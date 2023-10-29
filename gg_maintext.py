@@ -10,9 +10,9 @@ from gg_tkutils import isMac
 
 
 class GGmaintext(tk.Text):
-    def __init__(self, root, **kwargs):
+    def __init__(self, parent, **kwargs):
         # Create surrounding Frame
-        self.frame = ttk.Frame(root, padding="5 5 5 5")
+        self.frame = ttk.Frame(parent)
         self.frame.columnconfigure(0, weight=1)
         self.frame.rowconfigure(0, weight=1)
 
@@ -93,3 +93,13 @@ class GGmaintext(tk.Text):
             self.bind("<Control-1>", postContextMenu)
         else:
             self.bind("<3>", postContextMenu)
+
+    #
+    # Get the name of the image file the insert cursor is in
+    def getImageFilename(self):
+        sep_index = self.search("//-----File: ", self.index(tk.INSERT), backwards=True)
+        return (
+            self.get(sep_index + "+13c", sep_index + "lineend").rstrip("-")
+            if sep_index
+            else ""
+        )

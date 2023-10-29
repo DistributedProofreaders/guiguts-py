@@ -40,11 +40,19 @@ def ggRoot(root=None):
 
 
 #
-# Return main text widget
+# Set/return main text widget
 def ggMainText(maintext=None):
     if maintext:
         ggMainText.maintext = maintext
     return ggMainText.maintext
+
+
+#
+# Set/return main image widget
+def ggMainImage(mainimage=None):
+    if mainimage:
+        ggMainImage.mainimage = mainimage
+    return ggMainImage.mainimage
 
 
 #

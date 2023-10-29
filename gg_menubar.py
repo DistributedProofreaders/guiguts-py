@@ -15,6 +15,7 @@ class GGmenubar(tk.Menu):
         self.initFileMenu(root)
         self.initEditMenu(root)
         self.initHelpMenu(root)
+        self.initViewMenu(root)
         self.initOSMenu(root)
 
     def initFileMenu(self, root):
@@ -24,7 +25,6 @@ class GGmenubar(tk.Menu):
         menu_file.addButton("Save ~As...", root.saveasFile, "Cmd/Ctrl+Shift+S")
         menu_file.add_separator()
         menu_file.addButton("~Quit", root.quitProgram, "Cmd+Q" if isMac() else "")
-        return menu_file
 
     def initEditMenu(self, root):
         menu_edit = GGmenu(self, "~Edit")
@@ -34,13 +34,17 @@ class GGmenubar(tk.Menu):
         menu_edit.addCutCopyPaste()
         menu_edit.add_separator()
         menu_edit.addButton("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
-        return menu_edit
+
+    def initViewMenu(self, root):
+        menu_view = GGmenu(self, "~View")
+        menu_view.addButton("~Dock", root.dockImage, "Cmd/Ctrl+D")
+        menu_view.addButton("~Float", root.floatImage, "Cmd/Ctrl+F")
+        menu_view.addButton("~Load Image", root.loadImage, "Cmd/Ctrl+L")
 
     def initHelpMenu(self, root):
         menu_help = GGmenu(self, "~Help")
         menu_help.addButton("Guiguts ~Manual", root.helpManual)
         menu_help.addButton("About ~Guiguts", root.helpAbout)
-        return menu_help
 
     def initOSMenu(self, root):
         if isMac():
@@ -52,4 +56,3 @@ class GGmenubar(tk.Menu):
             menu_window = GGmenu(self, "Window", name="window")
         else:
             menu_app = None
-        return menu_app

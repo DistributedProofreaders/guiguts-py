@@ -1,15 +1,16 @@
 # Main Guiguts class, derived from Tk - serves as root window
 
 
-from os.path import basename, dirname
+import os.path
 import re
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import webbrowser
 
+from gg_mainimage import GGmainimage
 from gg_maintext import GGmaintext
 from gg_menubar import GGmenubar
-from gg_tkutils import isMac, ggRoot, ggMainText
+from gg_tkutils import isMac, ggRoot, ggMainText, ggMainImage
 
 
 class Guiguts(tk.Tk):
@@ -19,10 +20,14 @@ class Guiguts(tk.Tk):
         ggRoot(self)
         self.geometry("800x400")
         self.option_add("*tearOff", False)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
 
+        frame = ttk.Frame(self, padding="5 5 5 5")
+        frame.grid(column=0, row=0, sticky="NSEW")
         # Main text widget
         maintext = GGmaintext(
-            self,
+            frame,
             undo=True,
             wrap="none",
             autoseparators=True,
@@ -30,13 +35,18 @@ class Guiguts(tk.Tk):
         )
         ggMainText(maintext)
 
+        # Main image widget
+        mainimage = GGmainimage(frame)
+        ggMainImage(mainimage)
+
         # Menus
         self["menu"] = GGmenubar(self)
 
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
-        maintext.grid(column=0, row=0, sticky="NSEW")
-        # maintext.initContextMenu()
+        frame.rowconfigure(0, weight=1)
+        frame.columnconfigure(0, weight=1)
+        ggMainText().grid(column=0, row=0, sticky="NSEW")
+        frame.columnconfigure(1, weight=0)
+        ggMainImage().grid(column=1, row=0, sticky="NSEW")
 
         if isMac():
             self.createcommand("tk::mac::ShowPreferences", self.showMyPreferencesDialog)
@@ -45,9 +55,9 @@ class Guiguts(tk.Tk):
 
         self.filename = ""
         self.updateTitle()
-        maintext.focus_set()
 
-        maintext.addModifiedCallback(self.updateTitle)
+        ggMainText().focus_set()
+        ggMainText().addModifiedCallback(self.updateTitle)
 
     def run(self):
         self.mainloop()
@@ -82,8 +92,8 @@ class Guiguts(tk.Tk):
     # Save current text as new file
     def saveasFile(self, *args):
         fn = filedialog.asksaveasfilename(
-            initialfile=basename(self.filename),
-            initialdir=dirname(self.filename),
+            initialfile=os.path.basename(self.filename),
+            initialdir=os.path.dirname(self.filename),
             filetypes=[("All files", "*")],
         )
         if fn:
@@ -112,6 +122,23 @@ class Guiguts(tk.Tk):
 
     def helpManual(self, *args):
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
+
+    # Handle image window
+    def floatImage(self, *args):
+        self.wm_manage(ggMainImage())
+        ggMainImage().lift()
+        tk.Wm.protocol(
+            ggMainImage(), "WM_DELETE_WINDOW", self.dockImage
+        )  # re-dock if window closed
+
+    def dockImage(self, *args):
+        self.wm_forget(ggMainImage())
+        ggMainImage().grid(column=1, row=0, sticky="NSEW")
+
+    def loadImage(self, *args):
+        filename = ggMainText().getImageFilename()
+        ggMainImage().loadImage(filename)
+        ggMainImage().lift()
 
 
 if __name__ == "__main__":
