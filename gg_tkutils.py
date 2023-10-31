@@ -2,6 +2,8 @@
 #
 # Attempt to avoid passing root & maintext widgets everywhere for the
 # few places they are needed - to be reviewed/reconsidered
+# Maybe use singleton classes for root, maintext, mainimage
+# - only appropriate if certain there will only be one instance
 
 import re
 import tkinter as tk

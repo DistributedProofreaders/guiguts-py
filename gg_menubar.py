@@ -14,8 +14,8 @@ class GGmenubar(tk.Menu):
 
         self.initFileMenu(root)
         self.initEditMenu(root)
-        self.initHelpMenu(root)
         self.initViewMenu(root)
+        self.initHelpMenu(root)
         self.initOSMenu(root)
 
     def initFileMenu(self, root):
@@ -34,6 +34,8 @@ class GGmenubar(tk.Menu):
         menu_edit.addCutCopyPaste()
         menu_edit.add_separator()
         menu_edit.addButton("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
+        menu_edit.add_separator()
+        menu_edit.addButton("Pre~ferences...", root.showMyPreferencesDialog)
 
     def initViewMenu(self, root):
         menu_view = GGmenu(self, "~View")
