@@ -10,6 +10,8 @@ import webbrowser
 from gg_mainimage import GGmainimage
 from gg_maintext import GGmaintext
 from gg_menubar import GGmenubar
+from gg_prefs import GGprefs
+from gg_prefsdialog import GGprefsdialog
 from gg_tkutils import isMac, ggRoot, ggMainText, ggMainImage
 
 
@@ -22,6 +24,8 @@ class Guiguts(tk.Tk):
         self.option_add("*tearOff", False)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
+
+        self.setPrefsDefaults()
 
         frame = ttk.Frame(self, padding="5 5 5 5")
         frame.grid(column=0, row=0, sticky="NSEW")
@@ -45,8 +49,12 @@ class Guiguts(tk.Tk):
         frame.rowconfigure(0, weight=1)
         frame.columnconfigure(0, weight=1)
         ggMainText().grid(column=0, row=0, sticky="NSEW")
+
         frame.columnconfigure(1, weight=0)
-        ggMainImage().grid(column=1, row=0, sticky="NSEW")
+        if GGprefs().get("ImageWindow") == "Docked":
+            self.dockImage()
+        else:
+            self.floatImage()
 
         if isMac():
             self.createcommand("tk::mac::ShowPreferences", self.showMyPreferencesDialog)
@@ -110,9 +118,7 @@ class Guiguts(tk.Tk):
         )
 
     def showMyPreferencesDialog(self, *args):
-        messagebox.showwarning(
-            title="Preferences", message="Prefs dialog hasn't been written yet"
-        )
+        GGprefsdialog(self, "Set Preferences")
 
     # Handle drag/drop on Macs
     def openDocument(self, args):
@@ -127,18 +133,23 @@ class Guiguts(tk.Tk):
     def floatImage(self, *args):
         self.wm_manage(ggMainImage())
         ggMainImage().lift()
-        tk.Wm.protocol(
-            ggMainImage(), "WM_DELETE_WINDOW", self.dockImage
-        )  # re-dock if window closed
+        tk.Wm.protocol(ggMainImage(), "WM_DELETE_WINDOW", self.dockImage)
+        GGprefs().set("ImageWindow", "Floated")
 
     def dockImage(self, *args):
         self.wm_forget(ggMainImage())
         ggMainImage().grid(column=1, row=0, sticky="NSEW")
+        GGprefs().set("ImageWindow", "Docked")
 
     def loadImage(self, *args):
         filename = ggMainText().getImageFilename()
         ggMainImage().loadImage(filename)
         ggMainImage().lift()
+
+    #
+    # Set default preference values - will be overridden by any values set in the GGprefs file
+    def setPrefsDefaults(self):
+        GGprefs().setDefault("ImageWindow", "Docked")
 
 
 if __name__ == "__main__":
