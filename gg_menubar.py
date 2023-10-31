@@ -24,6 +24,8 @@ class GGmenubar(tk.Menu):
         menu_file.addButton("~Save", root.saveFile, "Cmd/Ctrl+S")
         menu_file.addButton("Save ~As...", root.saveasFile, "Cmd/Ctrl+Shift+S")
         menu_file.add_separator()
+        menu_file.addButton("Spawn ~Process", root.spawnProcess)
+        menu_file.add_separator()
         menu_file.addButton("~Quit", root.quitProgram, "Cmd+Q" if isMac() else "")
 
     def initEditMenu(self, root):

@@ -3,6 +3,7 @@
 
 import os.path
 import re
+import subprocess
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import webbrowser
@@ -145,6 +146,17 @@ class Guiguts(tk.Tk):
         filename = ggMainText().getImageFilename()
         ggMainImage().loadImage(filename)
         ggMainImage().lift()
+
+    # Handle spawning a process
+    def spawnProcess(self, *args):
+        result = subprocess.run(
+            "python child.py",
+            input="Convert me to uppercase",
+            text=True,
+            capture_output=True,
+        )
+        messagebox.showinfo(title="Spawn stdout", message=result.stdout)
+        messagebox.showinfo(title="Spawn stderr", message=result.stderr)
 
     #
     # Set default preference values - will be overridden by any values set in the GGprefs file
