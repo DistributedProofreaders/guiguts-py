@@ -58,6 +58,14 @@ def ggMainImage(mainimage=None):
 
 
 #
+# Set/return statusbar widget
+def ggStatusBar(statusbar=None):
+    if statusbar:
+        ggStatusBar.statusbar = statusbar
+    return ggStatusBar.statusbar
+
+
+#
 # Bind lower & uppercase versions of keyevent to handler
 # in main text window
 def keyBind(keyevent, handler):

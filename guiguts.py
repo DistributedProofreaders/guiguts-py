@@ -1,6 +1,7 @@
 # Main Guiguts class, derived from Tk - serves as root window
 
 
+import datetime
 import os.path
 import re
 import subprocess
@@ -10,10 +11,12 @@ import webbrowser
 
 from gg_mainimage import GGmainimage
 from gg_maintext import GGmaintext
+from gg_menu import GGmenu
 from gg_menubar import GGmenubar
 from gg_prefs import GGprefs
 from gg_prefsdialog import GGprefsdialog
-from gg_tkutils import isMac, ggRoot, ggMainText, ggMainImage
+from gg_statusbar import GGstatusbar
+from gg_tkutils import isMac, ggRoot, ggMainText, ggMainImage, ggStatusBar
 
 
 class Guiguts(tk.Tk):
@@ -40,22 +43,28 @@ class Guiguts(tk.Tk):
         )
         ggMainText(maintext)
 
-        # Main image widget
-        mainimage = GGmainimage(frame)
-        ggMainImage(mainimage)
-
-        # Menus
-        self["menu"] = GGmenubar(self)
+        menubar = GGmenubar(self)
+        self.initMenus(menubar)
+        self["menu"] = menubar
 
         frame.rowconfigure(0, weight=1)
         frame.columnconfigure(0, weight=1)
         ggMainText().grid(column=0, row=0, sticky="NSEW")
 
+        # Main image widget
+        mainimage = GGmainimage(frame)
+        ggMainImage(mainimage)
         frame.columnconfigure(1, weight=0)
         if GGprefs().get("ImageWindow") == "Docked":
             self.dockImage()
         else:
             self.floatImage()
+
+        # Status bar
+        statusbar = GGstatusbar(frame)
+        ggStatusBar(statusbar)
+        self.initStatusBar(statusbar)
+        statusbar.grid(column=0, row=1, columnspan=2, sticky="NSEW")
 
         if isMac():
             self.createcommand("tk::mac::ShowPreferences", self.showMyPreferencesDialog)
@@ -63,7 +72,7 @@ class Guiguts(tk.Tk):
             self.createcommand("tk::mac::Quit", self.quitProgram)
 
         self.filename = ""
-        self.updateTitle()
+        self.updateFilenameLabels()
 
         ggMainText().focus_set()
         ggMainText().addModifiedCallback(self.updateTitle)
@@ -72,7 +81,7 @@ class Guiguts(tk.Tk):
         self.mainloop()
 
     #
-    # Update title field with filename
+    # Update title field & statusbar with filename
     def updateTitle(self):
         modtitle = " - edited" if ggMainText().isModified() else ""
         filetitle = " - " + self.filename if self.filename else ""
@@ -87,7 +96,7 @@ class Guiguts(tk.Tk):
         if fn:
             self.filename = fn
             ggMainText().doOpen(self.filename)
-            self.updateTitle()
+            self.updateFilenameLabels()
 
     #
     # Save the current file
@@ -108,7 +117,7 @@ class Guiguts(tk.Tk):
         if fn:
             self.filename = fn
             ggMainText().doSave(self.filename)
-            self.updateTitle()
+            self.updateFilenameLabels()
 
     def quitProgram(self, *args):
         self.quit()
@@ -125,43 +134,127 @@ class Guiguts(tk.Tk):
     def openDocument(self, args):
         filename = args[0]  # Take first of list of filenames
         ggMainText().doOpen(filename)
-        self.updateTitle()
+        self.updateFilenameLabels()
 
     def helpManual(self, *args):
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
 
     # Handle image window
     def floatImage(self, *args):
-        self.wm_manage(ggMainImage())
-        ggMainImage().lift()
-        tk.Wm.protocol(ggMainImage(), "WM_DELETE_WINDOW", self.dockImage)
+        ggMainImage().grid_remove()
+        if ggMainImage().isImageLoaded():
+            self.wm_manage(ggMainImage())
+            ggMainImage().lift()
+            tk.Wm.protocol(ggMainImage(), "WM_DELETE_WINDOW", self.dockImage)
+        else:
+            self.wm_forget(ggMainImage())
         GGprefs().set("ImageWindow", "Floated")
 
     def dockImage(self, *args):
         self.wm_forget(ggMainImage())
-        ggMainImage().grid(column=1, row=0, sticky="NSEW")
+        if ggMainImage().isImageLoaded():
+            ggMainImage().grid(column=1, row=0, sticky="NSEW")
+        else:
+            ggMainImage().grid_remove()
+
         GGprefs().set("ImageWindow", "Docked")
 
     def loadImage(self, *args):
         filename = ggMainText().getImageFilename()
         ggMainImage().loadImage(filename)
-        ggMainImage().lift()
+        if GGprefs().get("ImageWindow") == "Docked":
+            self.dockImage()
+        else:
+            self.floatImage()
 
     # Handle spawning a process
     def spawnProcess(self, *args):
-        result = subprocess.run(
-            "python child.py",
-            input="Convert me to uppercase",
-            text=True,
-            capture_output=True,
-        )
+        try:
+            result = subprocess.run(
+                ["python", "child.py"],
+                input="Convert me to uppercase",
+                text=True,
+                capture_output=True,
+            )
+        except FileNotFoundError:
+            result = subprocess.run(
+                ["python3", "child.py"],
+                input="Convert me to uppercase",
+                text=True,
+                capture_output=True,
+            )
         messagebox.showinfo(title="Spawn stdout", message=result.stdout)
         messagebox.showinfo(title="Spawn stderr", message=result.stderr)
+
+    def updateFilenameLabels(self):
+        self.updateTitle()
+        ggStatusBar().set("filename", os.path.basename(self.filename))
 
     #
     # Set default preference values - will be overridden by any values set in the GGprefs file
     def setPrefsDefaults(self):
         GGprefs().setDefault("ImageWindow", "Docked")
+
+    def initMenus(self, menubar):
+        self.initFileMenu(menubar)
+        self.initEditMenu(menubar)
+        self.initViewMenu(menubar)
+        self.initHelpMenu(menubar)
+        self.initOSMenu(menubar)
+
+    def initFileMenu(self, parent):
+        menu_file = GGmenu(parent, "~File")
+        menu_file.addButton("~Open...", self.openFile, "Cmd/Ctrl+O")
+        menu_file.addButton("~Save", self.saveFile, "Cmd/Ctrl+S")
+        menu_file.addButton("Save ~As...", self.saveasFile, "Cmd/Ctrl+Shift+S")
+        menu_file.add_separator()
+        menu_file.addButton("Spawn ~Process", self.spawnProcess)
+        menu_file.add_separator()
+        menu_file.addButton("~Quit", self.quitProgram, "Cmd+Q" if isMac() else "")
+
+    def initEditMenu(self, parent):
+        menu_edit = GGmenu(parent, "~Edit")
+        menu_edit.addButton("~Undo", "<<Undo>>", "Cmd/Ctrl+Z")
+        menu_edit.addButton("~Redo", "<<Redo>>", "Cmd+Shift+Z" if isMac() else "Ctrl+Y")
+        menu_edit.add_separator()
+        menu_edit.addCutCopyPaste()
+        menu_edit.add_separator()
+        menu_edit.addButton("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
+        menu_edit.add_separator()
+        menu_edit.addButton("Pre~ferences...", self.showMyPreferencesDialog)
+
+    def initViewMenu(self, parent):
+        menu_view = GGmenu(parent, "~View")
+        menu_view.addButton("~Dock", self.dockImage, "Cmd/Ctrl+D")
+        menu_view.addButton("~Float", self.floatImage, "Cmd/Ctrl+F")
+        menu_view.addButton("~Load Image", self.loadImage, "Cmd/Ctrl+L")
+
+    def initHelpMenu(self, parent):
+        menu_help = GGmenu(parent, "~Help")
+        menu_help.addButton("Guiguts ~Manual", self.helpManual)
+        menu_help.addButton("About ~Guiguts", self.helpAbout)
+
+    def initOSMenu(self, parent):
+        if isMac():
+            # Apple menu
+            menu_app = GGmenu(parent, "", name="apple")
+            menu_app.addButton("About ~Guiguts", self.helpAbout)
+            menu_app.add_separator()
+            # Window menu
+            menu_window = GGmenu(parent, "Window", name="window")
+        else:
+            menu_app = None
+
+    def initStatusBar(self, statusbar):
+        statusbar.add(
+            "rowcol",
+            lambda: re.sub(r"(\d)\.(\d)", r"L:\1 C:\2", ggMainText().index(tk.INSERT)),
+            width=10,
+        )
+        statusbar.add("filename", width=12)
+        statusbar.add(
+            "time", lambda: datetime.datetime.now().strftime("%H:%M:%S"), width=8
+        )
 
 
 if __name__ == "__main__":
