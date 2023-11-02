@@ -1,4 +1,3 @@
-#
 # GGmainimage is a frame, containing a label which can display a png/jpeg file
 # NOTE: requires `pip install Pillow`
 
@@ -31,3 +30,6 @@ class GGmainimage(tk.Frame):  # Can't use ttk.Frame or it's not un/dockable
             self.label.config(image=self.photo)
         else:
             self.label.config(image="")
+
+    def isImageLoaded(self):
+        return bool(self.label.cget("image"))
