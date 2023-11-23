@@ -19,7 +19,7 @@ from gg_statusbar import GGstatusbar
 from gg_tkutils import isMac, ggRoot, ggMainText, ggMainImage, ggStatusBar
 
 
-class Guiguts(tk.Tk):
+class Guiguts(  tk.Tk  ):
     def __init__(self):
         super().__init__()
 
