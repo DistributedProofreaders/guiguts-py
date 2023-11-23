@@ -1,0 +1,4 @@
+[flake8]
+# leave line-length checking to black to avoid conflicts
+ignore = E501
+

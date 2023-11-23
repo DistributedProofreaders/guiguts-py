@@ -191,7 +191,7 @@ class Guiguts(tk.Tk):
         ggStatusBar().set("filename", os.path.basename(self.filename))
 
     #
-    # Set default preference values - will be overridden by any values set in the GGprefs file
+    # Set default prefs - will be overridden by any values set in the GGprefs file
     def setPrefsDefaults(self):
         GGprefs().setDefault("ImageWindow", "Docked")
 
@@ -241,7 +241,7 @@ class Guiguts(tk.Tk):
             menu_app.addButton("About ~Guiguts", self.helpAbout)
             menu_app.add_separator()
             # Window menu
-            menu_window = GGmenu(parent, "Window", name="window")
+            GGmenu(parent, "Window", name="window")
         else:
             menu_app = None
 
