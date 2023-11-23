@@ -1,7 +1,6 @@
 # GGprefsdialog class is a ttk simple dialog
 
 import tkinter as tk
-from tkinter import simpledialog
 
 from gg_prefs import GGprefs
 

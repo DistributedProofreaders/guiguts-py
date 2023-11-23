@@ -6,7 +6,6 @@
 # - only appropriate if certain there will only be one instance
 
 import re
-import tkinter as tk
 
 
 #

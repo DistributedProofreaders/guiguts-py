@@ -2,7 +2,6 @@
 
 import json
 import os
-import tkinter as tk
 
 from gg_tkutils import isX11
 
@@ -61,7 +60,6 @@ class GGprefs:
 
     # Save prefs dictionary to JSON file
     def save(self):
-        key = "mykey"
         if not os.path.isdir(self.prefsdir):
             os.mkdir(self.prefsdir)
         with open(self.prefsfile, "w") as fp:

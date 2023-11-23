@@ -26,3 +26,17 @@ Minor alterations probably needed for other platforms
 1. Install Python & Poetry (above)
 2. Clone the [GG2 Github repo](https://github.com/windymilla/Guiguts-2.0-tkinter)
 3. In the cloned GG2 directory, `poetry install`
+
+## Code style
+Guiguts 2 uses [flake8](https://pypi.org/project/flake8) for static code analysis
+and [black](https://pypi.org/project/black) for consistent styling. Both use
+default settings, with the exception of maximum line length checking which is
+suppressed using the `.flake8` file to avoid conflicts with black.
+
+Both tools will be installed via `poetry` as described above.
+
+`flake8 src` will check all `src` python files.
+`black src` will reformat all `src` python files where necessary.
+
+This project uses Github Actions to ensure neither of the above tools reports any
+error.
