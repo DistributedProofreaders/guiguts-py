@@ -9,14 +9,11 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import webbrowser
 
-from gg_mainimage import GGmainimage
-from gg_maintext import GGmaintext
-from gg_menu import GGmenu
-from gg_menubar import GGmenubar
-from gg_prefs import GGprefs
-from gg_prefsdialog import GGprefsdialog
-from gg_statusbar import GGstatusbar
-from gg_tkutils import isMac, ggRoot, ggMainText, ggMainImage, ggStatusBar
+from mainwindow import MainImage, MainText, Menu, MenuBar, StatusBar
+from preferences import Preferences
+from gg_prefsdialog import PreferencesDialog
+
+from tk_utilities import isMac, ggRoot, ggMainText, ggMainImage, ggStatusBar
 
 
 class Guiguts(tk.Tk):
@@ -34,7 +31,7 @@ class Guiguts(tk.Tk):
         frame = ttk.Frame(self, padding="5 5 5 5")
         frame.grid(column=0, row=0, sticky="NSEW")
         # Main text widget
-        maintext = GGmaintext(
+        maintext = MainText(
             frame,
             undo=True,
             wrap="none",
@@ -43,7 +40,7 @@ class Guiguts(tk.Tk):
         )
         ggMainText(maintext)
 
-        menubar = GGmenubar(self)
+        menubar = MenuBar(self)
         self.initMenus(menubar)
         self["menu"] = menubar
 
@@ -52,16 +49,16 @@ class Guiguts(tk.Tk):
         ggMainText().grid(column=0, row=0, sticky="NSEW")
 
         # Main image widget
-        mainimage = GGmainimage(frame)
+        mainimage = MainImage(frame)
         ggMainImage(mainimage)
         frame.columnconfigure(1, weight=0)
-        if GGprefs().get("ImageWindow") == "Docked":
+        if Preferences().get("ImageWindow") == "Docked":
             self.dockImage()
         else:
             self.floatImage()
 
         # Status bar
-        statusbar = GGstatusbar(frame)
+        statusbar = StatusBar(frame)
         ggStatusBar(statusbar)
         self.initStatusBar(statusbar)
         statusbar.grid(column=0, row=1, columnspan=2, sticky="NSEW")
@@ -128,7 +125,7 @@ class Guiguts(tk.Tk):
         )
 
     def showMyPreferencesDialog(self, *args):
-        GGprefsdialog(self, "Set Preferences")
+        PreferencesDialog(self, "Set Preferences")
 
     # Handle drag/drop on Macs
     def openDocument(self, args):
@@ -148,7 +145,7 @@ class Guiguts(tk.Tk):
             tk.Wm.protocol(ggMainImage(), "WM_DELETE_WINDOW", self.dockImage)
         else:
             self.wm_forget(ggMainImage())
-        GGprefs().set("ImageWindow", "Floated")
+        Preferences().set("ImageWindow", "Floated")
 
     def dockImage(self, *args):
         self.wm_forget(ggMainImage())
@@ -157,12 +154,12 @@ class Guiguts(tk.Tk):
         else:
             ggMainImage().grid_remove()
 
-        GGprefs().set("ImageWindow", "Docked")
+        Preferences().set("ImageWindow", "Docked")
 
     def loadImage(self, *args):
         filename = ggMainText().getImageFilename()
         ggMainImage().loadImage(filename)
-        if GGprefs().get("ImageWindow") == "Docked":
+        if Preferences().get("ImageWindow") == "Docked":
             self.dockImage()
         else:
             self.floatImage()
@@ -191,9 +188,9 @@ class Guiguts(tk.Tk):
         ggStatusBar().set("filename", os.path.basename(self.filename))
 
     #
-    # Set default prefs - will be overridden by any values set in the GGprefs file
+    # Set default prefs - will be overridden by any values set in the Preferences file
     def setPrefsDefaults(self):
-        GGprefs().setDefault("ImageWindow", "Docked")
+        Preferences().setDefault("ImageWindow", "Docked")
 
     def initMenus(self, menubar):
         self.initFileMenu(menubar)
@@ -203,7 +200,7 @@ class Guiguts(tk.Tk):
         self.initOSMenu(menubar)
 
     def initFileMenu(self, parent):
-        menu_file = GGmenu(parent, "~File")
+        menu_file = Menu(parent, "~File")
         menu_file.addButton("~Open...", self.openFile, "Cmd/Ctrl+O")
         menu_file.addButton("~Save", self.saveFile, "Cmd/Ctrl+S")
         menu_file.addButton("Save ~As...", self.saveasFile, "Cmd/Ctrl+Shift+S")
@@ -213,7 +210,7 @@ class Guiguts(tk.Tk):
         menu_file.addButton("~Quit", self.quitProgram, "Cmd+Q" if isMac() else "")
 
     def initEditMenu(self, parent):
-        menu_edit = GGmenu(parent, "~Edit")
+        menu_edit = Menu(parent, "~Edit")
         menu_edit.addButton("~Undo", "<<Undo>>", "Cmd/Ctrl+Z")
         menu_edit.addButton("~Redo", "<<Redo>>", "Cmd+Shift+Z" if isMac() else "Ctrl+Y")
         menu_edit.add_separator()
@@ -224,24 +221,24 @@ class Guiguts(tk.Tk):
         menu_edit.addButton("Pre~ferences...", self.showMyPreferencesDialog)
 
     def initViewMenu(self, parent):
-        menu_view = GGmenu(parent, "~View")
+        menu_view = Menu(parent, "~View")
         menu_view.addButton("~Dock", self.dockImage, "Cmd/Ctrl+D")
         menu_view.addButton("~Float", self.floatImage, "Cmd/Ctrl+F")
         menu_view.addButton("~Load Image", self.loadImage, "Cmd/Ctrl+L")
 
     def initHelpMenu(self, parent):
-        menu_help = GGmenu(parent, "~Help")
+        menu_help = Menu(parent, "~Help")
         menu_help.addButton("Guiguts ~Manual", self.helpManual)
         menu_help.addButton("About ~Guiguts", self.helpAbout)
 
     def initOSMenu(self, parent):
         if isMac():
             # Apple menu
-            menu_app = GGmenu(parent, "", name="apple")
+            menu_app = Menu(parent, "", name="apple")
             menu_app.addButton("About ~Guiguts", self.helpAbout)
             menu_app.add_separator()
             # Window menu
-            GGmenu(parent, "Window", name="window")
+            Menu(parent, "Window", name="window")
         else:
             menu_app = None
 
