@@ -1,4 +1,4 @@
-# Child process
+# Child process test file
 import sys
 
 input_string = input()
