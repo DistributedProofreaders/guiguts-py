@@ -1,88 +1,48 @@
-# Main Guiguts class, derived from Tk - serves as root window
+# Guiguts class, sets up main window
 
 
 import datetime
 import os.path
 import re
 import subprocess
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import filedialog, messagebox
 import webbrowser
 
-from mainwindow import MainImage, MainText, Menu, MenuBar, StatusBar
+from mainwindow import Root, MainWindow, MainImage, MainText, Menu, MenuBar, StatusBar
+
 from preferences import Preferences
-from gg_prefsdialog import PreferencesDialog
+from preferences_dialog import PreferencesDialog
+from tk_utilities import isMac
 
-from tk_utilities import isMac, ggRoot, ggMainText, ggMainImage, ggStatusBar
 
-
-class Guiguts(tk.Tk):
+class Guiguts:
     def __init__(self):
-        super().__init__()
+        """Initialize Guiguts class"""
 
-        ggRoot(self)
-        self.geometry("800x400")
-        self.option_add("*tearOff", False)
-        self.rowconfigure(0, weight=1)
-        self.columnconfigure(0, weight=1)
-
+        # Set up main window with initial widgets and geometry
         self.setPrefsDefaults()
 
-        frame = ttk.Frame(self, padding="5 5 5 5")
-        frame.grid(column=0, row=0, sticky="NSEW")
-        # Main text widget
-        maintext = MainText(
-            frame,
-            undo=True,
-            wrap="none",
-            autoseparators=True,
-            maxundo=-1,
-        )
-        ggMainText(maintext)
+        MainWindow()
 
-        menubar = MenuBar(self)
-        self.initMenus(menubar)
-        self["menu"] = menubar
+        self.initMenus(MenuBar())
 
-        frame.rowconfigure(0, weight=1)
-        frame.columnconfigure(0, weight=1)
-        ggMainText().grid(column=0, row=0, sticky="NSEW")
-
-        # Main image widget
-        mainimage = MainImage(frame)
-        ggMainImage(mainimage)
-        frame.columnconfigure(1, weight=0)
-        if Preferences().get("ImageWindow") == "Docked":
-            self.dockImage()
-        else:
-            self.floatImage()
-
-        # Status bar
-        statusbar = StatusBar(frame)
-        ggStatusBar(statusbar)
-        self.initStatusBar(statusbar)
-        statusbar.grid(column=0, row=1, columnspan=2, sticky="NSEW")
-
-        if isMac():
-            self.createcommand("tk::mac::ShowPreferences", self.showMyPreferencesDialog)
-            self.createcommand("tk::mac::OpenDocument", self.openDocument)
-            self.createcommand("tk::mac::Quit", self.quitProgram)
+        self.initStatusBar(StatusBar())
 
         self.filename = ""
         self.updateFilenameLabels()
 
-        ggMainText().focus_set()
-        ggMainText().addModifiedCallback(self.updateTitle)
+        MainText().focus_set()
+        MainText().addModifiedCallback(self.updateTitle)
 
     def run(self):
-        self.mainloop()
+        Root().mainloop()
 
     #
-    # Update title field & statusbar with filename
+    # Update title field with filename
     def updateTitle(self):
-        modtitle = " - edited" if ggMainText().isModified() else ""
+        modtitle = " - edited" if MainText().isModified() else ""
         filetitle = " - " + self.filename if self.filename else ""
-        self.title("Guiguts 2.0" + modtitle + filetitle)
+        Root().title("Guiguts 2.0" + modtitle + filetitle)
 
     #
     # Open and load a text file
@@ -92,14 +52,14 @@ class Guiguts(tk.Tk):
         )
         if fn:
             self.filename = fn
-            ggMainText().doOpen(self.filename)
+            MainText().doOpen(self.filename)
             self.updateFilenameLabels()
 
     #
     # Save the current file
     def saveFile(self, *args):
         if self.filename:
-            ggMainText().doSave(self.filename)
+            MainText().doSave(self.filename)
         else:
             self.saveasFile()
 
@@ -113,11 +73,11 @@ class Guiguts(tk.Tk):
         )
         if fn:
             self.filename = fn
-            ggMainText().doSave(self.filename)
+            MainText().doSave(self.filename)
             self.updateFilenameLabels()
 
     def quitProgram(self, *args):
-        self.quit()
+        Root().quit()
 
     def helpAbout(self, *args):
         messagebox.showinfo(
@@ -125,44 +85,24 @@ class Guiguts(tk.Tk):
         )
 
     def showMyPreferencesDialog(self, *args):
-        PreferencesDialog(self, "Set Preferences")
+        PreferencesDialog(Root(), "Set Preferences")
 
     # Handle drag/drop on Macs
     def openDocument(self, args):
         filename = args[0]  # Take first of list of filenames
-        ggMainText().doOpen(filename)
+        MainText().doOpen(filename)
         self.updateFilenameLabels()
 
     def helpManual(self, *args):
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
 
-    # Handle image window
-    def floatImage(self, *args):
-        ggMainImage().grid_remove()
-        if ggMainImage().isImageLoaded():
-            self.wm_manage(ggMainImage())
-            ggMainImage().lift()
-            tk.Wm.protocol(ggMainImage(), "WM_DELETE_WINDOW", self.dockImage)
-        else:
-            self.wm_forget(ggMainImage())
-        Preferences().set("ImageWindow", "Floated")
-
-    def dockImage(self, *args):
-        self.wm_forget(ggMainImage())
-        if ggMainImage().isImageLoaded():
-            ggMainImage().grid(column=1, row=0, sticky="NSEW")
-        else:
-            ggMainImage().grid_remove()
-
-        Preferences().set("ImageWindow", "Docked")
-
     def loadImage(self, *args):
-        filename = ggMainText().getImageFilename()
-        ggMainImage().loadImage(filename)
+        filename = MainText().getImageFilename()
+        MainImage().loadImage(filename)
         if Preferences().get("ImageWindow") == "Docked":
-            self.dockImage()
+            MainWindow().dockImage()
         else:
-            self.floatImage()
+            MainWindow().floatImage()
 
     # Handle spawning a process
     def spawnProcess(self, *args):
@@ -185,7 +125,7 @@ class Guiguts(tk.Tk):
 
     def updateFilenameLabels(self):
         self.updateTitle()
-        ggStatusBar().set("filename", os.path.basename(self.filename))
+        StatusBar().set("filename", os.path.basename(self.filename))
 
     #
     # Set default prefs - will be overridden by any values set in the Preferences file
@@ -198,6 +138,13 @@ class Guiguts(tk.Tk):
         self.initViewMenu(menubar)
         self.initHelpMenu(menubar)
         self.initOSMenu(menubar)
+
+        if isMac():
+            Root().createcommand(
+                "tk::mac::ShowPreferences", self.showMyPreferencesDialog
+            )
+            Root().createcommand("tk::mac::OpenDocument", self.openDocument)
+            Root().createcommand("tk::mac::Quit", self.quitProgram)
 
     def initFileMenu(self, parent):
         menu_file = Menu(parent, "~File")
@@ -222,8 +169,8 @@ class Guiguts(tk.Tk):
 
     def initViewMenu(self, parent):
         menu_view = Menu(parent, "~View")
-        menu_view.addButton("~Dock", self.dockImage, "Cmd/Ctrl+D")
-        menu_view.addButton("~Float", self.floatImage, "Cmd/Ctrl+F")
+        menu_view.addButton("~Dock", MainWindow().dockImage, "Cmd/Ctrl+D")
+        menu_view.addButton("~Float", MainWindow().floatImage, "Cmd/Ctrl+F")
         menu_view.addButton("~Load Image", self.loadImage, "Cmd/Ctrl+L")
 
     def initHelpMenu(self, parent):
@@ -245,7 +192,7 @@ class Guiguts(tk.Tk):
     def initStatusBar(self, statusbar):
         statusbar.add(
             "rowcol",
-            lambda: re.sub(r"(\d)\.(\d)", r"L:\1 C:\2", ggMainText().index(tk.INSERT)),
+            lambda: re.sub(r"(\d)\.(\d)", r"L:\1 C:\2", MainText().get_insert_index()),
             width=10,
         )
         statusbar.add("filename", width=12)
@@ -255,5 +202,4 @@ class Guiguts(tk.Tk):
 
 
 if __name__ == "__main__":
-    guiguts = Guiguts()
-    guiguts.run()
+    Guiguts().run()
