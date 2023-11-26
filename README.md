@@ -25,7 +25,10 @@ Minor alterations probably needed for other platforms
 
 1. Install Python & Poetry (above)
 2. Clone the [GG2 Github repo](https://github.com/windymilla/Guiguts-2.0-tkinter)
-3. In the cloned GG2 directory, `poetry install`
+3. In the cloned GG2 directory, `poetry install`. The message
+   ".../guiguts does not contain any element" can be ignored (or suppressed by using
+   `poetry install --no-root` instead).
+
 
 ## Code style
 Guiguts 2 uses [flake8](https://pypi.org/project/flake8) for static code analysis
@@ -40,3 +43,12 @@ Both tools will be installed via `poetry` as described above.
 
 This project uses Github Actions to ensure neither of the above tools reports any
 error.
+
+## Documentation
+[Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
+are used to document modules, classes, functions, etc.
+
+`Sphinx` can be used to create HTML documentation by running the following command
+in the `docs` directory: `python -m sphinx -b html . build`
+
+Note: Currently does not work on decorated `@singleton` classes

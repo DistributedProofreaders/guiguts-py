@@ -1,4 +1,4 @@
-# Guiguts class, sets up main window
+"""Guiguts - application to support creation of books for PG"""
 
 
 import datetime
@@ -16,6 +16,8 @@ from tk_utilities import isMac
 
 
 class Guiguts:
+    """Top level Guiguts class"""
+
     def __init__(self):
         """Initialize Guiguts class"""
 
