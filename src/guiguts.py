@@ -10,10 +10,10 @@ import webbrowser
 
 from mainwindow import (
     root,
-    mainwindow,
+    MainWindow,
+    Menu,
     mainimage,
     maintext,
-    Menu,
     menubar,
     statusbar,
 )
@@ -31,7 +31,7 @@ class Guiguts:
 
         self.setPrefsDefaults()
 
-        mainwindow()
+        MainWindow()
 
         self.initMenus(menubar())
 
@@ -109,9 +109,9 @@ class Guiguts:
         filename = maintext().getImageFilename()
         mainimage().loadImage(filename)
         if Preferences().get("ImageWindow") == "Docked":
-            mainwindow().dockImage()
+            mainimage().dockImage()
         else:
-            mainwindow().floatImage()
+            mainimage().floatImage()
 
     # Handle spawning a process
     def spawnProcess(self, *args):
@@ -178,8 +178,8 @@ class Guiguts:
 
     def initViewMenu(self, parent):
         menu_view = Menu(parent, "~View")
-        menu_view.addButton("~Dock", mainwindow().dockImage, "Cmd/Ctrl+D")
-        menu_view.addButton("~Float", mainwindow().floatImage, "Cmd/Ctrl+F")
+        menu_view.addButton("~Dock", mainimage().dockImage, "Cmd/Ctrl+D")
+        menu_view.addButton("~Float", mainimage().floatImage, "Cmd/Ctrl+F")
         menu_view.addButton("~Load Image", self.loadImage, "Cmd/Ctrl+L")
 
     def initHelpMenu(self, parent):

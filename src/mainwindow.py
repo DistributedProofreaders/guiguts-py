@@ -45,9 +45,18 @@ class Root(tk.Tk):
 class MainWindow:
     """Handles the construction of the main window with its basic widgets"""
 
+    # These class variables are set in __init__ to store the single instance
+    # of these main window items. They are exposed externally via convenience
+    # functions with the same names, e.g. root() returns MainWindow.root
+    root = None
+    menubar = None
+    maintext = None
+    mainimage = None
+    statusbar = None
+
     def __init__(self):
-        root(Root())
-        menubar(MenuBar())
+        MainWindow.root = Root()
+        MainWindow.menubar = MenuBar()
         root()["menu"] = menubar()
 
         frame = ttk.Frame(root(), padding="5 5 5 5")
@@ -58,7 +67,7 @@ class MainWindow:
         frame.rowconfigure(TEXT_WINDOW_ROW, weight=1)
         frame.columnconfigure(TEXT_WINDOW_COL, weight=1)
 
-        statusbar(StatusBar(frame))
+        MainWindow.statusbar = StatusBar(frame)
         statusbar().grid(
             column=STATUSBAR_COL,
             row=STATUSBAR_ROW,
@@ -66,43 +75,21 @@ class MainWindow:
             sticky="NSEW",
         )
 
-        maintext(
-            MainText(
-                frame,
-                undo=True,
-                wrap="none",
-                autoseparators=True,
-                maxundo=-1,
-            )
+        MainWindow.maintext = MainText(
+            frame,
+            undo=True,
+            wrap="none",
+            autoseparators=True,
+            maxundo=-1,
         )
+
         maintext().grid(column=TEXT_WINDOW_COL, row=TEXT_WINDOW_ROW, sticky="NSEW")
 
-        mainimage(MainImage(frame))
+        MainWindow.mainimage = MainImage(frame)
         if Preferences().get("ImageWindow") == "Docked":
-            self.dockImage()
+            mainimage().dockImage()
         else:
-            self.floatImage()
-
-    def floatImage(self, *args):
-        mainimage().grid_remove()
-        if mainimage().isImageLoaded():
-            root().wm_manage(mainimage())
-            mainimage().lift()
-            tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.dockImage)
-        else:
-            root().wm_forget(mainimage())
-        Preferences().set("ImageWindow", "Floated")
-
-    def dockImage(self, *args):
-        root().wm_forget(mainimage())
-        if mainimage().isImageLoaded():
-            mainimage().grid(
-                column=IMAGE_WINDOW_COL, row=IMAGE_WINDOW_ROW, sticky="NSEW"
-            )
-        else:
-            mainimage().grid_remove()
-
-        Preferences().set("ImageWindow", "Docked")
+            mainimage().floatImage()
 
 
 class Menu(tk.Menu):
@@ -340,6 +327,25 @@ class MainImage(tk.Frame):  # Can't use ttk.Frame or it's not un/dockable
     def isImageLoaded(self):
         return bool(self.label.cget("image"))
 
+    def floatImage(self, *args):
+        self.grid_remove()
+        if self.isImageLoaded():
+            root().wm_manage(self)
+            self.lift()
+            tk.Wm.protocol(self, "WM_DELETE_WINDOW", self.dockImage)
+        else:
+            root().wm_forget(self)
+        Preferences().set("ImageWindow", "Floated")
+
+    def dockImage(self, *args):
+        root().wm_forget(self)
+        if self.isImageLoaded():
+            self.grid(column=IMAGE_WINDOW_COL, row=IMAGE_WINDOW_ROW, sticky="NSEW")
+        else:
+            self.grid_remove()
+
+        Preferences().set("ImageWindow", "Docked")
+
 
 # StatusBar - status bar at the bottom of the screen
 # Label can be added with optional callback that returns a string
@@ -373,30 +379,21 @@ class StatusBar(tk.Frame):
         self.after(200, self._update)
 
 
-def single_instance_template(typename):
-    """Return a function to store/create/return single instance."""
-
-    def single_instance(the_instance=None):
-        """Return a single instance of a class.
-
-        If given an instance, it stores & returns it.
-        If not given an instance, it returns the stored instance.
-        If no instance stored, default instance is created.
-        """
-        if the_instance:
-            setattr(single_instance, "_the_instance", the_instance)
-        try:
-            return getattr(single_instance, "_the_instance")
-        except AttributeError:
-            setattr(single_instance, "_the_instance", typename())
-        return getattr(single_instance, "_the_instance")
-
-    return single_instance
+def root():
+    return MainWindow.root
 
 
-root = single_instance_template(Root)
-mainwindow = single_instance_template(MainWindow)
-mainimage = single_instance_template(MainImage)
-maintext = single_instance_template(MainText)
-menubar = single_instance_template(MenuBar)
-statusbar = single_instance_template(StatusBar)
+def mainimage():
+    return MainWindow.mainimage
+
+
+def maintext():
+    return MainWindow.maintext
+
+
+def menubar():
+    return MainWindow.menubar
+
+
+def statusbar():
+    return MainWindow.statusbar
