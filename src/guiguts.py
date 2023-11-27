@@ -8,7 +8,15 @@ import subprocess
 from tkinter import filedialog, messagebox
 import webbrowser
 
-from mainwindow import Root, MainWindow, MainImage, MainText, Menu, MenuBar, StatusBar
+from mainwindow import (
+    root,
+    mainwindow,
+    mainimage,
+    maintext,
+    Menu,
+    menubar,
+    statusbar,
+)
 
 from preferences import Preferences
 from preferences_dialog import PreferencesDialog
@@ -21,30 +29,29 @@ class Guiguts:
     def __init__(self):
         """Initialize Guiguts class"""
 
-        # Set up main window with initial widgets and geometry
         self.setPrefsDefaults()
 
-        MainWindow()
+        mainwindow()
 
-        self.initMenus(MenuBar())
+        self.initMenus(menubar())
 
-        self.initStatusBar(StatusBar())
+        self.initStatusBar(statusbar())
 
         self.filename = ""
         self.updateFilenameLabels()
 
-        MainText().focus_set()
-        MainText().addModifiedCallback(self.updateTitle)
+        maintext().focus_set()
+        maintext().addModifiedCallback(self.updateTitle)
 
     def run(self):
-        Root().mainloop()
+        root().mainloop()
 
     #
     # Update title field with filename
     def updateTitle(self):
-        modtitle = " - edited" if MainText().isModified() else ""
+        modtitle = " - edited" if maintext().isModified() else ""
         filetitle = " - " + self.filename if self.filename else ""
-        Root().title("Guiguts 2.0" + modtitle + filetitle)
+        root().title("Guiguts 2.0" + modtitle + filetitle)
 
     #
     # Open and load a text file
@@ -54,14 +61,14 @@ class Guiguts:
         )
         if fn:
             self.filename = fn
-            MainText().doOpen(self.filename)
+            maintext().doOpen(self.filename)
             self.updateFilenameLabels()
 
     #
     # Save the current file
     def saveFile(self, *args):
         if self.filename:
-            MainText().doSave(self.filename)
+            maintext().doSave(self.filename)
         else:
             self.saveasFile()
 
@@ -75,11 +82,11 @@ class Guiguts:
         )
         if fn:
             self.filename = fn
-            MainText().doSave(self.filename)
+            maintext().doSave(self.filename)
             self.updateFilenameLabels()
 
     def quitProgram(self, *args):
-        Root().quit()
+        root().quit()
 
     def helpAbout(self, *args):
         messagebox.showinfo(
@@ -87,24 +94,24 @@ class Guiguts:
         )
 
     def showMyPreferencesDialog(self, *args):
-        PreferencesDialog(Root(), "Set Preferences")
+        PreferencesDialog(root(), "Set Preferences")
 
     # Handle drag/drop on Macs
     def openDocument(self, args):
         filename = args[0]  # Take first of list of filenames
-        MainText().doOpen(filename)
+        maintext().doOpen(filename)
         self.updateFilenameLabels()
 
     def helpManual(self, *args):
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
 
     def loadImage(self, *args):
-        filename = MainText().getImageFilename()
-        MainImage().loadImage(filename)
+        filename = maintext().getImageFilename()
+        mainimage().loadImage(filename)
         if Preferences().get("ImageWindow") == "Docked":
-            MainWindow().dockImage()
+            mainwindow().dockImage()
         else:
-            MainWindow().floatImage()
+            mainwindow().floatImage()
 
     # Handle spawning a process
     def spawnProcess(self, *args):
@@ -127,7 +134,7 @@ class Guiguts:
 
     def updateFilenameLabels(self):
         self.updateTitle()
-        StatusBar().set("filename", os.path.basename(self.filename))
+        statusbar().set("filename", os.path.basename(self.filename))
 
     #
     # Set default prefs - will be overridden by any values set in the Preferences file
@@ -142,11 +149,11 @@ class Guiguts:
         self.initOSMenu(menubar)
 
         if isMac():
-            Root().createcommand(
+            root().createcommand(
                 "tk::mac::ShowPreferences", self.showMyPreferencesDialog
             )
-            Root().createcommand("tk::mac::OpenDocument", self.openDocument)
-            Root().createcommand("tk::mac::Quit", self.quitProgram)
+            root().createcommand("tk::mac::OpenDocument", self.openDocument)
+            root().createcommand("tk::mac::Quit", self.quitProgram)
 
     def initFileMenu(self, parent):
         menu_file = Menu(parent, "~File")
@@ -171,8 +178,8 @@ class Guiguts:
 
     def initViewMenu(self, parent):
         menu_view = Menu(parent, "~View")
-        menu_view.addButton("~Dock", MainWindow().dockImage, "Cmd/Ctrl+D")
-        menu_view.addButton("~Float", MainWindow().floatImage, "Cmd/Ctrl+F")
+        menu_view.addButton("~Dock", mainwindow().dockImage, "Cmd/Ctrl+D")
+        menu_view.addButton("~Float", mainwindow().floatImage, "Cmd/Ctrl+F")
         menu_view.addButton("~Load Image", self.loadImage, "Cmd/Ctrl+L")
 
     def initHelpMenu(self, parent):
@@ -194,7 +201,7 @@ class Guiguts:
     def initStatusBar(self, statusbar):
         statusbar.add(
             "rowcol",
-            lambda: re.sub(r"(\d)\.(\d)", r"L:\1 C:\2", MainText().get_insert_index()),
+            lambda: re.sub(r"(\d)\.(\d)", r"L:\1 C:\2", maintext().get_insert_index()),
             width=10,
         )
         statusbar.add("filename", width=12)
