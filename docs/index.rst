@@ -22,12 +22,7 @@ Preferences Dialog
    
 .. automodule:: preferences_dialog
  
-Singleton
-=========
-    
-.. automodule:: singleton
- 
 Utilities
 =========
     
-.. automodule:: tk_utilities
+.. automodule:: utilities

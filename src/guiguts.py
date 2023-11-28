@@ -18,9 +18,9 @@ from mainwindow import (
     statusbar,
 )
 
-from preferences import Preferences
+from preferences import preferences
 from preferences_dialog import PreferencesDialog
-from tk_utilities import isMac
+from utilities import isMac
 
 
 class Guiguts:
@@ -108,7 +108,7 @@ class Guiguts:
     def loadImage(self, *args):
         filename = maintext().getImageFilename()
         mainimage().loadImage(filename)
-        if Preferences().get("ImageWindow") == "Docked":
+        if preferences.get("ImageWindow") == "Docked":
             mainimage().dockImage()
         else:
             mainimage().floatImage()
@@ -137,9 +137,9 @@ class Guiguts:
         statusbar().set("filename", os.path.basename(self.filename))
 
     #
-    # Set default prefs - will be overridden by any values set in the Preferences file
+    # Set default preferences - will be overridden by any values set in the Preferences file
     def setPrefsDefaults(self):
-        Preferences().setDefault("ImageWindow", "Docked")
+        preferences.setDefault("ImageWindow", "Docked")
 
     def initMenus(self, menubar):
         self.initFileMenu(menubar)
