@@ -9,10 +9,10 @@ from preferences import preferences
 
 
 class PreferencesDialog(tk.simpledialog.Dialog):
-    def __init__(self, parent, title):
+    def __init__(self, parent):
         self.labels = {}
         self.entries = {}
-        super().__init__(parent, title)
+        super().__init__(parent, "Set Preferences")
 
     # Show all preferences keys/values
     def body(self, frame):
