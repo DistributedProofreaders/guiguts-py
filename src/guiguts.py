@@ -94,7 +94,7 @@ class Guiguts:
         )
 
     def showMyPreferencesDialog(self, *args):
-        PreferencesDialog(root(), "Set Preferences")
+        PreferencesDialog(root())
 
     # Handle drag/drop on Macs
     def openDocument(self, args):

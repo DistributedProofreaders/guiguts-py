@@ -16,7 +16,6 @@ import os.path
 from PIL import Image, ImageTk
 import re
 import tkinter as tk
-from tkinter import ttk
 
 from preferences import preferences
 from utilities import isMac
@@ -59,8 +58,8 @@ class MainWindow:
         MainWindow.menubar = MenuBar()
         root()["menu"] = menubar()
 
-        frame = ttk.Frame(root(), padding="5 5 5 5")
-        frame.grid(column=0, row=0, sticky="NSEW")
+        frame = tk.Frame(root())
+        frame.grid(column=0, row=0, sticky="NSEW", padx=5, pady=5)
         # Specify image window weights first, so text window will override if on same row or column
         frame.rowconfigure(IMAGE_WINDOW_ROW, weight=0)
         frame.columnconfigure(IMAGE_WINDOW_COL, weight=0)
@@ -191,20 +190,19 @@ class MainText(tk.Text):
 
     def __init__(self, parent, **kwargs):
         # Create surrounding Frame
-        self.frame = ttk.Frame(parent)
+        self.frame = tk.Frame(parent)
         self.frame.columnconfigure(0, weight=1)
         self.frame.rowconfigure(0, weight=1)
 
         # Create Text itself & place in Frame
-        # ASK SOMEONE- why doesn't `super()` work in place of `tk.Text` below?
-        tk.Text.__init__(self, self.frame, **kwargs)
+        super().__init__(self.frame, **kwargs)
         tk.Text.grid(self, column=0, row=0, sticky="NSEW")
 
         # Create scrollbars, place in Frame, and link to Text
-        hscroll = ttk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=self.xview)
+        hscroll = tk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=self.xview)
         hscroll.grid(column=0, row=1, sticky="EW")
         self["xscrollcommand"] = hscroll.set
-        vscroll = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
+        vscroll = tk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
         vscroll.grid(column=1, row=0, sticky="NS")
         self["yscrollcommand"] = vscroll.set
 
@@ -299,10 +297,10 @@ class MainText(tk.Text):
 # MainImage is a frame, containing a label which can display a png/jpeg file
 
 
-class MainImage(tk.Frame):  # Can't use ttk.Frame or it's not un/dockable
+class MainImage(tk.Frame):
     def __init__(self, parent):
-        tk.Frame.__init__(
-            self, parent, borderwidth=2, relief=tk.SUNKEN, name="*Image Viewer*"
+        super().__init__(
+            parent, borderwidth=2, relief=tk.SUNKEN, name="*Image Viewer*"
         )
 
         self.label = tk.Label(self, text="No image")
@@ -355,7 +353,7 @@ class MainImage(tk.Frame):  # Can't use ttk.Frame or it's not un/dockable
 
 class StatusBar(tk.Frame):
     def __init__(self, parent):
-        tk.Frame.__init__(self, parent, borderwidth=1, relief=tk.SUNKEN)
+        super().__init__(parent, borderwidth=1, relief=tk.SUNKEN)
         self.labels = {}
         self.callbacks = {}
         self._update()
