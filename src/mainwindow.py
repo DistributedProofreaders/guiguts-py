@@ -18,8 +18,8 @@ import re
 import tkinter as tk
 from tkinter import ttk
 
-from preferences import Preferences
-from tk_utilities import isMac
+from preferences import preferences
+from utilities import isMac
 
 
 TEXT_WINDOW_ROW = 0
@@ -86,7 +86,7 @@ class MainWindow:
         maintext().grid(column=TEXT_WINDOW_COL, row=TEXT_WINDOW_ROW, sticky="NSEW")
 
         MainWindow.mainimage = MainImage(frame)
-        if Preferences().get("ImageWindow") == "Docked":
+        if preferences.get("ImageWindow") == "Docked":
             mainimage().dockImage()
         else:
             mainimage().floatImage()
@@ -214,8 +214,8 @@ class MainText(tk.Text):
 
         self.initContextMenu()
 
-    # Override grid, so placing MainText widget actually places surrounding Frame
     def grid(self, *args, **kwargs):
+        """Override grid, so placing MainText widget actually places surrounding Frame"""
         return self.frame.grid(*args, **kwargs)
 
     #
@@ -335,7 +335,7 @@ class MainImage(tk.Frame):  # Can't use ttk.Frame or it's not un/dockable
             tk.Wm.protocol(self, "WM_DELETE_WINDOW", self.dockImage)
         else:
             root().wm_forget(self)
-        Preferences().set("ImageWindow", "Floated")
+        preferences.set("ImageWindow", "Floated")
 
     def dockImage(self, *args):
         root().wm_forget(self)
@@ -344,7 +344,7 @@ class MainImage(tk.Frame):  # Can't use ttk.Frame or it's not un/dockable
         else:
             self.grid_remove()
 
-        Preferences().set("ImageWindow", "Docked")
+        preferences.set("ImageWindow", "Docked")
 
 
 # StatusBar - status bar at the bottom of the screen
