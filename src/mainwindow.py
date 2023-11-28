@@ -299,9 +299,7 @@ class MainText(tk.Text):
 
 class MainImage(tk.Frame):
     def __init__(self, parent):
-        super().__init__(
-            parent, borderwidth=2, relief=tk.SUNKEN, name="*Image Viewer*"
-        )
+        super().__init__(parent, borderwidth=2, relief=tk.SUNKEN, name="*Image Viewer*")
 
         self.label = tk.Label(self, text="No image")
         self.label.grid(column=0, row=0)
