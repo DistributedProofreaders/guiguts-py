@@ -29,26 +29,30 @@ Minor alterations probably needed for other platforms
    ".../guiguts does not contain any element" can be ignored (or suppressed by using
    `poetry install --no-root` instead).
 
-
 ## Code style
 Guiguts 2 uses [flake8](https://pypi.org/project/flake8) for static code analysis
 and [black](https://pypi.org/project/black) for consistent styling. Both use
 default settings, with the exception of maximum line length checking which is
-suppressed using the `.flake8` file to avoid conflicts with black.
+adjusted in the recommended manner using the `.flake8` file to avoid conflicts
+with black.
 
 Both tools will be installed via `poetry` as described above.
 
-`flake8 src` will check all `src` python files.
-`black src` will reformat all `src` python files where necessary.
+`poetry run flake8 src` will check all `src` python files.
+`poetry run black src` will reformat all `src` python files where necessary.
 
 This project uses Github Actions to ensure neither of the above tools reports any
 error.
+
+Naming conventions from [PEP8](https://pep8.org/#prescriptive-naming-conventions)
+are used. To summarize, class names use CapWords; constants are ALL_UPPERCASE;
+most other variables, functions and methods are all_lowercase.
 
 ## Documentation
 [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
 are used to document modules, classes, functions, etc.
 
-`Sphinx` can be used to create HTML documentation by running the following command
-in the `docs` directory: `python -m sphinx -b html . build`
+`Sphinx` can be used to create HTML documentation by running the following command:
+`poetry run python -m sphinx -b html docs docs/build`
 
-Note: Currently does not work on decorated `@singleton` classes
+HTML docs will appear in the `docs/build` directory.

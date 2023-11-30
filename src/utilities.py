@@ -5,17 +5,17 @@ import platform
 
 #
 # Functions to check which OS is being used
-def isMac():
+def is_mac():
     """Return true if running on Mac"""
     return _is_system("Darwin")
 
 
-def isWindows():
+def is_windows():
     """Return true if running on Windows"""
     return _is_system("Windows")
 
 
-def isX11():
+def is_x11():
     """Return true if running on Linux"""
     return _is_system("Linux")
 

@@ -20,61 +20,64 @@ from mainwindow import (
 
 from preferences import preferences
 from preferences_dialog import PreferencesDialog
-from utilities import isMac
+from utilities import is_mac
 
 
 class Guiguts:
-    """Top level Guiguts class"""
+    """Top level Guiguts application.
+
+    Attributes:
+        filename: name of the loaded file.
+    """
 
     def __init__(self):
-        """Initialize Guiguts class"""
+        """Initialize Guiguts class.
 
-        self.setPrefsDefaults()
+        Creates windows and sets default preferences."""
+
+        self.set_preferences_defaults()
 
         MainWindow()
 
-        self.initMenus(menubar())
+        self.init_menus(menubar())
 
-        self.initStatusBar(statusbar())
+        self.init_statusbar(statusbar())
 
         self.filename = ""
-        self.updateFilenameLabels()
+        self.update_filename_labels()
 
         maintext().focus_set()
-        maintext().addModifiedCallback(self.updateTitle)
+        maintext().add_modified_callback(self.update_title)
 
     def run(self):
+        """Run the app."""
         root().mainloop()
 
-    #
-    # Update title field with filename
-    def updateTitle(self):
-        modtitle = " - edited" if maintext().isModified() else ""
+    def update_title(self):
+        """Update the window title to reflect current status."""
+        modtitle = " - edited" if maintext().is_modified() else ""
         filetitle = " - " + self.filename if self.filename else ""
         root().title("Guiguts 2.0" + modtitle + filetitle)
 
-    #
-    # Open and load a text file
-    def openFile(self, *args):
+    def open_file(self, *args):
+        """Open and load a text file."""
         fn = filedialog.askopenfilename(
             filetypes=(("Text files", "*.txt *.html *.htm"), ("All files", "*.*"))
         )
         if fn:
             self.filename = fn
-            maintext().doOpen(self.filename)
-            self.updateFilenameLabels()
+            maintext().do_open(self.filename)
+            self.update_filename_labels()
 
-    #
-    # Save the current file
-    def saveFile(self, *args):
+    def save_file(self, *args):
+        """Save the current file."""
         if self.filename:
-            maintext().doSave(self.filename)
+            maintext().do_save(self.filename)
         else:
-            self.saveasFile()
+            self.save_as_file()
 
-    #
-    # Save current text as new file
-    def saveasFile(self, *args):
+    def save_as_file(self, *args):
+        """Save current text as new file."""
         fn = filedialog.asksaveasfilename(
             initialfile=os.path.basename(self.filename),
             initialdir=os.path.dirname(self.filename),
@@ -82,39 +85,51 @@ class Guiguts:
         )
         if fn:
             self.filename = fn
-            maintext().doSave(self.filename)
-            self.updateFilenameLabels()
+            maintext().do_save(self.filename)
+            self.update_filename_labels()
 
-    def quitProgram(self, *args):
+    def quit_program(self, *args):
+        """Exit the program."""
         root().quit()
 
-    def helpAbout(self, *args):
+    def help_about(self, *args):
+        """Display a 'Help About' dialog."""
         messagebox.showinfo(
             title="About Guiguts", message="Here's some information about Guiguts"
         )
 
-    def showMyPreferencesDialog(self, *args):
+    def show_preferences_dialog(self, *args):
+        """Show the preferences display/edit dialog."""
         PreferencesDialog(root())
 
-    # Handle drag/drop on Macs
-    def openDocument(self, args):
-        filename = args[0]  # Take first of list of filenames
-        maintext().doOpen(filename)
-        self.updateFilenameLabels()
+    def open_document(self, args):
+        """Handle drag/drop on Macs.
 
-    def helpManual(self, *args):
+        Accepts a list of filenames, but only loads the first.
+        """
+        filename = args[0]
+        maintext().do_open(filename)
+        self.update_filename_labels()
+
+    def show_help_manual(self, *args):
+        """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
 
-    def loadImage(self, *args):
-        filename = maintext().getImageFilename()
-        mainimage().loadImage(filename)
+    def load_image(self, *args):
+        """Load the image for the current page."""
+        filename = maintext().get_image_filename()
+        mainimage().load_image(filename)
         if preferences.get("ImageWindow") == "Docked":
-            mainimage().dockImage()
+            mainimage().dock_image()
         else:
-            mainimage().floatImage()
+            mainimage().float_image()
 
-    # Handle spawning a process
-    def spawnProcess(self, *args):
+    def spawn_process(self, *args):
+        """Spawn a subprocess.
+
+        Executes a command, sends input to the process and captures
+        stdout and stderr from the process.
+        """
         try:
             result = subprocess.run(
                 ["python", "child.py"],
@@ -132,73 +147,87 @@ class Guiguts:
         messagebox.showinfo(title="Spawn stdout", message=result.stdout)
         messagebox.showinfo(title="Spawn stderr", message=result.stderr)
 
-    def updateFilenameLabels(self):
-        self.updateTitle()
+    def update_filename_labels(self):
+        """Update places where the filename is displayed."""
+        self.update_title()
         statusbar().set("filename", os.path.basename(self.filename))
 
-    #
-    # Set default preferences - will be overridden by any values set in the Preferences file
-    def setPrefsDefaults(self):
-        preferences.setDefault("ImageWindow", "Docked")
+    def set_preferences_defaults(self):
+        """Set default preferences - will be overridden by any values set
+        in the Preferences file.
+        """
+        preferences.set_default("ImageWindow", "Docked")
 
-    def initMenus(self, menubar):
-        self.initFileMenu(menubar)
-        self.initEditMenu(menubar)
-        self.initViewMenu(menubar)
-        self.initHelpMenu(menubar)
-        self.initOSMenu(menubar)
+    def init_menus(self, menubar):
+        """Create all the menus."""
+        self.init_file_menu(menubar)
+        self.init_edit_menu(menubar)
+        self.init_view_menu(menubar)
+        self.init_help_menu(menubar)
+        self.init_os_menu(menubar)
 
-        if isMac():
+        if is_mac():
             root().createcommand(
-                "tk::mac::ShowPreferences", self.showMyPreferencesDialog
+                "tk::mac::ShowPreferences", self.show_preferences_dialog
             )
-            root().createcommand("tk::mac::OpenDocument", self.openDocument)
-            root().createcommand("tk::mac::Quit", self.quitProgram)
+            root().createcommand("tk::mac::OpenDocument", self.open_document)
+            root().createcommand("tk::mac::Quit", self.quit_program)
 
-    def initFileMenu(self, parent):
+    def init_file_menu(self, parent):
+        """Create the File menu."""
         menu_file = Menu(parent, "~File")
-        menu_file.addButton("~Open...", self.openFile, "Cmd/Ctrl+O")
-        menu_file.addButton("~Save", self.saveFile, "Cmd/Ctrl+S")
-        menu_file.addButton("Save ~As...", self.saveasFile, "Cmd/Ctrl+Shift+S")
+        menu_file.add_button("~Open...", self.open_file, "Cmd/Ctrl+O")
+        menu_file.add_button("~Save", self.save_file, "Cmd/Ctrl+S")
+        menu_file.add_button("Save ~As...", self.save_as_file, "Cmd/Ctrl+Shift+S")
         menu_file.add_separator()
-        menu_file.addButton("Spawn ~Process", self.spawnProcess)
+        menu_file.add_button("Spawn ~Process", self.spawn_process)
         menu_file.add_separator()
-        menu_file.addButton("~Quit", self.quitProgram, "Cmd+Q" if isMac() else "")
+        menu_file.add_button("~Quit", self.quit_program, "Cmd+Q" if is_mac() else "")
 
-    def initEditMenu(self, parent):
+    def init_edit_menu(self, parent):
+        """Create the Edit menu."""
         menu_edit = Menu(parent, "~Edit")
-        menu_edit.addButton("~Undo", "<<Undo>>", "Cmd/Ctrl+Z")
-        menu_edit.addButton("~Redo", "<<Redo>>", "Cmd+Shift+Z" if isMac() else "Ctrl+Y")
+        menu_edit.add_button("~Undo", "<<Undo>>", "Cmd/Ctrl+Z")
+        menu_edit.add_button(
+            "~Redo", "<<Redo>>", "Cmd+Shift+Z" if is_mac() else "Ctrl+Y"
+        )
         menu_edit.add_separator()
-        menu_edit.addCutCopyPaste()
+        menu_edit.add_cut_copy_paste()
         menu_edit.add_separator()
-        menu_edit.addButton("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
+        menu_edit.add_button("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
         menu_edit.add_separator()
-        menu_edit.addButton("Pre~ferences...", self.showMyPreferencesDialog)
+        menu_edit.add_button("Pre~ferences...", self.show_preferences_dialog)
 
-    def initViewMenu(self, parent):
+    def init_view_menu(self, parent):
+        """Create the View menu."""
         menu_view = Menu(parent, "~View")
-        menu_view.addButton("~Dock", mainimage().dockImage, "Cmd/Ctrl+D")
-        menu_view.addButton("~Float", mainimage().floatImage, "Cmd/Ctrl+F")
-        menu_view.addButton("~Load Image", self.loadImage, "Cmd/Ctrl+L")
+        menu_view.add_button("~Dock", mainimage().dock_image, "Cmd/Ctrl+D")
+        menu_view.add_button("~Float", mainimage().float_image, "Cmd/Ctrl+F")
+        menu_view.add_button("~Load Image", self.load_image, "Cmd/Ctrl+L")
 
-    def initHelpMenu(self, parent):
+    def init_help_menu(self, parent):
+        """Create the Help menu."""
         menu_help = Menu(parent, "~Help")
-        menu_help.addButton("Guiguts ~Manual", self.helpManual)
-        menu_help.addButton("About ~Guiguts", self.helpAbout)
+        menu_help.add_button("Guiguts ~Manual", self.show_help_manual)
+        menu_help.add_button("About ~Guiguts", self.help_about)
 
-    def initOSMenu(self, parent):
-        if isMac():
+    def init_os_menu(self, parent):
+        """Create the OS-specific menu.
+
+        Currently only does anything on Macs
+        """
+        if is_mac():
             # Apple menu
             menu_app = Menu(parent, "", name="apple")
-            menu_app.addButton("About ~Guiguts", self.helpAbout)
+            menu_app.add_button("About ~Guiguts", self.help_about)
             menu_app.add_separator()
             # Window menu
             Menu(parent, "Window", name="window")
         else:
             menu_app = None
 
-    def initStatusBar(self, statusbar):
+    def init_statusbar(self, statusbar):
+        """Add labels to initialie the statusbar"""
         statusbar.add(
             "rowcol",
             lambda: re.sub(r"(\d)\.(\d)", r"L:\1 C:\2", maintext().get_insert_index()),
