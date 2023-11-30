@@ -1,4 +1,6 @@
 [flake8]
-# leave line-length checking to black to avoid conflicts
-ignore = E501
 
+# Recommended settings to avoid line-length conflicts with black
+max-line-length = 80
+select = C,E,F,W,B,B950
+extend-ignore = E203, E501, E704
