@@ -26,3 +26,8 @@ Utilities
 =========
     
 .. automodule:: utilities
+ 
+File
+=========
+    
+.. automodule:: file

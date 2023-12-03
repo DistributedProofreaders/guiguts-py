@@ -226,8 +226,16 @@ class MainText(tk.Text):
         """
         lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
         uk = re.sub("[A-Z]>$", lambda m: m.group(0).upper(), keyevent)
-        self.bind(lk, handler)
-        self.bind(uk, handler)
+
+        def handler_break(event, func):
+            """In order for class binding not to be called after widget
+            binding, event handler for widget needs to return "break"
+            """
+            func(event)
+            return "break"
+
+        self.bind(lk, lambda event: handler_break(event, handler))
+        self.bind(uk, lambda event: handler_break(event, handler))
 
     #
     # Handle "modified" flag
