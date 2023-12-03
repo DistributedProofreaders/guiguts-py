@@ -1,11 +1,12 @@
 """Dialog to handle preferences"""
 
 import tkinter as tk
+from tkinter import simpledialog
 
 from preferences import preferences
 
 
-class PreferencesDialog(tk.simpledialog.Dialog):
+class PreferencesDialog(simpledialog.Dialog):
     """A Tk simpledialog that allows the user to view/edit all preferences.
 
     Attributes:

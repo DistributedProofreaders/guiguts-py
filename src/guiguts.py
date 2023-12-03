@@ -1,13 +1,12 @@
 """Guiguts - application to support creation of books for PG"""
 
 
-import datetime
-import os.path
 import re
 import subprocess
-from tkinter import filedialog, messagebox
+from tkinter import messagebox
 import webbrowser
 
+from file import File
 from mainwindow import (
     root,
     MainWindow,
@@ -17,18 +16,13 @@ from mainwindow import (
     menubar,
     statusbar,
 )
-
 from preferences import preferences
 from preferences_dialog import PreferencesDialog
 from utilities import is_mac
 
 
 class Guiguts:
-    """Top level Guiguts application.
-
-    Attributes:
-        filename: name of the loaded file.
-    """
+    """Top level Guiguts application."""
 
     def __init__(self):
         """Initialize Guiguts class.
@@ -37,14 +31,14 @@ class Guiguts:
 
         self.set_preferences_defaults()
 
+        self.file = File(self.update_title)
+
         MainWindow()
+        self.update_title()
 
         self.init_menus(menubar())
 
         self.init_statusbar(statusbar())
-
-        self.filename = ""
-        self.update_filename_labels()
 
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
@@ -56,41 +50,13 @@ class Guiguts:
     def update_title(self):
         """Update the window title to reflect current status."""
         modtitle = " - edited" if maintext().is_modified() else ""
-        filetitle = " - " + self.filename if self.filename else ""
+        filetitle = " - " + self.file.filename if self.file.filename else ""
         root().title("Guiguts 2.0" + modtitle + filetitle)
-
-    def open_file(self, *args):
-        """Open and load a text file."""
-        fn = filedialog.askopenfilename(
-            filetypes=(("Text files", "*.txt *.html *.htm"), ("All files", "*.*"))
-        )
-        if fn:
-            self.filename = fn
-            maintext().do_open(self.filename)
-            self.update_filename_labels()
-
-    def save_file(self, *args):
-        """Save the current file."""
-        if self.filename:
-            maintext().do_save(self.filename)
-        else:
-            self.save_as_file()
-
-    def save_as_file(self, *args):
-        """Save current text as new file."""
-        fn = filedialog.asksaveasfilename(
-            initialfile=os.path.basename(self.filename),
-            initialdir=os.path.dirname(self.filename),
-            filetypes=[("All files", "*")],
-        )
-        if fn:
-            self.filename = fn
-            maintext().do_save(self.filename)
-            self.update_filename_labels()
 
     def quit_program(self, *args):
         """Exit the program."""
-        root().quit()
+        if self.file.check_save():
+            root().quit()
 
     def help_about(self, *args):
         """Display a 'Help About' dialog."""
@@ -107,9 +73,7 @@ class Guiguts:
 
         Accepts a list of filenames, but only loads the first.
         """
-        filename = args[0]
-        maintext().do_open(filename)
-        self.update_filename_labels()
+        maintext().do_open(args[0])
 
     def show_help_manual(self, *args):
         """Display the manual."""
@@ -147,17 +111,13 @@ class Guiguts:
         messagebox.showinfo(title="Spawn stdout", message=result.stdout)
         messagebox.showinfo(title="Spawn stderr", message=result.stderr)
 
-    def update_filename_labels(self):
-        """Update places where the filename is displayed."""
-        self.update_title()
-        statusbar().set("filename", os.path.basename(self.filename))
-
     def set_preferences_defaults(self):
         """Set default preferences - will be overridden by any values set
         in the Preferences file.
         """
         preferences.set_default("ImageWindow", "Docked")
 
+    # Lay out menus
     def init_menus(self, menubar):
         """Create all the menus."""
         self.init_file_menu(menubar)
@@ -176,9 +136,9 @@ class Guiguts:
     def init_file_menu(self, parent):
         """Create the File menu."""
         menu_file = Menu(parent, "~File")
-        menu_file.add_button("~Open...", self.open_file, "Cmd/Ctrl+O")
-        menu_file.add_button("~Save", self.save_file, "Cmd/Ctrl+S")
-        menu_file.add_button("Save ~As...", self.save_as_file, "Cmd/Ctrl+Shift+S")
+        menu_file.add_button("~Open...", self.file.open_file, "Cmd/Ctrl+O")
+        menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
+        menu_file.add_button("Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S")
         menu_file.add_separator()
         menu_file.add_button("Spawn ~Process", self.spawn_process)
         menu_file.add_separator()
@@ -196,7 +156,7 @@ class Guiguts:
         menu_edit.add_separator()
         menu_edit.add_button("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
         menu_edit.add_separator()
-        menu_edit.add_button("Pre~ferences...", self.show_preferences_dialog)
+        menu_edit.add_button("Pre~ferences...", lambda: PreferencesDialog(root()))
 
     def init_view_menu(self, parent):
         """Create the View menu."""
@@ -226,16 +186,13 @@ class Guiguts:
         else:
             menu_app = None
 
+    # Lay out statusbar
     def init_statusbar(self, statusbar):
-        """Add labels to initialie the statusbar"""
+        """Add labels to initialize the statusbar"""
         statusbar.add(
             "rowcol",
             lambda: re.sub(r"(\d)\.(\d)", r"L:\1 C:\2", maintext().get_insert_index()),
             width=10,
-        )
-        statusbar.add("filename", width=12)
-        statusbar.add(
-            "time", lambda: datetime.datetime.now().strftime("%H:%M:%S"), width=8
         )
 
 
