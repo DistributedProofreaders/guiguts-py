@@ -3,24 +3,37 @@
 import json
 import os
 
-from utilities import is_x11
+import utilities
 
 
 class Preferences:
-    """Handle setting/getting/saving/loading/defaulting preferences."""
+    """Handle setting/getting/saving/loading/defaulting preferences.
+
+    Load/Save preferences in temporary file when testing."""
 
     def __init__(self):
         """Initialize by loading from JSON file."""
         self.dict = {}
         self.defaults = {}
-        if is_x11():
+        if utilities.is_x11():
             self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
         else:
             self.prefsdir = os.path.join(
-                os.path.expanduser("~"), "Documents", "Preferences"
+                os.path.expanduser("~"), "Documents", "GGprefs"
             )
-        self.prefsfile = os.path.join(self.prefsdir, "Preferences.json")
+        # If testing, use a test prefs file so tests and normal running do not interact
+        if utilities._called_from_test:
+            prefs_name = "GGprefs_test.json"
+        else:
+            prefs_name = "GGprefs.json"
+        self.prefsfile = os.path.join(self.prefsdir, prefs_name)
+
+        self._remove_test_prefs_file()
         self.load()
+
+    def __del__(self):
+        """Remove any test prefs file when finished"""
+        self._remove_test_prefs_file()
 
     def set_default(self, key, default):
         """Set default preference value
@@ -80,6 +93,11 @@ class Preferences:
         if os.path.isfile(self.prefsfile):
             with open(self.prefsfile, "r") as fp:
                 self.dict = json.load(fp)
+
+    def _remove_test_prefs_file(self):
+        """Remove temporary JSON file used for prefs during testing"""
+        if utilities._called_from_test and os.path.exists(self.prefsfile):
+            os.remove(self.prefsfile)
 
 
 preferences = Preferences()

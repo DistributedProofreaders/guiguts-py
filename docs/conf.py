@@ -9,7 +9,7 @@ extensions = [
     "sphinx.ext.napoleon",
 ]
 
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 autoclass_content = "both"
 
 autodoc_default_options = {
