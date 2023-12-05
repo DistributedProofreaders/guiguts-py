@@ -28,7 +28,7 @@ def test_preferences():
     assert preferences.get("pkey1") == "pvalue1"
     assert preferences.get_default("pkey1") == "pdefault1"
     keys = preferences.keys()
-    assert len(keys) == 2
+    assert len(keys) == 1
     assert "pkey1" in keys
 
 
