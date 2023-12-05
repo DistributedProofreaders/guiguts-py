@@ -2,6 +2,10 @@
 
 import platform
 
+# Flag so application code can detect if within a pytest run - only use if really needed
+# See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
+_called_from_test = False
+
 
 #
 # Functions to check which OS is being used

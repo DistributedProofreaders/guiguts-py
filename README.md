@@ -38,8 +38,8 @@ with black.
 
 Both tools will be installed via `poetry` as described above.
 
-`poetry run flake8 src` will check all `src` python files.
-`poetry run black src` will reformat all `src` python files where necessary.
+`poetry run flake8 .` will check all `src` & `tests` python files.
+`poetry run black .` will reformat all `src` & `tests` python files where necessary.
 
 This project uses Github Actions to ensure neither of the above tools reports any
 error.
@@ -56,3 +56,14 @@ are used to document modules, classes, functions, etc.
 `poetry run python -m sphinx -b html docs docs/build`
 
 HTML docs will appear in the `docs/build` directory.
+
+This project uses Github Actions to ensure running `sphinx` does not report an error.
+
+## Testing
+
+`Pytest` is used for testing.
+
+All tests can be run using the following command:
+`poetry run pytest`
+
+This project uses Github Actions to ensure running `pytest` does not report an error.
