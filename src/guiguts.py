@@ -6,6 +6,7 @@ import subprocess
 from tkinter import messagebox
 import webbrowser
 
+import file
 from file import File
 from mainwindow import (
     root,
@@ -73,7 +74,7 @@ class Guiguts:
 
         Accepts a list of filenames, but only loads the first.
         """
-        maintext().do_open(args[0])
+        file.load_file(args[0])
 
     def show_help_manual(self, *args):
         """Display the manual."""
@@ -189,10 +190,16 @@ class Guiguts:
     # Lay out statusbar
     def init_statusbar(self, statusbar):
         """Add labels to initialize the statusbar"""
+        pattern = re.compile(r"(\d+)\.(\d+)")
         statusbar.add(
             "rowcol",
-            lambda: re.sub(r"(\d)\.(\d)", r"L:\1 C:\2", maintext().get_insert_index()),
+            lambda: pattern.sub(r"L:\1 C:\2", maintext().get_insert_index()),
             width=10,
+        )
+        statusbar.add(
+            "img",
+            lambda: "Img: " + self.file.get_current_image_name(),
+            # width=10,
         )
 
 
