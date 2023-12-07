@@ -326,6 +326,16 @@ class MainText(tk.Text):
         """Return index of the insert cursor."""
         return self.index(tk.INSERT)
 
+    def set_insert_index(self, index, see=False):
+        """Set the position of the insert cursor.
+
+        Args:
+            index: String containing index/mark to position cursor.
+        """
+        self.mark_set(tk.INSERT, index)
+        if see:
+            self.see(tk.INSERT)
+
 
 class MainImage(tk.Frame):
     """MainImage is a frame, containing a label which can display a png/jpeg file.
@@ -406,6 +416,7 @@ class StatusBar(tk.Frame):
         self.labels = {}
         self.callbacks = {}
         self._update()
+        tk.Label(self)
 
     def add(self, key, callback=None, **kwargs):
         """Add label to status bar
@@ -421,7 +432,7 @@ class StatusBar(tk.Frame):
         kwargs["relief"] = tk.RIDGE
         self.labels[key] = tk.Label(self, kwargs)
         self.callbacks[key] = callback
-        self.labels[key].pack(side=tk.LEFT)
+        self.labels[key].grid(column=len(self.labels), row=0)
 
     def set(self, key, value):
         """Set label in statusbar to given value.
