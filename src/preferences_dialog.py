@@ -1,7 +1,7 @@
 """Dialog to handle preferences"""
 
 import tkinter as tk
-from tkinter import simpledialog
+from tkinter import simpledialog, ttk
 
 from preferences import preferences
 
@@ -27,22 +27,30 @@ class PreferencesDialog(simpledialog.Dialog):
         Note: Does not cope with non-string values at the moment, since values
         are converted to string for display in dialog.
         """
+        frame["borderwidth"] = 2
+        frame["relief"] = "groove"
+        frame["padx"] = 5
+        frame["pady"] = 5
         for row, key in enumerate(preferences.keys()):
-            self.labels[key] = tk.Label(frame, text=key)
+            self.labels[key] = ttk.Label(frame, text=key)
             self.labels[key].grid(row=row, column=0)
-            self.entries[key] = tk.Entry(frame, width=12)
+            self.entries[key] = ttk.Entry(frame, width=20)
             self.entries[key].insert(tk.END, str(preferences.get(key)))
             self.entries[key].grid(row=row, column=1)
         return frame
 
     def buttonbox(self):
         """Override default to set up OK and Cancel buttons."""
-        self.ok_button = tk.Button(self, text="OK", width=5, command=self.ok_pressed)
-        self.ok_button.pack(side="left", padx=5, pady=5)
-        cancel_button = tk.Button(
-            self, text="Cancel", width=5, command=self.cancel_pressed
+        frame = ttk.Frame(self, padding=5)
+        frame.pack()
+        ok_button = ttk.Button(
+            frame, text="OK", default="active", command=self.ok_pressed
         )
-        cancel_button.pack(side="right", padx=5, pady=5)
+        ok_button.grid(column=1, row=1)
+        cancel_button = ttk.Button(
+            frame, text="Cancel", default="normal", command=self.cancel_pressed
+        )
+        cancel_button.grid(column=2, row=1)
         self.bind("<Return>", lambda event: self.ok_pressed())
         self.bind("<Escape>", lambda event: self.cancel_pressed())
 
