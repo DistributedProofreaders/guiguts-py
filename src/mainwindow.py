@@ -5,6 +5,7 @@ import os.path
 from PIL import Image, ImageTk
 import re
 import tkinter as tk
+from tkinter import ttk
 
 from preferences import preferences
 from utilities import is_mac
@@ -49,7 +50,7 @@ class MainWindow:
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()
 
-        frame = tk.Frame(root())
+        frame = ttk.Frame(root())
         frame.grid(column=0, row=0, sticky="NSEW", padx=5, pady=5)
         # Specify image window weights first, so text window will override if on same row or column
         frame.rowconfigure(IMAGE_WINDOW_ROW, weight=0)
@@ -187,7 +188,7 @@ class MainText(tk.Text):
         """
 
         # Create surrounding Frame
-        self.frame = tk.Frame(parent)
+        self.frame = ttk.Frame(parent)
         self.frame.columnconfigure(0, weight=1)
         self.frame.rowconfigure(0, weight=1)
 
@@ -196,10 +197,10 @@ class MainText(tk.Text):
         tk.Text.grid(self, column=0, row=0, sticky="NSEW")
 
         # Create scrollbars, place in Frame, and link to Text
-        hscroll = tk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=self.xview)
+        hscroll = ttk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=self.xview)
         hscroll.grid(column=0, row=1, sticky="EW")
         self["xscrollcommand"] = hscroll.set
-        vscroll = tk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
+        vscroll = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
         vscroll.grid(column=1, row=0, sticky="NS")
         self["yscrollcommand"] = vscroll.set
 
@@ -324,7 +325,8 @@ class MainText(tk.Text):
 class MainImage(tk.Frame):
     """MainImage is a frame, containing a label which can display a png/jpeg file.
 
-    MainImage can be docked or floating."""
+    MainImage can be docked or floating.
+    Floating is not supported with ttk.Frame, hence inherits from tk.Frame."""
 
     def __init__(self, parent):
         """Create a label, defaulting to having no image loaded.
@@ -384,7 +386,7 @@ class MainImage(tk.Frame):
         preferences.set("ImageWindow", "Docked")
 
 
-class StatusBar(tk.Frame):
+class StatusBar(ttk.Frame):
     """Statusbar at the bottom of the screen.
 
     Labels in statusbar can be automatically or manually updated.
@@ -400,7 +402,6 @@ class StatusBar(tk.Frame):
         self.labels = {}
         self.callbacks = {}
         self._update()
-        tk.Label(self)
 
     def add(self, key, callback=None, **kwargs):
         """Add label to status bar
