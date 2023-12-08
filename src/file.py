@@ -53,6 +53,7 @@ class File:
         """
         self.filename = filename
         maintext().do_open(filename)
+        maintext().set_insert_index(1.0, see=True)
         self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
@@ -240,7 +241,7 @@ class File:
         return False
 
     def get_current_image_name(self):
-        """Find name of the image file corresponding to where the
+        """Find basename of the image file corresponding to where the
         insert cursor is.
 
         Returns:
@@ -252,6 +253,21 @@ class File:
             if is_page_mark(mark):
                 return img_from_page_mark(mark)
         return ""
+
+    def get_current_image_path(self):
+        """Return the path of the image file for the page where the insert
+        cursor is located.
+
+        Returns:
+            Name of the image file for the current page, or the empty string
+            if unable to get image file name.
+        """
+        basename = self.get_current_image_name()
+        if basename:
+            basename += ".png"
+            return os.path.join(os.path.dirname(self.filename), "pngs", basename)
+        else:
+            return ""
 
 
 def is_page_mark(mark):

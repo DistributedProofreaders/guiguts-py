@@ -306,22 +306,6 @@ class MainText(tk.Text):
         else:
             self.bind("<3>", post_context_menu)
 
-    def get_image_filename(self):
-        """Return the name of the image file for the page where the insert
-        cursor is located.
-
-        Returns:
-            Name of the image file for the current page, or the empty string
-            if unable to get image file name.
-        """
-        sep_index = self.search(
-            "//-----File: ", self.get_insert_index(), backwards=True
-        )
-        if sep_index:
-            return self.get(sep_index + "+13c", sep_index + "lineend").rstrip("-")
-        else:
-            return ""
-
     def get_insert_index(self):
         """Return index of the insert cursor."""
         return self.index(tk.INSERT)

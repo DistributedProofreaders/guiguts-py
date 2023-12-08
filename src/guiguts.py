@@ -82,7 +82,7 @@ class Guiguts:
 
     def load_image(self, *args):
         """Load the image for the current page."""
-        filename = maintext().get_image_filename()
+        filename = self.file.get_current_image_path()
         mainimage().load_image(filename)
         if preferences.get("ImageWindow") == "Docked":
             mainimage().dock_image()
