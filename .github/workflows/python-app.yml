@@ -40,6 +40,9 @@ jobs:
     - name: Check documentation with sphinx
       run: |
         sphinx-build -W -b html docs docs/build
+    - name: Report undocumented code with sphinx
+      run: |
+        sphinx-build -W -M coverage docs docs/build
     - name: Test with pytest
       run: |
         pytest
