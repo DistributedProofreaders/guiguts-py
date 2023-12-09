@@ -1,6 +1,8 @@
 import os
 import sys
 
+project = "Guiguts 2.0"
+
 sys.path.insert(0, os.path.abspath("../src"))
 
 extensions = [
@@ -14,6 +16,8 @@ autoclass_content = "both"
 
 autodoc_default_options = {
     "members": True,
-    "undoc-members": True,
     "private-members": True,
 }
+
+coverage_show_missing_items = True
+coverage_statistics_to_stdout = False
