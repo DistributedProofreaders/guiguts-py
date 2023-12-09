@@ -171,11 +171,6 @@ class File:
                 maintext().mark_gravity(mark, tk.LEFT)
 
     def set_initial_position(self, index):
-        """Set initial cursor position after file is loaded.
-
-        Args:
-            index: Location for insert cursor. If none, go to start.
-        """
         if not index:
             index = "1.0"
         maintext().set_insert_index(index, see=True)
