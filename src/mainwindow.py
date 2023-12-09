@@ -11,13 +11,11 @@ from preferences import preferences
 from utilities import is_mac
 
 
-TEXT_WINDOW_ROW = 0
-TEXT_WINDOW_COL = 0
-IMAGE_WINDOW_ROW = TEXT_WINDOW_ROW
-IMAGE_WINDOW_COL = 1
+TEXTIMAGE_WINDOW_ROW = 0
+TEXTIMAGE_WINDOW_COL = 0
 STATUSBAR_ROW = 1
 STATUSBAR_COL = 0
-STATUSBAR_COLSPAN = 2
+MIN_PANE_WIDTH = 20
 
 
 class Root(tk.Tk):
@@ -50,37 +48,57 @@ class MainWindow:
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()
 
-        frame = ttk.Frame(root())
-        frame.grid(column=0, row=0, sticky="NSEW", padx=5, pady=5)
-        # Specify image window weights first, so text window will override if on same row or column
-        frame.rowconfigure(IMAGE_WINDOW_ROW, weight=0)
-        frame.columnconfigure(IMAGE_WINDOW_COL, weight=0)
-        frame.rowconfigure(TEXT_WINDOW_ROW, weight=1)
-        frame.columnconfigure(TEXT_WINDOW_COL, weight=1)
-
-        MainWindow.statusbar = StatusBar(frame)
+        MainWindow.statusbar = StatusBar(root())
         statusbar().grid(
             column=STATUSBAR_COL,
             row=STATUSBAR_ROW,
-            columnspan=STATUSBAR_COLSPAN,
             sticky="NSEW",
         )
 
+        self.paned_window = tk.PanedWindow(
+            root(), orient=tk.HORIZONTAL, sashwidth=4, sashrelief=tk.GROOVE
+        )
+        self.paned_window.grid(
+            column=TEXTIMAGE_WINDOW_COL, row=TEXTIMAGE_WINDOW_ROW, sticky="NSEW"
+        )
+
         MainWindow.maintext = MainText(
-            frame,
+            self.paned_window,
             undo=True,
             wrap="none",
             autoseparators=True,
             maxundo=-1,
         )
+        self.paned_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
 
-        maintext().grid(column=TEXT_WINDOW_COL, row=TEXT_WINDOW_ROW, sticky="NSEW")
-
-        MainWindow.mainimage = MainImage(frame)
+        MainWindow.mainimage = MainImage(self.paned_window)
         if preferences.get("ImageWindow") == "Docked":
-            mainimage().dock_image()
+            self.dock_image()
         else:
-            mainimage().float_image()
+            self.float_image()
+
+    def float_image(self, *args):
+        """Float the image into a separate window"""
+        mainimage().grid_remove()
+        if mainimage().is_image_loaded():
+            root().wm_manage(mainimage())
+            mainimage().lift()
+            tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.dock_image)
+        else:
+            root().wm_forget(mainimage())
+        preferences.set("ImageWindow", "Floated")
+
+    def dock_image(self, *args):
+        """Dock the image back into the main window"""
+        root().wm_forget(mainimage())
+        if mainimage().is_image_loaded():
+            self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
+        else:
+            try:
+                self.paned_window.forget(mainimage())
+            except tk.TclError:
+                pass  # OK - image wasn't being managed by paned_window
+        preferences.set("ImageWindow", "Docked")
 
 
 class Menu(tk.Menu):
@@ -362,28 +380,6 @@ class MainImage(tk.Frame):
     def is_image_loaded(self):
         """Return if an image is currently loaded"""
         return bool(self.label.cget("image"))
-
-    def float_image(self, *args):
-        """Float the image into a separate window"""
-
-        self.grid_remove()
-        if self.is_image_loaded():
-            root().wm_manage(self)
-            self.lift()
-            tk.Wm.protocol(self, "WM_DELETE_WINDOW", self.dock_image)
-        else:
-            root().wm_forget(self)
-        preferences.set("ImageWindow", "Floated")
-
-    def dock_image(self, *args):
-        """Dock the image back back into the main window"""
-        root().wm_forget(self)
-        if self.is_image_loaded():
-            self.grid(column=IMAGE_WINDOW_COL, row=IMAGE_WINDOW_ROW, sticky="NSEW")
-        else:
-            self.grid_remove()
-
-        preferences.set("ImageWindow", "Docked")
 
 
 class StatusBar(ttk.Frame):

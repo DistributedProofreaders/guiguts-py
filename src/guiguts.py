@@ -34,7 +34,7 @@ class Guiguts:
 
         self.file = File(self.update_title)
 
-        MainWindow()
+        self.mainwindow = MainWindow()
         self.update_title()
 
         self.init_menus(menubar())
@@ -85,9 +85,9 @@ class Guiguts:
         filename = self.file.get_current_image_path()
         mainimage().load_image(filename)
         if preferences.get("ImageWindow") == "Docked":
-            mainimage().dock_image()
+            self.mainwindow.dock_image()
         else:
-            mainimage().float_image()
+            self.mainwindow.float_image()
 
     def spawn_process(self, *args):
         """Spawn a subprocess.
@@ -162,8 +162,8 @@ class Guiguts:
     def init_view_menu(self, parent):
         """Create the View menu."""
         menu_view = Menu(parent, "~View")
-        menu_view.add_button("~Dock", mainimage().dock_image, "Cmd/Ctrl+D")
-        menu_view.add_button("~Float", mainimage().float_image, "Cmd/Ctrl+F")
+        menu_view.add_button("~Dock", self.mainwindow.dock_image, "Cmd/Ctrl+D")
+        menu_view.add_button("~Float", self.mainwindow.float_image, "Cmd/Ctrl+F")
         menu_view.add_button("~Load Image", self.load_image, "Cmd/Ctrl+L")
 
     def init_help_menu(self, parent):
