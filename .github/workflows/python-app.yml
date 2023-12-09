@@ -42,7 +42,7 @@ jobs:
         sphinx-build -W -b html docs docs/build
     - name: Report undocumented code with sphinx
       run: |
-        python -m sphinx -W -M coverage docs docs/build
+        python -m sphinx -M coverage docs docs/build -W 
     - name: Test with pytest
       run: |
         pytest
