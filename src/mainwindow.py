@@ -426,7 +426,9 @@ class MainImage(tk.Frame):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         bbox_scroll = self.canvas.bbox(self.container)  # get image area
-        if not (bbox_scroll[0] < x < bbox_scroll[2] and bbox_scroll[1] < y < bbox_scroll[3]):
+        if not (
+            bbox_scroll[0] < x < bbox_scroll[2] and bbox_scroll[1] < y < bbox_scroll[3]
+        ):
             return  # zoom only inside image area
         scale = 1.0
         # Respond to Linux (event.num) or Windows/MacOS (event.delta) wheel event
@@ -448,8 +450,13 @@ class MainImage(tk.Frame):
     def show_image(self, event=None):
         """Show image on the Canvas"""
         # get image area & remove 1 pixel shift
-        bbox_image = self.canvas.bbox(self.container)  
-        bbox_image = (bbox_image[0] + 1, bbox_image[1] + 1, bbox_image[2] - 1, bbox_image[3] - 1)
+        bbox_image = self.canvas.bbox(self.container)
+        bbox_image = (
+            bbox_image[0] + 1,
+            bbox_image[1] + 1,
+            bbox_image[2] - 1,
+            bbox_image[3] - 1,
+        )
         # get visible area of the canvas
         bbox_visible = (
             self.canvas.canvasx(0),
@@ -487,7 +494,12 @@ class MainImage(tk.Frame):
         if int(xm2 - xm1) > 0 and int(ym2 - ym1) > 0:
             image = self.image.crop((xm1, ym1, xm2, ym2))
             self.canvas.imagetk = ImageTk.PhotoImage(
-                image.resize((int(self.image_scale*image.width), int(self.image_scale*image.height)))
+                image.resize(
+                    (
+                        int(self.image_scale * image.width),
+                        int(self.image_scale * image.height),
+                    )
+                )
             )
             if self.imageid:
                 self.canvas.delete(self.imageid)
