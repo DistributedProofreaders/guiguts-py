@@ -400,6 +400,7 @@ class MainImage(tk.Frame):
         self.scale_delta = 1.3
         self.image = None
         self.imageid = None
+        self.container = None
 
     def scroll_y(self, *args, **kwargs):
         """Scroll canvas vertically and redraw the image"""
@@ -424,8 +425,8 @@ class MainImage(tk.Frame):
         """Zoom with mouse wheel."""
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
-        bbox = self.canvas.bbox(self.container)  # get image area
-        if not (bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]):
+        bbox_scroll = self.canvas.bbox(self.container)  # get image area
+        if not (bbox_scroll[0] < x < bbox_scroll[2] and bbox_scroll[1] < y < bbox_scroll[3]):
             return  # zoom only inside image area
         scale = 1.0
         # Respond to Linux (event.num) or Windows/MacOS (event.delta) wheel event
@@ -446,37 +447,38 @@ class MainImage(tk.Frame):
 
     def show_image(self, event=None):
         """Show image on the Canvas"""
-        bbox1 = self.canvas.bbox(self.container)  # get image area
-        # Remove 1 pixel shift at the sides of the bbox1
-        bbox1 = (bbox1[0] + 1, bbox1[1] + 1, bbox1[2] - 1, bbox1[3] - 1)
-        bbox2 = (
-            self.canvas.canvasx(0),  # get visible area of the canvas
+        # get image area & remove 1 pixel shift
+        bbox_image = self.canvas.bbox(self.container)  
+        bbox_image = (bbox_image[0] + 1, bbox_image[1] + 1, bbox_image[2] - 1, bbox_image[3] - 1)
+        # get visible area of the canvas
+        bbox_visible = (
+            self.canvas.canvasx(0),
             self.canvas.canvasy(0),
             self.canvas.canvasx(self.canvas.winfo_width()),
             self.canvas.canvasy(self.canvas.winfo_height()),
         )
         # get scroll region box
-        bbox = [
-            min(bbox1[0], bbox2[0]),
-            min(bbox1[1], bbox2[1]),
-            max(bbox1[2], bbox2[2]),
-            max(bbox1[3], bbox2[3]),
+        bbox_scroll = [
+            min(bbox_image[0], bbox_visible[0]),
+            min(bbox_image[1], bbox_visible[1]),
+            max(bbox_image[2], bbox_visible[2]),
+            max(bbox_image[3], bbox_visible[3]),
         ]
         # whole image width in the visible area
-        if bbox[0] == bbox2[0] and bbox[2] == bbox2[2]:
-            bbox[0] = bbox1[0]
-            bbox[2] = bbox1[2]
+        if bbox_scroll[0] == bbox_visible[0] and bbox_scroll[2] == bbox_visible[2]:
+            bbox_scroll[0] = bbox_image[0]
+            bbox_scroll[2] = bbox_image[2]
         # whole image height in the visible area
-        if bbox[1] == bbox2[1] and bbox[3] == bbox2[3]:
-            bbox[1] = bbox1[1]
-            bbox[3] = bbox1[3]
-        self.canvas.configure(scrollregion=bbox)
+        if bbox_scroll[1] == bbox_visible[1] and bbox_scroll[3] == bbox_visible[3]:
+            bbox_scroll[1] = bbox_image[1]
+            bbox_scroll[3] = bbox_image[3]
+        self.canvas.configure(scrollregion=bbox_scroll)
 
         # get coordinates (x1,y1,x2,y2) of the image tile
-        x1 = max(bbox2[0] - bbox1[0], 0)
-        y1 = max(bbox2[1] - bbox1[1], 0)
-        x2 = min(bbox2[2], bbox1[2]) - bbox1[0]
-        y2 = min(bbox2[3], bbox1[3]) - bbox1[1]
+        x1 = max(bbox_visible[0] - bbox_image[0], 0)
+        y1 = max(bbox_visible[1] - bbox_image[1], 0)
+        x2 = min(bbox_visible[2], bbox_image[2]) - bbox_image[0]
+        y2 = min(bbox_visible[3], bbox_image[3]) - bbox_image[1]
         # show image if it is in the visible area
         xm1 = min(int(x1 / self.image_scale), self.width)
         ym1 = min(int(y1 / self.image_scale), self.height)
@@ -485,13 +487,13 @@ class MainImage(tk.Frame):
         if int(xm2 - xm1) > 0 and int(ym2 - ym1) > 0:
             image = self.image.crop((xm1, ym1, xm2, ym2))
             self.canvas.imagetk = ImageTk.PhotoImage(
-                image.resize((int(x2 - x1), int(y2 - y1)))
+                image.resize((int(self.image_scale*image.width), int(self.image_scale*image.height)))
             )
             if self.imageid:
                 self.canvas.delete(self.imageid)
             self.imageid = self.canvas.create_image(
-                max(bbox2[0], bbox1[0]),
-                max(bbox2[1], bbox1[1]),
+                max(bbox_visible[0], bbox_image[0]),
+                max(bbox_visible[1], bbox_image[1]),
                 anchor="nw",
                 image=self.canvas.imagetk,
             )
@@ -518,13 +520,16 @@ class MainImage(tk.Frame):
               and display "No image" label.
         """
         if os.path.isfile(filename):
-            # Put image into container rectangle
             self.image = Image.open(filename)
             self.width, self.height = self.image.size
+            if self.container:
+                self.canvas.delete(self.container)
             self.container = self.canvas.create_rectangle(
                 0, 0, self.width, self.height, width=0
             )
-            self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
+            self.canvas.config(scrollregion=self.canvas.bbox(self.container))
+            self.canvas.yview_moveto(0)
+            self.canvas.xview_moveto(0)
             self.show_image()
         else:
             self.image = None
