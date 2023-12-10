@@ -8,7 +8,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from preferences import preferences
-from utilities import is_mac
+from utilities import is_mac, is_x11
 
 
 TEXTIMAGE_WINDOW_ROW = 0
@@ -72,6 +72,8 @@ class MainWindow:
         self.paned_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
 
         MainWindow.mainimage = MainImage(self.paned_window)
+        # self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
+        return
         if preferences.get("ImageWindow") == "Docked":
             self.dock_image()
         else:
@@ -341,22 +343,172 @@ class MainText(tk.Text):
 
 
 class MainImage(tk.Frame):
-    """MainImage is a frame, containing a label which can display a png/jpeg file.
+    """MainImage is a Frame, containing a Canvas which can display a png/jpeg file.
 
-    MainImage can be docked or floating.
-    Floating is not supported with ttk.Frame, hence inherits from tk.Frame."""
+    Also contains scrollbars, and can be scrolled with mousewheel (vertically),
+    Shift-mousewheel (horizontally) and zoomed with Control-mousewheel.
+
+    MainImage can be docked or floating. Floating is not supported with ttk.Frame,
+    hence inherits from tk.Frame.
+
+    Adapted from https://stackoverflow.com/questions/41656176/tkinter-canvas-zoom-move-pan
+    and https://stackoverflow.com/questions/56043767/show-large-image-using-scrollbar-in-python
+
+    Attributes:
+        hbar: Horizontal scrollbar.
+        vbar: Vertical scrollbar.
+        canvas: Canvas widget.
+        image: Whole loaded image (or None)
+        image_scale: Zoom scale at which image should be drawn.
+        scale_delta: Ratio to multiply/divide scale when Control-scrolling mouse wheel.
+    """
 
     def __init__(self, parent):
-        """Create a label, defaulting to having no image loaded.
+        """Initialize the MainImage to contain an empty Canvas with scrollbars"""
+        tk.Frame.__init__(self, parent)
 
-        Args:
-            parent: Parent frame for when MainImage is docked.
-        """
-        super().__init__(parent, borderwidth=2, relief=tk.SUNKEN, name="*Image Viewer*")
+        self.hbar = ttk.Scrollbar(self, orient=tk.HORIZONTAL)
+        self.hbar.grid(row=1, column=0, sticky="EW")
+        self.hbar.configure(command=self.scroll_x)
+        self.vbar = ttk.Scrollbar(self, orient=tk.VERTICAL)
+        self.vbar.grid(row=0, column=1, sticky="NS")
+        self.vbar.configure(command=self.scroll_y)
 
-        self.label = tk.Label(self, text="No image")
-        self.label.grid(column=0, row=0)
-        self.photo = None
+        self.canvas = tk.Canvas(
+            self,
+            highlightthickness=0,
+            xscrollcommand=self.hbar.set,
+            yscrollcommand=self.vbar.set,
+        )
+        self.canvas.grid(row=0, column=0, sticky="NSEW")
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+
+        self.canvas.bind("<Configure>", self.show_image)
+        self.canvas.bind("<ButtonPress-1>", self.move_from)
+        self.canvas.bind("<B1-Motion>", self.move_to)
+        if is_x11():
+            self.canvas.bind("<Control-Button-5>", self.wheel_zoom)
+            self.canvas.bind("<Control-Button-4>", self.wheel_zoom)
+            self.canvas.bind("<Button-5>", self.wheel_scroll)
+            self.canvas.bind("<Button-4>", self.wheel_scroll)
+        else:
+            self.canvas.bind("<Control-MouseWheel>", self.wheel_zoom)
+            self.canvas.bind("<MouseWheel>", self.wheel_scroll)
+
+        self.image_scale = 1.0
+        self.scale_delta = 1.3
+        self.image = None
+        self.imageid = None
+
+    def scroll_y(self, *args, **kwargs):
+        """Scroll canvas vertically and redraw the image"""
+        self.canvas.yview(*args, **kwargs)
+        self.show_image()
+
+    def scroll_x(self, *args, **kwargs):
+        """Scroll canvas horizontally and redraw the image."""
+        self.canvas.xview(*args, **kwargs)
+        self.show_image()
+
+    def move_from(self, event):
+        """Remember previous coordinates for dragging with the mouse."""
+        self.canvas.scan_mark(event.x, event.y)
+
+    def move_to(self, event):
+        """Drag canvas to the new position."""
+        self.canvas.scan_dragto(event.x, event.y, gain=1)
+        self.show_image()
+
+    def wheel_zoom(self, event):
+        """Zoom with mouse wheel."""
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
+        bbox = self.canvas.bbox(self.container)  # get image area
+        if not (bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]):
+            return  # zoom only inside image area
+        scale = 1.0
+        # Respond to Linux (event.num) or Windows/MacOS (event.delta) wheel event
+        if event.num == 5 or event.delta < 0:
+            min_dimension = min(self.width, self.height)
+            if int(min_dimension * self.image_scale) < 30:
+                return  # image too small
+            self.image_scale /= self.scale_delta
+            scale /= self.scale_delta
+        if event.num == 4 or event.delta > 0:
+            min_dimension = min(self.canvas.winfo_width(), self.canvas.winfo_height())
+            if min_dimension < self.image_scale:
+                return  # image too large
+            self.image_scale *= self.scale_delta
+            scale *= self.scale_delta
+        self.canvas.scale("all", x, y, scale, scale)  # rescale all canvas objects
+        self.show_image()
+
+    def show_image(self, event=None):
+        """Show image on the Canvas"""
+        bbox1 = self.canvas.bbox(self.container)  # get image area
+        # Remove 1 pixel shift at the sides of the bbox1
+        bbox1 = (bbox1[0] + 1, bbox1[1] + 1, bbox1[2] - 1, bbox1[3] - 1)
+        bbox2 = (
+            self.canvas.canvasx(0),  # get visible area of the canvas
+            self.canvas.canvasy(0),
+            self.canvas.canvasx(self.canvas.winfo_width()),
+            self.canvas.canvasy(self.canvas.winfo_height()),
+        )
+        # get scroll region box
+        bbox = [
+            min(bbox1[0], bbox2[0]),
+            min(bbox1[1], bbox2[1]),
+            max(bbox1[2], bbox2[2]),
+            max(bbox1[3], bbox2[3]),
+        ]
+        # whole image width in the visible area
+        if bbox[0] == bbox2[0] and bbox[2] == bbox2[2]:
+            bbox[0] = bbox1[0]
+            bbox[2] = bbox1[2]
+        # whole image height in the visible area
+        if bbox[1] == bbox2[1] and bbox[3] == bbox2[3]:
+            bbox[1] = bbox1[1]
+            bbox[3] = bbox1[3]
+        self.canvas.configure(scrollregion=bbox)
+
+        # get coordinates (x1,y1,x2,y2) of the image tile
+        x1 = max(bbox2[0] - bbox1[0], 0)
+        y1 = max(bbox2[1] - bbox1[1], 0)
+        x2 = min(bbox2[2], bbox1[2]) - bbox1[0]
+        y2 = min(bbox2[3], bbox1[3]) - bbox1[1]
+        # show image if it is in the visible area
+        xm1 = min(int(x1 / self.image_scale), self.width)
+        ym1 = min(int(y1 / self.image_scale), self.height)
+        xm2 = min(int(x2 / self.image_scale), self.width)
+        ym2 = min(int(y2 / self.image_scale), self.height)
+        if int(xm2 - xm1) > 0 and int(ym2 - ym1) > 0:
+            image = self.image.crop((xm1, ym1, xm2, ym2))
+            self.canvas.imagetk = ImageTk.PhotoImage(
+                image.resize((int(x2 - x1), int(y2 - y1)))
+            )
+            if self.imageid:
+                self.canvas.delete(self.imageid)
+            self.imageid = self.canvas.create_image(
+                max(bbox2[0], bbox1[0]),
+                max(bbox2[1], bbox1[1]),
+                anchor="nw",
+                image=self.canvas.imagetk,
+            )
+
+    def wheel_scroll(self, evt):
+        """Scroll image up/down using mouse wheel"""
+        if evt.state == 0:
+            if is_mac():
+                self.canvas.yview_scroll(-1 * (evt.delta), "units")
+            else:
+                self.canvas.yview_scroll(int(-1 * (evt.delta / 120)), "units")
+        if evt.state == 1:
+            if is_mac():
+                self.canvas.xview_scroll(-1 * (evt.delta), "units")
+            else:
+                self.canvas.xview_scroll(int(-1 * (evt.delta / 120)), "units")
+        self.show_image()
 
     def load_image(self, filename=None):
         """Load or clear the given image file.
@@ -366,20 +518,20 @@ class MainImage(tk.Frame):
               and display "No image" label.
         """
         if os.path.isfile(filename):
-            image = Image.open(filename)
-            width = 300
-            scale = width / image.width
-            height = image.height * scale
-            image = image.resize((int(width), int(height)))
-
-            self.photo = ImageTk.PhotoImage(image)
-            self.label.config(image=self.photo)
+            # Put image into container rectangle
+            self.image = Image.open(filename)
+            self.width, self.height = self.image.size
+            self.container = self.canvas.create_rectangle(
+                0, 0, self.width, self.height, width=0
+            )
+            self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
+            self.show_image()
         else:
-            self.label.config(image="")
+            self.image = None
 
     def is_image_loaded(self):
         """Return if an image is currently loaded"""
-        return bool(self.label.cget("image"))
+        return self.image is not None
 
 
 class StatusBar(ttk.Frame):
