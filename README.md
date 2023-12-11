@@ -48,9 +48,9 @@ brew install poetry
    or a fork thereof.
 3. In the cloned GG2 directory, create a virtual environment using the version of
    python you installed above.
-   * Windows
-     ```
-     poetry env use C:\Users\<username>\AppData\Local\Programs\Python\Python310\python3
+   * Windows (in git bash shell)
+     ```bash
+     poetry env use ~/AppData/Local/Programs/Python/Python310/python.exe
      ```
    * macOS
      ```bash
