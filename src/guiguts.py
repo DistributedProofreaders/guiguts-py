@@ -164,7 +164,7 @@ class Guiguts:
         menu_view = Menu(parent, "~View")
         menu_view.add_button("~Dock", self.mainwindow.dock_image, "Cmd/Ctrl+D")
         menu_view.add_button("~Float", self.mainwindow.float_image, "Cmd/Ctrl+F")
-        menu_view.add_button("~Load Image", self.load_image, "Cmd/Ctrl+L")
+        menu_view.add_button("~Load Image", self.load_image)
 
     def init_help_menu(self, parent):
         """Create the Help menu."""
@@ -190,17 +190,30 @@ class Guiguts:
     # Lay out statusbar
     def init_statusbar(self, statusbar):
         """Add labels to initialize the statusbar"""
-        pattern = re.compile(r"(\d+)\.(\d+)")
+
+        index_pattern = re.compile(r"(\d+)\.(\d+)")
         statusbar.add(
             "rowcol",
-            lambda: pattern.sub(r"L:\1 C:\2", maintext().get_insert_index()),
-            width=10,
+            update=lambda: index_pattern.sub(
+                r"L:\1 C:\2", maintext().get_insert_index()
+            ),
         )
+        statusbar.add_binding("rowcol", "<ButtonRelease-1>", self.file.goto_line)
+
         statusbar.add(
             "img",
-            lambda: "Img: " + self.file.get_current_image_name(),
-            # width=10,
+            update=lambda: "Img: " + self.file.get_current_image_name(),
         )
+        statusbar.add_binding("img", "<ButtonRelease-1>", self.file.goto_page)
+
+        statusbar.add("prev img", text="<", width=1)
+        statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
+
+        statusbar.add("see img", text="See Img", width=7)
+        statusbar.add_binding("see img", "<ButtonRelease-1>", self.load_image)
+
+        statusbar.add("next img", text=">", width=1)
+        statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
 
 
 if __name__ == "__main__":

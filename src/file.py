@@ -4,7 +4,7 @@ import json
 import os.path
 import re
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, simpledialog
 
 from mainwindow import maintext
 
@@ -250,14 +250,25 @@ class File:
         insert cursor is.
 
         Returns:
-            Basename of image file (= name of preceding page mark).
-            Empty string if no page mark before insert cursor.
+            Basename of image file. Empty string if none found.
         """
-        mark = maintext().get_insert_index()
-        while mark := maintext().mark_previous(mark):
+        insert = maintext().get_insert_index()
+        mark = insert
+        good_mark = ""
+        # First check for page marks at the current cursor position & return last one
+        while (mark := maintext().mark_next(mark)) and maintext().compare(
+            mark, "==", insert
+        ):
             if is_page_mark(mark):
-                return img_from_page_mark(mark)
-        return ""
+                good_mark = mark
+        # If not, then find page mark before current position
+        if not good_mark:
+            mark = insert
+            while mark := maintext().mark_previous(mark):
+                if is_page_mark(mark):
+                    good_mark = mark
+                    break
+        return img_from_page_mark(good_mark)
 
     def get_current_image_path(self):
         """Return the path of the image file for the page where the insert
@@ -273,6 +284,60 @@ class File:
             return os.path.join(os.path.dirname(self.filename), "pngs", basename)
         else:
             return ""
+
+    def goto_line(self):
+        """Go to the line number the user enters"""
+        line_num = simpledialog.askinteger(
+            "Go To Line", "Line number", parent=maintext()
+        )
+        if line_num is not None:
+            maintext().set_insert_index(f"{line_num}.0", see=True)
+
+    def goto_page(self):
+        """Go to the page the user enters"""
+        page_num = simpledialog.askstring(
+            "Go To Page", "Image number", parent=maintext()
+        )
+        if page_num is not None:
+            try:
+                index = maintext().index(PAGEMARK_PREFIX + page_num)
+            except tk._tkinter.TclError:
+                # Bad page number
+                return
+            maintext().set_insert_index(index, see=True)
+
+    def prev_page(self):
+        """Go to the start of the previous page"""
+        self._next_prev_page(-1)
+
+    def next_page(self):
+        """Go to the start of the next page"""
+        self._next_prev_page(1)
+
+    def _next_prev_page(self, direction):
+        """Go to the page before/after the current one
+
+        Always moves backward/forward in file, even if cursor and page mark(s)
+        are coincident or multiple coincident page marks. Will not remain in
+        the same location unless no further page marks are found.
+
+        Args:
+            direction: Positive to go to next page; negative for previous page
+        """
+        if direction < 0:
+            mark_next_previous = maintext().mark_previous
+        else:
+            mark_next_previous = maintext().mark_next
+
+        insert = maintext().get_insert_index()
+        cur_page = self.get_current_image_name()
+        mark = PAGEMARK_PREFIX + cur_page if cur_page else insert
+        while mark := mark_next_previous(mark):
+            if is_page_mark(mark) and maintext().compare(mark, "!=", insert):
+                maintext().set_insert_index(mark, see=True)
+                return
+        # TODO: Ring bell or something
+        return
 
 
 def is_page_mark(mark):
@@ -292,12 +357,13 @@ def img_from_page_mark(mark):
 
     Args:
         mark: String containing name of mark whose image is needed.
-          Does not check if mark is a page mark
+          Does not check if mark is a page mark. If it is not, the
+          full string is returned.
 
     Returns:
-        True if string matches the format of page mark names.
+        Image name.
     """
-    return mark[len(PAGEMARK_PREFIX) :]
+    return mark.removeprefix(PAGEMARK_PREFIX)
 
 
 def bin_name(basename):
