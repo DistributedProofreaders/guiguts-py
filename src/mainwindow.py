@@ -13,7 +13,9 @@ from utilities import is_mac, is_x11
 
 TEXTIMAGE_WINDOW_ROW = 0
 TEXTIMAGE_WINDOW_COL = 0
-STATUSBAR_ROW = 1
+SEPARATOR_ROW = 1
+SEPARATOR_COL = 0
+STATUSBAR_ROW = 2
 STATUSBAR_COL = 0
 MIN_PANE_WIDTH = 20
 
@@ -55,6 +57,12 @@ class MainWindow:
             sticky="NSEW",
         )
 
+        ttk.Separator(root()).grid(
+            column=SEPARATOR_COL,
+            row=SEPARATOR_ROW,
+            sticky="NSEW",
+        )
+
         self.paned_window = tk.PanedWindow(
             root(), orient=tk.HORIZONTAL, sashwidth=4, sashrelief=tk.GROOVE
         )
@@ -68,16 +76,11 @@ class MainWindow:
             wrap="none",
             autoseparators=True,
             maxundo=-1,
+            highlightthickness=0,
         )
         self.paned_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
 
         MainWindow.mainimage = MainImage(self.paned_window)
-        # self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
-        return
-        if preferences.get("ImageWindow") == "Docked":
-            self.dock_image()
-        else:
-            self.float_image()
 
     def float_image(self, *args):
         """Float the image into a separate window"""
@@ -340,6 +343,7 @@ class MainText(tk.Text):
         self.mark_set(tk.INSERT, index)
         if see:
             self.see(tk.INSERT)
+            self.focus_set()
 
 
 class MainImage(tk.Frame):
@@ -528,8 +532,7 @@ class MainImage(tk.Frame):
         """Load or clear the given image file.
 
         Args:
-            filename: Optional name of image file. If none given, clear image
-              and display "No image" label.
+            filename: Optional name of image file. If none given, clear image.
         """
         if os.path.isfile(filename):
             self.image = Image.open(filename)
@@ -554,7 +557,7 @@ class MainImage(tk.Frame):
 class StatusBar(ttk.Frame):
     """Statusbar at the bottom of the screen.
 
-    Labels in statusbar can be automatically or manually updated.
+    Fields in statusbar can be automatically or manually updated.
     """
 
     def __init__(self, parent):
@@ -563,44 +566,72 @@ class StatusBar(ttk.Frame):
         Args:
             parent: Frame to contain status bar.
         """
-        super().__init__(parent, borderwidth=1, relief=tk.SUNKEN)
-        self.labels = {}
+        super().__init__(parent)
+        self.fields = {}
         self.callbacks = {}
         self._update()
 
-    def add(self, key, callback=None, **kwargs):
-        """Add label to status bar
+    def add(self, key, update=None, **kwargs):
+        """Add field to status bar
 
         Args:
-            key - Key to use to refer to label
-            callback - Optional callback function that returns a string.
-              If supplied, label will be regularly updated automatically with
-              the string returned by ``callback()``. If argument not given,
+            key: Key to use to refer to field.
+            update: Optional callback function that returns a string.
+              If supplied, field will be regularly updated automatically with
+              the string returned by ``update()``. If argument not given,
               application is responsible for updating, using ``set(key)``.
         """
-        kwargs["borderwidth"] = 1
-        kwargs["relief"] = tk.RIDGE
-        self.labels[key] = tk.Label(self, kwargs)
-        self.callbacks[key] = callback
-        self.labels[key].grid(column=len(self.labels), row=0)
+        self.fields[key] = ttk.Button(self, takefocus=0, **kwargs)
+        self.callbacks[key] = update
+        self.fields[key].grid(column=len(self.fields), row=0)
 
     def set(self, key, value):
-        """Set label in statusbar to given value.
+        """Set field in statusbar to given value.
 
         Args:
-            key - Key to refer to label.
-            value - String to use to update label.
+            key: Key to refer to field.
+            value: String to use to update field.
         """
-        self.labels[key].config(text=value)
+        self.fields[key].config(text=value)
 
     def _update(self):
-        """Update labels in statusbar that have callbacks. Updates every
+        """Update fields in statusbar that have callbacks. Updates every
         200 milliseconds.
         """
-        for key in self.labels:
+        for key in self.fields:
             if self.callbacks[key]:
                 self.set(key, self.callbacks[key]())
         self.after(200, self._update)
+
+    def add_binding(self, key, event, callback):
+        """Add an action to be executed when the given event occurs
+
+        Args:
+            key: Key to refer to field.
+            callback: Function to be called when event occurs.
+            event: Event to trigger action. Use button release to avoid
+              clash with button activate appearance behavior.
+        """
+        mouse_bind(self.fields[key], event, lambda *args: callback())
+
+
+def mouse_bind(widget, event, callback):
+    """Bind mouse button callback to event on widget.
+
+    If binding is to mouse button 2 or 3, also bind the other button
+    to support all platforms and 2-button mice.
+
+    Args:
+        widget: Widget to bind to
+        event: Event string to trigger callback
+        callback: Function to be called when event occurs
+    """
+    widget.bind(event, callback)
+
+    if match := re.match(r"(<.*Button.*)([23])(>)", event):
+        other_button = "2" if match.group(2) == "3" else "3"
+        other_event = match.group(1) + other_button + match.group(3)
+        widget.bind(other_event, callback)
 
 
 def root():
