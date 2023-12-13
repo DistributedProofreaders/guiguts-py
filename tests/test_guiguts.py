@@ -24,12 +24,17 @@ def test_preferences():
     assert preferences.get_default("pkey1") is None
     preferences.set_default("pkey1", "pdefault1")
     assert preferences.get_default("pkey1") == "pdefault1"
-    preferences.set("pkey1", "pvalue1")
-    assert preferences.get("pkey1") == "pvalue1"
+    preferences["pkey1"] = "pvalue1"
+    assert preferences["pkey1"] == "pvalue1"
     assert preferences.get_default("pkey1") == "pdefault1"
     keys = preferences.keys()
     assert len(keys) == 1
     assert "pkey1" in keys
+    preferences.set_default("pkey2", "pdefault2")
+    keys = preferences.keys()
+    assert len(keys) == 2
+    assert "pkey1" in keys
+    assert "pkey2" in keys
 
 
 def test_mainwindow():

@@ -35,7 +35,7 @@ class PreferencesDialog(simpledialog.Dialog):
             self.labels[key] = ttk.Label(frame, text=key)
             self.labels[key].grid(row=row, column=0)
             self.entries[key] = ttk.Entry(frame, width=20)
-            self.entries[key].insert(tk.END, str(preferences.get(key)))
+            self.entries[key].insert(tk.END, str(preferences[key]))
             self.entries[key].grid(row=row, column=1)
         return frame
 
@@ -61,7 +61,7 @@ class PreferencesDialog(simpledialog.Dialog):
         always returns a string.
         """
         for key in preferences.keys():
-            preferences.set(key, self.entries[key].get())
+            preferences[key] = self.entries[key].get()
         preferences.save()
         self.destroy()
 

@@ -31,6 +31,32 @@ class Preferences:
         self._remove_test_prefs_file()
         self.load()
 
+    def __getitem__(self, key):
+        """Get preference value using key.
+
+        Provides `value = preferences[key]`
+
+        Args:
+            key: Name of preference.
+
+        Returns:
+            Preferences value; default for ``key`` if no preference set;
+            ``None`` if no default for ``key``.
+        """
+        return self.dict.get(key, self.get_default(key))
+
+    def __setitem__(self, key, value):
+        """Set preference value and save to file.
+
+        Provides `preferences[key] = value`
+
+        Args:
+            key: Name of preference.
+            value: Value for preference.
+        """
+        self.dict[key] = value
+        self.save()
+
     def __del__(self):
         """Remove any test prefs file when finished."""
         self._remove_test_prefs_file()
@@ -54,28 +80,6 @@ class Preferences:
             Default value for preference; ``None`` if no default for ``key``
         """
         return self.defaults.get(key)
-
-    def set(self, key, value):
-        """Set preference value and save to file.
-
-        Args:
-            key: Name of preference.
-            value: Value for preference.
-        """
-        self.dict[key] = value
-        self.save()
-
-    def get(self, key):
-        """Get preference value using key.
-
-        Args:
-            key: Name of preference.
-
-        Returns:
-            Preferences value; default for ``key`` if no preference set;
-            ``None`` if no default for ``key``.
-        """
-        return self.dict.get(key, self.get_default(key))
 
     def keys(self):
         """Return list of preferences keys.
