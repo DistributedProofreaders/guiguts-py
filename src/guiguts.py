@@ -84,7 +84,7 @@ class Guiguts:
         """Load the image for the current page."""
         filename = self.file.get_current_image_path()
         mainimage().load_image(filename)
-        if preferences.get("ImageWindow") == "Docked":
+        if preferences["ImageWindow"] == "Docked":
             self.mainwindow.dock_image()
         else:
             self.mainwindow.float_image()

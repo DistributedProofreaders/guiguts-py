@@ -104,7 +104,7 @@ class MainWindow:
             tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.dock_image)
         else:
             root().wm_forget(mainimage())
-        preferences.set("ImageWindow", "Floated")
+        preferences["ImageWindow"] = "Floated"
 
     def dock_image(self, *args):
         """Dock the image back into the main window"""
@@ -116,7 +116,7 @@ class MainWindow:
                 self.paned_window.forget(mainimage())
             except tk.TclError:
                 pass  # OK - image wasn't being managed by paned_window
-        preferences.set("ImageWindow", "Docked")
+        preferences["ImageWindow"] = "Docked"
 
 
 class Menu(tk.Menu):
@@ -654,7 +654,7 @@ def sound_bell():
     Visible flashes the first statusbar button (must be ttk.Button)
     Preference "Bell" contains "Audible", "Visible", both or neither
     """
-    bell_pref = preferences.get("Bell")
+    bell_pref = preferences["Bell"]
     if "Audible" in bell_pref:
         root().bell()
     if "Visible" in bell_pref:
