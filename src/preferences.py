@@ -32,11 +32,11 @@ class Preferences:
         self.load()
 
     def __del__(self):
-        """Remove any test prefs file when finished"""
+        """Remove any test prefs file when finished."""
         self._remove_test_prefs_file()
 
     def set_default(self, key, default):
-        """Set default preference value
+        """Set default preference value.
 
         Args:
             key: Name of preference.
@@ -45,7 +45,7 @@ class Preferences:
         self.defaults[key] = default
 
     def get_default(self, key):
-        """Get default preference value
+        """Get default preference value.
 
         Args:
             key: Name of preference.
@@ -56,7 +56,7 @@ class Preferences:
         return self.defaults.get(key)
 
     def set(self, key, value):
-        """Set preference value and save to file
+        """Set preference value and save to file.
 
         Args:
             key: Name of preference.
@@ -66,7 +66,7 @@ class Preferences:
         self.save()
 
     def get(self, key):
-        """Get default preference value using key
+        """Get preference value using key.
 
         Args:
             key: Name of preference.
@@ -78,24 +78,27 @@ class Preferences:
         return self.dict.get(key, self.get_default(key))
 
     def keys(self):
-        """Return list of preferences keys"""
-        return self.dict.keys()
+        """Return list of preferences keys.
+
+        Also includes preferences that have not been set, so only exist
+        as defaults."""
+        return list(set(list(self.dict.keys()) + list(self.defaults.keys())))
 
     def save(self):
-        """Save preferences dictionary to JSON file"""
+        """Save preferences dictionary to JSON file."""
         if not os.path.isdir(self.prefsdir):
             os.mkdir(self.prefsdir)
         with open(self.prefsfile, "w") as fp:
             json.dump(self.dict, fp, indent=2)
 
     def load(self):
-        """Load preferences dictionary from JSON file"""
+        """Load preferences dictionary from JSON file."""
         if os.path.isfile(self.prefsfile):
             with open(self.prefsfile, "r") as fp:
                 self.dict = json.load(fp)
 
     def _remove_test_prefs_file(self):
-        """Remove temporary JSON file used for prefs during testing"""
+        """Remove temporary JSON file used for prefs during testing."""
         if utilities._called_from_test and os.path.exists(self.prefsfile):
             os.remove(self.prefsfile)
 

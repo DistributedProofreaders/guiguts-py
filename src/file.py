@@ -6,7 +6,7 @@ import re
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 
-from mainwindow import maintext
+from mainwindow import maintext, sound_bell
 
 PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".bin"
@@ -336,8 +336,7 @@ class File:
             if is_page_mark(mark) and maintext().compare(mark, "!=", insert):
                 maintext().set_insert_index(mark, see=True)
                 return
-        # TODO: Ring bell or something
-        return
+        sound_bell()
 
 
 def is_page_mark(mark):

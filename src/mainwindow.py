@@ -4,8 +4,11 @@
 import os.path
 from PIL import Image, ImageTk
 import re
+import sys
+import traceback
 import tkinter as tk
 from tkinter import ttk
+from tkinter.messagebox import showerror
 
 from preferences import preferences
 from utilities import is_mac, is_x11
@@ -29,6 +32,16 @@ class Root(tk.Tk):
         self.option_add("*tearOff", False)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
+
+    def report_callback_exception(self, exc, val, tb):
+        """Override tkinter exception reporting rather just
+        writing it to stderr.
+
+        TODO: send this to a full error logging window.
+        """
+        err = "\n".join(traceback.format_exception(exc, val, tb))
+        print(str(err), file=sys.stderr)
+        showerror("Caught Tkinter Exception", message=err)
 
 
 class MainWindow:
@@ -632,6 +645,40 @@ def mouse_bind(widget, event, callback):
         other_button = "2" if match.group(2) == "3" else "3"
         other_event = match.group(1) + other_button + match.group(3)
         widget.bind(other_event, callback)
+
+
+def sound_bell():
+    """Sound warning bell audibly and/or visually.
+
+    Audible uses the default system bell sound.
+    Visible flashes the first statusbar button (must be ttk.Button)
+    Preference "Bell" contains "Audible", "Visible", both or neither
+    """
+    bell_pref = preferences.get("Bell")
+    if "Audible" in bell_pref:
+        root().bell()
+    if "Visible" in bell_pref:
+        bell_button = statusbar().fields["rowcol"]
+        # Belt & suspenders: uses the "disabled" state of button in temporary style,
+        # but also restores setting in temporary style, and restores default style.
+        style = ttk.Style()
+        # Set temporary style's disabled bg to red, inherting
+        style.map("W.TButton", foreground=[("disabled", "red")])
+        # Save current disabled bg default for buttons
+        save_bg = style.lookup("TButton", "background", state=[("disabled")])
+        # Save style currently used by button
+        cur_style = statusbar().fields["rowcol"]["style"]
+        # Set button to use temporary style
+        bell_button.configure(style="W.TButton")
+        # Flash 3 times
+        for state in ("disabled", "normal", "disabled", "normal", "disabled", "normal"):
+            bell_button["state"] = state
+            bell_button.update()
+            bell_button.after(50)
+        # Set button to use its previous style again
+        bell_button.configure(style=cur_style)
+        # Just in case, set the temporary style back to the default
+        style.map("W.TButton", background=[("disabled", save_bg)])
 
 
 def root():

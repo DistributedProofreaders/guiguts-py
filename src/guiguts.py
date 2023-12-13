@@ -117,6 +117,7 @@ class Guiguts:
         in the Preferences file.
         """
         preferences.set_default("ImageWindow", "Docked")
+        preferences.set_default("Bell", "VisibleAudible")
 
     # Lay out menus
     def init_menus(self, menubar):
