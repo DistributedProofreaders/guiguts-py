@@ -57,12 +57,14 @@ brew install poetry
      poetry env use /usr/local/bin/python3.10
      ```
 4. Also from the GG2 directory, install the GG2 python dependencies in the
-   virtual environment.
+   virtual environment. This will install GG2 as an editable package that you
+   can develop and run directly.
    ```bash
    poetry install
    ```
 
-You can access the virtual environment shell with `poetry shell`.
+You can access the virtual environment shell with `poetry shell` and run
+GG2 directly with `poetry run guiguts`.
 
 ## Code style
 Guiguts 2 uses [flake8](https://pypi.org/project/flake8) for static code analysis
