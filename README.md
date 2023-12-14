@@ -59,7 +59,7 @@ brew install poetry
 4. Also from the GG2 directory, install the GG2 python dependencies in the
    virtual environment.
    ```bash
-   poetry install --no-root
+   poetry install
    ```
 
 You can access the virtual environment shell with `poetry shell`.

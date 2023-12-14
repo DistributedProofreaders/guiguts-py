@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import simpledialog, ttk
 
-from preferences import preferences
+from guiguts.preferences import preferences
 
 
 class PreferencesDialog(simpledialog.Dialog):

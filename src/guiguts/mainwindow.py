@@ -10,8 +10,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showerror
 
-from preferences import preferences
-from utilities import is_mac, is_x11
+from guiguts.preferences import preferences
+from guiguts.utilities import is_mac, is_x11
 
 
 TEXTIMAGE_WINDOW_ROW = 0

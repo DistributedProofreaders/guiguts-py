@@ -6,7 +6,7 @@ import re
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 
-from mainwindow import maintext, sound_bell
+from guiguts.mainwindow import maintext, sound_bell
 
 PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".bin"
