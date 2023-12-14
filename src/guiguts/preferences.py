@@ -3,7 +3,7 @@
 import json
 import os
 
-import utilities
+from guiguts.utilities import is_x11, _called_from_test
 
 
 class Preferences:
@@ -15,14 +15,14 @@ class Preferences:
         """Initialize by loading from JSON file."""
         self.dict = {}
         self.defaults = {}
-        if utilities.is_x11():
+        if is_x11():
             self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
         else:
             self.prefsdir = os.path.join(
                 os.path.expanduser("~"), "Documents", "GGprefs"
             )
         # If testing, use a test prefs file so tests and normal running do not interact
-        if utilities._called_from_test:
+        if _called_from_test:
             prefs_name = "GGprefs_test.json"
         else:
             prefs_name = "GGprefs.json"
@@ -103,7 +103,7 @@ class Preferences:
 
     def _remove_test_prefs_file(self):
         """Remove temporary JSON file used for prefs during testing."""
-        if utilities._called_from_test and os.path.exists(self.prefsfile):
+        if _called_from_test and os.path.exists(self.prefsfile):
             os.remove(self.prefsfile)
 
 

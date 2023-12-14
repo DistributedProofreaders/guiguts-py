@@ -1,9 +1,9 @@
 """Test functions"""
 
-from file import File
-from mainwindow import _process_label, _process_accel
-from preferences import preferences
-from utilities import is_mac, is_windows, is_x11, _is_system
+from guiguts.file import File
+from guiguts.mainwindow import _process_label, _process_accel
+from guiguts.preferences import preferences
+from guiguts.utilities import is_mac, is_windows, is_x11, _is_system
 
 
 def test_which_os():
@@ -49,8 +49,12 @@ def test_mainwindow():
     assert accel == "Ctrl+X"
     assert event == "<Control-X>"
     (accel, event) = _process_accel("Cmd/Ctrl+y")
-    assert accel == "Ctrl+y"
-    assert event == "<Control-y>"
+    if is_mac():
+        assert accel == "Cmd+y"
+        assert event == "<Meta-y>"
+    else:
+        assert accel == "Ctrl+y"
+        assert event == "<Control-y>"
     (accel, event) = _process_accel("Shift+Ctrl+Z")
     assert accel == "Shift+Ctrl+Z"
     assert event == "<Shift-Control-Z>"

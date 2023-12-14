@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Guiguts - application to support creation of books for PG"""
 
 
@@ -6,9 +7,13 @@ import subprocess
 from tkinter import messagebox
 import webbrowser
 
-import file
-from file import File
-from mainwindow import (
+# Allow running this file directly during development
+if __name__ == "__main__" and __package__ is None:
+    __package__ == "guiguts"
+
+
+from guiguts.file import File
+from guiguts.mainwindow import (
     root,
     MainWindow,
     Menu,
@@ -17,9 +22,9 @@ from mainwindow import (
     menubar,
     statusbar,
 )
-from preferences import preferences
-from preferences_dialog import PreferencesDialog
-from utilities import is_mac
+from guiguts.preferences import preferences
+from guiguts.preferences_dialog import PreferencesDialog
+from guiguts.utilities import is_mac
 
 
 class Guiguts:
@@ -74,7 +79,7 @@ class Guiguts:
 
         Accepts a list of filenames, but only loads the first.
         """
-        file.load_file(args[0])
+        self.file.load_file(args[0])
 
     def show_help_manual(self, *args):
         """Display the manual."""
@@ -217,5 +222,9 @@ class Guiguts:
         statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
 
 
-if __name__ == "__main__":
+def main():
     Guiguts().run()
+
+
+if __name__ == "__main__":
+    main()
