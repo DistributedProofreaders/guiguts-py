@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Guiguts - an application to support creation of books for PG"""
+"""Guiguts - an application to support creation of ebooks for PG"""
 
 
 import re
@@ -66,9 +66,9 @@ class Guiguts:
 
     def help_about(self, *args):
         """Display a 'Help About' dialog."""
-        help = """Guiguts - an application to support creation of books for PG
+        help = """Guiguts - an application to support creation of ebooks for PG
 
-Copyright Contributors to the Guiguts project at pgdp.org
+Copyright Contributors to the Guiguts-py project.
 
 This program is free software; you can redistribute it
 and/or modify it under the terms of the GNU General Public
