@@ -54,7 +54,7 @@ brew install poetry
      ```
    * macOS
      ```bash
-     poetry env use /usr/local/bin/python3.10
+     poetry env use $(brew --prefix)/bin/python3.10
      ```
 4. Also from the GG2 directory, install the GG2 python dependencies in the
    virtual environment. This will install GG2 as an editable package that you
