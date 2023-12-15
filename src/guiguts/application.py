@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Guiguts - application to support creation of books for PG"""
+"""Guiguts - an application to support creation of books for PG"""
 
 
 import re
@@ -66,9 +66,28 @@ class Guiguts:
 
     def help_about(self, *args):
         """Display a 'Help About' dialog."""
-        messagebox.showinfo(
-            title="About Guiguts", message="Here's some information about Guiguts"
-        )
+        help = """Guiguts - an application to support creation of books for PG
+
+Copyright Contributors to the Guiguts project at pgdp.org
+
+This program is free software; you can redistribute it
+and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be
+useful, but WITHOUT ANY WARRANTY; without even
+the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General
+Public License for more details.
+
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the
+Free Software Foundation, Inc., 51 Franklin Street,
+Fifth Floor, Boston, MA 02110-1301 USA."""
+
+        messagebox.showinfo(title="About Guiguts", message=help)
 
     def show_preferences_dialog(self, *args):
         """Show the preferences display/edit dialog."""
