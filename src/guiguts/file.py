@@ -37,6 +37,11 @@ class File:
         self._filename = value
         self._filename_callback()
 
+    def reset(self):
+        """Reset file internals to defaults, e.g. filename, page markers, etc"""
+        self._filename = ""
+        self.remove_page_marks()
+
     def open_file(self, *args):
         """Open and load a text file."""
         if self.check_save():
@@ -51,6 +56,7 @@ class File:
         Args:
             filename: Name of file to be loaded. Bin filename has ".bin" appended.
         """
+        self.reset()
         self.filename = filename
         maintext().do_open(filename)
         maintext().set_insert_index(1.0, see=True)
