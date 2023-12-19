@@ -49,6 +49,28 @@ class Guiguts:
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
 
+        self.set_auto_image(preferences["AutoImage"])
+
+    def get_auto_image(self):
+        """Return whether to show scan images automatically.
+
+        Returns:
+            True if scan images should be shown automatically.
+        """
+        return preferences["AutoImage"]
+
+    def set_auto_image(self, value):
+        """Set whether to show scan images automatically."""
+        preferences["AutoImage"] = value
+        statusbar().set("see img", "Auto Img" if value else "See Img")
+        if value:
+            self.auto_image_check()
+
+    def auto_image_check(self):
+        if preferences["AutoImage"]:
+            self.load_image()
+            root().after(200, self.auto_image_check)
+
     def run(self):
         """Run the app."""
         root().mainloop()
@@ -113,6 +135,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         else:
             self.mainwindow.float_image()
 
+    def toggle_auto_image(self):
+        self.set_auto_image(not self.get_auto_image())
+
     def spawn_process(self, *args):
         """Spawn a subprocess.
 
@@ -142,6 +167,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """
         preferences.set_default("ImageWindow", "Docked")
         preferences.set_default("Bell", "VisibleAudible")
+        preferences.set_default("AutoImage", False)
 
     # Lay out menus
     def init_menus(self, menubar):
@@ -234,11 +260,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add("prev img", text="<", width=1)
         statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
 
-        statusbar.add("see img", text="See Img", width=7)
+        statusbar.add("see img", text="See Img", width=9)
         statusbar.add_binding("see img", "<ButtonRelease-1>", self.load_image)
         statusbar.add_binding(
             "see img", "<ButtonRelease-3>", self.file.choose_image_dir
         )
+        statusbar.add_binding("see img", "<Double-Button-1>", self.toggle_auto_image)
 
         statusbar.add("next img", text=">", width=1)
         statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
