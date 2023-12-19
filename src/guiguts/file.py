@@ -12,22 +12,30 @@ PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".bin"
 BINFILE_KEY_PAGEMARKS = "pagemarks"
 BINFILE_KEY_INSERTPOS = "insertpos"
+BINFILE_KEY_IMAGEDIR = "imagedir"
 
 
 class File:
-    """Handle data and actions relating to the main text file"""
+    """Handle data and actions relating to the main text file.
+
+    Attributes:
+        _filename: Current filename.
+        _filename_callback: Function to be called whenever filename is set.
+        _image_dir: Directory containing scan images.
+    """
 
     def __init__(self, filename_callback):
         """
         Args:
-            filename_callback: function to be called whenever filename is set.
+            filename_callback: Function to be called whenever filename is set.
         """
         self._filename = ""
         self._filename_callback = filename_callback
+        self._image_dir = ""
 
     @property
     def filename(self):
-        """Name of currently loaded file
+        """Name of currently loaded file.
 
         When assigned to, executes callback function to update interface"""
         return self._filename
@@ -37,9 +45,23 @@ class File:
         self._filename = value
         self._filename_callback()
 
+    @property
+    def image_dir(self):
+        """Directory containing scan images.
+
+        If unset, defaults to pngs subdir of project dir"""
+        if (not self._image_dir) and self.filename:
+            self._image_dir = os.path.join(os.path.dirname(self.filename), "pngs")
+        return self._image_dir
+
+    @image_dir.setter
+    def image_dir(self, value):
+        self._image_dir = value
+
     def reset(self):
         """Reset file internals to defaults, e.g. filename, page markers, etc"""
-        self._filename = ""
+        self.filename = ""
+        self.image_dir = ""
         self.remove_page_marks()
 
     def open_file(self, *args):
@@ -151,6 +173,7 @@ class File:
         """
         self.set_initial_position(bin_dict.get(BINFILE_KEY_INSERTPOS))
         self.dict_to_page_marks(bin_dict.get(BINFILE_KEY_PAGEMARKS))
+        self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
 
     def create_bin(self):
         """From relevant variables, etc., create dictionary suitable for saving
@@ -162,6 +185,7 @@ class File:
         bin_dict = {}
         bin_dict[BINFILE_KEY_INSERTPOS] = maintext().get_insert_index()
         bin_dict[BINFILE_KEY_PAGEMARKS] = self.dict_from_page_marks()
+        bin_dict[BINFILE_KEY_IMAGEDIR] = self.image_dir
         return bin_dict
 
     def dict_to_page_marks(self, page_marks_dict):
@@ -287,9 +311,18 @@ class File:
         basename = self.get_current_image_name()
         if basename:
             basename += ".png"
-            return os.path.join(os.path.dirname(self.filename), "pngs", basename)
-        else:
-            return ""
+            path = os.path.join(self.image_dir, basename)
+            if not os.path.exists(path):
+                self.choose_image_dir()
+                path = os.path.join(self.image_dir, basename)
+            if os.path.exists(path):
+                return path
+        return ""
+
+    def choose_image_dir(self):
+        """Allow user to select directory containing png image files"""
+        self.image_dir = filedialog.askdirectory(mustexist=True)
+        return self.image_dir
 
     def goto_line(self):
         """Go to the line number the user enters"""

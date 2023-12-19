@@ -236,6 +236,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         statusbar.add("see img", text="See Img", width=7)
         statusbar.add_binding("see img", "<ButtonRelease-1>", self.load_image)
+        statusbar.add_binding(
+            "see img", "<ButtonRelease-3>", self.file.choose_image_dir
+        )
 
         statusbar.add("next img", text=">", width=1)
         statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
