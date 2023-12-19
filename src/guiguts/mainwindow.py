@@ -328,6 +328,11 @@ class MainText(tk.Text):
             self.insert(tk.END, fh.read())
             self.set_modified(False)
 
+    def do_close(self):
+        """Close current file and clear widget."""
+        self.delete("1.0", tk.END)
+        self.set_modified(False)
+
     def init_context_menu(self):
         """Create a context menu for the main text widget"""
 

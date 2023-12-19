@@ -165,6 +165,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_file.add_button("~Open...", self.file.open_file, "Cmd/Ctrl+O")
         menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
         menu_file.add_button("Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S")
+        menu_file.add_button("~Close", self.file.close_file)
         menu_file.add_separator()
         menu_file.add_button("Spawn ~Process", self.spawn_process)
         menu_file.add_separator()

@@ -50,6 +50,13 @@ class File:
             ):
                 self.load_file(fn)
 
+    def close_file(self, *args):
+        """Close current file, leaving an empty file."""
+        if self.check_save():
+            self.reset()
+            self.filename = ""
+            maintext().do_close()
+
     def load_file(self, filename):
         """Load file & bin file.
 
