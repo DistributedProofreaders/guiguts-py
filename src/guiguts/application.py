@@ -49,27 +49,26 @@ class Guiguts:
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
 
-        self.set_auto_image(preferences["AutoImage"])
+        self.auto_image = preferences["AutoImage"]  # For side effects
 
-    def get_auto_image(self):
-        """Return whether to show scan images automatically.
-
-        Returns:
-            True if scan images should be shown automatically.
-        """
+    @property
+    def auto_image(self):
         return preferences["AutoImage"]
 
-    def set_auto_image(self, value):
-        """Set whether to show scan images automatically."""
+    @auto_image.setter
+    def auto_image(self, value):
         preferences["AutoImage"] = value
         statusbar().set("see img", "Auto Img" if value else "See Img")
         if value:
             self.auto_image_check()
 
     def auto_image_check(self):
-        if preferences["AutoImage"]:
+        if self.auto_image:
             self.load_image()
             root().after(200, self.auto_image_check)
+
+    def toggle_auto_image(self):
+        self.auto_image = not self.auto_image
 
     def run(self):
         """Run the app."""
@@ -134,9 +133,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             self.mainwindow.dock_image()
         else:
             self.mainwindow.float_image()
-
-    def toggle_auto_image(self):
-        self.set_auto_image(not self.get_auto_image())
 
     def spawn_process(self, *args):
         """Spawn a subprocess.
