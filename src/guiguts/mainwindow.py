@@ -435,6 +435,7 @@ class MainImage(tk.Frame):
         self.image = None
         self.imageid = None
         self.container = None
+        self.filename = None
 
     def scroll_y(self, *args, **kwargs):
         """Scroll canvas vertically and redraw the image"""
@@ -564,7 +565,11 @@ class MainImage(tk.Frame):
         Args:
             filename: Optional name of image file. If none given, clear image.
         """
+        if filename == self.filename:
+            return
+
         if filename and os.path.isfile(filename):
+            self.filename = filename
             self.image = Image.open(filename)
             self.width, self.height = self.image.size
             if self.container:
@@ -578,6 +583,7 @@ class MainImage(tk.Frame):
             self.show_image()
         else:
             self.image = None
+            self.filename = None
 
     def is_image_loaded(self):
         """Return if an image is currently loaded"""
