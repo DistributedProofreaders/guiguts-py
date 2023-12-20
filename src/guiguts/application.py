@@ -49,7 +49,7 @@ class Guiguts:
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
 
-        self.auto_image = preferences["AutoImage"]  # For side effects
+        preferences.run_callbacks()
 
     @property
     def auto_image(self):
@@ -163,7 +163,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """
         preferences.set_default("ImageWindow", "Docked")
         preferences.set_default("Bell", "VisibleAudible")
+
+        def set_auto_image(value):
+            self.auto_image = value
+
         preferences.set_default("AutoImage", False)
+        preferences.set_callback("AutoImage", set_auto_image)
 
     # Lay out menus
     def init_menus(self, menubar):
