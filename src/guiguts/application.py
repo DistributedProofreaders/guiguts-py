@@ -261,7 +261,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
 
         statusbar.add("see img", text="See Img", width=9)
-        statusbar.add_binding("see img", "<ButtonRelease-1>", lambda: self.mainwindow.load_image(self.file.get_current_image_path())
+        statusbar.add_binding(
+            "see img",
+            "<ButtonRelease-1>",
+            lambda: self.mainwindow.load_image(self.file.get_current_image_path()),
+        )
         statusbar.add_binding(
             "see img", "<ButtonRelease-3>", self.file.choose_image_dir
         )
