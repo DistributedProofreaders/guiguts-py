@@ -274,6 +274,14 @@ class File:
                 if is_page_mark(mark):
                     good_mark = mark
                     break
+        # If not, then maybe we're before the first page mark, so search forward
+        if not good_mark:
+            mark = insert
+            while mark := maintext().mark_next(mark):
+                if is_page_mark(mark):
+                    good_mark = mark
+                    break
+
         return img_from_page_mark(good_mark)
 
     def get_current_image_path(self):
