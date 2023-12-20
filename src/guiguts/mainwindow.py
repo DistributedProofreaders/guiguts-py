@@ -118,6 +118,18 @@ class MainWindow:
                 pass  # OK - image wasn't being managed by paned_window
         preferences["ImageWindow"] = "Docked"
 
+    def load_image(self, filename):
+        """Load the image for the given page.
+
+        Args:
+            filename: Path to image file.
+        """
+        mainimage().load_image(filename)
+        if preferences["ImageWindow"] == "Docked":
+            self.dock_image()
+        else:
+            self.float_image()
+
 
 class Menu(tk.Menu):
     """Extend ``tk.Menu`` to make adding buttons with accelerators simpler."""
@@ -552,7 +564,7 @@ class MainImage(tk.Frame):
         Args:
             filename: Optional name of image file. If none given, clear image.
         """
-        if os.path.isfile(filename):
+        if filename and os.path.isfile(filename):
             self.image = Image.open(filename)
             self.width, self.height = self.image.size
             if self.container:

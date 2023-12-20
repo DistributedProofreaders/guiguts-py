@@ -17,7 +17,6 @@ from guiguts.mainwindow import (
     root,
     MainWindow,
     Menu,
-    mainimage,
     maintext,
     menubar,
     statusbar,
@@ -100,18 +99,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """
         self.file.load_file(args[0])
 
+    def close_file(self):
+        """Close currently loaded file and associated image."""
+        self.file.close_file("")
+        self.mainwindow.load_image("")
+
     def show_help_manual(self, *args):
         """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
-
-    def load_image(self, *args):
-        """Load the image for the current page."""
-        filename = self.file.get_current_image_path()
-        mainimage().load_image(filename)
-        if preferences["ImageWindow"] == "Docked":
-            self.mainwindow.dock_image()
-        else:
-            self.mainwindow.float_image()
 
     def spawn_process(self, *args):
         """Spawn a subprocess.
@@ -165,7 +160,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_file.add_button("~Open...", self.file.open_file, "Cmd/Ctrl+O")
         menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
         menu_file.add_button("Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S")
-        menu_file.add_button("~Close", self.file.close_file)
+        menu_file.add_button("~Close", self.close_file)
         menu_file.add_separator()
         menu_file.add_button("Spawn ~Process", self.spawn_process)
         menu_file.add_separator()
@@ -190,7 +185,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view = Menu(parent, "~View")
         menu_view.add_button("~Dock", self.mainwindow.dock_image, "Cmd/Ctrl+D")
         menu_view.add_button("~Float", self.mainwindow.float_image, "Cmd/Ctrl+F")
-        menu_view.add_button("~Load Image", self.load_image)
+        menu_view.add_button(
+            "~Load Image",
+            lambda: self.mainwindow.load_image(self.file.get_current_image_path()),
+        )
 
     def init_help_menu(self, parent):
         """Create the Help menu."""
@@ -236,7 +234,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
 
         statusbar.add("see img", text="See Img", width=7)
-        statusbar.add_binding("see img", "<ButtonRelease-1>", self.load_image)
+        statusbar.add_binding(
+            "see img",
+            "<ButtonRelease-1>",
+            lambda: self.mainwindow.load_image(self.file.get_current_image_path()),
+        )
 
         statusbar.add("next img", text=">", width=1)
         statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)

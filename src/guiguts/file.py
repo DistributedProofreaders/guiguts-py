@@ -39,7 +39,7 @@ class File:
 
     def reset(self):
         """Reset file internals to defaults, e.g. filename, page markers, etc"""
-        self._filename = ""
+        self.filename = ""
         self.remove_page_marks()
 
     def open_file(self, *args):
@@ -54,7 +54,6 @@ class File:
         """Close current file, leaving an empty file."""
         if self.check_save():
             self.reset()
-            self.filename = ""
             maintext().do_close()
 
     def load_file(self, filename):
