@@ -63,7 +63,7 @@ class Guiguts:
 
     def auto_image_check(self):
         if self.auto_image:
-            self.load_image()
+            self.mainwindow.load_image(self.file.get_current_image_path())
             root().after(200, self.auto_image_check)
 
     def toggle_auto_image(self):
@@ -120,9 +120,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """
         self.file.load_file(args[0])
 
+    def open_file(self):
+        """Open new file, close old image if open."""
+        if self.file.open_file():
+            self.mainwindow.load_image("")
+
     def close_file(self):
         """Close currently loaded file and associated image."""
-        self.file.close_file("")
+        self.file.close_file()
         self.mainwindow.load_image("")
 
     def show_help_manual(self, *args):
@@ -184,7 +189,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_file_menu(self, parent):
         """Create the File menu."""
         menu_file = Menu(parent, "~File")
-        menu_file.add_button("~Open...", self.file.open_file, "Cmd/Ctrl+O")
+        menu_file.add_button("~Open...", self.open_file, "Cmd/Ctrl+O")
         menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
         menu_file.add_button("Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S")
         menu_file.add_button("~Close", self.close_file, "Cmd+W" if is_mac() else "")
