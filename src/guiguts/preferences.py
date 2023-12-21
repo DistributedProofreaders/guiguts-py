@@ -142,7 +142,7 @@ class Preferences:
         for key in self.callbacks.keys():
             callback = self.callbacks[key]
             if callback:
-                callback(self.dict[key])
+                callback(self[key])
 
     def _remove_test_prefs_file(self):
         """Remove temporary JSON file used for prefs during testing."""
