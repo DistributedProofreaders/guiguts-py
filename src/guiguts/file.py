@@ -9,7 +9,7 @@ from tkinter import filedialog, messagebox, simpledialog
 from guiguts.mainwindow import maintext, sound_bell
 
 PAGEMARK_PREFIX = "Pg"
-BINFILE_SUFFIX = ".bin"
+BINFILE_SUFFIX = ".json"
 BINFILE_KEY_PAGEMARKS = "pagemarks"
 BINFILE_KEY_INSERTPOS = "insertpos"
 BINFILE_KEY_IMAGEDIR = "imagedir"
