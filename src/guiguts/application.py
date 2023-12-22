@@ -52,6 +52,8 @@ class Guiguts:
 
     @property
     def auto_image(self):
+        """Auto image flag: setting causes side effects in UI
+        & starts repeating check."""
         return preferences["AutoImage"]
 
     @auto_image.setter
@@ -62,11 +64,13 @@ class Guiguts:
             self.auto_image_check()
 
     def auto_image_check(self):
+        """Function called repeatedly to check whether an image needs loading."""
         if self.auto_image:
             self.mainwindow.load_image(self.file.get_current_image_path())
             root().after(200, self.auto_image_check)
 
     def toggle_auto_image(self):
+        """Toggle the auto image flag."""
         self.auto_image = not self.auto_image
 
     def run(self):
@@ -74,6 +78,7 @@ class Guiguts:
         root().mainloop()
 
     def filename_changed(self):
+        """Handle side effects needed when filename changes."""
         self.init_file_menu()  # Recreate file menu to reflect recent files
         self.update_title()
 
@@ -301,6 +306,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
 
 def main():
+    """Main application function."""
     Guiguts().run()
 
 
