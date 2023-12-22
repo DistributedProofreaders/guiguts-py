@@ -118,6 +118,18 @@ class MainWindow:
                 pass  # OK - image wasn't being managed by paned_window
         preferences["ImageWindow"] = "Docked"
 
+    def load_image(self, filename):
+        """Load the image for the given page.
+
+        Args:
+            filename: Path to image file.
+        """
+        mainimage().load_image(filename)
+        if preferences["ImageWindow"] == "Docked":
+            self.dock_image()
+        else:
+            self.float_image()
+
 
 class Menu(tk.Menu):
     """Extend ``tk.Menu`` to make adding buttons with accelerators simpler."""
@@ -327,6 +339,11 @@ class MainText(tk.Text):
             self.delete("1.0", tk.END)
             self.insert(tk.END, fh.read())
             self.set_modified(False)
+
+    def do_close(self):
+        """Close current file and clear widget."""
+        self.delete("1.0", tk.END)
+        self.set_modified(False)
 
     def init_context_menu(self):
         """Create a context menu for the main text widget"""
@@ -551,7 +568,7 @@ class MainImage(tk.Frame):
         if filename == self.filename:
             return
 
-        if os.path.isfile(filename):
+        if filename and os.path.isfile(filename):
             self.filename = filename
             self.image = Image.open(filename)
             self.width, self.height = self.image.size

@@ -67,12 +67,24 @@ class File:
         self.remove_page_marks()
 
     def open_file(self, *args):
-        """Open and load a text file."""
+        """Open and load a text file.
+
+        Returns:
+            Name of file opened - empty string if cancelled.
+        """
+        fn = ""
         if self.check_save():
             if fn := filedialog.askopenfilename(
                 filetypes=(("Text files", "*.txt *.html *.htm"), ("All files", "*.*"))
             ):
                 self.load_file(fn)
+        return fn
+
+    def close_file(self):
+        """Close current file, leaving an empty file."""
+        if self.check_save():
+            self.reset()
+            maintext().do_close()
 
     def load_file(self, filename):
         """Load file & bin file.

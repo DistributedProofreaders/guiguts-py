@@ -17,7 +17,6 @@ from guiguts.mainwindow import (
     root,
     MainWindow,
     Menu,
-    mainimage,
     maintext,
     menubar,
     statusbar,
@@ -64,7 +63,7 @@ class Guiguts:
 
     def auto_image_check(self):
         if self.auto_image:
-            self.load_image()
+            self.mainwindow.load_image(self.file.get_current_image_path())
             root().after(200, self.auto_image_check)
 
     def toggle_auto_image(self):
@@ -125,18 +124,19 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """
         self.file.load_file(args[0])
 
+    def open_file(self):
+        """Open new file, close old image if open."""
+        if self.file.open_file():
+            self.mainwindow.load_image("")
+
+    def close_file(self):
+        """Close currently loaded file and associated image."""
+        self.file.close_file()
+        self.mainwindow.load_image("")
+
     def show_help_manual(self, *args):
         """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
-
-    def load_image(self, *args):
-        """Load the image for the current page."""
-        filename = self.file.get_current_image_path()
-        mainimage().load_image(filename)
-        if preferences["ImageWindow"] == "Docked":
-            self.mainwindow.dock_image()
-        else:
-            self.mainwindow.float_image()
 
     def spawn_process(self, *args):
         """Spawn a subprocess.
@@ -203,6 +203,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.menu_file.add_button(
             "Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S"
         )
+        self.menu_file.add_button(
+            "~Close", self.close_file, "Cmd+W" if is_mac() else ""
+        )
         self.menu_file.add_separator()
         self.menu_file.add_button("Spawn ~Process", self.spawn_process)
         self.menu_file.add_separator()
@@ -237,7 +240,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view = Menu(menubar(), "~View")
         menu_view.add_button("~Dock", self.mainwindow.dock_image)
         menu_view.add_button("~Float", self.mainwindow.float_image)
-        menu_view.add_button("~Load Image", self.load_image)
+        menu_view.add_button("~Load Image", self.mainwindow.load_image)
 
     def init_help_menu(self):
         """Create the Help menu."""
@@ -283,7 +286,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
 
         statusbar.add("see img", text="See Img", width=9)
-        statusbar.add_binding("see img", "<ButtonRelease-1>", self.load_image)
+        statusbar.add_binding(
+            "see img",
+            "<ButtonRelease-1>",
+            lambda: self.mainwindow.load_image(self.file.get_current_image_path()),
+        )
         statusbar.add_binding(
             "see img", "<ButtonRelease-3>", self.file.choose_image_dir
         )
