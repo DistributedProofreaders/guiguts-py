@@ -5,7 +5,7 @@ Guiguts Documentation
 Guiguts
 =======
 
-.. automodule:: guiguts
+.. automodule:: application
 
 MainWindow
 ==========
