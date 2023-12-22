@@ -7,9 +7,11 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 
 from guiguts.mainwindow import maintext, sound_bell
+from guiguts.preferences import preferences
 
+NUM_RECENT_FILES = 9
 PAGEMARK_PREFIX = "Pg"
-BINFILE_SUFFIX = ".bin"
+BINFILE_SUFFIX = ".json"
 BINFILE_KEY_PAGEMARKS = "pagemarks"
 BINFILE_KEY_INSERTPOS = "insertpos"
 BINFILE_KEY_IMAGEDIR = "imagedir"
@@ -91,12 +93,14 @@ class File:
             filename: Name of file to be loaded. Bin filename has ".bin" appended.
         """
         self.reset()
-        self.filename = filename
         maintext().do_open(filename)
         maintext().set_insert_index(1.0, see=True)
         self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
+        self.store_recent_files(filename)
+        # Load complete, so set filename (including side effects)
+        self.filename = filename
 
     def save_file(self, *args):
         """Save the current file.
@@ -199,6 +203,19 @@ class File:
         bin_dict[BINFILE_KEY_PAGEMARKS] = self.dict_from_page_marks()
         bin_dict[BINFILE_KEY_IMAGEDIR] = self.image_dir
         return bin_dict
+
+    def store_recent_files(self, filename):
+        """Store given filename in list of recent files.
+
+        Args:
+            filename: Name of new file to add to list.
+        """
+        recent_files = preferences["RecentFiles"]
+        if filename in recent_files:
+            recent_files.remove(filename)
+        recent_files.append(filename)
+        del recent_files[0:-NUM_RECENT_FILES]
+        preferences["RecentFiles"] = recent_files
 
     def dict_to_page_marks(self, page_marks_dict):
         """Set page marks from keys/values in dictionary.
@@ -310,6 +327,14 @@ class File:
                 if is_page_mark(mark):
                     good_mark = mark
                     break
+        # If not, then maybe we're before the first page mark, so search forward
+        if not good_mark:
+            mark = insert
+            while mark := maintext().mark_next(mark):
+                if is_page_mark(mark):
+                    good_mark = mark
+                    break
+
         return img_from_page_mark(good_mark)
 
     def get_current_image_path(self):

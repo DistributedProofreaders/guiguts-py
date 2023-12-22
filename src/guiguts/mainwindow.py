@@ -148,7 +148,7 @@ class Menu(tk.Menu):
         command_args = {"menu": self}
         if label:
             (label_tilde, label_txt) = _process_label(label)
-            command_args["label"] = (label_txt,)
+            command_args["label"] = label_txt
             if label_tilde >= 0:
                 command_args["underline"] = label_tilde
         # Only needs cascade if a child of menu/menubar, not if a context popup menu
