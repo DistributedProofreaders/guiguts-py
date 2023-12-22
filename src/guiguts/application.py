@@ -240,7 +240,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view = Menu(menubar(), "~View")
         menu_view.add_button("~Dock", self.mainwindow.dock_image)
         menu_view.add_button("~Float", self.mainwindow.float_image)
-        menu_view.add_button("~Load Image", self.load_image)
+        menu_view.add_button("~Load Image", self.mainwindow.load_image)
 
     def init_help_menu(self):
         """Create the Help menu."""
