@@ -235,8 +235,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_view_menu(self):
         """Create the View menu."""
         menu_view = Menu(menubar(), "~View")
-        menu_view.add_button("~Dock", self.mainwindow.dock_image, "Cmd/Ctrl+D")
-        menu_view.add_button("~Float", self.mainwindow.float_image, "Cmd/Ctrl+F")
+        menu_view.add_button("~Dock", self.mainwindow.dock_image)
+        menu_view.add_button("~Float", self.mainwindow.float_image)
         menu_view.add_button("~Load Image", self.load_image)
 
     def init_help_menu(self):
