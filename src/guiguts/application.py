@@ -81,7 +81,7 @@ class Guiguts:
         """Handle side effects needed when filename changes."""
         self.init_file_menu()  # Recreate file menu to reflect recent files
         self.update_title()
-        maintext().focus_set()
+        maintext().after_idle(maintext().focus_set)
 
     def update_title(self):
         """Update the window title to reflect current status."""
