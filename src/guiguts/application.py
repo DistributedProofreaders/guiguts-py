@@ -129,15 +129,23 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """
         self.file.load_file(args[0])
 
-    def open_file(self):
-        """Open new file, close old image if open."""
-        if self.file.open_file():
+    def open_file(self, filename=""):
+        """Open new file, close old image if open.
+
+        Args:
+            filename: Optional filename - prompt user if none given.
+        """
+        if self.file.open_file(filename):
             self.mainwindow.load_image("")
 
     def close_file(self):
         """Close currently loaded file and associated image."""
         self.file.close_file()
         self.mainwindow.load_image("")
+
+    def load_current_image(self):
+        """Load image corresponding to current cursor position"""
+        self.mainwindow.load_image(self.file.get_current_image_path())
 
     def show_help_manual(self, *args):
         """Display the manual."""
@@ -202,7 +210,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             self.menu_file.delete(0, "end")
         except AttributeError:
             self.menu_file = Menu(menubar(), "~File")
-        self.menu_file.add_button("~Open...", self.file.open_file, "Cmd/Ctrl+O")
+        self.menu_file.add_button(
+            "~Open...", lambda *args: self.open_file(), "Cmd/Ctrl+O"
+        )
         self.init_file_recent_menu(self.menu_file)
         self.menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
         self.menu_file.add_button(
@@ -223,7 +233,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         recent_menu = Menu(parent, "Recent Doc~uments")
         for count, file in enumerate(reversed(preferences["RecentFiles"]), start=1):
             recent_menu.add_button(
-                f"~{count}: {file}", lambda fn=file: self.file.load_file(fn)
+                f"~{count}: {file}", lambda fn=file: self.open_file(fn)
             )
 
     def init_edit_menu(self):
@@ -245,7 +255,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view = Menu(menubar(), "~View")
         menu_view.add_button("~Dock", self.mainwindow.dock_image)
         menu_view.add_button("~Float", self.mainwindow.float_image)
-        menu_view.add_button("~Load Image", self.mainwindow.load_image)
+        menu_view.add_button("~Load Image", self.load_current_image)
 
     def init_help_menu(self):
         """Create the Help menu."""
@@ -291,11 +301,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
 
         statusbar.add("see img", text="See Img", width=9)
-        statusbar.add_binding(
-            "see img",
-            "<ButtonRelease-1>",
-            lambda: self.mainwindow.load_image(self.file.get_current_image_path()),
-        )
+        statusbar.add_binding("see img", "<ButtonRelease-1>", self.load_current_image)
         statusbar.add_binding(
             "see img", "<ButtonRelease-3>", self.file.choose_image_dir
         )
