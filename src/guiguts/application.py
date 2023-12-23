@@ -213,10 +213,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         self.menu_file.add_separator()
         self.menu_file.add_button("Spawn ~Process", self.spawn_process)
-        self.menu_file.add_separator()
-        self.menu_file.add_button(
-            "~Quit", self.quit_program, "Cmd+Q" if is_mac() else ""
-        )
+        if not is_mac():
+            self.menu_file.add_separator()
+            self.menu_file.add_button("E~xit", self.quit_program, "")
 
     def init_file_recent_menu(self, parent):
         """Create the Recent Documents menu."""
