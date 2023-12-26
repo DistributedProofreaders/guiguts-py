@@ -17,7 +17,6 @@ from guiguts.mainwindow import (
     root,
     MainWindow,
     Menu,
-    mainimage,
     maintext,
     menubar,
     statusbar,
@@ -37,21 +36,51 @@ class Guiguts:
 
         self.set_preferences_defaults()
 
-        self.file = File(self.update_title)
+        self.file = File(self.filename_changed)
 
         self.mainwindow = MainWindow()
         self.update_title()
 
-        self.init_menus(menubar())
+        self.init_menus()
 
         self.init_statusbar(statusbar())
 
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
 
+        preferences.run_callbacks()
+
+    @property
+    def auto_image(self):
+        """Auto image flag: setting causes side effects in UI
+        & starts repeating check."""
+        return preferences["AutoImage"]
+
+    @auto_image.setter
+    def auto_image(self, value):
+        preferences["AutoImage"] = value
+        statusbar().set("see img", "Auto Img" if value else "See Img")
+        if value:
+            self.auto_image_check()
+
+    def auto_image_check(self):
+        """Function called repeatedly to check whether an image needs loading."""
+        if self.auto_image:
+            self.mainwindow.load_image(self.file.get_current_image_path())
+            root().after(200, self.auto_image_check)
+
+    def toggle_auto_image(self):
+        """Toggle the auto image flag."""
+        self.auto_image = not self.auto_image
+
     def run(self):
         """Run the app."""
         root().mainloop()
+
+    def filename_changed(self):
+        """Handle side effects needed when filename changes."""
+        self.init_file_menu()  # Recreate file menu to reflect recent files
+        self.update_title()
 
     def update_title(self):
         """Update the window title to reflect current status."""
@@ -100,18 +129,19 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """
         self.file.load_file(args[0])
 
+    def open_file(self):
+        """Open new file, close old image if open."""
+        if self.file.open_file():
+            self.mainwindow.load_image("")
+
+    def close_file(self):
+        """Close currently loaded file and associated image."""
+        self.file.close_file()
+        self.mainwindow.load_image("")
+
     def show_help_manual(self, *args):
         """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
-
-    def load_image(self, *args):
-        """Load the image for the current page."""
-        filename = self.file.get_current_image_path()
-        mainimage().load_image(filename)
-        if preferences["ImageWindow"] == "Docked":
-            self.mainwindow.dock_image()
-        else:
-            self.mainwindow.float_image()
 
     def spawn_process(self, *args):
         """Spawn a subprocess.
@@ -140,17 +170,24 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Set default preferences - will be overridden by any values set
         in the Preferences file.
         """
-        preferences.set_default("ImageWindow", "Docked")
+
+        def set_auto_image(value):
+            self.auto_image = value
+
+        preferences.set_default("AutoImage", False)
+        preferences.set_callback("AutoImage", set_auto_image)
         preferences.set_default("Bell", "VisibleAudible")
+        preferences.set_default("ImageWindow", "Docked")
+        preferences.set_default("RecentFiles", [])
 
     # Lay out menus
-    def init_menus(self, menubar):
+    def init_menus(self):
         """Create all the menus."""
-        self.init_file_menu(menubar)
-        self.init_edit_menu(menubar)
-        self.init_view_menu(menubar)
-        self.init_help_menu(menubar)
-        self.init_os_menu(menubar)
+        self.init_file_menu()
+        self.init_edit_menu()
+        self.init_view_menu()
+        self.init_help_menu()
+        self.init_os_menu()
 
         if is_mac():
             root().createcommand(
@@ -159,20 +196,38 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             root().createcommand("tk::mac::OpenDocument", self.open_document)
             root().createcommand("tk::mac::Quit", self.quit_program)
 
-    def init_file_menu(self, parent):
-        """Create the File menu."""
-        menu_file = Menu(parent, "~File")
-        menu_file.add_button("~Open...", self.file.open_file, "Cmd/Ctrl+O")
-        menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
-        menu_file.add_button("Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S")
-        menu_file.add_separator()
-        menu_file.add_button("Spawn ~Process", self.spawn_process)
-        menu_file.add_separator()
-        menu_file.add_button("~Quit", self.quit_program, "Cmd+Q" if is_mac() else "")
+    def init_file_menu(self):
+        """(Re-)create the File menu."""
+        try:
+            self.menu_file.delete(0, "end")
+        except AttributeError:
+            self.menu_file = Menu(menubar(), "~File")
+        self.menu_file.add_button("~Open...", self.file.open_file, "Cmd/Ctrl+O")
+        self.init_file_recent_menu(self.menu_file)
+        self.menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
+        self.menu_file.add_button(
+            "Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S"
+        )
+        self.menu_file.add_button(
+            "~Close", self.close_file, "Cmd+W" if is_mac() else ""
+        )
+        self.menu_file.add_separator()
+        self.menu_file.add_button("Spawn ~Process", self.spawn_process)
+        if not is_mac():
+            self.menu_file.add_separator()
+            self.menu_file.add_button("E~xit", self.quit_program, "")
 
-    def init_edit_menu(self, parent):
+    def init_file_recent_menu(self, parent):
+        """Create the Recent Documents menu."""
+        recent_menu = Menu(parent, "Recent Doc~uments")
+        for count, file in enumerate(reversed(preferences["RecentFiles"]), start=1):
+            recent_menu.add_button(
+                f"~{count}: {file}", lambda fn=file: self.file.load_file(fn)
+            )
+
+    def init_edit_menu(self):
         """Create the Edit menu."""
-        menu_edit = Menu(parent, "~Edit")
+        menu_edit = Menu(menubar(), "~Edit")
         menu_edit.add_button("~Undo", "<<Undo>>", "Cmd/Ctrl+Z")
         menu_edit.add_button(
             "~Redo", "<<Redo>>", "Cmd+Shift+Z" if is_mac() else "Ctrl+Y"
@@ -184,31 +239,31 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_edit.add_separator()
         menu_edit.add_button("Pre~ferences...", lambda: PreferencesDialog(root()))
 
-    def init_view_menu(self, parent):
+    def init_view_menu(self):
         """Create the View menu."""
-        menu_view = Menu(parent, "~View")
-        menu_view.add_button("~Dock", self.mainwindow.dock_image, "Cmd/Ctrl+D")
-        menu_view.add_button("~Float", self.mainwindow.float_image, "Cmd/Ctrl+F")
-        menu_view.add_button("~Load Image", self.load_image)
+        menu_view = Menu(menubar(), "~View")
+        menu_view.add_button("~Dock", self.mainwindow.dock_image)
+        menu_view.add_button("~Float", self.mainwindow.float_image)
+        menu_view.add_button("~Load Image", self.mainwindow.load_image)
 
-    def init_help_menu(self, parent):
+    def init_help_menu(self):
         """Create the Help menu."""
-        menu_help = Menu(parent, "~Help")
+        menu_help = Menu(menubar(), "~Help")
         menu_help.add_button("Guiguts ~Manual", self.show_help_manual)
         menu_help.add_button("About ~Guiguts", self.help_about)
 
-    def init_os_menu(self, parent):
+    def init_os_menu(self):
         """Create the OS-specific menu.
 
         Currently only does anything on Macs
         """
         if is_mac():
             # Apple menu
-            menu_app = Menu(parent, "", name="apple")
+            menu_app = Menu(menubar(), "", name="apple")
             menu_app.add_button("About ~Guiguts", self.help_about)
             menu_app.add_separator()
             # Window menu
-            Menu(parent, "Window", name="window")
+            Menu(menubar(), "Window", name="window")
         else:
             menu_app = None
 
@@ -234,14 +289,23 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add("prev img", text="<", width=1)
         statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
 
-        statusbar.add("see img", text="See Img", width=7)
-        statusbar.add_binding("see img", "<ButtonRelease-1>", self.load_image)
+        statusbar.add("see img", text="See Img", width=9)
+        statusbar.add_binding(
+            "see img",
+            "<ButtonRelease-1>",
+            lambda: self.mainwindow.load_image(self.file.get_current_image_path()),
+        )
+        statusbar.add_binding(
+            "see img", "<ButtonRelease-3>", self.file.choose_image_dir
+        )
+        statusbar.add_binding("see img", "<Double-Button-1>", self.toggle_auto_image)
 
         statusbar.add("next img", text=">", width=1)
         statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
 
 
 def main():
+    """Main application function."""
     Guiguts().run()
 
 

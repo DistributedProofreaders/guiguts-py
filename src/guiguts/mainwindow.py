@@ -119,6 +119,18 @@ class MainWindow:
                 pass  # OK - image wasn't being managed by paned_window
         preferences["ImageWindow"] = "Docked"
 
+    def load_image(self, filename):
+        """Load the image for the given page.
+
+        Args:
+            filename: Path to image file.
+        """
+        mainimage().load_image(filename)
+        if preferences["ImageWindow"] == "Docked":
+            self.dock_image()
+        else:
+            self.float_image()
+
 
 class Menu(tk.Menu):
     """Extend ``tk.Menu`` to make adding buttons with accelerators simpler."""
@@ -137,7 +149,7 @@ class Menu(tk.Menu):
         command_args = {"menu": self}
         if label:
             (label_tilde, label_txt) = _process_label(label)
-            command_args["label"] = (label_txt,)
+            command_args["label"] = label_txt
             if label_tilde >= 0:
                 command_args["underline"] = label_tilde
         # Only needs cascade if a child of menu/menubar, not if a context popup menu
@@ -329,6 +341,11 @@ class MainText(tk.Text):
             self.insert(tk.END, fh.read())
             self.set_modified(False)
 
+    def do_close(self):
+        """Close current file and clear widget."""
+        self.delete("1.0", tk.END)
+        self.set_modified(False)
+
     def init_context_menu(self):
         """Create a context menu for the main text widget"""
 
@@ -419,6 +436,7 @@ class MainImage(tk.Frame):
         self.image = None
         self.imageid = None
         self.container = None
+        self.filename = None
 
     def scroll_y(self, *args, **kwargs):
         """Scroll canvas vertically and redraw the image"""
@@ -548,7 +566,11 @@ class MainImage(tk.Frame):
         Args:
             filename: Optional name of image file. If none given, clear image.
         """
-        if os.path.isfile(filename):
+        if filename == self.filename:
+            return
+
+        if filename and os.path.isfile(filename):
+            self.filename = filename
             self.image = Image.open(filename)
             self.width, self.height = self.image.size
             if self.container:
@@ -562,6 +584,7 @@ class MainImage(tk.Frame):
             self.show_image()
         else:
             self.image = None
+            self.filename = None
 
     def is_image_loaded(self):
         """Return if an image is currently loaded"""
