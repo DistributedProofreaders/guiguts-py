@@ -93,12 +93,20 @@ class File:
             filename: Name of file to be loaded. Bin filename has ".bin" appended.
         """
         self.reset()
-        maintext().do_open(filename)
+        try:
+            maintext().do_open(filename)
+        except FileNotFoundError:
+            messagebox.showerror(
+                title="File Not Found", message=f"Unable to open {filename}"
+            )
+            self.remove_recent_file(filename)
+            self.filename = ""
+            return
         maintext().set_insert_index(1.0, see=True)
         self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
-        self.store_recent_files(filename)
+        self.store_recent_file(filename)
         # Load complete, so set filename (including side effects)
         self.filename = filename
 
@@ -204,18 +212,24 @@ class File:
         bin_dict[BINFILE_KEY_IMAGEDIR] = self.image_dir
         return bin_dict
 
-    def store_recent_files(self, filename):
+    def store_recent_file(self, filename):
         """Store given filename in list of recent files.
 
         Args:
             filename: Name of new file to add to list.
         """
-        recent_files = preferences["RecentFiles"]
-        if filename in recent_files:
-            recent_files.remove(filename)
-        recent_files.append(filename)
-        del recent_files[0:-NUM_RECENT_FILES]
-        preferences["RecentFiles"] = recent_files
+        self.remove_recent_file(filename)
+        preferences["RecentFiles"].insert(0, filename)
+        del preferences["RecentFiles"][NUM_RECENT_FILES:]
+
+    def remove_recent_file(self, filename):
+        """Remove given filename from list of recent files.
+
+        Args:
+            filename: Name of new file to add to list.
+        """
+        if filename in preferences["RecentFiles"]:
+            preferences["RecentFiles"].remove(filename)
 
     def dict_to_page_marks(self, page_marks_dict):
         """Set page marks from keys/values in dictionary.

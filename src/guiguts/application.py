@@ -2,6 +2,7 @@
 """Guiguts - an application to support creation of ebooks for PG"""
 
 
+import argparse
 import re
 import subprocess
 from tkinter import messagebox
@@ -12,7 +13,7 @@ if __name__ == "__main__" and __package__ is None:
     __package__ == "guiguts"
 
 
-from guiguts.file import File
+from guiguts.file import File, NUM_RECENT_FILES
 from guiguts.mainwindow import (
     root,
     MainWindow,
@@ -34,6 +35,8 @@ class Guiguts:
 
         Creates windows and sets default preferences."""
 
+        self.parse_args()
+
         self.set_preferences_defaults()
 
         self.file = File(self.filename_changed)
@@ -48,7 +51,40 @@ class Guiguts:
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
 
+        # Known tkinter issue - must call this before any dialogs can get created,
+        # or focus will not return to maintext on Windows
+        root().update_idletasks()
+
         preferences.run_callbacks()
+
+        self.load_file_if_given()
+
+    def parse_args(self):
+        """Parse command line args"""
+        parser = argparse.ArgumentParser(
+            prog="guiguts", description="Guiguts is an ebook creation tool"
+        )
+        parser.add_argument(
+            "filename", nargs="?", help="Optional name of file to be loaded"
+        )
+        parser.add_argument(
+            "-r",
+            "--recent",
+            type=int,
+            choices=range(1, NUM_RECENT_FILES + 1),
+            help="Number of 'Recent File' to be loaded: 1 is most recent",
+        )
+        self.args = parser.parse_args()
+
+    def load_file_if_given(self):
+        """If filename, or recent number, given on command line
+        load the relevant file."""
+
+        if self.args.filename:
+            self.file.load_file(self.args.filename)
+        elif self.args.recent:
+            index = self.args.recent - 1
+            self.file.load_file(preferences["RecentFiles"][index])
 
     @property
     def auto_image(self):
@@ -220,7 +256,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_file_recent_menu(self, parent):
         """Create the Recent Documents menu."""
         recent_menu = Menu(parent, "Recent Doc~uments")
-        for count, file in enumerate(reversed(preferences["RecentFiles"]), start=1):
+        for count, file in enumerate(preferences["RecentFiles"], start=1):
             recent_menu.add_button(
                 f"~{count}: {file}", lambda fn=file: self.file.load_file(fn)
             )
