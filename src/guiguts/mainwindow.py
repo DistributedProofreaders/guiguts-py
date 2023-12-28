@@ -130,6 +130,10 @@ class MainWindow:
         else:
             self.float_image()
 
+    def clear_image(self):
+        """Clear the image currently being shown."""
+        mainimage().load_image("")
+
 
 class Menu(tk.Menu):
     """Extend ``tk.Menu`` to make adding buttons with accelerators simpler."""
