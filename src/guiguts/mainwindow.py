@@ -32,6 +32,16 @@ class Root(tk.Tk):
         self.option_add("*tearOff", False)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
+        self.after_idle(self.grab_focus)
+
+    def grab_focus(self):
+        """Arcane calls to force window manager to put root window
+        to the front and make it active. Then set focus to the text window.
+        """
+        self.lift()
+        self.call("wm", "iconify", ".")
+        self.call("wm", "deiconify", ".")
+        maintext().focus_set()
 
     def report_callback_exception(self, exc, val, tb):
         """Override tkinter exception reporting rather just
@@ -621,7 +631,7 @@ class StatusBar(ttk.Frame):
               the string returned by ``update()``. If argument not given,
               application is responsible for updating, using ``set(key)``.
         """
-        self.fields[key] = ttk.Button(self, takefocus=0, **kwargs)
+        self.fields[key] = ttk.Button(self, **kwargs)
         self.callbacks[key] = update
         self.fields[key].grid(column=len(self.fields), row=0)
 
