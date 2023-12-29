@@ -68,19 +68,25 @@ class File:
         self.image_dir = ""
         self.remove_page_marks()
 
-    def open_file(self, *args):
+    def open_file(self, filename=""):
         """Open and load a text file.
 
+        Args:
+            Optional filename - if not given, ask user to select file
         Returns:
             Name of file opened - empty string if cancelled.
         """
-        fn = ""
         if self.check_save():
-            if fn := filedialog.askopenfilename(
-                filetypes=(("Text files", "*.txt *.html *.htm"), ("All files", "*.*"))
-            ):
-                self.load_file(fn)
-        return fn
+            if not filename:
+                filename = filedialog.askopenfilename(
+                    filetypes=(
+                        ("Text files", "*.txt *.html *.htm"),
+                        ("All files", "*.*"),
+                    )
+                )
+            if filename:
+                self.load_file(filename)
+        return filename
 
     def close_file(self):
         """Close current file, leaving an empty file."""
