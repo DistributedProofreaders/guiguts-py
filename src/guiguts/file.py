@@ -8,7 +8,9 @@ from tkinter import filedialog, messagebox, simpledialog
 
 from guiguts.mainwindow import maintext, sound_bell
 from guiguts.preferences import preferences
+from guiguts.utilities import is_windows
 
+FOLDER_DIR = "folder" if is_windows() else "directory"
 NUM_RECENT_FILES = 9
 PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".json"
@@ -66,19 +68,25 @@ class File:
         self.image_dir = ""
         self.remove_page_marks()
 
-    def open_file(self, *args):
+    def open_file(self, filename=""):
         """Open and load a text file.
 
+        Args:
+            Optional filename - if not given, ask user to select file
         Returns:
             Name of file opened - empty string if cancelled.
         """
-        fn = ""
         if self.check_save():
-            if fn := filedialog.askopenfilename(
-                filetypes=(("Text files", "*.txt *.html *.htm"), ("All files", "*.*"))
-            ):
-                self.load_file(fn)
-        return fn
+            if not filename:
+                filename = filedialog.askopenfilename(
+                    filetypes=(
+                        ("Text files", "*.txt *.html *.htm"),
+                        ("All files", "*.*"),
+                    )
+                )
+            if filename:
+                self.load_file(filename)
+        return filename
 
     def close_file(self):
         """Close current file, leaving an empty file."""
@@ -360,20 +368,18 @@ class File:
             if unable to get image file name.
         """
         basename = self.get_current_image_name()
-        if basename:
+        if self.image_dir and basename:
             basename += ".png"
             path = os.path.join(self.image_dir, basename)
-            if not os.path.exists(path):
-                self.choose_image_dir()
-                path = os.path.join(self.image_dir, basename)
             if os.path.exists(path):
                 return path
         return ""
 
     def choose_image_dir(self):
         """Allow user to select directory containing png image files"""
-        self.image_dir = filedialog.askdirectory(mustexist=True)
-        return self.image_dir
+        self.image_dir = filedialog.askdirectory(
+            mustexist=True, title="Select " + FOLDER_DIR + " containing scans"
+        )
 
     def goto_line(self):
         """Go to the line number the user enters"""
