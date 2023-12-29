@@ -44,7 +44,7 @@ brew install poetry
 ## Common Development Setup
 
 1. Install Python & Poetry (above)
-2. Clone the [GG2 Github repo](https://github.com/windymilla/Guiguts-2.0-tkinter)
+2. Clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
    or a fork thereof.
 3. In the cloned GG2 directory, create a virtual environment using the version of
    python you installed above.
@@ -63,8 +63,8 @@ brew install poetry
    poetry install
    ```
 
-You can access the virtual environment shell with `poetry shell` and run
-GG2 directly with `poetry run guiguts`.
+You can run then GG2 directly with `poetry run guiguts`. For advanced users, 
+you can access the virtual environment shell with `poetry shell`.
 
 ## Code style
 Guiguts 2 uses [flake8](https://pypi.org/project/flake8) for static code analysis

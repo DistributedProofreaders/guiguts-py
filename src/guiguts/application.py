@@ -2,6 +2,7 @@
 """Guiguts - an application to support creation of ebooks for PG"""
 
 
+import os.path
 import re
 import subprocess
 from tkinter import messagebox
@@ -61,6 +62,7 @@ class Guiguts:
         preferences["AutoImage"] = value
         statusbar().set("see img", "Auto Img" if value else "See Img")
         if value:
+            self.image_dir_check()
             self.auto_image_check()
 
     def auto_image_check(self):
@@ -73,6 +75,18 @@ class Guiguts:
         """Toggle the auto image flag."""
         self.auto_image = not self.auto_image
 
+    def see_image(self):
+        """Show the image corresponding to current location."""
+        self.image_dir_check()
+        self.mainwindow.load_image(self.file.get_current_image_path())
+
+    def image_dir_check(self):
+        """Check if image dir is set up correctly."""
+        if self.file.filename and not (
+            self.file.image_dir and os.path.exists(self.file.image_dir)
+        ):
+            self.file.choose_image_dir()
+
     def run(self):
         """Run the app."""
         root().mainloop()
@@ -81,6 +95,9 @@ class Guiguts:
         """Handle side effects needed when filename changes."""
         self.init_file_menu()  # Recreate file menu to reflect recent files
         self.update_title()
+        if self.auto_image:
+            self.image_dir_check()
+        maintext().after_idle(maintext().focus_set)
 
     def update_title(self):
         """Update the window title to reflect current status."""
@@ -136,12 +153,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             filename: Optional filename - prompt user if none given.
         """
         if self.file.open_file(filename):
-            self.mainwindow.load_image("")
+            self.mainwindow.clear_image()
 
     def close_file(self):
         """Close currently loaded file and associated image."""
         self.file.close_file()
-        self.mainwindow.load_image("")
+        self.mainwindow.clear_image()
 
     def load_current_image(self):
         """Load image corresponding to current cursor position"""
@@ -223,10 +240,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         self.menu_file.add_separator()
         self.menu_file.add_button("Spawn ~Process", self.spawn_process)
-        self.menu_file.add_separator()
-        self.menu_file.add_button(
-            "~Quit", self.quit_program, "Cmd+Q" if is_mac() else ""
-        )
+        if not is_mac():
+            self.menu_file.add_separator()
+            self.menu_file.add_button("E~xit", self.quit_program, "")
 
     def init_file_recent_menu(self, parent):
         """Create the Recent Documents menu."""
@@ -255,7 +271,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view = Menu(menubar(), "~View")
         menu_view.add_button("~Dock", self.mainwindow.dock_image)
         menu_view.add_button("~Float", self.mainwindow.float_image)
-        menu_view.add_button("~Load Image", self.load_current_image)
+        menu_view.add_button("~See Image", self.see_image)
 
     def init_help_menu(self):
         """Create the Help menu."""
@@ -301,7 +317,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
 
         statusbar.add("see img", text="See Img", width=9)
-        statusbar.add_binding("see img", "<ButtonRelease-1>", self.load_current_image)
+        statusbar.add_binding(
+            "see img",
+            "<ButtonRelease-1>",
+            self.see_image,
+        )
         statusbar.add_binding(
             "see img", "<ButtonRelease-3>", self.file.choose_image_dir
         )
