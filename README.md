@@ -65,7 +65,7 @@ brew install poetry
 1. Install Python & Poetry (above)
 2. Clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
    or a fork thereof.
-3. In the cloned GG2 directory, create a virtual environment using the version(s) of
+3. In the cloned GG2 directory, create a virtual environment using a version of
    python you installed above.
    * Windows - single python version (in git bash shell)
      ```bash
