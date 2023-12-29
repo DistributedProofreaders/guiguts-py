@@ -60,6 +60,10 @@ class Guiguts:
 
         self.load_file_if_given()
 
+        root().protocol(
+            "WM_DELETE_WINDOW", lambda: self.file.check_save() and root().destroy()
+        )
+
     def parse_args(self):
         """Parse command line args"""
         parser = argparse.ArgumentParser(
