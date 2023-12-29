@@ -8,7 +8,7 @@ import sys
 import traceback
 import tkinter as tk
 from tkinter import ttk
-from tkinter.messagebox import showerror
+from tkinter import messagebox
 
 from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, is_x11
@@ -51,7 +51,7 @@ class Root(tk.Tk):
         """
         err = "\n".join(traceback.format_exception(exc, val, tb))
         print(str(err), file=sys.stderr)
-        showerror("Caught Tkinter Exception", message=err)
+        messagebox.showerror("Caught Tkinter Exception", message=err)
 
 
 class MainWindow:
