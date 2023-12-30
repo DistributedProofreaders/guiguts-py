@@ -39,6 +39,10 @@ jobs:
     - name: Report undocumented code with sphinx
       run: |
         poetry run python -m sphinx -M coverage docs docs/build -W
+    - name: Static type check with mypy
+      run: |
+        poetry run mypy -p guiguts
+        poetry run mypy tests
     - name: Test with pytest
       run: |
         poetry run pytest
