@@ -92,6 +92,7 @@ you can start a virtual environment shell with `poetry shell`, then run
 GG2 with `guiguts`.
 
 ## Code style
+
 Guiguts 2 uses [flake8](https://pypi.org/project/flake8) for static code analysis
 and [black](https://pypi.org/project/black) for consistent styling. Both use
 default settings, with the exception of maximum line length checking which is
@@ -101,6 +102,7 @@ with black.
 Both tools will be installed via `poetry` as described above.
 
 `poetry run flake8 .` will check all `src` & `tests` python files.
+
 `poetry run black .` will reformat all `src` & `tests` python files where necessary.
 
 This project uses Github Actions to ensure neither of the above tools reports any
@@ -111,21 +113,49 @@ are used. To summarize, class names use CapWords; constants are ALL_UPPERCASE;
 most other variables, functions and methods are all_lowercase.
 
 ## Documentation
+
 [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
 are used to document modules, classes, functions, etc.
 
 [Sphinx](https://www.sphinx-doc.org/en/master/index.html) will be installed by
 poetry (above) and can be used to create HTML documentation by running the following command:
-`poetry run python -m sphinx -b html docs docs/build`
+```bash
+poetry run python -m sphinx -b html docs docs/build`
+```
 
 HTML docs will appear in the `docs/build` directory.
 
 Sphinx can also be used to check coverage, i.e. that docstrings have been used everywhere
 appropriate:
-`poetry run python -m sphinx -M coverage docs docs/build`
+```bash
+poetry run python -m sphinx -M coverage docs docs/build`
+```
 
 This project uses Github Actions to ensure running sphinx does not report an error, and
 that the coverage check does not report any undocumented items.
+
+## Type checking
+
+[Mypy](https://mypy.readthedocs.io/en/stable/index.html) will be installed by
+poetry (above) and is used for static type checking. Where developers have added 
+[type hints](https://peps.python.org/pep-0484/), mypy will issue warnings when those
+types are used incorrectly.
+
+It is not intended that every variable should have its type annotated, but developers
+are encouraged to add type hints to function definitions, e.g.
+```python
+def myfunc(num: int) -> str:
+    ...
+```
+Note that functions without type annotation will not be type checked. The
+[type hints cheat sheet](https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html)
+has a summary of how to use type annotations for various common situations.
+
+To type check the Guiguts package and the test routines:
+```bash
+poetry run mypy -p guiguts
+poetry run mypy tests
+```
 
 ## Testing
 
