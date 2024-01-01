@@ -2,6 +2,7 @@
 
 import json
 import os
+from typing import Any, Callable
 
 from guiguts.utilities import is_x11, _called_from_test
 
@@ -23,6 +24,8 @@ class Preferences:
     than just returning None. Would probably need explicit call to load, rather
     than loading on instantiation. Also, may be less forward/backward compatible
     when new preferences are added in future releases.
+    Consider whether get/set should be typed, to trap error if preference is
+    expected to be a string, but is an int, for example.
 
     Attributes:
         dict: dictionary of values for prefs.
@@ -33,11 +36,11 @@ class Preferences:
           each time pref is changed.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize by loading from JSON file."""
-        self.dict = {}
-        self.defaults = {}
-        self.callbacks = {}
+        self.dict: dict[str, Any] = {}
+        self.defaults: dict[str, Any] = {}
+        self.callbacks: dict[str, Callable[[Any], None]] = {}
         if is_x11():
             self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
         else:
@@ -54,7 +57,7 @@ class Preferences:
         self._remove_test_prefs_file()
         self.load()
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         """Get preference value using key.
 
         Provides `value = preferences[key]`
@@ -68,7 +71,7 @@ class Preferences:
         """
         return self.dict.get(key, self.defaults.get(key))
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any) -> None:
         """Set preference value and save to file.
 
         Provides `preferences[key] = value`
@@ -80,11 +83,11 @@ class Preferences:
         self.dict[key] = value
         self.save()
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Remove any test prefs file when finished."""
         self._remove_test_prefs_file()
 
-    def set_default(self, key, default):
+    def set_default(self, key: str, default: Any) -> None:
         """Set default preference value.
 
         Args:
@@ -93,7 +96,7 @@ class Preferences:
         """
         self.defaults[key] = default
 
-    def get_default(self, key):
+    def get_default(self, key: str) -> Any:
         """Get default preference value.
 
         Args:
@@ -104,7 +107,7 @@ class Preferences:
         """
         return self.defaults.get(key)
 
-    def set_callback(self, key, callback):
+    def set_callback(self, key: str, callback: Callable[[Any], None]) -> None:
         """Add a callback for preference. Callback will be run when all
           prefs are loaded and UI is ready.
 
@@ -115,36 +118,36 @@ class Preferences:
         """
         self.callbacks[key] = callback
 
-    def keys(self):
+    def keys(self) -> list[str]:
         """Return list of preferences keys.
 
         Also includes preferences that have not been set, so only exist
         as defaults."""
         return list(set(list(self.dict.keys()) + list(self.defaults.keys())))
 
-    def save(self):
+    def save(self) -> None:
         """Save preferences dictionary to JSON file."""
         if not os.path.isdir(self.prefsdir):
             os.mkdir(self.prefsdir)
         with open(self.prefsfile, "w") as fp:
             json.dump(self.dict, fp, indent=2)
 
-    def load(self):
+    def load(self) -> None:
         """Load preferences dictionary from JSON file."""
         if os.path.isfile(self.prefsfile):
             with open(self.prefsfile, "r") as fp:
                 self.dict = json.load(fp)
 
-    def run_callbacks(self):
+    def run_callbacks(self) -> None:
         """Run all defined callbacks, passing value as argument.
 
         Should be called after prefs are loaded and UI is ready"""
         for key in self.callbacks.keys():
             callback = self.callbacks[key]
-            if callback:
+            if callback is not None:
                 callback(self[key])
 
-    def _remove_test_prefs_file(self):
+    def _remove_test_prefs_file(self) -> None:
         """Remove temporary JSON file used for prefs during testing."""
         if _called_from_test and os.path.exists(self.prefsfile):
             os.remove(self.prefsfile)

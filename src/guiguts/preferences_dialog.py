@@ -14,13 +14,13 @@ class PreferencesDialog(simpledialog.Dialog):
         entries: Dictionary of ``Entry`` widgets showing preference values.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent: tk.Tk) -> None:
         """Initialize ``labels`` and ``entries`` to empty dictionaries."""
-        self.labels = {}
-        self.entries = {}
+        self.labels: dict[str, ttk.Label] = {}
+        self.entries: dict[str, ttk.Entry] = {}
         super().__init__(parent, "Set Preferences")
 
-    def body(self, frame):
+    def body(self, frame: tk.Frame) -> tk.Frame:
         """Override default to construct widgets needed to show all
         preferences keys/values.
 
@@ -39,7 +39,7 @@ class PreferencesDialog(simpledialog.Dialog):
             self.entries[key].grid(row=row, column=1)
         return frame
 
-    def buttonbox(self):
+    def buttonbox(self) -> None:
         """Override default to set up OK and Cancel buttons."""
         frame = ttk.Frame(self, padding=5)
         frame.pack()
@@ -54,7 +54,7 @@ class PreferencesDialog(simpledialog.Dialog):
         self.bind("<Return>", lambda event: self.ok_pressed())
         self.bind("<Escape>", lambda event: self.cancel_pressed())
 
-    def ok_pressed(self):
+    def ok_pressed(self) -> None:
         """Update all preferences from the corresponding ``Entry``` widget.
 
         Does not cope with non-string values at the moment, since get()
@@ -65,6 +65,6 @@ class PreferencesDialog(simpledialog.Dialog):
         preferences.save()
         self.destroy()
 
-    def cancel_pressed(self):
+    def cancel_pressed(self) -> None:
         """Destroy dialog."""
         self.destroy()

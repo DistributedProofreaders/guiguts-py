@@ -6,20 +6,20 @@ from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, is_windows, is_x11, _is_system
 
 
-def test_which_os():
+def test_which_os() -> None:
     """Test the OS checking functions"""
     assert is_mac() or is_windows() or is_x11()
     assert not _is_system("Android")
 
 
-def test_file():
+def test_file() -> None:
     """Test the File class"""
     ff = File(lambda: None)
     ff.filename = "dummy.txt"
     assert ff.filename == "dummy.txt"
 
 
-def test_preferences():
+def test_preferences() -> None:
     """Test the Preferences class"""
     assert preferences.get_default("pkey1") is None
     preferences.set_default("pkey1", "pdefault1")
@@ -37,7 +37,7 @@ def test_preferences():
     assert "pkey2" in keys
 
 
-def test_mainwindow():
+def test_mainwindow() -> None:
     """Test mainwindow functions"""
     (tilde, text) = _process_label("~Save...")
     assert tilde == 0
