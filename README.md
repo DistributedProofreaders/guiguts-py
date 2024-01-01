@@ -8,9 +8,28 @@ Minor alterations probably needed for other platforms
 
 ### Install Python
 
-1. Download 3.10 from [python.org](https://www.python.org/).
-2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python310`
+#### Single (system-wide) version
+
+1. Download 3.11 from [python.org](https://www.python.org/).
+2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python311`
 3. Ensure this dir is in PATH variable
+
+#### Using pyenv to install/use multiple Python versions
+
+[pyenv](https://github.com/pyenv/pyenv/blob/master/README.md) lets you easily switch between
+multiple versions of Python, if that would be useful for development/testing.
+
+1. Clone the pyenv-win repo: `git clone https://github.com/pyenv-win/pyenv-win.git "$HOME\.pyenv"`
+2. Add environment variables (can execute these in a Powershell window):
+    ```powershell
+    [System.Environment]::SetEnvironmentVariable('PYENV',$env:USERPROFILE + "\.pyenv\pyenv-win\","User")
+    [System.Environment]::SetEnvironmentVariable('PYENV_ROOT',$env:USERPROFILE + "\.pyenv\pyenv-win\","User")
+    [System.Environment]::SetEnvironmentVariable('PYENV_HOME',$env:USERPROFILE + "\.pyenv\pyenv-win\","User")
+    [System.Environment]::SetEnvironmentVariable('path', $env:USERPROFILE + "\.pyenv\pyenv-win\bin;" + $env:USERPROFILE + "\.pyenv\pyenv-win\shims;" + [System.Environment]::GetEnvironmentVariable('path', "User"),"User")
+    ```
+3. In a new shell, install version(s) of Python, e.g. `pyenv install 3.11.7`,
+`pyenv install 3.12.0`, etc.
+4. To set python version, use `pyenv global 3.11.7`, for example.
 
 ### Install Poetry
 
@@ -30,7 +49,7 @@ Install python and python-tk using Homebrew. Note that we install and use a
 specific version in the commands below for consistency with other developers.
 
 ```bash
-brew install python@3.10 python-tk@3.10
+brew install python@3.11 python-tk@3.11
 ```
 
 ### Install Poetry
@@ -46,25 +65,31 @@ brew install poetry
 1. Install Python & Poetry (above)
 2. Clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
    or a fork thereof.
-3. In the cloned GG2 directory, create a virtual environment using the version of
+3. In the cloned GG2 directory, create a virtual environment using a version of
    python you installed above.
-   * Windows (in git bash shell)
+   * Windows - single python version (in git bash shell)
      ```bash
-     poetry env use ~/AppData/Local/Programs/Python/Python310/python.exe
+     poetry env use ~/AppData/Local/Programs/Python/Python311/python.exe
+     ```
+   * Windows - pyenv (in git bash shell)
+     ```bash
+     poetry config virtualenvs.prefer-active-python true
      ```
    * macOS
      ```bash
-     poetry env use $(brew --prefix)/bin/python3.10
+     poetry env use $(brew --prefix)/bin/python3.11
      ```
 4. Also from the GG2 directory, install the GG2 python dependencies in the
    virtual environment. This will install GG2 as an editable package that you
-   can develop and run directly.
+   can develop and run directly. If you use pyenv to switch to a new
+   version of python, you will need to re-run this command.
    ```bash
    poetry install
    ```
 
-You can run then GG2 directly with `poetry run guiguts`. For advanced users, 
-you can access the virtual environment shell with `poetry shell`.
+You can then run GG2 directly with `poetry run guiguts`. Alternatively, 
+you can start a virtual environment shell with `poetry shell`, then run
+GG2 with `guiguts`.
 
 ## Code style
 Guiguts 2 uses [flake8](https://pypi.org/project/flake8) for static code analysis
@@ -89,19 +114,27 @@ most other variables, functions and methods are all_lowercase.
 [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
 are used to document modules, classes, functions, etc.
 
-`Sphinx` can be used to create HTML documentation by running the following command:
+[Sphinx](https://www.sphinx-doc.org/en/master/index.html) will be installed by
+poetry (above) and can be used to create HTML documentation by running the following command:
 `poetry run python -m sphinx -b html docs docs/build`
 
 HTML docs will appear in the `docs/build` directory.
 
-This project uses Github Actions to ensure running `sphinx` does not report an error.
+Sphinx can also be used to check coverage, i.e. that docstrings have been used everywhere
+appropriate:
+`poetry run python -m sphinx -M coverage docs docs/build`
+
+This project uses Github Actions to ensure running sphinx does not report an error, and
+that the coverage check does not report any undocumented items.
 
 ## Testing
 
-`Pytest` is used for testing.
+[Pytest](https://docs.pytest.org) will be installed by poetry (above) and is used for testing.
 
 All tests can be run using the following command:
 `poetry run pytest`
+
+Developers are encouraged to add tests (as appropriate) when new code is added to the project.
 
 This project uses Github Actions to ensure running `pytest` does not report an error.
 

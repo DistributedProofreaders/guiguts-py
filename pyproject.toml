@@ -7,11 +7,11 @@ readme = "README.md"
 packages = [{include = "guiguts", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 Pillow = "^10.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.11"
+black = "^23.12"
 flake8 = "^6.1"
 Sphinx = "^7.2"
 pytest = "^7.4"
