@@ -5,10 +5,12 @@ import os.path
 from PIL import Image, ImageTk
 import re
 import sys
+import time
 import traceback
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
+from types import TracebackType
+from typing import Any, Callable, Optional
 
 from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, is_x11
@@ -26,7 +28,7 @@ MIN_PANE_WIDTH = 20
 class Root(tk.Tk):
     """Inherits from Tk root window"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.geometry("800x400")
         self.option_add("*tearOff", False)
@@ -34,7 +36,7 @@ class Root(tk.Tk):
         self.columnconfigure(0, weight=1)
         self.after_idle(self.grab_focus)
 
-    def grab_focus(self):
+    def grab_focus(self) -> None:
         """Arcane calls to force window manager to put root window
         to the front and make it active. Then set focus to the text window.
         """
@@ -43,7 +45,9 @@ class Root(tk.Tk):
         self.call("wm", "deiconify", ".")
         maintext().focus_set()
 
-    def report_callback_exception(self, exc, val, tb):
+    def report_callback_exception(
+        self, exc: type[BaseException], val: BaseException, tb: TracebackType | None
+    ) -> None:
         """Override tkinter exception reporting rather just
         writing it to stderr.
 
@@ -54,102 +58,10 @@ class Root(tk.Tk):
         messagebox.showerror("Caught Tkinter Exception", message=err)
 
 
-class MainWindow:
-    """Handles the construction of the main window with its basic widgets
-
-    These class variables are set in ``__init__`` to store the single instance
-    of these main window items. They are exposed externally via convenience
-    functions with the same names, e.g. ``root()`` returns ``MainWindow.root``
-    """
-
-    root = None
-    menubar = None
-    maintext = None
-    mainimage = None
-    statusbar = None
-
-    def __init__(self):
-        MainWindow.root = Root()
-        MainWindow.menubar = tk.Menu()
-        root()["menu"] = menubar()
-
-        MainWindow.statusbar = StatusBar(root())
-        statusbar().grid(
-            column=STATUSBAR_COL,
-            row=STATUSBAR_ROW,
-            sticky="NSEW",
-        )
-
-        ttk.Separator(root()).grid(
-            column=SEPARATOR_COL,
-            row=SEPARATOR_ROW,
-            sticky="NSEW",
-        )
-
-        self.paned_window = tk.PanedWindow(
-            root(), orient=tk.HORIZONTAL, sashwidth=4, sashrelief=tk.GROOVE
-        )
-        self.paned_window.grid(
-            column=TEXTIMAGE_WINDOW_COL, row=TEXTIMAGE_WINDOW_ROW, sticky="NSEW"
-        )
-
-        MainWindow.maintext = MainText(
-            self.paned_window,
-            undo=True,
-            wrap="none",
-            autoseparators=True,
-            maxundo=-1,
-            highlightthickness=0,
-        )
-        self.paned_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
-        maintext().init_context_menu()
-
-        MainWindow.mainimage = MainImage(self.paned_window)
-
-    def float_image(self, *args):
-        """Float the image into a separate window"""
-        mainimage().grid_remove()
-        if mainimage().is_image_loaded():
-            root().wm_manage(mainimage())
-            mainimage().lift()
-            tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.dock_image)
-        else:
-            root().wm_forget(mainimage())
-        preferences["ImageWindow"] = "Floated"
-
-    def dock_image(self, *args):
-        """Dock the image back into the main window"""
-        root().wm_forget(mainimage())
-        if mainimage().is_image_loaded():
-            self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
-        else:
-            try:
-                self.paned_window.forget(mainimage())
-            except tk.TclError:
-                pass  # OK - image wasn't being managed by paned_window
-        preferences["ImageWindow"] = "Docked"
-
-    def load_image(self, filename):
-        """Load the image for the given page.
-
-        Args:
-            filename: Path to image file.
-        """
-        mainimage().load_image(filename)
-        if preferences["ImageWindow"] == "Docked":
-            self.dock_image()
-        else:
-            self.float_image()
-
-    def clear_image(self):
-        """Clear the image currently being shown."""
-        mainimage().load_image("")
-
-
 class Menu(tk.Menu):
     """Extend ``tk.Menu`` to make adding buttons with accelerators simpler."""
 
-    def __init__(self, parent, label, **kwargs):
+    def __init__(self, parent: tk.Widget, label: str, **kwargs: Any) -> None:
         """Initialize menu and add to parent
 
         Args:
@@ -160,7 +72,7 @@ class Menu(tk.Menu):
         """
 
         super().__init__(parent, **kwargs)
-        command_args = {"menu": self}
+        command_args: dict[str, Any] = {"menu": self}
         if label:
             (label_tilde, label_txt) = _process_label(label)
             command_args["label"] = label_txt
@@ -170,7 +82,9 @@ class Menu(tk.Menu):
         if isinstance(parent, tk.Menu):
             parent.add_cascade(command_args)
 
-    def add_button(self, label, handler, accel=""):
+    def add_button(
+        self, label: str, handler: str | Callable[..., Any], accel: str = ""
+    ) -> None:
         """Add a button to the menu.
 
         Args:
@@ -189,8 +103,10 @@ class Menu(tk.Menu):
         if isinstance(handler, str):
             # Handler is built-in virtual event, which needs to be
             # generated by button click
-            def command(*args):
-                root().focus_get().event_generate(handler)
+            def command(*args: Any) -> None:
+                widget = root().focus_get()
+                if widget is not None:
+                    widget.event_generate(handler)
 
         else:
             # Handler is function, so may need key binding
@@ -209,14 +125,14 @@ class Menu(tk.Menu):
             command_args["underline"] = label_tilde
         self.add_command(command_args)
 
-    def add_cut_copy_paste(self):
+    def add_cut_copy_paste(self) -> None:
         """Add cut/copy/paste buttons to this menu"""
         self.add_button("Cu~t", "<<Cut>>", "Cmd/Ctrl+X")
         self.add_button("~Copy", "<<Copy>>", "Cmd/Ctrl+C")
         self.add_button("~Paste", "<<Paste>>", "Cmd/Ctrl+V")
 
 
-def _process_label(label):
+def _process_label(label: str) -> tuple[int, str]:
     """Given a button label string, e.g. "~Save...", where the optional
     tilde indicates the underline location for keyboard activation,
     return the tilde location (-1 if none), and the string without the tilde.
@@ -224,7 +140,7 @@ def _process_label(label):
     return (label.find("~"), label.replace("~", ""))
 
 
-def _process_accel(accel):
+def _process_accel(accel: str) -> tuple[str, str]:
     """Convert accelerator string, e.g. "Ctrl+X" to appropriate keyevent
     string for platform, e.g. "Control-X".
 
@@ -243,7 +159,7 @@ def _process_accel(accel):
 class MainText(tk.Text):
     """MainText is the main text window, and inherits from ``tk.Text``."""
 
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent: tk.Widget, **kwargs: Any) -> None:
         """Create a Frame, and put a Text and two Scrollbars in the Frame.
         Layout and linking of the Scrollbars to the Text widget is done here.
 
@@ -270,14 +186,14 @@ class MainText(tk.Text):
         self["yscrollcommand"] = vscroll.set
 
         # Set up response to text being modified
-        self.modifiedCallbacks = []
+        self.modifiedCallbacks: list[Callable[[], None]] = []
         self.bind("<<Modified>>", self.modify_flag_changed_callback)
 
-    def grid(self, *args, **kwargs):
+    def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
         return self.frame.grid(*args, **kwargs)
 
-    def key_bind(self, keyevent, handler):
+    def key_bind(self, keyevent: str, handler: Callable[[Any], None]) -> None:
         """Bind lower & uppercase versions of ``keyevent`` to ``handler``
         in main text window.
 
@@ -291,7 +207,7 @@ class MainText(tk.Text):
         lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
         uk = re.sub("[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
-        def handler_break(event, func):
+        def handler_break(event: tk.Event, func: Callable[[tk.Event], None]) -> str:
             """In order for class binding not to be called after widget
             binding, event handler for widget needs to return "break"
             """
@@ -304,7 +220,7 @@ class MainText(tk.Text):
     #
     # Handle "modified" flag
     #
-    def add_modified_callback(self, func):
+    def add_modified_callback(self, func: Callable[[], None]) -> None:
         """Add callback function to a list of functions to be called when
         widget's modified flag changes.
 
@@ -313,7 +229,7 @@ class MainText(tk.Text):
         """
         self.modifiedCallbacks.append(func)
 
-    def modify_flag_changed_callback(self, *args):
+    def modify_flag_changed_callback(self, *args: Any) -> None:
         """This method is bound to <<Modified>> event which happens whenever
         the widget's modified flag is changed - not just when changed to True.
 
@@ -322,7 +238,7 @@ class MainText(tk.Text):
         for func in self.modifiedCallbacks:
             func()
 
-    def set_modified(self, mod):
+    def set_modified(self, mod: bool) -> None:
         """Manually set widget's modified flag (may trigger call to
         ```modify_flag_changed_callback```).
 
@@ -330,11 +246,11 @@ class MainText(tk.Text):
             mod: Boolean setting for widget's modified flag."""
         self.edit_modified(mod)
 
-    def is_modified(self):
+    def is_modified(self) -> bool:
         """Return whether widget's text has been modified."""
         return self.edit_modified()
 
-    def do_save(self, fname):
+    def do_save(self, fname: str) -> None:
         """Save widget's text to file.
 
         Args:
@@ -344,7 +260,7 @@ class MainText(tk.Text):
             fh.write(self.get(1.0, tk.END))
             self.set_modified(False)
 
-    def do_open(self, fname):
+    def do_open(self, fname: str) -> None:
         """Load text from file into widget.
 
         Args:
@@ -355,18 +271,18 @@ class MainText(tk.Text):
             self.insert(tk.END, fh.read())
             self.set_modified(False)
 
-    def do_close(self):
+    def do_close(self) -> None:
         """Close current file and clear widget."""
         self.delete("1.0", tk.END)
         self.set_modified(False)
 
-    def init_context_menu(self):
+    def init_context_menu(self) -> None:
         """Create a context menu for the main text widget"""
 
         menu_context = Menu(self, "")
         menu_context.add_cut_copy_paste()
 
-        def post_context_menu(event):
+        def post_context_menu(event: tk.Event) -> None:
             menu_context.post(event.x_root, event.y_root)
 
         if is_mac():
@@ -375,11 +291,11 @@ class MainText(tk.Text):
         else:
             self.bind("<3>", post_context_menu)
 
-    def get_insert_index(self):
+    def get_insert_index(self) -> str:
         """Return index of the insert cursor."""
         return self.index(tk.INSERT)
 
-    def set_insert_index(self, index, see=False):
+    def set_insert_index(self, index: str, see: bool = False) -> None:
         """Set the position of the insert cursor.
 
         Args:
@@ -389,6 +305,14 @@ class MainText(tk.Text):
         if see:
             self.see(tk.INSERT)
             self.focus_set()
+
+    # def mark_next(self, index: tk._tkinter.Tcl_Obj) -> str :
+    # pos = super().mark_next(index)
+    # return pos if pos else ""
+
+    # def mark_previous(self, index: tk._tkinter.Tcl_Obj) -> str :
+    # pos = super().mark_previous(index)
+    # return pos if pos else ""
 
 
 class MainImage(tk.Frame):
@@ -412,7 +336,7 @@ class MainImage(tk.Frame):
         scale_delta: Ratio to multiply/divide scale when Control-scrolling mouse wheel.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent: tk.Widget) -> None:
         """Initialize the MainImage to contain an empty Canvas with scrollbars"""
         tk.Frame.__init__(self, parent)
 
@@ -447,31 +371,31 @@ class MainImage(tk.Frame):
 
         self.image_scale = 1.0
         self.scale_delta = 1.3
-        self.image = None
+        self.image: Optional[Image.Image] = None
         self.imageid = None
-        self.container = None
-        self.filename = None
+        self.container: int = 0
+        self.filename = ""
 
-    def scroll_y(self, *args, **kwargs):
+    def scroll_y(self, *args: Any, **kwargs: Any) -> None:
         """Scroll canvas vertically and redraw the image"""
         self.canvas.yview(*args, **kwargs)
         self.show_image()
 
-    def scroll_x(self, *args, **kwargs):
+    def scroll_x(self, *args: Any, **kwargs: Any) -> None:
         """Scroll canvas horizontally and redraw the image."""
         self.canvas.xview(*args, **kwargs)
         self.show_image()
 
-    def move_from(self, event):
+    def move_from(self, event: tk.Event) -> None:
         """Remember previous coordinates for dragging with the mouse."""
         self.canvas.scan_mark(event.x, event.y)
 
-    def move_to(self, event):
+    def move_to(self, event: tk.Event) -> None:
         """Drag canvas to the new position."""
         self.canvas.scan_dragto(event.x, event.y, gain=1)
         self.show_image()
 
-    def wheel_zoom(self, event):
+    def wheel_zoom(self, event: tk.Event) -> None:
         """Zoom with mouse wheel."""
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
@@ -497,7 +421,7 @@ class MainImage(tk.Frame):
         self.canvas.scale("all", x, y, scale, scale)  # rescale all canvas objects
         self.show_image()
 
-    def show_image(self, event=None):
+    def show_image(self, event=None):  # type: ignore[no-untyped-def]
         """Show image on the Canvas"""
         # get image area & remove 1 pixel shift
         bbox_image = self.canvas.bbox(self.container)
@@ -560,7 +484,7 @@ class MainImage(tk.Frame):
                 image=self.canvas.imagetk,
             )
 
-    def wheel_scroll(self, evt):
+    def wheel_scroll(self, evt: tk.Event) -> None:
         """Scroll image up/down using mouse wheel"""
         if evt.state == 0:
             if is_mac():
@@ -574,7 +498,7 @@ class MainImage(tk.Frame):
                 self.canvas.xview_scroll(int(-1 * (evt.delta / 120)), "units")
         self.show_image()
 
-    def load_image(self, filename=None):
+    def load_image(self, filename: Optional[str] = None) -> None:
         """Load or clear the given image file.
 
         Args:
@@ -598,9 +522,9 @@ class MainImage(tk.Frame):
             self.show_image()
         else:
             self.image = None
-            self.filename = None
+            self.filename = ""
 
-    def is_image_loaded(self):
+    def is_image_loaded(self) -> bool:
         """Return if an image is currently loaded"""
         return self.image is not None
 
@@ -611,18 +535,20 @@ class StatusBar(ttk.Frame):
     Fields in statusbar can be automatically or manually updated.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent: Root) -> None:
         """Initialize statusbar within given frame.
 
         Args:
             parent: Frame to contain status bar.
         """
         super().__init__(parent)
-        self.fields = {}
-        self.callbacks = {}
+        self.fields: dict[str, ttk.Button] = {}
+        self.callbacks: dict[str, Optional[Callable[[], str]]] = {}
         self._update()
 
-    def add(self, key, update=None, **kwargs):
+    def add(
+        self, key: str, update: Optional[Callable[[], str]] = None, **kwargs: Any
+    ) -> None:
         """Add field to status bar
 
         Args:
@@ -636,7 +562,7 @@ class StatusBar(ttk.Frame):
         self.callbacks[key] = update
         self.fields[key].grid(column=len(self.fields), row=0)
 
-    def set(self, key, value):
+    def set(self, key: str, value: str) -> None:
         """Set field in statusbar to given value.
 
         Args:
@@ -645,16 +571,17 @@ class StatusBar(ttk.Frame):
         """
         self.fields[key].config(text=value)
 
-    def _update(self):
+    def _update(self) -> None:
         """Update fields in statusbar that have callbacks. Updates every
         200 milliseconds.
         """
         for key in self.fields:
-            if self.callbacks[key]:
-                self.set(key, self.callbacks[key]())
+            func = self.callbacks[key]
+            if func is not None:
+                self.set(key, func())
         self.after(200, self._update)
 
-    def add_binding(self, key, event, callback):
+    def add_binding(self, key: str, event: str, callback: Callable[[], None]) -> None:
         """Add an action to be executed when the given event occurs
 
         Args:
@@ -666,7 +593,101 @@ class StatusBar(ttk.Frame):
         mouse_bind(self.fields[key], event, lambda *args: callback())
 
 
-def mouse_bind(widget, event, callback):
+class MainWindow:
+    """Handles the construction of the main window with its basic widgets
+
+    These class variables are set in ``__init__`` to store the single instance
+    of these main window items. They are exposed externally via convenience
+    functions with the same names, e.g. ``root()`` returns ``MainWindow.root``
+    """
+
+    root: Root
+    menubar: tk.Menu
+    maintext: MainText
+    mainimage: MainImage
+    statusbar: StatusBar
+
+    def __init__(self) -> None:
+        MainWindow.root = Root()
+        MainWindow.menubar = tk.Menu()
+        root()["menu"] = menubar()
+
+        MainWindow.statusbar = StatusBar(root())
+        statusbar().grid(
+            column=STATUSBAR_COL,
+            row=STATUSBAR_ROW,
+            sticky="NSEW",
+        )
+
+        ttk.Separator(root()).grid(
+            column=SEPARATOR_COL,
+            row=SEPARATOR_ROW,
+            sticky="NSEW",
+        )
+
+        self.paned_window = tk.PanedWindow(
+            root(), orient=tk.HORIZONTAL, sashwidth=4, sashrelief=tk.GROOVE
+        )
+        self.paned_window.grid(
+            column=TEXTIMAGE_WINDOW_COL, row=TEXTIMAGE_WINDOW_ROW, sticky="NSEW"
+        )
+
+        MainWindow.maintext = MainText(
+            self.paned_window,
+            undo=True,
+            wrap="none",
+            autoseparators=True,
+            maxundo=-1,
+            highlightthickness=0,
+        )
+        self.paned_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
+        maintext().init_context_menu()
+
+        MainWindow.mainimage = MainImage(self.paned_window)
+
+    def float_image(self, *args: Any) -> None:
+        """Float the image into a separate window"""
+        mainimage().grid_remove()
+        if mainimage().is_image_loaded():
+            root().wm_manage(mainimage())
+            mainimage().lift()
+            tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.dock_image)  # type: ignore[call-overload]
+        else:
+            root().wm_forget(mainimage())  # type: ignore[arg-type]
+        preferences["ImageWindow"] = "Floated"
+
+    def dock_image(self, *args: Any) -> None:
+        """Dock the image back into the main window"""
+        root().wm_forget(mainimage())  # type: ignore[arg-type]
+        if mainimage().is_image_loaded():
+            self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
+        else:
+            try:
+                self.paned_window.forget(mainimage())
+            except tk.TclError:
+                pass  # OK - image wasn't being managed by paned_window
+        preferences["ImageWindow"] = "Docked"
+
+    def load_image(self, filename: str) -> None:
+        """Load the image for the given page.
+
+        Args:
+            filename: Path to image file.
+        """
+        mainimage().load_image(filename)
+        if preferences["ImageWindow"] == "Docked":
+            self.dock_image()
+        else:
+            self.float_image()
+
+    def clear_image(self) -> None:
+        """Clear the image currently being shown."""
+        mainimage().load_image("")
+
+
+def mouse_bind(
+    widget: tk.Widget, event: str, callback: Callable[[tk.Event], object]
+) -> None:
     """Bind mouse button callback to event on widget.
 
     If binding is to mouse button 2 or 3, also bind the other button
@@ -685,7 +706,7 @@ def mouse_bind(widget, event, callback):
         widget.bind(other_event, callback)
 
 
-def sound_bell():
+def sound_bell() -> None:
     """Sound warning bell audibly and/or visually.
 
     Audible uses the default system bell sound.
@@ -712,33 +733,38 @@ def sound_bell():
         for state in ("disabled", "normal", "disabled", "normal", "disabled", "normal"):
             bell_button["state"] = state
             bell_button.update()
-            bell_button.after(50)
+            time.sleep(0.08)
         # Set button to use its previous style again
         bell_button.configure(style=cur_style)
         # Just in case, set the temporary style back to the default
         style.map("W.TButton", background=[("disabled", save_bg)])
 
 
-def root():
+def root() -> Root:
     """Return the single instance of Root"""
+    assert MainWindow.root is not None
     return MainWindow.root
 
 
-def mainimage():
+def mainimage() -> MainImage:
     """Return the single MainImage widget"""
+    assert MainWindow.mainimage is not None
     return MainWindow.mainimage
 
 
-def maintext():
+def maintext() -> MainText:
     """Return the single MainText widget"""
+    assert MainWindow.maintext is not None
     return MainWindow.maintext
 
 
-def menubar():
+def menubar() -> tk.Menu:
     """Return the single Menu widget used as the menubar"""
+    assert MainWindow.menubar is not None
     return MainWindow.menubar
 
 
-def statusbar():
+def statusbar() -> StatusBar:
     """Return the single StatusBar widget"""
+    assert MainWindow.statusbar is not None
     return MainWindow.statusbar
