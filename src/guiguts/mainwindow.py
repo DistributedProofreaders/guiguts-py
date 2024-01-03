@@ -1,6 +1,8 @@
 """Define key components of main window"""
 
 
+from datetime import datetime
+from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found]
 import os.path
 from PIL import Image, ImageTk
 import re
@@ -8,7 +10,8 @@ import sys
 import time
 import traceback
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
+
 from types import TracebackType
 from typing import Any, Callable, Optional
 
@@ -50,12 +53,9 @@ class Root(tk.Tk):
     ) -> None:
         """Override tkinter exception reporting rather just
         writing it to stderr.
-
-        TODO: send this to a full error logging window.
         """
-        err = "\n".join(traceback.format_exception(exc, val, tb))
-        print(str(err), file=sys.stderr)
-        messagebox.showerror("Caught Tkinter Exception", message=err)
+        err = "Tkinter Exception\n" + "".join(traceback.format_exception(exc, val, tb))
+        messagelog().error(err)
 
 
 class Menu(tk.Menu):
@@ -125,11 +125,15 @@ class Menu(tk.Menu):
             command_args["underline"] = label_tilde
         self.add_command(command_args)
 
-    def add_cut_copy_paste(self) -> None:
+    def add_cut_copy_paste(self, read_only: bool = False) -> None:
         """Add cut/copy/paste buttons to this menu"""
-        self.add_button("Cu~t", "<<Cut>>", "Cmd/Ctrl+X")
+        if not read_only:
+            self.add_button("Cu~t", "<<Cut>>", "Cmd/Ctrl+X")
         self.add_button("~Copy", "<<Copy>>", "Cmd/Ctrl+C")
-        self.add_button("~Paste", "<<Paste>>", "Cmd/Ctrl+V")
+        if not read_only:
+            self.add_button("~Paste", "<<Paste>>", "Cmd/Ctrl+V")
+        self.add_separator()
+        self.add_button("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
 
 
 def _process_label(label: str) -> tuple[int, str]:
@@ -275,21 +279,6 @@ class MainText(tk.Text):
         """Close current file and clear widget."""
         self.delete("1.0", tk.END)
         self.set_modified(False)
-
-    def init_context_menu(self) -> None:
-        """Create a context menu for the main text widget"""
-
-        menu_context = Menu(self, "")
-        menu_context.add_cut_copy_paste()
-
-        def post_context_menu(event: tk.Event) -> None:
-            menu_context.post(event.x_root, event.y_root)
-
-        if is_mac():
-            self.bind("<2>", post_context_menu)
-            self.bind("<Control-1>", post_context_menu)
-        else:
-            self.bind("<3>", post_context_menu)
 
     def get_insert_index(self) -> str:
         """Return index of the insert cursor."""
@@ -593,6 +582,99 @@ class StatusBar(ttk.Frame):
         mouse_bind(self.fields[key], event, lambda *args: callback())
 
 
+class ScrolledReadOnlyText(tk.Text):
+    """Implement a read only mode text editor class with scroll bar.
+
+    Done by replacing the bindings for the insert and delete events. From:
+    http://stackoverflow.com/questions/3842155/is-there-a-way-to-make-the-tkinter-text-widget-read-only
+    """
+
+    def __init__(self, parent, *args, **kwargs):  # type: ignore[no-untyped-def]
+        """Init the class and set the insert and delete event bindings."""
+
+        self.frame = ttk.Frame(parent)
+        self.frame.grid(row=0, column=0, sticky="NSEW")
+        self.frame.columnconfigure(0, weight=1)
+        self.frame.rowconfigure(0, weight=1)
+
+        super().__init__(self.frame, *args, **kwargs)
+        super().grid(column=0, row=0, sticky="NSEW")
+        self.redirector = WidgetRedirector(self)
+        self.insert = self.redirector.register("insert", lambda *args, **kw: "break")
+        self.delete = self.redirector.register("delete", lambda *args, **kw: "break")
+
+        hscroll = ttk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=self.xview)
+        hscroll.grid(column=0, row=1, sticky="NSEW")
+        self["xscrollcommand"] = hscroll.set
+        vscroll = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
+        vscroll.grid(column=1, row=0, sticky="NSEW")
+        self["yscrollcommand"] = vscroll.set
+
+        add_text_context_menu(self, read_only=True)
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        """Override ``grid``, so placing Text actually places surrounding Frame"""
+        return self.frame.grid(*args, **kwargs)
+
+
+class MessageLogDialog(tk.Toplevel):
+    """A Tk simpledialog that displays error/info messages."""
+
+    def __init__(self, parent: tk.Tk, *args: Any, **kwargs: Any) -> None:
+        """Initialize messagelog dialog."""
+        super().__init__(parent, *args, **kwargs)
+        self.title("Message Log")
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+
+        frame = ttk.Frame(self)
+        frame.columnconfigure(0, weight=1)
+        frame.grid(row=0, column=0, sticky="NSEW")
+        frame.rowconfigure(0, weight=1)
+
+        self.messagelog = ScrolledReadOnlyText(frame, wrap=tk.NONE)
+        self.messagelog.grid(column=0, row=0, sticky="NSEW")
+
+    def append(self, message: str) -> None:
+        """Append a message to the message log dialog."""
+        self.messagelog.insert("end", message)
+
+
+class MessageLog:
+    """Handles the output of messages."""
+
+    def __init__(self) -> None:
+        """Initialize message logging.
+
+        Attributes:
+            _messagelog: List of messages that have been output.
+            dialog: The dialog to write the messages to
+        """
+        self._messagelog: str = ""
+        self.dialog: MessageLogDialog
+
+    def error(self, error: str) -> None:
+        """Output an error message to the message log dialog
+
+        If the dialog does not exist, create it.
+
+        Args:
+            error: Message to be output.
+        """
+        date_time = datetime.now().strftime("%H:%M:%S:")
+        error = f"{date_time} {error}\n"
+        sys.stderr.write(error)
+        self._messagelog += error
+
+        # If dialog exists, append error, otherwise create dialog & write whole log
+        if hasattr(self, "dialog") and self.dialog.winfo_exists():
+            self.dialog.append(error)
+        else:
+            self.dialog = MessageLogDialog(root())
+            self.dialog.append(self._messagelog)
+        self.dialog.lift()
+
+
 class MainWindow:
     """Handles the construction of the main window with its basic widgets
 
@@ -606,11 +688,13 @@ class MainWindow:
     maintext: MainText
     mainimage: MainImage
     statusbar: StatusBar
+    messagelog: MessageLog
 
     def __init__(self) -> None:
         MainWindow.root = Root()
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()
+        MainWindow.messagelog = MessageLog()
 
         MainWindow.statusbar = StatusBar(root())
         statusbar().grid(
@@ -641,7 +725,7 @@ class MainWindow:
             highlightthickness=0,
         )
         self.paned_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
-        maintext().init_context_menu()
+        add_text_context_menu(maintext())
 
         MainWindow.mainimage = MainImage(self.paned_window)
 
@@ -740,6 +824,28 @@ def sound_bell() -> None:
         style.map("W.TButton", background=[("disabled", save_bg)])
 
 
+def add_text_context_menu(text_widget: tk.Text, read_only: bool = False) -> None:
+    """Add a context menu to a Text widget.
+
+    Puts Cut, Copy, Paste, Select All menu buttons in a context menu.
+
+    Args:
+        read_only: True if text is read-only, so does not require Cut & Paste options.
+    """
+    menu_context = Menu(text_widget, "")
+    menu_context.add_cut_copy_paste(read_only=read_only)
+
+    def post_context_menu(event: tk.Event) -> None:
+        event.widget.focus_set()
+        menu_context.post(event.x_root, event.y_root)
+
+    if is_mac():
+        text_widget.bind("<2>", post_context_menu)
+        text_widget.bind("<Control-1>", post_context_menu)
+    else:
+        text_widget.bind("<3>", post_context_menu)
+
+
 def root() -> Root:
     """Return the single instance of Root"""
     assert MainWindow.root is not None
@@ -768,3 +874,9 @@ def statusbar() -> StatusBar:
     """Return the single StatusBar widget"""
     assert MainWindow.statusbar is not None
     return MainWindow.statusbar
+
+
+def messagelog() -> MessageLog:
+    """Return the single MessageLog object"""
+    assert MainWindow.messagelog is not None
+    return MainWindow.messagelog

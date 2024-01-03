@@ -306,8 +306,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_edit.add_separator()
         menu_edit.add_cut_copy_paste()
         menu_edit.add_separator()
-        menu_edit.add_button("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
-        menu_edit.add_separator()
         menu_edit.add_button("Pre~ferences...", lambda: PreferencesDialog(root()))
 
     def init_view_menu(self) -> None:
