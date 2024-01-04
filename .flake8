@@ -1,6 +1,7 @@
 [flake8]
 
-# Recommended settings to avoid line-length conflicts with black
+# Recommended settings to avoid line-length and
+# "line break before binary operator" conflicts with black
 max-line-length = 80
 select = C,E,F,W,B,B950
-extend-ignore = E203, E501, E704
+extend-ignore = E203, E501, E704, W503

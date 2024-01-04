@@ -248,6 +248,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default("Bell", "VisibleAudible")
         preferences.set_default("ImageWindow", "Docked")
         preferences.set_default("RecentFiles", [])
+        preferences.set_default("LineNumbers", True)
+        preferences.set_callback(
+            "LineNumbers", lambda show: maintext().show_line_numbers(show)
+        )
 
     # Lay out menus
     def init_menus(self) -> None:
@@ -350,6 +354,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             ),
         )
         statusbar.add_binding("rowcol", "<ButtonRelease-1>", self.file.goto_line)
+        statusbar.add_binding(
+            "rowcol", "<ButtonRelease-3>", maintext().toggle_line_numbers
+        )
 
         statusbar.add(
             "img",
