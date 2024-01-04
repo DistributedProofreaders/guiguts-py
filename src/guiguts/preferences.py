@@ -77,12 +77,8 @@ class Preferences:
             key: Name of preference.
             value: Value for preference.
         """
-        print(key, flush=True)
-        print(self.get(key), flush=True)
-        print(value, flush=True)
         if self.get(key) != value:
             self.dict[key] = value
-            print("save", flush=True)
             self.save()
 
     def __del__(self) -> None:
