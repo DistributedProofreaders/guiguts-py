@@ -236,8 +236,10 @@ class File:
             filename: Name of new file to add to list.
         """
         self.remove_recent_file(filename)
-        preferences["RecentFiles"].insert(0, filename)
-        del preferences["RecentFiles"][NUM_RECENT_FILES:]
+        recents = preferences.get("RecentFiles")
+        recents.insert(0, filename)
+        del recents[NUM_RECENT_FILES:]
+        preferences.set("RecentFiles", recents)
 
     def remove_recent_file(self, filename: str) -> None:
         """Remove given filename from list of recent files.
@@ -245,8 +247,10 @@ class File:
         Args:
             filename: Name of new file to add to list.
         """
-        if filename in preferences["RecentFiles"]:
-            preferences["RecentFiles"].remove(filename)
+        recents = preferences.get("RecentFiles")
+        if filename in recents:
+            recents.remove(filename)
+            preferences.set("RecentFiles", recents)
 
     def dict_to_page_marks(self, page_marks_dict: Any) -> None:
         """Set page marks from keys/values in dictionary.

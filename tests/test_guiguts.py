@@ -24,8 +24,8 @@ def test_preferences() -> None:
     assert preferences.get_default("pkey1") is None
     preferences.set_default("pkey1", "pdefault1")
     assert preferences.get_default("pkey1") == "pdefault1"
-    preferences["pkey1"] = "pvalue1"
-    assert preferences["pkey1"] == "pvalue1"
+    preferences.set("pkey1", "pvalue1")
+    assert preferences.get("pkey1") == "pvalue1"
     assert preferences.get_default("pkey1") == "pdefault1"
     keys = preferences.keys()
     assert len(keys) == 1
