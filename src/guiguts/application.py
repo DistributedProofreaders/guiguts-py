@@ -68,6 +68,7 @@ class Guiguts:
         root().update_idletasks()
 
         self.logging_add_gui(self.logger)
+        self.logger.info("GUI initialized")
 
         preferences.run_callbacks()
 
