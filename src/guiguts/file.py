@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal
 
-from guiguts.mainwindow import maintext, sound_bell
+from guiguts.mainwindow import maintext, sound_bell, logger
 from guiguts.preferences import preferences
 from guiguts.utilities import is_windows
 
@@ -112,9 +112,7 @@ class File:
         try:
             maintext().do_open(filename)
         except FileNotFoundError:
-            messagebox.showerror(
-                title="File Not Found", message=f"Unable to open {filename}"
-            )
+            logger.error(f"Unable to open {filename}")
             self.remove_recent_file(filename)
             self.filename = ""
             return

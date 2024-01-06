@@ -3,6 +3,7 @@
 
 
 import argparse
+import logging
 import os.path
 import re
 import subprocess
@@ -24,10 +25,15 @@ from guiguts.mainwindow import (
     menubar,
     StatusBar,
     statusbar,
+    ErrorHandler,
 )
 from guiguts.preferences import preferences
 from guiguts.preferences_dialog import PreferencesDialog
 from guiguts.utilities import is_mac
+
+
+MESSAGE_FORMAT = "%(asctime)s: %(levelname)s - %(message)s"
+DEBUG_FORMAT = "%(asctime)s: %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
 
 
 class Guiguts:
@@ -39,6 +45,9 @@ class Guiguts:
         Creates windows and sets default preferences."""
 
         self.parse_args()
+
+        self.logger = self.logging_init()
+        self.logger.info("Guiguts started")
 
         self.set_preferences_defaults()
 
@@ -57,6 +66,8 @@ class Guiguts:
         # Known tkinter issue - must call this before any dialogs can get created,
         # or focus will not return to maintext on Windows
         root().update_idletasks()
+
+        self.logging_add_gui(self.logger)
 
         preferences.run_callbacks()
 
@@ -82,6 +93,12 @@ class Guiguts:
             type=int,
             choices=range(1, NUM_RECENT_FILES + 1),
             help="Number of 'Recent File' to be loaded: 1 is most recent",
+        )
+        parser.add_argument(
+            "-d",
+            "--debug",
+            action="store_true",
+            help="Run in debug mode",
         )
         self.args = parser.parse_args()
 
@@ -314,6 +331,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view.add_button("~Dock", self.mainwindow.dock_image)
         menu_view.add_button("~Float", self.mainwindow.float_image)
         menu_view.add_button("~See Image", self.see_image)
+        menu_view.add_button("~Message Log", self.mainwindow.messagelog.show)
 
     def init_help_menu(self) -> None:
         """Create the Help menu."""
@@ -371,6 +389,51 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         statusbar.add("next img", text=">", width=1)
         statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
+
+    def logging_init(self) -> logging.Logger:
+        """Set up basic logger until GUI is ready."""
+        if self.args.debug:
+            log_level = logging.DEBUG
+            console_log_level = logging.DEBUG
+            formatter = logging.Formatter(DEBUG_FORMAT, "%H:%M:%S")
+        else:
+            log_level = logging.INFO
+            console_log_level = logging.WARNING
+            formatter = logging.Formatter(MESSAGE_FORMAT, "%H:%M:%S")
+        logger = logging.getLogger(__package__)
+        logger.setLevel(log_level)
+        # Output to console
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(console_log_level)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+        return logger
+
+    def logging_add_gui(self, logger: logging.Logger) -> None:
+        """Add handlers to display log messages via the GUI.
+
+        Assumes mainwindow has created the message_log handler.
+
+        Args:
+            logger: Logger to be updated with GUI handlers.
+        """
+
+        # Message log is approximate GUI equivalent to console output
+        if self.args.debug:
+            message_log_level = logging.DEBUG
+            formatter = logging.Formatter(DEBUG_FORMAT, "%H:%M:%S")
+        else:
+            message_log_level = logging.INFO
+            formatter = logging.Formatter(MESSAGE_FORMAT, "%H:%M:%S")
+        self.mainwindow.messagelog.setLevel(message_log_level)
+        self.mainwindow.messagelog.setFormatter(formatter)
+        logger.addHandler(self.mainwindow.messagelog)
+
+        # Alert is just for errors, e.g. unable to load file
+        alert_handler = ErrorHandler()
+        alert_handler.setLevel(logging.ERROR)
+        alert_handler.setFormatter(formatter)
+        logger.addHandler(alert_handler)
 
 
 def main() -> None:
