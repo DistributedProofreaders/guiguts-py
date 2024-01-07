@@ -8,6 +8,8 @@ from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal
 
 from guiguts.mainwindow import maintext, sound_bell
+import guiguts.page_details as page_details
+from guiguts.page_details import PageDetail, PageDetails
 from guiguts.preferences import preferences
 from guiguts.utilities import is_windows
 
@@ -16,13 +18,13 @@ NUM_RECENT_FILES = 9
 PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".json"
 
-BINFILE_KEY_PAGEMARKS: Final = "pagemarks"
+BINFILE_KEY_PAGEDETAILS: Final = "pagedetails"
 BINFILE_KEY_INSERTPOS: Final = "insertpos"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
 
 
 class BinDict(TypedDict):
-    pagemarks: dict[str, str]
+    pagedetails: PageDetails
     insertpos: str
     imagedir: str
 
@@ -44,6 +46,7 @@ class File:
         self._filename = ""
         self._filename_callback = filename_callback
         self._image_dir = ""
+        self.page_details = PageDetails()
 
     @property
     def filename(self) -> str:
@@ -75,6 +78,7 @@ class File:
         self.filename = ""
         self.image_dir = ""
         self.remove_page_marks()
+        self.page_details = PageDetails()
 
     def open_file(self, filename: str = "") -> str:
         """Open and load a text file.
@@ -212,7 +216,9 @@ class File:
             bin_dict: Dictionary loaded from bin file
         """
         self.set_initial_position(bin_dict.get(BINFILE_KEY_INSERTPOS))
-        self.dict_to_page_marks(bin_dict.get(BINFILE_KEY_PAGEMARKS))
+        if page_details := bin_dict.get(BINFILE_KEY_PAGEDETAILS):
+            self.page_details = page_details
+        self.set_page_marks(self.page_details)
         self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
 
     def create_bin(self) -> BinDict:
@@ -222,9 +228,10 @@ class File:
         Returns:
             Dictionary of settings to be saved in bin file
         """
+        self.update_page_marks(self.page_details)
         bin_dict: BinDict = {
             BINFILE_KEY_INSERTPOS: maintext().get_insert_index(),
-            BINFILE_KEY_PAGEMARKS: self.dict_from_page_marks(),
+            BINFILE_KEY_PAGEDETAILS: self.page_details,
             BINFILE_KEY_IMAGEDIR: self.image_dir,
         }
         return bin_dict
@@ -248,16 +255,16 @@ class File:
         if filename in preferences["RecentFiles"]:
             preferences["RecentFiles"].remove(filename)
 
-    def dict_to_page_marks(self, page_marks_dict: Any) -> None:
+    def set_page_marks(self, page_details: PageDetails) -> None:
         """Set page marks from keys/values in dictionary.
 
         Args:
-            page_marks_dict: Dictionary of page mark indexes
+            page_details: Dictionary of page details, including indexes.
         """
         self.remove_page_marks()
-        if page_marks_dict:
-            for mark, index in page_marks_dict.items():
-                maintext().mark_set(mark, index)
+        if page_details:
+            for mark, detail in page_details.items():
+                maintext().mark_set(mark, detail["index"])
                 maintext().mark_gravity(mark, tk.LEFT)
 
     def set_initial_position(self, index: str | None) -> None:
@@ -270,17 +277,16 @@ class File:
             index = "1.0"
         maintext().set_insert_index(index, see=True)
 
-    def dict_from_page_marks(self) -> dict[str, str]:
-        """Create dictionary of page mark locations.
+    def update_page_marks(self, page_details: PageDetails) -> None:
+        """Update page mark locations in page details structure.
 
-        Returns:
-            Dictionary with marks as keys and indexes as values
+        Args:
+            page_details: Dictionary of page details, including indexes.
         """
-        page_marks_dict: dict[str, str] = {}
         mark = "1.0"
         while mark := page_mark_next(mark):
-            page_marks_dict[mark] = maintext().index(mark)
-        return page_marks_dict
+            assert mark in page_details
+            page_details[mark]["index"] = maintext().index(mark)
 
     def mark_page_boundaries(self) -> None:
         """Loop through whole file, ensuring all page separator lines
@@ -288,18 +294,21 @@ class File:
         start of each page separator line.
         """
 
+        self.page_details = PageDetails()
+        page_num_style = page_details.STYLE_ROMAN
+        page_num = "1"
+
         page_separator_regex = r"File:.+?([^/\\ ]+)\.(png|jpg)"
         pattern = re.compile(page_separator_regex)
         search_start = "1.0"
         while page_index := maintext().search(
             page_separator_regex, search_start, regexp=True, stopindex="end"
         ):
-            line_start = page_index + " linestart"
+            line_start = maintext().index(page_index + " linestart")
             line_end = page_index + " lineend"
             line = maintext().get(line_start, line_end)
-            if match := pattern.search(
-                line
-            ):  # Always matches since same regex as earlier search
+            # Always matches since same regex as earlier search
+            if match := pattern.search(line):
                 (page, ext) = match.group(1, 2)
                 standard_line = f"-----File: {page}.{ext}"
                 standard_line += "-" * (75 - len(standard_line))
@@ -309,6 +318,11 @@ class File:
                 page_mark = PAGEMARK_PREFIX + page
                 maintext().mark_set(page_mark, line_start)
                 maintext().mark_gravity(page_mark, tk.LEFT)
+                self.page_details[page_mark] = PageDetail(
+                    line_start, page_num_style, page_num
+                )
+                page_num_style = page_details.STYLE_DITTO
+                page_num = "+1"
 
             search_start = line_end
 

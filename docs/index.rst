@@ -31,3 +31,8 @@ File
 =========
     
 .. automodule:: file
+ 
+Page Details
+============
+    
+.. automodule:: page_details
