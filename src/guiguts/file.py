@@ -1,15 +1,18 @@
 """Handle file operations"""
 
 import json
+import logging
 import os.path
 import re
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal
 
-from guiguts.mainwindow import maintext, sound_bell, logger
+from guiguts.mainwindow import maintext, sound_bell
 from guiguts.preferences import preferences
 from guiguts.utilities import is_windows
+
+logger = logging.getLogger(__package__)
 
 FOLDER_DIR = "folder" if is_windows() else "directory"
 NUM_RECENT_FILES = 9

@@ -17,6 +17,7 @@ from typing import Any, Callable, Optional
 from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, is_x11
 
+logger = logging.getLogger(__package__)
 
 TEXTIMAGE_WINDOW_ROW = 0
 TEXTIMAGE_WINDOW_COL = 0
@@ -670,7 +671,7 @@ class MessageLog(logging.Handler):
         Args:
             record: Record containing message.
         """
-        message = self.format(record)
+        message = self.format(record) + "\n"
         self._messagelog += message
 
         # If dialog is visible, append error
@@ -885,6 +886,3 @@ def statusbar() -> StatusBar:
     """Return the single StatusBar widget"""
     assert MainWindow.statusbar is not None
     return MainWindow.statusbar
-
-
-logger = logging.getLogger(__package__)

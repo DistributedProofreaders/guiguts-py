@@ -31,6 +31,7 @@ from guiguts.preferences import preferences
 from guiguts.preferences_dialog import PreferencesDialog
 from guiguts.utilities import is_mac
 
+logger = logging.getLogger(__package__)
 
 MESSAGE_FORMAT = "%(asctime)s: %(levelname)s - %(message)s"
 DEBUG_FORMAT = "%(asctime)s: %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
@@ -46,8 +47,8 @@ class Guiguts:
 
         self.parse_args()
 
-        self.logger = self.logging_init()
-        self.logger.info("Guiguts started")
+        self.logging_init()
+        logger.info("Guiguts started")
 
         self.set_preferences_defaults()
 
@@ -67,8 +68,8 @@ class Guiguts:
         # or focus will not return to maintext on Windows
         root().update_idletasks()
 
-        self.logging_add_gui(self.logger)
-        self.logger.info("GUI initialized")
+        self.logging_add_gui()
+        logger.info("GUI initialized")
 
         preferences.run_callbacks()
 
@@ -391,7 +392,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add("next img", text=">", width=1)
         statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
 
-    def logging_init(self) -> logging.Logger:
+    def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""
         if self.args.debug:
             log_level = logging.DEBUG
@@ -401,22 +402,17 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             log_level = logging.INFO
             console_log_level = logging.WARNING
             formatter = logging.Formatter(MESSAGE_FORMAT, "%H:%M:%S")
-        logger = logging.getLogger(__package__)
         logger.setLevel(log_level)
         # Output to console
         console_handler = logging.StreamHandler()
         console_handler.setLevel(console_log_level)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
-        return logger
 
-    def logging_add_gui(self, logger: logging.Logger) -> None:
+    def logging_add_gui(self) -> None:
         """Add handlers to display log messages via the GUI.
 
         Assumes mainwindow has created the message_log handler.
-
-        Args:
-            logger: Logger to be updated with GUI handlers.
         """
 
         # Message log is approximate GUI equivalent to console output
