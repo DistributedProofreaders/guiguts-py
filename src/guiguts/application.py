@@ -353,7 +353,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "img",
             update=lambda: "Img: " + self.file.get_current_image_name(),
         )
-        statusbar.add_binding("img", "<ButtonRelease-1>", self.file.goto_page)
+        statusbar.add_binding("img", "<ButtonRelease-1>", self.file.goto_image)
 
         statusbar.add("prev img", text="<", width=1)
         statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
@@ -371,6 +371,13 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         statusbar.add("next img", text=">", width=1)
         statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
+
+        statusbar.add(
+            "page label",
+            text="Lbl: ",
+            update=lambda: "Lbl: " + self.file.get_current_page_label(),
+        )
+        statusbar.add_binding("page label", "<ButtonRelease-1>", self.file.goto_page)
 
 
 def main() -> None:

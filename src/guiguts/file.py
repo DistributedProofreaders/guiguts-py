@@ -5,11 +5,11 @@ import os.path
 import re
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
-from typing import Any, Callable, Final, TypedDict, Literal
+from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 from guiguts.mainwindow import maintext, sound_bell
 import guiguts.page_details as page_details
-from guiguts.page_details import PageDetail, PageDetails
+from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
 from guiguts.utilities import is_windows
 
@@ -126,6 +126,7 @@ class File:
         self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
+        self.page_details.recalculate()
         self.store_recent_file(filename)
         # Load complete, so set filename (including side effects)
         self.filename = filename
@@ -295,7 +296,7 @@ class File:
         """
 
         self.page_details = PageDetails()
-        page_num_style = page_details.STYLE_ROMAN
+        page_num_style = page_details.STYLE_ARABIC
         page_num = "1"
 
         page_separator_regex = r"File:.+?([^/\\ ]+)\.(png|jpg)"
@@ -318,7 +319,7 @@ class File:
                 page_mark = PAGEMARK_PREFIX + page
                 maintext().mark_set(page_mark, line_start)
                 maintext().mark_gravity(page_mark, tk.LEFT)
-                self.page_details[page_mark] = PageDetail(
+                self.page_details[page] = PageDetail(
                     line_start, page_num_style, page_num
                 )
                 page_num_style = page_details.STYLE_DITTO
@@ -343,12 +344,11 @@ class File:
         """
         return page_mark_next("1.0") != ""
 
-    def get_current_image_name(self) -> str:
-        """Find basename of the image file corresponding to where the
-        insert cursor is.
+    def get_current_page_mark(self) -> str:
+        """Find page mark corresponding to where the insert cursor is.
 
         Returns:
-            Basename of image file. Empty string if none found.
+            Name of preceding mark. Empty string if none found.
         """
         insert = maintext().get_insert_index()
         mark = insert
@@ -364,8 +364,20 @@ class File:
         if not good_mark:
             if mark := page_mark_next(insert):
                 good_mark = mark
+        return good_mark
 
-        return img_from_page_mark(good_mark)
+    def get_current_image_name(self) -> str:
+        """Find basename of the image file corresponding to where the
+        insert cursor is.
+
+        Returns:
+            Basename of image file. Empty string if none found.
+        """
+        mark = self.get_current_page_mark()
+        if mark == "":
+            return ""
+        else:
+            return img_from_page_mark(mark)
 
     def get_current_image_path(self) -> str:
         """Return the path of the image file for the page where the insert
@@ -389,6 +401,18 @@ class File:
             mustexist=True, title="Select " + FOLDER_DIR + " containing scans"
         )
 
+    def get_current_page_label(self) -> str:
+        """Find page label corresponding to where the insert cursor is.
+
+        Returns:
+            Page label of current page. Empty string if none found.
+        """
+        mark = self.get_current_image_name()
+        if mark == "":
+            return ""
+        else:
+            return self.page_details[mark]["label"]
+
     def goto_line(self) -> None:
         """Go to the line number the user enters"""
         line_num = simpledialog.askinteger(
@@ -397,18 +421,35 @@ class File:
         if line_num is not None:
             maintext().set_insert_index(f"{line_num}.0", see=True)
 
-    def goto_page(self) -> None:
-        """Go to the page the user enters"""
-        page_num = simpledialog.askstring(
+    def goto_image(self) -> None:
+        """Go to the image the user enters"""
+        image_num = simpledialog.askstring(
             "Go To Page", "Image number", parent=maintext()
         )
-        if page_num is not None:
+        self.do_goto_image(image_num)
+
+    def do_goto_image(self, image_num: Optional[str]) -> None:
+        """Go to page corresponding to the given image number.
+
+        Args:
+            image_num: Number of image to go to, e.g. "001"
+        """
+        if image_num is not None:
             try:
-                index = maintext().index(PAGEMARK_PREFIX + page_num)
+                index = maintext().index(PAGEMARK_PREFIX + image_num)
             except tk._tkinter.TclError:  # type: ignore[attr-defined]
-                # Bad page number
+                # Bad image number
                 return
             maintext().set_insert_index(index, see=True)
+
+    def goto_page(self) -> None:
+        """Go to the page the user enters."""
+        page_num = simpledialog.askstring(
+            "Go To Page", "Page number", parent=maintext()
+        )
+        if page_num is not None:
+            image_num = self.page_details.png_from_label(PAGE_LABEL_PREFIX + page_num)
+            self.do_goto_image(image_num)
 
     def prev_page(self) -> None:
         """Go to the start of the previous page"""

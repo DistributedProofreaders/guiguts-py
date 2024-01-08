@@ -17,6 +17,7 @@ Sphinx = "^7.2"
 pytest = "^7.4"
 mypy = "^1.8"
 types-Pillow = "^10.1"
+roman = "^4.1"
 build = "^1.0.3"
 
 [tool.poetry.scripts]
