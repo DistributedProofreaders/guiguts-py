@@ -3,6 +3,7 @@
 
 
 import argparse
+import logging
 import os.path
 import re
 import subprocess
@@ -24,10 +25,16 @@ from guiguts.mainwindow import (
     menubar,
     StatusBar,
     statusbar,
+    ErrorHandler,
 )
 from guiguts.preferences import preferences
 from guiguts.preferences_dialog import PreferencesDialog
 from guiguts.utilities import is_mac
+
+logger = logging.getLogger(__package__)
+
+MESSAGE_FORMAT = "%(asctime)s: %(levelname)s - %(message)s"
+DEBUG_FORMAT = "%(asctime)s: %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
 
 
 class Guiguts:
@@ -39,6 +46,9 @@ class Guiguts:
         Creates windows and sets default preferences."""
 
         self.parse_args()
+
+        self.logging_init()
+        logger.info("Guiguts started")
 
         self.set_preferences_defaults()
 
@@ -57,6 +67,9 @@ class Guiguts:
         # Known tkinter issue - must call this before any dialogs can get created,
         # or focus will not return to maintext on Windows
         root().update_idletasks()
+
+        self.logging_add_gui()
+        logger.info("GUI initialized")
 
         preferences.run_callbacks()
 
@@ -83,6 +96,12 @@ class Guiguts:
             choices=range(1, NUM_RECENT_FILES + 1),
             help="Number of 'Recent File' to be loaded: 1 is most recent",
         )
+        parser.add_argument(
+            "-d",
+            "--debug",
+            action="store_true",
+            help="Run in debug mode",
+        )
         self.args = parser.parse_args()
 
     def load_file_if_given(self) -> None:
@@ -93,17 +112,17 @@ class Guiguts:
             self.file.load_file(self.args.filename)
         elif self.args.recent:
             index = self.args.recent - 1
-            self.file.load_file(preferences["RecentFiles"][index])
+            self.file.load_file(preferences.get("RecentFiles")[index])
 
     @property
     def auto_image(self) -> bool:
         """Auto image flag: setting causes side effects in UI
         & starts repeating check."""
-        return preferences["AutoImage"]
+        return preferences.get("AutoImage")
 
     @auto_image.setter
     def auto_image(self, value: bool) -> None:
-        preferences["AutoImage"] = value
+        preferences.set("AutoImage", value)
         statusbar().set("see img", "Auto Img" if value else "See Img")
         if value:
             self.image_dir_check()
@@ -248,6 +267,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default("Bell", "VisibleAudible")
         preferences.set_default("ImageWindow", "Docked")
         preferences.set_default("RecentFiles", [])
+        preferences.set_default("LineNumbers", True)
+        preferences.set_callback(
+            "LineNumbers", lambda show: maintext().show_line_numbers(show)
+        )
 
     # Lay out menus
     def init_menus(self) -> None:
@@ -291,7 +314,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_file_recent_menu(self, parent: Menu) -> None:
         """Create the Recent Documents menu."""
         recent_menu = Menu(parent, "Recent Doc~uments")
-        for count, file in enumerate(preferences["RecentFiles"], start=1):
+        for count, file in enumerate(preferences.get("RecentFiles"), start=1):
             recent_menu.add_button(
                 f"~{count}: {file}", lambda fn=file: self.open_file(fn)
             )
@@ -314,6 +337,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view.add_button("~Dock", self.mainwindow.dock_image)
         menu_view.add_button("~Float", self.mainwindow.float_image)
         menu_view.add_button("~See Image", self.see_image)
+        menu_view.add_button("~Message Log", self.mainwindow.messagelog.show)
 
     def init_help_menu(self) -> None:
         """Create the Help menu."""
@@ -348,6 +372,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             ),
         )
         statusbar.add_binding("rowcol", "<ButtonRelease-1>", self.file.goto_line)
+        statusbar.add_binding(
+            "rowcol", "<ButtonRelease-3>", maintext().toggle_line_numbers
+        )
 
         statusbar.add(
             "img",
@@ -378,6 +405,46 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             update=lambda: "Lbl: " + self.file.get_current_page_label(),
         )
         statusbar.add_binding("page label", "<ButtonRelease-1>", self.file.goto_page)
+
+    def logging_init(self) -> None:
+        """Set up basic logger until GUI is ready."""
+        if self.args.debug:
+            log_level = logging.DEBUG
+            console_log_level = logging.DEBUG
+            formatter = logging.Formatter(DEBUG_FORMAT, "%H:%M:%S")
+        else:
+            log_level = logging.INFO
+            console_log_level = logging.WARNING
+            formatter = logging.Formatter(MESSAGE_FORMAT, "%H:%M:%S")
+        logger.setLevel(log_level)
+        # Output to console
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(console_log_level)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
+    def logging_add_gui(self) -> None:
+        """Add handlers to display log messages via the GUI.
+
+        Assumes mainwindow has created the message_log handler.
+        """
+
+        # Message log is approximate GUI equivalent to console output
+        if self.args.debug:
+            message_log_level = logging.DEBUG
+            formatter = logging.Formatter(DEBUG_FORMAT, "%H:%M:%S")
+        else:
+            message_log_level = logging.INFO
+            formatter = logging.Formatter(MESSAGE_FORMAT, "%H:%M:%S")
+        self.mainwindow.messagelog.setLevel(message_log_level)
+        self.mainwindow.messagelog.setFormatter(formatter)
+        logger.addHandler(self.mainwindow.messagelog)
+
+        # Alert is just for errors, e.g. unable to load file
+        alert_handler = ErrorHandler()
+        alert_handler.setLevel(logging.ERROR)
+        alert_handler.setFormatter(formatter)
+        logger.addHandler(alert_handler)
 
 
 def main() -> None:

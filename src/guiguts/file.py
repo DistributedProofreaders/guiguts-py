@@ -1,6 +1,7 @@
 """Handle file operations"""
 
 import json
+import logging
 import os.path
 import re
 import tkinter as tk
@@ -12,6 +13,8 @@ import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
 from guiguts.utilities import is_windows
+
+logger = logging.getLogger(__package__)
 
 FOLDER_DIR = "folder" if is_windows() else "directory"
 NUM_RECENT_FILES = 9
@@ -116,9 +119,7 @@ class File:
         try:
             maintext().do_open(filename)
         except FileNotFoundError:
-            messagebox.showerror(
-                title="File Not Found", message=f"Unable to open {filename}"
-            )
+            logger.error(f"Unable to open {filename}")
             self.remove_recent_file(filename)
             self.filename = ""
             return
@@ -244,8 +245,10 @@ class File:
             filename: Name of new file to add to list.
         """
         self.remove_recent_file(filename)
-        preferences["RecentFiles"].insert(0, filename)
-        del preferences["RecentFiles"][NUM_RECENT_FILES:]
+        recents = preferences.get("RecentFiles")
+        recents.insert(0, filename)
+        del recents[NUM_RECENT_FILES:]
+        preferences.set("RecentFiles", recents)
 
     def remove_recent_file(self, filename: str) -> None:
         """Remove given filename from list of recent files.
@@ -253,8 +256,10 @@ class File:
         Args:
             filename: Name of new file to add to list.
         """
-        if filename in preferences["RecentFiles"]:
-            preferences["RecentFiles"].remove(filename)
+        recents = preferences.get("RecentFiles")
+        if filename in recents:
+            recents.remove(filename)
+            preferences.set("RecentFiles", recents)
 
     def set_page_marks(self, page_details: PageDetails) -> None:
         """Set page marks from keys/values in dictionary.

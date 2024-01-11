@@ -1,5 +1,6 @@
 """Handle preferences"""
 
+import copy
 import json
 import os
 from typing import Any, Callable
@@ -13,7 +14,7 @@ class Preferences:
     Call `add` to create/define each preference, giving its default value,
     and optionally a callback function, e.g. if loading a pref requires an
     initial UI setting. Once UI is ready, call `run_callbacks` to deal with
-    all required side effects. Get/set value using preferences[key].
+    all required side effects.
 
     Load/Save preferences in temporary file when testing.
 
@@ -57,10 +58,8 @@ class Preferences:
         self._remove_test_prefs_file()
         self.load()
 
-    def __getitem__(self, key: str) -> Any:
+    def get(self, key: str) -> Any:
         """Get preference value using key.
-
-        Provides `value = preferences[key]`
 
         Args:
             key: Name of preference.
@@ -69,19 +68,18 @@ class Preferences:
             Preferences value; default for ``key`` if no preference set;
             ``None`` if no default for ``key``.
         """
-        return self.dict.get(key, self.defaults.get(key))
+        return copy.deepcopy(self.dict.get(key, self.defaults.get(key)))
 
-    def __setitem__(self, key: str, value: Any) -> None:
-        """Set preference value and save to file.
-
-        Provides `preferences[key] = value`
+    def set(self, key: str, value: Any) -> None:
+        """Set preference value and save to file if value has changed.
 
         Args:
             key: Name of preference.
             value: Value for preference.
         """
-        self.dict[key] = value
-        self.save()
+        if self.get(key) != value:
+            self.dict[key] = value
+            self.save()
 
     def __del__(self) -> None:
         """Remove any test prefs file when finished."""
@@ -145,7 +143,7 @@ class Preferences:
         for key in self.callbacks.keys():
             callback = self.callbacks[key]
             if callback is not None:
-                callback(self[key])
+                callback(self.get(key))
 
     def _remove_test_prefs_file(self) -> None:
         """Remove temporary JSON file used for prefs during testing."""
