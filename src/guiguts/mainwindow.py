@@ -289,7 +289,7 @@ class MainText(tk.Text):
             self.linenumbers.grid()
         else:
             self.linenumbers.grid_remove()
-        preferences["LineNumbers"] = show
+        preferences.set("LineNumbers", show)
 
     def line_numbers_shown(self) -> bool:
         """Check if line numbers are shown.
