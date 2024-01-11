@@ -14,7 +14,7 @@ class Preferences:
     Call `add` to create/define each preference, giving its default value,
     and optionally a callback function, e.g. if loading a pref requires an
     initial UI setting. Once UI is ready, call `run_callbacks` to deal with
-    all required side effects. Get/set value using preferences[key].
+    all required side effects.
 
     Load/Save preferences in temporary file when testing.
 
