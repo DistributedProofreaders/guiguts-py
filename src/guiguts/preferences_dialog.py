@@ -1,12 +1,13 @@
 """Dialog to handle preferences"""
 
 import tkinter as tk
-from tkinter import simpledialog, ttk
+from tkinter import ttk
 
+from guiguts.dialogs import OkCancelDialog
 from guiguts.preferences import preferences
 
 
-class PreferencesDialog(simpledialog.Dialog):
+class PreferencesDialog(OkCancelDialog):
     """A Tk simpledialog that allows the user to view/edit all preferences.
 
     Attributes:
@@ -39,23 +40,9 @@ class PreferencesDialog(simpledialog.Dialog):
             self.entries[key].grid(row=row, column=1)
         return frame
 
-    def buttonbox(self) -> None:
-        """Override default to set up OK and Cancel buttons."""
-        frame = ttk.Frame(self, padding=5)
-        frame.pack()
-        ok_button = ttk.Button(
-            frame, text="OK", default="active", command=self.ok_pressed
-        )
-        ok_button.grid(column=1, row=1)
-        cancel_button = ttk.Button(
-            frame, text="Cancel", default="normal", command=self.cancel_pressed
-        )
-        cancel_button.grid(column=2, row=1)
-        self.bind("<Return>", lambda event: self.ok_pressed())
-        self.bind("<Escape>", lambda event: self.cancel_pressed())
-
-    def ok_pressed(self) -> None:
-        """Update all preferences from the corresponding ``Entry``` widget.
+    def ok_press_complete(self) -> bool:
+        """Overridden to update all preferences from the corresponding
+        ``Entry``` widget.
 
         Does not cope with non-string values at the moment, since get()
         always returns a string.
@@ -63,8 +50,4 @@ class PreferencesDialog(simpledialog.Dialog):
         for key in preferences.keys():
             preferences.set(key, self.entries[key].get())
         preferences.save()
-        self.destroy()
-
-    def cancel_pressed(self) -> None:
-        """Destroy dialog."""
-        self.destroy()
+        return True

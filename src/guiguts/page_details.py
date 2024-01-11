@@ -4,6 +4,7 @@ import roman  # type: ignore[import-untyped]
 import tkinter as tk
 from tkinter import simpledialog, ttk
 
+from guiguts.dialogs import OkCancelDialog
 from guiguts.mainwindow import maintext
 
 STYLE_COLUMN = "#2"
@@ -106,12 +107,13 @@ class PageDetails(dict[str, PageDetail]):
         self.recalculate()
 
 
-class PageDetailsDialog(simpledialog.Dialog):
-    """A Tk simpledialog that allows the user to view/edit page details.
+class PageDetailsDialog(OkCancelDialog):
+    """A dialog that allows the user to view/edit page details.
 
     Attributes:
-        labels: Dictionary of ``Label`` widgets showing preference keys.
-        entries: Dictionary of ``Entry`` widgets showing preference values.
+        master_details: Dictionary of page details as used by text file.
+        details: Temporary dictionary to hold values as changed in dialog.
+        changed: True if any changes have been made in dialog.
     """
 
     def __init__(self, parent: tk.Tk, page_details: PageDetails) -> None:
@@ -211,28 +213,9 @@ class PageDetailsDialog(simpledialog.Dialog):
         self.populate_list(self.details, self.list.index(row_id))
         self.changed = True
 
-    def buttonbox(self) -> None:
-        """Override default to set up OK and Cancel buttons."""
-        frame = ttk.Frame(self, padding=5)
-        frame.pack()
-        ok_button = ttk.Button(
-            frame, text="OK", default="active", command=self.ok_pressed
-        )
-        ok_button.grid(column=1, row=1)
-        cancel_button = ttk.Button(
-            frame, text="Cancel", default="normal", command=self.cancel_pressed
-        )
-        cancel_button.grid(column=2, row=1)
-        self.bind("<Return>", lambda event: self.ok_pressed())
-        self.bind("<Escape>", lambda event: self.cancel_pressed())
-
-    def ok_pressed(self) -> None:
-        """Update page label settings from the dialog."""
+    def ok_press_complete(self) -> bool:
+        """Overridden to update page label settings from the dialog."""
         if self.changed:
             self.master_details.copy_details_from(self.details)
             maintext().set_modified(True)
-        self.destroy()
-
-    def cancel_pressed(self) -> None:
-        """Destroy dialog."""
-        self.destroy()
+        return True
