@@ -1,16 +1,15 @@
 """Define key components of main window"""
 
 
-from datetime import datetime
 from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found]
+import logging
 import os.path
 from PIL import Image, ImageTk
 import re
-import sys
 import time
 import traceback
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 from types import TracebackType
 from typing import Any, Callable, Optional
@@ -18,6 +17,7 @@ from typing import Any, Callable, Optional
 from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, is_x11
 
+logger = logging.getLogger(__package__)
 
 TEXTIMAGE_WINDOW_ROW = 0
 TEXTIMAGE_WINDOW_COL = 0
@@ -55,7 +55,7 @@ class Root(tk.Tk):
         writing it to stderr.
         """
         err = "Tkinter Exception\n" + "".join(traceback.format_exception(exc, val, tb))
-        messagelog().error(err)
+        logger.error(err)
 
 
 class Menu(tk.Menu):
@@ -742,36 +742,48 @@ class MessageLogDialog(tk.Toplevel):
         self.messagelog.insert("end", message)
 
 
-class MessageLog:
-    """Handles the output of messages."""
+class ErrorHandler(logging.Handler):
+    """Handle GUI output of error messages."""
 
-    def __init__(self) -> None:
-        """Initialize message logging.
+    def __init__(self, *args: Any) -> None:
+        """Initialize error logging handler."""
+        super().__init__(*args)
 
-        Attributes:
-            _messagelog: List of messages that have been output.
-            dialog: The dialog to write the messages to
+    def emit(self, record: logging.LogRecord) -> None:
+        """Output error message to message box.
+
+        Args:
+            record: Record containing error message.
         """
+        messagebox.showerror(title=record.levelname, message=record.getMessage())
+
+
+class MessageLog(logging.Handler):
+    """Handle GUI output of all messages."""
+
+    def __init__(self, *args: Any) -> None:
+        """Initialize the message log handler."""
+        super().__init__(*args)
         self._messagelog: str = ""
         self.dialog: MessageLogDialog
 
-    def error(self, error: str) -> None:
-        """Output an error message to the message log dialog
-
-        If the dialog does not exist, create it.
+    def emit(self, record: logging.LogRecord) -> None:
+        """Log message in message log.
 
         Args:
-            error: Message to be output.
+            record: Record containing message.
         """
-        date_time = datetime.now().strftime("%H:%M:%S:")
-        error = f"{date_time} {error}\n"
-        sys.stderr.write(error)
-        self._messagelog += error
+        message = self.format(record) + "\n"
+        self._messagelog += message
 
-        # If dialog exists, append error, otherwise create dialog & write whole log
+        # If dialog is visible, append error
         if hasattr(self, "dialog") and self.dialog.winfo_exists():
-            self.dialog.append(error)
-        else:
+            self.dialog.append(message)
+            self.dialog.lift()
+
+    def show(self) -> None:
+        """Show the message log dialog."""
+        if not (hasattr(self, "dialog") and self.dialog.winfo_exists()):
             self.dialog = MessageLogDialog(root())
             self.dialog.append(self._messagelog)
         self.dialog.lift()
@@ -976,9 +988,3 @@ def statusbar() -> StatusBar:
     """Return the single StatusBar widget"""
     assert MainWindow.statusbar is not None
     return MainWindow.statusbar
-
-
-def messagelog() -> MessageLog:
-    """Return the single MessageLog object"""
-    assert MainWindow.messagelog is not None
-    return MainWindow.messagelog

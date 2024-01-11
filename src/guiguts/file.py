@@ -1,6 +1,7 @@
 """Handle file operations"""
 
 import json
+import logging
 import os.path
 import re
 import tkinter as tk
@@ -10,6 +11,8 @@ from typing import Any, Callable, Final, TypedDict, Literal
 from guiguts.mainwindow import maintext, sound_bell
 from guiguts.preferences import preferences
 from guiguts.utilities import is_windows
+
+logger = logging.getLogger(__package__)
 
 FOLDER_DIR = "folder" if is_windows() else "directory"
 NUM_RECENT_FILES = 9
@@ -112,9 +115,7 @@ class File:
         try:
             maintext().do_open(filename)
         except FileNotFoundError:
-            messagebox.showerror(
-                title="File Not Found", message=f"Unable to open {filename}"
-            )
+            logger.error(f"Unable to open {filename}")
             self.remove_recent_file(filename)
             self.filename = ""
             return
