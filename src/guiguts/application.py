@@ -93,17 +93,17 @@ class Guiguts:
             self.file.load_file(self.args.filename)
         elif self.args.recent:
             index = self.args.recent - 1
-            self.file.load_file(preferences["RecentFiles"][index])
+            self.file.load_file(preferences.get("RecentFiles")[index])
 
     @property
     def auto_image(self) -> bool:
         """Auto image flag: setting causes side effects in UI
         & starts repeating check."""
-        return preferences["AutoImage"]
+        return preferences.get("AutoImage")
 
     @auto_image.setter
     def auto_image(self, value: bool) -> None:
-        preferences["AutoImage"] = value
+        preferences.set("AutoImage", value)
         statusbar().set("see img", "Auto Img" if value else "See Img")
         if value:
             self.image_dir_check()
@@ -295,7 +295,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_file_recent_menu(self, parent: Menu) -> None:
         """Create the Recent Documents menu."""
         recent_menu = Menu(parent, "Recent Doc~uments")
-        for count, file in enumerate(preferences["RecentFiles"], start=1):
+        for count, file in enumerate(preferences.get("RecentFiles"), start=1):
             recent_menu.add_button(
                 f"~{count}: {file}", lambda fn=file: self.open_file(fn)
             )
