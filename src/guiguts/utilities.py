@@ -1,6 +1,12 @@
 """Handy utility functions"""
 
+import json
 import platform
+import logging
+import os.path
+from typing import Any, Optional
+
+logger = logging.getLogger(__package__)
 
 # Flag so application code can detect if within a pytest run - only use if really needed
 # See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
@@ -38,3 +44,21 @@ def _is_system(system: str) -> bool:
         if _is_system.system not in ["Darwin", "Linux", "Windows"]:
             raise Exception("Unknown windowing system")
         return _is_system.system == system
+
+
+def load_dict_from_json(filename: str) -> Optional[dict[str, Any]]:
+    """If file exists, attempt to load into dict.
+
+    Args:
+        filename: Name of JSON file to load.
+
+    Returns:
+        Dictionary if loaded successfully, or None.
+    """
+    if os.path.isfile(filename):
+        with open(filename, "r") as fp:
+            try:
+                return json.load(fp)
+            except json.decoder.JSONDecodeError as exc:
+                logger.error(f"Unable to load {filename}\n" + str(exc))
+    return None
