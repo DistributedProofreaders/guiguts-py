@@ -60,5 +60,7 @@ def load_dict_from_json(filename: str) -> Optional[dict[str, Any]]:
             try:
                 return json.load(fp)
             except json.decoder.JSONDecodeError as exc:
-                logger.error(f"Unable to load {filename}\n" + str(exc))
+                logger.error(
+                    f"Unable to load {filename} -- not valid JSON format\n" + str(exc)
+                )
     return None
