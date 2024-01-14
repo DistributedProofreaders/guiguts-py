@@ -2,10 +2,14 @@
 
 import copy
 import json
+import logging
 import os
 from typing import Any, Callable
 
-from guiguts.utilities import is_x11, _called_from_test
+from guiguts.utilities import is_x11, _called_from_test, load_dict_from_json
+
+
+logger = logging.getLogger(__package__)
 
 
 class Preferences:
@@ -56,7 +60,6 @@ class Preferences:
         self.prefsfile = os.path.join(self.prefsdir, prefs_name)
 
         self._remove_test_prefs_file()
-        self.load()
 
     def get(self, key: str) -> Any:
         """Get preference value using key.
@@ -132,9 +135,9 @@ class Preferences:
 
     def load(self) -> None:
         """Load preferences dictionary from JSON file."""
-        if os.path.isfile(self.prefsfile):
-            with open(self.prefsfile, "r") as fp:
-                self.dict = json.load(fp)
+        prefs_dict = load_dict_from_json(self.prefsfile)
+        if prefs_dict is not None:
+            self.dict = prefs_dict
 
     def run_callbacks(self) -> None:
         """Run all defined callbacks, passing value as argument.

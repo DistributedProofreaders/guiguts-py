@@ -51,7 +51,7 @@ class Guiguts:
         self.logging_init()
         logger.info("Guiguts started")
 
-        self.set_preferences_defaults()
+        self.initialize_preferences()
 
         self.file = File(self.filename_changed)
 
@@ -259,10 +259,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         messagebox.showinfo(title="Spawn stdout", message=result.stdout)
         messagebox.showinfo(title="Spawn stderr", message=result.stderr)
 
-    def set_preferences_defaults(self) -> None:
-        """Set default preferences - will be overridden by any values set
-        in the Preferences file.
-        """
+    def initialize_preferences(self) -> None:
+        """Set default preferences and load settings from the GGPrefs file."""
 
         def set_auto_image(value: bool) -> None:
             self.auto_image = value
@@ -276,6 +274,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(
             "LineNumbers", lambda show: maintext().show_line_numbers(show)
         )
+        preferences.load()
 
     # Lay out menus
     def init_menus(self) -> None:

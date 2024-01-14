@@ -12,7 +12,7 @@ from guiguts.mainwindow import maintext, sound_bell
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
-from guiguts.utilities import is_windows
+from guiguts.utilities import is_windows, load_dict_from_json
 
 logger = logging.getLogger(__package__)
 
@@ -193,12 +193,9 @@ class File:
         Args:
             basename - name of current text file - bin file has ".bin" appended.
         """
-        binfile_name = bin_name(basename)
-        if not os.path.isfile(binfile_name):
-            return
-        with open(binfile_name, "r") as fp:
-            bin_dict = json.load(fp)
-        self.interpret_bin(bin_dict)
+        bin_dict = load_dict_from_json(bin_name(basename))
+        if bin_dict is not None:
+            self.interpret_bin(bin_dict)  # type: ignore[arg-type]
 
     def save_bin(self, basename: str) -> None:
         """Save bin file associated with current file.
