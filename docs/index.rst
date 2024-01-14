@@ -31,3 +31,13 @@ File
 =========
     
 .. automodule:: file
+ 
+Page Details
+============
+    
+.. automodule:: page_details
+ 
+Dialogs
+=======
+    
+.. automodule:: dialogs

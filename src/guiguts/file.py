@@ -6,9 +6,11 @@ import os.path
 import re
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
-from typing import Any, Callable, Final, TypedDict, Literal
+from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 from guiguts.mainwindow import maintext, sound_bell
+import guiguts.page_details as page_details
+from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
 from guiguts.utilities import is_windows
 
@@ -19,13 +21,13 @@ NUM_RECENT_FILES = 9
 PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".json"
 
-BINFILE_KEY_PAGEMARKS: Final = "pagemarks"
+BINFILE_KEY_PAGEDETAILS: Final = "pagedetails"
 BINFILE_KEY_INSERTPOS: Final = "insertpos"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
 
 
 class BinDict(TypedDict):
-    pagemarks: dict[str, str]
+    pagedetails: PageDetails
     insertpos: str
     imagedir: str
 
@@ -47,6 +49,7 @@ class File:
         self._filename = ""
         self._filename_callback = filename_callback
         self._image_dir = ""
+        self.page_details = PageDetails()
 
     @property
     def filename(self) -> str:
@@ -78,6 +81,7 @@ class File:
         self.filename = ""
         self.image_dir = ""
         self.remove_page_marks()
+        self.page_details = PageDetails()
 
     def open_file(self, filename: str = "") -> str:
         """Open and load a text file.
@@ -123,6 +127,7 @@ class File:
         self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
+        self.page_details.recalculate()
         self.store_recent_file(filename)
         # Load complete, so set filename (including side effects)
         self.filename = filename
@@ -213,7 +218,14 @@ class File:
             bin_dict: Dictionary loaded from bin file
         """
         self.set_initial_position(bin_dict.get(BINFILE_KEY_INSERTPOS))
-        self.dict_to_page_marks(bin_dict.get(BINFILE_KEY_PAGEMARKS))
+        # Since object loaded from bin file is a dictionary of dictionaries,
+        # need to create PageDetails from the loaded raw data.
+        if page_details := bin_dict.get(BINFILE_KEY_PAGEDETAILS):
+            for img, detail in page_details.items():
+                self.page_details[img] = PageDetail(
+                    detail["index"], detail["style"], detail["number"]
+                )
+        self.set_page_marks(self.page_details)
         self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
 
     def create_bin(self) -> BinDict:
@@ -223,9 +235,10 @@ class File:
         Returns:
             Dictionary of settings to be saved in bin file
         """
+        self.update_page_marks(self.page_details)
         bin_dict: BinDict = {
             BINFILE_KEY_INSERTPOS: maintext().get_insert_index(),
-            BINFILE_KEY_PAGEMARKS: self.dict_from_page_marks(),
+            BINFILE_KEY_PAGEDETAILS: self.page_details,
             BINFILE_KEY_IMAGEDIR: self.image_dir,
         }
         return bin_dict
@@ -253,16 +266,17 @@ class File:
             recents.remove(filename)
             preferences.set("RecentFiles", recents)
 
-    def dict_to_page_marks(self, page_marks_dict: Any) -> None:
+    def set_page_marks(self, page_details: PageDetails) -> None:
         """Set page marks from keys/values in dictionary.
 
         Args:
-            page_marks_dict: Dictionary of page mark indexes
+            page_details: Dictionary of page details, including indexes.
         """
         self.remove_page_marks()
-        if page_marks_dict:
-            for mark, index in page_marks_dict.items():
-                maintext().mark_set(mark, index)
+        if page_details:
+            for img, detail in page_details.items():
+                mark = page_mark_from_img(img)
+                maintext().mark_set(mark, detail["index"])
                 maintext().mark_gravity(mark, tk.LEFT)
 
     def set_initial_position(self, index: str | None) -> None:
@@ -275,17 +289,17 @@ class File:
             index = "1.0"
         maintext().set_insert_index(index, see=True)
 
-    def dict_from_page_marks(self) -> dict[str, str]:
-        """Create dictionary of page mark locations.
+    def update_page_marks(self, page_details: PageDetails) -> None:
+        """Update page mark locations in page details structure.
 
-        Returns:
-            Dictionary with marks as keys and indexes as values
+        Args:
+            page_details: Dictionary of page details, including indexes.
         """
-        page_marks_dict: dict[str, str] = {}
         mark = "1.0"
         while mark := page_mark_next(mark):
-            page_marks_dict[mark] = maintext().index(mark)
-        return page_marks_dict
+            img = img_from_page_mark(mark)
+            assert img in page_details
+            page_details[img]["index"] = maintext().index(mark)
 
     def mark_page_boundaries(self) -> None:
         """Loop through whole file, ensuring all page separator lines
@@ -293,27 +307,35 @@ class File:
         start of each page separator line.
         """
 
+        self.page_details = PageDetails()
+        page_num_style = page_details.STYLE_ARABIC
+        page_num = "1"
+
         page_separator_regex = r"File:.+?([^/\\ ]+)\.(png|jpg)"
         pattern = re.compile(page_separator_regex)
         search_start = "1.0"
         while page_index := maintext().search(
             page_separator_regex, search_start, regexp=True, stopindex="end"
         ):
-            line_start = page_index + " linestart"
+            line_start = maintext().index(page_index + " linestart")
             line_end = page_index + " lineend"
             line = maintext().get(line_start, line_end)
-            if match := pattern.search(
-                line
-            ):  # Always matches since same regex as earlier search
+            # Always matches since same regex as earlier search
+            if match := pattern.search(line):
                 (page, ext) = match.group(1, 2)
                 standard_line = f"-----File: {page}.{ext}"
                 standard_line += "-" * (75 - len(standard_line))
                 if line != standard_line:
                     maintext().delete(line_start, line_end)
                     maintext().insert(line_start, standard_line)
-                page_mark = PAGEMARK_PREFIX + page
+                page_mark = page_mark_from_img(page)
                 maintext().mark_set(page_mark, line_start)
                 maintext().mark_gravity(page_mark, tk.LEFT)
+                self.page_details[page] = PageDetail(
+                    line_start, page_num_style, page_num
+                )
+                page_num_style = page_details.STYLE_DITTO
+                page_num = "+1"
 
             search_start = line_end
 
@@ -334,12 +356,11 @@ class File:
         """
         return page_mark_next("1.0") != ""
 
-    def get_current_image_name(self) -> str:
-        """Find basename of the image file corresponding to where the
-        insert cursor is.
+    def get_current_page_mark(self) -> str:
+        """Find page mark corresponding to where the insert cursor is.
 
         Returns:
-            Basename of image file. Empty string if none found.
+            Name of preceding mark. Empty string if none found.
         """
         insert = maintext().get_insert_index()
         mark = insert
@@ -355,8 +376,20 @@ class File:
         if not good_mark:
             if mark := page_mark_next(insert):
                 good_mark = mark
+        return good_mark
 
-        return img_from_page_mark(good_mark)
+    def get_current_image_name(self) -> str:
+        """Find basename of the image file corresponding to where the
+        insert cursor is.
+
+        Returns:
+            Basename of image file. Empty string if none found.
+        """
+        mark = self.get_current_page_mark()
+        if mark == "":
+            return ""
+        else:
+            return img_from_page_mark(mark)
 
     def get_current_image_path(self) -> str:
         """Return the path of the image file for the page where the insert
@@ -380,6 +413,18 @@ class File:
             mustexist=True, title="Select " + FOLDER_DIR + " containing scans"
         )
 
+    def get_current_page_label(self) -> str:
+        """Find page label corresponding to where the insert cursor is.
+
+        Returns:
+            Page label of current page. Empty string if none found.
+        """
+        img = self.get_current_image_name()
+        if img == "":
+            return ""
+        else:
+            return self.page_details[img]["label"]
+
     def goto_line(self) -> None:
         """Go to the line number the user enters"""
         line_num = simpledialog.askinteger(
@@ -388,18 +433,35 @@ class File:
         if line_num is not None:
             maintext().set_insert_index(f"{line_num}.0", see=True)
 
-    def goto_page(self) -> None:
-        """Go to the page the user enters"""
-        page_num = simpledialog.askstring(
+    def goto_image(self) -> None:
+        """Go to the image the user enters"""
+        image_num = simpledialog.askstring(
             "Go To Page", "Image number", parent=maintext()
         )
-        if page_num is not None:
+        self.do_goto_image(image_num)
+
+    def do_goto_image(self, image_num: Optional[str]) -> None:
+        """Go to page corresponding to the given image number.
+
+        Args:
+            image_num: Number of image to go to, e.g. "001"
+        """
+        if image_num is not None:
             try:
-                index = maintext().index(PAGEMARK_PREFIX + page_num)
+                index = maintext().index(page_mark_from_img(image_num))
             except tk._tkinter.TclError:  # type: ignore[attr-defined]
-                # Bad page number
+                # Bad image number
                 return
             maintext().set_insert_index(index, see=True)
+
+    def goto_page(self) -> None:
+        """Go to the page the user enters."""
+        page_num = simpledialog.askstring(
+            "Go To Page", "Page number", parent=maintext()
+        )
+        if page_num is not None:
+            image_num = self.page_details.png_from_label(PAGE_LABEL_PREFIX + page_num)
+            self.do_goto_image(image_num)
 
     def prev_page(self) -> None:
         """Go to the start of the previous page"""
@@ -421,7 +483,7 @@ class File:
         """
         insert = maintext().get_insert_index()
         cur_page = self.get_current_image_name()
-        mark = PAGEMARK_PREFIX + cur_page if cur_page else insert
+        mark = page_mark_from_img(cur_page) if cur_page else insert
         while mark := page_mark_next_previous(mark, direction):
             if maintext().compare(mark, "!=", insert):
                 maintext().set_insert_index(mark, see=True)
@@ -480,6 +542,19 @@ def img_from_page_mark(mark: str) -> str:
         Image name.
     """
     return mark.removeprefix(PAGEMARK_PREFIX)
+
+
+def page_mark_from_img(img: str) -> str:
+    """Get page mark from base image name, e.g. "027" gives "Pg027".
+
+    Args:
+        img: Name of png img file whose mark is needed.
+          Does not check validity of png img file name.
+
+    Returns:
+        Page mark string.
+    """
+    return PAGEMARK_PREFIX + img
 
 
 def bin_name(basename: str) -> str:

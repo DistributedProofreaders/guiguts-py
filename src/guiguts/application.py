@@ -27,6 +27,7 @@ from guiguts.mainwindow import (
     statusbar,
     ErrorHandler,
 )
+from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences
 from guiguts.preferences_dialog import PreferencesDialog
 from guiguts.utilities import is_mac
@@ -201,6 +202,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def show_preferences_dialog(self, *args: Any) -> None:
         """Show the preferences display/edit dialog."""
         PreferencesDialog(root())
+
+    def show_page_details_dialog(self, *args: Any) -> None:
+        """Show the page details display/edit dialog."""
+        PageDetailsDialog(root(), self.file.page_details)
 
     def open_document(self, args: list[str]) -> None:
         """Handle drag/drop on Macs.
@@ -380,7 +385,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "img",
             update=lambda: "Img: " + self.file.get_current_image_name(),
         )
-        statusbar.add_binding("img", "<ButtonRelease-1>", self.file.goto_page)
+        statusbar.add_binding("img", "<ButtonRelease-1>", self.file.goto_image)
 
         statusbar.add("prev img", text="<", width=1)
         statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
@@ -398,6 +403,16 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         statusbar.add("next img", text=">", width=1)
         statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
+
+        statusbar.add(
+            "page label",
+            text="Lbl: ",
+            update=lambda: "Lbl: " + self.file.get_current_page_label(),
+        )
+        statusbar.add_binding("page label", "<ButtonRelease-1>", self.file.goto_page)
+        statusbar.add_binding(
+            "page label", "<ButtonRelease-3>", self.show_page_details_dialog
+        )
 
     def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""
