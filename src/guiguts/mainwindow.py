@@ -16,6 +16,7 @@ from typing import Any, Callable, Optional
 
 from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, is_x11
+from guiguts.widgets import grab_focus
 
 logger = logging.getLogger(__package__)
 
@@ -37,16 +38,7 @@ class Root(tk.Tk):
         self.option_add("*tearOff", False)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.after_idle(self.grab_focus)
-
-    def grab_focus(self) -> None:
-        """Arcane calls to force window manager to put root window
-        to the front and make it active. Then set focus to the text window.
-        """
-        self.lift()
-        self.call("wm", "iconify", ".")
-        self.call("wm", "deiconify", ".")
-        maintext().focus_set()
+        self.after_idle(lambda: grab_focus(self, self, maintext()))
 
     def report_callback_exception(
         self, exc: type[BaseException], val: BaseException, tb: TracebackType | None
@@ -364,7 +356,6 @@ class MainText(tk.Text):
         """
         with open(fname, "w", encoding="utf-8") as fh:
             fh.write(self.get_text())
-            self.set_modified(False)
 
     def do_open(self, fname: str) -> None:
         """Load text from file into widget.
@@ -732,9 +723,9 @@ class ScrolledReadOnlyText(tk.Text):
 class MessageLogDialog(tk.Toplevel):
     """A Tk simpledialog that displays error/info messages."""
 
-    def __init__(self, parent: tk.Tk, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize messagelog dialog."""
-        super().__init__(parent, *args, **kwargs)
+        super().__init__(root(), *args, **kwargs)
         self.title("Message Log")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -794,7 +785,7 @@ class MessageLog(logging.Handler):
     def show(self) -> None:
         """Show the message log dialog."""
         if not (hasattr(self, "dialog") and self.dialog.winfo_exists()):
-            self.dialog = MessageLogDialog(root())
+            self.dialog = MessageLogDialog()
             self.dialog.append(self._messagelog)
         self.dialog.lift()
 

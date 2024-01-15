@@ -16,6 +16,7 @@ if __name__ == "__main__" and __package__ is None:
     __package__ == "guiguts"
 
 
+from guiguts.checkers import run_pptxt
 from guiguts.file import File, NUM_RECENT_FILES
 from guiguts.mainwindow import (
     root,
@@ -281,6 +282,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Create all the menus."""
         self.init_file_menu()
         self.init_edit_menu()
+        self.init_tools_menu()
         self.init_view_menu()
         self.init_help_menu()
         self.init_os_menu()
@@ -334,6 +336,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_edit.add_cut_copy_paste()
         menu_edit.add_separator()
         menu_edit.add_button("Pre~ferences...", lambda: PreferencesDialog(root()))
+
+    def init_tools_menu(self) -> None:
+        """Create the Tools menu."""
+        menu_edit = Menu(menubar(), "~Tools")
+        menu_edit.add_button("PP~txt", lambda: run_pptxt(self.file.filename))
 
     def init_view_menu(self) -> None:
         """Create the View menu."""

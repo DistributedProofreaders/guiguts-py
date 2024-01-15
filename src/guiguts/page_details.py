@@ -4,7 +4,7 @@ import roman  # type: ignore[import-untyped]
 import tkinter as tk
 from tkinter import simpledialog, ttk
 
-from guiguts.dialogs import OkCancelDialog
+from guiguts.widgets import OkCancelDialog
 from guiguts.mainwindow import maintext
 
 STYLE_COLUMN = "#2"

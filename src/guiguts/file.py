@@ -143,6 +143,7 @@ class File:
         """
         if self.filename:
             maintext().do_save(self.filename)
+            maintext().set_modified(False)
             self.save_bin(self.filename)
             return self.filename
         else:
@@ -162,6 +163,7 @@ class File:
             self.store_recent_file(fn)
             self.filename = fn
             maintext().do_save(fn)
+            maintext().set_modified(False)
             self.save_bin(fn)
         return fn
 

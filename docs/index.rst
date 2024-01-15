@@ -37,7 +37,12 @@ Page Details
     
 .. automodule:: page_details
  
-Dialogs
+Checkers
+========
+    
+.. automodule:: checkers
+ 
+Widgets
 =======
     
-.. automodule:: dialogs
+.. automodule:: widgets
