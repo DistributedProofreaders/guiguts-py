@@ -6,7 +6,6 @@ import argparse
 import logging
 import os.path
 import re
-import subprocess
 from tkinter import messagebox
 from typing import Any
 import webbrowser
@@ -237,29 +236,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
 
-    def spawn_process(self, *args: Any) -> None:
-        """Spawn a subprocess.
-
-        Executes a command, sends input to the process and captures
-        stdout and stderr from the process.
-        """
-        try:
-            result = subprocess.run(
-                ["python", "child.py"],
-                input="Convert me to uppercase",
-                text=True,
-                capture_output=True,
-            )
-        except FileNotFoundError:
-            result = subprocess.run(
-                ["python3", "child.py"],
-                input="Convert me to uppercase",
-                text=True,
-                capture_output=True,
-            )
-        messagebox.showinfo(title="Spawn stdout", message=result.stdout)
-        messagebox.showinfo(title="Spawn stderr", message=result.stderr)
-
     def initialize_preferences(self) -> None:
         """Set default preferences and load settings from the GGPrefs file."""
 
@@ -311,8 +287,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.menu_file.add_button(
             "~Close", self.close_file, "Cmd+W" if is_mac() else ""
         )
-        self.menu_file.add_separator()
-        self.menu_file.add_button("Spawn ~Process", self.spawn_process)
         if not is_mac():
             self.menu_file.add_separator()
             self.menu_file.add_button("E~xit", self.quit_program, "")
