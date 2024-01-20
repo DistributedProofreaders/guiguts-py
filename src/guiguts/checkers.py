@@ -1,13 +1,14 @@
 """Support running of checking tools"""
 
+import io
 import logging
-import os.path
-import subprocess
 import tkinter as tk
 from tkinter import font
-from typing import Any
+from typing import Any, Callable
 
 from guiguts.mainwindow import maintext, root, ScrolledReadOnlyText
+from guiguts.tools.pptxt import pptxt
+from guiguts.tools.pptxt import color
 from guiguts.widgets import ToplevelDialog
 
 logger = logging.getLogger(__package__)
@@ -15,86 +16,25 @@ logger = logging.getLogger(__package__)
 TOOL_TMPFILE = "ggtmpfile.txt"
 
 
-def run_pptxt(pathname: str) -> None:
-    """Run the pptxt tool on the current file.
+def run_pptxt() -> None:
+    """Run the pptxt tool on the current file."""
+    run_tool(pptxt, "PPtxt results", verbose=False, highlight=True)
+
+
+def run_tool(tool_func: Callable, title: str, **kwargs: Any) -> None:
+    """Run a tool & display results in dialog.
 
     Args:
-        pathname: Path name of currently loaded file.
+        tool_func: Function to run.
+        title: Title for dialog.
+        kwargs: Arguments to pass to tool, e.g. verbose=True.
     """
-    result = run_tool("pptxt", pathname)
-    if result.returncode == 0:
-        dialog = CheckerDialog("PPtxt results")
-        dialog.set_text(result.stdout)
-
-
-def run_tool(tool_name: str, pathname: str) -> subprocess.CompletedProcess:
-    """Run a tool. Pass the name of a temporary file containing
-    the currently loaded text as the sole argument to the tool.
-
-    Subprocess is run in the current project folder.
-
-    Args:
-        tool_name: Name of tool to run. For now, assumes this is the
-          basename of a python script in the tools subdir, e.g.
-          `pptxt` assumes tool is `tools/pptxt.py`.
-          May be handled differently in due course.
-        path_name: Path name of currently loaded file.
-
-    Returns:
-        CompletedProcess object containing stdout & stderr output.
-    """
-    script = os.path.join(os.path.dirname(__file__), "tools", tool_name + ".py")
-
-    # Change to project dir to run tool in case any current dir
-    # is read-only/under the release, or in case any files get left behind.
-    save_cwd = os.getcwd()
-    os.chdir(os.path.dirname(pathname))
-    maintext().do_save(TOOL_TMPFILE)
-    result = run_python_tool(script)
-    os.remove(TOOL_TMPFILE)
-    os.chdir(save_cwd)
-
-    if result.returncode != 0:
-        if result.stderr:
-            logger.error(f"Error running {tool_name}. Details in message log")
-            logger.info(result.stderr)
-        else:
-            logger.error(f"Unknown error running {tool_name}")
-    return result
-
-
-def run_python_tool(script_name: str) -> subprocess.CompletedProcess:
-    """Run python tool, allowing for interpreter being named either
-    `python` or `python3`.
-
-    Args:
-        script_name: Pathname of script to run.
-
-    Returns:
-        CompletedProcess object containing stdout & stderr output.
-    """
-    try:
-        result = run_subprocess(["python3", script_name, TOOL_TMPFILE])
-    except FileNotFoundError:
-        result = run_subprocess(["python", script_name, TOOL_TMPFILE])
-    return result
-
-
-def run_subprocess(command: list[str]) -> subprocess.CompletedProcess:
-    """Spawn a subprocess.
-
-    Executes a command, sends input to the process and captures
-    stdout and stderr from the process.
-
-    Args:
-        command: List of strings containing command and arguments.
-    """
-    return subprocess.run(
-        command,
-        text=True,
-        encoding="utf-8",
-        capture_output=True,
-    )
+    buffer = maintext().get(1.0, tk.END)
+    string_in = io.StringIO(buffer)
+    string_out = io.StringIO()
+    tool_func(string_in, string_out, **kwargs)
+    dialog = CheckerDialog(title)
+    dialog.set_text(string_out.getvalue())
 
 
 class CheckerDialog(ToplevelDialog):
@@ -125,6 +65,8 @@ class CheckerDialog(ToplevelDialog):
         self.text.tag_config("red", foreground="red")
         self.text.tag_config("green", foreground="green")
         self.text.tag_config("yellow", foreground="yellow")
+        self.text.tag_config("redonyellow", foreground="red", background="yellow")
+
         bold_font = font.Font(self.text, self.text.cget("font"))
         bold_font.configure(weight="bold")
         self.text.tag_config("bold", font=bold_font)
@@ -133,12 +75,13 @@ class CheckerDialog(ToplevelDialog):
         self.text.tag_config("italic", font=italic_font)
         self.text.tag_config("underline", underline=True)
 
-        self.format_text("red", "\033[91m")
-        self.format_text("green", "\033[92m")
-        self.format_text("yellow", "\033[93m")
-        self.format_text("bold", "\033[1m")
-        self.format_text("italic", "\033[3m")
-        self.format_text("underline", "\033[4m")
+        self.format_text("red", color.RED)
+        self.format_text("green", color.GREEN)
+        self.format_text("yellow", color.YELLOW)
+        self.format_text("redonyellow", color.REDONYELLOW)
+        self.format_text("bold", color.BOLD)
+        self.format_text("italic", color.ITALIC)
+        self.format_text("underline", color.UNDERLINE)
 
     def format_text(self, tag: str, code: str) -> None:
         """Format text based on ANSI escape sequences.
@@ -148,10 +91,11 @@ class CheckerDialog(ToplevelDialog):
             code: Escape sequence start code.
         """
         code_len = len(code)
+        end_len = len(color.END)
         while start := self.text.search(code, "1.0"):
-            end = self.text.search("\033[0m", start)
+            end = self.text.search(color.END, start)
             if not end:
                 return
             self.text.tag_add(tag, start, end)
-            self.text.delete(end, f"{end}+4c")
+            self.text.delete(end, f"{end}+{end_len}c")
             self.text.delete(start, f"{start}+{code_len}c")

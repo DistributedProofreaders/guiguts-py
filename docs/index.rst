@@ -46,3 +46,8 @@ Widgets
 =======
     
 .. automodule:: widgets
+ 
+Tools/pptxt
+===========
+    
+.. automodule:: tools.pptxt

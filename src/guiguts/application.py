@@ -340,7 +340,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         menu_edit = Menu(menubar(), "~Tools")
-        menu_edit.add_button("PP~txt", lambda: run_pptxt(self.file.filename))
+        menu_edit.add_button("PP~txt", run_pptxt)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
