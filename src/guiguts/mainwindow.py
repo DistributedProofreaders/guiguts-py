@@ -363,7 +363,9 @@ class MainText(tk.Text):
             fname: Name of file to save text to.
         """
         with open(fname, "w", encoding="utf-8") as fh:
-            fh.write(self.get(1.0, tk.END))
+            fh.write(
+                self.get(1.0, f"{tk.END}-1c")
+            )  # "-1c" because Tk has an extra newline at tk.END
             self.set_modified(False)
 
     def do_open(self, fname: str) -> None:
