@@ -220,10 +220,10 @@ class File:
         md5checksum = bin_dict.get(BINFILE_KEY_MD5CHECKSUM)
         if md5checksum and md5checksum != self.get_md5_checksum():
             logger.error(
-                """Main file and bin (.json) file do not match.
-    File may have been edited in a different editor.
-    You may continue, but page boundary positions
-    may not be accurate."""
+                "Main file and bin (.json) file do not match.\n"
+                "  File may have been edited in a different editor.\n"
+                "  You may continue, but page boundary positions\n"
+                "  may not be accurate."
             )
         self.set_initial_position(bin_dict.get(BINFILE_KEY_INSERTPOS))
         # Since object loaded from bin file is a dictionary of dictionaries,
@@ -258,7 +258,7 @@ class File:
         Returns:
             MD5 checksum
         """
-        return hashlib.md5(maintext().get(1.0, tk.END).encode()).hexdigest()
+        return hashlib.md5(maintext().get_text().encode()).hexdigest()
 
     def store_recent_file(self, filename: str) -> None:
         """Store given filename in list of recent files.
