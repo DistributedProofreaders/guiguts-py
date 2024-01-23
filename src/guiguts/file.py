@@ -156,6 +156,7 @@ class File:
             initialdir=os.path.dirname(self.filename),
             filetypes=[("All files", "*")],
         ):
+            self.store_recent_file(fn)
             self.filename = fn
             maintext().do_save(fn)
             self.save_bin(fn)
