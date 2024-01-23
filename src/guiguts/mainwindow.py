@@ -363,7 +363,7 @@ class MainText(tk.Text):
             fname: Name of file to save text to.
         """
         with open(fname, "w", encoding="utf-8") as fh:
-            fh.write(self.get(1.0, tk.END))
+            fh.write(self.get_text())
             self.set_modified(False)
 
     def do_open(self, fname: str) -> None:
@@ -396,6 +396,16 @@ class MainText(tk.Text):
         if see:
             self.see(tk.INSERT)
             self.focus_set()
+
+    def get_text(self) -> str:
+        """Return all the text from the text widget.
+
+        Strips final additional newline that widget adds at tk.END.
+
+        Returns:
+            String containing text widget contents.
+        """
+        return self.get(1.0, f"{tk.END}-1c")
 
     # def mark_next(self, index: tk._tkinter.Tcl_Obj) -> str :
     # pos = super().mark_next(index)

@@ -1,5 +1,6 @@
 """Handle file operations"""
 
+import hashlib
 import json
 import logging
 import os.path
@@ -21,12 +22,14 @@ NUM_RECENT_FILES = 9
 PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".json"
 
+BINFILE_KEY_MD5CHECKSUM: Final = "md5checksum"
 BINFILE_KEY_PAGEDETAILS: Final = "pagedetails"
 BINFILE_KEY_INSERTPOS: Final = "insertpos"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
 
 
 class BinDict(TypedDict):
+    md5checksum: str
     pagedetails: PageDetails
     insertpos: str
     imagedir: str
@@ -215,6 +218,14 @@ class File:
         Args:
             bin_dict: Dictionary loaded from bin file
         """
+        md5checksum = bin_dict.get(BINFILE_KEY_MD5CHECKSUM)
+        if md5checksum and md5checksum != self.get_md5_checksum():
+            logger.error(
+                "Main file and bin (.json) file do not match.\n"
+                "  File may have been edited in a different editor.\n"
+                "  You may continue, but page boundary positions\n"
+                "  may not be accurate."
+            )
         self.set_initial_position(bin_dict.get(BINFILE_KEY_INSERTPOS))
         # Since object loaded from bin file is a dictionary of dictionaries,
         # need to create PageDetails from the loaded raw data.
@@ -235,11 +246,20 @@ class File:
         """
         self.update_page_marks(self.page_details)
         bin_dict: BinDict = {
+            BINFILE_KEY_MD5CHECKSUM: self.get_md5_checksum(),
             BINFILE_KEY_INSERTPOS: maintext().get_insert_index(),
             BINFILE_KEY_PAGEDETAILS: self.page_details,
             BINFILE_KEY_IMAGEDIR: self.image_dir,
         }
         return bin_dict
+
+    def get_md5_checksum(self) -> str:
+        """Get checksum from maintext file contents.
+
+        Returns:
+            MD5 checksum
+        """
+        return hashlib.md5(maintext().get_text().encode()).hexdigest()
 
     def store_recent_file(self, filename: str) -> None:
         """Store given filename in list of recent files.
