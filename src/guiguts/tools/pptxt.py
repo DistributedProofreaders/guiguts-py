@@ -9,17 +9,20 @@ import os
 import io
 import platform
 import regex as re
+from typing import Dict, Union
 
 ########################################################
 # pptxt.py
 # Perl author: Roger Franks (DP:rfrank) - 2009
 # Go author: Roger Franks (DP:rfrank) - 2020
 # Python author: Quentin Campbell (DP:qgc) - 2024
-# Last edit: 15-jan-2024
+# Last edit: 22-jan-2024
 ########################################################
 
 
 class color:
+    """ANSI Escape Sequences to bracket text for highlighting."""
+
     RED = "\033[91m"
     GREEN = "\033[92m"
     YELLOW = "\033[93m"
@@ -30,7 +33,13 @@ class color:
     END = "\033[0m"
 
 
-def is_valid_file(parser, arg):
+def is_valid_file(parser: argparse.ArgumentParser, arg: str) -> str:
+    """check whether the specified path is an existing regular file or not.
+
+    Args:
+        parser: instance of ArgumentParser() whose error() method may be called.
+        arg: file path to check.
+    """
     if not os.path.isfile(arg):
         parser.error("The file %s does not exist" % arg)
 
@@ -39,9 +48,30 @@ def is_valid_file(parser, arg):
         return arg
 
 
-def pptxt(string_in, string_out, verbose, highlight):
-    def decorate(string, list_of_tuples, style):
+def pptxt(
+    string_in: io.StringIO, string_out: io.StringIO, verbose: bool, highlight: bool
+) -> None:
+    """Runs several diverse tests on a Latin-1 or UTF-8 text file and generates a single consolidated report.
+
+    Args:
+        string_in: io.StringIO() memory buffer with lines of a text file.
+        string_out: initially empty io.StringIO() memory buffer to which report records are written.
+        verbose: boolean variable which determines whether all or only a sample of each test results is reported.
+        highlight: boolean variable which determines whether certain items in the report are highlighted.
+    """
+
+    def decorate(string: str, list_of_tuples: list[tuple], style: str) -> str:
+        """Insert ANSI escape sequences into a text string to highlight all or parts.
+
+        Args:
+            string: text string (parts of) which to be highlighted
+            list_of_tuples: list of tuples (slice_start, slice_length) that define slices of 'string' to be highlighted.
+            style: text string specifying highlighting style for each slice.
+        """
+
         class super:
+            """Superscript characters to replace digits 2,3,4 & 5 when 'super' highlighting specified"""
+
             TWO = "²"
             THREE = "³"
             FOUR = "⁴"
@@ -511,26 +541,15 @@ def pptxt(string_in, string_out, verbose, highlight):
 
         return string
 
-    def get_tuples(string, substring):
-        list_of_tuples = []
-        ptr = 0
-        slice_length = len(substring)
+    def make_a_report_record(line_number: int, line: str, wrap: bool = True) -> str:
+        """Return a print-ready report record.
 
-        while ptr < len(string):
-            if string[ptr : ptr + slice_length] == substring:
-                list_of_tuples.append((ptr, slice_length))
-                ptr += slice_length
-
-            else:
-                ptr += 1
-
-        # The list of tuples returned may be empty
-        return list_of_tuples
-
-    def make_a_report_record(line_number, line, wrap=True):
-        # Return a record ready for printing to the report.
-        # The default is to wrap the input line so that no
-        # section exceeds 70 characters.
+        Args:
+            line_number: line number of the book line to be reported.
+            line: text of the book line to be reported (with possible highlighting).
+            wrap: boolean - default is to wrap so that no section of a multi-line
+                  report record exceeds 70 characters.
+        """
 
         if wrap:
             # Wrap the text in the argument 'line' into
@@ -547,14 +566,22 @@ def pptxt(string_in, string_out, verbose, highlight):
 
         return template.format(line_number, line)
 
-    def get_centered_slice_endpoints(indx, para):
-        # Define the start and end positions of a slice of the
-        # 'para' string such that the position denoted by
-        # 'indx' is roughly the center of the slice. The slice
-        # will have as many whole words that can fit into about
-        # 30 characters either side of 'indx'. If 'indx' is
-        # near the start or end of the paragraph then the slice
-        # cannot be centered around that position.
+    def get_centered_slice_endpoints(indx: int, para: str) -> tuple[int, int]:
+        """Define the start and end positions of a slice
+           of a string containing only whole words.
+
+        Args:
+            indx: position in string about which the slice will be centered.
+            para: a text string from which a slice will be extracted.
+        """
+
+        # The slice of the paragraph text to be defined is such
+        # that the position denoted by 'indx' is roughly the
+        # center of the slice. The slice will have as many whole
+        # words that can fit into about 30 characters either side
+        # of 'indx'. If 'indx' is near the start or end of the
+        # paragraph then the slice will not be centered around
+        # that position.
 
         llim = indx - 30
         rlim = indx + 30
@@ -574,7 +601,7 @@ def pptxt(string_in, string_out, verbose, highlight):
         # and end of the slice of the 'paragrpah' string defined by llim and
         # rlim may have partial words. Expand the slice at both ends until first
         # whitespace character found or start or end of paragraph encountered.
-        # The slice that is defined will now have only complete words.
+        # The slice that is defined will now have only whole words.
 
         while llim > 0 and para[llim : llim + 1] != " ":
             llim -= 1
@@ -584,10 +611,14 @@ def pptxt(string_in, string_out, verbose, highlight):
 
         return llim, rlim
 
-    def wrap_text9(line):
-        # Wrap the text in 'line' into a string with embedded newlines
-        # and a leader of 9 spaces for all lines after the first.
+    def wrap_text9(line: str) -> str:
+        """Wraps the text from 'line' into a string with embedded newlines
+           and a leader of 9 spaces for all lines after the first. No section
+           of a rewrapped line will exceed 70 characters in length.
 
+        Args:
+            line: a text string to be rewrapped if necessary.
+        """
         line2 = ""
         ch_cnt = 0
         line_length = len(line)
@@ -606,11 +637,12 @@ def pptxt(string_in, string_out, verbose, highlight):
     # Scan book for superfluous asterisks
     ######################################################################
 
-    def asterisk_check():
+    def asterisk_check() -> None:
+        """Scans text of each book line for superfluous asterisks."""
         print("asterisk check\n", file=string_out)
 
-        # Regex for for a thought-break
-        re_tb = re.compile(r"\*       \*       \*       \*       \*$")
+        # Regex for a thought-break  **DISABLED** - see comment below
+        # re_tb = re.compile(r"\*       \*       \*       \*       \*$")
 
         # Regex for a random '*' in text
         re_as = re.compile(r"\*")
@@ -660,7 +692,11 @@ def pptxt(string_in, string_out, verbose, highlight):
     # does not start with a space
     ######################################################################
 
-    def adjacent_spaces():
+    def adjacent_spaces() -> None:
+        """Scans text of each book line for adjacent spaces."""
+
+        # If the line starts with one or more spaces (poetry, block-quotes, etc.,
+        # adjacent spaced will not be reported.
         print("adjacent spaces check\n", file=string_out)
 
         # Regex for for two adjacent spaces
@@ -709,7 +745,8 @@ def pptxt(string_in, string_out, verbose, highlight):
     # Scan book for trailing spaces
     ######################################################################
 
-    def trailing_spaces():
+    def trailing_spaces() -> None:
+        """Scans each book line for trailing spaces."""
         print("trailing spaces check\n", file=string_out)
 
         # Regex for a line with one trailing space at end
@@ -749,19 +786,18 @@ def pptxt(string_in, string_out, verbose, highlight):
         print(template.format("-" * 80), file=string_out)
 
     ######################################################################
-    # Unusual character check. This will collect and output to the log
-    # file, lines that contain characters ('weirdos') not normally found
-    # in an English text. A caret underneath such characters highlights
-    # them in the log file.
+    # Unusual character check. This will collect and output to the log file,
+    # lines that contain characters ('weirdos') not normally found in an
+    # an English text. Each 'weirdo' on a line in the report is highlighted.
     ######################################################################
 
-    def weird_characters():
+    def weird_characters() -> None:
+        """Collects lines containing unusual characters. Lines in the report
+        are grouped by unusual character and each instance of the character
+        on a report line is highlighted."""
         print("unusual characters check", file=string_out)
 
         no_weirdos = True
-
-        # arrow = "↑"
-        arrow = "^"
 
         # Regex for a line of containing only normal characters.
         re_all_normal = re.compile(r"^[A-Za-z0-9\s.,:;?!\-_—–=“”‘’{}]+$")
@@ -783,11 +819,10 @@ def pptxt(string_in, string_out, verbose, highlight):
         # The dictionary and its values is mapped directly to the layout in the log by
         # the code that follows.
 
-        weird_dict = {}
+        # weird_dict = {}  # See next line to keep mypy happy!
+        weird_dict: Dict[str, list[tuple]] = {}
 
         for line in book:
-            marker_str = ""
-
             # Test for a line containing one or more 'weird' characters.
 
             if not re_all_normal.search(line) and not re_all_whitespace.search(line):
@@ -904,7 +939,8 @@ def pptxt(string_in, string_out, verbose, highlight):
                         ptr += 1
 
                     print(
-                        decorate(output_record, list_of_tuples, "red"), file=string_out
+                        decorate(output_record, list_of_tuples, "redonyellow"),
+                        file=string_out,
                     )
 
                 rec_cnt += 1
@@ -932,7 +968,8 @@ def pptxt(string_in, string_out, verbose, highlight):
     # blank line spacing check
     ######################################################################
 
-    def spacing_check():
+    def spacing_check() -> None:
+        """Blank line spacing check that flags other than 4121, 421 or 411 spacing."""
         print("spacing check", file=string_out)
 
         comment = "\nNB Any spacing until the first four-line space is ignored. From there, DP expects\n"
@@ -954,14 +991,6 @@ def pptxt(string_in, string_out, verbose, highlight):
         # String of spacing counts
         s = ""
 
-        # Record to be written to log. It's contructed from the line number that starts
-        # the first text block of a sequence of blank-line delineated text blocks that
-        # eventually end with exactly 4 blank lines. The string of counts of blank lines
-        # found in the sequence is appended.
-        # NB It also handles an input file in which no blocks of text end with exactly
-        #    4 blank lines.
-        output_record = ""
-
         # Regex for an empty line or all whitespace
         re_spaces = re.compile(r"^ *$")
 
@@ -970,8 +999,11 @@ def pptxt(string_in, string_out, verbose, highlight):
         repl_ones = "1..1"
 
         # Regexes for counts/sequences of counts to replace with highlighted versions.
-        # NB The highlighting involves replacing the values in the regex with their
-        #    superscript version. That is, same digits but as superscripts.
+        # NB1 The highlighting involves replacing the values in the regex with their
+        #     superscript version. That is, same digits but as superscripts.
+        # NB2 Earlier versions of this check allowed a choice of highlighting by
+        #     changing the color of the digit(s) or replacing them with their
+        #     superscript version.
         re_3 = re.compile(r"3")
         re_5 = re.compile(r"5")
         re_22 = re.compile(r"22")
@@ -991,41 +1023,33 @@ def pptxt(string_in, string_out, verbose, highlight):
             # Here if non-blank line.
             #
             # If encountered after seeing four or more consecutive
-            # blank lines, start a new string of spaces counts. this
+            # blank lines, start a new string of spaces counts. This
             # handles the possibility there may be 5 blank lines, the
             # fifth being there in error. That count of 5 will be
-            # specially flagged in the output.
+            # highlighted in the output.
 
             if consec >= 4:
-                # Flush the current string of blank-line counts to output rec.
+                # Flush the current string 's' of blank-line counts and
+                # make an output record of it for report.
 
                 # Before doing that, replace long sequences of '1' with '1..1'
-                # and flag any 'invalid' counts of blank lines such as 3 or 5.
-
-                list_of_tuples = []
+                # and replace any anomolous counts of blank lines; that is '3',
+                # '5', '22' or '44' by the same digit(s) as a superscript.
 
                 s = re_ones.sub(repl_ones, s)
-
-                L = get_tuples(s, "3")
-                for tple in L:
-                    list_of_tuples.append(tple)
-                L = get_tuples(s, "5")
-                for tple in L:
-                    list_of_tuples.append(tple)
-                L = get_tuples(s, "22")
-                for tple in L:
-                    list_of_tuples.append(tple)
-                L = get_tuples(s, "44")
-                for tple in L:
-                    list_of_tuples.append(tple)
-
-                # s = decorate(s, list_of_tuples, "redonyellow")
-
                 s = re_3.sub(repl_3, s)
                 s = re_5.sub(repl_5, s)
                 s = re_22.sub(repl_22, s)
                 s = re_44.sub(repl_44, s)
 
+                # Generate a report line containing (possibly highlighted) spacing
+                # counts. It's contructed from the line number that starts the first
+                # text block of a sequence of blank-line delineated text blocks that
+                # eventually end with exactly 4 blank lines. The string of counts of
+                # blank lines found in the sequence is appended.
+                #
+                # NB It handles an input file in which no blocks of text start/end with
+                #    exactly 4 blank lines.
                 print(make_a_report_record(last_line_number, s), file=string_out)
 
                 s = str(consec)
@@ -1044,26 +1068,9 @@ def pptxt(string_in, string_out, verbose, highlight):
         # Print last line of buffered output if its not empty.
 
         if len(s) != 0:
-            # Find and highlight any anomalous spacing counts.
-            list_of_tuples = []
-            # First look for sequences of '1's and replace as appropriate.
+            # Find and highlight any anomalous spacing counts as above.
+
             s = re_ones.sub(repl_ones, s)
-            # Next find any '3' counts of blank lines.
-            L = get_tuples(s, "3")
-            for tple in L:
-                list_of_tuples.append(tple)
-            L = get_tuples(s, "5")
-            for tple in L:
-                list_of_tuples.append(tple)
-            L = get_tuples(s, "22")
-            for tple in L:
-                list_of_tuples.append(tple)
-            L = get_tuples(s, "44")
-            for tple in L:
-                list_of_tuples.append(tple)
-
-            # s = decorate(s, list_of_tuples, "redonyellow")
-
             s = re_3.sub(repl_3, s)
             s = re_5.sub(repl_5, s)
             s = re_22.sub(repl_22, s)
@@ -1086,14 +1093,15 @@ def pptxt(string_in, string_out, verbose, highlight):
     # short lines check
     ######################################################################
 
-    def short_lines_check():
+    def short_lines_check() -> None:
+        """Short lines check."""
         print("short lines check\n", file=string_out)
 
         # The below from Project Gutenberg via Roger Franks:
 
-        SHORTEST_PG_LINE = 55
-        LONGEST_PG_LINE = 75
-        FAR_TOO_LONG = 80
+        # SHORTEST_PG_LINE = 55
+        # LONGEST_PG_LINE = 75
+        # FAR_TOO_LONG = 80
 
         # Short line definition:
         #   No leading space but some text (ANY characters)
@@ -1169,20 +1177,18 @@ def pptxt(string_in, string_out, verbose, highlight):
             if verbose or rec_cnt < 5:
                 # Write the two lines in the window to the log. Flag the short one (line 1)
 
-                # Log record is all text so convert line numbers to a string
-                ln1 = str(line_number - 1)
-                ln2 = str(line_number)
-
                 window_line_1 = decorate(
-                    window_line_1, [(0, len(window_line_1))], "yellow"
+                    window_line_1, [(0, len(window_line_1))], "redonyellow"
                 )
-                print(make_a_report_record(ln1, window_line_1), file=string_out)
-                # output_record = make_a_report_record(ln1, window_line_1)
+                print(
+                    make_a_report_record(line_number - 1, window_line_1),
+                    file=string_out,
+                )
 
                 # Now do line 2 (which isn't highlighted) but is output as context;
                 # its presence can determine whether the previous line is 'short'.
 
-                print(make_a_report_record(ln2, window_line_2), file=string_out)
+                print(make_a_report_record(line_number, window_line_2), file=string_out)
 
                 print(" ", file=string_out)
 
@@ -1211,7 +1217,8 @@ def pptxt(string_in, string_out, verbose, highlight):
     # long lines check
     ######################################################################
 
-    def long_lines_check():
+    def long_lines_check() -> None:
+        """Long lines check (>72)."""
         print("long lines check\n", file=string_out)
 
         long_line_list = []
@@ -1242,7 +1249,7 @@ def pptxt(string_in, string_out, verbose, highlight):
             if verbose or rec_cnt < 5:
                 # Extract line number, line length and line text from tuple.
 
-                ln = str(tple[0])  # (int) line number
+                ln = tple[0]  # (int) line number
                 ll = str(tple[1])  # (int) line length
                 lt = tple[2]  # (str) line text
 
@@ -1269,7 +1276,7 @@ def pptxt(string_in, string_out, verbose, highlight):
             print("    ...", remaining, "more", file=string_out)
 
         if no_long_lines:
-            print("    no long lines found in text\n", file=string_out)
+            print("    no long lines found\n", file=string_out)
         else:
             print(" ", file=string_out)
 
@@ -1280,7 +1287,8 @@ def pptxt(string_in, string_out, verbose, highlight):
     # repeated words check
     ######################################################################
 
-    def repeated_words_check():
+    def repeated_words_check() -> None:
+        """Repeated words check."""
         print("repeated words check\n", file=string_out)
 
         ###########################################################
@@ -1367,7 +1375,7 @@ def pptxt(string_in, string_out, verbose, highlight):
                     output_record = decorate(
                         para[llim:rlim],
                         [(highlighted_segment_start, highlighted_segment_length)],
-                        "red",
+                        "redonyellow",
                     )
 
                     # Lop off any prefixing spaces at start of record so all records
@@ -1389,7 +1397,7 @@ def pptxt(string_in, string_out, verbose, highlight):
         # Here when no more paras to search
 
         if no_repeated_words:
-            print("    no repeated words found in text\n", file=string_out)
+            print("    no repeated words found\n", file=string_out)
         else:
             print(" ", file=string_out)
 
@@ -1400,7 +1408,8 @@ def pptxt(string_in, string_out, verbose, highlight):
     # ellipses check
     ######################################################################
 
-    def ellipses_check():
+    def ellipses_check() -> None:
+        """Ellipses check."""
         print("ellipses check\n", file=string_out)
 
         # It checks for:
@@ -1474,7 +1483,7 @@ def pptxt(string_in, string_out, verbose, highlight):
             print("    ...", remaining, "more", file=string_out)
 
         if no_ellipses_found:
-            print("    no incorrect ellipse usage found in text\n", file=string_out)
+            print("    no incorrect ellipse usage found\n", file=string_out)
         else:
             print(" ", file=string_out)
 
@@ -1485,7 +1494,8 @@ def pptxt(string_in, string_out, verbose, highlight):
     # abandoned HTML tag check
     ######################################################################
 
-    def html_check():
+    def html_check() -> None:
+        """Abandoned HTML tag check."""
         print("abandoned HTML tag check\n", file=string_out)
 
         # Courtesy limit if user uploads fpgen source, etc.
@@ -1496,7 +1506,7 @@ def pptxt(string_in, string_out, verbose, highlight):
 
         line_number = 1
         for line in book:
-            if res := re_tg.search(line):
+            if re_tg.search(line):
                 if abandoned_HTML_tag_count < 10:
                     HTML_report.append(make_a_report_record(line_number, line))
                 if abandoned_HTML_tag_count == 10:
@@ -1516,7 +1526,7 @@ def pptxt(string_in, string_out, verbose, highlight):
             print(record, file=string_out)
 
         if abandoned_HTML_tag_count == 0:
-            print("    no abandoned HTML tags found in text\n", file=string_out)
+            print("    no abandoned HTML tags found\n", file=string_out)
         else:
             print(" ", file=string_out)
 
@@ -1527,19 +1537,18 @@ def pptxt(string_in, string_out, verbose, highlight):
     # Unicode numeric character references check.
     ######################################################################
 
-    def uniocode_numeric_character_check():
+    def uniocode_numeric_character_check() -> None:
+        """Unicode numeric character references check."""
         print("unicode numeric character references check\n", file=string_out)
 
         # Courtesy limit if user uploads fpgen source, etc.
         numeric_char_reference_count = 0
 
-        numeric_char_report = []
         re_unicode = re.compile(r"(&#[0-9]{1,4};|&#x[0-9a-fA-F]{1,4};)")
 
-        rec_cnt = 0
         line_number = 1
         for line in book:
-            if res := re_unicode.search(line):
+            if re_unicode.search(line):
                 if verbose or numeric_char_reference_count < 5:
                     print(make_a_report_record(line_number, line), file=string_out)
 
@@ -1569,13 +1578,26 @@ def pptxt(string_in, string_out, verbose, highlight):
     # dash review
     ######################################################################
 
-    def dash_repl_re0c(matchobj):
+    def dash_repl_re0c(matchobj: re.Match) -> str:
+        """Called to replace exactly 2 emdashes by 1 emdash.
+
+        Args:
+            matchobj: A regex match object.
+        """
+
         return matchobj.group(1) + "—" + matchobj.group(2)
 
-    def dash_repl_re00(matchobj):
+    def dash_repl_re00(matchobj: re.Match) -> str:
+        """Called to remove a hyphen minus between two letters.
+
+        Args:
+            matchobj: A regex match object.
+        """
+
         return matchobj.group(1) + matchobj.group(2)
 
-    def dash_review():
+    def dash_review() -> None:
+        """Hyphen/dashes check."""
         print("hyphen/dashes check", file=string_out)
 
         # The algorithm used below is adopted from the one Roger Franks uses in
@@ -1583,9 +1605,6 @@ def pptxt(string_in, string_out, verbose, highlight):
         # runs multiple passes over the copy. The first set of passes protects
         # what is allowed by overwriting them. The final pass categorises any
         # dashes that remain and flags them in the report.
-
-        no_suspect_dashes_found = True
-        rec_cnt = 0
 
         ####
         # In the PPWB Go version of PPTXT, Roger qualifies and protects the following dash characters & sequences:
@@ -1823,7 +1842,7 @@ def pptxt(string_in, string_out, verbose, highlight):
 
             count = 0
             for record in a_hh:
-                if not "--" in record:
+                if "--" not in record:
                     if verbose:
                         # Print all records.
                         print(record, file=string_out)
@@ -1954,7 +1973,7 @@ def pptxt(string_in, string_out, verbose, highlight):
                 count += 1
 
         if not dash_suspects_found:
-            print("\n    no dash suspects found in text", file=string_out)
+            print("\n    no dash suspects found", file=string_out)
 
         template = "\n{}"
         print(template.format("-" * 80), file=string_out)
@@ -1963,7 +1982,8 @@ def pptxt(string_in, string_out, verbose, highlight):
     # curly quote check (positional, not using a state machine)
     ######################################################################
 
-    def curly_quote_check():
+    def curly_quote_check() -> None:
+        """Curly quote check."""
         print("curly quote check", file=string_out)
 
         # Report floating quotes - “” and ‘’ types.
@@ -2136,12 +2156,885 @@ def pptxt(string_in, string_out, verbose, highlight):
             print(template.format(rec_count_qm - 5), file=string_out)
 
         if rec_count_fq == 0 and rec_count_qd == 0 and rec_count_qm == 0:
-            print("\n    no suspect curly quotes found in text", file=string_out)
+            print("\n    no suspect curly quotes found", file=string_out)
 
         template = "\n{}"
         print(template.format("-" * 80), file=string_out)
 
-    def build_scanno_dictionary():
+    def mask_special_cases(match_obj: re.Match) -> str:
+        """Obfuscate temporarily special case characters. The replacement will
+        be reversed later so obscure Unicode number characters are used that
+        are very unlikely to appear in book texts."""
+        if match_obj.group(2) == "-":
+            repl = "①"
+        elif match_obj.group(2) == "’":
+            repl = "②"
+        elif match_obj.group(2) == "‘":
+            repl = "③"
+        elif match_obj.group(2) == "'":
+            repl = "④"
+        elif match_obj.group(2) == ".":
+            repl = "⑤"
+        elif match_obj.group(2) == "^":
+            repl = "⑥"
+        elif match_obj.group(2) == "—":
+            # Replace emdash with space in this situation
+            repl = " "
+        else:
+            repl = match_obj.group(2)
+        return match_obj.group(1) + repl + match_obj.group(3)
+
+    def get_words_on_line(line: str) -> list[str]:
+        """Parses the text to find all the 'words' on a line
+        and returns them as a (possibly) empty list."""
+
+        if len(line) == 0:
+            return []
+
+        # Words may be surrounded by abandoned HTML tags, entities,
+        # Unicode numeric character references, etc. Remove these
+        # from the line first of all so genuine words are easier to
+        # identify.
+
+        # A document starting with a "<!DOCTYPE>" declaration is
+        # assumed to be an HTML file. We have to treat this HTML
+        # declaration specially as it may overflow onto a second
+        # line in the case of older documents (HTML 4 or XHTML).
+        # Check for this.
+
+        # A flag that needs to exist between function calls.
+        nonlocal long_doctype_decl  # type: ignore[misc]
+
+        re_doctype = re.compile(r"(?i)<!DOCTYPE")
+
+        if long_doctype_decl:
+            # Second line of a long <!DOCTYPE> declaration. Toss it.
+            long_doctype_decl = False
+            return []
+
+        if re_doctype.search(line) and ">" not in line:
+            # Looks like a two-line <!DOCTYPE declaration. Toss it
+            # and set flag to toss the second line too.
+            long_doctype_decl = True
+            return []
+
+        # A short HTML 5 <!DOCTYPE> declaration will not be detected
+        # by the above tests. However it will be detected as an HTML
+        # 'tag' next and removed from line.
+
+        re_tag = re.compile(r"(?s)(<(?=[!\/a-z]).*?(?<=[\"A-Za-z0-9\/]|-)>)")
+        new_line = ""
+        while res := re_tag.search(line):
+            new_line += " " + line[0 : res.start(0)]
+            line = line[res.start(0) + len(res.group(0)) :]
+
+        if len(line) != 0:
+            new_line += " " + line
+        line = new_line
+
+        # Replace HTML entities (e.g. &amp;) with a space.
+        re_entity = re.compile(r"(&[a-z0-9]+?;)")
+        new_line = ""
+        while res := re_entity.search(line):
+            new_line += " " + line[0 : res.start(0)]
+            line = line[res.start(0) + len(res.group(0)) :]
+
+        if len(line) != 0:
+            new_line += " " + line
+        line = new_line
+
+        # Replace Unicode numeric character references with a space.
+        re_unicode = re.compile(r"(&#[0-9]{1,4};|&#x[0-9a-fA-F]{1,4};)")
+        new_line = ""
+        while res := re_unicode.search(line):
+            new_line += " " + line[0 : res.start(0)]
+            line = line[res.start(0) + len(res.group(0)) :]
+
+        if len(line) != 0:
+            new_line += " " + line
+        line = new_line
+
+        # Replace 1/2-style fractions with a space.
+        re_frac = re.compile(r"[0-9]+?/[0-9]+?")
+        new_line = ""
+        while res := re_frac.search(line):
+            new_line += " " + line[0 : res.start(0)]
+            line = line[res.start(0) + len(res.group(0)) :]
+
+        if len(line) != 0:
+            new_line += " " + line
+        line = new_line
+
+        # Replace [99]-type footnote anchors with a space.
+        re_fna = re.compile(r"\[[0-9]+?\]|\[[0-9]+?[a-zA-Z]\]")
+        new_line = ""
+        while res := re_fna.search(line):
+            new_line += " " + line[0 : res.start(0)]
+            line = line[res.start(0) + len(res.group(0)) :]
+
+        if len(line) != 0:
+            new_line += " " + line
+        line = new_line
+
+        # Remove italic markup (_) before letter and after letter or period (.).
+        # re_italic = re.compile("(.*?)(_(?=\p{L})[\p{L}\.]*?(?<=\p{L}|\p{L}\.)_)(.*)")
+        re_italic = re.compile(r"(.*?)(_(?=\p{L}).*?(?<=\p{L}|\.)_)(.*)")
+        while res := re_italic.search(line):
+            t = res.group(2)
+            t = t.replace("_", " ")
+            line = res.group(1) + t + res.group(3)
+
+        # Protect special cases by masking them temporarily:
+        # E.g.
+        # high-flying, hasn’t, ’tis, Househ^d
+        # all stay intact
+        # Capitalisation is retained.
+        # Additionally, an emdash separating words in, for
+        # example, the ToC is replaced by a space.
+
+        # Need these twice to handle alternates
+        # E.g. fo’c’s’le
+
+        # Emdash
+        line = re.sub(
+            r"([\p{L}\p{Nd}\p{P}=])(\—)([\p{L}\p{N}’‘“_\(])", mask_special_cases, line
+        )
+        line = re.sub(
+            r"([\p{L}\p{Nd}\p{P}=])(\—)([\p{L}\p{N}’‘“_\(])", mask_special_cases, line
+        )
+        # Minus
+        line = re.sub(r"([\p{L}①②③④⑤\.=])(\-)([\p{L}\p{N}])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤\.=])(\-)([\p{L}\p{N}])", mask_special_cases, line)
+        # The others.
+        line = re.sub(r"([\p{L}①②③④⑤])(’)([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤])(’)([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤]|^)(’)([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤]|^)(’)([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤])(‘)([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤])(‘)([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤])(\')([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤])(\')([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤]|^)(\')([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(r"([\p{L}①②③④⑤]|^)(\')([\p{L}①②③④⑤])", mask_special_cases, line)
+        line = re.sub(
+            r"([\p{L}①②③④⑤])(\.)([\p{L}①②③④⑤\p{P}])", mask_special_cases, line
+        )
+        line = re.sub(
+            r"([\p{L}①②③④⑤])(\.)([\p{L}①②③④⑤\p{P}])", mask_special_cases, line
+        )
+        line = re.sub(
+            r"([\p{L}①②③④⑤])(\^)([\p{L}①②③④⑤\p{P}])", mask_special_cases, line
+        )
+        line = re.sub(
+            r"([\p{L}①②③④⑤])(\^)([\p{L}①②③④⑤\p{P}])", mask_special_cases, line
+        )
+
+        s = ""
+        indx = 0
+
+        while indx < len(line):
+            # Look for 'words', one character at a time.
+            if (
+                line[indx : indx + 1].isnumeric()
+                or line[indx : indx + 1].isalpha()
+                or line[indx : indx + 1].isspace()
+            ):
+                s = s + line[indx : indx + 1]
+            else:
+                s = s + " "
+            indx += 1
+
+        # Use temporary list to hold the split line while we put
+        # back the protected characters.
+        T = s.split()
+        L = []
+        for n in range(len(T)):
+            # For efficiency!
+            Tn = T[n]
+            Tn = Tn.replace("①", "-")
+            Tn = Tn.replace("②", "’")
+            Tn = Tn.replace("③", "‘")
+            Tn = Tn.replace("④", "'")
+            Tn = Tn.replace("⑤", ".")
+            Tn = Tn.replace("⑥", "^")
+            L.append(Tn)
+        return L
+
+    def scanno_check() -> None:
+        """Checks the 'words' on a line against a long list
+        of commonly misspelled words."""
+        print("scanno check", file=string_out)
+
+        scanno_dictionary = build_scanno_dictionary()
+        scanno_outrecs: Dict[str, list[str]] = {}
+        no_scannos_found = True
+
+        line_number = 1
+        for line in book:
+            # We have the list of words on the line already in
+            # the array 'line_word_list'. It is indexed from
+            # zero, not one.
+
+            L = line_word_list[line_number - 1]
+
+            for word in L:
+                if word in scanno_dictionary:
+                    no_scannos_found = False
+
+                    # Add a record for the scanno to be output to the log later.
+                    # Create the initial entry for this scanno if necessary.
+                    if word not in scanno_outrecs:
+                        scanno_outrecs[word] = []
+                    scanno_outrecs[word].append(make_a_report_record(line_number, line))
+
+            line_number += 1
+
+        # We're done looking for scannos. Report what we found.
+        # NB scanno_outrecs is a dictionary. The keys are a scanno
+        #    and the value is a list of output records (line number,
+        #    line) containing that scanno.
+
+        for scanno in scanno_outrecs:
+            # The scanno word is used as a header for all the lines
+            # output to the report that contain the scanno.
+
+            output_record = "\n" + scanno
+            print(output_record, file=string_out)
+
+            # Now process and output those records.
+
+            rec_cnt = 0
+
+            for output_record in scanno_outrecs[scanno]:
+                # There may be more than one instance of the scanno on
+                # the original line of text. Highlight each instance
+                # in the output record (which contains a copy of 'line).
+
+                slices_to_highlight = []
+                indx = 0
+
+                # We search successively shorter sections of the record.
+                # ignoring the bit previously searched. The record to be
+                # output will always contain at least one instance of the
+                # scanno.
+
+                while True:
+                    # Make sure scanno is not found *within* a word.
+                    # E.g. that scanno 'ou' is not found in 'you'.
+                    pattern = "\\b" + scanno + "\\b"
+
+                    if res := re.search(pattern, output_record[indx:]):
+                        # Each 'slice' of output_record to highlight is
+                        # defined as a tuple:
+                        #   (start of slice in record, length of slice)
+                        indx += res.start()
+                        # Add the slice to our list.
+                        slices_to_highlight.append((indx, len(scanno)))
+                        indx += len(scanno)
+                    else:
+                        break
+
+                # We have a list of slices of the ourput record to be
+                # highlighted before printing to the report. The list
+                # will always contain at least one slice.
+
+                output_record = decorate(
+                    output_record, slices_to_highlight, "redonyellow"
+                )
+
+                if verbose or rec_cnt < 2:
+                    print(output_record, file=string_out)
+
+                rec_cnt += 1
+
+            if not verbose and rec_cnt > 2:
+                # Tell user how many lines above 2 not printed.
+                remaining = len(scanno_outrecs[scanno]) - 2
+                print("    ...", remaining, "more", file=string_out)
+
+        if no_scannos_found:
+            print("\n    no scanno suspects found", file=string_out)
+
+        template = "\n{}"
+        print(template.format("-" * 80), file=string_out)
+
+    def regex_search(word: str, record: str) -> Union[re.Match[str], None]:
+        """Escape any '^' characters in a word then do a regex search
+        for the word in a second string.
+
+        Args:
+            word: A text string (that may contain '^').
+            record: A text string in which 'word' is searched for.
+        """
+
+        word = word.replace("^", r"\^")
+
+        return re.search(word, record)
+
+    def specials_check() -> None:
+        """A series of textual checks. Standalone 0 and 1 and punctuation
+        in unusual situations are among the checks."""
+        print("special situations check", file=string_out)
+
+        # The following is based on Roger Frank's version of
+        # PPTXT that is written in Go and available on the
+        # online PPWB site. It uses tests extracted from
+        # gutcheck that aren't supposed to be included in
+        # earlier checks here.
+
+        # METHOD
+        #
+        # Use a dictionary to collect reports on lines that contain
+        # the 'specials' we are testing for. The keys are the report
+        # headings (e.g. "full stop followed by letter") and the
+        # value for the key is a list containing one or more records
+        # that detail each line containing that 'special'. The records
+        # are in 'output record' format; i.e. line number and text of
+        # line and will be written directly to the log when all lines
+        # in the book examined.
+
+        specials_report: Dict[str, list[str]] = {}
+
+        # Allow Illustrations, Greek, Music or number in '[]'
+        re0000 = re.compile(r"\[[^IGMS\d]")
+        # Punctuation after case-insensitive 'the'.
+        re0001 = re.compile(r"(?i)\bthe\p{P}")
+        # Double punctuation.
+        re0002 = re.compile(r"(,\.)|(\.,)|(,,)|([^\.]\.\.[^\.])")
+        # For mixed case checks.
+        re0003a1 = re.compile(r"..*?[\p{ll}].*?")
+        re0003b1 = re.compile(r"..*?[\p{lu}].*?")
+        re0003a2 = re.compile(r"...*?[\p{ll}].*?")
+        re0003b2 = re.compile(r"...*?[\p{lu}].*?")
+        # For mixed case checks - very rare to end word.
+        re0003c = re.compile("cb|gb|pb|sb|tb|wh|fr|br|qu|tw|gl|fl|sw|gr|sl|cl|iy")
+        # For mixed case checks - very rare to start word.
+        re0003d = re.compile("hr|hl|cb|sb|tb|wb|tl|tn|rn|lt|tj")
+        # Single character line
+        re0006 = re.compile("^.$")
+        # Broken hyphenation
+        re0007 = re.compile(r"(\p{L}\- +?\p{L})|(\p{L} +?\-\p{L})")
+        # Comma spacing regexes
+        re0008a = re.compile(r"\p{L},\p{L}")
+        re0008b = re.compile(r"\p{L},\p{N}")
+        re0008c = re.compile(r"\s,")
+        re0008d = re.compile(r"^,")
+        # Oct. 8,2023 date fotmat
+        re0010 = re.compile(r",[12]\p{Nd}{3}")
+        # I in place of intended !
+        re0011 = re.compile(r"I”")
+        # Disjointed contraction. E.g "I 've"
+        re0012 = re.compile(r"[A-Za-z]’ +?(m|ve|ll|t)\b")
+        # Title/honorific abbreviations
+        re0013 = re.compile(r"Mr,|Mrs,|Dr,|Drs,|Messrs,|Ms,")
+        # Spaced punctuation
+        re0014 = re.compile(r"\s[\?!:;]")
+
+        # HTML tag (Done in a standalone check so removed from here)
+        # Now the first standalone check done and used to warn user
+        # if file looks other than a text file; e.g. HTML or from
+        # fpgen.
+        # re0016 = re.compile(r'(<(?=[!\/a-z]).*?(?<=[\"a-z0-9\/]|-)>)')
+        # Ellipses (Done in a standalone check so removed from here)
+        # re0017 = re.compile(r"([^\.]\.\.\. )|(\.\.\.\.[^\s])|([^\.]\.\.[^\.])|(\.\.\.\.\.+")
+
+        # Quote direction (Done in a standalone check so could remove from here?))
+        re0018 = re.compile(r"(((?<!M)[‘])|[\p{P}]+[‘“])|(\p{L}+[“])|(“ )|( ”)|(‘s\s)")
+        # Standalone 0
+        re0019 = re.compile(r"\b0\b")
+        # Standalone 1 - general test
+        re0020a = re.compile(r"(^|\P{Nd})1($|\P{Nd})")
+        # Standalone 1 - exceptions
+        re0020b = re.compile(
+            r"[\$£]1\b"
+        )  # standalone 1 allowed after dollar/pound sign
+        re0020c = re.compile(r"1,")  # standalone 1 allowed before comma
+        re0020d = re.compile(
+            r"1(-|‑|‒|–|—|―)\p{Nd}"
+        )  # standalone 1 allowed before dash+num
+        re0020e = re.compile(
+            r"\p{Nd}(-|‑|‒|–|—|―)1"
+        )  # standalone 1 allowed after num+dash
+        re0020f = re.compile(
+            r"(^|\P{Nd})1\."
+        )  # standalone 1 allowed as "1." (a numbered list)
+        re0020g = re.compile(r"1st")  # standalone 1 allowed as "1st"
+        # Words mixing alphas and digits - general test.
+        re0021 = re.compile(r"(\p{L}\p{Nd})|(\p{Nd}\p{L})")
+        # Words mixing alphas and digits - exceptions to that test.
+        re0021a = re.compile(r"(^|\P{L})\p{Nd}*[02-9]?1st(\P{L}|$)")
+        re0021b = re.compile(r"(^|\P{L})\p{Nd}*[02-9]?2nd(\P{L}|$)")
+        re0021c = re.compile(r"(^|\P{L})\p{Nd}*[02-9]?3rd(\P{L}|$)")
+        re0021d = re.compile(r"(^|\P{L})\p{Nd}*[4567890]th(\P{L}|$)")
+        re0021e = re.compile(r"(^|\P{L})\p{Nd}*1\p{Nd}th(\P{L}|$)")
+        re0021f = re.compile(r"(^|\P{L})\p{Nd}*[23]d(\P{L}|$)")
+        # Abbreviation &c without period
+        re0023 = re.compile(r"&c([^\.]|$)")
+        # Line starts with (selected) punctuation
+        re0024 = re.compile(r"^[!;:,.?]")
+        # Line starts with hyphen followed by non-hyphen
+        re0025 = re.compile(r"^-[^-]")
+
+        # Periods should not occur after these words
+        no_period_pattern = (
+            r"\P{L}(every\.|i’m\.|during\.|that’s\.|their\.|your\.|our\.|my\.|or\."
+            r"|and\.|but\.|as\.|if\.|the\.|its\.|it’s\.|until\.|than\.|whether\.|i’ll\."
+            r"|whose\.|who\.|because\.|when\.|let\.|till\.|very\.|an\.|among\.|those\."
+            r"|into\.|whom\.|having\.|thence\.)"
+        )
+        re_period = re.compile(no_period_pattern)
+
+        # Commas should not occur after these words
+        no_comma_pattern = (
+            r"\P{L}(the,|it’s,|their,|an,|a,|our,|that’s,|its,|whose,|every,"
+            r"|i’ll,|your,|my,|mr,|mrs,|mss,|mssrs,|ft,|pm,|st,|dr,|rd,|pp,|cf,"
+            r"|jr,|sr,|vs,|lb,|lbs,|ltd,|i’m,|during,|let,|toward,|among,)"
+        )
+        re_comma = re.compile(no_comma_pattern)
+
+        # Paragraph ends in a comma?
+        cnt = 0
+        for line in book:
+            if cnt < len(book) - 1 and line.endswith(",") and book[cnt + 1] == "":
+                heading = "\nparagraph ends in comma"
+                if heading in specials_report:
+                    specials_report[heading].append(make_a_report_record(cnt + 1, line))
+                else:
+                    specials_report[heading] = [make_a_report_record(cnt + 1, line)]
+            cnt += 1
+
+        #####
+        # The following series of checks operate on each line of the book.
+        ####
+
+        line_index = 0
+        for line in book:
+            # Mixed letters/digits in a word. Note the exceptions.
+            if (
+                re0021.search(line)
+                and not re0021a.search(line)
+                and not re0021b.search(line)
+                and not re0021c.search(line)
+                and not re0021d.search(line)
+                and not re0021e.search(line)
+                and not re0021f.search(line)
+            ):
+                heading = "\nmixed letters and digits in word"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0000.search(line):
+                heading = "\nopening square bracket followed by other than I, G, M, S or number"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0001.search(line):
+                # Ignore contexts such as "Will-o’-the-wisp"
+                line_copy = line.replace("-the-", "-")
+                # Try again after eliminating the above context from line
+                if res := re0001.search(line_copy):
+                    heading = "\npunctuation after 'the'"
+                    if heading in specials_report:
+                        specials_report[heading].append(
+                            make_a_report_record(line_index + 1, line)
+                        )
+                    else:
+                        specials_report[heading] = [
+                            make_a_report_record(line_index + 1, line)
+                        ]
+
+            if res := re0002.search(line):
+                # Ignore contexts such as "etc.,"
+                line_copy = line.replace("etc.,", " ")
+                line_copy = line_copy.replace("&c.,", " ")
+                # Try again after eliminating the above context(s) from line
+                if res := re0002.search(line):
+                    heading = "\npunctuation error"
+                    if heading in specials_report:
+                        specials_report[heading].append(
+                            make_a_report_record(line_index + 1, line)
+                        )
+                    else:
+                        specials_report[heading] = [
+                            make_a_report_record(line_index + 1, line)
+                        ]
+
+            ##
+            # The following series of tests operate on words within the line.
+            ##
+
+            in_good_words_list = False  # Temporary until decision on loading 'good words' and/or 'proj dict'.
+
+            # re0003* - check each word separately
+            for word in line_word_list[line_index]:
+                # Check for mixed case within word after the first character,
+                # or after the second character if the first is "’" but not
+                # if the word is in the good word list or it occurs more than
+                # once in the book. NB Until inputting good words/proj dictionary
+                # implemented assume not in good words list so word is always
+                # reported.
+
+                reportme = False
+                if book_word_count[word] < 2 and not in_good_words_list:
+                    # NB The first test above also means the word is never
+                    #    repeated on a line as it appears only once in book.
+
+                    if word.startswith("’"):
+                        # Check lower + upper in word after the second character.
+                        if re0003a2.match(word) and re0003b2.match(word):
+                            reportme = True
+                    else:
+                        # Check lower + upper in word after the first character.
+                        if re0003a1.match(word) and re0003b1.match(word):
+                            reportme = True
+                if reportme:
+                    heading = "\nmixed case within word"
+                    output_record = make_a_report_record(line_index + 1, line)
+
+                    # Highlight the word within the output record just generated.
+
+                    if res := regex_search(word, output_record):
+                        output_record = decorate(
+                            output_record, [(res.start(), len(word))], "redonyellow"
+                        )
+                        if heading in specials_report:
+                            specials_report[heading].append(output_record)
+                        else:
+                            specials_report[heading] = [output_record]
+
+                if len(word) > 2:
+                    # Check word endings (last 2 characters)
+                    last2 = word[len(word) - 2 :]
+                    if res := re0003c.match(last2):
+                        template = "\nquery word ending with {}"
+                        heading = template.format(last2)
+                        output_record = make_a_report_record(line_index + 1, line)
+                        # Find the suspect word on the output record and highlight it.
+                        if res := regex_search(
+                            word, output_record
+                        ):  # Belt-n-braces. Should always match.
+                            output_record = decorate(
+                                output_record, [(res.start(), len(word))], "redonyellow"
+                            )
+                            if heading in specials_report:
+                                specials_report[heading].append(output_record)
+                            else:
+                                specials_report[heading] = [output_record]
+                    # Check word start (first 2 characters)
+                    first2 = word[0:2]
+                    if res := re0003d.match(first2):
+                        template = "\nquery word starting with {}"
+                        heading = template.format(first2)
+                        output_record = make_a_report_record(line_index + 1, line)
+                        # Find the suspect word on the output record and highlight it.
+                        if res := regex_search(
+                            word, output_record
+                        ):  # Belt-n-braces. Should always match.
+                            output_record = decorate(
+                                output_record, [(res.start(), len(word))], "redonyellow"
+                            )
+                            if heading in specials_report:
+                                specials_report[heading].append(output_record)
+                            else:
+                                specials_report[heading] = [output_record]
+
+            ##
+            # We're back to testing whole line again.
+            ##
+
+            if res := re0006.search(line):
+                heading = "\nsingle character line"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0007.search(line):
+                heading = "\nbroken hyphenation"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if (
+                re0008a.search(line)
+                or re0008b.search(line)
+                or re0008c.search(line)
+                or re0008d.search(line)
+            ):
+                heading = "\ncomma spacing"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0010.search(line):
+                heading = "\ndate format"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0011.search(line):
+                heading = "\nI/! check"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0012.search(line):
+                heading = "\ndisjointed contraction"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0013.search(line):
+                heading = "\ntitle abbreviation + comma"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0014.search(line):
+                heading = "\nspaced punctuation"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0018.search(line):
+                heading = "\nquote error (context)"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0019.search(line):
+                heading = "\nstandalone 0"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if (
+                re0020a.search(line)
+                and not re0020b.search(line)
+                and not re0020c.search(line)
+                and not re0020d.search(line)
+                and not re0020e.search(line)
+                and not re0020f.search(line)
+                and not re0020g.search(line)
+            ):
+                heading = "\nstandalone 1"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0023.search(line):
+                heading = "\nabbreviation &c without period"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0024.search(line):
+                heading = "\nline start with suspect punctuation"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if res := re0025.search(line):
+                heading = "\nline start with hyphen and then non-hyphen"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            ##
+            # Non-regex based checks
+            ##
+
+            if "Blank Page" in line:
+                heading = "\nBlank Page place holder found"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if "—-" in line or "-—" in line or "–-" in line or "-–" in line:
+                heading = "\nmixed hyphen/dashd in line"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if "\u00A0" in line:
+                heading = "\nnon-breaking space"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if "\u00AD" in line:
+                heading = "\nsoft hyphen in line"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if "\u0009" in line:
+                heading = "\ntab character in line"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if "&" in line and "&#" not in line:
+                heading = "\nampersand character in line (excluding unicode numeric character references)"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            lc_line = line.lower()
+            if re_comma.search(lc_line):
+                heading = "\nunexpected comma after certain words"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            if re_period.search(lc_line):
+                heading = "\nunexpected period after certain words"
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        make_a_report_record(line_index + 1, line)
+                    )
+                else:
+                    specials_report[heading] = [
+                        make_a_report_record(line_index + 1, line)
+                    ]
+
+            line_index += 1
+
+        # We have at this point a dictionary of headings and accompanying line
+        # text, etc., that are formatted as complete records ready to be written
+        # to the output file. So just output the whole dictionary.
+
+        for heading in sorted(specials_report):
+            print(heading, file=string_out)
+            for record in specials_report[heading]:
+                print(record, file=string_out)
+
+        # We may get here without finding any 'specials' entries.
+        if len(specials_report) == 0:
+            print("\n    no special situations reports.", file=string_out)
+
+        # All done! Write the rule that terminates this section of the report.
+        template = "\n{}"
+        print(template.format("-" * 80), file=string_out)
+
+    def build_scanno_dictionary() -> Dict[str, int]:
+        """Builds a dictionary from a list of common misspelled words."""
         # List of common scannos. Add additions to end of the list.
         # Duplicates will be dealt with when building the dictionary.
 
@@ -5614,872 +6507,13 @@ def pptxt(string_in, string_out, verbose, highlight):
                 scanno_dictionary[wu] = 0
         return scanno_dictionary
 
-    def mask_special_cases(match_obj):
-        if match_obj.group(2) == "-":
-            repl = "①"
-        elif match_obj.group(2) == "’":
-            repl = "②"
-        elif match_obj.group(2) == "‘":
-            repl = "③"
-        elif match_obj.group(2) == "'":
-            repl = "④"
-        elif match_obj.group(2) == ".":
-            repl = "⑤"
-        elif match_obj.group(2) == "^":
-            repl = "⑥"
-        elif match_obj.group(2) == "—":
-            # Replace emdash with space in this situation
-            repl = " "
-        else:
-            repl = match_obj.group(2)
-        return match_obj.group(1) + repl + match_obj.group(3)
-
-    def get_words_on_line(line):
-        # Parses the text to find all the words on a line
-        # and returns them as a (possibly empty) list.
-
-        if len(line) == 0:
-            return []
-
-        # Words may be surrounded by abandoned HTML tags, entities,
-        # Unicode numeric character references, etc. Remove these
-        # from the line first of all so genuine words are easier to
-        # identify.
-
-        # A document starting with a "<!DOCTYPE>" declaration is
-        # assumed to be an HTML file and is rejected by the main
-        # program, so we should never get here and encounter such
-        # a declaration on a line. Just in case, however, we look
-        # out for it as we look out for abandoned HTML tags. But
-        # we have to treat this HTML declaration specially as it
-        # may overflow onto a second line. Check for this.
-
-        nonlocal long_doctype_decl
-
-        re_doctype = re.compile(r"(?i)<!DOCTYPE")
-
-        if long_doctype_decl:
-            # Second line of a long <!DOCTYPE> declaration. Toss it.
-            long_doctype_decl = False
-            return []
-
-        if re_doctype.search(line) and ">" not in line:
-            # Looks like a two-line <!DOCTYPE declaration. Toss it
-            # and set flag to toss the second line too.
-            long_doctype_decl = True
-            return []
-
-        # A short HTML 5 <!DOCTYPE> declaration will not be detected
-        # by the above tests. However it will be detected as an HTML
-        # 'tag' next and removed from line.
-
-        re_tag = re.compile(r"(?s)(<(?=[!\/a-z]).*?(?<=[\"A-Za-z0-9\/]|-)>)")
-        new_line = ""
-        while res := re_tag.search(line):
-            new_line += " " + line[0 : res.start(0)]
-            line = line[res.start(0) + len(res.group(0)) :]
-
-        if len(line) != 0:
-            new_line += " " + line
-        line = new_line
-
-        # Replace HTML entities (e.g. &amp;) with a space.
-        re_entity = re.compile(r"(&[a-z0-9]+?;)")
-        new_line = ""
-        while res := re_entity.search(line):
-            new_line += " " + line[0 : res.start(0)]
-            line = line[res.start(0) + len(res.group(0)) :]
-
-        if len(line) != 0:
-            new_line += " " + line
-        line = new_line
-
-        # Replace Unicode numeric character references with a space.
-        re_unicode = re.compile(r"(&#[0-9]{1,4};|&#x[0-9a-fA-F]{1,4};)")
-        new_line = ""
-        while res := re_unicode.search(line):
-            new_line += " " + line[0 : res.start(0)]
-            line = line[res.start(0) + len(res.group(0)) :]
-
-        if len(line) != 0:
-            new_line += " " + line
-        line = new_line
-
-        # Replace 1/2-style fractions with a space.
-        re_frac = re.compile(r"[0-9]+?/[0-9]+?")
-        new_line = ""
-        while res := re_frac.search(line):
-            new_line += " " + line[0 : res.start(0)]
-            line = line[res.start(0) + len(res.group(0)) :]
-
-        if len(line) != 0:
-            new_line += " " + line
-        line = new_line
-
-        # Replace [99]-type footnote anchors with a space.
-        re_fna = re.compile(r"\[[0-9]+?\]|\[[0-9]+?[a-zA-Z]\]")
-        new_line = ""
-        while res := re_fna.search(line):
-            new_line += " " + line[0 : res.start(0)]
-            line = line[res.start(0) + len(res.group(0)) :]
-
-        if len(line) != 0:
-            new_line += " " + line
-        line = new_line
-
-        # Remove italic markup (_) before letter and after letter or period (.).
-        # re_italic = re.compile("(.*?)(_(?=\p{L})[\p{L}\.]*?(?<=\p{L}|\p{L}\.)_)(.*)")
-        re_italic = re.compile(r"(.*?)(_(?=\p{L}).*?(?<=\p{L}|\.)_)(.*)")
-        while res := re_italic.search(line):
-            t = res.group(2)
-            t = t.replace("_", " ")
-            line = res.group(1) + t + res.group(3)
-
-        # Protect special cases by masking them temporarily:
-        # E.g.
-        # high-flying, hasn’t, ’tis, Househ^d
-        # all stay intact
-        # Capitalisation is retained.
-        # Additionally, an emdash separating words in, for
-        # example, the ToC is replaced by a space.
-
-        # Need these twice to handle alternates
-        # E.g. fo’c’s’le
-
-        # Emdash
-        line = re.sub(
-            r"([\p{L}\p{Nd}\p{P}=])(\—)([\p{L}\p{N}’‘“_\(])", mask_special_cases, line
-        )
-        line = re.sub(
-            r"([\p{L}\p{Nd}\p{P}=])(\—)([\p{L}\p{N}’‘“_\(])", mask_special_cases, line
-        )
-        # Minus
-        line = re.sub(r"([\p{L}①②③④⑤\.=])(\-)([\p{L}\p{N}])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤\.=])(\-)([\p{L}\p{N}])", mask_special_cases, line)
-        # The others.
-        line = re.sub(r"([\p{L}①②③④⑤])(’)([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤])(’)([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤]|^)(’)([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤]|^)(’)([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤])(‘)([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤])(‘)([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤])(\')([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤])(\')([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤]|^)(\')([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(r"([\p{L}①②③④⑤]|^)(\')([\p{L}①②③④⑤])", mask_special_cases, line)
-        line = re.sub(
-            r"([\p{L}①②③④⑤])(\.)([\p{L}①②③④⑤\p{P}])", mask_special_cases, line
-        )
-        line = re.sub(
-            r"([\p{L}①②③④⑤])(\.)([\p{L}①②③④⑤\p{P}])", mask_special_cases, line
-        )
-        line = re.sub(
-            r"([\p{L}①②③④⑤])(\^)([\p{L}①②③④⑤\p{P}])", mask_special_cases, line
-        )
-        line = re.sub(
-            r"([\p{L}①②③④⑤])(\^)([\p{L}①②③④⑤\p{P}])", mask_special_cases, line
-        )
-
-        s = ""
-        indx = 0
-
-        while indx < len(line):
-            # Look for 'words', one character at a time.
-            if (
-                line[indx : indx + 1].isnumeric()
-                or line[indx : indx + 1].isalpha()
-                or line[indx : indx + 1].isspace()
-            ):
-                s = s + line[indx : indx + 1]
-            else:
-                s = s + " "
-            indx += 1
-
-        # Use temporary list to hold the split line while we put
-        # back the protected characters.
-        T = s.split()
-        L = []
-        for n in range(len(T)):
-            # For efficiency!
-            Tn = T[n]
-            Tn = Tn.replace("①", "-")
-            Tn = Tn.replace("②", "’")
-            Tn = Tn.replace("③", "‘")
-            Tn = Tn.replace("④", "'")
-            Tn = Tn.replace("⑤", ".")
-            Tn = Tn.replace("⑥", "^")
-            L.append(Tn)
-        return L
-
-    def scanno_check():
-        print("scanno check", file=string_out)
-
-        scanno_dictionary = build_scanno_dictionary()
-        scanno_outrecs = {}
-        no_scannos_found = True
-
-        line_number = 1
-        for line in book:
-            # We have the list of words on the line already in
-            # the array 'line_word_list'. It is indexed from
-            # zero, not one.
-
-            L = line_word_list[line_number - 1]
-
-            for word in L:
-                if word in scanno_dictionary:
-                    no_scannos_found = False
-
-                    # Add a record for the scanno to be output to the log later.
-                    # Create the initial entry for this scanno if necessary.
-                    if word not in scanno_outrecs:
-                        scanno_outrecs[word] = []
-                    scanno_outrecs[word].append(make_a_report_record(line_number, line))
-
-            line_number += 1
-
-        # We're done looking for scannos. Report what we found.
-        # NB scanno_outrecs is a dictionary. The keys are a scanno
-        #    and the value is a list of output records (line number,
-        #    line) containing that scanno.
-
-        for scanno in scanno_outrecs:
-            # The scanno word is used as a header for all the lines
-            # output to the report that contain the scanno.
-
-            output_record = "\n" + scanno
-            print(output_record, file=string_out)
-
-            # Now process and output those records.
-
-            rec_cnt = 0
-
-            for output_record in scanno_outrecs[scanno]:
-                # There may be more than one instance of the scanno on
-                # the original line of text. Highlight each instance
-                # in the output record (which contains a copy of 'line).
-
-                slices_to_highlight = []
-                indx = 0
-
-                # We search successively shorter sections of the record.
-                # ignoring the bit previously searched. The record to be
-                # output will always contain at least one instance of the
-                # scanno.
-
-                while True:
-                    # Make sure scanno is not found *within* a word.
-                    # E.g. that scanno 'ou' is not found in 'you'.
-                    pattern = "\\b" + scanno + "\\b"
-
-                    if res := re.search(pattern, output_record[indx:]):
-                        # Each 'slice' of output_record to highlight is
-                        # defined as a tuple:
-                        #   (start of slice in record, length of slice)
-                        indx += res.start()
-                        # Add the slice to our list.
-                        slices_to_highlight.append((indx, len(scanno)))
-                        indx += len(scanno)
-                    else:
-                        break
-
-                # We have a list of slices of the ourput record to be
-                # highlighted before printing to the report. The list
-                # will always contain at least one slice.
-
-                output_record = decorate(
-                    output_record, slices_to_highlight, "redonyellow"
-                )
-
-                if verbose or rec_cnt < 2:
-                    print(output_record, file=string_out)
-
-                rec_cnt += 1
-
-            if not verbose and rec_cnt > 2:
-                # Tell user how many lines above 2 not printed.
-                remaining = len(scanno_outrecs[scanno]) - 2
-                print("    ...", remaining, "more", file=string_out)
-
-        if no_scannos_found:
-            print("\n    no scanno suspects found in text", file=string_out)
-
-        template = "\n{}"
-        print(template.format("-" * 80), file=string_out)
-
-    def regex_search(word, record):
-        # 'word' may contain '^' which needs to be escaped for regex search.
-        word = word.replace("^", r"\^")
-
-        return re.search(word, record)
-
-    def specials_check():
-        print("special situations check", file=string_out)
-
-        # The following is based on Roger Frank's version of
-        # PPTXT that is written in Go and available on the
-        # online PPWB site. It uses tests extracted from
-        # gutcheck that aren't supposed to be included in
-        # earlier checks here.
-
-        # METHOD
-        #
-        # Use a dictionary to collect reports on lines that contain
-        # the 'specials' we are testing for. The keys are the report
-        # headings (e.g. "full stop followed by letter") and the
-        # value for the key is a list containing one or more records
-        # that detail each line containing that 'special'. The records
-        # are in 'output record' format; i.e. line number and text of
-        # line and will be written directly to the log when all lines
-        # in the book examined.
-
-        specials_report = {}
-
-        ## Allow Illustrations, Greek, Music or number in '[]'
-        re0000 = re.compile(r"\[[^IGMS\d]")
-        ## Punctuation after case-insensitive 'the'.
-        re0001 = re.compile(r"(?i)\bthe\p{P}")
-        ## Double punctuation.
-        re0002 = re.compile(r"(,\.)|(\.,)|(,,)|([^\.]\.\.[^\.])")
-        ## For mixed case checks.
-        re0003a1 = re.compile(r"..*?[\p{ll}].*?")
-        re0003b1 = re.compile(r"..*?[\p{lu}].*?")
-        re0003a2 = re.compile(r"...*?[\p{ll}].*?")
-        re0003b2 = re.compile(r"...*?[\p{lu}].*?")
-        ### For mixed case checks - very rare to end word.
-        re0003c = re.compile("cb|gb|pb|sb|tb|wh|fr|br|qu|tw|gl|fl|sw|gr|sl|cl|iy")
-        ### For mixed case checks - very rare to start word.
-        re0003d = re.compile("hr|hl|cb|sb|tb|wb|tl|tn|rn|lt|tj")
-        ### Single character line
-        re0006 = re.compile("^.$")
-        ### Broken hyphenation
-        re0007 = re.compile(r"(\p{L}\- +?\p{L})|(\p{L} +?\-\p{L})")
-        ### Comma spacing regexes
-        re0008a = re.compile(r"\p{L},\p{L}")
-        re0008b = re.compile(r"\p{L},\p{N}")
-        re0008c = re.compile(r"\s,")
-        re0008d = re.compile(r"^,")
-        ### Oct. 8,2023 date fotmat
-        re0010 = re.compile(r",[12]\p{Nd}{3}")
-        ### I in place of intended !
-        re0011 = re.compile(r"I”")
-        ### Disjointed contraction. E.g "I 've"
-        re0012 = re.compile(r"[A-Za-z]’ +?(m|ve|ll|t)\b")
-        ### Title/honorific abbreviations
-        re0013 = re.compile(r"Mr,|Mrs,|Dr,|Drs,|Messrs,|Ms,")
-        ### Spaced punctuation
-        re0014 = re.compile(r"\s[\?!:;]")
-
-        ### HTML tag (Done in a standalone check so removed from here)
-        ### Now the first standalone check done and used to warn user
-        ### if file looks other than a text file; e.g. HTML or from
-        ### fpgen.
-        # re0016 = re.compile(r'(<(?=[!\/a-z]).*?(?<=[\"a-z0-9\/]|-)>)')
-        ### Ellipses (Done in a standalone check so removed from here)
-        # re0017 = re.compile(r"([^\.]\.\.\. )|(\.\.\.\.[^\s])|([^\.]\.\.[^\.])|(\.\.\.\.\.+")
-
-        ### Quote direction (Done in a standalone check so could remove from here?))
-        re0018 = re.compile(r"(((?<!M)[‘])|[\p{P}]+[‘“])|(\p{L}+[“])|(“ )|( ”)|(‘s\s)")
-        ### Standalone 0
-        re0019 = re.compile(r"\b0\b")
-        ### Standalone 1 - general test
-        re0020a = re.compile(r"(^|\P{Nd})1($|\P{Nd})")
-        ### Standalone 1 - exceptions
-        re0020b = re.compile(
-            r"[\$£]1\b"
-        )  # standalone 1 allowed after dollar/pound sign
-        re0020c = re.compile(r"1,")  # standalone 1 allowed before comma
-        re0020d = re.compile(
-            r"1(-|‑|‒|–|—|―)\p{Nd}"
-        )  # standalone 1 allowed before dash+num
-        re0020e = re.compile(
-            r"\p{Nd}(-|‑|‒|–|—|―)1"
-        )  # standalone 1 allowed after num+dash
-        re0020f = re.compile(
-            r"(^|\P{Nd})1\."
-        )  # standalone 1 allowed as "1." (a numbered list)
-        re0020g = re.compile(r"1st")  # standalone 1 allowed as "1st"
-        ## Words mixing alphas and digits - general test.
-        re0021 = re.compile(r"(\p{L}\p{Nd})|(\p{Nd}\p{L})")
-        ## Words mixing alphas and digits - exceptions to that test.
-        re0021a = re.compile(r"(^|\P{L})\p{Nd}*[02-9]?1st(\P{L}|$)")
-        re0021b = re.compile(r"(^|\P{L})\p{Nd}*[02-9]?2nd(\P{L}|$)")
-        re0021c = re.compile(r"(^|\P{L})\p{Nd}*[02-9]?3rd(\P{L}|$)")
-        re0021d = re.compile(r"(^|\P{L})\p{Nd}*[4567890]th(\P{L}|$)")
-        re0021e = re.compile(r"(^|\P{L})\p{Nd}*1\p{Nd}th(\P{L}|$)")
-        re0021f = re.compile(r"(^|\P{L})\p{Nd}*[23]d(\P{L}|$)")
-        ## Abbreviation &c without period
-        re0023 = re.compile(r"&c([^\.]|$)")
-        ## Line starts with (selected) punctuation
-        re0024 = re.compile(r"^[!;:,.?]")
-        ## Line starts with hyphen followed by non-hyphen
-        re0025 = re.compile(r"^-[^-]")
-
-        ## Periods should not occur after these words
-        no_period_pattern = (
-            r"\P{L}(every\.|i’m\.|during\.|that’s\.|their\.|your\.|our\.|my\.|or\."
-            r"|and\.|but\.|as\.|if\.|the\.|its\.|it’s\.|until\.|than\.|whether\.|i’ll\."
-            r"|whose\.|who\.|because\.|when\.|let\.|till\.|very\.|an\.|among\.|those\."
-            r"|into\.|whom\.|having\.|thence\.)"
-        )
-        re_period = re.compile(no_period_pattern)
-
-        ## Commas should not occur after these words
-        no_comma_pattern = (
-            r"\P{L}(the,|it’s,|their,|an,|a,|our,|that’s,|its,|whose,|every,"
-            r"|i’ll,|your,|my,|mr,|mrs,|mss,|mssrs,|ft,|pm,|st,|dr,|rd,|pp,|cf,"
-            r"|jr,|sr,|vs,|lb,|lbs,|ltd,|i’m,|during,|let,|toward,|among,)"
-        )
-        re_comma = re.compile(no_comma_pattern)
-
-        ## Paragraph ends in a comma?
-        cnt = 0
-        for line in book:
-            if cnt < len(book) - 1 and line.endswith(",") and book[cnt + 1] == "":
-                heading = "\nparagraph ends in comma"
-                if heading in specials_report:
-                    specials_report[heading].append(make_a_report_record(cnt + 1, line))
-                else:
-                    specials_report[heading] = [make_a_report_record(cnt + 1, line)]
-            cnt += 1
-
-        #####
-        # The following series of checks operate on each line of the book.
-        ####
-
-        line_index = 0
-        for line in book:
-            ## Mixed letters/digits in a word. Note the exceptions.
-            if (
-                re0021.search(line)
-                and not re0021a.search(line)
-                and not re0021b.search(line)
-                and not re0021c.search(line)
-                and not re0021d.search(line)
-                and not re0021e.search(line)
-                and not re0021f.search(line)
-            ):
-                heading = "\nmixed letters and digits in word"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0000.search(line):
-                heading = "\nopening square bracket followed by other than I, G, M, S or number"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0001.search(line):
-                # Ignore contexts such as "Will-o’-the-wisp"
-                line_copy = line.replace("-the-", "-")
-                # Try again after eliminating the above context from line
-                if res := re0001.search(line_copy):
-                    heading = "\npunctuation after 'the'"
-                    if heading in specials_report:
-                        specials_report[heading].append(
-                            make_a_report_record(line_index + 1, line)
-                        )
-                    else:
-                        specials_report[heading] = [
-                            make_a_report_record(line_index + 1, line)
-                        ]
-
-            if res := re0002.search(line):
-                # Ignore contexts such as "etc.,"
-                line_copy = line.replace("etc.,", " ")
-                line_copy = line_copy.replace("&c.,", " ")
-                # Try again after eliminating the above context(s) from line
-                if res := re0002.search(line):
-                    heading = "\npunctuation error"
-                    if heading in specials_report:
-                        specials_report[heading].append(
-                            make_a_report_record(line_index + 1, line)
-                        )
-                    else:
-                        specials_report[heading] = [
-                            make_a_report_record(line_index + 1, line)
-                        ]
-
-            ##
-            # The following series of tests operate on words within the line.
-            ##
-
-            in_good_words_list = False  # Temporary until decision on loading 'good words' and/or 'proj dict'.
-
-            # re0003* - check each word separately
-            for word in line_word_list[line_index]:
-                # Check for mixed case within word after the first character,
-                # or after the second character if the first is "’" but not
-                # if the word is in the good word list or it occurs more than
-                # once in the book. NB Until inputting good words/proj dictionary
-                # implemented assume not in good words list so word is always
-                # reported.
-
-                reportme = False
-                if book_word_count[word] < 2 and not in_good_words_list:
-                    # NB The first test above also means the word is never
-                    #    repeated on a line as it appears only once in book.
-
-                    if word.startswith("’"):
-                        # Check lower + upper in word after the second character.
-                        if re0003a2.match(word) and re0003b2.match(word):
-                            reportme = True
-                    else:
-                        # Check lower + upper in word after the first character.
-                        if re0003a1.match(word) and re0003b1.match(word):
-                            reportme = True
-                if reportme:
-                    heading = "\nmixed case within word"
-                    output_record = make_a_report_record(line_index + 1, line)
-
-                    # Highlight the word within the output record just generated.
-
-                    if res := regex_search(word, output_record):
-                        output_record = decorate(
-                            output_record, [(res.start(), len(word))], "redonyellow"
-                        )
-                        if heading in specials_report:
-                            specials_report[heading].append(output_record)
-                        else:
-                            specials_report[heading] = [output_record]
-
-                if len(word) > 2:
-                    # Check word endings (last 2 characters)
-                    last2 = word[len(word) - 2 :]
-                    if res := re0003c.match(last2):
-                        template = "\nquery word ending with {}"
-                        heading = template.format(last2)
-                        output_record = make_a_report_record(line_index + 1, line)
-                        # Find the suspect word on the output record and highlight it.
-                        if res := regex_search(
-                            word, output_record
-                        ):  # Belt-n-braces. Should always match.
-                            output_record = decorate(
-                                output_record, [(res.start(), len(word))], "redonyellow"
-                            )
-                            if heading in specials_report:
-                                specials_report[heading].append(output_record)
-                            else:
-                                specials_report[heading] = [output_record]
-                    # Check word start (first 2 characters)
-                    first2 = word[0:2]
-                    if res := re0003d.match(first2):
-                        template = "\nquery word starting with {}"
-                        heading = template.format(first2)
-                        output_record = make_a_report_record(line_index + 1, line)
-                        # Find the suspect word on the output record and highlight it.
-                        if res := regex_search(
-                            word, output_record
-                        ):  # Belt-n-braces. Should always match.
-                            output_record = decorate(
-                                output_record, [(res.start(), len(word))], "redonyellow"
-                            )
-                            if heading in specials_report:
-                                specials_report[heading].append(output_record)
-                            else:
-                                specials_report[heading] = [output_record]
-
-            ##
-            # We're back to testing whole line again.
-            ##
-
-            if res := re0006.search(line):
-                heading = "\nsingle character line"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0007.search(line):
-                heading = "\nbroken hyphenation"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if (
-                re0008a.search(line)
-                or re0008b.search(line)
-                or re0008c.search(line)
-                or re0008d.search(line)
-            ):
-                heading = "\ncomma spacing"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0010.search(line):
-                heading = "\ndate format"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0011.search(line):
-                heading = "\nI/! check"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0012.search(line):
-                heading = "\ndisjointed contraction"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0013.search(line):
-                heading = "\ntitle abbreviation + comma"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0014.search(line):
-                heading = "\nspaced punctuation"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0018.search(line):
-                heading = "\nquote error (context)"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0019.search(line):
-                heading = "\nstandalone 0"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if (
-                re0020a.search(line)
-                and not re0020b.search(line)
-                and not re0020c.search(line)
-                and not re0020d.search(line)
-                and not re0020e.search(line)
-                and not re0020f.search(line)
-                and not re0020g.search(line)
-            ):
-                heading = "\nstandalone 1"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0023.search(line):
-                heading = "\nabbreviation &c without period"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0024.search(line):
-                heading = "\nline start with suspect punctuation"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if res := re0025.search(line):
-                heading = "\nline start with hyphen and then non-hyphen"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            ##
-            # Non-regex based checks
-            ##
-
-            if "Blank Page" in line:
-                heading = "\nBlank Page place holder found"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if "—-" in line or "-—" in line or "–-" in line or "-–" in line:
-                heading = "\nmixed hyphen/dashd in line"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if "\u00A0" in line:
-                heading = "\nnon-breaking space"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if "\u00AD" in line:
-                heading = "\nsoft hyphen in line"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if "\u0009" in line:
-                heading = "\ntab character in line"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if "&" in line and not "&#" in line:
-                heading = "\nampersand character in line (excluding unicode numeric character references)"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            lc_line = line.lower()
-            if re_comma.search(lc_line):
-                heading = "\nunexpected comma after certain words"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            if re_period.search(lc_line):
-                heading = "\nunexpected period after certain words"
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        make_a_report_record(line_index + 1, line)
-                    )
-                else:
-                    specials_report[heading] = [
-                        make_a_report_record(line_index + 1, line)
-                    ]
-
-            line_index += 1
-
-        # We have at this point a dictionary of headings and accompanying line
-        # text, etc., that are formatted as complete records ready to be written
-        # to the output file. So just output the whole dictionary.
-
-        for heading in sorted(specials_report):
-            print(heading, file=string_out)
-            for record in specials_report[heading]:
-                print(record, file=string_out)
-
-        # We may get here without finding any 'specials' entries.
-        if len(specials_report) == 0:
-            print("\n    no special situations reports.", file=string_out)
-
-        # All done! Write the rule that terminates this section of the report.
-        template = "\n{}"
-        print(template.format("-" * 80), file=string_out)
-
     # PPTXT main part
 
     long_doctype_decl = False
     book = []
     paras = []
     line_word_list = []
-    book_word_count = {}
+    book_word_count: Dict[str, int] = {}
 
     # Read book a line at a time into list 'book[]' as a text string
     # then gather and count the 'words' on each line. See the function
