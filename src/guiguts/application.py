@@ -5,7 +5,6 @@
 import argparse
 import logging
 import os.path
-import re
 import subprocess
 from tkinter import messagebox
 from typing import Any
@@ -333,6 +332,17 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_edit.add_separator()
         menu_edit.add_cut_copy_paste()
         menu_edit.add_separator()
+        menu_edit.add_button("Columni~ze Selection", maintext().columnize_selection)
+        menu_edit.add_button(
+            "Co~lumn Cut", maintext().columnize_cut, "Cmd/Ctrl+Shift+X"
+        )
+        menu_edit.add_button(
+            "C~olumn Copy", maintext().columnize_copy, "Cmd/Ctrl+Shift+C"
+        )
+        menu_edit.add_button(
+            "Colu~mn Paste", maintext().columnize_paste, "Cmd/Ctrl+Shift+V"
+        )
+        menu_edit.add_separator()
         menu_edit.add_button("Pre~ferences...", lambda: PreferencesDialog(root()))
 
     def init_view_menu(self) -> None:
@@ -368,13 +378,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_statusbar(self, statusbar: StatusBar) -> None:
         """Add labels to initialize the statusbar"""
 
-        index_pattern = re.compile(r"(\d+)\.(\d+)")
-        statusbar.add(
-            "rowcol",
-            update=lambda: index_pattern.sub(
-                r"L:\1 C:\2", maintext().get_insert_index()
-            ),
-        )
+        def rowcol_str() -> str:
+            """Format current insert index for statusbar."""
+            row, col = maintext().get_insert_index().rowcol()
+            return f"L:{row} C:{col}"
+
+        statusbar.add("rowcol", update=rowcol_str)
         statusbar.add_binding("rowcol", "<ButtonRelease-1>", self.file.goto_line)
         statusbar.add_binding(
             "rowcol", "<ButtonRelease-3>", maintext().toggle_line_numbers

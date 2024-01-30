@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
-from guiguts.mainwindow import maintext, sound_bell
+from guiguts.mainwindow import maintext, sound_bell, IndexRowCol
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
@@ -126,7 +126,7 @@ class File:
             self.remove_recent_file(filename)
             self.filename = ""
             return
-        maintext().set_insert_index("1.0", see=True)
+        maintext().set_insert_index(IndexRowCol(1, 0), see=True)
         self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
@@ -247,7 +247,7 @@ class File:
         self.update_page_marks(self.page_details)
         bin_dict: BinDict = {
             BINFILE_KEY_MD5CHECKSUM: self.get_md5_checksum(),
-            BINFILE_KEY_INSERTPOS: maintext().get_insert_index(),
+            BINFILE_KEY_INSERTPOS: maintext().get_insert_index().index(),
             BINFILE_KEY_PAGEDETAILS: self.page_details,
             BINFILE_KEY_IMAGEDIR: self.image_dir,
         }
@@ -305,7 +305,7 @@ class File:
         """
         if not index:
             index = "1.0"
-        maintext().set_insert_index(index, see=True)
+        maintext().set_insert_index(IndexRowCol(index), see=True)
 
     def update_page_marks(self, page_details: PageDetails) -> None:
         """Update page mark locations in page details structure.
@@ -380,7 +380,7 @@ class File:
         Returns:
             Name of preceding mark. Empty string if none found.
         """
-        insert = maintext().get_insert_index()
+        insert = maintext().get_insert_index().index()
         mark = insert
         good_mark = ""
         # First check for page marks at the current cursor position & return last one
@@ -449,7 +449,7 @@ class File:
             "Go To Line", "Line number", parent=maintext()
         )
         if line_num is not None:
-            maintext().set_insert_index(f"{line_num}.0", see=True)
+            maintext().set_insert_index(IndexRowCol(line_num, 0), see=True)
 
     def goto_image(self) -> None:
         """Go to the image the user enters"""
@@ -466,7 +466,7 @@ class File:
         """
         if image_num is not None:
             try:
-                index = maintext().index(page_mark_from_img(image_num))
+                index = maintext().get_index(page_mark_from_img(image_num))
             except tk._tkinter.TclError:  # type: ignore[attr-defined]
                 # Bad image number
                 return
@@ -499,12 +499,12 @@ class File:
         Args:
             direction: +1 to go to next page; -1 for previous page
         """
-        insert = maintext().get_insert_index()
+        insert = maintext().get_insert_index().index()
         cur_page = self.get_current_image_name()
         mark = page_mark_from_img(cur_page) if cur_page else insert
         while mark := page_mark_next_previous(mark, direction):
             if maintext().compare(mark, "!=", insert):
-                maintext().set_insert_index(mark, see=True)
+                maintext().set_insert_index(maintext().get_index(mark), see=True)
                 return
         sound_bell()
 
