@@ -26,6 +26,7 @@ SEPARATOR_COL = 0
 STATUSBAR_ROW = 2
 STATUSBAR_COL = 0
 MIN_PANE_WIDTH = 20
+TK_ANCHOR_MARK = "tk::anchor1"
 
 
 class Root(tk.Tk):
@@ -302,13 +303,14 @@ class MainText(tk.Text):
         self.bind("<<Copy>>", self.smart_copy)
         self.bind("<<Paste>>", self.smart_paste)
 
-        # Column selection
+        # Column selection uses Alt key on Windows/Linux, Option key on macOS
+        # Key Release is reported as Alt_L on all platforms
+        modifier = "Option" if is_mac() else "Alt"
+        self.bind(f"<{modifier}-ButtonPress-1>", self.column_select_click)
+        self.bind(f"<{modifier}-B1-Motion>", self.column_select_motion)
+        self.bind(f"<{modifier}-ButtonRelease-1>", self.column_select_release)
+        self.bind("<KeyRelease-Alt_L>", lambda e: self.column_select_stop())
         self.column_selecting = False
-        self.bind("<Shift-ButtonPress-1>", self.column_select_click)
-        self.bind("<Shift-B1-Motion>", self.column_select_motion)
-        self.bind("<Shift-ButtonRelease-1>", self.column_select_release)
-        self.bind("<KeyRelease-Shift_L>", self.column_select_stop)
-        self.bind("<KeyRelease-Shift_R>", self.column_select_stop)
 
     def _proxy(self, *args: Any) -> Any:
         """Proxy to intercept commands sent to widget and generate a
@@ -662,9 +664,7 @@ class MainText(tk.Text):
         Returns:
             "break" to stop default binding.
         """
-        self.column_select_start = self.get_index(f"@{event.x},{event.y}")
-        self.tag_add("sel", self.column_select_start.index())
-        self.column_selecting = True
+        self.column_select_start(self.get_index(f"@{event.x},{event.y}"))
         return "break"
 
     def column_select_motion(self, event: tk.Event) -> str:
@@ -685,12 +685,12 @@ class MainText(tk.Text):
                 insert_rowcol = self.get_insert_index()
                 ranges = [IndexRange(insert_rowcol, insert_rowcol)]
             if self.compare(cur_index.index(), ">", ranges[0].start.index()):
-                self.column_select_start = ranges[0].start
+                anchor = ranges[0].start
             else:
-                self.column_select_start = ranges[-1].end
-            self.column_selecting = True
+                anchor = ranges[-1].end
+            self.column_select_start(anchor)
 
-        self.do_column_select(IndexRange(self.column_select_start, cur_index))
+        self.do_column_select(IndexRange(self.get_index(TK_ANCHOR_MARK), cur_index))
         return "break"
 
     def column_select_release(self, event: tk.Event) -> str:
@@ -703,19 +703,24 @@ class MainText(tk.Text):
             "break" to stop default binding or "" to allow it.
         """
         break_str = self.column_select_motion(event)
-        self.column_select_stop(event)
+        self.column_select_stop()
         return break_str
 
-    def column_select_stop(self, event: tk.Event) -> None:
-        """Stop column selection. Called when modifier key is released.
+    def column_select_start(self, anchor: IndexRowCol) -> None:
+        """Begin column selection.
 
         Args:
-            event: Event containing mouse coordinates.
-
-        Returns:
-            "break" to stop default binding or "" to allow it.
+            anchor: Selection anchor (start point) - this is also used by Tk
+                    if user switches to normal selection style.
         """
+        self.mark_set(TK_ANCHOR_MARK, anchor.index())
+        self.column_selecting = True
+        self.config(cursor="tcross")
+
+    def column_select_stop(self) -> None:
+        """Stop column selection."""
         self.column_selecting = False
+        self.config(cursor="")
 
 
 class MainImage(tk.Frame):
