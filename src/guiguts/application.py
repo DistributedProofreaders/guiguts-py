@@ -222,7 +222,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         if self.file.open_file(filename):
             self.mainwindow.clear_image()
 
-    def close_file(self) -> None:
+    def close_file(self, *args: Any) -> None:
         """Close currently loaded file and associated image."""
         self.file.close_file()
         self.mainwindow.clear_image()

@@ -157,7 +157,11 @@ def _process_accel(accel: str) -> tuple[str, str]:
         accel = accel.replace("Cmd/", "")
     keyevent = accel.replace("Ctrl+", "Control-")
     keyevent = keyevent.replace("Shift+", "Shift-")
-    keyevent = keyevent.replace("Cmd+", "Meta-")
+    keyevent = keyevent.replace("Cmd+", "Command-")
+    if is_mac():
+        keyevent = keyevent.replace("Alt+", "Option-")
+    else:
+        keyevent = keyevent.replace("Alt+", "Alt-")
     return (accel, f"<{keyevent}>")
 
 
@@ -379,18 +383,14 @@ class MainText(tk.Text):
         return self.linenumbers.winfo_viewable()
 
     def key_bind(self, keyevent: str, handler: Callable[[Any], None]) -> None:
-        """Bind lower & uppercase versions of ``keyevent`` to ``handler``
-        in main text window.
+        """Bind ``keyevent`` to ``handler`` in main text window.
 
-        If this is not done, then use of Caps Lock key causes confusing
-        behavior, because pressing ``Ctrl`` and ``s`` sends ``Ctrl+S``.
+        Treatment of the case of the key is platform-specific - see below.
 
         Args:
             keyevent: Key event to trigger call to ``handler``.
             handler: Callback function to be bound to ``keyevent``.
         """
-        lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
-        uk = re.sub("[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
         def handler_break(event: tk.Event, func: Callable[[tk.Event], None]) -> str:
             """In order for class binding not to be called after widget
@@ -399,8 +399,27 @@ class MainText(tk.Text):
             func(event)
             return "break"
 
-        self.bind(lk, lambda event: handler_break(event, handler))
-        self.bind(uk, lambda event: handler_break(event, handler))
+        lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
+        uk = re.sub("[a-z]>$", lambda m: m.group(0).upper(), keyevent)
+
+        if is_mac():
+            # Only bind key case that matches presence of "Shift-" in keyevent string.
+            # For some reason binding both case versions does not work on Macs but is
+            # useful on other platforms.
+            if "Shift-" in keyevent:
+                self.bind(uk, lambda event: handler_break(event, handler))
+            else:
+                self.bind(lk, lambda event: handler_break(event, handler))
+        else:
+            # Bind lower & uppercase versions of ``keyevent``. If
+            # Caps Lock is on, pressing Ctrl and `S` key sends Ctrl-S (uppercase)
+            # so a Ctrl-s (lowercase) binding is not triggered, and user can't
+            # understand why the shortcut is "broken". Also further complicated
+            # by the fact that the Shift key reverses the case, rather than forcing
+            # uppercase, e.g. Ctrl-Shift and `S` key normally sends Ctrl-Shift-S
+            # but if Caps Lock is on, it sends Ctrl-Shift-s (lowercase)
+            self.bind(lk, lambda event: handler_break(event, handler))
+            self.bind(uk, lambda event: handler_break(event, handler))
 
     #
     # Handle "modified" flag
