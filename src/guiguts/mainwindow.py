@@ -537,11 +537,14 @@ class MainText(tk.Text):
         min_col = min(col_range.start.col, col_range.end.col)
         max_col = max(col_range.start.col, col_range.end.col)
         for line in range(min_row, max_row + 1):
-            self.tag_add(
-                "sel",
-                IndexRowCol(line, min_col).index(),
-                IndexRowCol(line, max_col).index(),
-            )
+            beg = IndexRowCol(line, min_col).index()
+            end = IndexRowCol(line, max_col).index()
+            # If line is too short for any text to be selected, select to
+            # beginning of next line (just captures the newline). This
+            # is then dealt with in column_copy_cut.
+            if self.get(beg, end) == "":
+                end += "+ 1l linestart"
+            self.tag_add("sel", beg, end)
 
     def selected_ranges(self) -> list[IndexRange]:
         """Get the ranges of text marked with the `sel` tag.
@@ -570,6 +573,11 @@ class MainText(tk.Text):
         for range in ranges:
             start = range.start.index()
             end = range.end.index()
+            # Trap case where line was too short to select any text
+            # (in do_column_select) and so selection-end was adjusted to
+            # start of next line. Adjust it back again.
+            if range.end.row > range.start.row and range.end.col == 0:
+                end += "- 1l lineend"
             string = self.get(start, end)
             if cut:
                 self.delete(start, end)

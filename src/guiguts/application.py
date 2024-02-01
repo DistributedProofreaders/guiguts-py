@@ -332,7 +332,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_edit.add_separator()
         menu_edit.add_cut_copy_paste()
         menu_edit.add_separator()
-        menu_edit.add_button("Columni~ze Selection", maintext().columnize_selection)
         menu_edit.add_button(
             "Co~lumn Cut", maintext().columnize_cut, "Cmd/Ctrl+Shift+X"
         )
