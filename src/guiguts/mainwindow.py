@@ -248,7 +248,14 @@ class MainText(tk.Text):
 
         # let the actual widget perform the requested action
         cmd = (self._orig,) + args
-        result = self.tk.call(cmd)
+        try:
+            result = self.tk.call(cmd)
+        except tk.TclError:
+            if args[0:2] == ("edit", "undo") or args[0:2] == ("edit", "redo"):
+                sound_bell()
+            else:
+                raise
+            result = None
 
         # generate an event if something was added or deleted,
         # or the cursor position changed
