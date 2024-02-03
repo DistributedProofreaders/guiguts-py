@@ -26,6 +26,7 @@ SEPARATOR_COL = 0
 STATUSBAR_ROW = 2
 STATUSBAR_COL = 0
 MIN_PANE_WIDTH = 20
+TK_ANCHOR_MARK = "tk::anchor1"
 
 
 class Root(tk.Tk):
@@ -160,6 +161,71 @@ def _process_accel(accel: str) -> tuple[str, str]:
     return (accel, f"<{keyevent}>")
 
 
+class IndexRowCol:
+    """Class to store/manipulate Tk Text indexes.
+
+    Attributes:
+        row: Row or line number.
+        col: Column number.
+    """
+
+    row: int
+    col: int
+
+    def __init__(self, index_or_row: str | int, col: Optional[int] = None) -> None:
+        """Construct index either from string or two ints.
+
+        Args:
+            index_or_row: String index, or int row
+            col: Optional column - needed if index_or_row is an int
+        """
+        if isinstance(index_or_row, str):
+            assert col is None
+            rr, cc = index_or_row.split(".", 1)
+            self.row = int(rr)
+            self.col = int(cc)
+        else:
+            assert isinstance(index_or_row, int) and isinstance(col, int)
+            self.row = index_or_row
+            self.col = col
+
+    def index(self) -> str:
+        """Return string index from object's row/col attributes."""
+        return f"{self.row}.{self.col}"
+
+    def rowcol(self) -> tuple[int, int]:
+        """Return row, col tuple."""
+        return self.row, self.col
+
+
+class IndexRange:
+    """Class to store/manipulate a Text range defined by two indexes.
+
+    Attributes:
+        start: Start index.
+        end: End index.
+    """
+
+    def __init__(self, start: str | IndexRowCol, end: str | IndexRowCol) -> None:
+        """Initialize IndexRange with two strings or IndexRowCol objects.
+
+
+        Args:
+            start: Index of start of range - either string or IndexRowCol
+            end: Index of end of range - either string or IndexRowCol
+        """
+        if isinstance(start, str):
+            self.start = IndexRowCol(start)
+        else:
+            assert isinstance(start, IndexRowCol)
+            self.start = start
+        if isinstance(end, str):
+            self.end = IndexRowCol(end)
+        else:
+            assert isinstance(start, IndexRowCol)
+            self.end = end
+
+
 # TextLineNumbers widget adapted from answer at
 # https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
 class TextLineNumbers(tk.Canvas):
@@ -179,7 +245,7 @@ class TextLineNumbers(tk.Canvas):
             dline = self.textwidget.dlineinfo(index)
             if dline is None:
                 break
-            linenum = str(index).split(".")[0]
+            linenum = IndexRowCol(index).row
             self.create_text(text_pos, dline[1], anchor="ne", text=linenum)
             index = self.textwidget.index("%s+1line" % index)
 
@@ -232,6 +298,19 @@ class MainText(tk.Text):
         # Set up response to text being modified
         self.modifiedCallbacks: list[Callable[[], None]] = []
         self.bind("<<Modified>>", self.modify_flag_changed_callback)
+
+        self.bind("<<Cut>>", self.smart_cut)
+        self.bind("<<Copy>>", self.smart_copy)
+        self.bind("<<Paste>>", self.smart_paste)
+
+        # Column selection uses Alt key on Windows/Linux, Option key on macOS
+        # Key Release is reported as Alt_L on all platforms
+        modifier = "Option" if is_mac() else "Alt"
+        self.bind(f"<{modifier}-ButtonPress-1>", self.column_select_click)
+        self.bind(f"<{modifier}-B1-Motion>", self.column_select_motion)
+        self.bind(f"<{modifier}-ButtonRelease-1>", self.column_select_release)
+        self.bind("<KeyRelease-Alt_L>", lambda e: self.column_select_stop())
+        self.column_selecting = False
 
     def _proxy(self, *args: Any) -> Any:
         """Proxy to intercept commands sent to widget and generate a
@@ -382,17 +461,34 @@ class MainText(tk.Text):
         self.delete("1.0", tk.END)
         self.set_modified(False)
 
-    def get_insert_index(self) -> str:
-        """Return index of the insert cursor."""
-        return self.index(tk.INSERT)
+    def get_index(self, pos: str) -> IndexRowCol:
+        """Return index of given position as IndexRowCol object.
 
-    def set_insert_index(self, index: str, see: bool = False) -> None:
+        Wrapper for `Tk::Text.index()`
+
+        Args:
+            pos: Index to position in file.
+
+        Returns:
+            IndexRowCol containing position in file.
+        """
+        return IndexRowCol(self.index(pos))
+
+    def get_insert_index(self) -> IndexRowCol:
+        """Return index of the insert cursor as IndexRowCol object.
+
+        Returns:
+            IndexRowCol containing position of the insert cursor.
+        """
+        return self.get_index(tk.INSERT)
+
+    def set_insert_index(self, insert_pos: IndexRowCol, see: bool = False) -> None:
         """Set the position of the insert cursor.
 
         Args:
-            index: String containing index/mark to position cursor.
+            rowcol: Location to position insert cursor.
         """
-        self.mark_set(tk.INSERT, index)
+        self.mark_set(tk.INSERT, insert_pos.index())
         if see:
             self.see(tk.INSERT)
             self.focus_set()
@@ -407,13 +503,232 @@ class MainText(tk.Text):
         """
         return self.get(1.0, f"{tk.END}-1c")
 
-    # def mark_next(self, index: tk._tkinter.Tcl_Obj) -> str :
-    # pos = super().mark_next(index)
-    # return pos if pos else ""
+    def columnize_copy(self, *args: Any) -> None:
+        """Columnize the current selection and copy it."""
+        self.columnize_selection()
+        self.column_copy_cut()
 
-    # def mark_previous(self, index: tk._tkinter.Tcl_Obj) -> str :
-    # pos = super().mark_previous(index)
-    # return pos if pos else ""
+    def columnize_cut(self, *args: Any) -> None:
+        """Columnize the current selection and copy it."""
+        self.columnize_selection()
+        self.column_copy_cut(cut=True)
+
+    def columnize_paste(self, *args: Any) -> None:
+        """Columnize the current selection, if any, and paste the clipboard contents."""
+        self.columnize_selection()
+        self.column_paste()
+
+    def columnize_selection(self) -> None:
+        """Adjust current selection to column mode,
+        spanning a block defined by the two given corners."""
+        if not (ranges := self.selected_ranges()):
+            return
+        self.do_column_select(IndexRange(ranges[0].start, ranges[-1].end))
+
+    def do_column_select(self, col_range: IndexRange) -> None:
+        """Use multiple selection ranges to select a block
+        defined by the start & end of the given range.
+
+        Args:
+            IndexRange containing corners of block to be selected."""
+        self.tag_remove("sel", "1.0", tk.END)
+        min_row = min(col_range.start.row, col_range.end.row)
+        max_row = max(col_range.start.row, col_range.end.row)
+        min_col = min(col_range.start.col, col_range.end.col)
+        max_col = max(col_range.start.col, col_range.end.col)
+        for line in range(min_row, max_row + 1):
+            beg = IndexRowCol(line, min_col).index()
+            end = IndexRowCol(line, max_col).index()
+            # If line is too short for any text to be selected, select to
+            # beginning of next line (just captures the newline). This
+            # is then dealt with in column_copy_cut.
+            if self.get(beg, end) == "":
+                end += "+ 1l linestart"
+            self.tag_add("sel", beg, end)
+
+    def selected_ranges(self) -> list[IndexRange]:
+        """Get the ranges of text marked with the `sel` tag.
+
+        Returns:
+            List of IndexRange objects indicating the selected range(s)
+        """
+        ranges = self.tag_ranges("sel")
+        assert len(ranges) % 2 == 0
+        sel_ranges = []
+        for idx in range(0, len(ranges), 2):
+            sel_ranges.append(IndexRange(str(ranges[idx]), str(ranges[idx + 1])))
+        return sel_ranges
+
+    def column_copy_cut(self, cut: bool = False) -> None:
+        """Copy or cut the selected text to the clipboard.
+
+        A newline character is inserted between each line.
+
+        Args:
+            cut: True if cut is required, defaults to False (copy)
+        """
+        if not (ranges := self.selected_ranges()):
+            return
+        self.clipboard_clear()
+        for range in ranges:
+            start = range.start.index()
+            end = range.end.index()
+            # Trap case where line was too short to select any text
+            # (in do_column_select) and so selection-end was adjusted to
+            # start of next line. Adjust it back again.
+            if range.end.row > range.start.row and range.end.col == 0:
+                end += "- 1l lineend"
+            string = self.get(start, end)
+            if cut:
+                self.delete(start, end)
+            self.clipboard_append(string + "\n")
+
+    def column_paste(self) -> None:
+        """Paste the clipboard text column-wise, overwriting any selected text.
+
+        If more lines in clipboard than selected ranges, remaining lines will be
+        inserted in the same column in lines below. If more selected ranges than
+        clipboard lines, clipboard will be repeated until all selected ranges are
+        replaced.
+        """
+        # Trap empty clipboard or no STRING representation
+        try:
+            clipboard = self.clipboard_get()
+        except tk.TclError:
+            return
+        cliplines = clipboard.splitlines()
+        if not cliplines:
+            return
+        num_cliplines = len(cliplines)
+
+        # If nothing selected, set up an empty selection range at the current insert position
+        sel_ranges = self.selected_ranges()
+        ranges = []
+        if sel_ranges:
+            start_rowcol = sel_ranges[0].start
+            end_rowcol = sel_ranges[-1].end
+            for row in range(start_rowcol.row, end_rowcol.row + 1):
+                rbeg = IndexRowCol(row, start_rowcol.col)
+                rend = IndexRowCol(row, end_rowcol.col)
+                ranges.append(IndexRange(rbeg, rend))
+        else:
+            insert_index = self.get_insert_index()
+            ranges.append(IndexRange(insert_index, insert_index))
+        num_ranges = len(ranges)
+
+        # Add any necessary newlines if near end of file
+        min_row = ranges[0].start.row
+        max_row = min_row + max(num_cliplines, num_ranges)
+        end_index = self.get_index(IndexRowCol(max_row, 0).index())
+        if max_row > end_index.row:
+            self.insert(
+                end_index.index() + " lineend", "\n" * (max_row - end_index.row)
+            )
+
+        for line in range(max(num_cliplines, num_ranges)):
+            # Add any necessary spaces if line being pasted into is too short
+            start_rowcol = IndexRowCol(ranges[0].start.row + line, ranges[0].start.col)
+            end_rowcol = IndexRowCol(ranges[0].start.row + line, ranges[-1].end.col)
+            end_index = self.get_index(end_rowcol.index())
+            nspaces = start_rowcol.col - end_index.col
+            if nspaces > 0:
+                self.insert(end_index.index(), " " * nspaces)
+
+            clipline = cliplines[line % num_cliplines]
+            if line < num_ranges:
+                self.replace(start_rowcol.index(), end_rowcol.index(), clipline)
+            else:
+                self.insert(start_rowcol.index(), clipline)
+        rowcol = self.get_index(f"{start_rowcol.index()} + {len(clipline)}c")
+        self.set_insert_index(rowcol, True)
+
+    def smart_copy(self, *args: Any) -> str:
+        """Do column copy if multiple ranges selected, else default copy."""
+        if len(self.selected_ranges()) == 1:
+            return ""  # Permit default behavior to happen
+        self.column_copy_cut()
+        return "break"  # Skip default behavior
+
+    def smart_cut(self, *args: Any) -> str:
+        """Do column cut if multiple ranges selected, else default cut."""
+        if len(self.selected_ranges()) == 1:
+            return ""  # Permit default behavior to happen
+        self.column_copy_cut(cut=True)
+        return "break"  # Skip default behavior
+
+    def smart_paste(self, *args: Any) -> str:
+        """Do column paste if multiple ranges selected, else default paste."""
+        if len(self.selected_ranges()) == 1:
+            return ""  # Permit default behavior to happen
+        self.column_paste()
+        return "break"  # Skip default behavior
+
+    def column_select_click(self, event: tk.Event) -> str:
+        """Callback when column selection is started via mouse click.
+
+        Args
+            event: Event containing mouse coordinates.
+
+        Returns:
+            "break" to stop default binding.
+        """
+        self.column_select_start(self.get_index(f"@{event.x},{event.y}"))
+        return "break"
+
+    def column_select_motion(self, event: tk.Event) -> str:
+        """Callback when column selection continues via mouse motion.
+
+        Args:
+            event: Event containing mouse coordinates.
+
+        Returns:
+            "break" to stop default binding or "" to allow it.
+        """
+        # Attempt to start up column selection if arriving here without a previous click
+        # to start, e.g. user presses modifier key after beginning mouse-drag selection.
+        cur_index = self.get_index(f"@{event.x},{event.y}")
+        if not self.column_selecting:
+            ranges = self.selected_ranges()
+            if not ranges:  # Fallback to using insert cursor position
+                insert_rowcol = self.get_insert_index()
+                ranges = [IndexRange(insert_rowcol, insert_rowcol)]
+            if self.compare(cur_index.index(), ">", ranges[0].start.index()):
+                anchor = ranges[0].start
+            else:
+                anchor = ranges[-1].end
+            self.column_select_start(anchor)
+
+        self.do_column_select(IndexRange(self.get_index(TK_ANCHOR_MARK), cur_index))
+        return "break"
+
+    def column_select_release(self, event: tk.Event) -> str:
+        """Callback when column selection is stopped via mouse button release.
+
+        Args:
+            event: Event containing mouse coordinates.
+
+        Returns:
+            "break" to stop default binding or "" to allow it.
+        """
+        break_str = self.column_select_motion(event)
+        self.column_select_stop()
+        return break_str
+
+    def column_select_start(self, anchor: IndexRowCol) -> None:
+        """Begin column selection.
+
+        Args:
+            anchor: Selection anchor (start point) - this is also used by Tk
+                    if user switches to normal selection style.
+        """
+        self.mark_set(TK_ANCHOR_MARK, anchor.index())
+        self.column_selecting = True
+        self.config(cursor="tcross")
+
+    def column_select_stop(self) -> None:
+        """Stop column selection."""
+        self.column_selecting = False
+        self.config(cursor="")
 
 
 class MainImage(tk.Frame):
