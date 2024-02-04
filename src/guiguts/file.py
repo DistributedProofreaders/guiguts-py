@@ -13,7 +13,7 @@ from guiguts.mainwindow import maintext, sound_bell, IndexRowCol, root
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
-from guiguts.utilities import is_windows, load_dict_from_json, is_mac
+from guiguts.utilities import is_windows, load_dict_from_json
 
 logger = logging.getLogger(__package__)
 
@@ -104,8 +104,7 @@ class File:
                 )
             if filename:
                 self.load_file(filename)
-            if is_mac():
-                root().grab_focus()
+            root().grab_focus()
         return filename
 
     def close_file(self) -> None:
@@ -165,8 +164,7 @@ class File:
             self.filename = fn
             maintext().do_save(fn)
             self.save_bin(fn)
-        if is_mac():
-            root().grab_focus()
+        root().grab_focus()
         return fn
 
     def check_save(self) -> bool:
