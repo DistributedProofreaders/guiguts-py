@@ -10,6 +10,7 @@ import time
 import traceback
 import tkinter as tk
 from tkinter import ttk, messagebox
+from tkinter import font as tk_font
 
 from types import TracebackType
 from typing import Any, Callable, Optional
@@ -232,6 +233,8 @@ class TextLineNumbers(tk.Canvas):
 
     Attributes:
         textwidget: Text widget to provide line numbers for.
+        font: Font used by text widget, also used for line numbers.
+        offset: Gap between line numbers and text widget.
     """
 
     def __init__(
@@ -241,21 +244,27 @@ class TextLineNumbers(tk.Canvas):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        tk.Canvas.__init__(self, parent, *args, **kwargs)
+        self.textwidget = text_widget
+        self.font = tk_font.nametofont(self.textwidget.cget("font"))
+        self.offset = 5
+        # Allow for 5 digit line numbers
+        width = self.font.measure("88888") + self.offset
+        tk.Canvas.__init__(self, parent, *args, width=width, **kwargs)
         self.textwidget = text_widget
 
     def redraw(self, *args: Any) -> None:
         """Redraw line numbers."""
         self.delete("all")
-        font = self.textwidget.cget("font")
-        text_pos = self.winfo_width() - 2
+        text_pos = self.winfo_width() - self.offset
         index = self.textwidget.index("@0,0")
         while True:
             dline = self.textwidget.dlineinfo(index)
             if dline is None:
                 break
             linenum = IndexRowCol(index).row
-            self.create_text(text_pos, dline[1], anchor="ne", font=font, text=linenum)
+            self.create_text(
+                text_pos, dline[1], anchor="ne", font=self.font, text=linenum
+            )
             index = self.textwidget.index(index + "+1l")
 
 
@@ -285,7 +294,7 @@ class MainText(tk.Text):
 
         # Create Line Numbers widget and bind update routine to all
         # events that might change which line numbers should be displayed
-        self.linenumbers = TextLineNumbers(self.frame, self, width=35)
+        self.linenumbers = TextLineNumbers(self.frame, self)
         self.linenumbers.grid(column=0, row=0, sticky="NSEW")
         self.bind("<Configure>", self._on_change, add=True)
         self.bind("<KeyPress>", self._on_change, add=True)
