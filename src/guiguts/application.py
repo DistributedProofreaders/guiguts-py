@@ -341,8 +341,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_edit.add_button(
             "Colu~mn Paste", maintext().columnize_paste, "Cmd/Ctrl+Shift+V"
         )
-        menu_edit.add_separator()
-        menu_edit.add_button("Pre~ferences...", lambda: PreferencesDialog(root()))
+        if not is_mac():
+            menu_edit.add_separator()
+            menu_edit.add_button("Pre~ferences...", lambda: PreferencesDialog(root()))
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
