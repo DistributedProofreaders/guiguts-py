@@ -226,11 +226,20 @@ class IndexRange:
             self.end = end
 
 
-# TextLineNumbers widget adapted from answer at
-# https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
 class TextLineNumbers(tk.Canvas):
+    """TextLineNumbers widget adapted from answer at
+    https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
+
+    Attributes:
+        textwidget: Text widget to provide line numbers for.
+    """
+
     def __init__(
-        self, parent: tk.Widget, text_widget: tk.Text, *args: Any, **kwargs: Any
+        self,
+        parent: tk.Widget,
+        text_widget: tk.Text,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         tk.Canvas.__init__(self, parent, *args, **kwargs)
         self.textwidget = text_widget
@@ -238,7 +247,7 @@ class TextLineNumbers(tk.Canvas):
     def redraw(self, *args: Any) -> None:
         """Redraw line numbers."""
         self.delete("all")
-
+        font = self.textwidget.cget("font")
         text_pos = self.winfo_width() - 2
         index = self.textwidget.index("@0,0")
         while True:
@@ -246,7 +255,7 @@ class TextLineNumbers(tk.Canvas):
             if dline is None:
                 break
             linenum = IndexRowCol(index).row
-            self.create_text(text_pos, dline[1], anchor="ne", text=linenum)
+            self.create_text(text_pos, dline[1], anchor="ne", font=font, text=linenum)
             index = self.textwidget.index(index + "+1l")
 
 
