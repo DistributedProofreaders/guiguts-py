@@ -10,6 +10,7 @@ import time
 import traceback
 import tkinter as tk
 from tkinter import ttk, messagebox
+from tkinter import font as tk_font
 
 from types import TracebackType
 from typing import Any, Callable, Optional
@@ -238,28 +239,45 @@ class IndexRange:
             self.end = end
 
 
-# TextLineNumbers widget adapted from answer at
-# https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
 class TextLineNumbers(tk.Canvas):
+    """TextLineNumbers widget adapted from answer at
+    https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
+
+    Attributes:
+        textwidget: Text widget to provide line numbers for.
+        font: Font used by text widget, also used for line numbers.
+        offset: Gap between line numbers and text widget.
+    """
+
     def __init__(
-        self, parent: tk.Widget, text_widget: tk.Text, *args: Any, **kwargs: Any
+        self,
+        parent: tk.Widget,
+        text_widget: tk.Text,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
-        tk.Canvas.__init__(self, parent, *args, **kwargs)
+        self.textwidget = text_widget
+        self.font = tk_font.nametofont(self.textwidget.cget("font"))
+        self.offset = 5
+        # Allow for 5 digit line numbers
+        width = self.font.measure("88888") + self.offset
+        tk.Canvas.__init__(self, parent, *args, width=width, **kwargs)
         self.textwidget = text_widget
 
     def redraw(self, *args: Any) -> None:
-        """redraw line numbers"""
+        """Redraw line numbers."""
         self.delete("all")
-
-        text_pos = self.winfo_width() - 2
+        text_pos = self.winfo_width() - self.offset
         index = self.textwidget.index("@0,0")
         while True:
             dline = self.textwidget.dlineinfo(index)
             if dline is None:
                 break
             linenum = IndexRowCol(index).row
-            self.create_text(text_pos, dline[1], anchor="ne", text=linenum)
-            index = self.textwidget.index("%s+1line" % index)
+            self.create_text(
+                text_pos, dline[1], anchor="ne", font=self.font, text=linenum
+            )
+            index = self.textwidget.index(index + "+1l")
 
 
 class MainText(tk.Text):
@@ -286,26 +304,31 @@ class MainText(tk.Text):
         super().__init__(self.frame, **kwargs)
         tk.Text.grid(self, column=1, row=0, sticky="NSEW")
 
-        # Create a proxy for the underlying widget
-        self._w: str  # Let mypy know about _w
-        self._orig = self._w + "_orig"
-        self.tk.call("rename", self._w, self._orig)
-        self.tk.createcommand(self._w, self._proxy)
-
-        # Create Line Numbers widget
-        self.linenumbers = TextLineNumbers(self.frame, self, width=35)
+        # Create Line Numbers widget and bind update routine to all
+        # events that might change which line numbers should be displayed
+        self.linenumbers = TextLineNumbers(self.frame, self)
         self.linenumbers.grid(column=0, row=0, sticky="NSEW")
+        self.bind("<Configure>", self._on_change, add=True)
+        self.bind("<KeyPress>", self._on_change, add=True)
+        self.numbers_need_updating = True
 
-        self.bind("<<Change>>", self._on_change)
-        self.bind("<Configure>", self._on_change)
+        def hscroll_set(*args: Any) -> None:
+            self.hscroll.set(*args)
+            self._on_change()
+
+        def vscroll_set(*args: Any) -> None:
+            self.vscroll.set(*args)
+            self._on_change()
 
         # Create scrollbars, place in Frame, and link to Text
-        hscroll = ttk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=self.xview)
-        hscroll.grid(column=1, row=1, sticky="EW")
-        self["xscrollcommand"] = hscroll.set
-        vscroll = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
-        vscroll.grid(column=2, row=0, sticky="NS")
-        self["yscrollcommand"] = vscroll.set
+        self.hscroll = ttk.Scrollbar(
+            self.frame, orient=tk.HORIZONTAL, command=self.xview
+        )
+        self.hscroll.grid(column=1, row=1, sticky="EW")
+        self["xscrollcommand"] = hscroll_set
+        self.vscroll = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
+        self.vscroll.grid(column=2, row=0, sticky="NS")
+        self["yscrollcommand"] = vscroll_set
 
         # Set up response to text being modified
         self.modifiedCallbacks: list[Callable[[], None]] = []
@@ -324,41 +347,41 @@ class MainText(tk.Text):
         self.bind("<KeyRelease-Alt_L>", lambda e: self.column_select_stop())
         self.column_selecting = False
 
-    def _proxy(self, *args: Any) -> Any:
-        """Proxy to intercept commands sent to widget and generate a
-        <<Changed>> event if line numbers need updating."""
+    # The following methods are simply calling the Text widget method
+    # then updating the linenumbers widget
+    def insert(self, index: Any, chars: str, *args: Any) -> None:
+        """Override method to ensure line numbers are updated."""
+        super().insert(index, chars, *args)
+        self._on_change()
 
-        # Avoid error when copying or deleting
-        if (
-            (args[0] == "get" or args[0] == "delete")
-            and args[1] == "sel.first"
-            and args[2] == "sel.last"
-            and not self.tag_ranges("sel")
-        ):
-            return
+    def delete(self, index1: Any, index2: Any = None) -> None:
+        """Override method to ensure line numbers are updated."""
+        super().delete(index1, index2)
+        self._on_change()
 
-        # let the actual widget perform the requested action
-        cmd = (self._orig,) + args
-        result = self.tk.call(cmd)
+    def replace(self, index1: Any, index2: Any, chars: str, *args: Any) -> None:
+        """Override method to ensure line numbers are updated."""
+        super().replace(index1, index2, chars, *args)
+        self._on_change()
 
-        # generate an event if something was added or deleted,
-        # or the cursor position changed
-        if (
-            args[0] in ("insert", "replace", "delete")
-            or args[0:3] == ("mark", "set", "insert")
-            or args[0:2] == ("xview", "moveto")
-            or args[0:2] == ("xview", "scroll")
-            or args[0:2] == ("yview", "moveto")
-            or args[0:2] == ("yview", "scroll")
-        ):
-            self.event_generate("<<Change>>", when="tail")
+    def _do_linenumbers_redraw(self) -> None:
+        """Only redraw line numbers once when process becomes idle.
 
-        # return what the actual widget returned
-        return result
+        Several calls to this may be queued by _on_change, but only
+        the first will actually do a redraw, because the flag will
+        only be true on the first call."""
+        if self.numbers_need_updating:
+            self.linenumbers.redraw()
+        self.numbers_need_updating = False
 
-    def _on_change(self, event: tk.Event) -> None:
-        """Callback when visible region of file may have changed"""
-        self.linenumbers.redraw()
+    def _on_change(self, *args: Any) -> None:
+        """Callback when visible region of file may have changed.
+
+        By setting flag now, and queuing calls to _do_linenumbers_redraw,
+        we ensure the flag will be true for the first call to
+        _do_linenumbers_redraw."""
+        self.numbers_need_updating = True
+        root().after_idle(self._do_linenumbers_redraw)
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
