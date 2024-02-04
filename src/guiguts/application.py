@@ -365,14 +365,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         Currently only does anything on Macs
         """
         if is_mac():
-            # Apple menu
-            menu_app = Menu(menubar(), "", name="apple")
-            menu_app.add_button("About ~Guiguts", self.help_about)
-            menu_app.add_separator()
             # Window menu
             Menu(menubar(), "Window", name="window")
-        else:
-            menu_app = None
 
     # Lay out statusbar
     def init_statusbar(self, statusbar: StatusBar) -> None:
