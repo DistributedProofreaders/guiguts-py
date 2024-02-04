@@ -644,21 +644,21 @@ class MainText(tk.Text):
 
     def smart_copy(self, *args: Any) -> str:
         """Do column copy if multiple ranges selected, else default copy."""
-        if len(self.selected_ranges()) == 1:
+        if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_copy_cut()
         return "break"  # Skip default behavior
 
     def smart_cut(self, *args: Any) -> str:
         """Do column cut if multiple ranges selected, else default cut."""
-        if len(self.selected_ranges()) == 1:
+        if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_copy_cut(cut=True)
         return "break"  # Skip default behavior
 
     def smart_paste(self, *args: Any) -> str:
         """Do column paste if multiple ranges selected, else default paste."""
-        if len(self.selected_ranges()) == 1:
+        if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_paste()
         return "break"  # Skip default behavior
