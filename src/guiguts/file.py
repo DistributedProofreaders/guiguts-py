@@ -165,8 +165,8 @@ class File:
             self.filename = fn
             maintext().do_save(fn)
             self.save_bin(fn)
-            if is_mac():
-                root().grab_focus()
+        if is_mac():
+            root().grab_focus()
         return fn
 
     def check_save(self) -> bool:
