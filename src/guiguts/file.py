@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
-from guiguts.mainwindow import maintext, sound_bell, IndexRowCol
+from guiguts.mainwindow import maintext, sound_bell, IndexRowCol, root
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
@@ -104,6 +104,7 @@ class File:
                 )
             if filename:
                 self.load_file(filename)
+            root().grab_focus()
         return filename
 
     def close_file(self) -> None:
@@ -163,6 +164,7 @@ class File:
             self.filename = fn
             maintext().do_save(fn)
             self.save_bin(fn)
+        root().grab_focus()
         return fn
 
     def check_save(self) -> bool:

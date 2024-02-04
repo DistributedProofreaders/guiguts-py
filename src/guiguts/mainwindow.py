@@ -38,16 +38,24 @@ class Root(tk.Tk):
         self.option_add("*tearOff", False)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.after_idle(self.grab_focus)
+        self.after_idle(lambda: self.grab_focus(True))
 
-    def grab_focus(self) -> None:
+    def grab_focus(self, icon_deicon: bool = False) -> None:
         """Arcane calls to force window manager to put root window
         to the front and make it active. Then set focus to the text window.
+
+        Omitting any of these statements or re-ordering them will stop it
+        working on startup on Windows.
+
+        Args:
+            icon_deicon: If true, also iconify & deiconify window, which really
+                forces it to the front on Windows.
         """
         self.lift()
-        self.call("wm", "iconify", ".")
-        self.call("wm", "deiconify", ".")
-        maintext().focus_set()
+        if icon_deicon:
+            self.iconify()
+            self.deiconify()
+        maintext().focus_force()
 
     def report_callback_exception(
         self, exc: type[BaseException], val: BaseException, tb: TracebackType | None
@@ -157,7 +165,11 @@ def _process_accel(accel: str) -> tuple[str, str]:
         accel = accel.replace("Cmd/", "")
     keyevent = accel.replace("Ctrl+", "Control-")
     keyevent = keyevent.replace("Shift+", "Shift-")
-    keyevent = keyevent.replace("Cmd+", "Meta-")
+    keyevent = keyevent.replace("Cmd+", "Command-")
+    if is_mac():
+        keyevent = keyevent.replace("Alt+", "Option-")
+    else:
+        keyevent = keyevent.replace("Alt+", "Alt-")
     return (accel, f"<{keyevent}>")
 
 

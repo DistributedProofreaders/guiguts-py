@@ -60,4 +60,4 @@ def test_mainwindow() -> None:
     assert event == "<Shift-Control-Z>"
     (accel, event) = _process_accel("Cmd+?")
     assert accel == "Cmd+?"
-    assert event == "<Meta-?>"
+    assert event == "<Command-?>"
