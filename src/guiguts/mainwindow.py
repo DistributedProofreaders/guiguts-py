@@ -490,11 +490,13 @@ class MainText(tk.Text):
             self.delete("1.0", tk.END)
             self.insert(tk.END, fh.read())
             self.set_modified(False)
+        self.edit_reset()
 
     def do_close(self) -> None:
         """Close current file and clear widget."""
         self.delete("1.0", tk.END)
         self.set_modified(False)
+        self.edit_reset()
 
     def get_index(self, pos: str) -> IndexRowCol:
         """Return index of given position as IndexRowCol object.
