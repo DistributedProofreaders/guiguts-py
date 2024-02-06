@@ -37,6 +37,11 @@ Page Details
     
 .. automodule:: page_details
  
+Search
+======
+    
+.. automodule:: search
+ 
 Widgets
 =======
     

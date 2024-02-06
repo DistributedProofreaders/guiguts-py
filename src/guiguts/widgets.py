@@ -68,7 +68,7 @@ class ToplevelDialog(tk.Toplevel):
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-        self.top_frame: ttk.Frame = ttk.Frame(self)
+        self.top_frame: ttk.Frame = ttk.Frame(self, padding=5)
         self.top_frame.columnconfigure(0, weight=1)
         self.top_frame.rowconfigure(0, weight=1)
         self.top_frame.grid(row=0, column=0, sticky="NSEW")
