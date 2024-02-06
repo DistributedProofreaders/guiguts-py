@@ -138,10 +138,15 @@ class Guiguts:
         """Toggle the auto image flag."""
         self.auto_image = not self.auto_image
 
-    def see_image(self) -> None:
+    def show_image(self) -> None:
         """Show the image corresponding to current location."""
         self.image_dir_check()
         self.mainwindow.load_image(self.file.get_current_image_path())
+
+    def hide_image(self) -> None:
+        """Hide the image."""
+        self.auto_image = False
+        self.mainwindow.hide_image()
 
     def image_dir_check(self) -> None:
         """Check if image dir is set up correctly."""
@@ -348,9 +353,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_view_menu(self) -> None:
         """Create the View menu."""
         menu_view = Menu(menubar(), "~View")
-        menu_view.add_button("~Dock", self.mainwindow.dock_image)
-        menu_view.add_button("~Float", self.mainwindow.float_image)
-        menu_view.add_button("~See Image", self.see_image)
+        menu_view.add_checkbox(
+            "~Dock Image",
+            self.mainwindow.dock_image,
+            self.mainwindow.float_image,
+            preferences.get("ImageWindow") == "Docked",
+        )
+        menu_view.add_button("~Show Image", self.show_image)
+        menu_view.add_button("~Hide Image", self.hide_image)
         menu_view.add_button("~Message Log", self.mainwindow.messagelog.show)
 
     def init_help_menu(self) -> None:
@@ -396,7 +406,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add_binding(
             "see img",
             "<ButtonRelease-1>",
-            self.see_image,
+            self.show_image,
         )
         statusbar.add_binding(
             "see img", "<ButtonRelease-3>", self.file.choose_image_dir
