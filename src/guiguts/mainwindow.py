@@ -5,7 +5,7 @@ from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found
 import logging
 import os.path
 from PIL import Image, ImageTk
-import re
+import regex as re
 import time
 import traceback
 import tkinter as tk
@@ -17,6 +17,7 @@ from typing import Any, Callable, Optional
 
 from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, is_x11
+from guiguts.widgets import grab_focus, ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
@@ -39,24 +40,7 @@ class Root(tk.Tk):
         self.option_add("*tearOff", False)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.after_idle(lambda: self.grab_focus(True))
-
-    def grab_focus(self, icon_deicon: bool = False) -> None:
-        """Arcane calls to force window manager to put root window
-        to the front and make it active. Then set focus to the text window.
-
-        Omitting any of these statements or re-ordering them will stop it
-        working on startup on Windows.
-
-        Args:
-            icon_deicon: If true, also iconify & deiconify window, which really
-                forces it to the front on Windows.
-        """
-        self.lift()
-        if icon_deicon:
-            self.iconify()
-            self.deiconify()
-        maintext().focus_force()
+        self.after_idle(lambda: grab_focus(self, maintext(), True))
 
     def report_callback_exception(
         self, exc: type[BaseException], val: BaseException, tb: TracebackType | None
@@ -1081,22 +1065,13 @@ class ScrolledReadOnlyText(tk.Text):
         return self.frame.grid(*args, **kwargs)
 
 
-class MessageLogDialog(tk.Toplevel):
-    """A Tk simpledialog that displays error/info messages."""
+class MessageLogDialog(ToplevelDialog):
+    """A dialog that displays error/info messages."""
 
-    def __init__(self, parent: tk.Tk, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize messagelog dialog."""
-        super().__init__(parent, *args, **kwargs)
-        self.title("Message Log")
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
-
-        frame = ttk.Frame(self)
-        frame.columnconfigure(0, weight=1)
-        frame.grid(row=0, column=0, sticky="NSEW")
-        frame.rowconfigure(0, weight=1)
-
-        self.messagelog = ScrolledReadOnlyText(frame, wrap=tk.NONE)
+        super().__init__(root(), "Message Log", *args, **kwargs)
+        self.messagelog = ScrolledReadOnlyText(self.top_frame, wrap=tk.NONE)
         self.messagelog.grid(column=0, row=0, sticky="NSEW")
 
     def append(self, message: str) -> None:
@@ -1146,7 +1121,7 @@ class MessageLog(logging.Handler):
     def show(self) -> None:
         """Show the message log dialog."""
         if not (hasattr(self, "dialog") and self.dialog.winfo_exists()):
-            self.dialog = MessageLogDialog(root())
+            self.dialog = MessageLogDialog()
             self.dialog.append(self._messagelog)
         self.dialog.lift()
 
