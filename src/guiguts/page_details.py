@@ -4,8 +4,8 @@ import roman  # type: ignore[import-untyped]
 import tkinter as tk
 from tkinter import simpledialog, ttk
 
-from guiguts.dialogs import OkCancelDialog
 from guiguts.mainwindow import maintext
+from guiguts.widgets import OkCancelDialog
 
 STYLE_COLUMN = "#2"
 STYLE_ARABIC = "Arabic"
@@ -137,13 +137,13 @@ class PageDetailsDialog(OkCancelDialog):
         )
         for col in range(len(columns)):
             self.list.column(
-                f"#{col+1}",
+                f"#{col + 1}",
                 minwidth=10,
                 width=widths[col],
                 stretch=False,
                 anchor=tk.CENTER,
             )
-            self.list.heading(f"#{col+1}", text=columns[col])
+            self.list.heading(f"#{col + 1}", text=columns[col])
 
         self.list.bind("<ButtonRelease-1>", self.item_clicked)
         self.list.grid(row=0, column=0, sticky=tk.NSEW)

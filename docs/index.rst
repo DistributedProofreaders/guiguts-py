@@ -37,7 +37,7 @@ Page Details
     
 .. automodule:: page_details
  
-Dialogs
+Widgets
 =======
     
-.. automodule:: dialogs
+.. automodule:: widgets

@@ -3,8 +3,8 @@
 import tkinter as tk
 from tkinter import ttk
 
-from guiguts.dialogs import OkCancelDialog
 from guiguts.preferences import preferences
+from guiguts.widgets import OkCancelDialog
 
 
 class PreferencesDialog(OkCancelDialog):
