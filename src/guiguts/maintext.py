@@ -135,6 +135,10 @@ class MainText(tk.Text):
         self.bind("<KeyRelease-Alt_L>", lambda e: self.column_select_stop())
         self.column_selecting = False
 
+        # Ensure text still shows selected when focus is in another dialog
+        if "inactiveselect" not in kwargs.keys():
+            self["inactiveselect"] = self["selectbackground"]
+
         maintext(self)  # Register this single instance of MainText
 
     # The following methods are simply calling the Text widget method
@@ -309,15 +313,16 @@ class MainText(tk.Text):
         """
         return self.get_index(tk.INSERT)
 
-    def set_insert_index(self, insert_pos: IndexRowCol, see: bool = False) -> None:
+    def set_insert_index(self, insert_pos: IndexRowCol, focus: bool = True) -> None:
         """Set the position of the insert cursor.
 
         Args:
             rowcol: Location to position insert cursor.
+            focus: Optional, False means focus will not be forced to maintext
         """
         self.mark_set(tk.INSERT, insert_pos.index())
-        if see:
-            self.see(tk.INSERT)
+        self.see(tk.INSERT)
+        if focus:
             self.focus_set()
 
     def get_text(self) -> str:
@@ -372,6 +377,14 @@ class MainText(tk.Text):
             if self.get(beg, end) == "":
                 end += "+ 1l linestart"
             self.tag_add("sel", beg, end)
+
+    def do_select(self, range: IndexRange) -> None:
+        """Select the given range of text.
+
+        Args:
+            IndexRange containing start and end of text to be selected."""
+        self.tag_remove("sel", "1.0", tk.END)
+        self.tag_add("sel", range.start.index(), range.end.index())
 
     def selected_ranges(self) -> list[IndexRange]:
         """Get the ranges of text marked with the `sel` tag.
@@ -467,7 +480,7 @@ class MainText(tk.Text):
             else:
                 self.insert(start_rowcol.index(), clipline)
         rowcol = self.get_index(f"{start_rowcol.index()} + {len(clipline)}c")
-        self.set_insert_index(rowcol, True)
+        self.set_insert_index(rowcol)
 
     def smart_copy(self, *args: Any) -> str:
         """Do column copy if multiple ranges selected, else default copy."""

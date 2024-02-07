@@ -4,7 +4,7 @@ import json
 import platform
 import logging
 import os.path
-from typing import Any, Optional
+from typing import Any, Optional, Callable
 
 logger = logging.getLogger(__package__)
 
@@ -129,3 +129,25 @@ class IndexRange:
         else:
             assert isinstance(start, IndexRowCol)
             self.end = end
+
+
+# Store callback that sounds bell, and provide function to call it.
+# This is necessary since the bell requires various Tk features/widgets,
+# like root and the status bar. We don't want to have to import those
+# into every module that wants to sound the bell, e.g. Search.
+_bell_callback = None
+
+
+def bell_set_callback(callback: Callable[[], None]) -> None:
+    """Register a callback function that will sound the bell.
+
+    Args:
+        callback: Bell-sounding function."""
+    global _bell_callback
+    _bell_callback = callback
+
+
+def sound_bell() -> None:
+    """Call the registered bell callback in order to sound the bell."""
+    assert _bell_callback is not None
+    _bell_callback()

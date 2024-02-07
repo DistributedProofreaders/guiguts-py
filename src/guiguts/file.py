@@ -10,11 +10,11 @@ from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 from guiguts.maintext import maintext
-from guiguts.mainwindow import sound_bell, root
+from guiguts.mainwindow import root
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
-from guiguts.utilities import is_windows, load_dict_from_json, IndexRowCol
+from guiguts.utilities import is_windows, load_dict_from_json, IndexRowCol, sound_bell
 from guiguts.widgets import grab_focus
 
 logger = logging.getLogger(__package__)
@@ -129,7 +129,7 @@ class File:
             self.remove_recent_file(filename)
             self.filename = ""
             return
-        maintext().set_insert_index(IndexRowCol(1, 0), see=True)
+        maintext().set_insert_index(IndexRowCol(1, 0))
         self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
@@ -309,7 +309,7 @@ class File:
         """
         if not index:
             index = "1.0"
-        maintext().set_insert_index(IndexRowCol(index), see=True)
+        maintext().set_insert_index(IndexRowCol(index))
 
     def update_page_marks(self, page_details: PageDetails) -> None:
         """Update page mark locations in page details structure.
@@ -453,7 +453,7 @@ class File:
             "Go To Line", "Line number", parent=maintext()
         )
         if line_num is not None:
-            maintext().set_insert_index(IndexRowCol(line_num, 0), see=True)
+            maintext().set_insert_index(IndexRowCol(line_num, 0))
 
     def goto_image(self) -> None:
         """Go to the image the user enters"""
@@ -474,7 +474,7 @@ class File:
             except tk._tkinter.TclError:  # type: ignore[attr-defined]
                 # Bad image number
                 return
-            maintext().set_insert_index(index, see=True)
+            maintext().set_insert_index(index)
 
     def goto_page(self) -> None:
         """Go to the page the user enters."""
@@ -508,7 +508,7 @@ class File:
         mark = page_mark_from_img(cur_page) if cur_page else insert
         while mark := page_mark_next_previous(mark, direction):
             if maintext().compare(mark, "!=", insert):
-                maintext().set_insert_index(maintext().get_index(mark), see=True)
+                maintext().set_insert_index(maintext().get_index(mark))
                 return
         sound_bell()
 

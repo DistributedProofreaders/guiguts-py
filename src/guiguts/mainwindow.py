@@ -16,7 +16,7 @@ from typing import Any, Callable, Optional
 
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences
-from guiguts.utilities import is_mac, is_x11
+from guiguts.utilities import is_mac, is_x11, bell_set_callback
 from guiguts.widgets import grab_focus, ToplevelDialog
 
 logger = logging.getLogger(__package__)
@@ -722,7 +722,7 @@ def mouse_bind(
         widget.bind(other_event, callback)
 
 
-def sound_bell() -> None:
+def do_sound_bell() -> None:
     """Sound warning bell audibly and/or visually.
 
     Audible uses the default system bell sound.
@@ -754,6 +754,9 @@ def sound_bell() -> None:
         bell_button.configure(style=cur_style)
         # Just in case, set the temporary style back to the default
         style.map("W.TButton", background=[("disabled", save_bg)])
+
+
+bell_set_callback(do_sound_bell)
 
 
 def add_text_context_menu(text_widget: tk.Text, read_only: bool = False) -> None:
