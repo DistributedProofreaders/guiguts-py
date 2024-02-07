@@ -64,3 +64,68 @@ def load_dict_from_json(filename: str) -> Optional[dict[str, Any]]:
                     f"Unable to load {filename} -- not valid JSON format\n" + str(exc)
                 )
     return None
+
+
+class IndexRowCol:
+    """Class to store/manipulate Tk Text indexes.
+
+    Attributes:
+        row: Row or line number.
+        col: Column number.
+    """
+
+    row: int
+    col: int
+
+    def __init__(self, index_or_row: str | int, col: Optional[int] = None) -> None:
+        """Construct index either from string or two ints.
+
+        Args:
+            index_or_row: String index, or int row
+            col: Optional column - needed if index_or_row is an int
+        """
+        if isinstance(index_or_row, str):
+            assert col is None
+            rr, cc = index_or_row.split(".", 1)
+            self.row = int(rr)
+            self.col = int(cc)
+        else:
+            assert isinstance(index_or_row, int) and isinstance(col, int)
+            self.row = index_or_row
+            self.col = col
+
+    def index(self) -> str:
+        """Return string index from object's row/col attributes."""
+        return f"{self.row}.{self.col}"
+
+    def rowcol(self) -> tuple[int, int]:
+        """Return row, col tuple."""
+        return self.row, self.col
+
+
+class IndexRange:
+    """Class to store/manipulate a Text range defined by two indexes.
+
+    Attributes:
+        start: Start index.
+        end: End index.
+    """
+
+    def __init__(self, start: str | IndexRowCol, end: str | IndexRowCol) -> None:
+        """Initialize IndexRange with two strings or IndexRowCol objects.
+
+
+        Args:
+            start: Index of start of range - either string or IndexRowCol
+            end: Index of end of range - either string or IndexRowCol
+        """
+        if isinstance(start, str):
+            self.start = IndexRowCol(start)
+        else:
+            assert isinstance(start, IndexRowCol)
+            self.start = start
+        if isinstance(end, str):
+            self.end = IndexRowCol(end)
+        else:
+            assert isinstance(start, IndexRowCol)
+            self.end = end

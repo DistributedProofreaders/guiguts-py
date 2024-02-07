@@ -9,11 +9,12 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
-from guiguts.mainwindow import maintext, sound_bell, IndexRowCol, root
+from guiguts.maintext import maintext
+from guiguts.mainwindow import sound_bell, root
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
-from guiguts.utilities import is_windows, load_dict_from_json
+from guiguts.utilities import is_windows, load_dict_from_json, IndexRowCol
 from guiguts.widgets import grab_focus
 
 logger = logging.getLogger(__package__)

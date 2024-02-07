@@ -16,16 +16,17 @@ if __name__ == "__main__" and __package__ is None:
 
 
 from guiguts.file import File, NUM_RECENT_FILES
+from guiguts.maintext import maintext
 from guiguts.mainwindow import (
     root,
     MainWindow,
     Menu,
-    maintext,
     menubar,
     StatusBar,
     statusbar,
     ErrorHandler,
 )
+
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences
 from guiguts.preferences_dialog import PreferencesDialog

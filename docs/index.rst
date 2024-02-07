@@ -11,6 +11,11 @@ MainWindow
 ==========
      
 .. automodule:: mainwindow
+
+MainText
+========
+     
+.. automodule:: maintext
  
 Preferences
 ===========
