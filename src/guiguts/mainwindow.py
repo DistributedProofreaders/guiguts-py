@@ -119,6 +119,65 @@ class Menu(tk.Menu):
             command_args["underline"] = label_tilde
         self.add_command(command_args)
 
+    def add_checkbox(
+        self,
+        label: str,
+        handler_on: Callable[[], None],
+        handler_off: Callable[[], None],
+        initial_var: bool,
+        accel: str = "",
+    ) -> None:
+        """Add a button to the menu.
+
+        Args:
+            label: Label string for button, including tilde for keyboard
+              navigation, e.g. "~Save".
+            handler_on: Callback function for when checkbox gets checked
+            handler_off: Callback function for when checkbox gets checked
+            var: To keep track of state
+            accel: String describing optional accelerator key, used when a
+              callback function is passed in as ``handler``. Will be displayed
+              on the button, and will be bound to the same action as the menu
+              button. "Cmd/Ctrl" means `Cmd` key on Mac; `Ctrl` key on
+              Windows/Linux.
+        """
+        (label_tilde, label_txt) = _process_label(label)
+        (accel, key_event) = _process_accel(accel)
+
+        bool_var = tk.BooleanVar(value=initial_var)
+
+        # If key binding given, then bind it
+        if accel:
+
+            def accel_command(*args: Any) -> None:
+                """Command to simulate checkbox click via shortcut key.
+
+                Because key hasn't been clicked, variable hasn't been toggled.
+                """
+                bool_var.set(not bool_var.get())
+                checkbox_clicked()
+
+            maintext().key_bind(key_event, accel_command)
+
+        def checkbox_clicked() -> None:
+            """Callback when checkbox is clicked.
+
+            Call appropriate handler depending on setting."""
+            if bool_var.get():
+                handler_on()
+            else:
+                handler_off()
+
+        command_args = {
+            "label": label_txt,
+            "command": checkbox_clicked,
+            "variable": bool_var,
+            "accelerator": accel,
+        }
+        if label_tilde >= 0:
+            command_args["underline"] = label_tilde
+        self.add_checkbutton(command_args)
+
     def add_cut_copy_paste(self, read_only: bool = False) -> None:
         """Add cut/copy/paste buttons to this menu"""
         if not read_only:
@@ -861,6 +920,8 @@ class MainImage(tk.Frame):
     def show_image(self, event=None):  # type: ignore[no-untyped-def]
         """Show image on the Canvas"""
         # get image area & remove 1 pixel shift
+        if self.image is None:
+            return
         bbox_image = self.canvas.bbox(self.container)
         bbox_image = (
             bbox_image[0] + 1,
@@ -958,8 +1019,15 @@ class MainImage(tk.Frame):
             self.canvas.xview_moveto(0)
             self.show_image()
         else:
-            self.image = None
-            self.filename = ""
+            self.clear_image()
+
+    def clear_image(self) -> None:
+        """Clear the image and reset variables accordingly."""
+        self.filename = ""
+        self.image = None
+        if self.imageid:
+            self.canvas.delete(self.imageid)
+        self.imageid = None
 
     def is_image_loaded(self) -> bool:
         """Return if an image is currently loaded"""
@@ -995,7 +1063,7 @@ class StatusBar(ttk.Frame):
               the string returned by ``update()``. If argument not given,
               application is responsible for updating, using ``set(key)``.
         """
-        self.fields[key] = ttk.Button(self, **kwargs)
+        self.fields[key] = ttk.Button(self, takefocus=0, **kwargs)
         self.callbacks[key] = update
         self.fields[key].grid(column=len(self.fields), row=0)
 
@@ -1180,13 +1248,19 @@ class MainWindow:
 
         MainWindow.mainimage = MainImage(self.paned_window)
 
+    def hide_image(self) -> None:
+        """Stop showing the current image."""
+        self.clear_image()
+        root().wm_forget(mainimage())  # type: ignore[arg-type]
+        self.paned_window.forget(mainimage())
+
     def float_image(self, *args: Any) -> None:
         """Float the image into a separate window"""
         mainimage().grid_remove()
         if mainimage().is_image_loaded():
             root().wm_manage(mainimage())
             mainimage().lift()
-            tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.dock_image)  # type: ignore[call-overload]
+            tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.hide_image)  # type: ignore[call-overload]
         else:
             root().wm_forget(mainimage())  # type: ignore[arg-type]
         preferences.set("ImageWindow", "Floated")
@@ -1217,7 +1291,7 @@ class MainWindow:
 
     def clear_image(self) -> None:
         """Clear the image currently being shown."""
-        mainimage().load_image("")
+        mainimage().clear_image()
 
 
 def mouse_bind(
