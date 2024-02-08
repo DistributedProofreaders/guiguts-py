@@ -10,8 +10,18 @@ from guiguts.widgets import ToplevelDialog
 
 
 class SearchDialog(ToplevelDialog):
-    """A Toplevel dialog that allows the user to search/replace."""
+    """A Toplevel dialog that allows the user to search/replace.
 
+    Attributes:
+        first_use: True first time dialog is popped. Needed because Tk-based class
+            variables cannot be initialized until after Tk root is created.
+        reverse: True to search backwards
+        nocase: True to ignore case
+        wrap: True to wrap search round beginning/end of file
+        regex: True to use regex search
+    """
+
+    first_use: bool = True
     reverse: tk.BooleanVar
     nocase: tk.BooleanVar
     wrap: tk.BooleanVar
@@ -27,29 +37,48 @@ class SearchDialog(ToplevelDialog):
         self.search_box = ttk.Combobox(search_frame)
         self.search_box.grid(row=0, column=0, sticky="NSEW")
         self.search_box.focus()
+        search_string = maintext().selected_text()
+        self.search_box.set(search_string)
+
         search_button = ttk.Button(
-            search_frame, text="Search", default="active", command=self.search_clicked
+            search_frame,
+            text="Search",
+            default="active",
+            takefocus=0,
+            command=self.search_clicked,
         )
         search_button.grid(row=0, column=1, sticky="NSEW")
         count_button = ttk.Button(
-            search_frame, text="Count", default="normal", command=self.count_clicked
+            search_frame,
+            text="Count",
+            default="normal",
+            takefocus=0,
+            command=self.count_clicked,
         )
         count_button.grid(row=0, column=2, sticky="NSEW")
         findall_button = ttk.Button(
             search_frame,
             text="Find All",
             default="normal",
+            takefocus=0,
             command=self.findall_clicked,
         )
         findall_button.grid(row=0, column=3, sticky="NSEW")
-        self.bind("<Return>", self.search_clicked)
-        self.bind("<Shift-Return>", self.opposite_dir_search)
-        search_button.bind("<Shift-ButtonRelease-1>", self.opposite_dir_search)
+        self.bind("<Return>", lambda *args: self.search_clicked())
+        self.bind(
+            "<Shift-Return>", lambda *args: self.search_clicked(opposite_dir=True)
+        )
+        search_button.bind(
+            "<Shift-ButtonRelease-1>",
+            lambda *args: self.search_clicked(opposite_dir=True),
+        )
 
-        SearchDialog.reverse = tk.BooleanVar(value=False)
-        SearchDialog.nocase = tk.BooleanVar(value=False)
-        SearchDialog.wrap = tk.BooleanVar(value=False)
-        SearchDialog.regex = tk.BooleanVar(value=False)
+        if SearchDialog.first_use:
+            SearchDialog.reverse = tk.BooleanVar(value=False)
+            SearchDialog.nocase = tk.BooleanVar(value=False)
+            SearchDialog.wrap = tk.BooleanVar(value=False)
+            SearchDialog.regex = tk.BooleanVar(value=False)
+            SearchDialog.first_use = False
 
         options_frame = ttk.Frame(self.top_frame)
         options_frame.grid(row=1, column=0, sticky="NSEW")
@@ -70,11 +99,15 @@ class SearchDialog(ToplevelDialog):
         )
         regex_check.grid(row=0, column=3, sticky="NSEW")
 
-    def search_clicked(self, *args: Any) -> None:
-        """Callback when Search button clicked."""
+    def search_clicked(self, opposite_dir: bool = False, *args: Any) -> str:
+        """Callback when Search button clicked.
+
+        Returns:
+            "break" to avoid calling other callbacks"""
         search_string = self.search_box.get()
         count_var = tk.IntVar()
-        if SearchDialog.reverse.get():
+        # Reverse flag XOR use of Shift searches backwards
+        if SearchDialog.reverse.get() ^ opposite_dir:
             incr = ""
             stopindex = "" if SearchDialog.wrap.get() else "1.0"
             backwards = True
@@ -101,15 +134,6 @@ class SearchDialog(ToplevelDialog):
             maintext().do_select(IndexRange(rowcol_start, rowcol_end))
         else:
             sound_bell()
-
-    def opposite_dir_search(self, *args: Any) -> str:
-        """Search in direction opposite to "reverse flag" setting.
-
-        Returns:
-            "break" so that Button-1 callback is not executed"""
-        SearchDialog.reverse.set(not SearchDialog.reverse.get())
-        self.search_clicked()
-        SearchDialog.reverse.set(not SearchDialog.reverse.get())
         return "break"
 
     def count_clicked(self) -> None:

@@ -399,6 +399,18 @@ class MainText(tk.Text):
             sel_ranges.append(IndexRange(str(ranges[idx]), str(ranges[idx + 1])))
         return sel_ranges
 
+    def selected_text(self) -> str:
+        """Get the first chunk of text marked with the `sel` tag.
+
+        Returns:
+            String containing the selected text, or empty string if none selected.
+        """
+        ranges = self.tag_ranges("sel")
+        assert len(ranges) % 2 == 0
+        if ranges:
+            return self.get(ranges[0], ranges[1])
+        return ""
+
     def column_copy_cut(self, cut: bool = False) -> None:
         """Copy or cut the selected text to the clipboard.
 
