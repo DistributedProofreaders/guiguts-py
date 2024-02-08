@@ -4,6 +4,10 @@ import tkinter as tk
 from tkinter import simpledialog, ttk
 from typing import Any, Optional
 
+from guiguts.preferences import preferences
+
+NUM_HISTORY = 10
+
 
 class OkCancelDialog(simpledialog.Dialog):
     """A Tk simpledialog with OK and Cancel buttons and some overridden
@@ -73,6 +77,40 @@ class ToplevelDialog(tk.Toplevel):
         self.top_frame.rowconfigure(0, weight=1)
         self.top_frame.grid(row=0, column=0, sticky="NSEW")
         grab_focus(self)
+
+
+class Combobox(ttk.Combobox):
+    """A ttk Combobox with some convenience functions.
+
+    Attributes:
+        prefs_key: Key to saved history in prefs.
+    """
+
+    def __init__(
+        self, parent: tk.Widget, prefs_key: str, *args: Any, **kwargs: Any
+    ) -> None:
+        super().__init__(parent, *args, **kwargs)
+        self.prefs_key = prefs_key
+        self["values"] = preferences.get(self.prefs_key)
+
+    def add_to_history(self, string: str) -> None:
+        """Store given string in history list.
+
+        Stores string in prefs as well as widget drop-down.
+
+        Args:
+            string: String to add to list.
+        """
+        if string:
+            history = preferences.get(self.prefs_key)
+            try:
+                history.remove(string)
+            except ValueError:
+                pass  # OK if string wasn't in list
+            history.insert(0, string)
+            del history[NUM_HISTORY:]
+            preferences.set(self.prefs_key, history)
+            self["values"] = history
 
 
 def grab_focus(

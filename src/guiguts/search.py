@@ -6,7 +6,7 @@ from typing import Any
 
 from guiguts.maintext import maintext, IndexRowCol, IndexRange
 from guiguts.utilities import sound_bell
-from guiguts.widgets import ToplevelDialog
+from guiguts.widgets import ToplevelDialog, Combobox
 
 
 class SearchDialog(ToplevelDialog):
@@ -34,11 +34,14 @@ class SearchDialog(ToplevelDialog):
         search_frame.grid(row=0, column=0, sticky="NSEW")
         search_frame.columnconfigure(0, weight=1)
         search_frame.rowconfigure(0, weight=1)
-        self.search_box = ttk.Combobox(search_frame)
+        self.search_box = Combobox(search_frame, "SearchHistory")
         self.search_box.grid(row=0, column=0, sticky="NSEW")
         self.search_box.focus()
-        search_string = maintext().selected_text()
+        # Prepopulate search box with selected text (up to first newline)
+        search_string = maintext().selected_text().split("\n", 1)[0]
         self.search_box.set(search_string)
+        self.search_box.select_range(0, tk.END)
+        self.search_box.icursor(tk.END)
 
         search_button = ttk.Button(
             search_frame,
@@ -100,12 +103,12 @@ class SearchDialog(ToplevelDialog):
         regex_check.grid(row=0, column=3, sticky="NSEW")
 
     def search_clicked(self, opposite_dir: bool = False, *args: Any) -> str:
-        """Callback when Search button clicked.
+        """Search for string in the search box.
 
         Returns:
             "break" to avoid calling other callbacks"""
         search_string = self.search_box.get()
-        count_var = tk.IntVar()
+        self.search_box.add_to_history(search_string)
         # Reverse flag XOR use of Shift searches backwards
         if SearchDialog.reverse.get() ^ opposite_dir:
             incr = ""
@@ -116,6 +119,7 @@ class SearchDialog(ToplevelDialog):
             stopindex = "" if SearchDialog.wrap.get() else "end"
             backwards = False
         startindex = maintext().get_insert_index().index() + incr
+        count_var = tk.IntVar()
         found_start = maintext().search(
             search_string,
             startindex,

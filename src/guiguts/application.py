@@ -280,6 +280,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(
             "LineNumbers", lambda show: maintext().show_line_numbers(show)
         )
+        preferences.set_default("SearchHistory", [])
         preferences.load()
 
     # Lay out menus
