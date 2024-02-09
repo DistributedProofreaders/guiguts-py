@@ -27,8 +27,12 @@ class SearchDialog(ToplevelDialog):
     regex: tk.BooleanVar
     selection: tk.BooleanVar
 
-    def __init__(self, parent: tk.Tk, *args: Any, **kwargs: Any) -> None:
-        """Initialize Search dialog."""
+    def __init__(self, root: tk.Tk, *args: Any, **kwargs: Any) -> None:
+        """Initialize Search dialog.
+
+        Args:
+            root: Tk root
+        """
 
         # Initialize class variables on first instantiation, then remember
         # values for subsequent uses of dialog.
@@ -41,7 +45,7 @@ class SearchDialog(ToplevelDialog):
             SearchDialog.regex = tk.BooleanVar(value=False)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
-        super().__init__(parent, "Search & Replace", *args, **kwargs)
+        super().__init__(root, "Search & Replace", *args, **kwargs)
 
         # Frames
         self.top_frame.rowconfigure(0, weight=0)

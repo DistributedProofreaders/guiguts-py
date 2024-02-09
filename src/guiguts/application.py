@@ -32,6 +32,7 @@ from guiguts.preferences import preferences
 from guiguts.preferences_dialog import PreferencesDialog
 from guiguts.search import SearchDialog
 from guiguts.utilities import is_mac
+from guiguts.widgets import show_toplevel_dialog
 
 logger = logging.getLogger(__package__)
 
@@ -358,7 +359,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Create the View menu."""
         menu_view = Menu(menubar(), "~Search")
         menu_view.add_button(
-            "~Search & Replace...", lambda *args: SearchDialog(root()), "Cmd/Ctrl+F"
+            "~Search & Replace...",
+            lambda *args: show_toplevel_dialog(SearchDialog, root()),
+            "Cmd/Ctrl+F",
         )
 
     def init_view_menu(self) -> None:

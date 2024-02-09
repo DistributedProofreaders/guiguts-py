@@ -17,7 +17,7 @@ from typing import Any, Callable, Optional
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, is_x11, bell_set_callback
-from guiguts.widgets import grab_focus, ToplevelDialog
+from guiguts.widgets import grab_focus, ToplevelDialog, show_toplevel_dialog
 
 logger = logging.getLogger(__package__)
 
@@ -542,9 +542,9 @@ class ScrolledReadOnlyText(tk.Text):
 class MessageLogDialog(ToplevelDialog):
     """A dialog that displays error/info messages."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, root: tk.Tk, *args: Any, **kwargs: Any) -> None:
         """Initialize messagelog dialog."""
-        super().__init__(root(), "Message Log", *args, **kwargs)
+        super().__init__(root, "Message Log", *args, **kwargs)
         self.messagelog = ScrolledReadOnlyText(self.top_frame, wrap=tk.NONE)
         self.messagelog.grid(column=0, row=0, sticky="NSEW")
 
@@ -594,8 +594,9 @@ class MessageLog(logging.Handler):
 
     def show(self) -> None:
         """Show the message log dialog."""
-        if not (hasattr(self, "dialog") and self.dialog.winfo_exists()):
-            self.dialog = MessageLogDialog()
+        already_shown = hasattr(self, "dialog") and self.dialog.winfo_exists()
+        self.dialog = show_toplevel_dialog(MessageLogDialog, root())
+        if not already_shown:
             self.dialog.append(self._messagelog)
         self.dialog.lift()
 

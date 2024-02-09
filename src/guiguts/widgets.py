@@ -2,7 +2,7 @@
 
 import tkinter as tk
 from tkinter import simpledialog, ttk
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar
 
 from guiguts.preferences import preferences
 
@@ -134,3 +134,26 @@ def grab_focus(
     toplevel.focus_force()
     if focus_widget is not None:
         focus_widget.focus_set()
+
+
+# Dictionary of ToplevelDialog objects, keyed by class name.
+# Used to ensure only one instance of any dialog is created.
+_toplevel_dialogs: dict[str, ToplevelDialog] = {}
+
+TlDlg = TypeVar("TlDlg", bound=ToplevelDialog)
+
+
+def show_toplevel_dialog(dlg_cls: type[TlDlg], root: tk.Tk) -> TlDlg:
+    """Show the given dialog, or create it if it doesn't exist.
+
+    Args:
+        dlg_cls: Class of dialog to be created - subclass of ToplevelDialog.
+        root: Tk root.
+    """
+    global _toplevel_dialogs
+    dlg_name = dlg_cls.__name__
+    if dlg_name in _toplevel_dialogs and _toplevel_dialogs[dlg_name].winfo_exists():
+        _toplevel_dialogs[dlg_name].deiconify()
+    else:
+        _toplevel_dialogs[dlg_name] = dlg_cls(root)  # type: ignore[call-arg]
+    return _toplevel_dialogs[dlg_name]  # type: ignore[return-value]
