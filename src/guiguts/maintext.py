@@ -24,6 +24,19 @@ MIN_PANE_WIDTH = 20
 TK_ANCHOR_MARK = "tk::anchor1"
 
 
+class FindMatch:
+    """Index and length of match found by search method.
+
+    Attributes:
+        index: Index of start of match.
+        count: Length of match.
+    """
+
+    def __init__(self, index: IndexRowCol, count: int):
+        self.rowcol = index
+        self.count = count
+
+
 class TextLineNumbers(tk.Canvas):
     """TextLineNumbers widget adapted from answer at
     https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
@@ -581,6 +594,102 @@ class MainText(tk.Text):
         """Stop column selection."""
         self.column_selecting = False
         self.config(cursor="")
+
+    def rowcol(self, index: str) -> IndexRowCol:
+        """Return IndexRowCol corresponding to given index in maintext.
+
+        Args:
+            index: Index to position in maintext.
+
+        Returns:
+            IndexRowCol representing the position.
+        """
+        return IndexRowCol(self.index(index))
+
+    def start(self) -> IndexRowCol:
+        """Return IndexRowCol for start of text in widget, i.e. "1.0"."""
+        return self.rowcol("1.0")
+
+    def end(self) -> IndexRowCol:
+        """Return IndexRowCol for end of text in widget, i.e. "end"."""
+        return self.rowcol(tk.END)
+
+    def find_match(
+        self,
+        search_string: str,
+        start_range: IndexRowCol | IndexRange,
+        nocase: bool,
+        regexp: bool,
+        backwards: bool,
+    ) -> Optional[FindMatch]:
+        """Find occurrence of string/regex in given range.
+
+        Args:
+            search_string: String/regex to be searched for.
+            start_range: Range in which to search, or just start point to search whole file.
+            nocase: True to ignore case.
+            regexp: True if string is a regex; False for exact string match.
+            backwards: True to search backwards through text.
+
+        Returns:
+            FindMatch containing index of start and count of characters in match.
+            None if no match.
+        """
+        if isinstance(start_range, IndexRowCol):
+            start_index = start_range.index()
+            stop_index = ""
+        else:
+            assert isinstance(start_range, IndexRange)
+            start_index = start_range.start.index()
+            stop_index = start_range.end.index()
+
+        count_var = tk.IntVar()
+        if match_start := self.search(
+            search_string,
+            start_index,
+            stop_index,
+            count=count_var,
+            nocase=nocase,
+            regexp=regexp,
+            backwards=backwards,
+        ):
+            return FindMatch(IndexRowCol(match_start), count_var.get())
+        return None
+
+    def find_matches(
+        self, search_string: str, range: IndexRange, nocase: bool, regexp: bool
+    ) -> list[FindMatch]:
+        """Find all occurrences of string/regex in given range.
+
+        Args:
+            search_string: String/regex to be searched for.
+            range: Range in which to search.
+            nocase: True to ignore case.
+            regexp: True if string is a regex; False for exact string match.
+
+        Returns:
+            List of FindMatch objects, each containing index of start and count of characters in a match.
+            Empty list if no matches.
+        """
+        start_index = range.start.index()
+        stop_index = range.end.index()
+
+        matches = []
+        count_var = tk.IntVar()
+        start = start_index
+        while start:
+            start = self.search(
+                search_string,
+                start,
+                stop_index,
+                count=count_var,
+                nocase=nocase,
+                regexp=regexp,
+            )
+            if start:
+                matches.append(FindMatch(IndexRowCol(start), count_var.get()))
+                start += f"+{count_var.get()}c"
+        return matches
 
 
 # For convenient access, store the single MainText instance here,
