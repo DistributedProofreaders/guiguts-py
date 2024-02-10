@@ -47,6 +47,11 @@ Search
     
 .. automodule:: search
  
+Checkers
+========
+    
+.. automodule:: checkers
+ 
 Widgets
 =======
     

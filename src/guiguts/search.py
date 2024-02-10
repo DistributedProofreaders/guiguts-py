@@ -4,9 +4,10 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any
 
-from guiguts.maintext import maintext, IndexRowCol, IndexRange
-from guiguts.utilities import sound_bell
-from guiguts.widgets import ToplevelDialog, Combobox
+from guiguts.checkers import CheckerDialog
+from guiguts.maintext import maintext
+from guiguts.utilities import sound_bell, IndexRowCol, IndexRange
+from guiguts.widgets import ToplevelDialog, Combobox, show_toplevel_dialog
 
 
 class SearchDialog(ToplevelDialog):
@@ -45,6 +46,7 @@ class SearchDialog(ToplevelDialog):
             SearchDialog.regex = tk.BooleanVar(value=False)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
+        self.root = root
         super().__init__(root, "Search & Replace", *args, **kwargs)
 
         # Frames
@@ -227,4 +229,37 @@ class SearchDialog(ToplevelDialog):
 
     def findall_clicked(self) -> None:
         """Callback when Find All button clicked."""
-        pass
+        search_string = self.search_box.get()
+        if not search_string:
+            return
+        self.search_box.add_to_history(search_string)
+
+        range = None
+        if SearchDialog.selection.get():
+            if sel_ranges := maintext().selected_ranges():
+                range = sel_ranges[0]
+        else:
+            range = IndexRange(maintext().start(), maintext().end())
+        if range:
+            matches = maintext().find_matches(
+                search_string,
+                range,
+                nocase=SearchDialog.nocase.get(),
+                regexp=SearchDialog.regex.get(),
+            )
+        else:
+            matches = []
+            sound_bell()
+
+        results = ""
+        for match in matches:
+            line = maintext().get(
+                f"{match.rowcol.index()} linestart", f"{match.rowcol.index()} lineend"
+            )
+            results += f"{match.rowcol.row}.{match.rowcol.col}: {line}\n"
+
+        self.destroy()
+        checker_dialog = show_toplevel_dialog(
+            CheckerDialog, self.root, "Search Results"
+        )
+        checker_dialog.set_text(results)

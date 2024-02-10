@@ -143,17 +143,23 @@ _toplevel_dialogs: dict[str, ToplevelDialog] = {}
 TlDlg = TypeVar("TlDlg", bound=ToplevelDialog)
 
 
-def show_toplevel_dialog(dlg_cls: type[TlDlg], root: tk.Tk) -> TlDlg:
+def show_toplevel_dialog(
+    dlg_cls: type[TlDlg], root: tk.Tk, title: Optional[str] = None
+) -> TlDlg:
     """Show the given dialog, or create it if it doesn't exist.
 
     Args:
         dlg_cls: Class of dialog to be created - subclass of ToplevelDialog.
         root: Tk root.
+        title: Dialog title.
     """
     global _toplevel_dialogs
     dlg_name = dlg_cls.__name__
     if dlg_name in _toplevel_dialogs and _toplevel_dialogs[dlg_name].winfo_exists():
         _toplevel_dialogs[dlg_name].deiconify()
     else:
-        _toplevel_dialogs[dlg_name] = dlg_cls(root)  # type: ignore[call-arg]
+        if title is not None:
+            _toplevel_dialogs[dlg_name] = dlg_cls(root, title)  # type: ignore[call-arg]
+        else:
+            _toplevel_dialogs[dlg_name] = dlg_cls(root)  # type: ignore[call-arg]
     return _toplevel_dialogs[dlg_name]  # type: ignore[return-value]
