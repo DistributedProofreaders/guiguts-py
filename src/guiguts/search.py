@@ -88,7 +88,7 @@ class SearchDialog(ToplevelDialog):
             "<Shift-Return>", lambda *args: self.search_clicked(opposite_dir=True)
         )
         search_button.bind(
-            "<Shift-ButtonRelease-1>",
+            "<Shift-Button-1>",
             lambda *args: self.search_clicked(opposite_dir=True),
         )
 
