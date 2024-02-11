@@ -151,3 +151,45 @@ def sound_bell() -> None:
     """Call the registered bell callback in order to sound the bell."""
     assert _bell_callback is not None
     _bell_callback()
+
+
+def process_label(label: str) -> tuple[int, str]:
+    """Convert a button label string, e.g. "~Save...", where the optional
+    tilde indicates the underline location for keyboard activation,
+    to the tilde location (-1 if none), and the string without the tilde.
+
+    Args:
+        label: Label to appear on widget, e.g. button.
+
+    Returns:
+        Tuple containing location of tilde in label string (-1 if none),
+            and string with tilde removed.
+    """
+    return (label.find("~"), label.replace("~", ""))
+
+
+def process_accel(accel: str) -> tuple[str, str]:
+    """Convert accelerator string, e.g. "Ctrl+X" to appropriate keyevent
+    string for platform, e.g. "Control-X".
+
+    "Cmd/Ctrl" means use ``Cmd`` key on Mac; ``Ctrl`` key on Windows/Linux.
+
+    Args:
+        accel: Accelerator string.
+
+    Returns:
+        Tuple containing accelerator string and key event string suitable
+        for current platform.
+    """
+    if is_mac():
+        accel = accel.replace("/Ctrl", "")
+    else:
+        accel = accel.replace("Cmd/", "")
+    keyevent = accel.replace("Ctrl+", "Control-")
+    keyevent = keyevent.replace("Shift+", "Shift-")
+    keyevent = keyevent.replace("Cmd+", "Command-")
+    if is_mac():
+        keyevent = keyevent.replace("Alt+", "Option-")
+    else:
+        keyevent = keyevent.replace("Alt+", "Alt-")
+    return (accel, f"<{keyevent}>")

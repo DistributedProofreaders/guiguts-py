@@ -6,7 +6,9 @@ from typing import Any
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext
-from guiguts.utilities import sound_bell, IndexRowCol, IndexRange
+from guiguts.mainwindow import root
+from guiguts.preferences import preferences
+from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, process_accel, is_mac
 from guiguts.widgets import ToplevelDialog, Combobox, show_toplevel_dialog
 
 
@@ -68,11 +70,6 @@ class SearchDialog(ToplevelDialog):
         self.search_box = Combobox(search_frame, "SearchHistory")
         self.search_box.grid(row=0, column=0, sticky="NSEW")
         self.search_box.focus()
-        # Prepopulate search box with selected text (up to first newline)
-        search_string = maintext().selected_text().split("\n", 1)[0]
-        self.search_box.set(search_string)
-        self.search_box.select_range(0, tk.END)
-        self.search_box.icursor(tk.END)
 
         search_button = ttk.Button(
             search_frame,
@@ -127,14 +124,14 @@ class SearchDialog(ToplevelDialog):
         reverse_check.grid(row=0, column=0, sticky="NSEW")
         nocase_check = ttk.Checkbutton(
             options_frame,
-            text="Case Insensitive",
+            text="Case insensitive",
             variable=SearchDialog.nocase,
             takefocus=False,
         )
         nocase_check.grid(row=0, column=1, sticky="NSEW")
         wrap_check = ttk.Checkbutton(
             options_frame,
-            text="Wrap",
+            text="Wrap around",
             variable=SearchDialog.wrap,
             takefocus=False,
         )
@@ -150,6 +147,34 @@ class SearchDialog(ToplevelDialog):
         # Message (e.g. count)
         self.message = ttk.Label(message_frame)
         self.message.grid(row=0, column=0, sticky="NSE")
+
+        # Bindings for when focus is in Search dialog
+        if is_mac():
+            _, event = process_accel("Cmd+G")
+            self.bind(event, lambda *args: find_next())
+            _, event = process_accel("Cmd+g")
+            self.bind(event, lambda *args: find_next())
+            _, event = process_accel("Cmd+Shift+G")
+            self.bind(event, lambda *args: find_next(backwards=True))
+            _, event = process_accel("Cmd+Shift+g")
+            self.bind(event, lambda *args: find_next(backwards=True))
+        else:
+            _, event = process_accel("F3")
+            self.bind(event, lambda *args: find_next())
+            _, event = process_accel("Shift+F3")
+            self.bind(event, lambda *args: find_next(backwards=True))
+
+    def search_box_set(self, search_string: str) -> None:
+        """Set string in search box.
+
+        Also selects the string, and places the cursor at the end
+
+        Args:
+            search_string: String to put in search box.
+        """
+        self.search_box.set(search_string)
+        self.search_box.select_range(0, tk.END)
+        self.search_box.icursor(tk.END)
 
     def search_clicked(self, opposite_dir: bool = False, *args: Any) -> str:
         """Search for the string in the search box.
@@ -263,3 +288,61 @@ class SearchDialog(ToplevelDialog):
             CheckerDialog, self.root, "Search Results"
         )
         checker_dialog.set_text(results)
+
+
+def show_search_dialog() -> None:
+    """Show the Search dialog and set the string in search box
+    to the selected text if any (up to first newline)."""
+    dlg = show_toplevel_dialog(SearchDialog, root())
+    dlg.search_box_set(maintext().selected_text().split("\n", 1)[0])
+
+
+def find_next(backwards: bool = False) -> None:
+    """Find next occurrence of most recent search string.
+
+    Takes account of current wrap, nocase and regex flag settings in Search dialog.
+    If Search dialog hasn't been shown or there is no recent search string
+    sounds bell and returns.
+
+    Args:
+        backwards: True to search backwards (not dependent on "Reverse"
+            setting in dialog).
+    """
+    try:
+        SearchDialog.reverse
+    except AttributeError:
+        sound_bell()
+        return  # Dialog has never been instantiated
+
+    try:
+        search_string = preferences.get("SearchHistory")[0]
+    except IndexError:
+        sound_bell()
+        return  # No Search History
+
+    if backwards:
+        incr = ""
+        stop_rowcol = maintext().start()
+    else:
+        incr = "+1c"
+        stop_rowcol = maintext().end()
+    start_rowcol = maintext().rowcol(maintext().get_insert_index().index() + incr)
+    # If wrapping, just give start point, not start & end
+    search_range: IndexRowCol | IndexRange
+    if SearchDialog.wrap.get():
+        search_range = start_rowcol
+    else:
+        search_range = IndexRange(start_rowcol, stop_rowcol)
+    match = maintext().find_match(
+        search_string,
+        search_range,
+        nocase=SearchDialog.nocase.get(),
+        regexp=SearchDialog.regex.get(),
+        backwards=backwards,
+    )
+    if match:
+        rowcol_end = maintext().rowcol(match.rowcol.index() + f"+{match.count}c")
+        maintext().set_insert_index(match.rowcol, focus=False)
+        maintext().do_select(IndexRange(match.rowcol, rowcol_end))
+    else:
+        sound_bell()

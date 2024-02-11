@@ -30,9 +30,8 @@ from guiguts.mainwindow import (
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences
 from guiguts.preferences_dialog import PreferencesDialog
-from guiguts.search import SearchDialog
+from guiguts.search import show_search_dialog, find_next
 from guiguts.utilities import is_mac
-from guiguts.widgets import show_toplevel_dialog
 
 logger = logging.getLogger(__package__)
 
@@ -360,8 +359,18 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view = Menu(menubar(), "~Search")
         menu_view.add_button(
             "~Search & Replace...",
-            lambda *args: show_toplevel_dialog(SearchDialog, root()),
+            lambda *args: show_search_dialog(),
             "Cmd/Ctrl+F",
+        )
+        menu_view.add_button(
+            "Find ~Next",
+            lambda *args: find_next(),
+            "Cmd+G" if is_mac() else "F3",
+        )
+        menu_view.add_button(
+            "Find ~Previous",
+            lambda *args: find_next(backwards=True),
+            "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
 
     def init_view_menu(self) -> None:
