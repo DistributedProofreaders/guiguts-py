@@ -10,7 +10,7 @@ from tkinter import font as tk_font
 from typing import Any, Callable, Optional
 
 from guiguts.preferences import preferences
-from guiguts.utilities import is_mac, IndexRowCol, IndexRange
+from guiguts.utilities import is_mac, IndexRowCol, IndexRange, force_wholeword
 
 logger = logging.getLogger(__package__)
 
@@ -620,6 +620,7 @@ class MainText(tk.Text):
         start_range: IndexRowCol | IndexRange,
         nocase: bool,
         regexp: bool,
+        wholeword: bool,
         backwards: bool,
     ) -> Optional[FindMatch]:
         """Find occurrence of string/regex in given range.
@@ -629,6 +630,7 @@ class MainText(tk.Text):
             start_range: Range in which to search, or just start point to search whole file.
             nocase: True to ignore case.
             regexp: True if string is a regex; False for exact string match.
+            wholeword: True to only search for whole words (i.e. word boundary at start & end).
             backwards: True to search backwards through text.
 
         Returns:
@@ -643,6 +645,8 @@ class MainText(tk.Text):
             start_index = start_range.start.index()
             stop_index = start_range.end.index()
 
+        if wholeword:
+            search_string, regexp = force_wholeword(search_string, regexp)
         count_var = tk.IntVar()
         if match_start := self.search(
             search_string,
@@ -657,7 +661,12 @@ class MainText(tk.Text):
         return None
 
     def find_matches(
-        self, search_string: str, range: IndexRange, nocase: bool, regexp: bool
+        self,
+        search_string: str,
+        range: IndexRange,
+        nocase: bool,
+        regexp: bool,
+        wholeword: bool,
     ) -> list[FindMatch]:
         """Find all occurrences of string/regex in given range.
 
@@ -666,6 +675,7 @@ class MainText(tk.Text):
             range: Range in which to search.
             nocase: True to ignore case.
             regexp: True if string is a regex; False for exact string match.
+            wholeword: True to only search for whole words (i.e. word boundary at start & end).
 
         Returns:
             List of FindMatch objects, each containing index of start and count of characters in a match.
@@ -673,6 +683,8 @@ class MainText(tk.Text):
         """
         start_index = range.start.index()
         stop_index = range.end.index()
+        if wholeword:
+            search_string, regexp = force_wholeword(search_string, regexp)
 
         matches = []
         count_var = tk.IntVar()

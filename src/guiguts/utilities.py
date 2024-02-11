@@ -4,6 +4,7 @@ import json
 import platform
 import logging
 import os.path
+import regex as re
 from typing import Any, Optional, Callable
 
 logger = logging.getLogger(__package__)
@@ -193,3 +194,20 @@ def process_accel(accel: str) -> tuple[str, str]:
     else:
         keyevent = keyevent.replace("Alt+", "Alt-")
     return (accel, f"<{keyevent}>")
+
+
+def force_wholeword(string: str, regex: bool) -> tuple[str, bool]:
+    """Change string to only match whole word(s) by converting to
+    a regex (if not already), then prepending and appending word
+    boundary flags.
+
+    Args:
+        string: String to be converted to a match wholeword regex.
+        regex: True if string is already a regex.
+
+    Returns:
+        Tuple containing converted string and new regex flag value (always True)
+    """
+    if not regex:
+        string = re.escape(string)
+    return r"\m" + string + r"\M", True

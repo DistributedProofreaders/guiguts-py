@@ -26,6 +26,7 @@ class SearchDialog(ToplevelDialog):
     # Cannot be initialized here, since Tk root may not yet be created yet
     reverse: tk.BooleanVar
     nocase: tk.BooleanVar
+    wholeword: tk.BooleanVar
     wrap: tk.BooleanVar
     regex: tk.BooleanVar
     selection: tk.BooleanVar
@@ -44,6 +45,7 @@ class SearchDialog(ToplevelDialog):
         except AttributeError:
             SearchDialog.reverse = tk.BooleanVar(value=False)
             SearchDialog.nocase = tk.BooleanVar(value=False)
+            SearchDialog.wholeword = tk.BooleanVar(value=False)
             SearchDialog.wrap = tk.BooleanVar(value=False)
             SearchDialog.regex = tk.BooleanVar(value=False)
             SearchDialog.selection = tk.BooleanVar(value=False)
@@ -129,20 +131,27 @@ class SearchDialog(ToplevelDialog):
             takefocus=False,
         )
         nocase_check.grid(row=0, column=1, sticky="NSEW")
+        wholeword_check = ttk.Checkbutton(
+            options_frame,
+            text="Whole word",
+            variable=SearchDialog.wholeword,
+            takefocus=False,
+        )
+        wholeword_check.grid(row=0, column=2, sticky="NSEW")
         wrap_check = ttk.Checkbutton(
             options_frame,
             text="Wrap around",
             variable=SearchDialog.wrap,
             takefocus=False,
         )
-        wrap_check.grid(row=0, column=2, sticky="NSEW")
+        wrap_check.grid(row=0, column=3, sticky="NSEW")
         regex_check = ttk.Checkbutton(
             options_frame,
             text="Regex",
             variable=SearchDialog.regex,
             takefocus=False,
         )
-        regex_check.grid(row=0, column=3, sticky="NSEW")
+        regex_check.grid(row=0, column=4, sticky="NSEW")
 
         # Message (e.g. count)
         self.message = ttk.Label(message_frame)
@@ -208,6 +217,7 @@ class SearchDialog(ToplevelDialog):
             search_range,
             nocase=SearchDialog.nocase.get(),
             regexp=SearchDialog.regex.get(),
+            wholeword=SearchDialog.wholeword.get(),
             backwards=backwards,
         )
         if match:
@@ -244,6 +254,7 @@ class SearchDialog(ToplevelDialog):
                 range,
                 nocase=SearchDialog.nocase.get(),
                 regexp=SearchDialog.regex.get(),
+                wholeword=SearchDialog.wholeword.get(),
             )
             count = len(matches)
             match_str = "match" if count == 1 else "matches"
@@ -271,6 +282,7 @@ class SearchDialog(ToplevelDialog):
                 range,
                 nocase=SearchDialog.nocase.get(),
                 regexp=SearchDialog.regex.get(),
+                wholeword=SearchDialog.wholeword.get(),
             )
         else:
             matches = []
@@ -283,7 +295,6 @@ class SearchDialog(ToplevelDialog):
             )
             results += f"{match.rowcol.row}.{match.rowcol.col}: {line}\n"
 
-        self.destroy()
         checker_dialog = show_toplevel_dialog(
             CheckerDialog, self.root, "Search Results"
         )
@@ -300,9 +311,9 @@ def show_search_dialog() -> None:
 def find_next(backwards: bool = False) -> None:
     """Find next occurrence of most recent search string.
 
-    Takes account of current wrap, nocase and regex flag settings in Search dialog.
-    If Search dialog hasn't been shown or there is no recent search string
-    sounds bell and returns.
+    Takes account of current wrap, nocase, regex & wholeword flag settings
+    in Search dialog. If dialog hasn't been shown previously or there is
+    no recent search string sounds bell and returns.
 
     Args:
         backwards: True to search backwards (not dependent on "Reverse"
@@ -338,6 +349,7 @@ def find_next(backwards: bool = False) -> None:
         search_range,
         nocase=SearchDialog.nocase.get(),
         regexp=SearchDialog.regex.get(),
+        wholeword=SearchDialog.wholeword.get(),
         backwards=backwards,
     )
     if match:
