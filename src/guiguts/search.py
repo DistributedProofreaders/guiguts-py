@@ -9,7 +9,7 @@ from guiguts.maintext import maintext
 from guiguts.mainwindow import root
 from guiguts.preferences import preferences
 from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, process_accel, is_mac
-from guiguts.widgets import ToplevelDialog, Combobox, show_toplevel_dialog
+from guiguts.widgets import ToplevelDialog, Combobox
 
 
 class SearchDialog(ToplevelDialog):
@@ -295,7 +295,7 @@ class SearchDialog(ToplevelDialog):
             )
             results += f"{match.rowcol.row}.{match.rowcol.col}: {line}\n"
 
-        checker_dialog = show_toplevel_dialog(
+        checker_dialog = ToplevelDialog.show_dialog(
             CheckerDialog, self.root, "Search Results"
         )
         checker_dialog.set_text(results)
@@ -304,7 +304,7 @@ class SearchDialog(ToplevelDialog):
 def show_search_dialog() -> None:
     """Show the Search dialog and set the string in search box
     to the selected text if any (up to first newline)."""
-    dlg = show_toplevel_dialog(SearchDialog, root())
+    dlg = ToplevelDialog.show_dialog(SearchDialog, root())
     dlg.search_box_set(maintext().selected_text().split("\n", 1)[0])
 
 

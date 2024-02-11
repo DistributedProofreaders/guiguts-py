@@ -23,7 +23,7 @@ from guiguts.utilities import (
     process_accel,
     process_label,
 )
-from guiguts.widgets import grab_focus, ToplevelDialog, show_toplevel_dialog
+from guiguts.widgets import grab_focus, ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
@@ -573,7 +573,7 @@ class MessageLog(logging.Handler):
     def show(self) -> None:
         """Show the message log dialog."""
         already_shown = hasattr(self, "dialog") and self.dialog.winfo_exists()
-        self.dialog = show_toplevel_dialog(MessageLogDialog, root())
+        self.dialog = ToplevelDialog.show_dialog(MessageLogDialog, root())
         if not already_shown:
             self.dialog.append(self._messagelog)
         self.dialog.lift()

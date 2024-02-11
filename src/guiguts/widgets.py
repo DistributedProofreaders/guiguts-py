@@ -54,6 +54,9 @@ class OkCancelDialog(simpledialog.Dialog):
         self.destroy()
 
 
+TlDlg = TypeVar("TlDlg", bound="ToplevelDialog")
+
+
 class ToplevelDialog(tk.Toplevel):
     """Basic dialog with a frame - to avoid duplicated code.
 
@@ -63,6 +66,10 @@ class ToplevelDialog(tk.Toplevel):
     Attributes:
         top_frame: Frame widget in grid(0,0) position to contain widgets.
     """
+
+    # Dictionary of ToplevelDialog objects, keyed by class name.
+    # Used to ensure only one instance of any dialog is created.
+    _toplevel_dialogs: dict[str, "ToplevelDialog"] = {}
 
     def __init__(self, root: tk.Tk, title: str, *args: Any, **kwargs: Any) -> None:
         """Initialize the dialog."""
@@ -77,6 +84,30 @@ class ToplevelDialog(tk.Toplevel):
         self.top_frame.rowconfigure(0, weight=1)
         self.top_frame.grid(row=0, column=0, sticky="NSEW")
         grab_focus(self)
+
+    @classmethod
+    def show_dialog(
+        cls, dlg_cls: type[TlDlg], root: tk.Tk, title: Optional[str] = None
+    ) -> TlDlg:
+        """Show the given dialog, or create it if it doesn't exist.
+
+        Args:
+            dlg_cls: Class of dialog to be created - subclass of ToplevelDialog.
+            root: Tk root.
+            title: Dialog title.
+        """
+        dlg_name = dlg_cls.__name__
+        if (
+            dlg_name in ToplevelDialog._toplevel_dialogs
+            and ToplevelDialog._toplevel_dialogs[dlg_name].winfo_exists()
+        ):
+            ToplevelDialog._toplevel_dialogs[dlg_name].deiconify()
+        else:
+            if title is not None:
+                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls(root, title)  # type: ignore[call-arg]
+            else:
+                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls(root)  # type: ignore[call-arg]
+        return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
 
 
 class Combobox(ttk.Combobox):
@@ -134,32 +165,3 @@ def grab_focus(
     toplevel.focus_force()
     if focus_widget is not None:
         focus_widget.focus_set()
-
-
-# Dictionary of ToplevelDialog objects, keyed by class name.
-# Used to ensure only one instance of any dialog is created.
-_toplevel_dialogs: dict[str, ToplevelDialog] = {}
-
-TlDlg = TypeVar("TlDlg", bound=ToplevelDialog)
-
-
-def show_toplevel_dialog(
-    dlg_cls: type[TlDlg], root: tk.Tk, title: Optional[str] = None
-) -> TlDlg:
-    """Show the given dialog, or create it if it doesn't exist.
-
-    Args:
-        dlg_cls: Class of dialog to be created - subclass of ToplevelDialog.
-        root: Tk root.
-        title: Dialog title.
-    """
-    global _toplevel_dialogs
-    dlg_name = dlg_cls.__name__
-    if dlg_name in _toplevel_dialogs and _toplevel_dialogs[dlg_name].winfo_exists():
-        _toplevel_dialogs[dlg_name].deiconify()
-    else:
-        if title is not None:
-            _toplevel_dialogs[dlg_name] = dlg_cls(root, title)  # type: ignore[call-arg]
-        else:
-            _toplevel_dialogs[dlg_name] = dlg_cls(root)  # type: ignore[call-arg]
-    return _toplevel_dialogs[dlg_name]  # type: ignore[return-value]
