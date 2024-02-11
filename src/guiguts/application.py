@@ -112,7 +112,10 @@ class Guiguts:
             self.file.load_file(self.args.filename)
         elif self.args.recent:
             index = self.args.recent - 1
-            self.file.load_file(preferences.get("RecentFiles")[index])
+            try:
+                self.file.load_file(preferences.get("RecentFiles")[index])
+            except IndexError:
+                pass  # Not enough recent files to load the requested one
 
     @property
     def auto_image(self) -> bool:
