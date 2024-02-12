@@ -16,14 +16,14 @@ class CheckerDialog(ToplevelDialog):
     Attributes:
         text: Text widget to contain results."""
 
-    def __init__(self, root: tk.Tk, title: str, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, title: str, *args: Any, **kwargs: Any) -> None:
         """Initialize the dialog.
 
         Args:
             root: Tk root.
             title:  Title for dialog.
         """
-        super().__init__(root, title, *args, **kwargs)
+        super().__init__(title, *args, **kwargs)
         self.text = ScrolledReadOnlyText(self.top_frame, wrap=tk.NONE)
         self.text.grid(column=0, row=0, sticky="NSEW")
         self.text.bind("<ButtonRelease-1>", self.jump_to_rowcol)

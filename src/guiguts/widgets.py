@@ -71,9 +71,9 @@ class ToplevelDialog(tk.Toplevel):
     # Used to ensure only one instance of any dialog is created.
     _toplevel_dialogs: dict[str, "ToplevelDialog"] = {}
 
-    def __init__(self, root: tk.Tk, title: str, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, title: str, *args: Any, **kwargs: Any) -> None:
         """Initialize the dialog."""
-        super().__init__(root, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.bind("<Escape>", lambda event: self.destroy())
         self.title(title)
 
@@ -86,9 +86,7 @@ class ToplevelDialog(tk.Toplevel):
         grab_focus(self)
 
     @classmethod
-    def show_dialog(
-        cls, dlg_cls: type[TlDlg], root: tk.Tk, title: Optional[str] = None
-    ) -> TlDlg:
+    def show_dialog(cls, dlg_cls: type[TlDlg], title: Optional[str] = None) -> TlDlg:
         """Show the given dialog, or create it if it doesn't exist.
 
         Args:
@@ -104,9 +102,9 @@ class ToplevelDialog(tk.Toplevel):
             ToplevelDialog._toplevel_dialogs[dlg_name].deiconify()
         else:
             if title is not None:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls(root, title)  # type: ignore[call-arg]
+                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls(title)  # type: ignore[call-arg]
             else:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls(root)  # type: ignore[call-arg]
+                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls()  # type: ignore[call-arg]
         return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
 
 

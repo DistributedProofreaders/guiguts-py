@@ -520,9 +520,9 @@ class ScrolledReadOnlyText(tk.Text):
 class MessageLogDialog(ToplevelDialog):
     """A dialog that displays error/info messages."""
 
-    def __init__(self, root: tk.Tk, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize messagelog dialog."""
-        super().__init__(root, "Message Log", *args, **kwargs)
+        super().__init__("Message Log", *args, **kwargs)
         self.messagelog = ScrolledReadOnlyText(self.top_frame, wrap=tk.NONE)
         self.messagelog.grid(column=0, row=0, sticky="NSEW")
 
@@ -573,7 +573,7 @@ class MessageLog(logging.Handler):
     def show(self) -> None:
         """Show the message log dialog."""
         already_shown = hasattr(self, "dialog") and self.dialog.winfo_exists()
-        self.dialog = ToplevelDialog.show_dialog(MessageLogDialog, root())
+        self.dialog = ToplevelDialog.show_dialog(MessageLogDialog)
         if not already_shown:
             self.dialog.append(self._messagelog)
         self.dialog.lift()

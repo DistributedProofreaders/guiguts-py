@@ -6,7 +6,6 @@ from typing import Any
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext
-from guiguts.mainwindow import root
 from guiguts.preferences import preferences
 from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, process_accel, is_mac
 from guiguts.widgets import ToplevelDialog, Combobox
@@ -31,7 +30,7 @@ class SearchDialog(ToplevelDialog):
     regex: tk.BooleanVar
     selection: tk.BooleanVar
 
-    def __init__(self, root: tk.Tk, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize Search dialog.
 
         Args:
@@ -50,8 +49,7 @@ class SearchDialog(ToplevelDialog):
             SearchDialog.regex = tk.BooleanVar(value=False)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
-        self.root = root
-        super().__init__(root, "Search & Replace", *args, **kwargs)
+        super().__init__("Search & Replace", *args, **kwargs)
 
         # Frames
         self.top_frame.rowconfigure(0, weight=0)
@@ -295,16 +293,14 @@ class SearchDialog(ToplevelDialog):
             )
             results += f"{match.rowcol.row}.{match.rowcol.col}: {line}\n"
 
-        checker_dialog = ToplevelDialog.show_dialog(
-            CheckerDialog, self.root, "Search Results"
-        )
+        checker_dialog = ToplevelDialog.show_dialog(CheckerDialog, "Search Results")
         checker_dialog.set_text(results)
 
 
 def show_search_dialog() -> None:
     """Show the Search dialog and set the string in search box
     to the selected text if any (up to first newline)."""
-    dlg = ToplevelDialog.show_dialog(SearchDialog, root())
+    dlg = ToplevelDialog.show_dialog(SearchDialog)
     dlg.search_box_set(maintext().selected_text().split("\n", 1)[0])
 
 
