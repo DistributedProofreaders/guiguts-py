@@ -1,7 +1,7 @@
 """Test functions"""
 
 from guiguts.file import File
-from guiguts.mainwindow import _process_label, _process_accel
+from guiguts.mainwindow import process_label, process_accel
 from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, is_windows, is_x11, _is_system
 
@@ -39,25 +39,25 @@ def test_preferences() -> None:
 
 def test_mainwindow() -> None:
     """Test mainwindow functions"""
-    (tilde, text) = _process_label("~Save...")
+    (tilde, text) = process_label("~Save...")
     assert tilde == 0
     assert text == "Save..."
-    (tilde, text) = _process_label("Save ~As...")
+    (tilde, text) = process_label("Save ~As...")
     assert tilde == 5
     assert text == "Save As..."
-    (accel, event) = _process_accel("Ctrl+X")
+    (accel, event) = process_accel("Ctrl+X")
     assert accel == "Ctrl+X"
     assert event == "<Control-X>"
-    (accel, event) = _process_accel("Cmd/Ctrl+y")
+    (accel, event) = process_accel("Cmd/Ctrl+y")
     if is_mac():
         assert accel == "Cmd+y"
         assert event == "<Meta-y>"
     else:
         assert accel == "Ctrl+y"
         assert event == "<Control-y>"
-    (accel, event) = _process_accel("Shift+Ctrl+Z")
+    (accel, event) = process_accel("Shift+Ctrl+Z")
     assert accel == "Shift+Ctrl+Z"
     assert event == "<Shift-Control-Z>"
-    (accel, event) = _process_accel("Cmd+?")
+    (accel, event) = process_accel("Cmd+?")
     assert accel == "Cmd+?"
     assert event == "<Command-?>"

@@ -2,7 +2,11 @@
 
 import tkinter as tk
 from tkinter import simpledialog, ttk
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar
+
+from guiguts.preferences import preferences
+
+NUM_HISTORY = 10
 
 
 class OkCancelDialog(simpledialog.Dialog):
@@ -50,6 +54,9 @@ class OkCancelDialog(simpledialog.Dialog):
         self.destroy()
 
 
+TlDlg = TypeVar("TlDlg", bound="ToplevelDialog")
+
+
 class ToplevelDialog(tk.Toplevel):
     """Basic dialog with a frame - to avoid duplicated code.
 
@@ -60,19 +67,79 @@ class ToplevelDialog(tk.Toplevel):
         top_frame: Frame widget in grid(0,0) position to contain widgets.
     """
 
-    def __init__(self, root: tk.Tk, title: str, *args: Any, **kwargs: Any) -> None:
+    # Dictionary of ToplevelDialog objects, keyed by class name.
+    # Used to ensure only one instance of any dialog is created.
+    _toplevel_dialogs: dict[str, "ToplevelDialog"] = {}
+
+    def __init__(self, title: str, *args: Any, **kwargs: Any) -> None:
         """Initialize the dialog."""
-        super().__init__(root, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.bind("<Escape>", lambda event: self.destroy())
         self.title(title)
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-        self.top_frame: ttk.Frame = ttk.Frame(self)
+        self.top_frame: ttk.Frame = ttk.Frame(self, padding=5)
         self.top_frame.columnconfigure(0, weight=1)
         self.top_frame.rowconfigure(0, weight=1)
         self.top_frame.grid(row=0, column=0, sticky="NSEW")
         grab_focus(self)
+
+    @classmethod
+    def show_dialog(cls, dlg_cls: type[TlDlg], title: Optional[str] = None) -> TlDlg:
+        """Show the given dialog, or create it if it doesn't exist.
+
+        Args:
+            dlg_cls: Class of dialog to be created - subclass of ToplevelDialog.
+            root: Tk root.
+            title: Dialog title.
+        """
+        dlg_name = dlg_cls.__name__
+        if (
+            dlg_name in ToplevelDialog._toplevel_dialogs
+            and ToplevelDialog._toplevel_dialogs[dlg_name].winfo_exists()
+        ):
+            ToplevelDialog._toplevel_dialogs[dlg_name].deiconify()
+        else:
+            if title is not None:
+                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls(title)  # type: ignore[call-arg]
+            else:
+                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls()  # type: ignore[call-arg]
+        return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
+
+
+class Combobox(ttk.Combobox):
+    """A ttk Combobox with some convenience functions.
+
+    Attributes:
+        prefs_key: Key to saved history in prefs.
+    """
+
+    def __init__(
+        self, parent: tk.Widget, prefs_key: str, *args: Any, **kwargs: Any
+    ) -> None:
+        super().__init__(parent, *args, **kwargs)
+        self.prefs_key = prefs_key
+        self["values"] = preferences.get(self.prefs_key)
+
+    def add_to_history(self, string: str) -> None:
+        """Store given string in history list.
+
+        Stores string in prefs as well as widget drop-down.
+
+        Args:
+            string: String to add to list.
+        """
+        if string:
+            history = preferences.get(self.prefs_key)
+            try:
+                history.remove(string)
+            except ValueError:
+                pass  # OK if string wasn't in list
+            history.insert(0, string)
+            del history[NUM_HISTORY:]
+            preferences.set(self.prefs_key, history)
+            self["values"] = history
 
 
 def grab_focus(

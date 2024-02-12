@@ -4,7 +4,8 @@ import json
 import platform
 import logging
 import os.path
-from typing import Any, Optional
+import regex as re
+from typing import Any, Optional, Callable
 
 logger = logging.getLogger(__package__)
 
@@ -64,3 +65,149 @@ def load_dict_from_json(filename: str) -> Optional[dict[str, Any]]:
                     f"Unable to load {filename} -- not valid JSON format\n" + str(exc)
                 )
     return None
+
+
+class IndexRowCol:
+    """Class to store/manipulate Tk Text indexes.
+
+    Attributes:
+        row: Row or line number.
+        col: Column number.
+    """
+
+    row: int
+    col: int
+
+    def __init__(self, index_or_row: str | int, col: Optional[int] = None) -> None:
+        """Construct index either from string or two ints.
+
+        Args:
+            index_or_row: String index, or int row
+            col: Optional column - needed if index_or_row is an int
+        """
+        if isinstance(index_or_row, str):
+            assert col is None
+            rr, cc = index_or_row.split(".", 1)
+            self.row = int(rr)
+            self.col = int(cc)
+        else:
+            assert isinstance(index_or_row, int) and isinstance(col, int)
+            self.row = index_or_row
+            self.col = col
+
+    def index(self) -> str:
+        """Return string index from object's row/col attributes."""
+        return f"{self.row}.{self.col}"
+
+    def rowcol(self) -> tuple[int, int]:
+        """Return row, col tuple."""
+        return self.row, self.col
+
+
+class IndexRange:
+    """Class to store/manipulate a Text range defined by two indexes.
+
+    Attributes:
+        start: Start index.
+        end: End index.
+    """
+
+    def __init__(self, start: str | IndexRowCol, end: str | IndexRowCol) -> None:
+        """Initialize IndexRange with two strings or IndexRowCol objects.
+
+
+        Args:
+            start: Index of start of range - either string or IndexRowCol
+            end: Index of end of range - either string or IndexRowCol
+        """
+        if isinstance(start, str):
+            self.start = IndexRowCol(start)
+        else:
+            assert isinstance(start, IndexRowCol)
+            self.start = start
+        if isinstance(end, str):
+            self.end = IndexRowCol(end)
+        else:
+            assert isinstance(start, IndexRowCol)
+            self.end = end
+
+
+# Store callback that sounds bell, and provide function to call it.
+# This is necessary since the bell requires various Tk features/widgets,
+# like root and the status bar. We don't want to have to import those
+# into every module that wants to sound the bell, e.g. Search.
+_bell_callback = None
+
+
+def bell_set_callback(callback: Callable[[], None]) -> None:
+    """Register a callback function that will sound the bell.
+
+    Args:
+        callback: Bell-sounding function."""
+    global _bell_callback
+    _bell_callback = callback
+
+
+def sound_bell() -> None:
+    """Call the registered bell callback in order to sound the bell."""
+    assert _bell_callback is not None
+    _bell_callback()
+
+
+def process_label(label: str) -> tuple[int, str]:
+    """Convert a button label string, e.g. "~Save...", where the optional
+    tilde indicates the underline location for keyboard activation,
+    to the tilde location (-1 if none), and the string without the tilde.
+
+    Args:
+        label: Label to appear on widget, e.g. button.
+
+    Returns:
+        Tuple containing location of tilde in label string (-1 if none),
+            and string with tilde removed.
+    """
+    return (label.find("~"), label.replace("~", ""))
+
+
+def process_accel(accel: str) -> tuple[str, str]:
+    """Convert accelerator string, e.g. "Ctrl+X" to appropriate keyevent
+    string for platform, e.g. "Control-X".
+
+    "Cmd/Ctrl" means use ``Cmd`` key on Mac; ``Ctrl`` key on Windows/Linux.
+
+    Args:
+        accel: Accelerator string.
+
+    Returns:
+        Tuple containing accelerator string and key event string suitable
+        for current platform.
+    """
+    if is_mac():
+        accel = accel.replace("/Ctrl", "")
+    else:
+        accel = accel.replace("Cmd/", "")
+    keyevent = accel.replace("Ctrl+", "Control-")
+    keyevent = keyevent.replace("Shift+", "Shift-")
+    keyevent = keyevent.replace("Cmd+", "Command-")
+    if is_mac():
+        keyevent = keyevent.replace("Alt+", "Option-")
+    else:
+        keyevent = keyevent.replace("Alt+", "Alt-")
+    return (accel, f"<{keyevent}>")
+
+
+def force_wholeword(string: str, regex: bool) -> tuple[str, bool]:
+    """Change string to only match whole word(s) by converting to
+    a regex (if not already), then prepending and appending word
+    boundary flags.
+
+    Args:
+        string: String to be converted to a match wholeword regex.
+        regex: True if string is already a regex.
+
+    Returns:
+        Tuple containing converted string and new regex flag value (always True)
+    """
+    if not regex:
+        string = re.escape(string)
+    return r"\m" + string + r"\M", True

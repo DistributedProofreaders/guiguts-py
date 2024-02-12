@@ -11,6 +11,11 @@ MainWindow
 ==========
      
 .. automodule:: mainwindow
+
+MainText
+========
+     
+.. automodule:: maintext
  
 Preferences
 ===========
@@ -36,6 +41,16 @@ Page Details
 ============
     
 .. automodule:: page_details
+ 
+Search
+======
+    
+.. automodule:: search
+ 
+Checkers
+========
+    
+.. automodule:: checkers
  
 Widgets
 =======

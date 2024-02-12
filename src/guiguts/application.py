@@ -16,19 +16,21 @@ if __name__ == "__main__" and __package__ is None:
 
 
 from guiguts.file import File, NUM_RECENT_FILES
+from guiguts.maintext import maintext
 from guiguts.mainwindow import (
     root,
     MainWindow,
     Menu,
-    maintext,
     menubar,
     StatusBar,
     statusbar,
     ErrorHandler,
 )
+
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences
 from guiguts.preferences_dialog import PreferencesDialog
+from guiguts.search import show_search_dialog, find_next
 from guiguts.utilities import is_mac
 
 logger = logging.getLogger(__package__)
@@ -281,6 +283,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(
             "LineNumbers", lambda show: maintext().show_line_numbers(show)
         )
+        preferences.set_default("SearchHistory", [])
         preferences.load()
 
     # Lay out menus
@@ -288,6 +291,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Create all the menus."""
         self.init_file_menu()
         self.init_edit_menu()
+        self.init_search_menu()
         self.init_view_menu()
         self.init_help_menu()
         self.init_os_menu()
@@ -352,6 +356,25 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         if not is_mac():
             menu_edit.add_separator()
             menu_edit.add_button("Pre~ferences...", lambda: PreferencesDialog(root()))
+
+    def init_search_menu(self) -> None:
+        """Create the View menu."""
+        menu_view = Menu(menubar(), "~Search")
+        menu_view.add_button(
+            "~Search & Replace...",
+            lambda *args: show_search_dialog(),
+            "Cmd/Ctrl+F",
+        )
+        menu_view.add_button(
+            "Find ~Next",
+            lambda *args: find_next(),
+            "Cmd+G" if is_mac() else "F3",
+        )
+        menu_view.add_button(
+            "Find ~Previous",
+            lambda *args: find_next(backwards=True),
+            "Cmd+Shift+G" if is_mac() else "Shift+F3",
+        )
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
