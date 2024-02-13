@@ -109,8 +109,8 @@ class MainText(tk.Text):
         # events that might change which line numbers should be displayed
         self.linenumbers = TextLineNumbers(self.frame, self)
         self.linenumbers.grid(column=0, row=0, sticky="NSEW")
-        self.bind("<Configure>", self._on_change, add=True)
-        self.bind("<KeyPress>", self._on_change, add=True)
+        self.bind_event("<Configure>", self._on_change, add=True, force_break=False)
+        self.bind_event("<KeyPress>", self._on_change, add=True, force_break=False)
         self.numbers_need_updating = True
 
         def hscroll_set(*args: Any) -> None:
@@ -133,26 +133,57 @@ class MainText(tk.Text):
 
         # Set up response to text being modified
         self.modifiedCallbacks: list[Callable[[], None]] = []
-        self.bind("<<Modified>>", self.modify_flag_changed_callback)
+        self.bind_event("<<Modified>>", self.modify_flag_changed_callback)
 
-        self.bind("<<Cut>>", self.smart_cut)
-        self.bind("<<Copy>>", self.smart_copy)
-        self.bind("<<Paste>>", self.smart_paste)
+        self.bind_event("<<Cut>>", self.smart_cut, force_break=False)
+        self.bind_event("<<Copy>>", self.smart_copy, force_break=False)
+        self.bind_event("<<Paste>>", self.smart_paste, force_break=False)
 
         # Column selection uses Alt key on Windows/Linux, Option key on macOS
         # Key Release is reported as Alt_L on all platforms
         modifier = "Option" if is_mac() else "Alt"
-        self.bind(f"<{modifier}-ButtonPress-1>", self.column_select_click)
-        self.bind(f"<{modifier}-B1-Motion>", self.column_select_motion)
-        self.bind(f"<{modifier}-ButtonRelease-1>", self.column_select_release)
-        self.bind("<KeyRelease-Alt_L>", lambda e: self.column_select_stop())
+        self.bind_event(f"<{modifier}-ButtonPress-1>", self.column_select_click)
+        self.bind_event(f"<{modifier}-B1-Motion>", self.column_select_motion)
+        self.bind_event(f"<{modifier}-ButtonRelease-1>", self.column_select_release)
+        self.bind_event("<KeyRelease-Alt_L>", lambda e: self.column_select_stop())
         self.column_selecting = False
+
+        # Add common Mac key bindings for beginning/end of file
+        if is_mac():
+            self.bind_event("<Command-Up>", lambda e: self.move_to_start())
+            self.bind_event("<Command-Down>", lambda e: self.move_to_end())
+            self.bind_event("<Command-Shift-Up>", lambda e: self.select_to_start())
+            self.bind_event("<Command-Shift-Down>", lambda e: self.select_to_end())
 
         # Ensure text still shows selected when focus is in another dialog
         if "inactiveselect" not in kwargs.keys():
             self["inactiveselect"] = self["selectbackground"]
 
         maintext(self)  # Register this single instance of MainText
+
+    def bind_event(
+        self,
+        event_string: str,
+        func: Callable[[tk.Event], Optional[str]],
+        add: bool = False,
+        force_break: bool = True,
+    ) -> None:
+        """Bind event string to given function. Provides ability to force
+        a "break" return in order to stop class binding being executed.
+
+        Args:
+            event_string: String describing key/mouse/etc event.
+            func: Function to bind to event - may handle return "break" itself.
+            add: True to add this binding without removing existing binding.
+            force_break: True to always return "break", regardless of return from `func`.
+        """
+
+        def break_func(event: tk.Event) -> Any:
+            """Call bound function. Force "break" return if needed."""
+            func_ret = func(event)
+            return "break" if force_break else func_ret
+
+        super().bind(event_string, break_func, add)
 
     # The following methods are simply calling the Text widget method
     # then updating the linenumbers widget
@@ -234,15 +265,8 @@ class MainText(tk.Text):
         lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
         uk = re.sub("[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
-        def handler_break(event: tk.Event, func: Callable[[tk.Event], None]) -> str:
-            """In order for class binding not to be called after widget
-            binding, event handler for widget needs to return "break"
-            """
-            func(event)
-            return "break"
-
-        self.bind(lk, lambda event: handler_break(event, handler))
-        self.bind(uk, lambda event: handler_break(event, handler))
+        self.bind_event(lk, lambda event: handler(event))
+        self.bind_event(uk, lambda event: handler(event))
 
     #
     # Handle "modified" flag
@@ -376,7 +400,7 @@ class MainText(tk.Text):
 
         Args:
             IndexRange containing corners of block to be selected."""
-        self.tag_remove("sel", "1.0", tk.END)
+        self.clear_selection()
         min_row = min(col_range.start.row, col_range.end.row)
         max_row = max(col_range.start.row, col_range.end.row)
         min_col = min(col_range.start.col, col_range.end.col)
@@ -391,12 +415,16 @@ class MainText(tk.Text):
                 end += "+ 1l linestart"
             self.tag_add("sel", beg, end)
 
+    def clear_selection(self) -> None:
+        """Clear any current text selection."""
+        self.tag_remove("sel", "1.0", tk.END)
+
     def do_select(self, range: IndexRange) -> None:
         """Select the given range of text.
 
         Args:
             IndexRange containing start and end of text to be selected."""
-        self.tag_remove("sel", "1.0", tk.END)
+        self.clear_selection()
         self.tag_add("sel", range.start.index(), range.end.index())
 
     def selected_ranges(self) -> list[IndexRange]:
@@ -528,26 +556,19 @@ class MainText(tk.Text):
         self.column_paste()
         return "break"  # Skip default behavior
 
-    def column_select_click(self, event: tk.Event) -> str:
+    def column_select_click(self, event: tk.Event) -> None:
         """Callback when column selection is started via mouse click.
 
         Args
             event: Event containing mouse coordinates.
-
-        Returns:
-            "break" to stop default binding.
         """
         self.column_select_start(self.get_index(f"@{event.x},{event.y}"))
-        return "break"
 
-    def column_select_motion(self, event: tk.Event) -> str:
+    def column_select_motion(self, event: tk.Event) -> None:
         """Callback when column selection continues via mouse motion.
 
         Args:
             event: Event containing mouse coordinates.
-
-        Returns:
-            "break" to stop default binding or "" to allow it.
         """
         # Attempt to start up column selection if arriving here without a previous click
         # to start, e.g. user presses modifier key after beginning mouse-drag selection.
@@ -564,20 +585,15 @@ class MainText(tk.Text):
             self.column_select_start(anchor)
 
         self.do_column_select(IndexRange(self.get_index(TK_ANCHOR_MARK), cur_index))
-        return "break"
 
-    def column_select_release(self, event: tk.Event) -> str:
+    def column_select_release(self, event: tk.Event) -> None:
         """Callback when column selection is stopped via mouse button release.
 
         Args:
             event: Event containing mouse coordinates.
-
-        Returns:
-            "break" to stop default binding or "" to allow it.
         """
-        break_str = self.column_select_motion(event)
+        self.column_select_motion(event)
         self.column_select_stop()
-        return break_str
 
     def column_select_start(self, anchor: IndexRowCol) -> None:
         """Begin column selection.
@@ -613,6 +629,26 @@ class MainText(tk.Text):
     def end(self) -> IndexRowCol:
         """Return IndexRowCol for end of text in widget, i.e. "end"."""
         return self.rowcol(tk.END)
+
+    def move_to_start(self) -> None:
+        """Set insert position to start of text & clear any selection."""
+        self.clear_selection()
+        self.set_insert_index(self.start())
+
+    def move_to_end(self) -> None:
+        """Set insert position to end of text & clear any selection."""
+        self.clear_selection()
+        self.set_insert_index(self.end())
+
+    def select_to_start(self) -> None:
+        """Select from current position to start of text."""
+        self.do_select(IndexRange(self.start(), self.get_insert_index()))
+        self.set_insert_index(self.start())
+
+    def select_to_end(self) -> None:
+        """Select from current position to start of text."""
+        self.do_select(IndexRange(self.get_insert_index(), self.end()))
+        self.set_insert_index(self.end())
 
     def find_match(
         self,

@@ -47,6 +47,7 @@ class Root(tk.Tk):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.after_idle(lambda: grab_focus(self, maintext(), True))
+        self.set_tcl_word_characters()
 
     def report_callback_exception(
         self, exc: type[BaseException], val: BaseException, tb: TracebackType | None
@@ -56,6 +57,20 @@ class Root(tk.Tk):
         """
         err = "Tkinter Exception\n" + "".join(traceback.format_exception(exc, val, tb))
         logger.error(err)
+
+    def set_tcl_word_characters(self) -> None:
+        """Configure which characters are considered word/non-word characters by tcl.
+
+        Alphanumerics & stright/curly apostrophe will be considered word characters.
+        These affect operations such as double-click to select word, Cmd/Ctrl left/right
+        to move forward/backward a word at a time, etc.
+        See https://wiki.tcl-lang.org/page/tcl%5Fwordchars for more info.
+        """
+        # Trigger tcl to autoload library that defines variables we want to override.
+        self.tk.call("tcl_wordBreakAfter", "", 0)
+        # Set word and non-word characters
+        self.tk.call("set", "tcl_wordchars", r"[[:alnum:]'’]")
+        self.tk.call("set", "tcl_nonwordchars", r"[^[:alnum:]'’]")
 
 
 class Menu(tk.Menu):
