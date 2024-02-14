@@ -286,15 +286,25 @@ class SearchDialog(ToplevelDialog):
             matches = []
             sound_bell()
 
-        results = ""
+        checker_dialog = ToplevelDialog.show_dialog(CheckerDialog, "Search Results")
+        checker_dialog.reset()
         for match in matches:
             line = maintext().get(
                 f"{match.rowcol.index()} linestart", f"{match.rowcol.index()} lineend"
             )
-            results += f"{match.rowcol.row}.{match.rowcol.col}: {line}\n"
-
-        checker_dialog = ToplevelDialog.show_dialog(CheckerDialog, "Search Results")
-        checker_dialog.set_text(results)
+            line_prefix = f"{match.rowcol.row}.{match.rowcol.col}: "
+            result = line_prefix + line
+            end_rowcol = IndexRowCol(
+                maintext().index(match.rowcol.index() + f"+{match.count}c")
+            )
+            hilite_start = match.rowcol.col + len(line_prefix)
+            if end_rowcol.row > match.rowcol.row:
+                hilite_end = len(result)
+            else:
+                hilite_end = end_rowcol.col + len(line_prefix)
+            checker_dialog.add_entry(
+                IndexRange(match.rowcol, end_rowcol), result, hilite_start, hilite_end
+            )
 
 
 def show_search_dialog() -> None:
