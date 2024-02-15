@@ -72,11 +72,14 @@ class ToplevelDialog(tk.Toplevel):
     # Used to ensure only one instance of any dialog is created.
     _toplevel_dialogs: dict[str, "ToplevelDialog"] = {}
 
-    def __init__(self, title: str, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self, title: str, resizable: bool = True, *args: Any, **kwargs: Any
+    ) -> None:
         """Initialize the dialog."""
         super().__init__(*args, **kwargs)
         self.bind("<Escape>", lambda event: self.destroy())
         self.title(title)
+        self.resizable(resizable, resizable)
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
