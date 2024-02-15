@@ -260,6 +260,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "LineNumbers", lambda show: maintext().show_line_numbers(show)
         )
         preferences.set_default("SearchHistory", [])
+        preferences.set_default("DialogGeometry", {})
+        preferences.set_default("RootGeometry", "800x400")
+
         preferences.load()
 
     # Lay out menus

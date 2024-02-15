@@ -1,5 +1,6 @@
 """Common code/classes relating to Tk widgets."""
 
+import regex as re
 import tkinter as tk
 from tkinter import simpledialog, ttk
 from typing import Any, Optional, TypeVar
@@ -83,6 +84,11 @@ class ToplevelDialog(tk.Toplevel):
         self.top_frame.columnconfigure(0, weight=1)
         self.top_frame.rowconfigure(0, weight=1)
         self.top_frame.grid(row=0, column=0, sticky="NSEW")
+
+        self._do_config()
+        self.save_config = False
+        self.bind("<Configure>", self._handle_config)
+
         grab_focus(self)
 
     @classmethod
@@ -106,6 +112,39 @@ class ToplevelDialog(tk.Toplevel):
             else:
                 ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls()  # type: ignore[call-arg]
         return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
+
+    def _do_config(self) -> None:
+        config_dict = preferences.get("DialogGeometry")
+        try:
+            geometry = config_dict[self.__class__.__name__]
+            x_resize, y_resize = self.resizable()
+            if not (x_resize or y_resize):
+                geometry = re.sub(r"^\d+x\d+", "", geometry)
+            self.geometry(geometry)
+        except KeyError:
+            pass  # OK if no stored geometry for this dialog
+
+    def _handle_config(self, event: tk.Event) -> None:
+        """Callback from dialog <Configure> event.
+
+        By setting flag now, and queuing calls to _save_config,
+        we ensure the flag will be true for the first call to
+        _save_config when pricess becomes idle."""
+        self.save_config = True
+        self.after_idle(self._save_config)
+
+    def _save_config(self) -> None:
+        """Only save geometry when process becomes idle.
+
+        Several calls to this may be queued by config changes during
+        dialog creation and resizing. Only the first will actually
+        do a save, because the flag will only be true on the first call."""
+        if self.save_config:
+            config_dict = preferences.get("DialogGeometry")
+            key = self.__class__.__name__
+            config_dict[key] = self.geometry()
+            preferences.set("DialogGeometry", config_dict)
+            self.save_config = False
 
 
 class Combobox(ttk.Combobox):

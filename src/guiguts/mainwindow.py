@@ -42,12 +42,14 @@ class Root(tk.Tk):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.geometry("800x400")
+        self.geometry(preferences.get("RootGeometry"))
         self.option_add("*tearOff", False)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.after_idle(lambda: grab_focus(self, maintext(), True))
         self.set_tcl_word_characters()
+        self.save_config = False
+        self.bind("<Configure>", self._handle_config)
 
     def report_callback_exception(
         self, exc: type[BaseException], val: BaseException, tb: TracebackType | None
@@ -71,6 +73,24 @@ class Root(tk.Tk):
         # Set word and non-word characters
         self.tk.call("set", "tcl_wordchars", r"[[:alnum:]'’]")
         self.tk.call("set", "tcl_nonwordchars", r"[^[:alnum:]'’]")
+
+    def _handle_config(self, event: tk.Event) -> None:
+        """Callback from root dialog <Configure> event.
+
+        By setting flag now, and queuing calls to _save_config,
+        we ensure the flag will be true for the first call to
+        _save_config when pricess becomes idle."""
+        self.save_config = True
+        self.after_idle(self._save_config)
+
+    def _save_config(self) -> None:
+        """Only save geometry when process becomes idle.
+
+        Several calls to this may be queued by config changes during
+        root dialog creation and resizing. Only the first will actually
+        do a save, because the flag will only be true on the first call."""
+        if self.save_config:
+            preferences.set("RootGeometry", self.geometry())
 
 
 class Menu(tk.Menu):
