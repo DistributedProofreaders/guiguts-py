@@ -103,7 +103,7 @@ class CheckerDialog(ToplevelDialog):
         start = maintext().index(self._mark_from_rowcol(entry.range.start))
         end = maintext().index(self._mark_from_rowcol(entry.range.end))
         maintext().do_select(IndexRange(start, end))
-        maintext().set_insert_index(IndexRowCol(end), focus=True)
+        maintext().set_insert_index(IndexRowCol(start), focus=True)
         self.lift()
 
     def _mark_from_rowcol(self, rowcol: IndexRowCol) -> str:
