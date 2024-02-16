@@ -120,12 +120,12 @@ class ToplevelDialog(tk.Toplevel):
         config_dict = preferences.get("DialogGeometry")
         try:
             geometry = config_dict[self.__class__.__name__]
-            x_resize, y_resize = self.resizable()
-            if not (x_resize or y_resize):
-                geometry = re.sub(r"^\d+x\d+", "", geometry)
-            self.geometry(geometry)
         except KeyError:
-            pass  # OK if no stored geometry for this dialog
+            return  # Do nothing if no stored geometry for this dialog
+        x_resize, y_resize = self.resizable()
+        if not (x_resize or y_resize):
+            geometry = re.sub(r"^\d+x\d+", "", geometry)
+        self.geometry(geometry)
 
     def _handle_config(self, event: tk.Event) -> None:
         """Callback from dialog <Configure> event.
