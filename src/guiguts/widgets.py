@@ -132,7 +132,7 @@ class ToplevelDialog(tk.Toplevel):
 
         By setting flag now, and queuing calls to _save_config,
         we ensure the flag will be true for the first call to
-        _save_config when pricess becomes idle."""
+        _save_config when process becomes idle."""
         self.save_config = True
         self.after_idle(self._save_config)
 
