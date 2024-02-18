@@ -129,20 +129,29 @@ poetry env use $(brew --prefix)/bin/python3.11
 
 ## Code style
 
-Guiguts 2 uses [flake8](https://pypi.org/project/flake8) for static code analysis
-and [black](https://pypi.org/project/black) for consistent styling. Both use
-default settings, with the exception of maximum line length checking which is
-adjusted in the recommended manner using the `.flake8` file to avoid conflicts
-with black.
+Guiguts 2 uses [flake8](https://pypi.org/project/flake8) and
+[pylint](https://www.pylint.org) for static code analysis, and
+[black](https://pypi.org/project/black) for consistent styling.  All use default
+settings, with the exception of maximum line length checking which is adjusted
+in the recommended manner (using the `.flake8` file and the `tool.pylint`
+section of `pyproject.toml`) to avoid conflicts with black.
 
-Both tools will be installed via `poetry` as described above.
+All of the above tools will be installed via `poetry` as described above.
 
 `poetry run flake8 .` will check all `src` & `tests` python files.
 
+`poetry run pylint --recursive y .` will check all `src` & `tests` python files.
+
 `poetry run black .` will reformat all `src` & `tests` python files where necessary.
 
-This project uses Github Actions to ensure neither of the above tools reports any
+This project uses Github Actions to ensure neither flake8 nor black report any
 error.
+
+> **NOTE:** At this time, `pylint` is running in GitHub Actions in an advisory
+mode only.  That means that any warning or error reported by `pylint` will not
+cause the Action to fail. Over time, as we make changes in Guiguts and/or the
+`pylint` configuration, the aim is to clear all of `pylint`'s warnings. At that
+point perhaps it can run in an enforcement mode.
 
 Naming conventions from [PEP8](https://pep8.org/#prescriptive-naming-conventions)
 are used. To summarize, class names use CapWords; constants are ALL_UPPERCASE;
