@@ -6,8 +6,7 @@ import regex as re
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tk_font
-
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Literal
 
 from guiguts.preferences import preferences
 from guiguts.utilities import is_mac, IndexRowCol, IndexRange, force_wholeword
@@ -354,13 +353,29 @@ class MainText(tk.Text):
         """Set the position of the insert cursor.
 
         Args:
-            rowcol: Location to position insert cursor.
+            insert_pos: Location to position insert cursor.
             focus: Optional, False means focus will not be forced to maintext
         """
         self.mark_set(tk.INSERT, insert_pos.index())
         self.see(tk.INSERT)
         if focus:
             self.focus_set()
+
+    def set_mark_position(
+        self,
+        mark: str,
+        position: IndexRowCol,
+        gravity: Literal["left", "right"] = tk.LEFT,
+    ) -> None:
+        """Set the position of a mark and its gravity.
+
+        Args:
+            mark: Name of mark.
+            position: Location to position mark.
+            gravity: tk.LEFT(default) to stick to left character; tk.RIGHT to stick to right
+        """
+        self.mark_set(mark, position.index())
+        self.mark_gravity(mark, gravity)
 
     def get_text(self) -> str:
         """Return all the text from the text widget.

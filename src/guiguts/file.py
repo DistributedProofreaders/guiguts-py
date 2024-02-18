@@ -326,8 +326,7 @@ class File:
         if page_details:
             for img, detail in page_details.items():
                 mark = page_mark_from_img(img)
-                maintext().mark_set(mark, detail["index"])
-                maintext().mark_gravity(mark, tk.LEFT)
+                maintext().set_mark_position(mark, IndexRowCol(detail["index"]))
 
     def set_initial_position(self, index: str | None) -> None:
         """Set initial cursor position after file is loaded.
@@ -379,8 +378,7 @@ class File:
                     maintext().delete(line_start, line_end)
                     maintext().insert(line_start, standard_line)
                 page_mark = page_mark_from_img(page)
-                maintext().mark_set(page_mark, line_start)
-                maintext().mark_gravity(page_mark, tk.LEFT)
+                maintext().set_mark_position(page_mark, IndexRowCol(line_start))
                 self.page_details[page] = PageDetail(
                     line_start, page_num_style, page_num
                 )
