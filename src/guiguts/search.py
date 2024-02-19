@@ -3,7 +3,7 @@
 import regex as re
 import tkinter as tk
 from tkinter import ttk
-from typing import Any
+from typing import Any, Tuple, Optional
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext
@@ -13,6 +13,7 @@ from guiguts.widgets import ToplevelDialog, Combobox
 
 MARK_FOUND_START = "FoundStart"
 MARK_FOUND_END = "FoundEnd"
+MARK_END_RANGE = "SearchRangeEnd"
 
 
 class SearchDialog(ToplevelDialog):
@@ -73,7 +74,7 @@ class SearchDialog(ToplevelDialog):
         )
         selection_frame.grid(row=0, column=1, rowspan=3, sticky="NSEW")
         message_frame = ttk.Frame(self.top_frame, padding=1)
-        message_frame.grid(row=3, column=0, columnspan=2, sticky="NSE")
+        message_frame.grid(row=3, column=0, columnspan=2, sticky="NSEW")
 
         # Search
         self.search_box = Combobox(search_frame, "SearchHistory", width=30)
@@ -179,7 +180,7 @@ class SearchDialog(ToplevelDialog):
 
         # Message (e.g. count)
         self.message = ttk.Label(message_frame)
-        self.message.grid(row=0, column=0, sticky="NSE")
+        self.message.grid(row=0, column=0, sticky="NSW")
 
         # Bindings for when focus is in Search dialog
         if is_mac():
@@ -238,28 +239,20 @@ class SearchDialog(ToplevelDialog):
             return
         self.search_box.add_to_history(search_string)
 
-        range = None
-        count = 0
-        if SearchDialog.selection.get():
-            range_name = "selection"
-            if sel_ranges := maintext().selected_ranges():
-                range = sel_ranges[0]
-        else:
-            range_name = "file"
-            range = IndexRange(maintext().start(), maintext().end())
-        if range:
+        count_range, range_name = get_search_range()
+        if count_range:
             matches = maintext().find_matches(
                 search_string,
-                range,
+                count_range,
                 nocase=SearchDialog.nocase.get(),
                 regexp=SearchDialog.regex.get(),
                 wholeword=SearchDialog.wholeword.get(),
             )
             count = len(matches)
             match_str = "match" if count == 1 else "matches"
-            self.display_message(f"Count: {count} {match_str} in {range_name}")
+            self.display_message(f"Count: {count} {match_str} {range_name}")
         else:
-            self.display_message("No text selected")
+            self.display_message('No text selected for "In selection" count')
             sound_bell()
 
     def findall_clicked(self) -> None:
@@ -269,23 +262,23 @@ class SearchDialog(ToplevelDialog):
             return
         self.search_box.add_to_history(search_string)
 
-        range = None
-        if SearchDialog.selection.get():
-            if sel_ranges := maintext().selected_ranges():
-                range = sel_ranges[0]
-        else:
-            range = IndexRange(maintext().start(), maintext().end())
-        if range:
+        find_range, range_name = get_search_range()
+        if find_range:
             matches = maintext().find_matches(
                 search_string,
-                range,
+                find_range,
                 nocase=SearchDialog.nocase.get(),
                 regexp=SearchDialog.regex.get(),
                 wholeword=SearchDialog.wholeword.get(),
             )
+            count = len(matches)
+            match_str = "match" if count == 1 else "matches"
+            self.display_message(f"Found: {count} {match_str} {range_name}")
         else:
             matches = []
+            self.display_message('No text selected for "In selection" find')
             sound_bell()
+            return
 
         checker_dialog = ToplevelDialog.show_dialog(CheckerDialog, "Search Results")
         checker_dialog.reset()
@@ -352,18 +345,14 @@ class SearchDialog(ToplevelDialog):
         replace_string = self.replace_box.get()
         self.replace_box.add_to_history(replace_string)
 
-        replace_range = None
-        if SearchDialog.selection.get():
-            range_name = "selection"
-            if sel_ranges := maintext().selected_ranges():
-                replace_range = sel_ranges[0]
-        else:
-            range_name = "file"
-            replace_range = IndexRange(maintext().start(), maintext().end())
+        replace_range, range_name = get_search_range()
 
         if replace_range:
             replace_match = replace_string
             count = 0
+            # Use a mark for the end of the range, otherwise early replacements with longer
+            # or shorter strings will invalidate the index of the range end.
+            maintext().mark_set(MARK_END_RANGE, replace_range.end.index())
             while match := maintext().find_match(
                 search_string,
                 replace_range,
@@ -380,11 +369,17 @@ class SearchDialog(ToplevelDialog):
                         search_string, replace_string, match_text
                     )
                 maintext().replace(start_index, end_index, replace_match)
+                repl_len = len(replace_match)
                 maintext().mark_unset(MARK_FOUND_START, MARK_FOUND_END)
-                replace_range.start = maintext().get_index(start_index + "+1c")
+                replace_range.start = maintext().get_index(
+                    start_index + f"+{repl_len}c"
+                )
+                replace_range.end = maintext().get_index(
+                    MARK_END_RANGE
+                )  # Refresh end index
                 count += 1
             match_str = "match" if count == 1 else "matches"
-            self.display_message(f"{count} {match_str} replaced in {range_name}")
+            self.display_message(f"Replaced: {count} {match_str} {range_name}")
         else:
             self.display_message('No text selected for "In selection" replace')
             sound_bell()
@@ -500,3 +495,30 @@ def replace_regex(search_regex: str, replace_regex: str, match_text: str) -> str
         Replacement string.
     """
     return re.sub(search_regex, replace_regex, match_text)
+
+
+def get_search_range() -> Tuple[Optional[IndexRange], str]:
+    """Get range to search over, based on checkbox settings.
+
+    Returns:
+        Range to search over, and string to describe the range.
+    """
+    replace_range = None
+    range_name = ""
+    if SearchDialog.selection.get():
+        range_name = "in selection"
+        if sel_ranges := maintext().selected_ranges():
+            replace_range = sel_ranges[0]
+    else:
+        if SearchDialog.wrap.get():
+            range_name = "in entire file"
+            replace_range = IndexRange(maintext().start(), maintext().end())
+        elif SearchDialog.reverse.get():
+            range_name = "from start of file to current location"
+            replace_range = IndexRange(
+                maintext().start(), maintext().get_insert_index()
+            )
+        else:
+            range_name = "from current location to end of file"
+            replace_range = IndexRange(maintext().get_insert_index(), maintext().end())
+    return replace_range, range_name
