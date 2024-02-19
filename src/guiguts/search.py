@@ -1,15 +1,18 @@
 """Search/Replace functionality"""
 
+import logging
 import regex as re
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Tuple, Optional
 
 from guiguts.checkers import CheckerDialog
-from guiguts.maintext import maintext
+from guiguts.maintext import maintext, TclRegexCompileError
 from guiguts.preferences import preferences
 from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, process_accel, is_mac
 from guiguts.widgets import ToplevelDialog, Combobox
+
+logger = logging.getLogger(__package__)
 
 MARK_FOUND_START = "FoundStart"
 MARK_FOUND_END = "FoundEnd"
@@ -50,7 +53,7 @@ class SearchDialog(ToplevelDialog):
             SearchDialog.reverse = tk.BooleanVar(value=False)
             SearchDialog.nocase = tk.BooleanVar(value=False)
             SearchDialog.wholeword = tk.BooleanVar(value=False)
-            SearchDialog.wrap = tk.BooleanVar(value=False)
+            SearchDialog.wrap = tk.BooleanVar(value=True)
             SearchDialog.regex = tk.BooleanVar(value=False)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
@@ -225,8 +228,14 @@ class SearchDialog(ToplevelDialog):
         backwards = SearchDialog.reverse.get() ^ opposite_dir
         start_rowcol = get_search_start(backwards)
         stop_rowcol = maintext().start() if backwards else maintext().end()
-        _do_find_next(search_string, backwards, IndexRange(start_rowcol, stop_rowcol))
-        self.display_message()
+        message = ""
+        try:
+            _do_find_next(
+                search_string, backwards, IndexRange(start_rowcol, stop_rowcol)
+            )
+        except TclRegexCompileError as exc:
+            message = str(exc)
+        self.display_message(message)
         return "break"
 
     def count_clicked(self) -> None:
@@ -241,13 +250,18 @@ class SearchDialog(ToplevelDialog):
 
         count_range, range_name = get_search_range()
         if count_range:
-            matches = maintext().find_matches(
-                search_string,
-                count_range,
-                nocase=SearchDialog.nocase.get(),
-                regexp=SearchDialog.regex.get(),
-                wholeword=SearchDialog.wholeword.get(),
-            )
+            try:
+                matches = maintext().find_matches(
+                    search_string,
+                    count_range,
+                    nocase=SearchDialog.nocase.get(),
+                    regexp=SearchDialog.regex.get(),
+                    wholeword=SearchDialog.wholeword.get(),
+                )
+            except TclRegexCompileError as exc:
+                self.display_message(str(exc))
+                sound_bell()
+                return
             count = len(matches)
             match_str = "match" if count == 1 else "matches"
             self.display_message(f"Count: {count} {match_str} {range_name}")
@@ -264,13 +278,18 @@ class SearchDialog(ToplevelDialog):
 
         find_range, range_name = get_search_range()
         if find_range:
-            matches = maintext().find_matches(
-                search_string,
-                find_range,
-                nocase=SearchDialog.nocase.get(),
-                regexp=SearchDialog.regex.get(),
-                wholeword=SearchDialog.wholeword.get(),
-            )
+            try:
+                matches = maintext().find_matches(
+                    search_string,
+                    find_range,
+                    nocase=SearchDialog.nocase.get(),
+                    regexp=SearchDialog.regex.get(),
+                    wholeword=SearchDialog.wholeword.get(),
+                )
+            except TclRegexCompileError as exc:
+                self.display_message(str(exc))
+                sound_bell()
+                return
             count = len(matches)
             match_str = "match" if count == 1 else "matches"
             self.display_message(f"Found: {count} {match_str} {range_name}")
@@ -353,14 +372,23 @@ class SearchDialog(ToplevelDialog):
             # Use a mark for the end of the range, otherwise early replacements with longer
             # or shorter strings will invalidate the index of the range end.
             maintext().mark_set(MARK_END_RANGE, replace_range.end.index())
-            while match := maintext().find_match(
-                search_string,
-                replace_range,
-                nocase=SearchDialog.nocase.get(),
-                regexp=SearchDialog.regex.get(),
-                wholeword=SearchDialog.wholeword.get(),
-                backwards=False,
-            ):
+            while True:
+                try:
+                    match = maintext().find_match(
+                        search_string,
+                        replace_range,
+                        nocase=SearchDialog.nocase.get(),
+                        regexp=SearchDialog.regex.get(),
+                        wholeword=SearchDialog.wholeword.get(),
+                        backwards=False,
+                    )
+                except TclRegexCompileError as exc:
+                    self.display_message(str(exc))
+                    sound_bell()
+                    return
+
+                if not match:
+                    break
                 start_index = match.rowcol.index()
                 end_index = maintext().index(start_index + f"+{match.count}c")
                 match_text = maintext().get(start_index, end_index)
@@ -425,7 +453,10 @@ def find_next(backwards: bool = False) -> None:
 
     start_rowcol = get_search_start(backwards)
     stop_rowcol = maintext().start() if backwards else maintext().end()
-    _do_find_next(search_string, backwards, IndexRange(start_rowcol, stop_rowcol))
+    try:
+        _do_find_next(search_string, backwards, IndexRange(start_rowcol, stop_rowcol))
+    except TclRegexCompileError as exc:
+        logger.error(str(exc))
 
 
 def _do_find_next(
@@ -438,14 +469,17 @@ def _do_find_next(
         backwards: True to search backwards.
         start_point: Point to search from.
     """
-    match = maintext().find_match(
-        search_string,
-        search_limits.start if SearchDialog.wrap.get() else search_limits,
-        nocase=SearchDialog.nocase.get(),
-        regexp=SearchDialog.regex.get(),
-        wholeword=SearchDialog.wholeword.get(),
-        backwards=backwards,
-    )
+    try:
+        match = maintext().find_match(
+            search_string,
+            search_limits.start if SearchDialog.wrap.get() else search_limits,
+            nocase=SearchDialog.nocase.get(),
+            regexp=SearchDialog.regex.get(),
+            wholeword=SearchDialog.wholeword.get(),
+            backwards=backwards,
+        )
+    except tk.TclError:
+        pass
     if match:
         rowcol_end = maintext().rowcol(match.rowcol.index() + f"+{match.count}c")
         maintext().set_insert_index(match.rowcol, focus=False)

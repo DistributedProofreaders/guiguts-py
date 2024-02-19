@@ -196,10 +196,10 @@ def process_accel(accel: str) -> tuple[str, str]:
     return (accel, f"<{keyevent}>")
 
 
-def force_wholeword(string: str, regex: bool) -> tuple[str, bool]:
+def force_tcl_wholeword(string: str, regex: bool) -> tuple[str, bool]:
     """Change string to only match whole word(s) by converting to
-    a regex (if not already), then prepending and appending word
-    boundary flags.
+    a regex (if not already), then prepending and appending Tcl-style
+    word boundary flags.
 
     Args:
         string: String to be converted to a match wholeword regex.
@@ -210,4 +210,19 @@ def force_wholeword(string: str, regex: bool) -> tuple[str, bool]:
     """
     if not regex:
         string = re.escape(string)
-    return r"\m" + string + r"\M", True
+    return r"\y" + string + r"\y", True
+
+
+def convert_to_tcl_regex(regex: str) -> str:
+    """Convert regex to a Tcl-style regex.
+
+    Currently, only converts backslash-b to backslash-y.
+    Does not convert backslash-backslash-b.
+
+    Args:
+        regex: The regex to be converted
+
+    Returns:
+        Converted regex.
+    """
+    return re.sub(r"(?<!\\)\\b", r"\\y", regex)
