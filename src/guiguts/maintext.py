@@ -9,7 +9,13 @@ from tkinter import font as tk_font
 from typing import Any, Callable, Optional, Literal
 
 from guiguts.preferences import preferences
-from guiguts.utilities import is_mac, IndexRowCol, IndexRange, force_wholeword
+from guiguts.utilities import (
+    is_mac,
+    IndexRowCol,
+    IndexRange,
+    force_tcl_wholeword,
+    convert_to_tcl_regex,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -697,18 +703,27 @@ class MainText(tk.Text):
             start_index = start_range.start.index()
             stop_index = start_range.end.index()
 
+        if regexp:
+            search_string = convert_to_tcl_regex(search_string)
         if wholeword:
-            search_string, regexp = force_wholeword(search_string, regexp)
+            search_string, regexp = force_tcl_wholeword(search_string, regexp)
         count_var = tk.IntVar()
-        if match_start := self.search(
-            search_string,
-            start_index,
-            stop_index,
-            count=count_var,
-            nocase=nocase,
-            regexp=regexp,
-            backwards=backwards,
-        ):
+        try:
+            match_start = self.search(
+                search_string,
+                start_index,
+                stop_index,
+                count=count_var,
+                nocase=nocase,
+                regexp=regexp,
+                backwards=backwards,
+            )
+        except tk.TclError as exc:
+            if str(exc).startswith("couldn't compile regular expression pattern"):
+                raise TclRegexCompileError(str(exc))
+            match_start = None
+
+        if match_start:
             return FindMatch(IndexRowCol(match_start), count_var.get())
         return None
 
@@ -735,21 +750,28 @@ class MainText(tk.Text):
         """
         start_index = range.start.index()
         stop_index = range.end.index()
+        if regexp:
+            search_string = convert_to_tcl_regex(search_string)
         if wholeword:
-            search_string, regexp = force_wholeword(search_string, regexp)
+            search_string, regexp = force_tcl_wholeword(search_string, regexp)
 
         matches = []
         count_var = tk.IntVar()
         start = start_index
         while start:
-            start = self.search(
-                search_string,
-                start,
-                stop_index,
-                count=count_var,
-                nocase=nocase,
-                regexp=regexp,
-            )
+            try:
+                start = self.search(
+                    search_string,
+                    start,
+                    stop_index,
+                    count=count_var,
+                    nocase=nocase,
+                    regexp=regexp,
+                )
+            except tk.TclError as exc:
+                if str(exc).startswith("couldn't compile regular expression pattern"):
+                    raise TclRegexCompileError(str(exc))
+                break
             if start:
                 matches.append(FindMatch(IndexRowCol(start), count_var.get()))
                 start += f"+{count_var.get()}c"
@@ -866,6 +888,10 @@ class MainText(tk.Text):
             List of language strings.
         """
         return self.languages.split("+")
+
+
+class TclRegexCompileError(Exception):
+    """Raise if Tcl fails to compile regex."""
 
 
 # For convenient access, store the single MainText instance here,
