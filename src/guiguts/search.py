@@ -53,6 +53,7 @@ class SearchDialog(ToplevelDialog):
             SearchDialog.regex = tk.BooleanVar(value=False)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
+        kwargs["resizable"] = False
         super().__init__("Search & Replace", *args, **kwargs)
 
         # Frames
@@ -121,31 +122,31 @@ class SearchDialog(ToplevelDialog):
             text="Reverse",
             variable=SearchDialog.reverse,
             takefocus=False,
-        ).grid(row=0, column=0, sticky="NSEW")
+        ).grid(row=0, column=0, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
-            text="Case insensitive",
+            text="Nocase",
             variable=SearchDialog.nocase,
             takefocus=False,
-        ).grid(row=0, column=1, sticky="NSEW")
+        ).grid(row=0, column=1, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
-            text="Whole word",
+            text="Word",
             variable=SearchDialog.wholeword,
             takefocus=False,
-        ).grid(row=0, column=2, sticky="NSEW")
+        ).grid(row=0, column=2, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
-            text="Wrap around",
+            text="Wrap",
             variable=SearchDialog.wrap,
             takefocus=False,
-        ).grid(row=0, column=3, sticky="NSEW")
+        ).grid(row=0, column=3, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
             text="Regex",
             variable=SearchDialog.regex,
             takefocus=False,
-        ).grid(row=0, column=4, sticky="NSEW")
+        ).grid(row=0, column=4, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options2_frame,
             text="In selection",
