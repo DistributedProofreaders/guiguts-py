@@ -106,31 +106,30 @@ class ToplevelDialog(tk.Toplevel):
         grab_focus(self)
 
     @classmethod
-    def show_dialog(cls, dlg_cls: type[TlDlg], title: Optional[str] = None) -> TlDlg:
-        """Show the given dialog, or create it if it doesn't exist.
+    def show_dialog(cls: type[TlDlg], title: Optional[str] = None) -> TlDlg:
+        """Show the instance of this dialog class, or create it if it doesn't exist.
 
         Args:
-            dlg_cls: Class of dialog to be created - subclass of ToplevelDialog.
             title: Dialog title.
         """
-        dlg_name = dlg_cls.__name__
-        if cls.get_dialog(dlg_cls):
-            ToplevelDialog._toplevel_dialogs[dlg_name].deiconify()
+        dlg_name = cls.__name__
+        if dlg := cls.get_dialog():
+            dlg.deiconify()
         else:
             if title is not None:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls(title)  # type: ignore[call-arg]
+                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(title)  # type: ignore[call-arg]
             else:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls()  # type: ignore[call-arg]
+                ToplevelDialog._toplevel_dialogs[dlg_name] = cls()  # type: ignore[call-arg]
         return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
 
     @classmethod
-    def get_dialog(cls, dlg_cls: type[TlDlg]) -> Optional[TlDlg]:
-        """Return the given dialog if it exists.
+    def get_dialog(cls) -> Optional[TlDlg]:
+        """Return the one occurrence of this dialog class if it exists.
 
-        Args:
-            dlg_cls: Class of dialog to be created - subclass of ToplevelDialog.
+        Returns:
+            The one instance of this dialog type, or None if it's not currently shown.
         """
-        dlg_name = dlg_cls.__name__
+        dlg_name = cls.__name__
         if (
             dlg_name in ToplevelDialog._toplevel_dialogs
             and ToplevelDialog._toplevel_dialogs[dlg_name].winfo_exists()
