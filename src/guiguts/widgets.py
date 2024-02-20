@@ -73,13 +73,24 @@ class ToplevelDialog(tk.Toplevel):
     _toplevel_dialogs: dict[str, "ToplevelDialog"] = {}
 
     def __init__(
-        self, title: str, resizable: bool = True, *args: Any, **kwargs: Any
+        self,
+        title: str,
+        resize_x: bool = True,
+        resize_y: bool = True,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
-        """Initialize the dialog."""
+        """Initialize the dialog.
+
+        Args:
+            title: Dialog title.
+            resize_x: True(default) to allow resizing and remembering of the dialog width.
+            resize_y: True(default) to allow resizing and remembering of the dialog height.
+        """
         super().__init__(*args, **kwargs)
         self.bind("<Escape>", lambda event: self.destroy())
         self.title(title)
-        self.resizable(resizable, resizable)
+        self.resizable(resize_x, resize_y)
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -100,14 +111,10 @@ class ToplevelDialog(tk.Toplevel):
 
         Args:
             dlg_cls: Class of dialog to be created - subclass of ToplevelDialog.
-            root: Tk root.
             title: Dialog title.
         """
         dlg_name = dlg_cls.__name__
-        if (
-            dlg_name in ToplevelDialog._toplevel_dialogs
-            and ToplevelDialog._toplevel_dialogs[dlg_name].winfo_exists()
-        ):
+        if cls.get_dialog(dlg_cls):
             ToplevelDialog._toplevel_dialogs[dlg_name].deiconify()
         else:
             if title is not None:
@@ -116,16 +123,77 @@ class ToplevelDialog(tk.Toplevel):
                 ToplevelDialog._toplevel_dialogs[dlg_name] = dlg_cls()  # type: ignore[call-arg]
         return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
 
+    @classmethod
+    def get_dialog(cls, dlg_cls: type[TlDlg]) -> Optional[TlDlg]:
+        """Return the given dialog if it exists.
+
+        Args:
+            dlg_cls: Class of dialog to be created - subclass of ToplevelDialog.
+        """
+        dlg_name = dlg_cls.__name__
+        if (
+            dlg_name in ToplevelDialog._toplevel_dialogs
+            and ToplevelDialog._toplevel_dialogs[dlg_name].winfo_exists()
+        ):
+            return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
+        else:
+            return None
+
     def _do_config(self) -> None:
+        """Configure the geometry of the ToplevelDialog.
+
+        It is not possible (easy) to set just the width or height at this point,
+        since the `geometry` method doesn't support that, and the current width
+        or height can't be queried (in order to keep it unchanged) because the
+        dialog doesn't yet have any contents, so no size.
+
+        The parent dialog is responsible for setting the size correctly in the
+        case of a dialog that is only resizable in one direction, using
+        the config_width/config_height methods.
+        """
+        if geometry := self._get_pref_geometry():
+            x_resize, y_resize = self.resizable()
+            if not (x_resize and y_resize):
+                geometry = re.sub(r"^\d+x\d+", "", geometry)
+            self.geometry(geometry)
+
+    def config_width(self) -> None:
+        """Configure the width of the dialog to the Prefs value,
+        leaving the height unchanged.
+
+        This must not be called until all the contents of the dialog have
+        been created & managed.
+        """
+        if geometry := self._get_pref_geometry():
+            width = re.sub(r"x.+", "", geometry)
+            self.update()  # Needed before querying geometry
+            new_geometry = re.sub(r"^\d+", width, self.geometry())
+            self.geometry(new_geometry)
+
+    def config_height(self) -> None:
+        """Configure the height of the dialog to the Prefs value,
+        leaving the width unchanged.
+
+        This must not be called until all the contents of the dialog have
+        been created & managed.
+        """
+        if geometry := self._get_pref_geometry():
+            height = re.sub(r"^\d+x(\d+).+", r"\1", geometry)
+            self.update()  # Needed before querying geometry
+            new_geometry = re.sub(r"(?<=x)\d+", height, self.geometry())
+            self.geometry(new_geometry)
+
+    def _get_pref_geometry(self) -> str:
+        """Get preferred dialog geometry from Prefs file.
+
+        Returns:
+            String containing geometry, or empty string if none stored.
+        """
         config_dict = preferences.get("DialogGeometry")
         try:
-            geometry = config_dict[self.__class__.__name__]
+            return config_dict[self.__class__.__name__]
         except KeyError:
-            return  # Do nothing if no stored geometry for this dialog
-        x_resize, y_resize = self.resizable()
-        if not (x_resize or y_resize):
-            geometry = re.sub(r"^\d+x\d+", "", geometry)
-        self.geometry(geometry)
+            return ""
 
     def _handle_config(self, event: tk.Event) -> None:
         """Callback from dialog <Configure> event.

@@ -24,7 +24,7 @@ class SearchDialog(ToplevelDialog):
 
     Attributes:
         reverse: True to search backwards.
-        nocase: True to ignore case.
+        matchcase: True to ignore case.
         wrap: True to wrap search round beginning/end of file.
         regex: True to use regex search.
         selection: True to restrict counting, replacing, etc., to selected text.
@@ -32,18 +32,14 @@ class SearchDialog(ToplevelDialog):
 
     # Cannot be initialized here, since Tk root may not yet be created yet
     reverse: tk.BooleanVar
-    nocase: tk.BooleanVar
+    matchcase: tk.BooleanVar
     wholeword: tk.BooleanVar
     wrap: tk.BooleanVar
     regex: tk.BooleanVar
     selection: tk.BooleanVar
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize Search dialog.
-
-        Args:
-            root: Tk root
-        """
+        """Initialize Search dialog."""
 
         # Initialize class variables on first instantiation, then remember
         # values for subsequent uses of dialog.
@@ -51,47 +47,49 @@ class SearchDialog(ToplevelDialog):
             SearchDialog.reverse
         except AttributeError:
             SearchDialog.reverse = tk.BooleanVar(value=False)
-            SearchDialog.nocase = tk.BooleanVar(value=False)
+            SearchDialog.matchcase = tk.BooleanVar(value=False)
             SearchDialog.wholeword = tk.BooleanVar(value=False)
             SearchDialog.wrap = tk.BooleanVar(value=True)
             SearchDialog.regex = tk.BooleanVar(value=False)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
-        kwargs["resizable"] = False
+        kwargs["resize_y"] = False
         super().__init__("Search & Replace", *args, **kwargs)
+        self.minsize(400, 100)
 
         # Frames
-        self.top_frame.rowconfigure(0, weight=0)
-        options_frame = ttk.Frame(self.top_frame, padding=1)
-        options_frame.grid(row=0, column=0, sticky="NSEW")
+        self.top_frame.columnconfigure(0, weight=1)
+        options_frame = ttk.Frame(self.top_frame, borderwidth=1, relief=tk.GROOVE)
+        options_frame.grid(row=0, column=0, columnspan=2, sticky="NSEW")
         options_frame.columnconfigure(0, weight=1)
         options_frame.columnconfigure(1, weight=1)
         options_frame.columnconfigure(2, weight=1)
-        search_frame = ttk.Frame(self.top_frame, padding=1)
-        search_frame.grid(row=1, column=0, sticky="NSEW")
-        replace_frame = ttk.Frame(self.top_frame, padding=1)
-        replace_frame.grid(row=2, column=0, sticky="NSEW")
-        replace_frame.columnconfigure(0, weight=1)
+        search_frame1 = ttk.Frame(self.top_frame)
+        search_frame1.grid(row=1, column=0, sticky="NSEW")
+        search_frame1.columnconfigure(0, weight=1)
+        search_frame2 = ttk.Frame(self.top_frame)
+        search_frame2.grid(row=1, column=1, sticky="SEW")
+        search_frame2.columnconfigure(0, weight=1)
         selection_frame = ttk.Frame(
             self.top_frame, padding=1, borderwidth=1, relief=tk.GROOVE
         )
-        selection_frame.grid(row=0, column=1, rowspan=3, sticky="NSEW")
+        selection_frame.grid(row=0, column=2, rowspan=3, sticky="NSEW")
         message_frame = ttk.Frame(self.top_frame, padding=1)
-        message_frame.grid(row=3, column=0, columnspan=2, sticky="NSEW")
+        message_frame.grid(row=3, column=0, columnspan=3, sticky="NSEW")
 
         # Search
-        self.search_box = Combobox(search_frame, "SearchHistory", width=30)
-        self.search_box.grid(row=0, column=0, sticky="NSEW")
+        self.search_box = Combobox(search_frame1, "SearchHistory", width=30)
+        self.search_box.grid(row=0, column=0, padx=2, pady=(3, 0), sticky="NSEW")
         self.search_box.focus()
 
         search_button = ttk.Button(
-            search_frame,
+            search_frame1,
             text="Search",
             default="active",
             takefocus=False,
             command=self.search_clicked,
         )
-        search_button.grid(row=0, column=1, sticky="NSEW")
+        search_button.grid(row=0, column=1, pady=(3, 0), sticky="NSEW")
         search_button.bind(
             "<Shift-Button-1>",
             lambda *args: self.search_clicked(opposite_dir=True),
@@ -107,13 +105,13 @@ class SearchDialog(ToplevelDialog):
             text="Count",
             takefocus=False,
             command=self.count_clicked,
-        ).grid(row=1, column=0, sticky="NSEW")
+        ).grid(row=1, column=0, padx=2, pady=2, sticky="NSEW")
         ttk.Button(
             selection_frame,
             text="Find All",
             takefocus=False,
             command=self.findall_clicked,
-        ).grid(row=2, column=0, sticky="NSEW")
+        ).grid(row=2, column=0, padx=2, sticky="NSEW")
 
         # Options
         ttk.Checkbutton(
@@ -124,8 +122,8 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=0, column=0, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
-            text="Case insensitive",
-            variable=SearchDialog.nocase,
+            text="Match case",
+            variable=SearchDialog.matchcase,
             takefocus=False,
         ).grid(row=0, column=1, padx=2, columnspan=2, sticky="NSEW")
         ttk.Checkbutton(
@@ -136,7 +134,7 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=1, column=0, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
-            text="Wrap round",
+            text="Wrap around",
             variable=SearchDialog.wrap,
             takefocus=False,
         ).grid(row=1, column=1, padx=2, sticky="NSEW")
@@ -154,22 +152,22 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=0, column=0, sticky="NSE")
 
         # Replace
-        self.replace_box = Combobox(replace_frame, "ReplaceHistory", width=30)
-        self.replace_box.grid(row=0, column=0, sticky="NSEW")
+        self.replace_box = Combobox(search_frame1, "ReplaceHistory", width=30)
+        self.replace_box.grid(row=1, column=0, padx=2, pady=(2, 8), sticky="NSEW")
 
         ttk.Button(
-            replace_frame,
+            search_frame1,
             text="Replace",
             takefocus=False,
             command=self.replace_clicked,
-        ).grid(row=0, column=1, sticky="NSEW")
+        ).grid(row=1, column=1, pady=(2, 8), sticky="NSEW")
         rands_button = ttk.Button(
-            replace_frame,
+            search_frame2,
             text="R & S",
             takefocus=False,
             command=lambda *args: self.replace_clicked(search_again=True),
         )
-        rands_button.grid(row=0, column=2, sticky="NSEW")
+        rands_button.grid(row=0, column=0, pady=(0, 8), sticky="NSEW")
         rands_button.bind(
             "<Shift-Button-1>",
             lambda *args: self.replace_clicked(opposite_dir=True, search_again=True),
@@ -179,7 +177,7 @@ class SearchDialog(ToplevelDialog):
             text="Replace All",
             takefocus=False,
             command=self.replaceall_clicked,
-        ).grid(row=3, column=0, sticky="NSEW")
+        ).grid(row=3, column=0, padx=2, pady=2, sticky="NSEW")
 
         # Message (e.g. count)
         self.message = ttk.Label(message_frame)
@@ -201,6 +199,9 @@ class SearchDialog(ToplevelDialog):
             _, event = process_accel("Shift+F3")
             self.bind(event, lambda *args: find_next(backwards=True))
 
+        # Now dialog geometry is set up, set width to user pref, leaving height as it is
+        self.config_width()
+
     def search_box_set(self, search_string: str) -> None:
         """Set string in search box.
 
@@ -216,6 +217,8 @@ class SearchDialog(ToplevelDialog):
     def search_clicked(self, opposite_dir: bool = False) -> str:
         """Search for the string in the search box.
 
+        Args:
+            opposite_dir: True to search in opposite direction to reverse flag setting
         Returns:
             "break" to avoid calling other callbacks
         """
@@ -238,6 +241,24 @@ class SearchDialog(ToplevelDialog):
         self.display_message(message)
         return "break"
 
+    def search_forwards(self) -> str:
+        """Force forward search regardless of reverse flag.
+
+        Returns:
+            "break" to avoid calling other callbacks
+        """
+        self.search_clicked(opposite_dir=SearchDialog.reverse.get())
+        return "break"
+
+    def search_backwards(self) -> str:
+        """Force backward search regardless of reverse flag.
+
+        Returns:
+            "break" to avoid calling other callbacks
+        """
+        self.search_clicked(opposite_dir=not SearchDialog.reverse.get())
+        return "break"
+
     def count_clicked(self) -> None:
         """Count how many times search string occurs in file (or selection).
 
@@ -254,7 +275,7 @@ class SearchDialog(ToplevelDialog):
                 matches = maintext().find_matches(
                     search_string,
                     count_range,
-                    nocase=SearchDialog.nocase.get(),
+                    nocase=not SearchDialog.matchcase.get(),
                     regexp=SearchDialog.regex.get(),
                     wholeword=SearchDialog.wholeword.get(),
                 )
@@ -282,7 +303,7 @@ class SearchDialog(ToplevelDialog):
                 matches = maintext().find_matches(
                     search_string,
                     find_range,
-                    nocase=SearchDialog.nocase.get(),
+                    nocase=not SearchDialog.matchcase.get(),
                     regexp=SearchDialog.regex.get(),
                     wholeword=SearchDialog.wholeword.get(),
                 )
@@ -377,7 +398,7 @@ class SearchDialog(ToplevelDialog):
                     match = maintext().find_match(
                         search_string,
                         replace_range,
-                        nocase=SearchDialog.nocase.get(),
+                        nocase=not SearchDialog.matchcase.get(),
                         regexp=SearchDialog.regex.get(),
                         wholeword=SearchDialog.wholeword.get(),
                         backwards=False,
@@ -431,7 +452,7 @@ def show_search_dialog() -> None:
 def find_next(backwards: bool = False) -> None:
     """Find next occurrence of most recent search string.
 
-    Takes account of current wrap, nocase, regex & wholeword flag settings
+    Takes account of current wrap, matchcase, regex & wholeword flag settings
     in Search dialog. If dialog hasn't been shown previously or there is
     no recent search string sounds bell and returns.
 
@@ -445,11 +466,18 @@ def find_next(backwards: bool = False) -> None:
         sound_bell()
         return  # Dialog has never been instantiated
 
-    try:
-        search_string = preferences.get("SearchHistory")[0]
-    except IndexError:
-        sound_bell()
-        return  # No Search History
+    search_string = ""
+    # If dialog is visible, then string in search box takes priority over
+    # previously-searched-for string.
+    if dlg := ToplevelDialog.get_dialog(SearchDialog):
+        search_string = dlg.search_box.get()
+        dlg.search_box.add_to_history(search_string)
+    if not search_string:
+        try:
+            search_string = preferences.get("SearchHistory")[0]
+        except IndexError:
+            sound_bell()
+            return  # No Search History
 
     start_rowcol = get_search_start(backwards)
     stop_rowcol = maintext().start() if backwards else maintext().end()
@@ -473,7 +501,7 @@ def _do_find_next(
         match = maintext().find_match(
             search_string,
             search_limits.start if SearchDialog.wrap.get() else search_limits,
-            nocase=SearchDialog.nocase.get(),
+            nocase=not SearchDialog.matchcase.get(),
             regexp=SearchDialog.regex.get(),
             wholeword=SearchDialog.wholeword.get(),
             backwards=backwards,
