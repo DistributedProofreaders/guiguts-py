@@ -608,7 +608,7 @@ class MessageLog(logging.Handler):
     def show(self) -> None:
         """Show the message log dialog."""
         already_shown = hasattr(self, "dialog") and self.dialog.winfo_exists()
-        self.dialog = ToplevelDialog.show_dialog(MessageLogDialog)
+        self.dialog = MessageLogDialog.show_dialog()
         if not already_shown:
             self.dialog.append(self._messagelog)
         self.dialog.lift()

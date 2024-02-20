@@ -320,7 +320,7 @@ class SearchDialog(ToplevelDialog):
             sound_bell()
             return
 
-        checker_dialog = ToplevelDialog.show_dialog(CheckerDialog, "Search Results")
+        checker_dialog = CheckerDialog.show_dialog("Search Results")
         checker_dialog.reset()
         for match in matches:
             line = maintext().get(
@@ -445,7 +445,7 @@ class SearchDialog(ToplevelDialog):
 def show_search_dialog() -> None:
     """Show the Search dialog and set the string in search box
     to the selected text if any (up to first newline)."""
-    dlg = ToplevelDialog.show_dialog(SearchDialog)
+    dlg = SearchDialog.show_dialog()
     dlg.search_box_set(maintext().selected_text().split("\n", 1)[0])
 
 
@@ -469,7 +469,7 @@ def find_next(backwards: bool = False) -> None:
     search_string = ""
     # If dialog is visible, then string in search box takes priority over
     # previously-searched-for string.
-    if dlg := ToplevelDialog.get_dialog(SearchDialog):
+    if dlg := SearchDialog.get_dialog():
         search_string = dlg.search_box.get()
         dlg.search_box.add_to_history(search_string)
     if not search_string:
