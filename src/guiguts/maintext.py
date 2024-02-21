@@ -437,7 +437,13 @@ class MainText(tk.Text):
         assert len(ranges) % 2 == 0
         sel_ranges = []
         for idx in range(0, len(ranges), 2):
-            sel_ranges.append(IndexRange(str(ranges[idx]), str(ranges[idx + 1])))
+            idx_range = IndexRange(str(ranges[idx]), str(ranges[idx + 1]))
+            # Trap case where line was too short to select any text
+            # (in do_column_select) and so selection-end was adjusted to
+            # start of next line. Adjust it back again.
+            if idx_range.end.row > idx_range.start.row and idx_range.end.col == 0:
+                idx_range.end = self.get_index(idx_range.end.index() + "- 1l lineend")
+            sel_ranges.append(idx_range)
         return sel_ranges
 
     def selected_text(self) -> str:
@@ -466,11 +472,6 @@ class MainText(tk.Text):
         for range in ranges:
             start = range.start.index()
             end = range.end.index()
-            # Trap case where line was too short to select any text
-            # (in do_column_select) and so selection-end was adjusted to
-            # start of next line. Adjust it back again.
-            if range.end.row > range.start.row and range.end.col == 0:
-                end += "- 1l lineend"
             string = self.get(start, end)
             if cut:
                 self.delete(start, end)
@@ -750,11 +751,6 @@ class MainText(tk.Text):
         for _range in ranges:
             start = _range.start.index()
             end = _range.end.index()
-            # Trap case where line was too short to select any text
-            # (in do_column_select) and so selection-end was adjusted to
-            # start of next line. Adjust it back again.
-            if _range.end.row > _range.start.row and _range.end.col == 0:
-                end += "- 1l lineend"
             string = self.get(start, end)
             self.delete(start, end)
             # apply transform, then insert at start position
