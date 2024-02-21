@@ -27,6 +27,7 @@ STATUSBAR_ROW = 2
 STATUSBAR_COL = 0
 MIN_PANE_WIDTH = 20
 TK_ANCHOR_MARK = "tk::anchor1"
+PAGE_FLAG_TAG = "PageFlag"
 
 
 class FindMatch:
@@ -161,6 +162,9 @@ class MainText(tk.Text):
             self.bind_event("<Command-Down>", lambda e: self.move_to_end())
             self.bind_event("<Command-Shift-Up>", lambda e: self.select_to_start())
             self.bind_event("<Command-Shift-Down>", lambda e: self.select_to_end())
+
+        # Configure tags
+        self.tag_configure(PAGE_FLAG_TAG, background="yellow")
 
         # Ensure text still shows selected when focus is in another dialog
         if "inactiveselect" not in kwargs.keys():
