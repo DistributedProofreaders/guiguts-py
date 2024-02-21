@@ -8,7 +8,7 @@ from typing import Any, Tuple, Optional
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PersistentBoolean
 from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, process_accel, is_mac
 from guiguts.widgets import ToplevelDialog, Combobox
 
@@ -31,11 +31,11 @@ class SearchDialog(ToplevelDialog):
     """
 
     # Cannot be initialized here, since Tk root may not yet be created yet
-    reverse: tk.BooleanVar
-    matchcase: tk.BooleanVar
-    wholeword: tk.BooleanVar
-    wrap: tk.BooleanVar
-    regex: tk.BooleanVar
+    reverse: PersistentBoolean
+    matchcase: PersistentBoolean
+    wholeword: PersistentBoolean
+    wrap: PersistentBoolean
+    regex: PersistentBoolean
     selection: tk.BooleanVar
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -46,11 +46,11 @@ class SearchDialog(ToplevelDialog):
         try:
             SearchDialog.reverse
         except AttributeError:
-            SearchDialog.reverse = tk.BooleanVar(value=False)
-            SearchDialog.matchcase = tk.BooleanVar(value=False)
-            SearchDialog.wholeword = tk.BooleanVar(value=False)
-            SearchDialog.wrap = tk.BooleanVar(value=True)
-            SearchDialog.regex = tk.BooleanVar(value=False)
+            SearchDialog.reverse = PersistentBoolean("SearchDialogReverse")
+            SearchDialog.matchcase = PersistentBoolean("SearchDialogMatchcase")
+            SearchDialog.wholeword = PersistentBoolean("SearchDialogWholeword")
+            SearchDialog.wrap = PersistentBoolean("SearchDialogWrap")
+            SearchDialog.regex = PersistentBoolean("SearchDialogRegex")
             SearchDialog.selection = tk.BooleanVar(value=False)
 
         kwargs["resize_y"] = False

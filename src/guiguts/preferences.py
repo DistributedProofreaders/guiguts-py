@@ -4,6 +4,7 @@ import copy
 import json
 import logging
 import os
+import tkinter as tk
 from typing import Any, Callable
 
 from guiguts.utilities import is_x11, _called_from_test, load_dict_from_json
@@ -152,6 +153,23 @@ class Preferences:
         """Remove temporary JSON file used for prefs during testing."""
         if _called_from_test and os.path.exists(self.prefsfile):
             os.remove(self.prefsfile)
+
+
+class PersistentBoolean(tk.BooleanVar):
+    """Tk boolean variable whose value is stored in user prefs file.
+
+    Note that, like all prefs, the default value must be set in
+    `initialize_preferences`
+    """
+
+    def __init__(self, prefs_key: str) -> None:
+        """Initialize persistent boolean.
+
+        Args:
+            prefs_key: Preferences key associated with the variable.
+        """
+        super().__init__(value=preferences.get(prefs_key))
+        self.trace_add("write", lambda *args: preferences.set(prefs_key, self.get()))
 
 
 preferences = Preferences()
