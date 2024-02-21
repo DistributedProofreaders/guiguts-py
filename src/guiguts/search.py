@@ -59,7 +59,9 @@ class SearchDialog(ToplevelDialog):
 
         # Frames
         self.top_frame.columnconfigure(0, weight=1)
-        options_frame = ttk.Frame(self.top_frame, borderwidth=1, relief=tk.GROOVE)
+        options_frame = ttk.Frame(
+            self.top_frame, padding=3, borderwidth=1, relief=tk.GROOVE
+        )
         options_frame.grid(row=0, column=0, columnspan=2, sticky="NSEW")
         options_frame.columnconfigure(0, weight=1)
         options_frame.columnconfigure(1, weight=1)
@@ -79,17 +81,17 @@ class SearchDialog(ToplevelDialog):
 
         # Search
         self.search_box = Combobox(search_frame1, "SearchHistory", width=30)
-        self.search_box.grid(row=0, column=0, padx=2, pady=(3, 0), sticky="NSEW")
+        self.search_box.grid(row=0, column=0, padx=2, pady=(5, 0), sticky="NSEW")
         self.search_box.focus()
 
         search_button = ttk.Button(
             search_frame1,
             text="Search",
-            default="active",
+            # default="active",
             takefocus=False,
             command=self.search_clicked,
         )
-        search_button.grid(row=0, column=1, pady=(3, 0), sticky="NSEW")
+        search_button.grid(row=0, column=1, pady=(5, 0), sticky="NSEW")
         search_button.bind(
             "<Shift-Button-1>",
             lambda *args: self.search_clicked(opposite_dir=True),
@@ -105,13 +107,13 @@ class SearchDialog(ToplevelDialog):
             text="Count",
             takefocus=False,
             command=self.count_clicked,
-        ).grid(row=1, column=0, padx=2, pady=2, sticky="NSEW")
+        ).grid(row=1, column=0, padx=2, pady=(3, 2), sticky="NSEW")
         ttk.Button(
             selection_frame,
             text="Find All",
             takefocus=False,
             command=self.findall_clicked,
-        ).grid(row=2, column=0, padx=2, sticky="NSEW")
+        ).grid(row=2, column=0, padx=2, pady=2, sticky="NSEW")
 
         # Options
         ttk.Checkbutton(
@@ -153,21 +155,21 @@ class SearchDialog(ToplevelDialog):
 
         # Replace
         self.replace_box = Combobox(search_frame1, "ReplaceHistory", width=30)
-        self.replace_box.grid(row=1, column=0, padx=2, pady=(2, 8), sticky="NSEW")
+        self.replace_box.grid(row=1, column=0, padx=2, pady=(4, 6), sticky="NSEW")
 
         ttk.Button(
             search_frame1,
             text="Replace",
             takefocus=False,
             command=self.replace_clicked,
-        ).grid(row=1, column=1, pady=(2, 8), sticky="NSEW")
+        ).grid(row=1, column=1, pady=(4, 6), sticky="NSEW")
         rands_button = ttk.Button(
             search_frame2,
             text="R & S",
             takefocus=False,
             command=lambda *args: self.replace_clicked(search_again=True),
         )
-        rands_button.grid(row=0, column=0, pady=(0, 8), sticky="NSEW")
+        rands_button.grid(row=0, column=0, padx=(0, 2), pady=(2, 6), sticky="NSEW")
         rands_button.bind(
             "<Shift-Button-1>",
             lambda *args: self.replace_clicked(opposite_dir=True, search_again=True),
@@ -368,11 +370,16 @@ class SearchDialog(ToplevelDialog):
         if SearchDialog.regex.get():
             replace_string = replace_regex(search_string, replace_string, match_text)
         maintext().replace(start_index, end_index, replace_string)
-
-        maintext().mark_unset(MARK_FOUND_START, MARK_FOUND_END)
         # "Reverse flag XOR Shift-key" searches backwards
+        backwards = SearchDialog.reverse.get() ^ opposite_dir
+        # Replace leaves cursor at end of string - if going backwards
+        # need to position it at beginning or search could find
+        # the same match again.
+        if backwards:
+            maintext().set_insert_index(IndexRowCol(start_index))
+        maintext().mark_unset(MARK_FOUND_START, MARK_FOUND_END)
         if search_again:
-            find_next(backwards=SearchDialog.reverse.get() ^ opposite_dir)
+            find_next(backwards=backwards)
         self.display_message()
         return "break"
 
