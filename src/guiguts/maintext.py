@@ -739,6 +739,104 @@ class MainText(tk.Text):
                 start += f"+{count_var.get()}c"
         return matches
 
+    def transform_selection(self, fn) -> None:
+        """Transform a text selection by applying a function or method.
+
+        Args:
+            fn: Reference to a function or method
+        """
+        if not (ranges := self.selected_ranges()):
+            return
+        for _range in ranges:
+            start = _range.start.index()
+            end = _range.end.index()
+            # Trap case where line was too short to select any text
+            # (in do_column_select) and so selection-end was adjusted to
+            # start of next line. Adjust it back again.
+            if _range.end.row > _range.start.row and _range.end.col == 0:
+                end += "- 1l lineend"
+            string = self.get(start, end)
+            self.delete(start, end)
+            # apply transform, then insert at start position
+            self.insert(start, fn(string))
+
+    def sentence_case_transformer(self, s) -> str:
+        """Text transformer to convert a string to "Sentence case".
+
+        The transformation is not aware of sentence structure; if the
+        input string consists of multiple sentences, the result will
+        likely not be what was desired. This behavior was ported as-is
+        from Guiguts 1.x, but could potentially be improved, at least
+        for languages structured like English.
+
+        To be more specific: if multiple sentences are selected, the
+        first character of the first sentence will be capitalized, and
+        the subsequent sentences will begin with a lowercase letter.
+
+        When using column selection, *each line* within the column
+        has its first letter capitalized and the remainder lowercased.
+        Why anyone would want to use sentence case with a column
+        selection is left as an exercise for the reader.
+
+        Args:
+            s: an input string to be transformed
+
+        Returns:
+            A transformed string
+        """
+        # lowercase string, then look for first word character.
+        # DOTALL allows '.' to match newlines
+        m = re.match(r"(\W*\w)(.*)", s.lower(), flags=re.DOTALL)
+        if m:
+            return m.group(1).upper() + m.group(2)
+        else:
+            return s
+
+    def title_case_transformer(self, s) -> str:
+        """Text transformer to convert a string to "Title Case"
+
+        Args:
+            s: an input string to be transformed
+
+        Returns:
+            A transformed string
+        """
+        # A list of words to *not* capitalize. This list should only be used
+        # for English text.
+        exception_words = (
+            "a",
+            "an",
+            "and",
+            "at",
+            "by",
+            "from",
+            "in",
+            "of",
+            "on",
+            "the",
+            "to",
+        )
+
+        def capitalize_first_letter(match):
+            word = match.group()
+
+            # TODO: At the time this method was implemented, GG2 was not aware
+            # of the document language (`::main_lang()` in GG1 terms). When
+            # such support appears in GG2, we should add a test so that
+            # `exception_words` is only checked when the language is `en`.
+            if word in exception_words:
+                return word
+            else:
+                return word.capitalize()
+
+        # Look for word characters either at the start of the string, or which
+        # immediately follow whitespace or punctuation; then apply capitalization.
+        s2 = re.sub(r"(?<=\s|^|\p{P}\s?)(\w+)", capitalize_first_letter, s.lower())
+
+        # Edge case: if the string started with a word found in exception_words, it
+        # will have been lowercased erroneously.
+        return s2[0].upper() + s2[1:]
+
 
 # For convenient access, store the single MainText instance here,
 # with a function to set/query it.
