@@ -28,7 +28,6 @@ from guiguts.mainwindow import (
 
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences
-from guiguts.preferences_dialog import PreferencesDialog
 from guiguts.search import show_search_dialog, find_next
 from guiguts.utilities import is_mac
 
@@ -207,10 +206,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         messagebox.showinfo(title="About Guiguts", message=help)
 
-    def show_preferences_dialog(self, *args: Any) -> None:
-        """Show the preferences display/edit dialog."""
-        PreferencesDialog(root())
-
     def show_page_details_dialog(self, *args: Any) -> None:
         """Show the page details display/edit dialog."""
         PageDetailsDialog(root(), self.file.page_details)
@@ -276,9 +271,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.init_os_menu()
 
         if is_mac():
-            root().createcommand(
-                "tk::mac::ShowPreferences", self.show_preferences_dialog
-            )
             root().createcommand("tk::mac::OpenDocument", self.open_document)
             root().createcommand("tk::mac::Quit", self.quit_program)
 
@@ -355,9 +347,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             lambda *args: maintext().transform_selection(str.upper),
             "",
         )
-        if not is_mac():
-            menu_edit.add_separator()
-            menu_edit.add_button("Pre~ferences...", lambda: PreferencesDialog(root()))
 
     def init_search_menu(self) -> None:
         """Create the View menu."""

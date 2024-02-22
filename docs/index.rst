@@ -21,11 +21,6 @@ Preferences
 ===========
  
 .. automodule:: preferences
-  
-Preferences Dialog
-==================
-   
-.. automodule:: preferences_dialog
  
 Utilities
 =========
