@@ -94,6 +94,7 @@ class File:
     def languages(self) -> Any:
         """Languages of currently loaded file.
 
+        Multiple languages are separated by "+"
         When assigned to, executes callback function to update interface"""
         return self._languages
 
@@ -102,6 +103,8 @@ class File:
         self._languages = value
         self._languages_callback()
         preferences.set("DefaultLanguages", value)
+        # Inform maintext, so text manipulation algorithms there can check languages
+        maintext().set_languages(value)
 
     def reset(self) -> None:
         """Reset file internals to defaults, e.g. filename, page markers, etc"""
@@ -264,8 +267,6 @@ class File:
         self.set_page_marks(self.page_details)
         self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
         self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES)
-        # if languages := bin_dict.get(BINFILE_KEY_LANGUAGES):
-        # self.languages = languages
 
     def create_bin(self) -> BinDict:
         """From relevant variables, etc., create dictionary suitable for saving

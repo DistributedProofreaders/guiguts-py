@@ -801,21 +801,23 @@ class MainText(tk.Text):
         Returns:
             A transformed string
         """
-        # A list of words to *not* capitalize. This list should only be used
-        # for English text.
-        exception_words = (
-            "a",
-            "an",
-            "and",
-            "at",
-            "by",
-            "from",
-            "in",
-            "of",
-            "on",
-            "the",
-            "to",
-        )
+        # A list of words to *not* capitalize.
+        exception_words: tuple[str, ...] = ()
+        if "en" in self.get_language_list():
+            # This list should only be used for English text.
+            exception_words = (
+                "a",
+                "an",
+                "and",
+                "at",
+                "by",
+                "from",
+                "in",
+                "of",
+                "on",
+                "the",
+                "to",
+            )
 
         def capitalize_first_letter(match):
             word = match.group()
@@ -836,6 +838,22 @@ class MainText(tk.Text):
         # Edge case: if the string started with a word found in exception_words, it
         # will have been lowercased erroneously.
         return s2[0].upper() + s2[1:]
+
+    def set_languages(self, languages: str) -> None:
+        """Set languages used in text.
+
+        Multiple languages are separated by "+"
+        """
+        assert re.match(r"[a-z]+(\+[a-z]+)*", languages)
+        self.languages = languages
+
+    def get_language_list(self) -> list[str]:
+        """Get list of languages used in text.
+
+        Returns:
+            List of language strings.
+        """
+        return self.languages.split("+")
 
 
 # For convenient access, store the single MainText instance here,

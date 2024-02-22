@@ -343,14 +343,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "",
         )
         menu_edit.add_button(
-            "~Title Case Selection",
+            "T~itle Case Selection",
             lambda *args: maintext().transform_selection(
                 maintext().title_case_transformer
             ),
             "",
         )
         menu_edit.add_button(
-            "U~PPERCASE SELECTION",
+            "UPP~ERCASE SELECTION",
             lambda *args: maintext().transform_selection(str.upper),
             "",
         )
