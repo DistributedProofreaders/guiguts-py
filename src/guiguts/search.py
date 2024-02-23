@@ -563,7 +563,8 @@ def replace_regex(search_regex: str, replace_regex: str, match_text: str) -> str
     Returns:
         Replacement string.
     """
-    return re.sub(search_regex, replace_regex, match_text)
+    flags = 0 if SearchDialog.matchcase.get() else re.IGNORECASE
+    return re.sub(search_regex, replace_regex, match_text, flags=flags)
 
 
 def get_search_range() -> Tuple[Optional[IndexRange], str]:
