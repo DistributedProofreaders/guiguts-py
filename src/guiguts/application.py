@@ -174,7 +174,7 @@ class Guiguts:
 
     def languages_changed(self) -> None:
         """Handle side effects needed when languages change."""
-        statusbar().set("languages label", "Lang: " + self.file.languages)
+        statusbar().set("languages label", "Lang: " + (self.file.languages or ""))
 
     def update_title(self) -> None:
         """Update the window title to reflect current status."""
