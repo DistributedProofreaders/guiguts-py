@@ -803,7 +803,7 @@ class MainText(tk.Text):
         """
         # A list of words to *not* capitalize.
         exception_words: tuple[str, ...] = ()
-        if "en" in self.get_language_list():
+        if any(lang.startswith("en") for lang in self.get_language_list()):
             # This list should only be used for English text.
             exception_words = (
                 "a",
