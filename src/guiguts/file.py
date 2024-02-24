@@ -28,6 +28,7 @@ BINFILE_KEY_MD5CHECKSUM: Final = "md5checksum"
 BINFILE_KEY_PAGEDETAILS: Final = "pagedetails"
 BINFILE_KEY_INSERTPOS: Final = "insertpos"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
+BINFILE_KEY_LANGUAGES: Final = "languages"
 
 
 class BinDict(TypedDict):
@@ -35,6 +36,7 @@ class BinDict(TypedDict):
     pagedetails: PageDetails
     insertpos: str
     imagedir: str
+    languages: str
 
 
 class File:
@@ -43,10 +45,16 @@ class File:
     Attributes:
         _filename: Current filename.
         _filename_callback: Function to be called whenever filename is set.
+        _languages: Languages used in file.
+        _languages_callback: Function to be called whenever languages are set.
         _image_dir: Directory containing scan images.
     """
 
-    def __init__(self, filename_callback: Callable[[], None]):
+    def __init__(
+        self,
+        filename_callback: Callable[[], None],
+        languages_callback: Callable[[], None],
+    ):
         """
         Args:
             filename_callback: Function to be called whenever filename is set.
@@ -54,6 +62,7 @@ class File:
         self._filename = ""
         self._filename_callback = filename_callback
         self._image_dir = ""
+        self._languages_callback = languages_callback
         self.page_details = PageDetails()
 
     @property
@@ -80,6 +89,22 @@ class File:
     @image_dir.setter
     def image_dir(self, value: str) -> None:
         self._image_dir = value
+
+    @property
+    def languages(self) -> Any:
+        """Languages of currently loaded file.
+
+        Multiple languages are separated by "+"
+        When assigned to, executes callback function to update interface"""
+        return self._languages
+
+    @languages.setter
+    def languages(self, value: str) -> None:
+        self._languages = value
+        self._languages_callback()
+        preferences.set("DefaultLanguages", value)
+        # Inform maintext, so text manipulation algorithms there can check languages
+        maintext().set_languages(value)
 
     def reset(self) -> None:
         """Reset file internals to defaults, e.g. filename, page markers, etc"""
@@ -130,6 +155,7 @@ class File:
             self.filename = ""
             return
         maintext().set_insert_index(IndexRowCol(1, 0))
+        self.languages = preferences.get("DefaultLanguages")
         self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
@@ -240,6 +266,7 @@ class File:
                 )
         self.set_page_marks(self.page_details)
         self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
+        self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES)
 
     def create_bin(self) -> BinDict:
         """From relevant variables, etc., create dictionary suitable for saving
@@ -254,6 +281,7 @@ class File:
             BINFILE_KEY_INSERTPOS: maintext().get_insert_index().index(),
             BINFILE_KEY_PAGEDETAILS: self.page_details,
             BINFILE_KEY_IMAGEDIR: self.image_dir,
+            BINFILE_KEY_LANGUAGES: self.languages,
         }
         return bin_dict
 
@@ -446,6 +474,21 @@ class File:
             return ""
         else:
             return self.page_details[img]["label"]
+
+    def set_languages(self) -> None:
+        """Allow the user to set languages.
+
+        Multiple languages may be separated by any non-word character
+        which will be converted to "+"
+        """
+        languages = simpledialog.askstring(
+            "Set Language(s)", "Language(s)", parent=maintext()
+        )
+        if languages:
+            lang_list = re.split(r"\W", languages)
+            lang_list2 = [lang for lang in lang_list if lang]
+            self.languages = "+".join(lang_list2)
+            maintext().set_modified(True)  # Because bin file needs saving
 
     def goto_line(self) -> None:
         """Go to the line number the user enters"""

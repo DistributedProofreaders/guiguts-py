@@ -14,7 +14,7 @@ def test_which_os() -> None:
 
 def test_file() -> None:
     """Test the File class"""
-    ff = File(lambda: None)
+    ff = File(lambda: None, lambda: None)
     ff.filename = "dummy.txt"
     assert ff.filename == "dummy.txt"
 

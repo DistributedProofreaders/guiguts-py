@@ -52,7 +52,7 @@ class Guiguts:
 
         self.initialize_preferences()
 
-        self.file = File(self.filename_changed)
+        self.file = File(self.filename_changed, self.languages_changed)
 
         self.mainwindow = MainWindow()
         self.update_title()
@@ -60,6 +60,8 @@ class Guiguts:
         self.init_menus()
 
         self.init_statusbar(statusbar())
+
+        self.file.languages = preferences.get("DefaultLanguages")
 
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
@@ -170,6 +172,10 @@ class Guiguts:
             self.image_dir_check()
         maintext().after_idle(maintext().focus_set)
 
+    def languages_changed(self) -> None:
+        """Handle side effects needed when languages change."""
+        statusbar().set("languages label", "Lang: " + (self.file.languages or ""))
+
     def update_title(self) -> None:
         """Update the window title to reflect current status."""
         modtitle = " - edited" if maintext().is_modified() else ""
@@ -257,6 +263,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default("SearchHistory", [])
         preferences.set_default("DialogGeometry", {})
         preferences.set_default("RootGeometry", "800x400")
+        preferences.set_default("DefaultLanguages", "en")
 
         preferences.load()
 
@@ -336,14 +343,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "",
         )
         menu_edit.add_button(
-            "~Title Case Selection",
+            "T~itle Case Selection",
             lambda *args: maintext().transform_selection(
                 maintext().title_case_transformer
             ),
             "",
         )
         menu_edit.add_button(
-            "U~PPERCASE SELECTION",
+            "UPP~ERCASE SELECTION",
             lambda *args: maintext().transform_selection(str.upper),
             "",
         )
@@ -441,6 +448,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         statusbar.add_binding("page label", "<ButtonRelease-1>", self.file.goto_page)
         statusbar.add_binding(
             "page label", "<ButtonRelease-3>", self.show_page_details_dialog
+        )
+
+        statusbar.add("languages label", text="Lang: ")
+        statusbar.add_binding(
+            "languages label", "<ButtonRelease-1>", self.file.set_languages
         )
 
     def logging_init(self) -> None:
