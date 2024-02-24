@@ -437,7 +437,13 @@ class MainText(tk.Text):
         assert len(ranges) % 2 == 0
         sel_ranges = []
         for idx in range(0, len(ranges), 2):
-            sel_ranges.append(IndexRange(str(ranges[idx]), str(ranges[idx + 1])))
+            idx_range = IndexRange(str(ranges[idx]), str(ranges[idx + 1]))
+            # Trap case where line was too short to select any text
+            # (in do_column_select) and so selection-end was adjusted to
+            # start of next line. Adjust it back again.
+            if idx_range.end.row > idx_range.start.row and idx_range.end.col == 0:
+                idx_range.end = self.get_index(idx_range.end.index() + "- 1l lineend")
+            sel_ranges.append(idx_range)
         return sel_ranges
 
     def selected_text(self) -> str:
@@ -466,11 +472,6 @@ class MainText(tk.Text):
         for range in ranges:
             start = range.start.index()
             end = range.end.index()
-            # Trap case where line was too short to select any text
-            # (in do_column_select) and so selection-end was adjusted to
-            # start of next line. Adjust it back again.
-            if range.end.row > range.start.row and range.end.col == 0:
-                end += "- 1l lineend"
             string = self.get(start, end)
             if cut:
                 self.delete(start, end)
@@ -739,7 +740,7 @@ class MainText(tk.Text):
                 start += f"+{count_var.get()}c"
         return matches
 
-    def transform_selection(self, fn) -> None:
+    def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
 
         Args:
@@ -750,17 +751,12 @@ class MainText(tk.Text):
         for _range in ranges:
             start = _range.start.index()
             end = _range.end.index()
-            # Trap case where line was too short to select any text
-            # (in do_column_select) and so selection-end was adjusted to
-            # start of next line. Adjust it back again.
-            if _range.end.row > _range.start.row and _range.end.col == 0:
-                end += "- 1l lineend"
             string = self.get(start, end)
             self.delete(start, end)
             # apply transform, then insert at start position
             self.insert(start, fn(string))
 
-    def sentence_case_transformer(self, s) -> str:
+    def sentence_case_transformer(self, s: str) -> str:
         """Text transformer to convert a string to "Sentence case".
 
         The transformation is not aware of sentence structure; if the
@@ -792,7 +788,7 @@ class MainText(tk.Text):
         else:
             return s
 
-    def title_case_transformer(self, s) -> str:
+    def title_case_transformer(self, s: str) -> str:
         """Text transformer to convert a string to "Title Case"
 
         Args:
@@ -817,7 +813,7 @@ class MainText(tk.Text):
             "to",
         )
 
-        def capitalize_first_letter(match):
+        def capitalize_first_letter(match: re.regex.Match[str]) -> str:
             word = match.group()
 
             # TODO: At the time this method was implemented, GG2 was not aware
