@@ -844,8 +844,9 @@ class MainText(tk.Text):
 
         Multiple languages are separated by "+"
         """
-        assert re.match(r"[a-z]+(\+[a-z]+)*", languages)
-        self.languages = languages
+        if languages:
+            assert re.match(r"[a-z_]+(\+[a-z_]+)*", languages)
+            self.languages = languages
 
     def get_language_list(self) -> list[str]:
         """Get list of languages used in text.
