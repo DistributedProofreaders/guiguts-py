@@ -5,6 +5,7 @@ import platform
 import logging
 import os.path
 import regex as re
+from tkinter import _tkinter
 from typing import Any, Optional, Callable
 
 logger = logging.getLogger(__package__)
@@ -78,13 +79,17 @@ class IndexRowCol:
     row: int
     col: int
 
-    def __init__(self, index_or_row: str | int, col: Optional[int] = None) -> None:
+    def __init__(
+        self, index_or_row: _tkinter.Tcl_Obj | str | int, col: Optional[int] = None
+    ) -> None:
         """Construct index either from string or two ints.
 
         Args:
-            index_or_row: String index, or int row
+            index_or_row: Either int row, or index, which is string or Tcl_Obj that can be cast to string
             col: Optional column - needed if index_or_row is an int
         """
+        if isinstance(index_or_row, _tkinter.Tcl_Obj):
+            index_or_row = str(index_or_row)
         if isinstance(index_or_row, str):
             assert col is None
             rr, cc = index_or_row.split(".", 1)
@@ -112,14 +117,22 @@ class IndexRange:
         end: End index.
     """
 
-    def __init__(self, start: str | IndexRowCol, end: str | IndexRowCol) -> None:
-        """Initialize IndexRange with two strings or IndexRowCol objects.
+    def __init__(
+        self,
+        start: _tkinter.Tcl_Obj | str | IndexRowCol,
+        end: _tkinter.Tcl_Obj | str | IndexRowCol,
+    ) -> None:
+        """Initialize IndexRange with two Tcl_Obj/strings or IndexRowCol objects.
 
 
         Args:
-            start: Index of start of range - either string or IndexRowCol
-            end: Index of end of range - either string or IndexRowCol
+            start: Index of start of range - either string or IndexRowCol/Tcl_Obj
+            end: Index of end of range - either string or IndexRowCol/Tcl_Obj
         """
+        if isinstance(start, _tkinter.Tcl_Obj):
+            start = str(start)
+        if isinstance(end, _tkinter.Tcl_Obj):
+            end = str(end)
         if isinstance(start, str):
             self.start = IndexRowCol(start)
         else:

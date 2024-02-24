@@ -143,6 +143,8 @@ class MainText(tk.Text):
         self.bind_event("<<Cut>>", self.smart_cut, force_break=False)
         self.bind_event("<<Copy>>", self.smart_copy, force_break=False)
         self.bind_event("<<Paste>>", self.smart_paste, force_break=False)
+        self.bind_event("<BackSpace>", self.smart_delete, force_break=False)
+        self.bind_event("<Delete>", self.smart_delete, force_break=False)
 
         # Column selection uses Alt key on Windows/Linux, Option key on macOS
         # Key Release is reported as Alt_L on all platforms
@@ -432,8 +434,8 @@ class MainText(tk.Text):
             # If line is too short for any text to be selected, select to
             # beginning of next line (just captures the newline). This
             # is then dealt with in column_copy_cut.
-            if self.get(beg, end) == "":
-                end += "+ 1l linestart"
+            # if self.get(beg, end) == "":
+            # end += "+ 1l linestart"
             self.tag_add("sel", beg, end)
 
     def clear_selection(self) -> None:
@@ -453,18 +455,29 @@ class MainText(tk.Text):
 
         Returns:
             List of IndexRange objects indicating the selected range(s)
+            Each range covers one line of selection from the leftmost
+            to the rightmost selected columns in the first/last rows.
+            If column is greater than line length it equates to end of line.
         """
         ranges = self.tag_ranges("sel")
         assert len(ranges) % 2 == 0
         sel_ranges = []
-        for idx in range(0, len(ranges), 2):
-            idx_range = IndexRange(str(ranges[idx]), str(ranges[idx + 1]))
-            # Trap case where line was too short to select any text
-            # (in do_column_select) and so selection-end was adjusted to
-            # start of next line. Adjust it back again.
-            if idx_range.end.row > idx_range.start.row and idx_range.end.col == 0:
-                idx_range.end = self.get_index(idx_range.end.index() + "- 1l lineend")
-            sel_ranges.append(idx_range)
+        if len(ranges) > 0:
+            if len(ranges) == 2:
+                # Deal with normal (single) selection first
+                sel_ranges.append(IndexRange(ranges[0], ranges[1]))
+            else:
+                # Now column selection (read in conjunction with do_column_select)
+                start_rowcol = IndexRowCol(ranges[0])
+                end_rowcol = IndexRowCol(ranges[-1])
+                minidx = min(ranges, key=lambda x: IndexRowCol(x).col)
+                mincol = IndexRowCol(minidx).col
+                maxidx = max(ranges, key=lambda x: IndexRowCol(x).col)
+                maxcol = IndexRowCol(maxidx).col
+                for row in range(start_rowcol.row, end_rowcol.row + 1):
+                    start = IndexRowCol(row, mincol)
+                    end = IndexRowCol(row, maxcol)
+                    sel_ranges.append(IndexRange(start, end))
         return sel_ranges
 
     def selected_text(self) -> str:
@@ -478,6 +491,13 @@ class MainText(tk.Text):
         if ranges:
             return self.get(ranges[0], ranges[1])
         return ""
+
+    def column_delete(self) -> None:
+        """Delete the selected column text."""
+        if not (ranges := self.selected_ranges()):
+            return
+        for range in ranges:
+            self.delete(range.start.index(), range.end.index())
 
     def column_copy_cut(self, cut: bool = False) -> None:
         """Copy or cut the selected text to the clipboard.
@@ -578,6 +598,26 @@ class MainText(tk.Text):
         self.column_paste()
         return "break"  # Skip default behavior
 
+    def smart_delete(self, *args: Any) -> str:
+        """Do column delete if multiple ranges selected, else default backspace."""
+        if len(self.selected_ranges()) <= 1:
+            return ""  # Permit default behavior to happen
+        self.column_delete()
+        return "break"  # Skip default behavior
+
+    def xy_from_index(self, index: str) -> tuple[int, int]:
+        """Return top left xy of indexed character.
+
+        Args:
+            index: Index of character to be located.
+
+        Returns:
+            x,y tuple of top left corner ofcharacter.
+        """
+        geometry = self.bbox(index)
+        assert geometry is not None
+        return geometry[:2]
+
     def column_select_click(self, event: tk.Event) -> None:
         """Callback when column selection is started via mouse click.
 
@@ -589,24 +629,49 @@ class MainText(tk.Text):
     def column_select_motion(self, event: tk.Event) -> None:
         """Callback when column selection continues via mouse motion.
 
+        Jiggery-pokery needed because if mouse is on a short (or empty) line,
+        and mouse position is to right of the last character, its column
+        reported with by "@x,y" is the end of the line, not the screen column
+        of the mouse location.
+
         Args:
             event: Event containing mouse coordinates.
         """
+        anchor_rowcol = self.get_index(TK_ANCHOR_MARK)
+        cur_rowcol = self.get_index(f"@{event.x},{event.y}")
+        # Find longest line between start of selection and current mouse location
+        minrow = min(anchor_rowcol.row, cur_rowcol.row)
+        maxrow = max(anchor_rowcol.row, cur_rowcol.row)
+        maxlen = -1
+        maxlenrow = None
+        for row in range(minrow, maxrow + 1):
+            line_len = len(self.get(f"{row}.0", f"{row}.0 lineend"))
+            if line_len > maxlen:
+                maxlen = line_len
+                maxlenrow = row
+        # Find which column mouse would be at if it was over the longest line
+        # but in the same horizontal position - this is the "true" mouse column
+        # Get y of longest line, and use actual x of mouse
+        _, anchor_y = self.xy_from_index(f"{maxlenrow}.0")
+        truecol_rowcol = self.get_index(f"@{event.x},{anchor_y}")
+        # At last, we can set the column in cur_rowcol to the "screen" column
+        # which is what we need to pass to do_column_select().
+        cur_rowcol.col = truecol_rowcol.col
+
         # Attempt to start up column selection if arriving here without a previous click
         # to start, e.g. user presses modifier key after beginning mouse-drag selection.
-        cur_index = self.get_index(f"@{event.x},{event.y}")
         if not self.column_selecting:
             ranges = self.selected_ranges()
             if not ranges:  # Fallback to using insert cursor position
                 insert_rowcol = self.get_insert_index()
                 ranges = [IndexRange(insert_rowcol, insert_rowcol)]
-            if self.compare(cur_index.index(), ">", ranges[0].start.index()):
+            if self.compare(cur_rowcol.index(), ">", ranges[0].start.index()):
                 anchor = ranges[0].start
             else:
                 anchor = ranges[-1].end
             self.column_select_start(anchor)
 
-        self.do_column_select(IndexRange(self.get_index(TK_ANCHOR_MARK), cur_index))
+        self.do_column_select(IndexRange(self.get_index(TK_ANCHOR_MARK), cur_rowcol))
 
     def column_select_release(self, event: tk.Event) -> None:
         """Callback when column selection is stopped via mouse button release.
