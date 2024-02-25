@@ -1,7 +1,8 @@
 """Support running of checking tools"""
 
 import tkinter as tk
-from typing import Any, Optional
+from tkinter import ttk
+from typing import Any, Optional, Callable
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
@@ -36,17 +37,33 @@ class CheckerDialog(ToplevelDialog):
 
     Attributes:
         text: Text widget to contain results.
+        header_frame: Frame at top of widget containing configuration buttons, fields, etc.
+        count_label: Label showing how many linked entries there are in the dialog
     """
 
-    def __init__(self, title: str, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self, title: str, rerun_command: Callable[[], None], *args: Any, **kwargs: Any
+    ) -> None:
         """Initialize the dialog.
 
         Args:
-            title:  Title for dialog.
+            title: Title for dialog.
+            rerun_command: Function to call to re-run the check.
         """
         super().__init__(title, *args, **kwargs)
+        self.top_frame.rowconfigure(0, weight=0)
+        self.header_frame = ttk.Frame(self.top_frame, padding=2)
+        self.header_frame.grid(column=0, row=0, sticky="NSEW")
+        self.header_frame.columnconfigure(0, weight=1)
+        self.count_label = ttk.Label(self.header_frame, text="No results")
+        self.count_label.grid(column=0, row=0, sticky="NSW")
+        self.rerun_button = ttk.Button(
+            self.header_frame, text="Re-run", command=rerun_command
+        )
+        self.rerun_button.grid(column=1, row=0, sticky="NSE", padx=20)
+        self.top_frame.rowconfigure(1, weight=1)
         self.text = ScrolledReadOnlyText(self.top_frame, wrap=tk.NONE)
-        self.text.grid(column=0, row=0, sticky="NSEW")
+        self.text.grid(column=0, row=1, sticky="NSEW")
         self.text.bind("<ButtonRelease-1>", self.jump_to_rowcol)
         self.text.tag_configure(HILITE_TAG_NAME, underline=True)
         self.reset()
@@ -54,6 +71,7 @@ class CheckerDialog(ToplevelDialog):
     def reset(self) -> None:
         """Reset dialog and associated structures & marks."""
         self.entries: list[CheckerEntry] = []
+        self.count_linked_entries = 0  # Not the same as len(self.entries)
         self.text.delete("1.0", tk.END)
         for mark in maintext().mark_names():
             if mark.startswith(MARK_PREFIX):
@@ -82,6 +100,7 @@ class CheckerDialog(ToplevelDialog):
             rowcol_str = f"{text_range.start.row}.{text_range.start.col}: "
             if text_range.start.col < 10:
                 rowcol_str += " "
+            self.count_linked_entries += 1
 
         self.text.insert(tk.END, rowcol_str + line + "\n")
         if hilite_start is not None and hilite_end is not None:
@@ -98,6 +117,12 @@ class CheckerDialog(ToplevelDialog):
             maintext().mark_set(
                 self._mark_from_rowcol(text_range.end), text_range.end.index()
             )
+        self.update_count_label()
+
+    def update_count_label(self) -> None:
+        """Update the label showing how many linked entries are in dialog."""
+        word = "Entry" if self.count_linked_entries == 1 else "Entries"
+        self.count_label["text"] = f"{self.count_linked_entries} {word}"
 
     def jump_to_rowcol(self, event: tk.Event) -> None:
         """Jump to the line in the main text widget that corresponds to
