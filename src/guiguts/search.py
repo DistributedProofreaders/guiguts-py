@@ -87,7 +87,7 @@ class SearchDialog(ToplevelDialog):
         search_button = ttk.Button(
             search_frame1,
             text="Search",
-            # default="active",
+            default="active",
             takefocus=False,
             command=self.search_clicked,
         )
@@ -322,7 +322,9 @@ class SearchDialog(ToplevelDialog):
             sound_bell()
             return
 
-        checker_dialog = CheckerDialog.show_dialog("Search Results")
+        checker_dialog = CheckerDialog.show_dialog(
+            "Search Results", self.findall_clicked
+        )
         checker_dialog.reset()
         # Construct opening line describing the search
         desc_reg = "regex" if SearchDialog.regex.get() else "string"

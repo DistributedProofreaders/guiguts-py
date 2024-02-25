@@ -106,20 +106,24 @@ class ToplevelDialog(tk.Toplevel):
         grab_focus(self)
 
     @classmethod
-    def show_dialog(cls: type[TlDlg], title: Optional[str] = None) -> TlDlg:
+    def show_dialog(
+        cls: type[TlDlg], title: Optional[str] = None, *args: Any, **kwargs: Any
+    ) -> TlDlg:
         """Show the instance of this dialog class, or create it if it doesn't exist.
 
         Args:
             title: Dialog title.
+            args: Optional args to pass to dialog constructor.
+            kwargs: Optional kwargs to pass to dialog constructor.
         """
         dlg_name = cls.__name__
         if dlg := cls.get_dialog():
             dlg.deiconify()
         else:
             if title is not None:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(title)  # type: ignore[call-arg]
+                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(title, *args, **kwargs)  # type: ignore[call-arg]
             else:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = cls()  # type: ignore[call-arg]
+                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(*args, **kwargs)  # type: ignore[call-arg]
         return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
 
     @classmethod
