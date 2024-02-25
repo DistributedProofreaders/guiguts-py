@@ -165,18 +165,18 @@ class File:
         bin_matches_file = self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
-        marks_updated = self.update_page_marks_from_flags()
+        flags_present = self.update_page_marks_from_flags()
         if not bin_matches_file:
             # Inform user that bin doesn't match
-            # If marks were updated, user has used page marker flags to store the
+            # If flags are present, user has used page marker flags to store the
             # page boundary positions while using other editor, so only issue a
-            # warning. Otherwise, match is for some other reason, so it's an error.
-            if marks_updated:
+            # warning. Otherwise, other failure, so it's an error.
+            if flags_present:
                 logger.warning(
                     "Main file and bin (.json) file do not match.\n"
                     "  File may have been edited in a different editor.\n"
-                    "  However, page marker flags were detected, and page\n"
-                    "  boundary positions were updated accordingly."
+                    "  However, page marker flags were detected, so page\n"
+                    "  boundary positions were updated if necessary."
                 )
             else:
                 logger.error(
@@ -613,11 +613,12 @@ class File:
         Also tag flags to highlight them.
 
         Returns:
-            True if any mark locations were updated.
+            True if any flags were present.
         """
         search_range = IndexRange(maintext().start(), maintext().end())
         mark = "1.0"
-        updated = False
+        mark_locations_updated = False
+        flags_present = False
         while mark := page_mark_next(mark):
             img = img_from_page_mark(mark)
             assert img in self.page_details
@@ -629,16 +630,18 @@ class File:
                 wholeword=False,
                 backwards=False,
             ):
+                flags_present = True
                 if maintext().compare(mark, "!=", match.rowcol.index()):
                     maintext().mark_set(mark, match.rowcol.index())
+                    mark_locations_updated = True
                 maintext().tag_add(
                     PAGE_FLAG_TAG,
                     match.rowcol.index(),
                     match.rowcol.index() + f"+{match.count}c",
                 )
-        if updated:
+        if mark_locations_updated:
             maintext().set_modified(True)  # Bin file needs saving
-        return updated
+        return flags_present
 
 
 def page_mark_previous(mark: str) -> str:
