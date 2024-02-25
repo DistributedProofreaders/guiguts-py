@@ -324,23 +324,36 @@ class SearchDialog(ToplevelDialog):
 
         checker_dialog = CheckerDialog.show_dialog("Search Results")
         checker_dialog.reset()
+        # Construct opening line describing the search
+        desc_reg = "regex" if SearchDialog.regex.get() else "string"
+        prefix = f'Search for {desc_reg} "'
+        desc = f'{prefix}{search_string}"'
+        if SearchDialog.matchcase.get():
+            desc += ", matching case"
+        if SearchDialog.wholeword.get():
+            desc += ", whole words only"
+        if SearchDialog.selection.get():
+            desc += ", within selection"
+        checker_dialog.add_entry(desc, None, len(prefix), len(prefix + search_string))
+        checker_dialog.add_entry("")
+
         for match in matches:
             line = maintext().get(
                 f"{match.rowcol.index()} linestart", f"{match.rowcol.index()} lineend"
             )
-            line_prefix = f"{match.rowcol.row}.{match.rowcol.col}: "
-            result = line_prefix + line
             end_rowcol = IndexRowCol(
                 maintext().index(match.rowcol.index() + f"+{match.count}c")
             )
-            hilite_start = match.rowcol.col + len(line_prefix)
+            hilite_start = match.rowcol.col
             if end_rowcol.row > match.rowcol.row:
-                hilite_end = len(result)
+                hilite_end = len(line)
             else:
-                hilite_end = end_rowcol.col + len(line_prefix)
+                hilite_end = end_rowcol.col
             checker_dialog.add_entry(
-                IndexRange(match.rowcol, end_rowcol), result, hilite_start, hilite_end
+                line, IndexRange(match.rowcol, end_rowcol), hilite_start, hilite_end
             )
+        checker_dialog.add_entry("")
+        checker_dialog.add_entry("End of search results")
 
     def replace_clicked(
         self, opposite_dir: bool = False, search_again: bool = False
