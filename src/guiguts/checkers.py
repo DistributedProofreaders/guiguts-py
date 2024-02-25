@@ -17,18 +17,18 @@ class CheckerEntry:
 
     Attributes:
         text: Single line of text to display in checker dialog.
-        range: Start and end of point of interest in main text widget.
+        text_range: Start and end of point of interest in main text widget.
     """
 
-    def __init__(self, text: str, range: IndexRange) -> None:
+    def __init__(self, text: str, text_range: Optional[IndexRange]) -> None:
         """Initialize CheckerEntry object.
 
         Args:
             text: Single line of text to display in checker dialog.
-            range: Optional start and end of point of interest in main text widget.
+            text_range: Optional start and end of point of interest in main text widget.
         """
         self.text = text
-        self.range = range
+        self.text_range = text_range
 
 
 class CheckerDialog(ToplevelDialog):
@@ -61,8 +61,8 @@ class CheckerDialog(ToplevelDialog):
 
     def add_entry(
         self,
-        range: IndexRange,
-        text: str,
+        msg: str,
+        text_range: Optional[IndexRange] = None,
         hilite_start: Optional[int] = None,
         hilite_end: Optional[int] = None,
     ) -> None:
@@ -71,22 +71,33 @@ class CheckerDialog(ToplevelDialog):
         Also set marks in main text at locations of start & end of point of interest
 
         Args:
-            range: Start & end of point of interest in main text widget.
-            entry: Entry to display in the dialog - only first line is displayed
-            hilite_start: Optional column to begin higlighting entry in dialog
-            hilite_end: Optional column to end higlighting entry in dialog
+            msg: Entry to display in the dialog - only first line is displayed.
+            text_range: Optional Start & end of point of interest in main text widget.
+            hilite_start: Optional column to begin higlighting entry in dialog.
+            hilite_end: Optional column to end higlighting entry in dialog.
         """
-        line = text.splitlines()[0]
-        self.text.insert(tk.END, line + "\n")
+        line = msg.splitlines()[0] if msg else ""
+        rowcol_str = ""
+        if text_range is not None:
+            rowcol_str = f"{text_range.start.row}.{text_range.start.col}: "
+            if text_range.start.col < 10:
+                rowcol_str += " "
+
+        self.text.insert(tk.END, rowcol_str + line + "\n")
         if hilite_start is not None and hilite_end is not None:
             start_rowcol = IndexRowCol(self.text.index(tk.END + "-2line"))
-            start_rowcol.col = hilite_start
-            end_rowcol = IndexRowCol(start_rowcol.row, hilite_end)
+            start_rowcol.col = hilite_start + len(rowcol_str)
+            end_rowcol = IndexRowCol(start_rowcol.row, hilite_end + len(rowcol_str))
             self.text.tag_add(HILITE_TAG_NAME, start_rowcol.index(), end_rowcol.index())
-        entry = CheckerEntry(line, range)
+        entry = CheckerEntry(line, text_range)
         self.entries.append(entry)
-        maintext().mark_set(self._mark_from_rowcol(range.start), range.start.index())
-        maintext().mark_set(self._mark_from_rowcol(range.end), range.end.index())
+        if text_range is not None:
+            maintext().mark_set(
+                self._mark_from_rowcol(text_range.start), text_range.start.index()
+            )
+            maintext().mark_set(
+                self._mark_from_rowcol(text_range.end), text_range.end.index()
+            )
 
     def jump_to_rowcol(self, event: tk.Event) -> None:
         """Jump to the line in the main text widget that corresponds to
@@ -100,10 +111,11 @@ class CheckerDialog(ToplevelDialog):
         if entry_index < 0 or entry_index >= len(self.entries):
             return
         entry = self.entries[entry_index]
-        start = maintext().index(self._mark_from_rowcol(entry.range.start))
-        end = maintext().index(self._mark_from_rowcol(entry.range.end))
-        maintext().do_select(IndexRange(start, end))
-        maintext().set_insert_index(IndexRowCol(start), focus=True)
+        if entry.text_range is not None:
+            start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
+            end = maintext().index(self._mark_from_rowcol(entry.text_range.end))
+            maintext().do_select(IndexRange(start, end))
+            maintext().set_insert_index(IndexRowCol(start), focus=True)
         self.lift()
 
     def _mark_from_rowcol(self, rowcol: IndexRowCol) -> str:
