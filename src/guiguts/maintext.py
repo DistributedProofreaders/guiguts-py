@@ -431,11 +431,6 @@ class MainText(tk.Text):
         for line in range(min_row, max_row + 1):
             beg = IndexRowCol(line, min_col).index()
             end = IndexRowCol(line, max_col).index()
-            # If line is too short for any text to be selected, select to
-            # beginning of next line (just captures the newline). This
-            # is then dealt with in column_copy_cut.
-            # if self.get(beg, end) == "":
-            # end += "+ 1l linestart"
             self.tag_add("sel", beg, end)
 
     def clear_selection(self) -> None:
