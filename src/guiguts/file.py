@@ -593,7 +593,7 @@ class File:
 
     def remove_page_flags(self) -> None:
         """Remove [PgNNN] flags."""
-        search_regex = r"\[" + PAGEMARK_PREFIX + r"\d+\]"
+        search_regex = r"\[" + PAGEMARK_PREFIX + r".+?\]"
         search_range = IndexRange(maintext().start(), maintext().end())
         while match := maintext().find_match(
             search_regex,
