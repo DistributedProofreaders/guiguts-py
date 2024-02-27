@@ -36,6 +36,10 @@ BINFILE_KEY_INSERTPOS: Final = "insertpos"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
 BINFILE_KEY_LANGUAGES: Final = "languages"
 
+PAGE_FLAGS_NONE = 0
+PAGE_FLAGS_SOME = 1
+PAGE_FLAGS_ALL = 2
+
 
 class BinDict(TypedDict):
     md5checksum: str
@@ -165,24 +169,30 @@ class File:
         bin_matches_file = self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
-        flags_present = self.update_page_marks_from_flags()
+        flags_found = self.update_page_marks_from_flags()
         if not bin_matches_file:
             # Inform user that bin doesn't match
             # If flags are present, user has used page marker flags to store the
             # page boundary positions while using other editor, so only issue a
             # warning. Otherwise, other failure, so it's an error.
-            if flags_present:
+            msg_start = (
+                "Main file and bin (.json) file do not match.\n"
+                "  File may have been edited in a different editor.\n"
+            )
+            if flags_found == PAGE_FLAGS_ALL:
                 logger.warning(
-                    "Main file and bin (.json) file do not match.\n"
-                    "  File may have been edited in a different editor.\n"
-                    "  However, page marker flags were detected, so page\n"
-                    "  boundary positions were updated if necessary."
+                    msg_start + "  However, page marker flags were detected,\n"
+                    "  so page boundary positions were updated if necessary."
+                )
+            elif flags_found == PAGE_FLAGS_SOME:
+                logger.error(
+                    msg_start + "  Not all page marker flags are present,\n"
+                    "  so some boundary positions were not updated."
                 )
             else:
+                assert flags_found == PAGE_FLAGS_NONE
                 logger.error(
-                    "Main file and bin (.json) file do not match.\n"
-                    "  File may have been edited in a different editor.\n"
-                    "  You may continue, but page boundary positions\n"
+                    msg_start + "  You may continue, but page boundary positions\n"
                     "  may not be accurate."
                 )
 
@@ -607,18 +617,19 @@ class File:
                 match.rowcol.index(), match.rowcol.index() + f"+{match.count}c"
             )
 
-    def update_page_marks_from_flags(self) -> bool:
+    def update_page_marks_from_flags(self) -> int:
         """Update page mark locations from flags in file.
 
         Also tag flags to highlight them.
 
         Returns:
-            True if any flags were present.
+            PAGE_FLAGS_ALL/SOME/NONE depending on what flags were present.
         """
         search_range = IndexRange(maintext().start(), maintext().end())
         mark = "1.0"
         mark_locations_updated = False
-        flags_present = False
+        flag_found = False
+        flag_not_found = False
         while mark := page_mark_next(mark):
             img = img_from_page_mark(mark)
             assert img in self.page_details
@@ -630,7 +641,6 @@ class File:
                 wholeword=False,
                 backwards=False,
             ):
-                flags_present = True
                 if maintext().compare(mark, "!=", match.rowcol.index()):
                     maintext().mark_set(mark, match.rowcol.index())
                     mark_locations_updated = True
@@ -639,9 +649,15 @@ class File:
                     match.rowcol.index(),
                     match.rowcol.index() + f"+{match.count}c",
                 )
+                flag_found = True
+            else:
+                flag_not_found = True
         if mark_locations_updated:
             maintext().set_modified(True)  # Bin file needs saving
-        return flags_present
+        if flag_found:
+            return PAGE_FLAGS_SOME if flag_not_found else PAGE_FLAGS_ALL
+        else:
+            return PAGE_FLAGS_NONE
 
 
 def page_mark_previous(mark: str) -> str:
