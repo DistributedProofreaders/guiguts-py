@@ -9,12 +9,18 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
-from guiguts.maintext import maintext
+from guiguts.maintext import maintext, PAGE_FLAG_TAG
 from guiguts.mainwindow import root
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
-from guiguts.utilities import is_windows, load_dict_from_json, IndexRowCol, sound_bell
+from guiguts.utilities import (
+    is_windows,
+    load_dict_from_json,
+    IndexRowCol,
+    IndexRange,
+    sound_bell,
+)
 from guiguts.widgets import grab_focus
 
 logger = logging.getLogger(__package__)
@@ -29,6 +35,10 @@ BINFILE_KEY_PAGEDETAILS: Final = "pagedetails"
 BINFILE_KEY_INSERTPOS: Final = "insertpos"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
 BINFILE_KEY_LANGUAGES: Final = "languages"
+
+PAGE_FLAGS_NONE = 0
+PAGE_FLAGS_SOME = 1
+PAGE_FLAGS_ALL = 2
 
 
 class BinDict(TypedDict):
@@ -156,9 +166,36 @@ class File:
             return
         maintext().set_insert_index(IndexRowCol(1, 0))
         self.languages = preferences.get("DefaultLanguages")
-        self.load_bin(filename)
+        bin_matches_file = self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
+        flags_found = self.update_page_marks_from_flags()
+        if not bin_matches_file:
+            # Inform user that bin doesn't match
+            # If flags are present, user has used page marker flags to store the
+            # page boundary positions while using other editor, so only issue a
+            # warning. Otherwise, other failure, so it's an error.
+            msg_start = (
+                "Main file and bin (.json) file do not match.\n"
+                "  File may have been edited in a different editor.\n"
+            )
+            if flags_found == PAGE_FLAGS_ALL:
+                logger.warning(
+                    msg_start + "  However, page marker flags were detected,\n"
+                    "  so page boundary positions were updated if necessary."
+                )
+            elif flags_found == PAGE_FLAGS_SOME:
+                logger.error(
+                    msg_start + "  Not all page marker flags are present,\n"
+                    "  so some boundary positions were not updated."
+                )
+            else:
+                assert flags_found == PAGE_FLAGS_NONE
+                logger.error(
+                    msg_start + "  You may continue, but page boundary positions\n"
+                    "  may not be accurate."
+                )
+
         self.page_details.recalculate()
         self.store_recent_file(filename)
         # Load complete, so set filename (including side effects)
@@ -219,17 +256,21 @@ class File:
             return False
         return True
 
-    def load_bin(self, basename: str) -> None:
+    def load_bin(self, basename: str) -> bool:
         """Load bin file associated with current file.
 
         If bin file not found, returns silently.
 
         Args:
             basename - name of current text file - bin file has ".bin" appended.
+
+        Returns:
+            True if no bin, or bin matches main file; False otherwise
         """
         bin_dict = load_dict_from_json(bin_name(basename))
-        if bin_dict is not None:
-            self.interpret_bin(bin_dict)  # type: ignore[arg-type]
+        if bin_dict is None:
+            return True
+        return self.interpret_bin(bin_dict)  # type: ignore[arg-type]
 
     def save_bin(self, basename: str) -> None:
         """Save bin file associated with current file.
@@ -242,20 +283,15 @@ class File:
         with open(binfile_name, "w") as fp:
             json.dump(bin_dict, fp, indent=2)
 
-    def interpret_bin(self, bin_dict: BinDict) -> None:
+    def interpret_bin(self, bin_dict: BinDict) -> bool:
         """Interpret bin file dictionary and set necessary variables, etc.
 
         Args:
-            bin_dict: Dictionary loaded from bin file
+            bin_dict: Dictionary loaded from bin file.
+
+        Returns:
+            True if main file and text file match, False otherwise.
         """
-        md5checksum = bin_dict.get(BINFILE_KEY_MD5CHECKSUM)
-        if md5checksum and md5checksum != self.get_md5_checksum():
-            logger.error(
-                "Main file and bin (.json) file do not match.\n"
-                "  File may have been edited in a different editor.\n"
-                "  You may continue, but page boundary positions\n"
-                "  may not be accurate."
-            )
         self.set_initial_position(bin_dict.get(BINFILE_KEY_INSERTPOS))
         # Since object loaded from bin file is a dictionary of dictionaries,
         # need to create PageDetails from the loaded raw data.
@@ -267,6 +303,9 @@ class File:
         self.set_page_marks(self.page_details)
         self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
         self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES)
+
+        md5checksum = bin_dict.get(BINFILE_KEY_MD5CHECKSUM)
+        return not md5checksum or md5checksum == self.get_md5_checksum()
 
     def create_bin(self) -> BinDict:
         """From relevant variables, etc., create dictionary suitable for saving
@@ -552,6 +591,73 @@ class File:
                 maintext().set_insert_index(maintext().get_index(mark))
                 return
         sound_bell()
+
+    def add_page_flags(self) -> None:
+        """Add [PgNNN] flag at each page boundary.
+
+        Done in reverse order so two adjacent boundaries preserve their order.
+        """
+        mark: str = tk.END
+        while mark := page_mark_previous(mark):
+            maintext().insert(mark, "[" + mark + "]", PAGE_FLAG_TAG)
+
+    def remove_page_flags(self) -> None:
+        """Remove [PgNNN] flags."""
+        search_regex = r"\[" + PAGEMARK_PREFIX + r".+?\]"
+        search_range = IndexRange(maintext().start(), maintext().end())
+        while match := maintext().find_match(
+            search_regex,
+            search_range,
+            nocase=False,
+            regexp=True,
+            wholeword=False,
+            backwards=False,
+        ):
+            maintext().delete(
+                match.rowcol.index(), match.rowcol.index() + f"+{match.count}c"
+            )
+
+    def update_page_marks_from_flags(self) -> int:
+        """Update page mark locations from flags in file.
+
+        Also tag flags to highlight them.
+
+        Returns:
+            PAGE_FLAGS_ALL/SOME/NONE depending on what flags were present.
+        """
+        search_range = IndexRange(maintext().start(), maintext().end())
+        mark = "1.0"
+        mark_locations_updated = False
+        flag_found = False
+        flag_not_found = False
+        while mark := page_mark_next(mark):
+            img = img_from_page_mark(mark)
+            assert img in self.page_details
+            if match := maintext().find_match(
+                f"[{mark}]",
+                search_range,
+                nocase=False,
+                regexp=False,
+                wholeword=False,
+                backwards=False,
+            ):
+                if maintext().compare(mark, "!=", match.rowcol.index()):
+                    maintext().mark_set(mark, match.rowcol.index())
+                    mark_locations_updated = True
+                maintext().tag_add(
+                    PAGE_FLAG_TAG,
+                    match.rowcol.index(),
+                    match.rowcol.index() + f"+{match.count}c",
+                )
+                flag_found = True
+            else:
+                flag_not_found = True
+        if mark_locations_updated:
+            maintext().set_modified(True)  # Bin file needs saving
+        if flag_found:
+            return PAGE_FLAGS_SOME if flag_not_found else PAGE_FLAGS_ALL
+        else:
+            return PAGE_FLAGS_NONE
 
 
 def page_mark_previous(mark: str) -> str:
