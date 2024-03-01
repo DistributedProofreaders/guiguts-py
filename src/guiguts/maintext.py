@@ -6,7 +6,7 @@ import regex as re
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tk_font
-from typing import Any, Callable, Optional, Literal
+from typing import Any, Callable, Optional, Literal, Generator
 
 from guiguts.preferences import preferences
 from guiguts.utilities import (
@@ -398,6 +398,12 @@ class MainText(tk.Text):
             String containing text widget contents.
         """
         return self.get(1.0, f"{tk.END}-1c")
+
+    def get_lines(self) -> Generator[tuple[str, int], None, None]:
+        """Yield each line & line number in main text window."""
+        for line_num in range(1, self.end().row):
+            line = maintext().get(f"{line_num}.0", f"{line_num}.0 lineend")
+            yield line, line_num
 
     def columnize_copy(self, *args: Any) -> None:
         """Columnize the current selection and copy it."""

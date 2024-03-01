@@ -1,0 +1,39 @@
+This package was debianized by Domenico Andreoli <cavok@debian.org> on
+Fri,  9 Nov 2001 17:45:33 +0100.
+It was taken over by Jerome Marant on Sat, 26 Jan 2002 20:03:26 +0100.
+It was taken over by Bill Allombert on Fri,  1 Feb 2002 19:06:04 +0100.
+It was refactored by Frank Lin PIAT on Mon, 08 Mar 2010 12:18:52 +0100 based
+on aspell-en package by Brian Nelson on Sat, 19 Oct 2002 01:23:43 -0700.
+It is now maintained by Remi Vanicat <vanicat@debian.org> since
+Mon, 13 Jan 2003 11:35:42 +0100
+
+It was downloaded from http://ftp.gnu.org/gnu/aspell/dict/0index.html
+
+Upstream Author:
+
+    Rémi Vanicat <vanicat@debian.org>
+
+Copyright:
+
+    Copyright (C) 1998,1999 Christophe Pythoud <pythoud@moria.ch>
+    Copyright (C) 1998,1999 GUTenberg association http://www.gutenberg.eu.org
+    Copyright (C) 1998,1999,2000 Rémi Vanicat <vanicat@debian.org>
+    Copyright (C) 1999,2000 Kevin Atkinson <kevina@users.sourceforge.net>
+
+License:
+
+    This package is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 2.
+ 
+    This package is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+ 
+    You should have received a copy of the GNU General Public License
+    along with this package; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+On Debian systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL-2'.

@@ -40,6 +40,7 @@ class Preferences:
           deal with initial side effect of loading the pref, which will be
           called after all prefs have been loaded and UI is ready. Not called
           each time pref is changed.
+        prefsdir: directory containing user prefs & data files
     """
 
     def __init__(self) -> None:
