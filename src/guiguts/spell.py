@@ -1,9 +1,11 @@
 """Search/Replace functionality"""
 
+import importlib.resources
 import logging
 import os
 import regex as re
 
+from guiguts.data import dictionaries
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, FindMatch
 from guiguts.preferences import preferences
@@ -11,9 +13,8 @@ from guiguts.utilities import IndexRowCol, IndexRange
 
 logger = logging.getLogger(__package__)
 
-DEFAULT_DICTIONARY_DIR = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), "data", "dictionaries"
-)
+DEFAULT_DICTIONARY_DIR = importlib.resources.files(dictionaries)
+
 SPELL_CHECK_OK_YES = 0
 SPELL_CHECK_OK_NO = 1
 SPELL_CHECK_OK_BAD = 2
@@ -274,7 +275,7 @@ class SpellChecker:
         Args:
             lang: Language to be loaded.
         """
-        filename = os.path.join(DEFAULT_DICTIONARY_DIR, f"dict_{lang}_default.txt")
+        filename = str(DEFAULT_DICTIONARY_DIR.joinpath(f"dict_{lang}_default.txt"))
         words_loaded = self.add_words_from_dictionary(filename)
         if not words_loaded:
             logger.warning(f"No default dictionary for language {lang}")
