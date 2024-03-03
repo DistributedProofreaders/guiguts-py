@@ -2,7 +2,7 @@
 
 import importlib.resources
 import logging
-import os
+from pathlib import Path
 import regex as re
 
 from guiguts.data import dictionaries
@@ -10,6 +10,8 @@ from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, FindMatch
 from guiguts.preferences import preferences
 from guiguts.utilities import IndexRowCol, IndexRange
+
+TraversablePath = importlib.resources.abc.Traversable | Path
 
 logger = logging.getLogger(__package__)
 
@@ -247,7 +249,7 @@ class SpellChecker:
 
         return SPELL_CHECK_OK_NO
 
-    def add_words_from_dictionary(self, filename: str) -> bool:
+    def add_words_from_dictionary(self, path: TraversablePath) -> bool:
         """Loads given dictionary into SpellChecker dict.
 
         Args:
@@ -257,7 +259,7 @@ class SpellChecker:
             True if dictionary file exists.
         """
         try:
-            with open(filename, "r", encoding="utf-8") as f:
+            with path.open("r", encoding="utf-8") as f:
                 for line in f:
                     word = line.strip()
                     self.dictionary[word] = True
@@ -275,13 +277,13 @@ class SpellChecker:
         Args:
             lang: Language to be loaded.
         """
-        filename = str(DEFAULT_DICTIONARY_DIR.joinpath(f"dict_{lang}_default.txt"))
-        words_loaded = self.add_words_from_dictionary(filename)
+        path = DEFAULT_DICTIONARY_DIR.joinpath(f"dict_{lang}_default.txt")
+        words_loaded = self.add_words_from_dictionary(path)
         if not words_loaded:
             logger.warning(f"No default dictionary for language {lang}")
 
-        filename = os.path.join(preferences.prefsdir, f"dict_{lang}_user.txt")
-        if self.add_words_from_dictionary(filename):
+        path = Path(preferences.prefsdir, f"dict_{lang}_user.txt")
+        if self.add_words_from_dictionary(path):
             words_loaded = True
         if not words_loaded:  # Neither default nor user dictionary exist
             raise DictionaryNotFoundError(lang)
