@@ -14,6 +14,7 @@ from guiguts.mainwindow import root
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
+from guiguts.spell import spell_check_clear_dictionary
 from guiguts.utilities import (
     is_windows,
     load_dict_from_json,
@@ -110,11 +111,15 @@ class File:
 
     @languages.setter
     def languages(self, value: str) -> None:
+        if not value:
+            value = "en"
         self._languages = value
         self._languages_callback()
         preferences.set("DefaultLanguages", value)
         # Inform maintext, so text manipulation algorithms there can check languages
         maintext().set_languages(value)
+        # Clear any existing spell checker dictionary
+        spell_check_clear_dictionary()
 
     def reset(self) -> None:
         """Reset file internals to defaults, e.g. filename, page markers, etc"""

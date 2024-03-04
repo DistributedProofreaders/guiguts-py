@@ -42,6 +42,11 @@ Search
     
 .. automodule:: search
  
+Spell
+=====
+    
+.. automodule:: spell
+ 
 Checkers
 ========
     

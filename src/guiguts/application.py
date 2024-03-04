@@ -29,6 +29,7 @@ from guiguts.mainwindow import (
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences
 from guiguts.search import show_search_dialog, find_next
+from guiguts.spell import spell_check
 from guiguts.utilities import is_mac
 
 logger = logging.getLogger(__package__)
@@ -279,6 +280,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.init_file_menu()
         self.init_edit_menu()
         self.init_search_menu()
+        self.init_tools_menu()
         self.init_view_menu()
         self.init_help_menu()
         self.init_os_menu()
@@ -382,6 +384,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             lambda *args: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
+
+    def init_tools_menu(self) -> None:
+        """Create the Tools menu."""
+        menu_edit = Menu(menubar(), "~Tools")
+        menu_edit.add_button("~Spelling Check", spell_check)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
