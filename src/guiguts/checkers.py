@@ -6,11 +6,12 @@ from typing import Any, Optional, Callable
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.utilities import IndexRowCol, IndexRange
+from guiguts.utilities import IndexRowCol, IndexRange, process_accel
 from guiguts.widgets import ToplevelDialog
 
 MARK_PREFIX = "chk"
 HILITE_TAG_NAME = "chk_hilite"
+SELECT_TAG_NAME = "chk_select"
 
 
 class CheckerEntry:
@@ -42,13 +43,19 @@ class CheckerDialog(ToplevelDialog):
     """
 
     def __init__(
-        self, title: str, rerun_command: Callable[[], None], *args: Any, **kwargs: Any
+        self,
+        title: str,
+        rerun_command: Callable[[], None],
+        process_command: Optional[Callable[[CheckerEntry], None]] = None,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
 
         Args:
             title: Title for dialog.
             rerun_command: Function to call to re-run the check.
+            process_command: Function to call to "process" the current error, e.g. swap he/be
         """
         super().__init__(title, *args, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
@@ -62,10 +69,22 @@ class CheckerDialog(ToplevelDialog):
         )
         self.rerun_button.grid(column=1, row=0, sticky="NSE", padx=20)
         self.top_frame.rowconfigure(1, weight=1)
-        self.text = ScrolledReadOnlyText(self.top_frame, wrap=tk.NONE)
+        self.text = ScrolledReadOnlyText(
+            self.top_frame, context_menu=False, wrap=tk.NONE
+        )
         self.text.grid(column=0, row=1, sticky="NSEW")
-        self.text.bind("<ButtonRelease-1>", self.jump_to_rowcol)
-        self.text.tag_configure(HILITE_TAG_NAME, underline=True)
+        self.text.bind("<ButtonRelease-1>", self.select_entry_by_click)
+        self.text.bind("<ButtonRelease-2>", self.remove_entry_by_click)
+        self.text.bind("<ButtonRelease-3>", self.remove_entry_by_click)
+        _, event = process_accel("Cmd/Ctrl+ButtonRelease-1")
+        self.text.bind(event, self.process_entry_by_click)
+        _, event = process_accel("Cmd/Ctrl+ButtonRelease-2")
+        self.text.bind(event, self.process_remove_entry_by_click)
+        _, event = process_accel("Cmd/Ctrl+ButtonRelease-3")
+        self.text.bind(event, self.process_remove_entry_by_click)
+        self.process_command = process_command
+        self.text.tag_configure(HILITE_TAG_NAME, foreground="blue")
+        self.text.tag_configure(SELECT_TAG_NAME, background="gray")
         self.reset()
 
     def reset(self) -> None:
@@ -124,17 +143,76 @@ class CheckerDialog(ToplevelDialog):
         word = "Entry" if self.count_linked_entries == 1 else "Entries"
         self.count_label["text"] = f"{self.count_linked_entries} {word}"
 
-    def jump_to_rowcol(self, event: tk.Event) -> None:
-        """Jump to the line in the main text widget that corresponds to
-        the line clicked in the dialog.
+    def remove_entry_by_click(self, event: tk.Event) -> None:
+        """Remove the entry that was clicked in the dialog.
 
         Args:
             event: Event object containing mouse click position.
         """
-        click_rowcol = IndexRowCol(self.text.index(f"@{event.x},{event.y}"))
-        entry_index = click_rowcol.row - 1
-        if entry_index < 0 or entry_index >= len(self.entries):
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
             return
+        del self.entries[entry_index]
+        self.text.delete(f"{entry_index+1}.0", f"{entry_index+2}.0")
+        entry_index = min(entry_index, len(self.entries) - 1)
+        if len(self.entries) > 0:
+            self.select_entry(entry_index)
+
+    def select_entry_by_click(self, event: tk.Event) -> None:
+        """Select clicked line in dialog, and jump to the line in the
+        main text widget that corresponds to it.
+
+        Args:
+            event: Event object containing mouse click position.
+        """
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return
+        self.select_entry(entry_index)
+
+    def process_entry_by_click(self, event: tk.Event) -> None:
+        """Select clicked line in dialog, and jump to the line in the
+        main text widget that corresponds to it. Finally call the
+        "process" callback function, if any.
+
+        Args:
+            event: Event object containing mouse click position.
+        """
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return
+        self.select_entry(entry_index)
+        if self.process_command:
+            self.process_command(self.entries[entry_index])
+
+    def process_remove_entry_by_click(self, event: tk.Event) -> None:
+        """Select clicked line in dialog, and jump to the line in the
+        main text widget that corresponds to it. Call the
+        "process" callback function, if any, then remove the entry.
+
+        Args:
+            event: Event object containing mouse click position.
+        """
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return
+        self.select_entry(entry_index)
+        if self.process_command:
+            self.process_command(self.entries[entry_index])
+        self.remove_entry_by_click(event)
+
+    def select_entry(self, entry_index: int) -> None:
+        """Select line in dialog corresponding to given entry index,
+        and jump to the line in the main text widget that corresponds to it.
+
+        Args:
+            event: Event object containing mouse click position.
+        """
+        self.highlight_entry(entry_index)
         entry = self.entries[entry_index]
         if entry.text_range is not None:
             start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
@@ -142,6 +220,32 @@ class CheckerDialog(ToplevelDialog):
             maintext().do_select(IndexRange(start, end))
             maintext().set_insert_index(IndexRowCol(start), focus=True)
         self.lift()
+
+    def entry_index_from_click(self, event: tk.Event) -> int:
+        """Get the index into the list of entries based on the mouse position
+        in the click event.
+
+        Args:
+            event: Event object containing mouse click position.
+
+        Returns:
+            Index into self.entries list
+            Raises IndexError exception if out of range
+        """
+        click_rowcol = IndexRowCol(self.text.index(f"@{event.x},{event.y}"))
+        entry_index = click_rowcol.row - 1
+        if entry_index < 0 or entry_index >= len(self.entries):
+            raise IndexError
+        return entry_index
+
+    def highlight_entry(self, entry_index: int) -> None:
+        """Highlight the line of text corresponding to the entry_index.
+
+        Args:
+            entry_index: Index into self.entries list.
+        """
+        self.text.tag_remove(SELECT_TAG_NAME, "1.0", tk.END)
+        self.text.tag_add(SELECT_TAG_NAME, f"{entry_index+1}.0", f"{entry_index+2}.0")
 
     def _mark_from_rowcol(self, rowcol: IndexRowCol) -> str:
         """Return name to use to mark given location in text file.

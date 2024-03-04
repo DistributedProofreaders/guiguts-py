@@ -524,7 +524,7 @@ class ScrolledReadOnlyText(tk.Text):
     http://stackoverflow.com/questions/3842155/is-there-a-way-to-make-the-tkinter-text-widget-read-only
     """
 
-    def __init__(self, parent, *args, **kwargs):  # type: ignore[no-untyped-def]
+    def __init__(self, parent, context_menu=True, *args, **kwargs):  # type: ignore[no-untyped-def]
         """Init the class and set the insert and delete event bindings."""
 
         self.frame = ttk.Frame(parent)
@@ -545,7 +545,10 @@ class ScrolledReadOnlyText(tk.Text):
         vscroll.grid(column=1, row=0, sticky="NSEW")
         self["yscrollcommand"] = vscroll.set
 
-        add_text_context_menu(self, read_only=True)
+        self["inactiveselect"] = self["selectbackground"]
+
+        if context_menu:
+            add_text_context_menu(self, read_only=True)
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing Text actually places surrounding Frame"""
