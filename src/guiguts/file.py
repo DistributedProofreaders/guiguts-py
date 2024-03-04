@@ -555,7 +555,7 @@ class File:
         """
         if image_num is not None:
             try:
-                index = maintext().get_index(page_mark_from_img(image_num))
+                index = maintext().rowcol(page_mark_from_img(image_num))
             except tk._tkinter.TclError:  # type: ignore[attr-defined]
                 # Bad image number
                 return
@@ -593,7 +593,7 @@ class File:
         mark = page_mark_from_img(cur_page) if cur_page else insert
         while mark := page_mark_next_previous(mark, direction):
             if maintext().compare(mark, "!=", insert):
-                maintext().set_insert_index(maintext().get_index(mark))
+                maintext().set_insert_index(maintext().rowcol(mark))
                 return
         sound_bell()
 
