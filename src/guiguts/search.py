@@ -442,10 +442,8 @@ class SearchDialog(ToplevelDialog):
                 maintext().replace(start_index, end_index, replace_match)
                 repl_len = len(replace_match)
                 maintext().mark_unset(MARK_FOUND_START, MARK_FOUND_END)
-                replace_range.start = maintext().get_index(
-                    start_index + f"+{repl_len}c"
-                )
-                replace_range.end = maintext().get_index(
+                replace_range.start = maintext().rowcol(start_index + f"+{repl_len}c")
+                replace_range.end = maintext().rowcol(
                     MARK_END_RANGE
                 )  # Refresh end index
                 count += 1
@@ -562,7 +560,7 @@ def get_search_start(backwards: bool) -> IndexRowCol:
         if at_previous_match:
             if sel_ranges := maintext().selected_ranges():
                 if maintext().compare(sel_ranges[0].start.index(), "==", start_index):
-                    start_rowcol = maintext().get_index(start_index + "+1c")
+                    start_rowcol = maintext().rowcol(start_index + "+1c")
     return start_rowcol
 
 

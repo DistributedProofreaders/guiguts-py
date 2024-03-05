@@ -340,26 +340,13 @@ class MainText(tk.Text):
         self.set_modified(False)
         self.edit_reset()
 
-    def get_index(self, pos: str) -> IndexRowCol:
-        """Return index of given position as IndexRowCol object.
-
-        Wrapper for `Tk::Text.index()`
-
-        Args:
-            pos: Index to position in file.
-
-        Returns:
-            IndexRowCol containing position in file.
-        """
-        return IndexRowCol(self.index(pos))
-
     def get_insert_index(self) -> IndexRowCol:
         """Return index of the insert cursor as IndexRowCol object.
 
         Returns:
             IndexRowCol containing position of the insert cursor.
         """
-        return self.get_index(tk.INSERT)
+        return self.rowcol(tk.INSERT)
 
     def set_insert_index(self, insert_pos: IndexRowCol, focus: bool = True) -> None:
         """Set the position of the insert cursor.
@@ -559,7 +546,7 @@ class MainText(tk.Text):
         # Add any necessary newlines if near end of file
         min_row = ranges[0].start.row
         max_row = min_row + max(num_cliplines, num_ranges)
-        end_index = self.get_index(IndexRowCol(max_row, 0).index())
+        end_index = self.rowcol(IndexRowCol(max_row, 0).index())
         if max_row > end_index.row:
             self.insert(
                 end_index.index() + " lineend", "\n" * (max_row - end_index.row)
@@ -569,7 +556,7 @@ class MainText(tk.Text):
             # Add any necessary spaces if line being pasted into is too short
             start_rowcol = IndexRowCol(ranges[0].start.row + line, ranges[0].start.col)
             end_rowcol = IndexRowCol(ranges[0].start.row + line, ranges[-1].end.col)
-            end_index = self.get_index(end_rowcol.index())
+            end_index = self.rowcol(end_rowcol.index())
             nspaces = start_rowcol.col - end_index.col
             if nspaces > 0:
                 self.insert(end_index.index(), " " * nspaces)
@@ -579,7 +566,7 @@ class MainText(tk.Text):
                 self.replace(start_rowcol.index(), end_rowcol.index(), clipline)
             else:
                 self.insert(start_rowcol.index(), clipline)
-        rowcol = self.get_index(f"{start_rowcol.index()} + {len(clipline)}c")
+        rowcol = self.rowcol(f"{start_rowcol.index()} + {len(clipline)}c")
         self.set_insert_index(rowcol)
 
     def smart_copy(self, *args: Any) -> str:
@@ -629,7 +616,7 @@ class MainText(tk.Text):
         Args
             event: Event containing mouse coordinates.
         """
-        self.column_select_start(self.get_index(f"@{event.x},{event.y}"))
+        self.column_select_start(self.rowcol(f"@{event.x},{event.y}"))
 
     def column_select_motion(self, event: tk.Event) -> None:
         """Callback when column selection continues via mouse motion.
@@ -642,8 +629,8 @@ class MainText(tk.Text):
         Args:
             event: Event containing mouse coordinates.
         """
-        anchor_rowcol = self.get_index(TK_ANCHOR_MARK)
-        cur_rowcol = self.get_index(f"@{event.x},{event.y}")
+        anchor_rowcol = self.rowcol(TK_ANCHOR_MARK)
+        cur_rowcol = self.rowcol(f"@{event.x},{event.y}")
         # Find longest line between start of selection and current mouse location
         minrow = min(anchor_rowcol.row, cur_rowcol.row)
         maxrow = max(anchor_rowcol.row, cur_rowcol.row)
@@ -658,7 +645,7 @@ class MainText(tk.Text):
         # but in the same horizontal position - this is the "true" mouse column
         # Get y of longest line, and use actual x of mouse
         _, anchor_y = self.xy_from_index(f"{maxlenrow}.0")
-        truecol_rowcol = self.get_index(f"@{event.x},{anchor_y}")
+        truecol_rowcol = self.rowcol(f"@{event.x},{anchor_y}")
         # At last, we can set the column in cur_rowcol to the "screen" column
         # which is what we need to pass to do_column_select().
         cur_rowcol.col = truecol_rowcol.col
@@ -676,7 +663,7 @@ class MainText(tk.Text):
                 anchor = ranges[-1].end
             self.column_select_start(anchor)
 
-        self.do_column_select(IndexRange(self.get_index(TK_ANCHOR_MARK), cur_rowcol))
+        self.do_column_select(IndexRange(self.rowcol(TK_ANCHOR_MARK), cur_rowcol))
 
     def column_select_release(self, event: tk.Event) -> None:
         """Callback when column selection is stopped via mouse button release.
