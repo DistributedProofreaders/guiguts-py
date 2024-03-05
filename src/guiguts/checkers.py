@@ -6,7 +6,7 @@ from typing import Any, Optional, Callable
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.utilities import IndexRowCol, IndexRange, process_accel
+from guiguts.utilities import IndexRowCol, IndexRange, is_mac
 from guiguts.widgets import ToplevelDialog
 
 MARK_PREFIX = "chk"
@@ -73,18 +73,22 @@ class CheckerDialog(ToplevelDialog):
             self.top_frame, context_menu=False, wrap=tk.NONE
         )
         self.text.grid(column=0, row=1, sticky="NSEW")
-        self.text.bind("<ButtonRelease-1>", self.select_entry_by_click)
-        self.text.bind("<ButtonRelease-2>", self.remove_entry_by_click)
-        self.text.bind("<ButtonRelease-3>", self.remove_entry_by_click)
-        _, event = process_accel("Cmd/Ctrl+ButtonRelease-1")
-        self.text.bind(event, self.process_entry_by_click)
-        _, event = process_accel("Cmd/Ctrl+ButtonRelease-2")
-        self.text.bind(event, self.process_remove_entry_by_click)
-        _, event = process_accel("Cmd/Ctrl+ButtonRelease-3")
-        self.text.bind(event, self.process_remove_entry_by_click)
+
+        self.text.bind("<1>", self.select_entry_by_click)
+        if is_mac():
+            self.text.bind("<2>", self.remove_entry_by_click)
+            self.text.bind("<Control-1>", self.remove_entry_by_click)
+            self.text.bind("<Command-1>", self.process_entry_by_click)
+            self.text.bind("<Command-2>", self.process_remove_entry_by_click)
+            self.text.bind("<Command-Control-1>", self.process_remove_entry_by_click)
+        else:
+            self.text.bind("<3>", self.remove_entry_by_click)
+            self.text.bind("<Control-1>", self.process_entry_by_click)
+            self.text.bind("<Control-3>", self.process_remove_entry_by_click)
+
         self.process_command = process_command
-        self.text.tag_configure(HILITE_TAG_NAME, foreground="blue")
-        self.text.tag_configure(SELECT_TAG_NAME, background="gray")
+        self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
+        self.text.tag_configure(SELECT_TAG_NAME, background="#aaaaaa")
         self.reset()
 
     def reset(self) -> None:
@@ -143,67 +147,83 @@ class CheckerDialog(ToplevelDialog):
         word = "Entry" if self.count_linked_entries == 1 else "Entries"
         self.count_label["text"] = f"{self.count_linked_entries} {word}"
 
-    def remove_entry_by_click(self, event: tk.Event) -> None:
+    def remove_entry_by_click(self, event: tk.Event) -> str:
         """Remove the entry that was clicked in the dialog.
 
         Args:
             event: Event object containing mouse click position.
+
+        Returns:
+            "break" to avoid calling other callbacks.
         """
         try:
             entry_index = self.entry_index_from_click(event)
         except IndexError:
-            return
+            return "break"
         del self.entries[entry_index]
         self.text.delete(f"{entry_index+1}.0", f"{entry_index+2}.0")
         entry_index = min(entry_index, len(self.entries) - 1)
         if len(self.entries) > 0:
             self.select_entry(entry_index)
+        return "break"
 
-    def select_entry_by_click(self, event: tk.Event) -> None:
+    def select_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the
         main text widget that corresponds to it.
 
         Args:
             event: Event object containing mouse click position.
+
+        Returns:
+            "break" to avoid calling other callbacks.
         """
         try:
             entry_index = self.entry_index_from_click(event)
         except IndexError:
-            return
+            return "break"
         self.select_entry(entry_index)
+        return "break"
 
-    def process_entry_by_click(self, event: tk.Event) -> None:
+    def process_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the
         main text widget that corresponds to it. Finally call the
         "process" callback function, if any.
 
         Args:
             event: Event object containing mouse click position.
+
+        Returns:
+            "break" to avoid calling other callbacks.
         """
         try:
             entry_index = self.entry_index_from_click(event)
         except IndexError:
-            return
+            return "break"
         self.select_entry(entry_index)
         if self.process_command:
             self.process_command(self.entries[entry_index])
+        return "break"
 
-    def process_remove_entry_by_click(self, event: tk.Event) -> None:
+    def process_remove_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the
         main text widget that corresponds to it. Call the
         "process" callback function, if any, then remove the entry.
 
         Args:
             event: Event object containing mouse click position.
+
+        Returns:
+            "break" to avoid calling other callbacks.
         """
         try:
             entry_index = self.entry_index_from_click(event)
         except IndexError:
-            return
+            return "break"
         self.select_entry(entry_index)
         if self.process_command:
             self.process_command(self.entries[entry_index])
         self.remove_entry_by_click(event)
+        return "break"
 
     def select_entry(self, entry_index: int) -> None:
         """Select line in dialog corresponding to given entry index,
