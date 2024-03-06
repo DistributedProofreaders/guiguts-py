@@ -60,6 +60,38 @@ We also install poetry using Homebrew.
 brew install poetry
 ```
 
+## Linux Development Setup
+
+1. Install Python, Poetry, etc.
+   * Example from Ubuntu 22.04 -- adapt to your own Linux distro
+     ```bash
+     sudo apt install python3.11 python3-pip python3-tk idle-python3.11 git
+     sudo python3.11 -m pip install poetry
+     ## Test that Tk will work
+     python3.11 -m tkinter
+     ```
+   * The last line above tests that Tk is working with Python. It should open a small
+     window on your screen. Click the `Click me!` button to test mouse clicks, and
+     `QUIT` to close the window, ending the test.
+2. Clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
+   or a fork thereof.
+3. In the cloned GG2 directory, create a virtual environment using a version of
+   python you installed above.
+     ```bash
+     poetry env use $(which python3.11)
+     ```
+4. Also from the GG2 directory, install the GG2 python dependencies in the
+   virtual environment. This will install GG2 as an editable package that you
+   can develop and run directly. If you use pyenv to switch to a new
+   version of python, you will need to re-run this command.
+   ```bash
+   poetry install
+   ```
+
+You can then run GG2 directly with `poetry run guiguts`. Alternatively,
+you can start a virtual environment shell with `poetry shell`, then run
+GG2 with `guiguts`.
+
 ## Common Development Setup
 
 1. Install Python & Poetry (above)
