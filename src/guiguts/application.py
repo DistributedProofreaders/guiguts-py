@@ -306,9 +306,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.menu_file.add_button(
             "~Close", self.close_file, "Cmd+W" if is_mac() else ""
         )
-        page_menu = Menu(self.menu_file, "~Page Markers")
+        page_menu = Menu(self.menu_file, "Page ~Markers")
         page_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)
         page_menu.add_button("~Remove Page Marker Flags", self.file.remove_page_flags)
+        page_menu = Menu(self.menu_file, "~Project")
+        page_menu.add_button(
+            "~Add Good/Bad Words to Project Dictionary",
+            self.file.add_good_and_bad_words,
+        )
         if not is_mac():
             self.menu_file.add_separator()
             self.menu_file.add_button("E~xit", self.quit_program, "")
