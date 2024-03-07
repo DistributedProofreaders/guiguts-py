@@ -87,8 +87,10 @@ class CheckerDialog(ToplevelDialog):
             self.text.bind("<Control-3>", self.process_remove_entry_by_click)
 
         self.process_command = process_command
+        self.text.tag_configure(
+            SELECT_TAG_NAME, background="#dddddd", foreground="#000000"
+        )
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
-        self.text.tag_configure(SELECT_TAG_NAME, background="#aaaaaa")
         self.reset()
 
     def reset(self) -> None:
@@ -238,7 +240,7 @@ class CheckerDialog(ToplevelDialog):
             start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self._mark_from_rowcol(entry.text_range.end))
             maintext().do_select(IndexRange(start, end))
-            maintext().set_insert_index(IndexRowCol(start), focus=True)
+            maintext().set_insert_index(IndexRowCol(start), focus=False)
         self.lift()
 
     def entry_index_from_click(self, event: tk.Event) -> int:
