@@ -30,6 +30,7 @@ from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
+from guiguts.tools.pptxt import pptxt
 from guiguts.utilities import is_mac
 
 logger = logging.getLogger(__package__)
@@ -389,6 +390,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Create the Tools menu."""
         menu_edit = Menu(menubar(), "~Tools")
         menu_edit.add_button("~Spelling Check", spell_check)
+        menu_edit.add_button("PP~txt", pptxt)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
