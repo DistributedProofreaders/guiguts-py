@@ -6,7 +6,7 @@ from pathlib import Path
 import regex as re
 
 from guiguts.data import dictionaries
-from guiguts.checkers import CheckerDialog
+from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.maintext import maintext, FindMatch
 from guiguts.preferences import preferences
 from guiguts.utilities import IndexRowCol, IndexRange
@@ -302,7 +302,9 @@ def spell_check() -> None:
 
     bad_spellings = _the_spell_checker.spell_check_file()
 
-    checker_dialog = CheckerDialog.show_dialog("Spelling Check Results", spell_check)
+    checker_dialog = CheckerDialog.show_dialog(
+        "Spelling Check Results", spell_check, process_spelling
+    )
     checker_dialog.reset()
     # Construct opening line describing the search
     checker_dialog.add_entry("Start of Spelling Check")
@@ -326,3 +328,13 @@ def spell_check_clear_dictionary() -> None:
     """Clear the spell check dictionary."""
     global _the_spell_checker
     _the_spell_checker = None
+
+
+def process_spelling(checker_entry: CheckerEntry) -> None:
+    """Dummy process function for testing purposes only."""
+    if checker_entry.text_range:
+        r = checker_entry.text_range
+        prefix = f"{r.start.row}.{r.start.col}-{r.end.row}.{r.end.col}: "
+    else:
+        prefix = ""
+    logger.info(prefix + checker_entry.text)
