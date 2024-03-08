@@ -2,7 +2,6 @@
 
 Guiguts - an application to support creation of ebooks for PG
 
-
 ## Common Development Setup
 
 1. Install Python & Poetry, clone the repo and create a virtual environment,
@@ -18,8 +17,7 @@ Guiguts - an application to support creation of ebooks for PG
 3. You can then run GG2 directly with `poetry run guiguts`. Alternatively, 
    you can start a virtual environment shell with `poetry shell`, then run
    GG2 with `guiguts`.
- 
- 
+
 ## Windows Development Setup
 
 ### Install Python
@@ -73,7 +71,6 @@ python you installed above.
      poetry config virtualenvs.prefer-active-python true
      ```
 
-
 ## macOS Development Setup
 
 Developing Guiguts on macOS requires installing [Homebrew](https://brew.sh/) first.
@@ -109,7 +106,6 @@ python you installed above.
 poetry env use $(brew --prefix)/bin/python3.11
 ```
 
-
 ## Linux Development Setup
 
 1. Install Python, Poetry, etc.
@@ -130,7 +126,6 @@ poetry env use $(brew --prefix)/bin/python3.11
      ```bash
      poetry env use $(which python3.11)
      ```
-
 
 ## Code style
 
@@ -153,7 +148,6 @@ Naming conventions from [PEP8](https://pep8.org/#prescriptive-naming-conventions
 are used. To summarize, class names use CapWords; constants are ALL_UPPERCASE;
 most other variables, functions and methods are all_lowercase.
 
-
 ## Documentation
 
 [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
@@ -175,7 +169,6 @@ poetry run python -m sphinx -M coverage docs docs/build`
 
 This project uses Github Actions to ensure running sphinx does not report an error, and
 that the coverage check does not report any undocumented items.
-
 
 ## Type checking
 
@@ -210,7 +203,6 @@ All tests can be run using the following command:
 Developers are encouraged to add tests (as appropriate) when new code is added to the project.
 
 This project uses Github Actions to ensure running `pytest` does not report an error.
-
 
 ## Licensing
 
