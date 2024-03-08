@@ -7,9 +7,9 @@ Guiguts - an application to support creation of ebooks for PG
 
 1. Install Python & Poetry, clone the repo and create a virtual environment,
    using the OS-specific instructions below.
-2. In the cloned GG2 directory, install the GG2 python dependencies in the
-   virtual environment. This will install GG2 as an editable package that you
-   can develop and run directly.
+2. After following the OS-specific instructions, in the cloned GG2 directory,
+   install the GG2 python dependencies in the virtual environment. This will
+   install GG2 as an editable package that you can develop and run directly.
    ```bash
    poetry install
    ```
