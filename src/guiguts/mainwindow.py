@@ -7,15 +7,13 @@ import os.path
 from PIL import Image, ImageTk
 import regex as re
 import time
-import traceback
 import tkinter as tk
 from tkinter import ttk, messagebox
-
-from types import TracebackType
 from typing import Any, Callable, Optional
 
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences
+from guiguts.root import Root, root
 from guiguts.utilities import (
     is_mac,
     is_x11,
@@ -23,7 +21,7 @@ from guiguts.utilities import (
     process_accel,
     process_label,
 )
-from guiguts.widgets import grab_focus, ToplevelDialog
+from guiguts.widgets import ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
@@ -35,62 +33,6 @@ STATUSBAR_ROW = 2
 STATUSBAR_COL = 0
 MIN_PANE_WIDTH = 20
 TK_ANCHOR_MARK = "tk::anchor1"
-
-
-class Root(tk.Tk):
-    """Inherits from Tk root window"""
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self.geometry(preferences.get("RootGeometry"))
-        self.option_add("*tearOff", False)
-        self.rowconfigure(0, weight=1)
-        self.columnconfigure(0, weight=1)
-        self.after_idle(lambda: grab_focus(self, maintext(), True))
-        self.set_tcl_word_characters()
-        self.save_config = False
-        self.bind("<Configure>", self._handle_config)
-
-    def report_callback_exception(
-        self, exc: type[BaseException], val: BaseException, tb: TracebackType | None
-    ) -> None:
-        """Override tkinter exception reporting rather just
-        writing it to stderr.
-        """
-        err = "Tkinter Exception\n" + "".join(traceback.format_exception(exc, val, tb))
-        logger.error(err)
-
-    def set_tcl_word_characters(self) -> None:
-        """Configure which characters are considered word/non-word characters by tcl.
-
-        Alphanumerics & stright/curly apostrophe will be considered word characters.
-        These affect operations such as double-click to select word, Cmd/Ctrl left/right
-        to move forward/backward a word at a time, etc.
-        See https://wiki.tcl-lang.org/page/tcl%5Fwordchars for more info.
-        """
-        # Trigger tcl to autoload library that defines variables we want to override.
-        self.tk.call("tcl_wordBreakAfter", "", 0)
-        # Set word and non-word characters
-        self.tk.call("set", "tcl_wordchars", r"[[:alnum:]'’]")
-        self.tk.call("set", "tcl_nonwordchars", r"[^[:alnum:]'’]")
-
-    def _handle_config(self, event: tk.Event) -> None:
-        """Callback from root dialog <Configure> event.
-
-        By setting flag now, and queuing calls to _save_config,
-        we ensure the flag will be true for the first call to
-        _save_config when process becomes idle."""
-        self.save_config = True
-        self.after_idle(self._save_config)
-
-    def _save_config(self) -> None:
-        """Only save geometry when process becomes idle.
-
-        Several calls to this may be queued by config changes during
-        root dialog creation and resizing. Only the first will actually
-        do a save, because the flag will only be true on the first call."""
-        if self.save_config:
-            preferences.set("RootGeometry", self.geometry())
 
 
 class Menu(tk.Menu):
@@ -625,14 +567,13 @@ class MainWindow:
     functions with the same names, e.g. ``root()`` returns ``MainWindow.root``
     """
 
-    root: Root
     menubar: tk.Menu
     mainimage: MainImage
     statusbar: StatusBar
     messagelog: MessageLog
 
     def __init__(self) -> None:
-        MainWindow.root = Root()
+        Root()
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()
         MainWindow.messagelog = MessageLog()
@@ -796,12 +737,6 @@ def add_text_context_menu(text_widget: tk.Text, read_only: bool = False) -> None
         text_widget.bind("<Control-1>", post_context_menu)
     else:
         text_widget.bind("<3>", post_context_menu)
-
-
-def root() -> Root:
-    """Return the single instance of Root"""
-    assert MainWindow.root is not None
-    return MainWindow.root
 
 
 def mainimage() -> MainImage:

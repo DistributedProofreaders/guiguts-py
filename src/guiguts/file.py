@@ -11,10 +11,10 @@ from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 from guiguts.maintext import maintext, PAGE_FLAG_TAG
-from guiguts.mainwindow import root
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
+from guiguts.root import root
 from guiguts.spell import spell_check_clear_dictionary
 from guiguts.utilities import (
     is_windows,
@@ -145,6 +145,14 @@ class ProjectDict:
             True if dictionary contains any good/bad words.
         """
         return len(self.good_words) > 0 or len(self.bad_words) > 0
+
+    def add_good_word(self, word: str) -> None:
+        """Add a good word to the project dictionary.
+
+        Args:
+            word: The word to be added.
+        """
+        self.good_words[word] = True
 
 
 class File:
@@ -777,6 +785,15 @@ class File:
             logger.error(
                 f"Neither {GOOD_WORDS_FILENAME} nor {BAD_WORDS_FILENAME} was found"
             )
+
+    def add_good_word_to_project_dictionary(self, word: str) -> None:
+        """Add a good word to the project dictionary & save it.
+
+        Args:
+            word: The word to be added.
+        """
+        self.project_dict.add_good_word(word)
+        self.project_dict.save(self.filename)
 
 
 def page_mark_previous(mark: str) -> str:

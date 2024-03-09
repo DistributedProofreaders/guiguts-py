@@ -206,6 +206,15 @@ class CheckerDialog(ToplevelDialog):
             self.process_command(self.entries[entry_index])
         return "break"
 
+    def process_entry_current(self) -> None:
+        """Call the "process" callback function, if any, on the
+        currently selected entry, if any."""
+        if self.process_command:
+            tag_range = self.text.tag_nextrange(SELECT_TAG_NAME, "1.0")
+            if tag_range:
+                rowcol = IndexRowCol(tag_range[0])
+                self.process_command(self.entries[rowcol.row - 1])
+
     def process_remove_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the
         main text widget that corresponds to it. Call the

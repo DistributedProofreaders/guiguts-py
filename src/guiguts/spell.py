@@ -4,6 +4,8 @@ import importlib.resources
 import logging
 from pathlib import Path
 import regex as re
+from tkinter import ttk
+from typing import Callable
 
 from guiguts.data import dictionaries
 from guiguts.checkers import CheckerDialog, CheckerEntry
@@ -269,7 +271,7 @@ class SpellChecker:
             raise DictionaryNotFoundError(lang)
 
 
-def spell_check() -> None:
+def spell_check(add_project_word_callback: Callable[[str], None]) -> None:
     """Spell check the currently loaded file."""
     global _the_spell_checker
 
@@ -282,9 +284,20 @@ def spell_check() -> None:
 
     bad_spellings = _the_spell_checker.spell_check_file()
 
+    def process_spelling(checker_entry: CheckerEntry) -> None:
+        """Process the spelling error by adding the word to the project dictionary."""
+        if checker_entry.text_range:
+            add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
+
     checker_dialog = CheckerDialog.show_dialog(
         "Spelling Check Results", spell_check, process_spelling
     )
+    frame = checker_dialog.header_frame
+    project_dict_button = ttk.Button(
+        frame, text="Add to Project Dict", command=checker_dialog.process_entry_current
+    )
+    project_dict_button.grid(column=0, row=1, sticky="NSW")
+
     checker_dialog.reset()
     # Construct opening line describing the search
     checker_dialog.add_entry("Start of Spelling Check")
@@ -308,13 +321,3 @@ def spell_check_clear_dictionary() -> None:
     """Clear the spell check dictionary."""
     global _the_spell_checker
     _the_spell_checker = None
-
-
-def process_spelling(checker_entry: CheckerEntry) -> None:
-    """Dummy process function for testing purposes only."""
-    if checker_entry.text_range:
-        r = checker_entry.text_range
-        prefix = f"{r.start.row}.{r.start.col}-{r.end.row}.{r.end.col}: "
-    else:
-        prefix = ""
-    logger.info(prefix + checker_entry.text)
