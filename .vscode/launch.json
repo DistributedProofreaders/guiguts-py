@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Guiguts",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${command:python.interpreterPath}",
+            "module": "guiguts.application",
+            "args": ["-d"]
+        },
+        {
+            "name": "Guiguts (most recent file)",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${command:python.interpreterPath}",
+            "module": "guiguts.application",
+            "args": ["-r1", "-d"]
+        },
+        {
+            "name": "Guiguts (no debug output)",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${command:python.interpreterPath}",
+            "module": "guiguts.application"
+        }
+    ]
+}

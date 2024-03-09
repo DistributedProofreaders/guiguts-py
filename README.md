@@ -204,6 +204,26 @@ Developers are encouraged to add tests (as appropriate) when new code is added t
 
 This project uses Github Actions to ensure running `pytest` does not report an error.
 
+## Editor / IDE additional notes
+
+### Visual Studio Code
+
+Three debugger configs are provided.
+
+- "Guiguts"
+    - Run Guiguts with debug output enabled
+- "Guiguts (most recent file)"
+    - Run Guiguts with debug output enabled
+    - Open the most recently opened file
+- "Guiguts (no debug output)"
+    - Run Guiguts without debug output
+
+Requirement: [Python Debugger][vsc_debugpy] extension
+
+[vsc_debugpy]: https://marketplace.visualstudio.com/items?itemName=ms-python.debugpy
+
+Use the "Python: Select Interpreter" command to choose the appropriate Python environment. Your Poetry config should be detected and available to choose.
+
 ## Licensing
 
 Copyright Contributors to the [Guiguts-py](https://github.com/DistributedProofreaders/guiguts-py) project
