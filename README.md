@@ -1,16 +1,30 @@
 # Guiguts
 
 Guiguts - an application to support creation of ebooks for PG
- 
-## Windows Development Setup
 
-Minor alterations probably needed for other platforms
+## Common Development Setup
+
+1. Install Python & Poetry, clone the repo and create a virtual environment,
+   using the OS-specific instructions below.
+2. After following the OS-specific instructions, in the cloned GG2 directory,
+   install the GG2 python dependencies in the virtual environment. This will
+   install GG2 as an editable package that you can develop and run directly.
+   ```bash
+   poetry install
+   ```
+   If additional dependencies are added to GG2, or you use pyenv to switch
+   to a new version of python, you will need to re-run this command.
+3. You can then run GG2 directly with `poetry run guiguts`. Alternatively, 
+   you can start a virtual environment shell with `poetry shell`, then run
+   GG2 with `guiguts`.
+
+## Windows Development Setup
 
 ### Install Python
 
 #### Single (system-wide) version
 
-1. Download 3.11 from [python.org](https://www.python.org/).
+1. Download Python 3.11 from [python.org](https://www.python.org/).
 2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python311`
 3. Ensure this dir is in PATH variable
 
@@ -39,6 +53,24 @@ multiple versions of Python, if that would be useful for development/testing.
 4. Adds top-level “poetry” wrapper in `C:\Users\<username>\AppData\Roaming\Python\Scripts`
 5. Ensure the latter is in PATH variable
 
+### Clone the GG2 repo
+
+Either clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
+or a fork thereof.
+
+### Create virtual environment
+
+In the cloned GG2 directory, create a virtual environment using a version of
+python you installed above.
+   * Single python version (in git bash shell)
+     ```bash
+     poetry env use ~/AppData/Local/Programs/Python/Python311/python.exe
+     ```
+   * If using pyenv (in git bash shell)
+     ```bash
+     poetry config virtualenvs.prefer-active-python true
+     ```
+
 ## macOS Development Setup
 
 Developing Guiguts on macOS requires installing [Homebrew](https://brew.sh/) first.
@@ -60,36 +92,40 @@ We also install poetry using Homebrew.
 brew install poetry
 ```
 
-## Common Development Setup
+### Clone the GG2 repo
 
-1. Install Python & Poetry (above)
+Either clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
+or a fork thereof.
+
+### Create virtual environment
+
+In the cloned GG2 directory, create a virtual environment using a version of
+python you installed above.
+
+```bash
+poetry env use $(brew --prefix)/bin/python3.11
+```
+
+## Linux Development Setup
+
+1. Install Python, Poetry, etc.
+   * Example from Ubuntu 22.04 -- adapt to your own Linux distro
+     ```bash
+     sudo apt install python3.11 python3-pip python3-tk idle-python3.11 git
+     sudo python3.11 -m pip install poetry
+     ## Test that Tk will work
+     python3.11 -m tkinter
+     ```
+   * The last line above tests that Tk is working with Python. It should open a small
+     window on your screen. Click the `Click me!` button to test mouse clicks, and
+     `QUIT` to close the window, ending the test.
 2. Clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
    or a fork thereof.
 3. In the cloned GG2 directory, create a virtual environment using a version of
    python you installed above.
-   * Windows - single python version (in git bash shell)
      ```bash
-     poetry env use ~/AppData/Local/Programs/Python/Python311/python.exe
+     poetry env use $(which python3.11)
      ```
-   * Windows - pyenv (in git bash shell)
-     ```bash
-     poetry config virtualenvs.prefer-active-python true
-     ```
-   * macOS
-     ```bash
-     poetry env use $(brew --prefix)/bin/python3.11
-     ```
-4. Also from the GG2 directory, install the GG2 python dependencies in the
-   virtual environment. This will install GG2 as an editable package that you
-   can develop and run directly. If you use pyenv to switch to a new
-   version of python, you will need to re-run this command.
-   ```bash
-   poetry install
-   ```
-
-You can then run GG2 directly with `poetry run guiguts`. Alternatively, 
-you can start a virtual environment shell with `poetry shell`, then run
-GG2 with `guiguts`.
 
 ## Code style
 
