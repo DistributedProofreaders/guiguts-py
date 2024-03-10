@@ -190,7 +190,7 @@ class Guiguts:
 
     def help_about(self, *args: Any) -> None:
         """Display a 'Help About' dialog."""
-        help = """Guiguts - an application to support creation of ebooks for PG
+        help_message = """Guiguts - an application to support creation of ebooks for PG
 
 Copyright Contributors to the Guiguts-py project.
 
@@ -211,7 +211,7 @@ License along with this program; if not, write to the
 Free Software Foundation, Inc., 51 Franklin Street,
 Fifth Floor, Boston, MA 02110-1301 USA."""
 
-        messagebox.showinfo(title="About Guiguts", message=help)
+        messagebox.showinfo(title="About Guiguts", message=help_message)
 
     def show_page_details_dialog(self, *args: Any) -> None:
         """Show the page details display/edit dialog."""
