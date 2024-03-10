@@ -290,11 +290,15 @@ def spell_check(add_project_word_callback: Callable[[str], None]) -> None:
             add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
 
     checker_dialog = CheckerDialog.show_dialog(
-        "Spelling Check Results", spell_check, process_spelling
+        "Spelling Check Results",
+        lambda: spell_check(add_project_word_callback),
+        process_spelling,
     )
     frame = checker_dialog.header_frame
     project_dict_button = ttk.Button(
-        frame, text="Add to Project Dict", command=checker_dialog.process_entry_current
+        frame,
+        text="Add to Project Dict",
+        command=lambda: checker_dialog.process_remove_entry_current(all_matching=True),
     )
     project_dict_button.grid(column=0, row=1, sticky="NSW")
 
