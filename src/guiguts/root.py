@@ -1,4 +1,4 @@
-"""Define key components of main window"""
+"""Handle Tk root window"""
 
 
 import logging
