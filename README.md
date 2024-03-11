@@ -222,7 +222,7 @@ Requirement: [Python Debugger][vsc_debugpy] extension
 
 [vsc_debugpy]: https://marketplace.visualstudio.com/items?itemName=ms-python.debugpy
 
-Use the "Python: Select Interpreter" command to choose the appropriate Python environment. Your Poetry config should be detected and available to choose.
+Use the "Python: Select Interpreter" command to choose the appropriate Python environment. Your Poetry config should be detected and available to choose. If the Poetry config is not auto-detected, use `poetry env info -e` in the shell to find the Poetry-configured python interpreter. Then in the "Python: Select Interpreter" command, choose "Enter interpreter path..." and paste the full path to the `python` executable. 
 
 ## Licensing
 
