@@ -394,7 +394,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_edit = Menu(menubar(), "~Tools")
         menu_edit.add_button(
             "~Spelling Check",
-            lambda: spell_check(self.file.add_good_word_to_project_dictionary),
+            lambda: spell_check(
+                self.file.project_dict, self.file.add_good_word_to_project_dictionary
+            ),
         )
 
     def init_view_menu(self) -> None:

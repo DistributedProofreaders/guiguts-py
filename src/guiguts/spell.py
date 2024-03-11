@@ -1,4 +1,4 @@
-"""Search/Replace functionality"""
+"""Spell checking functionality"""
 
 import importlib.resources
 import logging
@@ -8,6 +8,7 @@ from tkinter import ttk
 from typing import Callable
 
 from guiguts.data import dictionaries
+from guiguts.file import ProjectDict
 from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.maintext import maintext, FindMatch
 from guiguts.preferences import preferences
@@ -39,13 +40,15 @@ class SpellingError(FindMatch):
         count: Number of characters in word.
         word: Word spelt wrongly.
         frequency: Number of occurrences of word.
+        bad_word: True if word is in project's bad word list
     """
 
-    def __init__(self, index: IndexRowCol, word: str):
+    def __init__(self, index: IndexRowCol, word: str, bad_word: bool):
         """Initialize SpellingError class."""
         super().__init__(index, len(word))
         self.word = word
         self.frequency = 0
+        self.bad_word = bad_word
 
 
 class SpellChecker:
@@ -57,7 +60,7 @@ class SpellChecker:
         for lang in maintext().get_language_list():
             self.add_words_from_language(lang)
 
-    def spell_check_file(self) -> list[SpellingError]:
+    def spell_check_file(self, project_dict: ProjectDict) -> list[SpellingError]:
         """Spell check the currently loaded file.
 
         Returns:
@@ -72,13 +75,13 @@ class SpellChecker:
                 col = next_col
                 next_col = col + len(word) + 1
                 if word:
-                    spell_check_result = self.spell_check_word(word)
+                    spell_check_result = self.spell_check_word(word, project_dict)
 
                     # If word has leading straight apostrophe, it might be
                     # open single quote; trim it and check again
                     if spell_check_result == SPELL_CHECK_OK_NO and word.startswith("'"):
                         word = word[1:]
-                        spell_check_result = self.spell_check_word(word)
+                        spell_check_result = self.spell_check_word(word, project_dict)
 
                     # If trailing straight/curly apostrophe, it might be
                     # close single quote; trim it and check again
@@ -86,7 +89,7 @@ class SpellChecker:
                         r"['’]$", word
                     ):
                         word = word[:-1]
-                        spell_check_result = self.spell_check_word(word)
+                        spell_check_result = self.spell_check_word(word, project_dict)
 
                     # If not found in dictionary, and word is not now empty
                     # or only consisting of single quotes, add it to errors list
@@ -94,7 +97,11 @@ class SpellChecker:
                         r"['’]*", word
                     ):
                         spelling_errors.append(
-                            SpellingError(IndexRowCol(line_num, col), word)
+                            SpellingError(
+                                IndexRowCol(line_num, col),
+                                word,
+                                spell_check_result == SPELL_CHECK_OK_BAD,
+                            )
                         )
                         try:
                             spelling_counts[word] += 1
@@ -105,7 +112,7 @@ class SpellChecker:
             spelling.frequency = spelling_counts[spelling.word]
         return spelling_errors
 
-    def spell_check_word(self, word: str) -> int:
+    def spell_check_word(self, word: str, project_dict: ProjectDict) -> int:
         """Spell check the given word.
 
         Allows things like numbers, years, decades, etc.
@@ -118,7 +125,7 @@ class SpellChecker:
             SPELL_CHECK_OK_YES if word is in dictionary
             SPELL_CHECK_OK_NO if neither (wrong spelling)
         """
-        word_status = self.spell_check_word_apos(word)
+        word_status = self.spell_check_word_apos(word, project_dict)
         # If it's a bad word or in the dictionary, we're done
         if word_status == SPELL_CHECK_OK_BAD or word_status == SPELL_CHECK_OK_YES:
             return word_status
@@ -131,13 +138,14 @@ class SpellChecker:
         match = re.match(r"(?P<prefix>\w+)['’](?P<remainder>\w+)", word)
         if (
             match is not None
-            and self.spell_check_word_apos(match.group("remainder"))
+            and self.spell_check_word_apos(match.group("remainder"), project_dict)
             == SPELL_CHECK_OK_YES
             and (
-                self.spell_check_word_apos(match.group("prefix")) == SPELL_CHECK_OK_YES
-                or self.spell_check_word_apos(match.group("prefix") + "'")
+                self.spell_check_word_apos(match.group("prefix"), project_dict)
                 == SPELL_CHECK_OK_YES
-                or self.spell_check_word_apos(match.group("prefix") + "’")
+                or self.spell_check_word_apos(match.group("prefix") + "'", project_dict)
+                == SPELL_CHECK_OK_YES
+                or self.spell_check_word_apos(match.group("prefix") + "’", project_dict)
                 == SPELL_CHECK_OK_YES
             )
         ):
@@ -183,7 +191,7 @@ class SpellChecker:
 
         return SPELL_CHECK_OK_NO
 
-    def spell_check_word_apos(self, word: str) -> int:
+    def spell_check_word_apos(self, word: str, project_dict: ProjectDict) -> int:
         """Spell check the given word.
 
         Copes with straight or curly apostrophes.
@@ -196,7 +204,7 @@ class SpellChecker:
             SPELL_CHECK_OK_YES if word is in dictionary
             SPELL_CHECK_OK_NO if neither (wrong spelling)
         """
-        word_status = self.spell_check_word_case(word)
+        word_status = self.spell_check_word_case(word, project_dict)
         # If it's a bad word or in the dictionary, we're done
         if word_status == SPELL_CHECK_OK_BAD or word_status == SPELL_CHECK_OK_YES:
             return word_status
@@ -208,9 +216,9 @@ class SpellChecker:
             word = re.sub(r"’", r"'", word)
         else:
             return word_status
-        return self.spell_check_word_case(word)
+        return self.spell_check_word_case(word, project_dict)
 
-    def spell_check_word_case(self, word: str) -> int:
+    def spell_check_word_case(self, word: str, project_dict: ProjectDict) -> int:
         """Spell check word, allowing for differences of case.
 
         Check same case, lower case, or title case (e.g. LONDON matches London)
@@ -224,6 +232,10 @@ class SpellChecker:
             SPELL_CHECK_OK_YES if word is in dictionary
             SPELL_CHECK_OK_NO if neither (wrong spelling)
         """
+        # Check if word is a bad word - case must match for bad words
+        if word in project_dict.bad_words:
+            return SPELL_CHECK_OK_BAD
+
         lower_word = word.lower()
         if lower_word == word:
             lower_word == ""
@@ -237,15 +249,14 @@ class SpellChecker:
         else:
             title_word = ""
 
-        # Todo: check if word, lower_word or title_word are bad words
-
-        # Now check dictionary for good words
-        if (
-            word in self.dictionary
-            or (lower_word and lower_word in self.dictionary)
-            or (title_word and title_word in self.dictionary)
-        ):
-            return SPELL_CHECK_OK_YES
+        # Now check global & project dictionaries for good words
+        for dict in (self.dictionary, project_dict.good_words):
+            if (
+                word in dict
+                or (lower_word and lower_word in dict)
+                or (title_word and title_word in dict)
+            ):
+                return SPELL_CHECK_OK_YES
 
         return SPELL_CHECK_OK_NO
 
@@ -271,7 +282,9 @@ class SpellChecker:
             raise DictionaryNotFoundError(lang)
 
 
-def spell_check(add_project_word_callback: Callable[[str], None]) -> None:
+def spell_check(
+    project_dict: ProjectDict, add_project_word_callback: Callable[[str], None]
+) -> None:
     """Spell check the currently loaded file."""
     global _the_spell_checker
 
@@ -282,7 +295,7 @@ def spell_check(add_project_word_callback: Callable[[str], None]) -> None:
             logger.error(f"Dictionary not found for language: {exc.language}")
             return
 
-    bad_spellings = _the_spell_checker.spell_check_file()
+    bad_spellings = _the_spell_checker.spell_check_file(project_dict)
 
     def process_spelling(checker_entry: CheckerEntry) -> None:
         """Process the spelling error by adding the word to the project dictionary."""
@@ -291,7 +304,7 @@ def spell_check(add_project_word_callback: Callable[[str], None]) -> None:
 
     checker_dialog = CheckerDialog.show_dialog(
         "Spelling Check Results",
-        lambda: spell_check(add_project_word_callback),
+        lambda: spell_check(project_dict, add_project_word_callback),
         process_spelling,
     )
     frame = checker_dialog.header_frame
@@ -311,8 +324,9 @@ def spell_check(add_project_word_callback: Callable[[str], None]) -> None:
         end_rowcol = IndexRowCol(
             maintext().index(spelling.rowcol.index() + f"+{spelling.count}c")
         )
+        bad_str = " ***" if spelling.bad_word else ""
         checker_dialog.add_entry(
-            f"{spelling.word} ({spelling.frequency})",
+            f"{spelling.word} ({spelling.frequency})" + bad_str,
             IndexRange(spelling.rowcol, end_rowcol),
             0,
             spelling.count,
