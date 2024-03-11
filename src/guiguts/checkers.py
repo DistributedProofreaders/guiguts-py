@@ -48,7 +48,6 @@ class CheckerDialog(ToplevelDialog):
         title: str,
         rerun_command: Callable[[], None],
         process_command: Optional[Callable[[CheckerEntry], None]] = None,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -58,7 +57,7 @@ class CheckerDialog(ToplevelDialog):
             rerun_command: Function to call to re-run the check.
             process_command: Function to call to "process" the current error, e.g. swap he/be
         """
-        super().__init__(title, *args, **kwargs)
+        super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
         self.header_frame = ttk.Frame(self.top_frame, padding=2)
         self.header_frame.grid(column=0, row=0, sticky="NSEW")

@@ -58,7 +58,7 @@ class Root(tk.Tk):
         self.tk.call("set", "tcl_wordchars", r"[[:alnum:]'’]")
         self.tk.call("set", "tcl_nonwordchars", r"[^[:alnum:]'’]")
 
-    def _handle_config(self, event: tk.Event) -> None:
+    def _handle_config(self, _event: tk.Event) -> None:
         """Callback from root dialog <Configure> event.
 
         By setting flag now, and queuing calls to _save_config,

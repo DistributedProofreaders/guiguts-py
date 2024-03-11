@@ -3,9 +3,9 @@
 import importlib.resources
 import logging
 from pathlib import Path
-import regex as re
 from tkinter import ttk
 from typing import Callable
+import regex as re
 
 from guiguts.data import dictionaries
 from guiguts.file import ProjectDict
@@ -127,7 +127,7 @@ class SpellChecker:
         """
         word_status = self.spell_check_word_apos(word, project_dict)
         # If it's a bad word or in the dictionary, we're done
-        if word_status == SPELL_CHECK_OK_BAD or word_status == SPELL_CHECK_OK_YES:
+        if word_status in (SPELL_CHECK_OK_BAD, SPELL_CHECK_OK_YES):
             return word_status
 
         # Some languages use l', quest', etc., before word.
@@ -206,7 +206,7 @@ class SpellChecker:
         """
         word_status = self.spell_check_word_case(word, project_dict)
         # If it's a bad word or in the dictionary, we're done
-        if word_status == SPELL_CHECK_OK_BAD or word_status == SPELL_CHECK_OK_YES:
+        if word_status in (SPELL_CHECK_OK_BAD, SPELL_CHECK_OK_YES):
             return word_status
 
         # Otherwise, try swapping apostrophes if there are any, and re-check
@@ -238,23 +238,23 @@ class SpellChecker:
 
         lower_word = word.lower()
         if lower_word == word:
-            lower_word == ""
+            lower_word = ""
         # Caution converting to title case - we want "LONDON" to match "London",
         # but we don't want "london" to match London, so leave first letter case
         # as-is, and lowercase the rest
         if len(word) > 1:
             title_word = word[0:1] + word[1:].lower()
             if title_word == word:
-                title_word == ""
+                title_word = ""
         else:
             title_word = ""
 
         # Now check global & project dictionaries for good words
-        for dict in (self.dictionary, project_dict.good_words):
+        for dictionary in (self.dictionary, project_dict.good_words):
             if (
-                word in dict
-                or (lower_word and lower_word in dict)
-                or (title_word and title_word in dict)
+                word in dictionary
+                or (lower_word and lower_word in dictionary)
+                or (title_word and title_word in dictionary)
             ):
                 return SPELL_CHECK_OK_YES
 
