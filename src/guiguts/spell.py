@@ -307,13 +307,26 @@ def spell_check(
         lambda: spell_check(project_dict, add_project_word_callback),
         process_spelling,
     )
-    frame = checker_dialog.header_frame
+    frame = ttk.Frame(checker_dialog.header_frame)
+    frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
     project_dict_button = ttk.Button(
         frame,
         text="Add to Project Dict",
         command=lambda: checker_dialog.process_remove_entry_current(all_matching=True),
     )
-    project_dict_button.grid(column=0, row=1, sticky="NSW")
+    project_dict_button.grid(column=0, row=0, sticky="NSW")
+    skip_button = ttk.Button(
+        frame,
+        text="Skip",
+        command=lambda: checker_dialog.remove_entry_current(all_matching=False),
+    )
+    skip_button.grid(column=1, row=0, sticky="NSW")
+    skip_all_button = ttk.Button(
+        frame,
+        text="Skip All",
+        command=lambda: checker_dialog.remove_entry_current(all_matching=True),
+    )
+    skip_all_button.grid(column=2, row=0, sticky="NSW")
 
     checker_dialog.reset()
     # Construct opening line describing the search
