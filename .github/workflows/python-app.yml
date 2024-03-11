@@ -30,6 +30,10 @@ jobs:
     - name: Lint with flake8
       run: |
         poetry run flake8 ./src
+    - name: Lint with pylint
+      run: |
+        poetry run pylint --recursive y .
+      continue-on-error: true
     - name: Check format with black
       run: |
         poetry run black --check --verbose ./src
