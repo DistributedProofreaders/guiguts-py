@@ -434,13 +434,13 @@ class MainText(tk.Text):
         """Clear any current text selection."""
         self.tag_remove("sel", "1.0", tk.END)
 
-    def do_select(self, range: IndexRange) -> None:
+    def do_select(self, _range: IndexRange) -> None:
         """Select the given range of text.
 
         Args:
             IndexRange containing start and end of text to be selected."""
         self.clear_selection()
-        self.tag_add("sel", range.start.index(), range.end.index())
+        self.tag_add("sel", _range.start.index(), _range.end.index())
 
     def selected_ranges(self) -> list[IndexRange]:
         """Get the ranges of text marked with the `sel` tag.
@@ -488,8 +488,8 @@ class MainText(tk.Text):
         """Delete the selected column text."""
         if not (ranges := self.selected_ranges()):
             return
-        for range in ranges:
-            self.delete(range.start.index(), range.end.index())
+        for _range in ranges:
+            self.delete(_range.start.index(), _range.end.index())
 
     def column_copy_cut(self, cut: bool = False) -> None:
         """Copy or cut the selected text to the clipboard.
@@ -502,9 +502,9 @@ class MainText(tk.Text):
         if not (ranges := self.selected_ranges()):
             return
         self.clipboard_clear()
-        for range in ranges:
-            start = range.start.index()
-            end = range.end.index()
+        for _range in ranges:
+            start = _range.start.index()
+            end = _range.end.index()
             string = self.get(start, end)
             if cut:
                 self.delete(start, end)
@@ -787,7 +787,7 @@ class MainText(tk.Text):
     def find_matches(
         self,
         search_string: str,
-        range: IndexRange,
+        text_range: IndexRange,
         nocase: bool,
         regexp: bool,
         wholeword: bool,
@@ -796,7 +796,7 @@ class MainText(tk.Text):
 
         Args:
             search_string: String/regex to be searched for.
-            range: Range in which to search.
+            text_range: Range in which to search.
             nocase: True to ignore case.
             regexp: True if string is a regex; False for exact string match.
             wholeword: True to only search for whole words (i.e. word boundary at start & end).
@@ -805,8 +805,8 @@ class MainText(tk.Text):
             List of FindMatch objects, each containing index of start and count of characters in a match.
             Empty list if no matches.
         """
-        start_index = range.start.index()
-        stop_index = range.end.index()
+        start_index = text_range.start.index()
+        stop_index = text_range.end.index()
         if regexp:
             search_string = convert_to_tcl_regex(search_string)
         if wholeword:
