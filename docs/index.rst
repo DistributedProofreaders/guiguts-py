@@ -56,3 +56,13 @@ Widgets
 =======
     
 .. automodule:: widgets
+ 
+Root
+====
+    
+.. automodule:: root
+ 
+Project Dict
+============
+    
+.. automodule:: project_dict

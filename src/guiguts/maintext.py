@@ -1,4 +1,4 @@
-"""Define key components of main window"""
+"""Handle main text widget"""
 
 
 import logging

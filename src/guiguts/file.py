@@ -10,10 +10,11 @@ from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 from guiguts.maintext import maintext, PAGE_FLAG_TAG
-from guiguts.mainwindow import root
 import guiguts.page_details as page_details
 from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
 from guiguts.preferences import preferences
+from guiguts.project_dict import ProjectDict, GOOD_WORDS_FILENAME, BAD_WORDS_FILENAME
+from guiguts.root import root
 from guiguts.spell import spell_check_clear_dictionary
 from guiguts.utilities import (
     is_windows,
@@ -75,6 +76,7 @@ class File:
         self._image_dir = ""
         self._languages_callback = languages_callback
         self.page_details = PageDetails()
+        self.project_dict = ProjectDict()
 
     @property
     def filename(self) -> str:
@@ -203,6 +205,7 @@ class File:
 
         self.page_details.recalculate()
         self.store_recent_file(filename)
+        self.project_dict.load(filename)
         # Load complete, so set filename (including side effects)
         self.filename = filename
 
@@ -232,8 +235,7 @@ class File:
         ):
             self.store_recent_file(fn)
             self.filename = fn
-            maintext().do_save(fn)
-            self.save_bin(fn)
+            self.save_file(fn)
         grab_focus(root(), maintext())
         return fn
 
@@ -286,7 +288,7 @@ class File:
         binfile_name = bin_name(basename)
         bin_dict = self.create_bin()
         with open(binfile_name, "w") as fp:
-            json.dump(bin_dict, fp, indent=2)
+            json.dump(bin_dict, fp, indent=2, ensure_ascii=False)
 
     def interpret_bin(self, bin_dict: BinDict) -> bool:
         """Interpret bin file dictionary and set necessary variables, etc.
@@ -663,6 +665,31 @@ class File:
             return PAGE_FLAGS_SOME if flag_not_found else PAGE_FLAGS_ALL
         else:
             return PAGE_FLAGS_NONE
+
+    def add_good_and_bad_words(self) -> None:
+        """Load the words from the good and bad words files into the project dictionary."""
+
+        gw_load = self.project_dict.add_good_bad_words(
+            self.filename, load_good_words=True
+        )
+        bw_load = self.project_dict.add_good_bad_words(
+            self.filename, load_good_words=False
+        )
+        if gw_load or bw_load:
+            self.project_dict.save(self.filename)
+        else:
+            logger.error(
+                f"Neither {GOOD_WORDS_FILENAME} nor {BAD_WORDS_FILENAME} was found"
+            )
+
+    def add_good_word_to_project_dictionary(self, word: str) -> None:
+        """Add a good word to the project dictionary & save it.
+
+        Args:
+            word: The word to be added.
+        """
+        self.project_dict.add_good_word(word)
+        self.project_dict.save(self.filename)
 
 
 def page_mark_previous(mark: str) -> str:

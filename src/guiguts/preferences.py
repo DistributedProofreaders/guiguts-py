@@ -133,7 +133,7 @@ class Preferences:
         if not os.path.isdir(self.prefsdir):
             os.mkdir(self.prefsdir)
         with open(self.prefsfile, "w") as fp:
-            json.dump(self.dict, fp, indent=2)
+            json.dump(self.dict, fp, indent=2, ensure_ascii=False)
 
     def load(self) -> None:
         """Load preferences dictionary from JSON file."""

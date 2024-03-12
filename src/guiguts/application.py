@@ -17,7 +17,6 @@ if __name__ == "__main__" and __package__ is None:
 from guiguts.file import File, NUM_RECENT_FILES
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
-    root,
     MainWindow,
     Menu,
     menubar,
@@ -25,9 +24,9 @@ from guiguts.mainwindow import (
     statusbar,
     ErrorHandler,
 )
-
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences
+from guiguts.root import root
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.utilities import is_mac
@@ -306,9 +305,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.menu_file.add_button(
             "~Close", self.close_file, "Cmd+W" if is_mac() else ""
         )
-        page_menu = Menu(self.menu_file, "~Page Markers")
+        page_menu = Menu(self.menu_file, "Page ~Markers")
         page_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)
         page_menu.add_button("~Remove Page Marker Flags", self.file.remove_page_flags)
+        page_menu = Menu(self.menu_file, "~Project")
+        page_menu.add_button(
+            "~Add Good/Bad Words to Project Dictionary",
+            self.file.add_good_and_bad_words,
+        )
         if not is_mac():
             self.menu_file.add_separator()
             self.menu_file.add_button("E~xit", self.quit_program, "")
@@ -388,7 +392,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         menu_edit = Menu(menubar(), "~Tools")
-        menu_edit.add_button("~Spelling Check", spell_check)
+        menu_edit.add_button(
+            "~Spelling Check",
+            lambda: spell_check(
+                self.file.project_dict, self.file.add_good_word_to_project_dictionary
+            ),
+        )
 
     def init_view_menu(self) -> None:
         """Create the View menu."""

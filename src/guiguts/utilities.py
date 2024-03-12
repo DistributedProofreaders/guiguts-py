@@ -1,14 +1,18 @@
 """Handy utility functions"""
 
+import importlib.resources
 import json
 import platform
 import logging
+from pathlib import Path
 import os.path
 import regex as re
 from tkinter import _tkinter
 from typing import Any, Optional, Callable
 
 logger = logging.getLogger(__package__)
+
+TraversablePath = importlib.resources.abc.Traversable | Path
 
 # Flag so application code can detect if within a pytest run - only use if really needed
 # See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
@@ -66,6 +70,28 @@ def load_dict_from_json(filename: str) -> Optional[dict[str, Any]]:
                     f"Unable to load {filename} -- not valid JSON format\n" + str(exc)
                 )
     return None
+
+
+def load_wordfile_into_dict(path: TraversablePath, target_dict: dict) -> bool:
+    """Load a one-word-per-line word list file into the target dictionary.
+
+    Args:
+        path: File to be loaded - accepts either a pathlib Path or
+            an importlib.resources Traversable object.
+        target_dict: Dictionary to be populated.
+
+    Returns:
+        True if file opened successfully, False if file not found.
+    """
+    try:
+        with path.open("r", encoding="utf-8") as fp:
+            for line in fp:
+                word = line.strip()
+                if word:
+                    target_dict[word] = True
+        return True
+    except FileNotFoundError:
+        return False
 
 
 class IndexRowCol:
