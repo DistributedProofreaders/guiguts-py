@@ -2,11 +2,12 @@
 
 
 import logging
-import regex as re
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tk_font
 from typing import Any, Callable, Optional, Literal, Generator
+
+import regex as re
 
 from guiguts.preferences import preferences
 from guiguts.utilities import (
@@ -19,13 +20,6 @@ from guiguts.utilities import (
 
 logger = logging.getLogger(__package__)
 
-TEXTIMAGE_WINDOW_ROW = 0
-TEXTIMAGE_WINDOW_COL = 0
-SEPARATOR_ROW = 1
-SEPARATOR_COL = 0
-STATUSBAR_ROW = 2
-STATUSBAR_COL = 0
-MIN_PANE_WIDTH = 20
 TK_ANCHOR_MARK = "tk::anchor1"
 PAGE_FLAG_TAG = "PageFlag"
 
@@ -68,7 +62,7 @@ class TextLineNumbers(tk.Canvas):
         tk.Canvas.__init__(self, parent, *args, width=width, **kwargs)
         self.textwidget = text_widget
 
-    def redraw(self, *args: Any) -> None:
+    def redraw(self, *_args: Any) -> None:
         """Redraw line numbers."""
         self.delete("all")
         text_pos = self.winfo_width() - self.offset
@@ -291,7 +285,7 @@ class MainText(tk.Text):
         """
         self.modifiedCallbacks.append(func)
 
-    def modify_flag_changed_callback(self, *args: Any) -> None:
+    def modify_flag_changed_callback(self, *_args: Any) -> None:
         """This method is bound to <<Modified>> event which happens whenever
         the widget's modified flag is changed - not just when changed to True.
 
@@ -392,17 +386,17 @@ class MainText(tk.Text):
             line = maintext().get(f"{line_num}.0", f"{line_num}.0 lineend")
             yield line, line_num
 
-    def columnize_copy(self, *args: Any) -> None:
+    def columnize_copy(self, *_args: Any) -> None:
         """Columnize the current selection and copy it."""
         self.columnize_selection()
         self.column_copy_cut()
 
-    def columnize_cut(self, *args: Any) -> None:
+    def columnize_cut(self, *_args: Any) -> None:
         """Columnize the current selection and copy it."""
         self.columnize_selection()
         self.column_copy_cut(cut=True)
 
-    def columnize_paste(self, *args: Any) -> None:
+    def columnize_paste(self, *_args: Any) -> None:
         """Columnize the current selection, if any, and paste the clipboard contents."""
         self.columnize_selection()
         self.column_paste()
@@ -569,28 +563,28 @@ class MainText(tk.Text):
         rowcol = self.rowcol(f"{start_rowcol.index()} + {len(clipline)}c")
         self.set_insert_index(rowcol)
 
-    def smart_copy(self, *args: Any) -> str:
+    def smart_copy(self, *_args: Any) -> str:
         """Do column copy if multiple ranges selected, else default copy."""
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_copy_cut()
         return "break"  # Skip default behavior
 
-    def smart_cut(self, *args: Any) -> str:
+    def smart_cut(self, *_args: Any) -> str:
         """Do column cut if multiple ranges selected, else default cut."""
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_copy_cut(cut=True)
         return "break"  # Skip default behavior
 
-    def smart_paste(self, *args: Any) -> str:
+    def smart_paste(self, *_args: Any) -> str:
         """Do column paste if multiple ranges selected, else default paste."""
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_paste()
         return "break"  # Skip default behavior
 
-    def smart_delete(self, *args: Any) -> str:
+    def smart_delete(self, *_args: Any) -> str:
         """Do column delete if multiple ranges selected, else default backspace."""
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
@@ -879,8 +873,7 @@ class MainText(tk.Text):
         m = re.match(r"(\W*\w)(.*)", s.lower(), flags=re.DOTALL)
         if m:
             return m.group(1).upper() + m.group(2)
-        else:
-            return s
+        return s
 
     def title_case_transformer(self, s: str) -> str:
         """Text transformer to convert a string to "Title Case"
@@ -911,15 +904,9 @@ class MainText(tk.Text):
 
         def capitalize_first_letter(match: re.regex.Match[str]) -> str:
             word = match.group()
-
-            # TODO: At the time this method was implemented, GG2 was not aware
-            # of the document language (`::main_lang()` in GG1 terms). When
-            # such support appears in GG2, we should add a test so that
-            # `exception_words` is only checked when the language is `en`.
             if word in exception_words:
                 return word
-            else:
-                return word.capitalize()
+            return word.capitalize()
 
         # Look for word characters either at the start of the string, or which
         # immediately follow whitespace or punctuation; then apply capitalization.

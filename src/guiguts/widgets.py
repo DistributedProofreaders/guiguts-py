@@ -1,9 +1,10 @@
 """Common code/classes relating to Tk widgets."""
 
-import regex as re
 import tkinter as tk
 from tkinter import simpledialog, ttk
 from typing import Any, Optional, TypeVar
+
+import regex as re
 
 from guiguts.preferences import preferences
 

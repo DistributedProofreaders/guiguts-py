@@ -4,12 +4,13 @@
 from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found]
 import logging
 import os.path
-from PIL import Image, ImageTk
-import regex as re
 import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Any, Callable, Optional
+
+from PIL import Image, ImageTk
+import regex as re
 
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences
@@ -32,7 +33,6 @@ SEPARATOR_COL = 0
 STATUSBAR_ROW = 2
 STATUSBAR_COL = 0
 MIN_PANE_WIDTH = 20
-TK_ANCHOR_MARK = "tk::anchor1"
 
 
 class Menu(tk.Menu):
