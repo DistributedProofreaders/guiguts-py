@@ -41,12 +41,12 @@ class Guiguts:
 
         Creates windows and sets default preferences."""
 
-        self._parse_args()
+        self.parse_args()
 
-        self._logging_init()
+        self.logging_init()
         logger.info("Guiguts started")
 
-        self._initialize_preferences()
+        self.initialize_preferences()
 
         self.file = File(self.filename_changed, self.languages_changed)
 
@@ -56,9 +56,9 @@ class Guiguts:
         self.menu_file: Optional[
             Menu
         ] = None  # File menu is saved to allow deletion & re-creation
-        self._init_menus()
+        self.init_menus()
 
-        self._init_statusbar(statusbar())
+        self.init_statusbar(statusbar())
 
         self.file.languages = preferences.get("DefaultLanguages")
 
@@ -69,7 +69,7 @@ class Guiguts:
         # or focus will not return to maintext on Windows
         root().update_idletasks()
 
-        self._logging_add_gui()
+        self.logging_add_gui()
         logger.info("GUI initialized")
 
         preferences.run_callbacks()
@@ -82,7 +82,7 @@ class Guiguts:
 
         root().protocol("WM_DELETE_WINDOW", check_save_and_destroy)
 
-    def _parse_args(self) -> None:
+    def parse_args(self) -> None:
         """Parse command line args"""
         parser = argparse.ArgumentParser(
             prog="guiguts", description="Guiguts is an ebook creation tool"
@@ -165,7 +165,7 @@ class Guiguts:
 
     def filename_changed(self) -> None:
         """Handle side effects needed when filename changes."""
-        self._init_file_menu()  # Recreate file menu to reflect recent files
+        self.init_file_menu()  # Recreate file menu to reflect recent files
         self.update_title()
         if self.auto_image:
             self.image_dir_check()
@@ -244,7 +244,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
 
-    def _initialize_preferences(self) -> None:
+    def initialize_preferences(self) -> None:
         """Set default preferences and load settings from the GGPrefs file."""
 
         def set_auto_image(value: bool) -> None:
@@ -273,21 +273,21 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.load()
 
     # Lay out menus
-    def _init_menus(self) -> None:
+    def init_menus(self) -> None:
         """Create all the menus."""
-        self._init_file_menu()
-        self._init_edit_menu()
-        self._init_search_menu()
-        self._init_tools_menu()
-        self._init_view_menu()
-        self._init_help_menu()
-        self._init_os_menu()
+        self.init_file_menu()
+        self.init_edit_menu()
+        self.init_search_menu()
+        self.init_tools_menu()
+        self.init_view_menu()
+        self.init_help_menu()
+        self.init_os_menu()
 
         if is_mac():
             root().createcommand("tk::mac::OpenDocument", self.open_document)
             root().createcommand("tk::mac::Quit", self.quit_program)
 
-    def _init_file_menu(self) -> None:
+    def init_file_menu(self) -> None:
         """(Re-)create the File menu."""
         try:
             self.menu_file.delete(0, "end")  # type:ignore[union-attr]
@@ -297,7 +297,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.menu_file.add_button(
             "~Open...", lambda *args: self.open_file(), "Cmd/Ctrl+O"
         )
-        self._init_file_recent_menu(self.menu_file)
+        self.init_file_recent_menu(self.menu_file)
         self.menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
         self.menu_file.add_button(
             "Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S"
@@ -317,7 +317,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             self.menu_file.add_separator()
             self.menu_file.add_button("E~xit", self.quit_program, "")
 
-    def _init_file_recent_menu(self, parent: Menu) -> None:
+    def init_file_recent_menu(self, parent: Menu) -> None:
         """Create the Recent Documents menu."""
         recent_menu = Menu(parent, "Recent Doc~uments")
         for count, file in enumerate(preferences.get("RecentFiles"), start=1):
@@ -325,7 +325,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
                 f"~{count}: {file}", lambda fn=file: self.open_file(fn)
             )
 
-    def _init_edit_menu(self) -> None:
+    def init_edit_menu(self) -> None:
         """Create the Edit menu."""
         menu_edit = Menu(menubar(), "~Edit")
         menu_edit.add_button("~Undo", "<<Undo>>", "Cmd/Ctrl+Z")
@@ -370,7 +370,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "",
         )
 
-    def _init_search_menu(self) -> None:
+    def init_search_menu(self) -> None:
         """Create the View menu."""
         menu_view = Menu(menubar(), "~Search")
         menu_view.add_button(
@@ -389,7 +389,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
 
-    def _init_tools_menu(self) -> None:
+    def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         menu_edit = Menu(menubar(), "~Tools")
         menu_edit.add_button(
@@ -399,7 +399,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             ),
         )
 
-    def _init_view_menu(self) -> None:
+    def init_view_menu(self) -> None:
         """Create the View menu."""
         menu_view = Menu(menubar(), "~View")
         menu_view.add_checkbox(
@@ -412,13 +412,13 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view.add_button("~Hide Image", self.hide_image)
         menu_view.add_button("~Message Log", self.mainwindow.messagelog.show)
 
-    def _init_help_menu(self) -> None:
+    def init_help_menu(self) -> None:
         """Create the Help menu."""
         menu_help = Menu(menubar(), "~Help")
         menu_help.add_button("Guiguts ~Manual", self.show_help_manual)
         menu_help.add_button("About ~Guiguts", self.help_about)
 
-    def _init_os_menu(self) -> None:
+    def init_os_menu(self) -> None:
         """Create the OS-specific menu.
 
         Currently only does anything on Macs
@@ -428,7 +428,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             Menu(menubar(), "Window", name="window")
 
     # Lay out statusbar
-    def _init_statusbar(self, the_statusbar: StatusBar) -> None:
+    def init_statusbar(self, the_statusbar: StatusBar) -> None:
         """Add labels to initialize the statusbar"""
 
         def rowcol_str() -> str:
@@ -484,7 +484,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "languages label", "<ButtonRelease-1>", self.file.set_languages
         )
 
-    def _logging_init(self) -> None:
+    def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""
         if self.args.debug:
             log_level = logging.DEBUG
@@ -501,7 +501,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-    def _logging_add_gui(self) -> None:
+    def logging_add_gui(self) -> None:
         """Add handlers to display log messages via the GUI.
 
         Assumes mainwindow has created the message_log handler.
