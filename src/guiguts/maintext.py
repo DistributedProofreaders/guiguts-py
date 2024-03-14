@@ -62,7 +62,7 @@ class TextLineNumbers(tk.Canvas):
         tk.Canvas.__init__(self, parent, *args, width=width, **kwargs)
         self.textwidget = text_widget
 
-    def redraw(self, *_args: Any) -> None:
+    def redraw(self) -> None:
         """Redraw line numbers."""
         self.delete("all")
         text_pos = self.winfo_width() - self.offset
@@ -133,13 +133,21 @@ class MainText(tk.Text):
 
         # Set up response to text being modified
         self.modifiedCallbacks: list[Callable[[], None]] = []
-        self.bind_event("<<Modified>>", self.modify_flag_changed_callback)
+        self.bind_event(
+            "<<Modified>>", lambda _event: self.modify_flag_changed_callback()
+        )
 
-        self.bind_event("<<Cut>>", self.smart_cut, force_break=False)
-        self.bind_event("<<Copy>>", self.smart_copy, force_break=False)
-        self.bind_event("<<Paste>>", self.smart_paste, force_break=False)
-        self.bind_event("<BackSpace>", self.smart_delete, force_break=False)
-        self.bind_event("<Delete>", self.smart_delete, force_break=False)
+        self.bind_event("<<Cut>>", lambda _event: self.smart_cut(), force_break=False)
+        self.bind_event("<<Copy>>", lambda _event: self.smart_copy(), force_break=False)
+        self.bind_event(
+            "<<Paste>>", lambda _event: self.smart_paste(), force_break=False
+        )
+        self.bind_event(
+            "<BackSpace>", lambda _event: self.smart_delete(), force_break=False
+        )
+        self.bind_event(
+            "<Delete>", lambda _event: self.smart_delete(), force_break=False
+        )
 
         # Column selection uses Alt key on Windows/Linux, Option key on macOS
         # Key Release is reported as Alt_L on all platforms
@@ -147,15 +155,17 @@ class MainText(tk.Text):
         self.bind_event(f"<{modifier}-ButtonPress-1>", self.column_select_click)
         self.bind_event(f"<{modifier}-B1-Motion>", self.column_select_motion)
         self.bind_event(f"<{modifier}-ButtonRelease-1>", self.column_select_release)
-        self.bind_event("<KeyRelease-Alt_L>", lambda e: self.column_select_stop())
+        self.bind_event("<KeyRelease-Alt_L>", lambda _event: self.column_select_stop())
         self.column_selecting = False
 
         # Add common Mac key bindings for beginning/end of file
         if is_mac():
-            self.bind_event("<Command-Up>", lambda e: self.move_to_start())
-            self.bind_event("<Command-Down>", lambda e: self.move_to_end())
-            self.bind_event("<Command-Shift-Up>", lambda e: self.select_to_start())
-            self.bind_event("<Command-Shift-Down>", lambda e: self.select_to_end())
+            self.bind_event("<Command-Up>", lambda _event: self.move_to_start())
+            self.bind_event("<Command-Down>", lambda _event: self.move_to_end())
+            self.bind_event("<Command-Shift-Up>", lambda _event: self.select_to_start())
+            self.bind_event(
+                "<Command-Shift-Down>", lambda e_event: self.select_to_end()
+            )
 
         # Configure tags
         self.tag_configure(PAGE_FLAG_TAG, background="yellow")
@@ -270,8 +280,8 @@ class MainText(tk.Text):
         lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
         uk = re.sub("[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
-        self.bind_event(lk, lambda event: handler(event))
-        self.bind_event(uk, lambda event: handler(event))
+        self.bind_event(lk, handler)
+        self.bind_event(uk, handler)
 
     #
     # Handle "modified" flag
@@ -285,7 +295,7 @@ class MainText(tk.Text):
         """
         self.modifiedCallbacks.append(func)
 
-    def modify_flag_changed_callback(self, *_args: Any) -> None:
+    def modify_flag_changed_callback(self) -> None:
         """This method is bound to <<Modified>> event which happens whenever
         the widget's modified flag is changed - not just when changed to True.
 
@@ -386,17 +396,17 @@ class MainText(tk.Text):
             line = maintext().get(f"{line_num}.0", f"{line_num}.0 lineend")
             yield line, line_num
 
-    def columnize_copy(self, *_args: Any) -> None:
+    def columnize_copy(self) -> None:
         """Columnize the current selection and copy it."""
         self.columnize_selection()
         self.column_copy_cut()
 
-    def columnize_cut(self, *_args: Any) -> None:
+    def columnize_cut(self) -> None:
         """Columnize the current selection and copy it."""
         self.columnize_selection()
         self.column_copy_cut(cut=True)
 
-    def columnize_paste(self, *_args: Any) -> None:
+    def columnize_paste(self) -> None:
         """Columnize the current selection, if any, and paste the clipboard contents."""
         self.columnize_selection()
         self.column_paste()
@@ -563,28 +573,28 @@ class MainText(tk.Text):
         rowcol = self.rowcol(f"{start_rowcol.index()} + {len(clipline)}c")
         self.set_insert_index(rowcol)
 
-    def smart_copy(self, *_args: Any) -> str:
+    def smart_copy(self) -> str:
         """Do column copy if multiple ranges selected, else default copy."""
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_copy_cut()
         return "break"  # Skip default behavior
 
-    def smart_cut(self, *_args: Any) -> str:
+    def smart_cut(self) -> str:
         """Do column cut if multiple ranges selected, else default cut."""
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_copy_cut(cut=True)
         return "break"  # Skip default behavior
 
-    def smart_paste(self, *_args: Any) -> str:
+    def smart_paste(self) -> str:
         """Do column paste if multiple ranges selected, else default paste."""
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_paste()
         return "break"  # Skip default behavior
 
-    def smart_delete(self, *_args: Any) -> str:
+    def smart_delete(self) -> str:
         """Do column delete if multiple ranges selected, else default backspace."""
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen

@@ -217,7 +217,7 @@ class File:
         # Load complete, so set filename (including side effects)
         self.filename = filename
 
-    def save_file(self, *_args: Any) -> str:
+    def save_file(self) -> str:
         """Save the current file.
 
         Returns:
@@ -229,7 +229,7 @@ class File:
             return self.filename
         return self.save_as_file()
 
-    def save_as_file(self, *_args: Any) -> str:
+    def save_as_file(self) -> str:
         """Save current text as new file.
 
         Returns:
@@ -242,7 +242,7 @@ class File:
         ):
             self.store_recent_file(fn)
             self.filename = fn
-            self.save_file(fn)
+            self.save_file()
         grab_focus(root(), maintext())
         return fn
 

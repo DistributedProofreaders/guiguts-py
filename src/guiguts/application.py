@@ -6,7 +6,7 @@ import argparse
 import logging
 import os.path
 from tkinter import messagebox
-from typing import Any, Optional
+from typing import Optional
 import webbrowser
 
 
@@ -181,12 +181,12 @@ class Guiguts:
         filetitle = " - " + self.file.filename if self.file.filename else ""
         root().title("Guiguts 2.0" + modtitle + filetitle)
 
-    def quit_program(self, *_args: Any) -> None:
+    def quit_program(self) -> None:
         """Exit the program."""
         if self.file.check_save():
             root().quit()
 
-    def help_about(self, *_args: Any) -> None:
+    def help_about(self) -> None:
         """Display a 'Help About' dialog."""
         help_message = """Guiguts - an application to support creation of ebooks for PG
 
@@ -211,7 +211,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         messagebox.showinfo(title="About Guiguts", message=help_message)
 
-    def show_page_details_dialog(self, *_args: Any) -> None:
+    def show_page_details_dialog(self) -> None:
         """Show the page details display/edit dialog."""
         PageDetailsDialog(root(), self.file.page_details)
 
@@ -231,7 +231,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         if self.file.open_file(filename):
             self.mainwindow.clear_image()
 
-    def close_file(self, *_args: Any) -> None:
+    def close_file(self) -> None:
         """Close currently loaded file and associated image."""
         self.file.close_file()
         self.mainwindow.clear_image()
@@ -240,7 +240,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Load image corresponding to current cursor position"""
         self.mainwindow.load_image(self.file.get_current_image_path())
 
-    def show_help_manual(self, *_args: Any) -> None:
+    def show_help_manual(self) -> None:
         """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
 
@@ -294,9 +294,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         except AttributeError:
             self.menu_file = Menu(menubar(), "~File")
         assert self.menu_file is not None
-        self.menu_file.add_button(
-            "~Open...", lambda *args: self.open_file(), "Cmd/Ctrl+O"
-        )
+        self.menu_file.add_button("~Open...", self.open_file, "Cmd/Ctrl+O")
         self.init_file_recent_menu(self.menu_file)
         self.menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
         self.menu_file.add_button(
@@ -322,7 +320,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         recent_menu = Menu(parent, "Recent Doc~uments")
         for count, file in enumerate(preferences.get("RecentFiles"), start=1):
             recent_menu.add_button(
-                f"~{count}: {file}", lambda fn=file: self.open_file(fn)
+                f"~{count}: {file}",
+                lambda fn=file: self.open_file(fn),  # type:ignore[misc]
             )
 
     def init_edit_menu(self) -> None:
@@ -347,26 +346,24 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_edit.add_separator()
         menu_edit.add_button(
             "lo~wercase selection",
-            lambda *args: maintext().transform_selection(str.lower),
+            lambda: maintext().transform_selection(str.lower),
             "",
         )
         menu_edit.add_button(
             "~Sentence case selection",
-            lambda *args: maintext().transform_selection(
+            lambda: maintext().transform_selection(
                 maintext().sentence_case_transformer
             ),
             "",
         )
         menu_edit.add_button(
             "T~itle Case Selection",
-            lambda *args: maintext().transform_selection(
-                maintext().title_case_transformer
-            ),
+            lambda: maintext().transform_selection(maintext().title_case_transformer),
             "",
         )
         menu_edit.add_button(
             "UPP~ERCASE SELECTION",
-            lambda *args: maintext().transform_selection(str.upper),
+            lambda: maintext().transform_selection(str.upper),
             "",
         )
 
@@ -375,17 +372,17 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view = Menu(menubar(), "~Search")
         menu_view.add_button(
             "~Search & Replace...",
-            lambda *args: show_search_dialog(),
+            show_search_dialog,
             "Cmd/Ctrl+F",
         )
         menu_view.add_button(
             "Find ~Next",
-            lambda *args: find_next(),
+            find_next,
             "Cmd+G" if is_mac() else "F3",
         )
         menu_view.add_button(
             "Find ~Previous",
-            lambda *args: find_next(backwards=True),
+            lambda: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
 
