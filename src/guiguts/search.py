@@ -1,10 +1,11 @@
 """Search/Replace functionality"""
 
 import logging
-import regex as re
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Tuple, Optional
+
+import regex as re
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError

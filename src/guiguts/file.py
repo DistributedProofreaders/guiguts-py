@@ -4,14 +4,20 @@ import hashlib
 import json
 import logging
 import os.path
-import regex as re
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
+import regex as re
+
 from guiguts.maintext import maintext, PAGE_FLAG_TAG
-import guiguts.page_details as page_details
-from guiguts.page_details import PageDetail, PageDetails, PAGE_LABEL_PREFIX
+from guiguts.page_details import (
+    PageDetail,
+    PageDetails,
+    PAGE_LABEL_PREFIX,
+    STYLE_ARABIC,
+    STYLE_DITTO,
+)
 from guiguts.preferences import preferences
 from guiguts.project_dict import ProjectDict, GOOD_WORDS_FILENAME, BAD_WORDS_FILENAME
 from guiguts.root import root
@@ -44,6 +50,8 @@ PAGE_FLAGS_ALL = 2
 
 
 class BinDict(TypedDict):
+    """Dictionary for saving to bin file."""
+
     md5checksum: str
     pagedetails: PageDetails
     insertpos: str
@@ -209,7 +217,7 @@ class File:
         # Load complete, so set filename (including side effects)
         self.filename = filename
 
-    def save_file(self, *args: Any) -> str:
+    def save_file(self) -> str:
         """Save the current file.
 
         Returns:
@@ -219,10 +227,9 @@ class File:
             maintext().do_save(self.filename)
             self.save_bin(self.filename)
             return self.filename
-        else:
-            return self.save_as_file()
+        return self.save_as_file()
 
-    def save_as_file(self, *args: Any) -> str:
+    def save_as_file(self) -> str:
         """Save current text as new file.
 
         Returns:
@@ -235,7 +242,7 @@ class File:
         ):
             self.store_recent_file(fn)
             self.filename = fn
-            self.save_file(fn)
+            self.save_file()
         grab_focus(root(), maintext())
         return fn
 
@@ -403,7 +410,7 @@ class File:
         """
 
         self.page_details = PageDetails()
-        page_num_style = page_details.STYLE_ARABIC
+        page_num_style = STYLE_ARABIC
         page_num = "1"
 
         page_separator_regex = r"File:.+?([^/\\ ]+)\.(png|jpg)"
@@ -428,7 +435,7 @@ class File:
                 self.page_details[page] = PageDetail(
                     line_start, page_num_style, page_num
                 )
-                page_num_style = page_details.STYLE_DITTO
+                page_num_style = STYLE_DITTO
                 page_num = "+1"
 
             search_start = line_end
@@ -482,8 +489,7 @@ class File:
         mark = self.get_current_page_mark()
         if mark == "":
             return ""
-        else:
-            return img_from_page_mark(mark)
+        return img_from_page_mark(mark)
 
     def get_current_image_path(self) -> str:
         """Return the path of the image file for the page where the insert
@@ -516,8 +522,7 @@ class File:
         img = self.get_current_image_name()
         if img == "":
             return ""
-        else:
-            return self.page_details[img]["label"]
+        return self.page_details[img]["label"]
 
     def set_languages(self) -> None:
         """Allow the user to set languages.
@@ -663,8 +668,7 @@ class File:
             maintext().set_modified(True)  # Bin file needs saving
         if flag_found:
             return PAGE_FLAGS_SOME if flag_not_found else PAGE_FLAGS_ALL
-        else:
-            return PAGE_FLAGS_NONE
+        return PAGE_FLAGS_NONE
 
     def add_good_and_bad_words(self) -> None:
         """Load the words from the good and bad words files into the project dictionary."""

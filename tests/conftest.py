@@ -1,4 +1,4 @@
-"""Configure pytest"""
+"""Configure pytest."""
 
 import pytest
 
@@ -10,4 +10,4 @@ def pytest_configure(config: pytest.Config) -> None:
 
     See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
     """
-    guiguts.utilities._called_from_test = True
+    guiguts.utilities.called_from_test = True

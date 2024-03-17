@@ -6,9 +6,10 @@ import platform
 import logging
 from pathlib import Path
 import os.path
-import regex as re
 from tkinter import _tkinter
 from typing import Any, Optional, Callable
+
+import regex as re
 
 logger = logging.getLogger(__package__)
 
@@ -16,7 +17,7 @@ TraversablePath = importlib.resources.abc.Traversable | Path
 
 # Flag so application code can detect if within a pytest run - only use if really needed
 # See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
-_called_from_test = False
+called_from_test = False
 
 
 #

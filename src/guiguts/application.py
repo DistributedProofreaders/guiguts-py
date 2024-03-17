@@ -6,12 +6,8 @@ import argparse
 import logging
 import os.path
 from tkinter import messagebox
-from typing import Any
+from typing import Optional
 import webbrowser
-
-# Allow running this file directly during development
-if __name__ == "__main__" and __package__ is None:
-    __package__ == "guiguts"
 
 
 from guiguts.file import File, NUM_RECENT_FILES
@@ -57,6 +53,9 @@ class Guiguts:
         self.mainwindow = MainWindow()
         self.update_title()
 
+        self.menu_file: Optional[
+            Menu
+        ] = None  # File menu is saved to allow deletion & re-creation
         self.init_menus()
 
         self.init_statusbar(statusbar())
@@ -182,12 +181,12 @@ class Guiguts:
         filetitle = " - " + self.file.filename if self.file.filename else ""
         root().title("Guiguts 2.0" + modtitle + filetitle)
 
-    def quit_program(self, *args: Any) -> None:
+    def quit_program(self) -> None:
         """Exit the program."""
         if self.file.check_save():
             root().quit()
 
-    def help_about(self, *args: Any) -> None:
+    def help_about(self) -> None:
         """Display a 'Help About' dialog."""
         help_message = """Guiguts - an application to support creation of ebooks for PG
 
@@ -212,7 +211,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         messagebox.showinfo(title="About Guiguts", message=help_message)
 
-    def show_page_details_dialog(self, *args: Any) -> None:
+    def show_page_details_dialog(self) -> None:
         """Show the page details display/edit dialog."""
         PageDetailsDialog(root(), self.file.page_details)
 
@@ -232,7 +231,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         if self.file.open_file(filename):
             self.mainwindow.clear_image()
 
-    def close_file(self, *args: Any) -> None:
+    def close_file(self) -> None:
         """Close currently loaded file and associated image."""
         self.file.close_file()
         self.mainwindow.clear_image()
@@ -241,7 +240,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Load image corresponding to current cursor position"""
         self.mainwindow.load_image(self.file.get_current_image_path())
 
-    def show_help_manual(self, *args: Any) -> None:
+    def show_help_manual(self) -> None:
         """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
 
@@ -291,12 +290,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_file_menu(self) -> None:
         """(Re-)create the File menu."""
         try:
-            self.menu_file.delete(0, "end")  # type:ignore[has-type]
+            self.menu_file.delete(0, "end")  # type:ignore[union-attr]
         except AttributeError:
             self.menu_file = Menu(menubar(), "~File")
-        self.menu_file.add_button(
-            "~Open...", lambda *args: self.open_file(), "Cmd/Ctrl+O"
-        )
+        assert self.menu_file is not None
+        self.menu_file.add_button("~Open...", self.open_file, "Cmd/Ctrl+O")
         self.init_file_recent_menu(self.menu_file)
         self.menu_file.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
         self.menu_file.add_button(
@@ -322,7 +320,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         recent_menu = Menu(parent, "Recent Doc~uments")
         for count, file in enumerate(preferences.get("RecentFiles"), start=1):
             recent_menu.add_button(
-                f"~{count}: {file}", lambda fn=file: self.open_file(fn)
+                f"~{count}: {file}",
+                lambda fn=file: self.open_file(fn),  # type:ignore[misc]
             )
 
     def init_edit_menu(self) -> None:
@@ -347,26 +346,24 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_edit.add_separator()
         menu_edit.add_button(
             "lo~wercase selection",
-            lambda *args: maintext().transform_selection(str.lower),
+            lambda: maintext().transform_selection(str.lower),
             "",
         )
         menu_edit.add_button(
             "~Sentence case selection",
-            lambda *args: maintext().transform_selection(
+            lambda: maintext().transform_selection(
                 maintext().sentence_case_transformer
             ),
             "",
         )
         menu_edit.add_button(
             "T~itle Case Selection",
-            lambda *args: maintext().transform_selection(
-                maintext().title_case_transformer
-            ),
+            lambda: maintext().transform_selection(maintext().title_case_transformer),
             "",
         )
         menu_edit.add_button(
             "UPP~ERCASE SELECTION",
-            lambda *args: maintext().transform_selection(str.upper),
+            lambda: maintext().transform_selection(str.upper),
             "",
         )
 
@@ -375,17 +372,17 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view = Menu(menubar(), "~Search")
         menu_view.add_button(
             "~Search & Replace...",
-            lambda *args: show_search_dialog(),
+            show_search_dialog,
             "Cmd/Ctrl+F",
         )
         menu_view.add_button(
             "Find ~Next",
-            lambda *args: find_next(),
+            find_next,
             "Cmd+G" if is_mac() else "F3",
         )
         menu_view.add_button(
             "Find ~Previous",
-            lambda *args: find_next(backwards=True),
+            lambda: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
 
@@ -428,7 +425,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             Menu(menubar(), "Window", name="window")
 
     # Lay out statusbar
-    def init_statusbar(self, statusbar: StatusBar) -> None:
+    def init_statusbar(self, the_statusbar: StatusBar) -> None:
         """Add labels to initialize the statusbar"""
 
         def rowcol_str() -> str:
@@ -436,47 +433,51 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             row, col = maintext().get_insert_index().rowcol()
             return f"L:{row} C:{col}"
 
-        statusbar.add("rowcol", update=rowcol_str)
-        statusbar.add_binding("rowcol", "<ButtonRelease-1>", self.file.goto_line)
-        statusbar.add_binding(
+        the_statusbar.add("rowcol", update=rowcol_str)
+        the_statusbar.add_binding("rowcol", "<ButtonRelease-1>", self.file.goto_line)
+        the_statusbar.add_binding(
             "rowcol", "<ButtonRelease-3>", maintext().toggle_line_numbers
         )
 
-        statusbar.add(
+        the_statusbar.add(
             "img",
             update=lambda: "Img: " + self.file.get_current_image_name(),
         )
-        statusbar.add_binding("img", "<ButtonRelease-1>", self.file.goto_image)
+        the_statusbar.add_binding("img", "<ButtonRelease-1>", self.file.goto_image)
 
-        statusbar.add("prev img", text="<", width=1)
-        statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
+        the_statusbar.add("prev img", text="<", width=1)
+        the_statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
 
-        statusbar.add("see img", text="See Img", width=9)
-        statusbar.add_binding(
+        the_statusbar.add("see img", text="See Img", width=9)
+        the_statusbar.add_binding(
             "see img",
             "<ButtonRelease-1>",
             self.show_image,
         )
-        statusbar.add_binding(
+        the_statusbar.add_binding(
             "see img", "<ButtonRelease-3>", self.file.choose_image_dir
         )
-        statusbar.add_binding("see img", "<Double-Button-1>", self.toggle_auto_image)
+        the_statusbar.add_binding(
+            "see img", "<Double-Button-1>", self.toggle_auto_image
+        )
 
-        statusbar.add("next img", text=">", width=1)
-        statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
+        the_statusbar.add("next img", text=">", width=1)
+        the_statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
 
-        statusbar.add(
+        the_statusbar.add(
             "page label",
             text="Lbl: ",
             update=lambda: "Lbl: " + self.file.get_current_page_label(),
         )
-        statusbar.add_binding("page label", "<ButtonRelease-1>", self.file.goto_page)
-        statusbar.add_binding(
+        the_statusbar.add_binding(
+            "page label", "<ButtonRelease-1>", self.file.goto_page
+        )
+        the_statusbar.add_binding(
             "page label", "<ButtonRelease-3>", self.show_page_details_dialog
         )
 
-        statusbar.add("languages label", text="Lang: ")
-        statusbar.add_binding(
+        the_statusbar.add("languages label", text="Lang: ")
+        the_statusbar.add_binding(
             "languages label", "<ButtonRelease-1>", self.file.set_languages
         )
 
