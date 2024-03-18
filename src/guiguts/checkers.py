@@ -129,6 +129,7 @@ class CheckerDialog(ToplevelDialog):
         """Reset dialog and associated structures & marks."""
         self.entries: list[CheckerEntry] = []
         self.count_linked_entries = 0  # Not the same as len(self.entries)
+        self.update_count_label()
         self.text.delete("1.0", tk.END)
         for mark in maintext().mark_names():
             if mark.startswith(MARK_PREFIX):
@@ -174,6 +175,12 @@ class CheckerDialog(ToplevelDialog):
             maintext().mark_set(
                 self._mark_from_rowcol(text_range.end), text_range.end.index()
             )
+            # If none selected, select the first message with a text range
+            if self.current_entry_index() is None:
+                for index, entry in enumerate(self.entries):
+                    if entry.text_range:
+                        self.select_entry(index)
+                        break
         self.update_count_label()
 
     def update_count_label(self) -> None:
@@ -302,11 +309,16 @@ class CheckerDialog(ToplevelDialog):
                 # Work in reverse since deleting from list while iterating
                 for ii in range(len(self.entries) - 1, -1, -1):
                     if self.entries[ii].text == del_text:
+                        if self.entries[ii].text_range:
+                            self.count_linked_entries -= 1
                         del self.entries[ii]
                         self.text.delete(f"{ii+1}.0", f"{ii+2}.0")
             else:
+                if self.entries[entry_index].text_range:
+                    self.count_linked_entries -= 1
                 del self.entries[entry_index]
                 self.text.delete(f"{entry_index+1}.0", f"{entry_index+2}.0")
+            self.update_count_label()
             # Select line after first deleted line
             entry_rowcol = IndexRowCol(self.text.index(MARK_REMOVED_ENTRY))
             entry_index = min(entry_rowcol.row - 1, len(self.entries) - 1)
@@ -343,7 +355,6 @@ class CheckerDialog(ToplevelDialog):
         """
         self.highlight_entry(entry_index)
         self.text.mark_set(tk.INSERT, f"{entry_index+1}.0")
-        self.text.see(tk.INSERT)
         self.text.focus_set()
         entry = self.entries[entry_index]
         if entry.text_range is not None:
