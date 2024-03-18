@@ -342,6 +342,9 @@ class CheckerDialog(ToplevelDialog):
             event: Event object containing mouse click position.
         """
         self.highlight_entry(entry_index)
+        self.text.mark_set(tk.INSERT, f"{entry_index+1}.0")
+        self.text.see(tk.INSERT)
+        self.text.focus_set()
         entry = self.entries[entry_index]
         if entry.text_range is not None:
             start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
