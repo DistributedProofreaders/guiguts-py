@@ -304,8 +304,9 @@ def spell_check(
 
     checker_dialog = CheckerDialog.show_dialog(
         "Spelling Check Results",
-        lambda: spell_check(project_dict, add_project_word_callback),
-        process_spelling,
+        destroy=True,
+        rerun_command=lambda: spell_check(project_dict, add_project_word_callback),
+        process_command=process_spelling,
     )
     frame = ttk.Frame(checker_dialog.header_frame)
     frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")

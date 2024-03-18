@@ -108,7 +108,11 @@ class ToplevelDialog(tk.Toplevel):
 
     @classmethod
     def show_dialog(
-        cls: type[TlDlg], title: Optional[str] = None, *args: Any, **kwargs: Any
+        cls: type[TlDlg],
+        title: Optional[str] = None,
+        destroy: bool = False,
+        *args: Any,
+        **kwargs: Any,
     ) -> TlDlg:
         """Show the instance of this dialog class, or create it if it doesn't exist.
 
@@ -117,10 +121,15 @@ class ToplevelDialog(tk.Toplevel):
             args: Optional args to pass to dialog constructor.
             kwargs: Optional kwargs to pass to dialog constructor.
         """
+        # If dialog exists, either destroy it or deiconify
         dlg_name = cls.__name__
         if dlg := cls.get_dialog():
-            dlg.deiconify()
-        else:
+            if destroy:
+                dlg.destroy()
+            else:
+                dlg.deiconify()
+        # Now, if dialog doesn't exist (may have been destroyed above) (re-)create it
+        if not cls.get_dialog():
             if title is not None:
                 ToplevelDialog._toplevel_dialogs[dlg_name] = cls(title, *args, **kwargs)  # type: ignore[call-arg]
             else:
