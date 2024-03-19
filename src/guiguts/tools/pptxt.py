@@ -7,6 +7,8 @@ from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext
 from guiguts.utilities import IndexRowCol, IndexRange
 
+REPORT_LIMIT = 5  # Max number of times to report same issue for some checks
+
 found_long_doctype_declaration: bool
 checker_dialog: CheckerDialog
 book: list[str]
@@ -31,6 +33,7 @@ cdq: int
 
 
 def get_words_on_line(line: str) -> list[str]:
+    """Extract all the words on one line."""
     global found_long_doctype_declaration
 
     # Words may be surrounded by abandoned HTML tags, HTML entities,
@@ -137,8 +140,8 @@ def get_words_on_line(line: str) -> list[str]:
 
     # Create a list of whole words from the line.
 
-    L = line.split()
-    newL = L.copy()
+    line_list = line.split()
+    new_list = line_list.copy()
 
     # Now split the hyphenated words in that list and add
     # their parts to it.
@@ -146,16 +149,16 @@ def get_words_on_line(line: str) -> list[str]:
     # E.g. 'sand-hill' -> 'sand', '-hill'
     #      'frien’-o’-mine' -> 'frien’', '-o’', '-mine'
 
-    for word in L:
+    for word in line_list:
         if "-" in word:
             # For each hyphenated word separate the hyphen(s) from
             # the preceding character with a " ".
             word_separated = re.sub(r"(’|\p{L})-", r"\1 -", word)
-            L2 = word_separated.split()
-            for word_part in L2:
-                newL.append(word_part)
+            word_parts = word_separated.split()
+            for word_part in word_parts:
+                new_list.append(word_part)
 
-    return newL
+    return new_list
 
 
 ######################################################################
@@ -180,40 +183,40 @@ def spacing_check() -> None:
     # a warning message about this unusual situation is output.
 
     # Initialise, counters, flags, etc.
-    BL_cnt = 0
-    prev_line_was_BL = False
-    prev_BL_cnt = 0
-    BL_spacing_ISSUES = []
+    bl_cnt = 0
+    prev_line_was_bl = False
+    prev_bl_cnt = 0
+    bl_spacing_issues = []
     line_number = 1
     four_line_spacing_found = False
     no_other_spacing_issues = False
 
     for line in book:
-        BL = re.match(r"^ *$", line)
-        if BL:
+        blank_line = re.match(r"^ *$", line)
+        if blank_line:
             # Blank line.
-            BL_cnt += 1
-            prev_line_was_BL = True
-        elif not BL and prev_line_was_BL:
-            if BL_cnt == 3 or BL_cnt > 4:
+            bl_cnt += 1
+            prev_line_was_bl = True
+        elif not blank_line and prev_line_was_bl:
+            if bl_cnt == 3 or bl_cnt > 4:
                 # i.e. 5..131.., 4..151.., etc, spacing.
-                BL_spacing_ISSUES.append((BL_cnt, line_number))
-            elif BL_cnt == 4:
+                bl_spacing_issues.append((bl_cnt, line_number))
+            elif bl_cnt == 4:
                 four_line_spacing_found = True
                 no_other_spacing_issues = True
-            elif BL_cnt == 2:
-                if prev_BL_cnt == 2:
+            elif bl_cnt == 2:
+                if prev_bl_cnt == 2:
                     # i.e. 4..1221..., etc, spacing.
-                    BL_spacing_ISSUES.append((BL_cnt, line_number))
-            prev_BL_cnt = BL_cnt
-            BL_cnt = 0
-            prev_line_was_BL = False
+                    bl_spacing_issues.append((bl_cnt, line_number))
+            prev_bl_cnt = bl_cnt
+            bl_cnt = 0
+            prev_line_was_bl = False
         line_number += 1
 
     # Output to dialog any line spacing issues found. We have a list
     # of issue tuples: (int: spacing count, int: line number)
 
-    for issue in BL_spacing_ISSUES:
+    for issue in bl_spacing_issues:
         no_other_spacing_issues = False
         # First value in an issue tuple is queried line spacing count.
         if issue[0] == 2:
@@ -470,7 +473,6 @@ def hyphenated_words_check() -> None:
         "----- Hyphenated/non-hyphenated words check ------------------------------------"
     )
 
-    LIMIT = 5
     first_header = True
     none_found = True
 
@@ -514,39 +516,31 @@ def hyphenated_words_check() -> None:
                     if line_number == prev_line_number:
                         prev_line_number = line_number
                         continue
-                    else:
-                        # Limit the length of the report by reporting only LIMIT (5) lines for a word.
-                        if count == LIMIT:
-                            count = -1
-                            break
-                        # Use re.finditer() to generate a new dialog line for each time the word appears
-                        # on the line.
-                        line = book[line_number - 1]
-                        IX = re.finditer(regx, line)
-                        while True:
-                            try:
-                                match_obj = next(IX)
-                            except StopIteration:
-                                break
-                            # Get start/end of error in file.
-                            error_start = (
-                                str(line_number) + "." + str(match_obj.start(1))
-                            )
-                            error_end = str(line_number) + "." + str(match_obj.end(1))
-                            # Store in structure for file row/col positions & ranges.
-                            start_rowcol = IndexRowCol(error_start)
-                            end_rowcol = IndexRowCol(error_end)
-                            # Highlight occurrence of word in the line.
-                            hilite_start = match_obj.start(1)
-                            hilite_end = match_obj.end(1)
-                            # Add record to the dialog.
-                            checker_dialog.add_entry(
-                                line,
-                                IndexRange(start_rowcol, end_rowcol),
-                                hilite_start,
-                                hilite_end,
-                            )
-                        count += 1
+                    # Limit the length of the report by reporting only REPORT_LIMIT (5) lines for a word.
+                    if count == REPORT_LIMIT:
+                        count = -1
+                        break
+                    # Use re.finditer() to generate a new dialog line for each time the word appears
+                    # on the line.
+                    line = book[line_number - 1]
+                    for match_obj in re.finditer(regx, line):
+                        # Get start/end of error in file.
+                        error_start = str(line_number) + "." + str(match_obj.start(1))
+                        error_end = str(line_number) + "." + str(match_obj.end(1))
+                        # Store in structure for file row/col positions & ranges.
+                        start_rowcol = IndexRowCol(error_start)
+                        end_rowcol = IndexRowCol(error_end)
+                        # Highlight occurrence of word in the line.
+                        hilite_start = match_obj.start(1)
+                        hilite_end = match_obj.end(1)
+                        # Add record to the dialog.
+                        checker_dialog.add_entry(
+                            line,
+                            IndexRange(start_rowcol, end_rowcol),
+                            hilite_start,
+                            hilite_end,
+                        )
+                    count += 1
                     prev_line_number = line_number
 
                 if count < 0:
@@ -554,7 +548,7 @@ def hyphenated_words_check() -> None:
 
                 # We do the same for the non-hyphenated version of the word. Separate this
                 # list of lines from the ones above with a rule. Limit the number of lines
-                # reported to LIMIT (5).
+                # reported to REPORT_LIMIT (5).
 
                 checker_dialog.add_entry("-----")
 
@@ -571,39 +565,31 @@ def hyphenated_words_check() -> None:
                     if line_number == prev_line_number:
                         prev_line_number = line_number
                         continue
-                    else:
-                        # Limit the length of the report by reporting only first 5 lines for a word.
-                        if count == LIMIT:
-                            count = -1
-                            break
-                        # Use re.finditer() to generate a new dialog line for each time the word appears
-                        # on the line.
-                        line = book[line_number - 1]
-                        IX = re.finditer(regx, line)
-                        while True:
-                            try:
-                                match_obj = next(IX)
-                            except StopIteration:
-                                break
-                            # Get start/end of error in file.
-                            error_start = (
-                                str(line_number) + "." + str(match_obj.start(1))
-                            )
-                            error_end = str(line_number) + "." + str(match_obj.end(1))
-                            # Store in structure for file row/col positions & ranges.
-                            start_rowcol = IndexRowCol(error_start)
-                            end_rowcol = IndexRowCol(error_end)
-                            # Highlight occurrence of word in the line.
-                            hilite_start = match_obj.start(1)
-                            hilite_end = match_obj.end(1)
-                            # Add record to the dialog.
-                            checker_dialog.add_entry(
-                                line,
-                                IndexRange(start_rowcol, end_rowcol),
-                                hilite_start,
-                                hilite_end,
-                            )
-                        count += 1
+                    # Limit the length of the report by reporting only first 5 lines for a word.
+                    if count == REPORT_LIMIT:
+                        count = -1
+                        break
+                    # Use re.finditer() to generate a new dialog line for each time the word appears
+                    # on the line.
+                    line = book[line_number - 1]
+                    for match_obj in re.finditer(regx, line):
+                        # Get start/end of error in file.
+                        error_start = str(line_number) + "." + str(match_obj.start(1))
+                        error_end = str(line_number) + "." + str(match_obj.end(1))
+                        # Store in structure for file row/col positions & ranges.
+                        start_rowcol = IndexRowCol(error_start)
+                        end_rowcol = IndexRowCol(error_end)
+                        # Highlight occurrence of word in the line.
+                        hilite_start = match_obj.start(1)
+                        hilite_end = match_obj.end(1)
+                        # Add record to the dialog.
+                        checker_dialog.add_entry(
+                            line,
+                            IndexRange(start_rowcol, end_rowcol),
+                            hilite_start,
+                            hilite_end,
+                        )
+                    count += 1
                     prev_line_number = line_number
 
                 if count < 0:
@@ -635,7 +621,6 @@ def weird_characters() -> None:
         "----- Character checks ---------------------------------------------------------"
     )
 
-    LIMIT = 5
     first_header = True
     none_found = True
 
@@ -666,7 +651,7 @@ def weird_characters() -> None:
     # If nothing in the dictioary, nothing to do!
     if len(weirdos_lines_dictionary) != 0:
         none_found = False
-        for weirdo in weirdos_lines_dictionary:
+        for weirdo, line_list in weirdos_lines_dictionary.items():
             count = weirdos_counts_dictionary[weirdo]
             # Make a header with this info and output it to dialog.
             # E.g. "'¢' (3)".
@@ -683,7 +668,6 @@ def weird_characters() -> None:
             # If there are multiple instances of a weirdo on a line then the line will appear in
             # the dialog multiple times, each time highlighting a different instance of it.
 
-            line_list = weirdos_lines_dictionary[weirdo]
             prev_line_number = -1
             regx = f"(\\{weirdo})"
             count = 0
@@ -695,37 +679,31 @@ def weird_characters() -> None:
                 if line_number == prev_line_number:
                     prev_line_number = line_number
                     continue
-                else:
-                    # Limit the length of the report by reporting only LIMIT (5) lines for a word.
-                    if count == LIMIT:
-                        count = -1
-                        break
-                    # Use re.finditer() to generate a new dialog line for each time the weirdo appears
-                    # on the line.
-                    line = book[line_number - 1]
-                    IX = re.finditer(regx, line)
-                    while True:
-                        try:
-                            match_obj = next(IX)
-                        except StopIteration:
-                            break
-                        # Get start/end of error in file.
-                        error_start = str(line_number) + "." + str(match_obj.start(1))
-                        error_end = str(line_number) + "." + str(match_obj.end(1))
-                        # Store in structure for file row/col positions & ranges.
-                        start_rowcol = IndexRowCol(error_start)
-                        end_rowcol = IndexRowCol(error_end)
-                        # Highlight occurrence of word in the line.
-                        hilite_start = match_obj.start(1)
-                        hilite_end = match_obj.end(1)
-                        # Add record to the dialog.
-                        checker_dialog.add_entry(
-                            line,
-                            IndexRange(start_rowcol, end_rowcol),
-                            hilite_start,
-                            hilite_end,
-                        )
-                    count += 1
+                # Limit the length of the report by reporting only REPORT_LIMIT (5) lines for a word.
+                if count == REPORT_LIMIT:
+                    count = -1
+                    break
+                # Use re.finditer() to generate a new dialog line for each time the weirdo appears
+                # on the line.
+                line = book[line_number - 1]
+                for match_obj in re.finditer(regx, line):
+                    # Get start/end of error in file.
+                    error_start = str(line_number) + "." + str(match_obj.start(1))
+                    error_end = str(line_number) + "." + str(match_obj.end(1))
+                    # Store in structure for file row/col positions & ranges.
+                    start_rowcol = IndexRowCol(error_start)
+                    end_rowcol = IndexRowCol(error_end)
+                    # Highlight occurrence of word in the line.
+                    hilite_start = match_obj.start(1)
+                    hilite_end = match_obj.end(1)
+                    # Add record to the dialog.
+                    checker_dialog.add_entry(
+                        line,
+                        IndexRange(start_rowcol, end_rowcol),
+                        hilite_start,
+                        hilite_end,
+                    )
+                count += 1
                 prev_line_number = line_number
 
             if count < 0:
@@ -796,12 +774,7 @@ def specials_check() -> None:
         # pattern are to be highlighted.
         # Use re.finditer() to generate a new dialog line for each time the pattern (the issue
         # being checked) appears on the line.
-        IX = re.finditer(pattern, line_copy)
-        while True:
-            try:
-                match_obj = next(IX)
-            except StopIteration:
-                break
+        for match_obj in re.finditer(pattern, line_copy):
             # Get start/end of error in file.
             error_start = str(line_number) + "." + str(match_obj.start(0))
             error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -835,12 +808,7 @@ def specials_check() -> None:
             # Get all occurrences of word on this line and report them.
             # regx = f"\\b{word}\\b"
             regx = r"(?<!\p{L}|\p{Nd})" + word + r"(?!\p{L}|\p{Nd})"
-            IX = re.finditer(regx, line)
-            while True:
-                try:
-                    match_obj = next(IX)
-                except StopIteration:
-                    break
+            for match_obj in re.finditer(regx, line):
                 # Get start/end of error in file.
                 error_start = str(line_number) + "." + str(match_obj.start(0))
                 error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -1190,7 +1158,7 @@ def specials_check() -> None:
     # the checks above. The specials_report dictionary may be
     # empty in which case there will be no dialog messages.
     first_header = True
-    for header_line in specials_report:
+    for header_line, tuples_list in specials_report.items():
         none_found = False
         # Insert a blank line before each header except the first one.
         if first_header:
@@ -1199,7 +1167,6 @@ def specials_check() -> None:
             checker_dialog.add_entry("")
         # Add header record to dialog.
         checker_dialog.add_entry(header_line)
-        tuples_list = specials_report[header_line]
         # Generate the dialog messages
         for tple in tuples_list:
             line = tple[0]
@@ -1239,8 +1206,8 @@ def html_check() -> None:
 
     # Courtesy limit if user uploads fpgen source, etc.
     courtesy_limit = 5
-    abandoned_HTML_tag_count = 0
-    lines_with_HTML_tags = 0
+    abandoned_html_tag_count = 0
+    lines_with_html_tags = 0
 
     line_number = 1
     regx = r"<(?=[!\/a-z]).*?(?<=[\"A-Za-z0-9\/]|-)>"
@@ -1248,12 +1215,7 @@ def html_check() -> None:
         if re.findall(regx, line):
             # Use re.finditer() to generate a new dialog line for each match
             # on the line.
-            IX = re.finditer(regx, line)
-            while True:
-                try:
-                    match_obj = next(IX)
-                except StopIteration:
-                    break
+            for match_obj in re.finditer(regx, line):
                 # Get start/end of error in file.
                 error_start = str(line_number) + "." + str(match_obj.start(0))
                 error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -1270,16 +1232,16 @@ def html_check() -> None:
                     hilite_start,
                     hilite_end,
                 )
-                abandoned_HTML_tag_count += 1
-            lines_with_HTML_tags += 1
+                abandoned_html_tag_count += 1
+            lines_with_html_tags += 1
 
         # If abandoned_HTML_tag_count > courtesy_limit then it looks like we are
         # not dealing with a plain text file afterall. Flag this and report the
         # number of HTML tags found so far then exit loop.
 
-        if abandoned_HTML_tag_count > courtesy_limit:
+        if abandoned_html_tag_count > courtesy_limit:
             checker_dialog.add_entry("")
-            record = f"Source file not plain text: {lines_with_HTML_tags} book lines with {abandoned_HTML_tag_count} markup instances so far..."
+            record = f"Source file not plain text: {lines_with_html_tags} book lines with {abandoned_html_tag_count} markup instances so far..."
             checker_dialog.add_entry(record)
             checker_dialog.add_entry("...abandoning check.")
             # Don't search any more book lines for HTML tags.
@@ -1288,7 +1250,7 @@ def html_check() -> None:
         line_number += 1
 
     # All book lines scanned or scanning abandoned.
-    if abandoned_HTML_tag_count == 0:
+    if abandoned_html_tag_count == 0:
         checker_dialog.add_entry("")
         checker_dialog.add_entry("    No abandoned HTML tags found.")
 
@@ -1317,12 +1279,7 @@ def unicode_numeric_character_check() -> None:
         if re.search(regx, line):
             # Use re.finditer() to generate a new dialog line for each match
             # on the line.
-            IX = re.finditer(regx, line)
-            while True:
-                try:
-                    match_obj = next(IX)
-                except StopIteration:
-                    break
+            for match_obj in re.finditer(regx, line):
                 # Get start/end of error in file.
                 error_start = str(line_number) + "." + str(match_obj.start(0))
                 error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -1380,12 +1337,7 @@ def adjacent_spaces_check() -> None:
             regx = r"\s\s+"
             # Use re.finditer() to generate a new dialog line for each match
             # on the line.
-            IX = re.finditer(regx, line)
-            while True:
-                try:
-                    match_obj = next(IX)
-                except StopIteration:
-                    break
+            for match_obj in re.finditer(regx, line):
                 # Get start/end of error in file.
                 error_start = str(line_number) + "." + str(match_obj.start(0))
                 error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -1477,12 +1429,7 @@ def report_all_occurrences_on_line(pattern: str, line: str, line_number: int) ->
         line_number - the line number of the line in the file.
     """
 
-    IX = re.finditer(pattern, line)
-    while True:
-        try:
-            match_obj = next(IX)
-        except StopIteration:
-            break
+    for match_obj in re.finditer(pattern, line):
         # Get start/end of error in file.
         error_start = str(line_number) + "." + str(match_obj.start(0))
         error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -1546,12 +1493,7 @@ def ellipsis_check() -> None:
         if re.search(pattern, line_copy):
             no_suspect_ellipsis_found = False
             # Note we search line copy ...
-            IX = re.finditer(pattern, line_copy)
-            while True:
-                try:
-                    match_obj = next(IX)
-                except StopIteration:
-                    break
+            for match_obj in re.finditer(pattern, line_copy):
                 # Get start/end of error in file.
                 error_start = str(line_number) + "." + str(match_obj.start(0))
                 error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -2007,12 +1949,7 @@ def dash_review() -> None:
 
             # Highlight only first dash in each sequence in report but whole sequence
             # in the file when report line clicked.
-            IX = re.finditer(r"(\p{Pd}\p{Pd}+)", line)
-            while True:
-                try:
-                    match_obj = next(IX)
-                except StopIteration:
-                    break
+            for match_obj in re.finditer(r"(\p{Pd}\p{Pd}+)", line):
                 # Get start/end of error in file; i.e. whole dash-sequence instance.
                 error_start = str(line_number) + "." + str(match_obj.start(0))
                 error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -2114,12 +2051,7 @@ def dash_review() -> None:
             # more em-dash but highlight whole sequence in the file when report line
             # is clicked. Note there may be single em-dashes and sequences of two or
             # more em-dashes on the same line, all to be highlighted as just described.
-            IX = re.finditer(r"(——*)", line)
-            while True:
-                try:
-                    match_obj = next(IX)
-                except StopIteration:
-                    break
+            for match_obj in re.finditer(r"(——*)", line):
                 # Get start/end of error in file; i.e. whole dash-sequence instance.
                 error_start = str(line_number) + "." + str(match_obj.start(0))
                 error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -2181,11 +2113,11 @@ def scanno_check() -> None:
         # We have the list of words on the line already in the
         # array 'word_list_map_words]'. It is indexed from zero.
 
-        L = word_list_map_words[line_index]
+        word_list = word_list_map_words[line_index]
         previously_found_on_this_line = []
 
         # Look for scannos among the words on this line.
-        for word in L:
+        for word in word_list:
             word_lc = word.lower()
             if (word_lc in scanno_dictionary) and (
                 word_lc not in previously_found_on_this_line
@@ -2212,7 +2144,7 @@ def scanno_check() -> None:
     #    value is a list of tuples: [(line number, line text), ...]
 
     first_header = True
-    for scanno in scanno_outrecs:
+    for scanno, tple_list in scanno_outrecs.items():
         # The value of each scanno key in scanno_outrecs dictionary
         # is a list of tuples: (line_number, line). For a given scanno
         # only one instance of it on a line has been noted in a tuple.
@@ -2226,7 +2158,6 @@ def scanno_check() -> None:
         # Header is the scanno.
         checker_dialog.add_entry(scanno)
 
-        tple_list = scanno_outrecs[scanno]
         for tple in tple_list:
             line_number = tple[0]
             line = tple[1]
@@ -2236,12 +2167,7 @@ def scanno_check() -> None:
             # Get all occuurences of scanno on line and report them.
 
             regx = f"\\b{scanno}\\b"
-            IX = re.finditer(regx, line, re.IGNORECASE)
-            while True:
-                try:
-                    match_obj = next(IX)
-                except StopIteration:
-                    break
+            for match_obj in re.finditer(regx, line, re.IGNORECASE):
                 # Get start/end of error in file.
                 error_start = str(line_number) + "." + str(match_obj.start(0))
                 error_end = str(line_number) + "." + str(match_obj.end(0))
@@ -2693,6 +2619,7 @@ def build_scanno_dictionary() -> Dict[str, int]:
 
 
 def pptxt() -> None:
+    """Top-level pptxt function."""
     global checker_dialog
     global book, word_list_map_count, word_list_map_lines, word_list_map_words
     global hyphenated_words_dictionary
@@ -2709,7 +2636,7 @@ def pptxt() -> None:
 
     # text = maintext().get_text()
     text = maintext().get_text()
-    input = text.splitlines()
+    input_lines = text.splitlines()
 
     # Get book lines, list of words on line and word frequency.
 
@@ -2726,7 +2653,7 @@ def pptxt() -> None:
     cdq = 0
 
     line_number = 1
-    for line in input:
+    for line in input_lines:
         line = line.rstrip("\r\n")
 
         book.append(line)

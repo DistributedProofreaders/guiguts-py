@@ -384,7 +384,9 @@ class SearchDialog(ToplevelDialog):
 
         match_text = maintext().get(start_index, end_index)
         if SearchDialog.regex.get():
-            replace_string = replace_regex(search_string, replace_string, match_text)
+            replace_string = get_regex_replacement(
+                search_string, replace_string, match_text
+            )
         maintext().replace(start_index, end_index, replace_string)
         # "Reverse flag XOR Shift-key" searches backwards
         backwards = SearchDialog.reverse.get() ^ opposite_dir
@@ -437,7 +439,7 @@ class SearchDialog(ToplevelDialog):
                 end_index = maintext().index(start_index + f"+{match.count}c")
                 match_text = maintext().get(start_index, end_index)
                 if SearchDialog.regex.get():
-                    replace_match = replace_regex(
+                    replace_match = get_regex_replacement(
                         search_string, replace_string, match_text
                     )
                 maintext().replace(start_index, end_index, replace_match)
@@ -565,7 +567,9 @@ def get_search_start(backwards: bool) -> IndexRowCol:
     return start_rowcol
 
 
-def replace_regex(search_regex: str, replace_regex: str, match_text: str) -> str:
+def get_regex_replacement(
+    search_regex: str, replace_regex: str, match_text: str
+) -> str:
     """Find actual replacement string, given the search & replace regexes
     and the matching text.
 

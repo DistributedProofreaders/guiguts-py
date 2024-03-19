@@ -14,7 +14,7 @@ from guiguts.widgets import grab_focus
 
 logger = logging.getLogger(__package__)
 
-_the_root = None
+_the_root = None  # pylint: disable=invalid-name
 
 
 class Root(tk.Tk):
