@@ -25,6 +25,7 @@ from guiguts.preferences import preferences
 from guiguts.root import root
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
+from guiguts.tools.pptxt import pptxt
 from guiguts.utilities import is_mac
 
 logger = logging.getLogger(__package__)
@@ -395,6 +396,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
                 self.file.project_dict, self.file.add_good_word_to_project_dictionary
             ),
         )
+        menu_edit.add_button("PP~txt", pptxt)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
