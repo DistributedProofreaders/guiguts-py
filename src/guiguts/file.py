@@ -294,7 +294,7 @@ class File:
         """
         binfile_name = bin_name(basename)
         bin_dict = self.create_bin()
-        with open(binfile_name, "w") as fp:
+        with open(binfile_name, "w", encoding="utf-8") as fp:
             json.dump(bin_dict, fp, indent=2, ensure_ascii=False)
 
     def interpret_bin(self, bin_dict: BinDict) -> bool:
@@ -563,7 +563,7 @@ class File:
         if image_num is not None:
             try:
                 index = maintext().rowcol(page_mark_from_img(image_num))
-            except tk._tkinter.TclError:  # type: ignore[attr-defined]
+            except tk.TclError:
                 # Bad image number
                 return
             maintext().set_insert_index(index)

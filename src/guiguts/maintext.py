@@ -105,6 +105,8 @@ class MainText(tk.Text):
         super().__init__(self.frame, **kwargs)
         tk.Text.grid(self, column=1, row=0, sticky="NSEW")
 
+        self.languages = ""
+
         # Create Line Numbers widget and bind update routine to all
         # events that might change which line numbers should be displayed
         self.linenumbers = TextLineNumbers(self.frame, self)
@@ -132,6 +134,7 @@ class MainText(tk.Text):
         self["yscrollcommand"] = vscroll_set
 
         # Set up response to text being modified
+        # pylint: disable-next=invalid-name
         self.modifiedCallbacks: list[Callable[[], None]] = []
         self.bind_event(
             "<<Modified>>", lambda _event: self.modify_flag_changed_callback()
@@ -171,7 +174,7 @@ class MainText(tk.Text):
         self.tag_configure(PAGE_FLAG_TAG, background="yellow")
 
         # Ensure text still shows selected when focus is in another dialog
-        if "inactiveselect" not in kwargs.keys():
+        if "inactiveselect" not in kwargs:
             self["inactiveselect"] = self["selectbackground"]
 
         maintext(self)  # Register this single instance of MainText
@@ -227,7 +230,7 @@ class MainText(tk.Text):
             self.linenumbers.redraw()
         self.numbers_need_updating = False
 
-    def _on_change(self, *args: Any) -> None:
+    def _on_change(self, *_args: Any) -> None:
         """Callback when visible region of file may have changed.
 
         By setting flag now, and queuing calls to _do_linenumbers_redraw,
@@ -781,7 +784,7 @@ class MainText(tk.Text):
             )
         except tk.TclError as exc:
             if str(exc).startswith("couldn't compile regular expression pattern"):
-                raise TclRegexCompileError(str(exc))
+                raise TclRegexCompileError(str(exc)) from exc
             match_start = None
 
         if match_start:
@@ -831,7 +834,7 @@ class MainText(tk.Text):
                 )
             except tk.TclError as exc:
                 if str(exc).startswith("couldn't compile regular expression pattern"):
-                    raise TclRegexCompileError(str(exc))
+                    raise TclRegexCompileError(str(exc)) from exc
                 break
             if start:
                 matches.append(FindMatch(IndexRowCol(start), count_var.get()))
@@ -950,7 +953,7 @@ class TclRegexCompileError(Exception):
 
 # For convenient access, store the single MainText instance here,
 # with a function to set/query it.
-_single_widget = None
+_single_widget = None  # pylint: disable=invalid-name
 
 
 def maintext(text_widget: Optional[MainText] = None) -> MainText:

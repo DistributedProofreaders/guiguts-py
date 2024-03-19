@@ -135,7 +135,7 @@ class Menu(tk.Menu):
         # If key binding given, then bind it
         if accel:
 
-            def accel_command(*args: Any) -> None:
+            def accel_command(_event: tk.Event) -> None:
                 """Command to simulate checkbox click via shortcut key.
 
                 Because key hasn't been clicked, variable hasn't been toggled.
@@ -235,6 +235,8 @@ class MainImage(tk.Frame):
         self.imageid = None
         self.container: int = 0
         self.filename = ""
+        self.width = 0
+        self.height = 0
 
     def scroll_y(self, *args: Any, **kwargs: Any) -> None:
         """Scroll canvas vertically and redraw the image"""
@@ -281,7 +283,7 @@ class MainImage(tk.Frame):
         self.canvas.scale("all", x, y, scale, scale)  # rescale all canvas objects
         self.show_image()
 
-    def show_image(self, event=None):  # type: ignore[no-untyped-def]
+    def show_image(self, _event=None):  # type: ignore[no-untyped-def]
         """Show image on the Canvas"""
         # get image area & remove 1 pixel shift
         if self.image is None:
@@ -471,7 +473,7 @@ class ScrolledReadOnlyText(tk.Text):
     http://stackoverflow.com/questions/3842155/is-there-a-way-to-make-the-tkinter-text-widget-read-only
     """
 
-    def __init__(self, parent, context_menu=True, *args, **kwargs):  # type: ignore[no-untyped-def]
+    def __init__(self, parent, context_menu=True, **kwargs):  # type: ignore[no-untyped-def]
         """Init the class and set the insert and delete event bindings."""
 
         self.frame = ttk.Frame(parent)
@@ -479,7 +481,7 @@ class ScrolledReadOnlyText(tk.Text):
         self.frame.columnconfigure(0, weight=1)
         self.frame.rowconfigure(0, weight=1)
 
-        super().__init__(self.frame, *args, **kwargs)
+        super().__init__(self.frame, **kwargs)
         super().grid(column=0, row=0, sticky="NSEW")
         self.redirector = WidgetRedirector(self)
         self.insert = self.redirector.register("insert", lambda *args, **kw: "break")
@@ -624,7 +626,7 @@ class MainWindow:
         root().wm_forget(mainimage())  # type: ignore[arg-type]
         self.paned_window.forget(mainimage())
 
-    def float_image(self, *args: Any) -> None:
+    def float_image(self, _event: Optional[tk.Event] = None) -> None:
         """Float the image into a separate window"""
         mainimage().grid_remove()
         if mainimage().is_image_loaded():
@@ -635,7 +637,7 @@ class MainWindow:
             root().wm_forget(mainimage())  # type: ignore[arg-type]
         preferences.set("ImageWindow", "Floated")
 
-    def dock_image(self, *args: Any) -> None:
+    def dock_image(self, _event: Optional[tk.Event] = None) -> None:
         """Dock the image back into the main window"""
         root().wm_forget(mainimage())  # type: ignore[arg-type]
         if mainimage().is_image_loaded():

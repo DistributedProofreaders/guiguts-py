@@ -78,7 +78,6 @@ class ToplevelDialog(tk.Toplevel):
         title: str,
         resize_x: bool = True,
         resize_y: bool = True,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -88,7 +87,7 @@ class ToplevelDialog(tk.Toplevel):
             resize_x: True(default) to allow resizing and remembering of the dialog width.
             resize_y: True(default) to allow resizing and remembering of the dialog height.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.bind("<Escape>", lambda event: self.destroy())
         self.title(title)
         self.resizable(resize_x, resize_y)
@@ -111,7 +110,6 @@ class ToplevelDialog(tk.Toplevel):
         cls: type[TlDlg],
         title: Optional[str] = None,
         destroy: bool = False,
-        *args: Any,
         **kwargs: Any,
     ) -> TlDlg:
         """Show the instance of this dialog class, or create it if it doesn't exist.
@@ -131,9 +129,9 @@ class ToplevelDialog(tk.Toplevel):
         # Now, if dialog doesn't exist (may have been destroyed above) (re-)create it
         if not cls.get_dialog():
             if title is not None:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(title, *args, **kwargs)  # type: ignore[call-arg]
+                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(title, **kwargs)  # type: ignore[call-arg]
             else:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(*args, **kwargs)  # type: ignore[call-arg]
+                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(**kwargs)  # type: ignore[call-arg]
         return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
 
     @classmethod
@@ -149,8 +147,7 @@ class ToplevelDialog(tk.Toplevel):
             and ToplevelDialog._toplevel_dialogs[dlg_name].winfo_exists()
         ):
             return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
-        else:
-            return None
+        return None
 
     def _do_config(self) -> None:
         """Configure the geometry of the ToplevelDialog.
@@ -208,7 +205,7 @@ class ToplevelDialog(tk.Toplevel):
         except KeyError:
             return ""
 
-    def _handle_config(self, event: tk.Event) -> None:
+    def _handle_config(self, _event: tk.Event) -> None:
         """Callback from dialog <Configure> event.
 
         By setting flag now, and queuing calls to _save_config,

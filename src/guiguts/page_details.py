@@ -56,10 +56,6 @@ class PageDetail(dict):
 class PageDetails(dict[str, PageDetail]):
     """Dictionary of Page Detail objects: key is png name."""
 
-    def __init__(self) -> None:
-        """Initialize dictionary."""
-        super().__init__()
-
     def recalculate(self) -> None:
         """Recalculate labels from details."""
         number = 0
@@ -125,18 +121,18 @@ class PageDetailsDialog(OkCancelDialog):
         self.changed = False
         super().__init__(parent, "Configure Page Labels")
 
-    def body(self, frame: tk.Frame) -> tk.Frame:
+    def body(self, master: tk.Frame) -> tk.Frame:
         """Override default to construct widgets needed to show page labels"""
-        frame.columnconfigure(0, weight=1)
-        frame.rowconfigure(0, weight=1)
-        frame.pack(expand=True, fill=tk.BOTH)
+        master.columnconfigure(0, weight=1)
+        master.rowconfigure(0, weight=1)
+        master.pack(expand=True, fill=tk.BOTH)
 
         columns = (COL_HEAD_IMG, COL_HEAD_STYLE, COL_HEAD_NUMBER, COL_HEAD_LABEL)
         widths = (50, 80, 80, 120)
         self.list = ttk.Treeview(
-            frame, columns=columns, show="headings", height=10, selectmode=tk.BROWSE
+            master, columns=columns, show="headings", height=10, selectmode=tk.BROWSE
         )
-        for col in range(len(columns)):
+        for col, column in enumerate(columns):
             self.list.column(
                 f"#{col + 1}",
                 minwidth=10,
@@ -144,19 +140,19 @@ class PageDetailsDialog(OkCancelDialog):
                 stretch=False,
                 anchor=tk.CENTER,
             )
-            self.list.heading(f"#{col + 1}", text=columns[col])
+            self.list.heading(f"#{col + 1}", text=column)
 
         self.list.bind("<ButtonRelease-1>", self.item_clicked)
         self.list.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.scrollbar = ttk.Scrollbar(
-            frame, orient=tk.VERTICAL, command=self.list.yview
+            master, orient=tk.VERTICAL, command=self.list.yview
         )
         self.list.configure(yscroll=self.scrollbar.set)  # type: ignore[call-overload]
         self.scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
         self.populate_list(self.details)
-        return frame
+        return master
 
     def populate_list(self, details: PageDetails, see_index: int = 0) -> None:
         """Populate the page details list from the given details.

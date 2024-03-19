@@ -22,7 +22,7 @@ SPELL_CHECK_OK_YES = 0
 SPELL_CHECK_OK_NO = 1
 SPELL_CHECK_OK_BAD = 2
 
-_the_spell_checker = None
+_the_spell_checker = None  # pylint: disable=invalid-name
 
 
 class DictionaryNotFoundError(Exception):
@@ -154,7 +154,7 @@ class SpellChecker:
         # Now check numbers
         if (
             # word is all digits
-            re.fullmatch(r"\d+", word)
+            re.fullmatch(r"\d+", word)  # pylint: disable=too-many-boolean-expressions
             # ...1st, ...21st, ...31st, etc
             or re.fullmatch(r"(\d*[02-9])?1st", word, flags=re.IGNORECASE)
             # ...2nd, ...22nd, ...32nd, etc (also 2d, 22d, etc)

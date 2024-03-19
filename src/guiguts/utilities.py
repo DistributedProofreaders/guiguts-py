@@ -17,7 +17,7 @@ TraversablePath = importlib.resources.abc.Traversable | Path
 
 # Flag so application code can detect if within a pytest run - only use if really needed
 # See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
-called_from_test = False
+called_from_test = False  # pylint: disable=invalid-name
 
 
 #
@@ -46,10 +46,10 @@ def _is_system(system: str) -> bool:
     """
     try:
         return _is_system.system == system
-    except AttributeError:
+    except AttributeError as exc:
         _is_system.system = platform.system()
         if _is_system.system not in ["Darwin", "Linux", "Windows"]:
-            raise Exception("Unknown windowing system")
+            raise RuntimeError("Unknown windowing system") from exc
         return _is_system.system == system
 
 
@@ -63,7 +63,7 @@ def load_dict_from_json(filename: str) -> Optional[dict[str, Any]]:
         Dictionary if loaded successfully, or None.
     """
     if os.path.isfile(filename):
-        with open(filename, "r") as fp:
+        with open(filename, "r", encoding="utf-8") as fp:
             try:
                 return json.load(fp)
             except json.decoder.JSONDecodeError as exc:
@@ -176,7 +176,7 @@ class IndexRange:
 # This is necessary since the bell requires various Tk features/widgets,
 # like root and the status bar. We don't want to have to import those
 # into every module that wants to sound the bell, e.g. Search.
-_bell_callback = None
+_bell_callback = None  # pylint: disable=invalid-name
 
 
 def bell_set_callback(callback: Callable[[], None]) -> None:

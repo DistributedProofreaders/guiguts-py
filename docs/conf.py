@@ -3,6 +3,8 @@
 import os
 import sys
 
+# pylint: disable=invalid-name
+
 project = "Guiguts 2.0"
 
 sys.path.insert(0, os.path.abspath("../src/guiguts/"))

@@ -132,7 +132,7 @@ class Preferences:
         """Save preferences dictionary to JSON file."""
         if not os.path.isdir(self.prefsdir):
             os.mkdir(self.prefsdir)
-        with open(self.prefsfile, "w") as fp:
+        with open(self.prefsfile, "w", encoding="utf-8") as fp:
             json.dump(self.dict, fp, indent=2, ensure_ascii=False)
 
     def load(self) -> None:
@@ -145,8 +145,7 @@ class Preferences:
         """Run all defined callbacks, passing value as argument.
 
         Should be called after prefs are loaded and UI is ready"""
-        for key in self.callbacks.keys():
-            callback = self.callbacks[key]
+        for key, callback in self.callbacks.items():
             if callback is not None:
                 callback(self.get(key))
 

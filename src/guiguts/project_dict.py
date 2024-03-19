@@ -37,7 +37,7 @@ class ProjectDict:
         project_dict = {}
         project_dict[GOOD_WORDS_KEY] = list(self.good_words.keys())
         project_dict[BAD_WORDS_KEY] = list(self.bad_words.keys())
-        with open(dict_name, "w") as fp:
+        with open(dict_name, "w", encoding="utf-8") as fp:
             json.dump(project_dict, fp, indent=2, ensure_ascii=False)
 
     def load(self, textfile_path: str) -> None:
@@ -88,7 +88,7 @@ class ProjectDict:
         Returns:
             Name of dictionary file.
         """
-        root, ext = os.path.splitext(file_name)
+        root, _ = os.path.splitext(file_name)
         root += "_dict"
         return root + ".json"
 
