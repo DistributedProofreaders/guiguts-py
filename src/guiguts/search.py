@@ -1,10 +1,11 @@
 """Search/Replace functionality"""
 
 import logging
-import regex as re
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Tuple, Optional
+
+import regex as re
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError
@@ -391,7 +392,7 @@ class SearchDialog(ToplevelDialog):
         # need to position it at beginning or search could find
         # the same match again.
         if backwards:
-            maintext().set_insert_index(IndexRowCol(start_index))
+            maintext().set_insert_index(IndexRowCol(start_index), focus=False)
         maintext().mark_unset(MARK_FOUND_START, MARK_FOUND_END)
         if search_again:
             find_next(backwards=backwards)

@@ -1,3 +1,5 @@
+"""Config file for sphinx."""
+
 import os
 import sys
 

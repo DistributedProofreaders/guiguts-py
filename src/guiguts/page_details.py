@@ -1,8 +1,9 @@
 """Store and manipulate page labels."""
 
-import roman  # type: ignore[import-untyped]
 import tkinter as tk
 from tkinter import simpledialog, ttk
+
+import roman  # type: ignore[import-untyped]
 
 from guiguts.maintext import maintext
 from guiguts.widgets import OkCancelDialog
@@ -63,7 +64,7 @@ class PageDetails(dict[str, PageDetail]):
         """Recalculate labels from details."""
         number = 0
         style = STYLE_ARABIC
-        for png, detail in sorted(self.items()):
+        for _, detail in sorted(self.items()):
             if detail["style"] != STYLE_DITTO:
                 style = detail["style"]
             if detail["number"] == NUMBER_NONE:

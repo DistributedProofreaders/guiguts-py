@@ -5,9 +5,8 @@ name: Python application
 
 on:
   push:
-    branches: [ "master" ]
   pull_request:
-    branches: [ "master" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -30,6 +29,10 @@ jobs:
     - name: Lint with flake8
       run: |
         poetry run flake8 ./src
+    - name: Lint with pylint
+      run: |
+        poetry run pylint --recursive y .
+      continue-on-error: true
     - name: Check format with black
       run: |
         poetry run black --check --verbose ./src

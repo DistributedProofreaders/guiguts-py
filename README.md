@@ -1,16 +1,30 @@
 # Guiguts
 
 Guiguts - an application to support creation of ebooks for PG
- 
-## Windows Development Setup
 
-Minor alterations probably needed for other platforms
+## Common Development Setup
+
+1. Install Python & Poetry, clone the repo and create a virtual environment,
+   using the OS-specific instructions below.
+2. After following the OS-specific instructions, in the cloned GG2 directory,
+   install the GG2 python dependencies in the virtual environment. This will
+   install GG2 as an editable package that you can develop and run directly.
+   ```bash
+   poetry install
+   ```
+   If additional dependencies are added to GG2, or you use pyenv to switch
+   to a new version of python, you will need to re-run this command.
+3. You can then run GG2 directly with `poetry run guiguts`. Alternatively, 
+   you can start a virtual environment shell with `poetry shell`, then run
+   GG2 with `guiguts`.
+
+## Windows Development Setup
 
 ### Install Python
 
 #### Single (system-wide) version
 
-1. Download 3.11 from [python.org](https://www.python.org/).
+1. Download Python 3.11 from [python.org](https://www.python.org/).
 2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python311`
 3. Ensure this dir is in PATH variable
 
@@ -39,6 +53,24 @@ multiple versions of Python, if that would be useful for development/testing.
 4. Adds top-level “poetry” wrapper in `C:\Users\<username>\AppData\Roaming\Python\Scripts`
 5. Ensure the latter is in PATH variable
 
+### Clone the GG2 repo
+
+Either clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
+or a fork thereof.
+
+### Create virtual environment
+
+In the cloned GG2 directory, create a virtual environment using a version of
+python you installed above.
+   * Single python version (in git bash shell)
+     ```bash
+     poetry env use ~/AppData/Local/Programs/Python/Python311/python.exe
+     ```
+   * If using pyenv (in git bash shell)
+     ```bash
+     poetry config virtualenvs.prefer-active-python true
+     ```
+
 ## macOS Development Setup
 
 Developing Guiguts on macOS requires installing [Homebrew](https://brew.sh/) first.
@@ -60,53 +92,66 @@ We also install poetry using Homebrew.
 brew install poetry
 ```
 
-## Common Development Setup
+### Clone the GG2 repo
 
-1. Install Python & Poetry (above)
+Either clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
+or a fork thereof.
+
+### Create virtual environment
+
+In the cloned GG2 directory, create a virtual environment using a version of
+python you installed above.
+
+```bash
+poetry env use $(brew --prefix)/bin/python3.11
+```
+
+## Linux Development Setup
+
+1. Install Python, Poetry, etc.
+   * Example from Ubuntu 22.04 -- adapt to your own Linux distro
+     ```bash
+     sudo apt install python3.11 python3-pip python3-tk idle-python3.11 git
+     sudo python3.11 -m pip install poetry
+     ## Test that Tk will work
+     python3.11 -m tkinter
+     ```
+   * The last line above tests that Tk is working with Python. It should open a small
+     window on your screen. Click the `Click me!` button to test mouse clicks, and
+     `QUIT` to close the window, ending the test.
 2. Clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
    or a fork thereof.
 3. In the cloned GG2 directory, create a virtual environment using a version of
    python you installed above.
-   * Windows - single python version (in git bash shell)
      ```bash
-     poetry env use ~/AppData/Local/Programs/Python/Python311/python.exe
+     poetry env use $(which python3.11)
      ```
-   * Windows - pyenv (in git bash shell)
-     ```bash
-     poetry config virtualenvs.prefer-active-python true
-     ```
-   * macOS
-     ```bash
-     poetry env use $(brew --prefix)/bin/python3.11
-     ```
-4. Also from the GG2 directory, install the GG2 python dependencies in the
-   virtual environment. This will install GG2 as an editable package that you
-   can develop and run directly. If you use pyenv to switch to a new
-   version of python, you will need to re-run this command.
-   ```bash
-   poetry install
-   ```
-
-You can then run GG2 directly with `poetry run guiguts`. Alternatively, 
-you can start a virtual environment shell with `poetry shell`, then run
-GG2 with `guiguts`.
 
 ## Code style
 
-Guiguts 2 uses [flake8](https://pypi.org/project/flake8) for static code analysis
-and [black](https://pypi.org/project/black) for consistent styling. Both use
-default settings, with the exception of maximum line length checking which is
-adjusted in the recommended manner using the `.flake8` file to avoid conflicts
-with black.
+Guiguts 2 uses [flake8](https://pypi.org/project/flake8) and
+[pylint](https://www.pylint.org) for static code analysis, and
+[black](https://pypi.org/project/black) for consistent styling.  All use default
+settings, with the exception of maximum line length checking which is adjusted
+in the recommended manner (using the `.flake8` file and the `tool.pylint`
+section of `pyproject.toml`) to avoid conflicts with black.
 
-Both tools will be installed via `poetry` as described above.
+All of the above tools will be installed via `poetry` as described above.
 
 `poetry run flake8 .` will check all `src` & `tests` python files.
 
+`poetry run pylint --recursive y .` will check all `src` & `tests` python files.
+
 `poetry run black .` will reformat all `src` & `tests` python files where necessary.
 
-This project uses Github Actions to ensure neither of the above tools reports any
+This project uses Github Actions to ensure neither flake8 nor black report any
 error.
+
+> **NOTE:** At this time, `pylint` is running in GitHub Actions in an advisory
+mode only.  That means that any warning or error reported by `pylint` will not
+cause the Action to fail. Over time, as we make changes in Guiguts and/or the
+`pylint` configuration, the aim is to clear all of `pylint`'s warnings. At that
+point perhaps it can run in an enforcement mode.
 
 Naming conventions from [PEP8](https://pep8.org/#prescriptive-naming-conventions)
 are used. To summarize, class names use CapWords; constants are ALL_UPPERCASE;
@@ -167,6 +212,26 @@ All tests can be run using the following command:
 Developers are encouraged to add tests (as appropriate) when new code is added to the project.
 
 This project uses Github Actions to ensure running `pytest` does not report an error.
+
+## Editor / IDE additional notes
+
+### Visual Studio Code
+
+Three debugger configs are provided.
+
+- "Guiguts"
+    - Run Guiguts with debug output enabled
+- "Guiguts (most recent file)"
+    - Run Guiguts with debug output enabled
+    - Open the most recently opened file
+- "Guiguts (no debug output)"
+    - Run Guiguts without debug output
+
+Requirement: [Python Debugger][vsc_debugpy] extension
+
+[vsc_debugpy]: https://marketplace.visualstudio.com/items?itemName=ms-python.debugpy
+
+Use the "Python: Select Interpreter" command to choose the appropriate Python environment. Your Poetry config should be detected and available to choose. If the Poetry config is not auto-detected, use `poetry env info -e` in the shell to find the Poetry-configured python interpreter. Then in the "Python: Select Interpreter" command, choose "Enter interpreter path..." and paste the full path to the `python` executable. 
 
 ## Licensing
 

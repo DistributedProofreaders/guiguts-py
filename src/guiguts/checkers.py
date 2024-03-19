@@ -6,11 +6,13 @@ from typing import Any, Optional, Callable
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.utilities import IndexRowCol, IndexRange
+from guiguts.utilities import IndexRowCol, IndexRange, is_mac
 from guiguts.widgets import ToplevelDialog
 
 MARK_PREFIX = "chk"
+MARK_REMOVED_ENTRY = "MarkRemovedEntry"
 HILITE_TAG_NAME = "chk_hilite"
+SELECT_TAG_NAME = "chk_select"
 
 
 class CheckerEntry:
@@ -42,15 +44,20 @@ class CheckerDialog(ToplevelDialog):
     """
 
     def __init__(
-        self, title: str, rerun_command: Callable[[], None], *args: Any, **kwargs: Any
+        self,
+        title: str,
+        rerun_command: Callable[[], None],
+        process_command: Optional[Callable[[CheckerEntry], None]] = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
 
         Args:
             title: Title for dialog.
             rerun_command: Function to call to re-run the check.
+            process_command: Function to call to "process" the current error, e.g. swap he/be
         """
-        super().__init__(title, *args, **kwargs)
+        super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
         self.header_frame = ttk.Frame(self.top_frame, padding=2)
         self.header_frame.grid(column=0, row=0, sticky="NSEW")
@@ -62,10 +69,60 @@ class CheckerDialog(ToplevelDialog):
         )
         self.rerun_button.grid(column=1, row=0, sticky="NSE", padx=20)
         self.top_frame.rowconfigure(1, weight=1)
-        self.text = ScrolledReadOnlyText(self.top_frame, wrap=tk.NONE)
+        self.text = ScrolledReadOnlyText(
+            self.top_frame, context_menu=False, wrap=tk.NONE
+        )
         self.text.grid(column=0, row=1, sticky="NSEW")
-        self.text.bind("<ButtonRelease-1>", self.jump_to_rowcol)
-        self.text.tag_configure(HILITE_TAG_NAME, underline=True)
+
+        self.text.bind("<1>", self.select_entry_by_click)
+        # On Mac, equivalent of mouse button 3 is button 2 (2-button mice) or
+        # Control with button 1 (1 button mice), so 2 bindings per function
+        if is_mac():
+            self.text.bind("<2>", self.remove_entry_by_click)
+            self.text.bind("<Control-1>", self.remove_entry_by_click)
+            self.text.bind(
+                "<Shift-2>",
+                lambda event: self.remove_entry_by_click(event, all_matching=True),
+            )
+            self.text.bind(
+                "<Shift-Control-1>",
+                lambda event: self.remove_entry_by_click(event, all_matching=True),
+            )
+            self.text.bind("<Command-1>", self.process_entry_by_click)
+            self.text.bind("<Command-2>", self.process_remove_entry_by_click)
+            self.text.bind("<Command-Control-1>", self.process_remove_entry_by_click)
+            self.text.bind(
+                "<Shift-Command-2>",
+                lambda event: self.process_remove_entry_by_click(
+                    event, all_matching=True
+                ),
+            )
+            self.text.bind(
+                "<Shift-Command-Control-1>",
+                lambda event: self.process_remove_entry_by_click(
+                    event, all_matching=True
+                ),
+            )
+        else:
+            self.text.bind("<3>", self.remove_entry_by_click)
+            self.text.bind(
+                "<Shift-3>",
+                lambda event: self.remove_entry_by_click(event, all_matching=True),
+            )
+            self.text.bind("<Control-1>", self.process_entry_by_click)
+            self.text.bind("<Control-3>", self.process_remove_entry_by_click)
+            self.text.bind(
+                "<Shift-Control-3>",
+                lambda event: self.process_remove_entry_by_click(
+                    event, all_matching=True
+                ),
+            )
+
+        self.process_command = process_command
+        self.text.tag_configure(
+            SELECT_TAG_NAME, background="#dddddd", foreground="#000000"
+        )
+        self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
         self.reset()
 
     def reset(self) -> None:
@@ -124,24 +181,183 @@ class CheckerDialog(ToplevelDialog):
         word = "Entry" if self.count_linked_entries == 1 else "Entries"
         self.count_label["text"] = f"{self.count_linked_entries} {word}"
 
-    def jump_to_rowcol(self, event: tk.Event) -> None:
-        """Jump to the line in the main text widget that corresponds to
-        the line clicked in the dialog.
+    def select_entry_by_click(self, event: tk.Event) -> str:
+        """Select clicked line in dialog, and jump to the line in the
+        main text widget that corresponds to it.
 
         Args:
             event: Event object containing mouse click position.
+
+        Returns:
+            "break" to avoid calling other callbacks.
+        """
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return "break"
+        self.select_entry(entry_index)
+        return "break"
+
+    def process_entry_by_click(self, event: tk.Event) -> str:
+        """Select clicked line in dialog, and jump to the line in the
+        main text widget that corresponds to it. Finally call the
+        "process" callback function, if any.
+
+        Args:
+            event: Event object containing mouse click position.
+
+        Returns:
+            "break" to avoid calling other callbacks.
+        """
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return "break"
+        self.select_entry(entry_index)
+        self.process_entry_current()
+        return "break"
+
+    def remove_entry_by_click(self, event: tk.Event, all_matching: bool = False) -> str:
+        """Remove the entry that was clicked in the dialog.
+
+        Args:
+            event: Event object containing mouse click position.
+            all_matching: If True remove all other entries that have the same
+                message as the chosen entry (e.g. same spelling error)
+
+        Returns:
+            "break" to avoid calling other callbacks.
+        """
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return "break"
+        self.select_entry(entry_index)
+        self.remove_entry_current(all_matching)
+        return "break"
+
+    def process_remove_entry_by_click(
+        self, event: tk.Event, all_matching: bool = False
+    ) -> str:
+        """Select clicked line in dialog, and jump to the line in the
+        main text widget that corresponds to it. Call the
+        "process" callback function, if any, then remove the entry.
+
+        Args:
+            event: Event object containing mouse click position.
+            all_matching: If True remove all other entries that have the same
+                message as the chosen entry (e.g. same spelling error)
+
+        Returns:
+            "break" to avoid calling other callbacks.
+        """
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return "break"
+        self.select_entry(entry_index)
+        self.process_entry_current()
+        self.remove_entry_current(all_matching)
+        return "break"
+
+    def entry_index_from_click(self, event: tk.Event) -> int:
+        """Get the index into the list of entries based on the mouse position
+        in the click event.
+
+        Args:
+            event: Event object containing mouse click position.
+
+        Returns:
+            Index into self.entries list
+            Raises IndexError exception if out of range
         """
         click_rowcol = IndexRowCol(self.text.index(f"@{event.x},{event.y}"))
         entry_index = click_rowcol.row - 1
         if entry_index < 0 or entry_index >= len(self.entries):
-            return
+            raise IndexError
+        return entry_index
+
+    def process_entry_current(self) -> None:
+        """Call the "process" callback function, if any, on the
+        currently selected entry, if any."""
+        if self.process_command:
+            entry_index = self.current_entry_index()
+            if entry_index is not None:
+                self.process_command(self.entries[entry_index])
+
+    def remove_entry_current(self, all_matching: bool = False) -> None:
+        """Remove the current entry, if any.
+
+        Args:
+            all_matching: If True remove all other entries that have the same
+                message as the chosen entry (e.g. same spelling error)
+        """
+        entry_index = self.current_entry_index()
+        if entry_index is not None:
+            # Mark before removing in case earlier entries get removed due to
+            # all_matching being True
+            self.text.mark_set(MARK_REMOVED_ENTRY, f"{entry_index+1}.0")
+            del_text = self.entries[entry_index].text
+            if all_matching:
+                # Work in reverse since deleting from list while iterating
+                for ii in range(len(self.entries) - 1, -1, -1):
+                    if self.entries[ii].text == del_text:
+                        del self.entries[ii]
+                        self.text.delete(f"{ii+1}.0", f"{ii+2}.0")
+            else:
+                del self.entries[entry_index]
+                self.text.delete(f"{entry_index+1}.0", f"{entry_index+2}.0")
+            # Select line after first deleted line
+            entry_rowcol = IndexRowCol(self.text.index(MARK_REMOVED_ENTRY))
+            entry_index = min(entry_rowcol.row - 1, len(self.entries) - 1)
+            if len(self.entries) > 0:
+                self.select_entry(entry_index)
+
+    def process_remove_entry_current(self, all_matching: bool = False) -> None:
+        """Call the "process" callback function, if any, for the current entry, if any,
+        then remove the entry.
+
+        Args:
+            all_matching: If True remove all other entries that have the same
+                message as the chosen entry (e.g. same spelling error)
+        """
+        self.process_entry_current()
+        self.remove_entry_current(all_matching)
+
+    def current_entry_index(self) -> Optional[int]:
+        """Get the index entry of the currently selected error message.
+
+        Returns:
+            Index into self.entries array, or None if no message selected.
+        """
+        if tag_range := self.text.tag_nextrange(SELECT_TAG_NAME, "1.0"):
+            return IndexRowCol(tag_range[0]).row - 1
+        return None
+
+    def select_entry(self, entry_index: int) -> None:
+        """Select line in dialog corresponding to given entry index,
+        and jump to the line in the main text widget that corresponds to it.
+
+        Args:
+            event: Event object containing mouse click position.
+        """
+        self.highlight_entry(entry_index)
         entry = self.entries[entry_index]
         if entry.text_range is not None:
             start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self._mark_from_rowcol(entry.text_range.end))
             maintext().do_select(IndexRange(start, end))
-            maintext().set_insert_index(IndexRowCol(start), focus=True)
+            maintext().set_insert_index(IndexRowCol(start), focus=False)
         self.lift()
+
+    def highlight_entry(self, entry_index: int) -> None:
+        """Highlight the line of text corresponding to the entry_index.
+
+        Args:
+            entry_index: Index into self.entries list.
+        """
+        self.text.tag_remove(SELECT_TAG_NAME, "1.0", tk.END)
+        self.text.tag_add(SELECT_TAG_NAME, f"{entry_index+1}.0", f"{entry_index+2}.0")
 
     def _mark_from_rowcol(self, rowcol: IndexRowCol) -> str:
         """Return name to use to mark given location in text file.

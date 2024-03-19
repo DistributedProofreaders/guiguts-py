@@ -7,7 +7,7 @@ import os
 import tkinter as tk
 from typing import Any, Callable
 
-from guiguts.utilities import is_x11, _called_from_test, load_dict_from_json
+from guiguts.utilities import is_x11, called_from_test, load_dict_from_json
 
 
 logger = logging.getLogger(__package__)
@@ -55,7 +55,7 @@ class Preferences:
                 os.path.expanduser("~"), "Documents", "GGprefs"
             )
         # If testing, use a test prefs file so tests and normal running do not interact
-        if _called_from_test:
+        if called_from_test:
             prefs_name = "GGprefs_test.json"
         else:
             prefs_name = "GGprefs.json"
@@ -133,7 +133,7 @@ class Preferences:
         if not os.path.isdir(self.prefsdir):
             os.mkdir(self.prefsdir)
         with open(self.prefsfile, "w") as fp:
-            json.dump(self.dict, fp, indent=2)
+            json.dump(self.dict, fp, indent=2, ensure_ascii=False)
 
     def load(self) -> None:
         """Load preferences dictionary from JSON file."""
@@ -152,7 +152,7 @@ class Preferences:
 
     def _remove_test_prefs_file(self) -> None:
         """Remove temporary JSON file used for prefs during testing."""
-        if _called_from_test and os.path.exists(self.prefsfile):
+        if called_from_test and os.path.exists(self.prefsfile):
             os.remove(self.prefsfile)
 
 
