@@ -2702,7 +2702,7 @@ def pptxt() -> None:
     found_long_doctype_declaration = False
 
     # Create the checker dialog to show results
-    checker_dialog = CheckerDialog.show_dialog("PPtxt Results", pptxt)
+    checker_dialog = CheckerDialog.show_dialog("PPtxt Results", rerun_command=pptxt)
     checker_dialog.reset()
 
     # Get the whole of the file from the main text widget
