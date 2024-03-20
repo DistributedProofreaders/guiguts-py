@@ -192,10 +192,14 @@ class PageDetailsDialog(OkCancelDialog):
         row = self.list.set(row_id)
 
         if col_id == STYLE_COLUMN:
+            if COL_HEAD_STYLE not in row:
+                return
             # Click in style column advances style
             new_value = STYLE_NEXT[row[COL_HEAD_STYLE]]
             self.details[row[COL_HEAD_IMG]]["style"] = new_value
         elif col_id == NUMBER_COLUMN:
+            if COL_HEAD_NUMBER not in row:
+                return
             # Click in number column advances number type.
             # May need to prompt user for page number.
             value = row[COL_HEAD_NUMBER]
