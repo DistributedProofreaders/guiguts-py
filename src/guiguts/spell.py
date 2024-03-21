@@ -304,7 +304,6 @@ def spell_check(
 
     checker_dialog = CheckerDialog.show_dialog(
         "Spelling Check Results",
-        destroy=True,
         rerun_command=lambda: spell_check(project_dict, add_project_word_callback),
         process_command=process_spelling,
     )

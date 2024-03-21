@@ -7,7 +7,7 @@ from typing import Any, Optional, Callable
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.utilities import IndexRowCol, IndexRange, is_mac
-from guiguts.widgets import ToplevelDialog
+from guiguts.widgets import ToplevelDialog, TlDlg
 
 MARK_PREFIX = "chk"
 MARK_REMOVED_ENTRY = "MarkRemovedEntry"
@@ -124,6 +124,24 @@ class CheckerDialog(ToplevelDialog):
         )
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
         self.reset()
+
+    @classmethod
+    def show_dialog(
+        cls: type[TlDlg],
+        title: Optional[str] = None,
+        destroy: bool = True,
+        *args: Any,
+        **kwargs: Any,
+    ) -> TlDlg:
+        """Show the instance of this dialog class, or create it if it doesn't exist.
+
+        Args:
+            title: Dialog title.
+            destroy: True (default) if dialog should be destroyed & re-created, rather than re-used
+            args: Optional args to pass to dialog constructor.
+            kwargs: Optional kwargs to pass to dialog constructor.
+        """
+        return super().show_dialog(title, destroy, *args, **kwargs)
 
     def reset(self) -> None:
         """Reset dialog and associated structures & marks."""
