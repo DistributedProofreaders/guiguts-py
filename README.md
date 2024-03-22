@@ -144,14 +144,8 @@ All of the above tools will be installed via `poetry` as described above.
 
 `poetry run black .` will reformat all `src` & `tests` python files where necessary.
 
-This project uses Github Actions to ensure neither flake8 nor black report any
+This project uses Github Actions to ensure none of the above tools report any
 error.
-
-> **NOTE:** At this time, `pylint` is running in GitHub Actions in an advisory
-mode only.  That means that any warning or error reported by `pylint` will not
-cause the Action to fail. Over time, as we make changes in Guiguts and/or the
-`pylint` configuration, the aim is to clear all of `pylint`'s warnings. At that
-point perhaps it can run in an enforcement mode.
 
 Naming conventions from [PEP8](https://pep8.org/#prescriptive-naming-conventions)
 are used. To summarize, class names use CapWords; constants are ALL_UPPERCASE;
