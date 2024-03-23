@@ -9,7 +9,6 @@ from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.utilities import IndexRowCol, IndexRange, is_mac
 from guiguts.widgets import ToplevelDialog, TlDlg
 
-MARK_PREFIX = "chk"
 MARK_REMOVED_ENTRY = "MarkRemovedEntry"
 HILITE_TAG_NAME = "chk_hilite"
 SELECT_TAG_NAME = "chk_select"
@@ -123,6 +122,8 @@ class CheckerDialog(ToplevelDialog):
             SELECT_TAG_NAME, background="#dddddd", foreground="#000000"
         )
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
+        # Reduce length of common part of mark names
+        self.mark_prefix = self.__class__.__name__.removesuffix("Dialog")
         self.reset()
 
     @classmethod
@@ -149,7 +150,7 @@ class CheckerDialog(ToplevelDialog):
         self.update_count_label()
         self.text.delete("1.0", tk.END)
         for mark in maintext().mark_names():
-            if mark.startswith(MARK_PREFIX):
+            if mark.startswith(self.mark_prefix):
                 maintext().mark_unset(mark)
 
     def add_entry(
@@ -399,4 +400,4 @@ class CheckerDialog(ToplevelDialog):
         Returns:
             Name for mark, e.g. "chk123.45"
         """
-        return f"{MARK_PREFIX}{rowcol.index()}"
+        return f"{self.mark_prefix}{rowcol.index()}"
