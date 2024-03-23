@@ -130,7 +130,6 @@ class CheckerDialog(ToplevelDialog):
         cls: type[TlDlg],
         title: Optional[str] = None,
         destroy: bool = True,
-        *args: Any,
         **kwargs: Any,
     ) -> TlDlg:
         """Show the instance of this dialog class, or create it if it doesn't exist.
@@ -141,7 +140,7 @@ class CheckerDialog(ToplevelDialog):
             args: Optional args to pass to dialog constructor.
             kwargs: Optional kwargs to pass to dialog constructor.
         """
-        return super().show_dialog(title, destroy, *args, **kwargs)
+        return super().show_dialog(title, destroy, **kwargs)
 
     def reset(self) -> None:
         """Reset dialog and associated structures & marks."""
