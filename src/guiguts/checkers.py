@@ -398,6 +398,6 @@ class CheckerDialog(ToplevelDialog):
             rowcol: Location in text file to be marked.
 
         Returns:
-            Name for mark, e.g. "chk123.45"
+            Name for mark, e.g. "Checker123.45"
         """
         return f"{self.mark_prefix}{rowcol.index()}"
