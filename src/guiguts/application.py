@@ -7,6 +7,7 @@ import logging
 import os.path
 from tkinter import messagebox
 from typing import Optional
+import unicodedata
 import webbrowser
 
 
@@ -477,6 +478,19 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         the_statusbar.add_binding(
             "page label", "<ButtonRelease-3>", self.show_page_details_dialog
         )
+
+        def ordinal_str() -> str:
+            """Format ordinal of char at current insert index for statusbar."""
+            char = maintext().get(maintext().get_insert_index().index())
+            # unicodedata.name fails to return name for "control" characters
+            # but the only one we care about is line feed
+            try:
+                name = unicodedata.name(char)
+            except ValueError:
+                name = "LINE FEED" if char == "\n" else ""
+            return f"U+{ord(char):04x}: {name}"
+
+        the_statusbar.add("ordinal", update=ordinal_str)
 
         the_statusbar.add("languages label", text="Lang: ")
         the_statusbar.add_binding(
