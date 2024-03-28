@@ -303,7 +303,7 @@ class CheckerDialog(ToplevelDialog):
         if entry_index is not None:
             # Mark before removing in case earlier entries get removed due to
             # all_matching being True
-            self.text.mark_set(MARK_REMOVED_ENTRY, f"{entry_index+1}.0")
+            self.text.mark_set(MARK_REMOVED_ENTRY, f"{entry_index + 1}.0")
             del_text = self.entries[entry_index].text
             if all_matching:
                 # Work in reverse since deleting from list while iterating
@@ -312,12 +312,12 @@ class CheckerDialog(ToplevelDialog):
                         if self.entries[ii].text_range:
                             self.count_linked_entries -= 1
                         del self.entries[ii]
-                        self.text.delete(f"{ii+1}.0", f"{ii+2}.0")
+                        self.text.delete(f"{ii + 1}.0", f"{ii + 2}.0")
             else:
                 if self.entries[entry_index].text_range:
                     self.count_linked_entries -= 1
                 del self.entries[entry_index]
-                self.text.delete(f"{entry_index+1}.0", f"{entry_index+2}.0")
+                self.text.delete(f"{entry_index + 1}.0", f"{entry_index + 2}.0")
             self.update_count_label()
             # Select line after first deleted line
             entry_rowcol = IndexRowCol(self.text.index(MARK_REMOVED_ENTRY))
@@ -354,7 +354,7 @@ class CheckerDialog(ToplevelDialog):
             event: Event object containing mouse click position.
         """
         self.highlight_entry(entry_index)
-        self.text.mark_set(tk.INSERT, f"{entry_index+1}.0")
+        self.text.mark_set(tk.INSERT, f"{entry_index + 1}.0")
         self.text.focus_set()
         entry = self.entries[entry_index]
         if entry.text_range is not None:
@@ -371,7 +371,9 @@ class CheckerDialog(ToplevelDialog):
             entry_index: Index into self.entries list.
         """
         self.text.tag_remove(SELECT_TAG_NAME, "1.0", tk.END)
-        self.text.tag_add(SELECT_TAG_NAME, f"{entry_index+1}.0", f"{entry_index+2}.0")
+        self.text.tag_add(
+            SELECT_TAG_NAME, f"{entry_index + 1}.0", f"{entry_index + 2}.0"
+        )
 
     def _mark_from_rowcol(self, rowcol: IndexRowCol) -> str:
         """Return name to use to mark given location in text file.
