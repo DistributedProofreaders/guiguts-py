@@ -323,8 +323,12 @@ class SearchDialog(ToplevelDialog):
             sound_bell()
             return
 
-        checker_dialog = CheckerDialog.show_dialog(
-            "Search Results", destroy=True, rerun_command=self.findall_clicked
+        class FindAllCheckerDialog(CheckerDialog):
+            """Minimal class inheriting from CheckerDialog so that it can exist
+            simultaneously with other checker dialogs."""
+
+        checker_dialog = FindAllCheckerDialog.show_dialog(
+            "Search Results", rerun_command=self.findall_clicked
         )
         checker_dialog.reset()
         # Construct opening line describing the search

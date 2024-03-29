@@ -7,9 +7,8 @@ from typing import Any, Optional, Callable
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.utilities import IndexRowCol, IndexRange, is_mac
-from guiguts.widgets import ToplevelDialog
+from guiguts.widgets import ToplevelDialog, TlDlg
 
-MARK_PREFIX = "chk"
 MARK_REMOVED_ENTRY = "MarkRemovedEntry"
 HILITE_TAG_NAME = "chk_hilite"
 SELECT_TAG_NAME = "chk_select"
@@ -123,7 +122,26 @@ class CheckerDialog(ToplevelDialog):
             SELECT_TAG_NAME, background="#dddddd", foreground="#000000"
         )
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
+        # Reduce length of common part of mark names
+        self.mark_prefix = self.__class__.__name__.removesuffix("Dialog")
         self.reset()
+
+    @classmethod
+    def show_dialog(
+        cls: type[TlDlg],
+        title: Optional[str] = None,
+        destroy: bool = True,
+        **kwargs: Any,
+    ) -> TlDlg:
+        """Show the instance of this dialog class, or create it if it doesn't exist.
+
+        Args:
+            title: Dialog title.
+            destroy: True (default) if dialog should be destroyed & re-created, rather than re-used
+            args: Optional args to pass to dialog constructor.
+            kwargs: Optional kwargs to pass to dialog constructor.
+        """
+        return super().show_dialog(title, destroy, **kwargs)
 
     def reset(self) -> None:
         """Reset dialog and associated structures & marks."""
@@ -132,7 +150,7 @@ class CheckerDialog(ToplevelDialog):
         self.update_count_label()
         self.text.delete("1.0", tk.END)
         for mark in maintext().mark_names():
-            if mark.startswith(MARK_PREFIX):
+            if mark.startswith(self.mark_prefix):
                 maintext().mark_unset(mark)
 
     def add_entry(
@@ -382,6 +400,6 @@ class CheckerDialog(ToplevelDialog):
             rowcol: Location in text file to be marked.
 
         Returns:
-            Name for mark, e.g. "chk123.45"
+            Name for mark, e.g. "Checker123.45"
         """
-        return f"{MARK_PREFIX}{rowcol.index()}"
+        return f"{self.mark_prefix}{rowcol.index()}"
