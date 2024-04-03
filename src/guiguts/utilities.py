@@ -7,7 +7,8 @@ import logging
 from pathlib import Path
 import os.path
 from tkinter import _tkinter
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, Mapping
+from unicodedata import combining, normalize
 
 import regex as re
 
@@ -184,6 +185,28 @@ class IndexRange:
         return (self.start, self.end) == (other.start, other.end)
 
 
+def sing_plur(count: int, singular: str, plural: str = "") -> str:
+    """Return singular/plural phrase depending on count.
+
+    Args:
+        count: Number of items.
+        singular: Singular version of item name.
+        plural: Plural version of item name (default - add `s` to singular).
+
+    Examples:
+        sing_plur(1, "word") -> "1 word"
+        sing_plur(2, "error") -> "2 errors"
+        sing_plur(3, "match", "matches") -> "3 matches"
+    """
+    if count == 1:
+        word = singular
+    elif plural == "":
+        word = singular + "s"
+    else:
+        word = plural
+    return f"{count} {word}"
+
+
 # Store callback that sounds bell, and provide function to call it.
 # This is necessary since the bell requires various Tk features/widgets,
 # like root and the status bar. We don't want to have to import those
@@ -278,3 +301,40 @@ def convert_to_tcl_regex(regex: str) -> str:
         Converted regex.
     """
     return re.sub(r"(?<!\\)\\b", r"\\y", regex)
+
+
+class DiacriticRemover:
+    """Supports removal of diacritics from strings."""
+
+    outliers: Mapping
+    source_outliers = "ä  æ  ǽ  đ ð ƒ ħ ı ł ø ǿ ö  œ  ß  ŧ ü  Ä  Æ  Ǽ  Đ Ð Ƒ Ħ I Ł Ø Ǿ Ö  Œ  ẞ  Ŧ Ü  Þ  þ"
+    target_outliers = "ae ae ae d d f h i l o o oe oe ss t ue AE AE AE D D F H I L O O OE OE SS T UE TH th"
+
+    @classmethod
+    def setup_outliers(cls, source_outliers: str, target_outliers: str) -> None:
+        """Setup the outliers mapping from source & target strings.
+
+        Should be called with the relevant outliers when the language is changed."""
+        DiacriticRemover.outliers = str.maketrans(
+            dict(zip(source_outliers.split(), target_outliers.split()))
+        )
+
+    @classmethod
+    def remove_diacritics(cls, string: str) -> str:
+        """Remove accents, etc., from string.
+
+        Based on https://stackoverflow.com/a/71408065
+        First fixes a few outliers, like ǿ --> o, then uses Unicode Normalization
+        to decompose string, then discards combining characters.
+        """
+        try:
+            DiacriticRemover.outliers
+        except AttributeError:
+            DiacriticRemover.setup_outliers(
+                DiacriticRemover.source_outliers, DiacriticRemover.target_outliers
+            )
+        return "".join(
+            char
+            for char in normalize("NFD", string.translate(DiacriticRemover.outliers))
+            if not combining(char)
+        )

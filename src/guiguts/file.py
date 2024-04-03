@@ -48,6 +48,8 @@ PAGE_FLAGS_NONE = 0
 PAGE_FLAGS_SOME = 1
 PAGE_FLAGS_ALL = 2
 
+PAGE_SEPARATOR_REGEX = r"File:.+?([^/\\ ]+)\.(png|jpg)"
+
 
 class BinDict(TypedDict):
     """Dictionary for saving to bin file."""
@@ -413,11 +415,10 @@ class File:
         page_num_style = STYLE_ARABIC
         page_num = "1"
 
-        page_separator_regex = r"File:.+?([^/\\ ]+)\.(png|jpg)"
-        pattern = re.compile(page_separator_regex)
+        pattern = re.compile(PAGE_SEPARATOR_REGEX)
         search_start = "1.0"
         while page_index := maintext().search(
-            page_separator_regex, search_start, regexp=True, stopindex="end"
+            PAGE_SEPARATOR_REGEX, search_start, regexp=True, stopindex="end"
         ):
             line_start = maintext().index(page_index + " linestart")
             line_end = page_index + " lineend"

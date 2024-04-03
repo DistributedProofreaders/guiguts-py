@@ -243,6 +243,8 @@ class Combobox(ttk.Combobox):
         super().__init__(parent, *args, **kwargs)
         self.prefs_key = prefs_key
         self["values"] = preferences.get(self.prefs_key)
+        # If user selects value from dropdown, add it to top of history list
+        self.bind("<<ComboboxSelected>>", lambda *_: self.add_to_history(self.get()))
 
     def add_to_history(self, string: str) -> None:
         """Store given string in history list.
@@ -262,6 +264,13 @@ class Combobox(ttk.Combobox):
             del history[NUM_HISTORY:]
             preferences.set(self.prefs_key, history)
             self["values"] = history
+
+    def display_latest_value(self) -> None:
+        """Display most recent value (if any) from history list."""
+        try:
+            self.current(0)
+        except tk.TclError:
+            self.set("")
 
 
 def grab_focus(

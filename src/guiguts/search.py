@@ -10,7 +10,14 @@ import regex as re
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError
 from guiguts.preferences import preferences, PersistentBoolean
-from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, process_accel, is_mac
+from guiguts.utilities import (
+    sound_bell,
+    IndexRowCol,
+    IndexRange,
+    process_accel,
+    is_mac,
+    sing_plur,
+)
 from guiguts.widgets import ToplevelDialog, Combobox
 
 logger = logging.getLogger(__package__)
@@ -287,8 +294,8 @@ class SearchDialog(ToplevelDialog):
                 sound_bell()
                 return
             count = len(matches)
-            match_str = "match" if count == 1 else "matches"
-            self.display_message(f"Count: {count} {match_str} {range_name}")
+            match_str = sing_plur(count, "match", "matches")
+            self.display_message(f"Count: {match_str} {range_name}")
         else:
             self.display_message('No text selected for "In selection" count')
             sound_bell()
@@ -315,8 +322,8 @@ class SearchDialog(ToplevelDialog):
                 sound_bell()
                 return
             count = len(matches)
-            match_str = "match" if count == 1 else "matches"
-            self.display_message(f"Found: {count} {match_str} {range_name}")
+            match_str = sing_plur(count, "match", "matches")
+            self.display_message(f"Found: {match_str} {range_name}")
         else:
             matches = []
             self.display_message('No text selected for "In selection" find')
@@ -454,8 +461,8 @@ class SearchDialog(ToplevelDialog):
                     MARK_END_RANGE
                 )  # Refresh end index
                 count += 1
-            match_str = "match" if count == 1 else "matches"
-            self.display_message(f"Replaced: {count} {match_str} {range_name}")
+            match_str = sing_plur(count, "match", "matches")
+            self.display_message(f"Replaced: {match_str} {range_name}")
         else:
             self.display_message('No text selected for "In selection" replace')
             sound_bell()
