@@ -6,36 +6,46 @@ Guiguts
 =======
 
 .. automodule:: application
-
-MainWindow
-==========
-     
-.. automodule:: mainwindow
+ 
+Checkers
+========
+    
+.. automodule:: checkers
+ 
+File
+=========
+    
+.. automodule:: file
 
 MainText
 ========
      
 .. automodule:: maintext
+
+MainWindow
+==========
+     
+.. automodule:: mainwindow
+ 
+Page Details
+============
+    
+.. automodule:: page_details
  
 Preferences
 ===========
  
 .. automodule:: preferences
  
-Utilities
-=========
-    
-.. automodule:: utilities
- 
-File
-=========
-    
-.. automodule:: file
- 
-Page Details
+Project Dict
 ============
     
-.. automodule:: page_details
+.. automodule:: project_dict
+ 
+Root
+====
+    
+.. automodule:: root
  
 Search
 ======
@@ -47,27 +57,21 @@ Spell
     
 .. automodule:: spell
  
-Checkers
-========
+Utilities
+=========
     
-.. automodule:: checkers
+.. automodule:: utilities
  
 Widgets
 =======
     
 .. automodule:: widgets
  
-Root
-====
+Word Frequency
+==============
     
-.. automodule:: root
- 
-Project Dict
-============
-    
-.. automodule:: project_dict
+.. automodule:: word_frequency
 
- 
 PPtxt
 ============
     

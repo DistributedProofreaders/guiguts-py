@@ -7,7 +7,7 @@ from typing import Any, Optional, Callable
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.root import root
-from guiguts.utilities import IndexRowCol, IndexRange, is_mac
+from guiguts.utilities import IndexRowCol, IndexRange, is_mac, sing_plur
 from guiguts.widgets import ToplevelDialog, TlDlg
 
 MARK_REMOVED_ENTRY = "MarkRemovedEntry"
@@ -204,8 +204,9 @@ class CheckerDialog(ToplevelDialog):
 
     def update_count_label(self) -> None:
         """Update the label showing how many linked entries are in dialog."""
-        word = "Entry" if self.count_linked_entries == 1 else "Entries"
-        self.count_label["text"] = f"{self.count_linked_entries} {word}"
+        self.count_label["text"] = sing_plur(
+            self.count_linked_entries, "Entry", "Entries"
+        )
 
     def select_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the

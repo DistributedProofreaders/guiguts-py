@@ -881,6 +881,16 @@ class MainText(tk.Text):
                 start += f"+{count_var.get()}c"
         return matches
 
+    def get_match_text(self, match: FindMatch) -> str:
+        """Return text indicated by given match.
+
+        Args:
+            match: Start and length of matched text - assumed to be valid.
+        """
+        start_index = match.rowcol.index()
+        end_index = maintext().index(start_index + f"+{match.count}c")
+        return maintext().get(start_index, end_index)
+
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
 

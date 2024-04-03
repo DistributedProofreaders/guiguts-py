@@ -29,6 +29,7 @@ from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.jeebies import jeebies_check
 from guiguts.utilities import is_mac
+from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
 logger = logging.getLogger(__package__)
 
@@ -269,6 +270,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default("SearchDialogWholeword", False)
         preferences.set_default("SearchDialogWrap", True)
         preferences.set_default("SearchDialogRegex", False)
+        preferences.set_default("WordFrequencyDialogSuspectsOnly", False)
+        preferences.set_default("WordFrequencyDialogIgnoreCase", False)
+        preferences.set_default(
+            "WordFrequencyDialogDisplayType", WFDisplayType.ALL_WORDS
+        )
+        preferences.set_default("WordFrequencyDialogSortType", WFSortType.ALPHABETIC)
+        preferences.set_default("WordFrequencyDialogItalThreshold", ["4"])
+        preferences.set_default("WordFrequencyDialogRegex", [])
         preferences.set_default("DialogGeometry", {})
         preferences.set_default("RootGeometry", "800x400")
         preferences.set_default("DefaultLanguages", "en")
@@ -392,6 +401,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         menu_edit = Menu(menubar(), "~Tools")
+        menu_edit.add_button("~Word Frequency", word_frequency)
         menu_edit.add_button(
             "~Spelling Check",
             lambda: spell_check(
