@@ -481,6 +481,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "page label", "<ButtonRelease-3>", self.show_page_details_dialog
         )
 
+        the_statusbar.add("languages label", text="Lang: ")
+        the_statusbar.add_binding(
+            "languages label", "<ButtonRelease-1>", self.file.set_languages
+        )
+
         def ordinal_str() -> str:
             """Format ordinal of char at current insert index for statusbar."""
             char = maintext().get(maintext().get_insert_index().index())
@@ -493,11 +498,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             return f"U+{ord(char):04x}: {name}"
 
         the_statusbar.add("ordinal", update=ordinal_str)
-
-        the_statusbar.add("languages label", text="Lang: ")
-        the_statusbar.add_binding(
-            "languages label", "<ButtonRelease-1>", self.file.set_languages
-        )
 
     def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""
