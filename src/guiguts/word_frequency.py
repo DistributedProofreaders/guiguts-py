@@ -11,7 +11,15 @@ from guiguts.file import PAGE_SEPARATOR_REGEX
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.preferences import preferences, PersistentBoolean, PersistentString
-from guiguts.utilities import sing_plur, DiacriticRemover, IndexRange
+from guiguts.search import SearchDialog
+from guiguts.utilities import (
+    sing_plur,
+    DiacriticRemover,
+    IndexRange,
+    IndexRowCol,
+    sound_bell,
+    is_mac,
+)
 from guiguts.widgets import ToplevelDialog, Combobox
 
 _the_word_lists = None  # pylint: disable=invalid-name
@@ -364,6 +372,14 @@ class WordFrequencyDialog(ToplevelDialog):
             self.top_frame, context_menu=False, wrap=tk.NONE
         )
         self.text.grid(row=1, column=0, sticky="NSEW")
+        self.text.bind("<1>", self.goto_word)
+        if is_mac():
+            self.text.bind("<2>", self.search_word)
+            self.text.bind("<Control-1>", self.search_word)
+        else:
+            self.text.bind("<3>", self.search_word)
+
+        self.previous_word = ""
 
         self.minsize(450, 100)
         self.reset()
@@ -412,7 +428,10 @@ class WordFrequencyDialog(ToplevelDialog):
             case _ as bad_value:
                 assert False, f"Invalid WFSortType: {bad_value}"
 
-        for entry in sorted(self.entries, key=key):
+        # Sort stored list, rather than just displayed list, since later
+        # we'll want to index into list based on index in display.
+        self.entries.sort(key=key)
+        for entry in self.entries:
             suspect = f" {WordFrequencyEntry.SUSPECT}" if entry.suspect else ""
             # Single whitespace characters are replaced with a visible label
             try:
@@ -421,6 +440,70 @@ class WordFrequencyDialog(ToplevelDialog):
                 word = entry.word
             message = f"{entry.frequency:<7} {word}{suspect}\n"
             self.text.insert(tk.END, message)
+
+    def goto_word(self, event: tk.Event) -> str:
+        """Go to first/next occurrence of word selected by `event`.
+
+        If a different word to last click, then start search from beginning
+        of file, otherwise just continue from current location."""
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return "break"
+        self.text.select_line(entry_index + 1)
+        word = self.entries[entry_index].word
+        if word == self.previous_word:
+            start = maintext().get_insert_index()
+            start.col += 1
+        else:
+            start = maintext().start()
+        match = maintext().find_match(
+            word,
+            IndexRange(start, maintext().end()),
+            nocase=self.ignore_case.get(),
+            regexp=False,
+            wholeword=(self.display_type.get() != WFDisplayType.CHAR_COUNTS),
+            backwards=False,
+        )
+        if match is None:
+            sound_bell()
+        else:
+            maintext().set_insert_index(match.rowcol, focus=False)
+            maintext().select_match_text(match)
+            self.previous_word = word
+        return "break"
+
+    def search_word(self, event: tk.Event) -> str:
+        """Open search dialog ready to search for selected word."""
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return "break"
+        self.text.select_line(entry_index + 1)
+
+        dlg = SearchDialog.show_dialog()
+        dlg.search_box_set(self.entries[entry_index].word)
+        SearchDialog.matchcase.set(not WordFrequencyDialog.ignore_case.get())
+        SearchDialog.wholeword.set(True)
+        SearchDialog.regex.set(False)
+
+        return "break"
+
+    def entry_index_from_click(self, event: tk.Event) -> int:
+        """Get the index into the list of entries based on the mouse position
+        in the click event.
+
+        Args:
+            event: Event object containing mouse click position.
+
+        Returns:
+            Index into self.entries list
+            Raises IndexError exception if out of range
+        """
+        entry_index = IndexRowCol(self.text.index(f"@{event.x},{event.y}")).row - 1
+        if entry_index < 0 or entry_index >= len(self.entries):
+            raise IndexError
+        return entry_index
 
 
 def word_frequency() -> None:
