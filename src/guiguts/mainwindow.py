@@ -21,6 +21,7 @@ from guiguts.utilities import (
     bell_set_callback,
     process_accel,
     process_label,
+    IndexRowCol,
 )
 from guiguts.widgets import ToplevelDialog
 
@@ -477,6 +478,10 @@ class ScrolledReadOnlyText(tk.Text):
     http://stackoverflow.com/questions/3842155/is-there-a-way-to-make-the-tkinter-text-widget-read-only
     """
 
+    # Tag can be used to select a line of text, and to search for the selected line
+    # Can't use standard selection since that would interfere with user trying to copy/paste, etc.
+    SELECT_TAG_NAME = "chk_select"
+
     def __init__(self, parent, context_menu=True, **kwargs):  # type: ignore[no-untyped-def]
         """Init the class and set the insert and delete event bindings."""
 
@@ -500,12 +505,39 @@ class ScrolledReadOnlyText(tk.Text):
 
         self["inactiveselect"] = self["selectbackground"]
 
+        self.tag_configure(
+            ScrolledReadOnlyText.SELECT_TAG_NAME,
+            background="#dddddd",
+            foreground="#000000",
+        )
+
         if context_menu:
             add_text_context_menu(self, read_only=True)
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing Text actually places surrounding Frame"""
         return self.frame.grid(*args, **kwargs)
+
+    def select_line(self, line_num: int) -> None:
+        """Highlight the line_num'th line of text, removing any other highlights.
+
+        Args:
+            line_num: Line number to be highlighted - assumed valid.
+        """
+        self.tag_remove(ScrolledReadOnlyText.SELECT_TAG_NAME, "1.0", tk.END)
+        self.tag_add(
+            ScrolledReadOnlyText.SELECT_TAG_NAME, f"{line_num}.0", f"{line_num + 1}.0"
+        )
+
+    def get_select_line_num(self) -> Optional[int]:
+        """Get the line number of the currently selected line.
+
+        Returns:
+            Line number of selected line, or None if no line selected.
+        """
+        if tag_range := self.tag_nextrange(ScrolledReadOnlyText.SELECT_TAG_NAME, "1.0"):
+            return IndexRowCol(tag_range[0]).row
+        return None
 
 
 class MessageLogDialog(ToplevelDialog):

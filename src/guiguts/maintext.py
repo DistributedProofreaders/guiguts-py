@@ -451,13 +451,13 @@ class MainText(tk.Text):
         """Clear any current text selection."""
         self.tag_remove("sel", "1.0", tk.END)
 
-    def do_select(self, _range: IndexRange) -> None:
+    def do_select(self, sel_range: IndexRange) -> None:
         """Select the given range of text.
 
         Args:
-            IndexRange containing start and end of text to be selected."""
+            sel_range: IndexRange containing start and end of text to be selected."""
         self.clear_selection()
-        self.tag_add("sel", _range.start.index(), _range.end.index())
+        self.tag_add("sel", sel_range.start.index(), sel_range.end.index())
 
     def selected_ranges(self) -> list[IndexRange]:
         """Get the ranges of text marked with the `sel` tag.
@@ -890,6 +890,16 @@ class MainText(tk.Text):
         start_index = match.rowcol.index()
         end_index = maintext().index(start_index + f"+{match.count}c")
         return maintext().get(start_index, end_index)
+
+    def select_match_text(self, match: FindMatch) -> None:
+        """Select text indicated by given match.
+
+        Args:
+            match: Start and length of matched text - assumed to be valid.
+        """
+        start_index = match.rowcol.index()
+        end_index = maintext().index(start_index + f"+{match.count}c")
+        maintext().do_select(IndexRange(start_index, end_index))
 
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
