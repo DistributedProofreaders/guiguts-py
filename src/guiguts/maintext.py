@@ -177,6 +177,9 @@ class MainText(tk.Text):
         if "inactiveselect" not in kwargs:
             self["inactiveselect"] = self["selectbackground"]
 
+        self.current_sel_ranges: list[IndexRange] = []
+        self.prev_sel_ranges: list[IndexRange] = []
+
         maintext(self)  # Register this single instance of MainText
 
     def bind_event(
@@ -490,6 +493,36 @@ class MainText(tk.Text):
         if ranges:
             return self.get(ranges[0], ranges[1])
         return ""
+
+    def save_selection_ranges(self) -> None:
+        """Save current selection ranges if they have changed since last call.
+
+        Also save previous selection ranges, if beginning and end have both changed,
+        so they can be restored if needed.
+        """
+        ranges = maintext().selected_ranges()
+        # Inequality tests below rely on IndexCol/IndexRange having `__eq__` method
+        if ranges and ranges != self.current_sel_ranges:
+            # Problem is when the user drags to select, you can get multiple calls to this function,
+            # which are really all the same selection. Possible better solution in future, but for now,
+            # Only save into prev if both the start and end are different to the last call.
+            if (
+                self.current_sel_ranges
+                and ranges[0].start != self.current_sel_ranges[0].start
+                and ranges[-1].end != self.current_sel_ranges[-1].end
+            ):
+                self.prev_sel_ranges = self.current_sel_ranges.copy()
+            self.current_sel_ranges = ranges.copy()
+
+    def restore_selection_ranges(self) -> None:
+        """Restore previous selection ranges."""
+        if len(self.prev_sel_ranges) == 1:
+            self.do_select(self.prev_sel_ranges[0])
+        elif len(self.prev_sel_ranges) > 1:
+            col_range = IndexRange(
+                self.prev_sel_ranges[0].start, self.prev_sel_ranges[-1].end
+            )
+            self.do_column_select(col_range)
 
     def column_delete(self) -> None:
         """Delete the selected column text."""
