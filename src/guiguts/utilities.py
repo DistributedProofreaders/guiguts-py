@@ -135,6 +135,12 @@ class IndexRowCol:
         """Return row, col tuple."""
         return self.row, self.col
 
+    def __eq__(self, other: object) -> bool:
+        """Override equality test to check row and col."""
+        if not isinstance(other, IndexRowCol):
+            return NotImplemented
+        return (self.row, self.col) == (other.row, other.col)
+
 
 class IndexRange:
     """Class to store/manipulate a Text range defined by two indexes.
@@ -170,6 +176,12 @@ class IndexRange:
         else:
             assert isinstance(start, IndexRowCol)
             self.end = end
+
+    def __eq__(self, other: object) -> bool:
+        """Override equality test to check start and end of range."""
+        if not isinstance(other, IndexRange):
+            return NotImplemented
+        return (self.start, self.end) == (other.start, other.end)
 
 
 # Store callback that sounds bell, and provide function to call it.

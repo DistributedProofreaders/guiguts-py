@@ -479,6 +479,27 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "page label", "<ButtonRelease-3>", self.show_page_details_dialog
         )
 
+        def selection_str() -> str:
+            """Format current selection range for statusbar.
+
+            Returns:
+                "Start-End" for a regualar selection, and "R:rows C:cols" for column selection.
+            """
+            ranges = maintext().selected_ranges()
+            maintext().save_selection_ranges()
+            if not ranges:
+                return "No selection"
+            if len(ranges) == 1:
+                return f"{ranges[0].start.index()}-{ranges[-1].end.index()}"
+            row_diff = abs(ranges[-1].end.row - ranges[0].start.row) + 1
+            col_diff = abs(ranges[-1].end.col - ranges[0].start.col)
+            return f"R:{row_diff} C:{col_diff}"
+
+        the_statusbar.add("selection", update=selection_str, width=16)
+        the_statusbar.add_binding(
+            "selection", "<ButtonRelease-1>", maintext().restore_selection_ranges
+        )
+
         the_statusbar.add("languages label", text="Lang: ")
         the_statusbar.add_binding(
             "languages label", "<ButtonRelease-1>", self.file.set_languages
