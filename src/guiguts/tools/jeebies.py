@@ -16,6 +16,16 @@ PARANOID_LEVEL_3WORDS = 1.0
 _the_jeebies_checker = None  # pylint: disable=invalid-name
 
 
+########################################################
+# jeebies.py
+# C author: Jim Tinsley (DP:jim) - 2005
+# Go author: Roger Franks (DP:rfrank) - 2020
+# Python author: Quentin Campbell (DP:qgc) - 2024
+########################################################
+# 2024.04.06 Used sentence case with full stop for first
+#            sentence of docstrings. Ditto for args.
+
+
 class DictionaryNotFoundError(Exception):
     """Raised when no hebe-forms dictionary found."""
 
@@ -41,8 +51,7 @@ class JeebiesChecker:
         checker_dialog.reset()
 
         # Get the whole of the file from the main text widget
-        text = maintext().get_text()
-        input_lines = text.splitlines()
+        input_lines = maintext().get_text().splitlines()
         # Ensure last paragraph converts to a line of text
         input_lines.append("")
 
@@ -56,7 +65,7 @@ class JeebiesChecker:
         be_cnt_in_file = 0
         he_cnt_in_file = 0
         for line in input_lines:
-            line = line.rstrip("\r\n")
+            line = line.rstrip()
             be_cnt_in_file += len(re.findall(r"(?<=^|\W)be(?=\W|$)", line))
             he_cnt_in_file += len(re.findall(r"(?<=^|\W)he(?=\W|$)", line))
             if line == "":
@@ -78,97 +87,91 @@ class JeebiesChecker:
             )
         else:
             checker_dialog.add_entry(
-                f"  --> 'be' counted {be_cnt_in_file} times and 'he' counted {he_cnt_in_file} times in file. Looking for suspect phrases..."
+                f"  --> 'be' counted {be_cnt_in_file} times and 'he' counted {he_cnt_in_file} times in file. Checking for suspect phrases..."
             )
         checker_dialog.add_entry("")
 
-        be_suspects_cnt = self.find_and_report_be_phrases(wbs, wbl, checker_dialog)
-        he_suspects_cnt = self.find_and_report_he_phrases(wbs, wbl, checker_dialog)
+        be_suspects_cnt = self.find_and_report_hebe_phrases(
+            "be", wbs, wbl, checker_dialog
+        )
+        he_suspects_cnt = self.find_and_report_hebe_phrases(
+            "he", wbs, wbl, checker_dialog
+        )
 
         if be_suspects_cnt == 0 and he_suspects_cnt == 0:
             checker_dialog.add_entry("    No suspect phrases found.")
 
-    def find_and_report_be_phrases(
-        self, wbs: list, wbl: list, checker_dialog: CheckerDialog
+    def find_and_report_hebe_phrases(
+        self, hebe: str, wbs: list, wbl: list, checker_dialog: CheckerDialog
     ) -> int:
-        """look for suspect "w1 he w2" phrases in paragraphs"""
+        """Look for suspect "w1 be w2" or "w1 he w2" phrases in paragraphs."""
 
-        ####
-        # Looking for 'be' errors.
-        ####
-
-        # Search for 3-form pattern "w1 be w2" in a lower-case copy of paragraph.
         suspects_count = 0
-        for rec_num, para_lc in enumerate(wbl):
-            for match_obj in re.finditer(r"[a-z’]+ be [a-z’]+", para_lc):
-                # Have a 3-word form here ("must be taken").
-                # See if it's in the list.
-                be_form = para_lc[match_obj.start(0) : match_obj.end(0)]
-                be_count = self.find_in_dictionary(be_form)
-                # Change 'be' to 'he' and lookup that 3-word form.
-                he_form = re.sub("be", "he", be_form)
-                he_count = self.find_in_dictionary(he_form)
-                # At this point we have the 'be' form and how common that is in
-                # be_count and the 'he' form and how common that is in he_count.
+        if hebe == "be":
+            # Search for 3-form pattern "w1 be w2" in a lower-case copy of paragraph.
+            for rec_num, para_lc in enumerate(wbl):
+                for match_obj in re.finditer(r"[a-z’]+ be [a-z’]+", para_lc):
+                    # Have a 3-word form here ("must be taken").
+                    # See if it's in the list.
+                    be_form = para_lc[match_obj.start(0) : match_obj.end(0)]
+                    be_count = self.find_in_dictionary(be_form)
+                    # Change 'be' to 'he' and lookup that 3-word form.
+                    he_form = re.sub("be", "he", be_form)
+                    he_count = self.find_in_dictionary(he_form)
+                    # At this point we have the 'be' form and how common that is in
+                    # be_count and the 'he' form and how common that is in he_count.
 
-                # Improved Golang/PPWB format and values calculation
-                if he_count > 0 and (
-                    be_count == 0 or he_count / be_count > PARANOID_LEVEL_3WORDS
-                ):
-                    suspects_count += 1
-                    info = f"({he_count}/{be_count} - 'he' is seen more frequently than 'be' in this phrase)"
+                    # Improved Golang/PPWB format and values calculation
+                    if he_count > 0 and (
+                        be_count == 0 or he_count / be_count > PARANOID_LEVEL_3WORDS
+                    ):
+                        suspects_count += 1
+                        info = f"({he_count}/{be_count} - 'he' is seen more frequently than 'be' in this phrase)"
 
-                    # Add this 3-form and its info to the dialog
+                        # Add this 3-form and its info to the dialog
 
-                    header = f'Query phrase "{be_form}" {info}'
-                    # Get whole-words slice from original para text that is approximately
-                    # centered on the 3-form phrase.
-                    _, _, centered_slice = self.get_para_slice(
-                        match_obj.start(0), wbs[rec_num]
-                    )
-                    self.add_to_dialog(header, centered_slice, checker_dialog)
+                        header = f'Query phrase "{be_form}" {info}'
+                        # Get whole-words slice from original para text that is approximately
+                        # centered on the 3-form phrase.
+                        _, _, centered_slice = self.get_para_slice(
+                            match_obj.start(0), wbs[rec_num]
+                        )
+                        self.add_to_dialog(header, centered_slice, checker_dialog)
 
-        return suspects_count
+        elif hebe == "he":
+            # Search for 3-form pattern "w1 he w2" in a lower-case copy of paragraph.
+            for rec_num, para_lc in enumerate(wbl):
+                for match_obj in re.finditer(r"[a-z’]+ he [a-z’]+", para_lc):
+                    # Have a 3-word form here ("where he expected").
+                    # See if it's in the list.
+                    he_form = para_lc[match_obj.start(0) : match_obj.end(0)]
+                    he_count = self.find_in_dictionary(he_form)
+                    # Change 'he' to 'be' and lookup that 3-word form.
+                    be_form = re.sub("he", "be", he_form)
+                    be_count = self.find_in_dictionary(be_form)
+                    # At this point we have the 'he' form and how common that is in
+                    # he_count and the 'be' form and how common that is in be_count.
 
-    def find_and_report_he_phrases(
-        self, wbs: list, wbl: list, checker_dialog: CheckerDialog
-    ) -> int:
-        """look for suspect "w1 be w2" phrases in paragraphs"""
+                    # Improved Golang/PPWB format and values calculation
+                    if be_count > 0 and (
+                        he_count == 0 or be_count / he_count > PARANOID_LEVEL_3WORDS
+                    ):
+                        suspects_count += 1
+                        info = f"({be_count}/{he_count} - 'be' is seen more frequently than 'he' in this phrase)"
 
-        ####
-        # Looking for 'he' errors.
-        ####
+                        # Add this 3-form and its info to the dialog
 
-        # Search for 3-form pattern "w1 he w2" in a lower-case copy of paragraph.
-        suspects_count = 0
-        for rec_num, para_lc in enumerate(wbl):
-            for match_obj in re.finditer(r"[a-z’]+ he [a-z’]+", para_lc):
-                # Have a 3-word form here ("where he expected").
-                # See if it's in the list.
-                he_form = para_lc[match_obj.start(0) : match_obj.end(0)]
-                he_count = self.find_in_dictionary(he_form)
-                # Change 'he' to 'be' and lookup that 3-word form.
-                be_form = re.sub("he", "be", he_form)
-                be_count = self.find_in_dictionary(be_form)
-                # At this point we have the 'he' form and how common that is in
-                # he_count and the 'be' form and how common that is in be_count.
+                        header = f'Query phrase "{he_form}" {info}'
+                        # Get whole-words slice from original para text that is approximately
+                        # centered on the 3-form phrase.
+                        _, _, centered_slice = self.get_para_slice(
+                            match_obj.start(0), wbs[rec_num]
+                        )
+                        self.add_to_dialog(header, centered_slice, checker_dialog)
 
-                # Improved Golang/PPWB format and values calculation
-                if be_count > 0 and (
-                    he_count == 0 or be_count / he_count > PARANOID_LEVEL_3WORDS
-                ):
-                    suspects_count += 1
-                    info = f"({be_count}/{he_count} - 'be' is seen more frequently than 'he' in this phrase)"
-
-                    # Add this 3-form and its info to the dialog
-
-                    header = f'Query phrase "{he_form}" {info}'
-                    # Get whole-words slice from original para text that is approximately
-                    # centered on the 3-form phrase.
-                    _, _, centered_slice = self.get_para_slice(
-                        match_obj.start(0), wbs[rec_num]
-                    )
-                    self.add_to_dialog(header, centered_slice, checker_dialog)
+        else:
+            # Shouldn't reach here as the only argument values for hebe are 'be' or 'he'.
+            pass
 
         return suspects_count
 
@@ -177,10 +180,10 @@ class JeebiesChecker:
            only whole words and also return that slice.
 
         Args:
-            indx: normally the position in string about which the slice will be
+            indx: Normally the position in string about which the slice will be
                   centered. If the required slice is the head or tail of the string
                   then indx will be 0 or len(para) - 1 respectively.
-            para: a text string from which a 'whole words' slice will be extracted.
+            para: A text string from which a 'whole words' slice will be extracted.
         """
 
         # The slice of the paragraph text to be delimited will
@@ -239,25 +242,23 @@ class JeebiesChecker:
         return llim, rlim + 1, para[llim : rlim + 1]
 
     def find_in_dictionary(self, three_form: str) -> int:
-        """returns frequency in hebe phrase corpus or zero"""
+        """Returns frequency in hebe phrase corpus or zero."""
 
         words = three_form.split()
-        key = words[0] + "|" + words[1] + "|" + words[2]
-        freq = 0
-        if key in self.dictionary:
-            freq = self.dictionary[key]
+        key = "|".join(words)
+        freq = self.dictionary.get(key, 0)
 
         return freq
 
     def add_to_dialog(
         self, header: str, para_slice: str, checker_dialog: CheckerDialog
     ) -> None:
-        """helper function that abstracts repeated code
+        """Helper function that abstracts repeated code.
 
         Args:
-            header: a 3-form phrase with explanatory info
-            para_slice: a slice of a paragraph centered around the 3-form phrase
-            checker_dialog: where report text is written
+            header: A 3-form phrase with explanatory info.
+            para_slice: A slice of a paragraph centered around the 3-form phrase.
+            checker_dialog: Where report text is written.
         """
 
         record = "    " + para_slice
@@ -277,8 +278,8 @@ class JeebiesChecker:
                 for line in fp:
                     line = line.strip()
                     if ":" in line:
-                        parts = line.split(":")
-                        self.dictionary[parts[0]] = int(parts[1])
+                        key, value = line.split(":")
+                        self.dictionary[key] = int(value)
         except FileNotFoundError as exc:
             raise DictionaryNotFoundError(file) from exc
 
