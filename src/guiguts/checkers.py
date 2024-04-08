@@ -6,6 +6,7 @@ from typing import Any, Optional, Callable
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
+from guiguts.root import root
 from guiguts.utilities import IndexRowCol, IndexRange, is_mac
 from guiguts.widgets import ToplevelDialog, TlDlg
 
@@ -376,6 +377,8 @@ class CheckerDialog(ToplevelDialog):
         self.text.focus_set()
         entry = self.entries[entry_index]
         if entry.text_range is not None:
+            if root().state() == "iconic":
+                root().deiconify()
             start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self._mark_from_rowcol(entry.text_range.end))
             maintext().do_select(IndexRange(start, end))
