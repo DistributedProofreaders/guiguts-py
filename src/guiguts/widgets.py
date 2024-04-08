@@ -7,6 +7,7 @@ from typing import Any, Optional, TypeVar
 import regex as re
 
 from guiguts.preferences import preferences
+from guiguts.utilities import is_windows
 
 NUM_HISTORY = 10
 
@@ -275,10 +276,10 @@ def grab_focus(
     Args:
         toplevel: Toplevel widget to receive focus
         focus_widget: Optional widget within the toplevel tree to take keyboard focus
-        icon_deicon: True if iconify/deiconify hack required
+        icon_deicon: True if iconify/deiconify Windows hack required
     """
     toplevel.lift()
-    if icon_deicon:
+    if icon_deicon and is_windows():
         toplevel.iconify()
         toplevel.deiconify()
     toplevel.focus_force()

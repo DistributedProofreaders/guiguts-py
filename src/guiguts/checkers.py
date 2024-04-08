@@ -382,7 +382,7 @@ class CheckerDialog(ToplevelDialog):
             start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self._mark_from_rowcol(entry.text_range.end))
             maintext().do_select(IndexRange(start, end))
-            maintext().set_insert_index(IndexRowCol(start), focus=False)
+            maintext().set_insert_index(IndexRowCol(start), focus=not is_mac())
         self.lift()
 
     def highlight_entry(self, entry_index: int) -> None:
