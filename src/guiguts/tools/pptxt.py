@@ -6,6 +6,7 @@ import regex as re
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext
 from guiguts.utilities import IndexRowCol, IndexRange
+from guiguts.file import ProjectDict
 
 REPORT_LIMIT = 5  # Max number of times to report same issue for some checks
 
@@ -28,7 +29,6 @@ cdq: int
 # Perl author: Roger Franks (DP:rfrank) - 2009
 # Go author: Roger Franks (DP:rfrank) - 2020
 # Python author: Quentin Campbell (DP:qgc) - 2024
-# Last edit: 18-mar-2024
 ########################################################
 
 
@@ -336,7 +336,7 @@ def repeated_words_check() -> None:
         # NB If no words on line or only a single word, for-loop will not be
         #    executed so wordn1 is not bound to a value (i.e. is unassigned).
         if len(words_on_line) > 1 and not re.match(r"^[\p{Nd}]+$", wordn1):
-            no_numbers_words_on_line.append(word)
+            no_numbers_words_on_line.append(wordn1)
         # There may be possible repeats of words (non-numbers) on line.
         if possibles:
             # For each word on line see if a copy follows separated only
@@ -511,35 +511,19 @@ def hyphenated_words_check() -> None:
                 for line_number in line_number_list:
                     # The same line number can appear multiple times in the list if the word in question
                     # appears multiple times on the line. Treat each appearance of the word separately.
-                    # We do this using re.finditer() the first time the line number appears in the list
-                    # then ignoring all other appearances of that line number in the list.
+                    # At the first time the line number appears in the list report all the occurrences
+                    # on that line then ignore any other instances of that line number in the list.
                     if line_number == prev_line_number:
                         prev_line_number = line_number
                         continue
-                    # Limit the length of the report by reporting only REPORT_LIMIT (5) lines for a word.
+                    # Limit the length of the report by reporting only first 5 lines for a word ...
                     if count == REPORT_LIMIT:
                         count = -1
                         break
-                    # Use re.finditer() to generate a new dialog line for each time the word appears
-                    # on the line.
+                    # ... but note that a new dialog line is generated for each time the word appears
+                    # on the line so there may be more than 5 dialog lines output
                     line = book[line_number - 1]
-                    for match_obj in re.finditer(regx, line):
-                        # Get start/end of error in file.
-                        error_start = str(line_number) + "." + str(match_obj.start(1))
-                        error_end = str(line_number) + "." + str(match_obj.end(1))
-                        # Store in structure for file row/col positions & ranges.
-                        start_rowcol = IndexRowCol(error_start)
-                        end_rowcol = IndexRowCol(error_end)
-                        # Highlight occurrence of word in the line.
-                        hilite_start = match_obj.start(1)
-                        hilite_end = match_obj.end(1)
-                        # Add record to the dialog.
-                        checker_dialog.add_entry(
-                            line,
-                            IndexRange(start_rowcol, end_rowcol),
-                            hilite_start,
-                            hilite_end,
-                        )
+                    report_all_occurrences_on_line(regx, line, line_number)
                     count += 1
                     prev_line_number = line_number
 
@@ -560,35 +544,19 @@ def hyphenated_words_check() -> None:
                 for line_number in line_number_list:
                     # The same line number can appear multiple times in the list if the word in question
                     # appears multiple times on the line. Treat each appearance of the word separately.
-                    # We do this using re.finditer() the first time the line number appears in the list
-                    # list then ignoring all other appearances of that line number in the list.
+                    # At the first time the line number appears in the list report all the occurrences
+                    # on that line then ignore any other instances of that line number in the list.
                     if line_number == prev_line_number:
                         prev_line_number = line_number
                         continue
-                    # Limit the length of the report by reporting only first 5 lines for a word.
+                    # Limit the length of the report by reporting only first 5 lines for a word ...
                     if count == REPORT_LIMIT:
                         count = -1
                         break
-                    # Use re.finditer() to generate a new dialog line for each time the word appears
-                    # on the line.
+                    # ... but note that a new dialog line is generated for each time the word appears
+                    # on the line so there may be more than 5 dialog lines output.
                     line = book[line_number - 1]
-                    for match_obj in re.finditer(regx, line):
-                        # Get start/end of error in file.
-                        error_start = str(line_number) + "." + str(match_obj.start(1))
-                        error_end = str(line_number) + "." + str(match_obj.end(1))
-                        # Store in structure for file row/col positions & ranges.
-                        start_rowcol = IndexRowCol(error_start)
-                        end_rowcol = IndexRowCol(error_end)
-                        # Highlight occurrence of word in the line.
-                        hilite_start = match_obj.start(1)
-                        hilite_end = match_obj.end(1)
-                        # Add record to the dialog.
-                        checker_dialog.add_entry(
-                            line,
-                            IndexRange(start_rowcol, end_rowcol),
-                            hilite_start,
-                            hilite_end,
-                        )
+                    report_all_occurrences_on_line(regx, line, line_number)
                     count += 1
                     prev_line_number = line_number
 
@@ -669,40 +637,24 @@ def weird_characters() -> None:
             # the dialog multiple times, each time highlighting a different instance of it.
 
             prev_line_number = -1
-            regx = f"(\\{weirdo})"
+            regx = "(" + "\\" + weirdo + ")"
             count = 0
             for line_number in line_list:
                 # The same line number can appear multiple times in the list if the weirdo in question
                 # appears multiple times on the line. Treat each appearance of the weirdo separately.
-                # We do this using re.finditer() the first time the line number appears in the list
-                # list then ignoring all other appearances of that line number in the list.
+                # At the first time the line number appears in the list report all the occurrences
+                # on that line then ignore any other instances of that line number in the list.
                 if line_number == prev_line_number:
                     prev_line_number = line_number
                     continue
-                # Limit the length of the report by reporting only REPORT_LIMIT (5) lines for a word.
+                # Limit the length of the report by reporting only first 5 lines for a word ...
                 if count == REPORT_LIMIT:
                     count = -1
                     break
-                # Use re.finditer() to generate a new dialog line for each time the weirdo appears
-                # on the line.
+                # ... but note that a new dialog line is generated for each time the word appears
+                # on the line so there may be more than 5 dialog lines output.
                 line = book[line_number - 1]
-                for match_obj in re.finditer(regx, line):
-                    # Get start/end of error in file.
-                    error_start = str(line_number) + "." + str(match_obj.start(1))
-                    error_end = str(line_number) + "." + str(match_obj.end(1))
-                    # Store in structure for file row/col positions & ranges.
-                    start_rowcol = IndexRowCol(error_start)
-                    end_rowcol = IndexRowCol(error_end)
-                    # Highlight occurrence of word in the line.
-                    hilite_start = match_obj.start(1)
-                    hilite_end = match_obj.end(1)
-                    # Add record to the dialog.
-                    checker_dialog.add_entry(
-                        line,
-                        IndexRange(start_rowcol, end_rowcol),
-                        hilite_start,
-                        hilite_end,
-                    )
+                report_all_occurrences_on_line(regx, line, line_number)
                 count += 1
                 prev_line_number = line_number
 
@@ -723,8 +675,8 @@ def weird_characters() -> None:
 ######################################################################
 
 
-def specials_check() -> None:
-    """A series of textual checks done on a single read of the book lines"""
+def specials_check(project_dict: ProjectDict) -> None:
+    """A series of textual checks done on a single read of the book lines."""
 
     checker_dialog.add_entry(
         "----- Special situations checks ------------------------------------------------"
@@ -747,7 +699,7 @@ def specials_check() -> None:
     def process_line_with_pattern(
         pattern: str, exceptions: Sequence[str], line: str
     ) -> None:
-        """Helper function for abstraction of processing logic
+        """Helper function for abstraction of processing logic.
 
         METHOD
         On a copy of the line passed in:
@@ -774,6 +726,7 @@ def specials_check() -> None:
         # pattern are to be highlighted.
         # Use re.finditer() to generate a new dialog line for each time the pattern (the issue
         # being checked) appears on the line.
+
         for match_obj in re.finditer(pattern, line_copy):
             # Get start/end of error in file.
             error_start = str(line_number) + "." + str(match_obj.start(0))
@@ -787,7 +740,7 @@ def specials_check() -> None:
                 specials_report[heading] = [(line, error_start, error_end, hilite_start, hilite_end)]  # type: ignore[has-type]
 
     def process_word(word: str, exceptions: Sequence[str], line: str) -> None:
-        """Helper function for abstraction of processing logic
+        """Helper function for abstraction of processing logic.
 
         METHOD
         On the line passed in:
@@ -1045,14 +998,6 @@ def specials_check() -> None:
         # on the line.
         ##
 
-        # Temporary variable until decision on loading 'good words'
-        # and/or 'proj dict' is made. It means that...
-        in_good_words_list = False
-        # ...for the moment we assume any suspect word we want to look
-        # up in either collection is not found so will be flagged by
-        # the checks. If it had been present in those collections the
-        # check would not have reported the word.
-
         # We already have a list of words for this line. Note that
         # words are stripped of all punctuation except curly apostrophe.
         # Thus &c. 1s. and 1d. on a line will appear as &c 1s and 1d
@@ -1070,12 +1015,14 @@ def specials_check() -> None:
             # Looks for mixed case within word but not if the word is in
             # the good words list or occurs more than once in the book.
 
-            if word_list_map_count[word] == 1 and not in_good_words_list:
+            if word_list_map_count[word] == 1 and word not in project_dict.good_words:
                 if re.search(r".\p{Ll}+[-]?\p{Lu}", word):
-                    # NB word occurs only once in the book.
+                    # NB word occurs only once in the book and isn't in good_words.
                     line = book[line_index]
                     # Generate dialog tuples.
-                    heading = "Mixed case in word."
+                    heading = (
+                        "Mixed case in word (excluding words in project dictionary)."
+                    )
                     process_word(word, [], line)
 
             # Word start and word endings checks.
@@ -1086,13 +1033,15 @@ def specials_check() -> None:
                 # The following pairs of characters are very rare at word end.
                 if (
                     re.match(
-                        "cb|gb|pb|sb|tb|wh|fr|br|qu|tw|gl|fl|sw|gr|sl|cl|iy", last2
+                        "cb|gb|pb|sb|tb|wh|fr|br|qu|tw|gl|fl|sw|gr|sl|cl|iy",
+                        last2,
+                        re.IGNORECASE,
                     )
-                    and not in_good_words_list
+                    and word not in project_dict.good_words
                 ):
                     line = book[line_index]
                     # Generate dialog tuples.
-                    heading = f"Query word ending with '{last2}'."
+                    heading = f"Query word ending with '{last2}' (excludes words in project dictionary)."
                     process_word(word, [], line)
 
                 # Check word start (first 2 characters)
@@ -1101,11 +1050,11 @@ def specials_check() -> None:
                 # The following pairs of characters are very rare at start of word.
                 if (
                     re.match("hr|hl|cb|sb|tb|wb|tl|tn|rn|lt|tj", first2, re.IGNORECASE)
-                    and not in_good_words_list
+                    and word not in project_dict.good_words
                 ):
                     line = book[line_index]
                     # Generate dialog tuples.
-                    heading = f"Query word starting with '{first2}'."
+                    heading = f"Query word starting with '{first2}' (excludes words in project dictionary)."
                     process_word(word, [], line)
 
             # The following check for mixed letters/digits in word consists of:
@@ -1212,27 +1161,12 @@ def html_check() -> None:
     line_number = 1
     regx = r"<(?=[!\/a-z]).*?(?<=[\"A-Za-z0-9\/]|-)>"
     for line in book:
-        if re.findall(regx, line):
-            # Use re.finditer() to generate a new dialog line for each match
-            # on the line.
-            for match_obj in re.finditer(regx, line):
-                # Get start/end of error in file.
-                error_start = str(line_number) + "." + str(match_obj.start(0))
-                error_end = str(line_number) + "." + str(match_obj.end(0))
-                # Store in structure for file row/col positions & ranges.
-                start_rowcol = IndexRowCol(error_start)
-                end_rowcol = IndexRowCol(error_end)
-                # Highlight occurrence of word in the line.
-                hilite_start = match_obj.start(0)
-                hilite_end = match_obj.end(0)
-                # Add record to the dialog.
-                checker_dialog.add_entry(
-                    line,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
-                )
-                abandoned_html_tag_count += 1
+        if re.search(regx, line):
+            # Generate a new dialog line for each tag on the line, keeping
+            # count of total tags found over all the lines reported.
+            abandoned_html_tag_count += report_all_occurrences_on_line(
+                regx, line, line_number
+            )
             lines_with_html_tags += 1
 
         # If abandoned_HTML_tag_count > courtesy_limit then it looks like we are
@@ -1271,32 +1205,32 @@ def unicode_numeric_character_check() -> None:
     )
 
     # Courtesy limit if user uploads fpgen source, etc.
+    courtesy_limit = 5
     numeric_char_reference_count = 0
+    lines_with_numeric_char_references = 0
 
     line_number = 1
     regx = r"(&#[0-9]{1,4};|&#x[0-9a-fA-F]{1,4};)"
     for line in book:
         if re.search(regx, line):
-            # Use re.finditer() to generate a new dialog line for each match
-            # on the line.
-            for match_obj in re.finditer(regx, line):
-                # Get start/end of error in file.
-                error_start = str(line_number) + "." + str(match_obj.start(0))
-                error_end = str(line_number) + "." + str(match_obj.end(0))
-                # Store in structure for file row/col positions & ranges.
-                start_rowcol = IndexRowCol(error_start)
-                end_rowcol = IndexRowCol(error_end)
-                # Highlight occurrence of word in the line.
-                hilite_start = match_obj.start(0)
-                hilite_end = match_obj.end(0)
-                # Add record to the dialog.
-                checker_dialog.add_entry(
-                    line,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
-                )
-                numeric_char_reference_count += 1
+            # Generate a new dialog line for each match on the line, keeping
+            # count of number of character references encountered.
+            numeric_char_reference_count += report_all_occurrences_on_line(
+                regx, line, line_number
+            )
+            lines_with_numeric_char_references += 1
+
+        # If numeric_char_reference_count > courtesy_limit then it looks like we are
+        # not dealing with a plain text file afterall. Flag this and report the
+        # number of numeric character references found so far then exit loop.
+
+        if numeric_char_reference_count > courtesy_limit:
+            checker_dialog.add_entry("")
+            record = f"Source file not plain text: {lines_with_numeric_char_references} book lines with {numeric_char_reference_count} unicode numeric character references so far..."
+            checker_dialog.add_entry(record)
+            checker_dialog.add_entry("...abandoning check.")
+            # Don't search any more book lines for numeric character references.
+            break
 
         line_number += 1
 
@@ -1334,26 +1268,8 @@ def adjacent_spaces_check() -> None:
         # If adjacent spaces but no leading spaces then ...
         if re.search(r"\s\s+?", line) and not re.search(r"^\s+?", line):
             no_adjacent_spaces_found = False
-            regx = r"\s\s+"
-            # Use re.finditer() to generate a new dialog line for each match
-            # on the line.
-            for match_obj in re.finditer(regx, line):
-                # Get start/end of error in file.
-                error_start = str(line_number) + "." + str(match_obj.start(0))
-                error_end = str(line_number) + "." + str(match_obj.end(0))
-                # Store in structure for file row/col positions & ranges.
-                start_rowcol = IndexRowCol(error_start)
-                end_rowcol = IndexRowCol(error_end)
-                # Highlight occurrence of word in the line.
-                hilite_start = match_obj.start(0)
-                hilite_end = match_obj.end(0)
-                # Add record to the dialog.
-                checker_dialog.add_entry(
-                    line,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
-                )
+            # Generate a new dialog line for each match on the line.
+            report_all_occurrences_on_line(r"\s\s+", line, line_number)
 
         line_number += 1
 
@@ -1420,15 +1336,16 @@ def double_dash_replace(matchobj: re.Match) -> str:
     return matchobj.group(1) + "—" + matchobj.group(2)
 
 
-def report_all_occurrences_on_line(pattern: str, line: str, line_number: int) -> None:
+def report_all_occurrences_on_line(pattern: str, line: str, line_number: int) -> int:
     """Abstraction of dialog code that's used repeatedly for reporting.
 
     Args:
-        pattern - a regex of the pattern to be matched and highlighted.
-        line - the string on which to match the pattern.
-        line_number - the line number of the line in the file.
+        pattern: A regex of the pattern to be matched and highlighted.
+        line: The string on which to match the pattern.
+        line_number: The line number of the line in the file.
     """
 
+    count_of_matches = 0
     for match_obj in re.finditer(pattern, line):
         # Get start/end of error in file.
         error_start = str(line_number) + "." + str(match_obj.start(0))
@@ -1446,6 +1363,9 @@ def report_all_occurrences_on_line(pattern: str, line: str, line_number: int) ->
             hilite_start,
             hilite_end,
         )
+        count_of_matches += 1
+
+    return count_of_matches
 
 
 ######################################################################
@@ -1608,7 +1528,7 @@ def curly_quote_check() -> None:
 
 
 def quote_type_checks() -> None:
-    """Check for mixed straight/curly quotes"""
+    """Check for mixed straight/curly quotes."""
 
     checker_dialog.add_entry(
         "----- Quotes types check -------------------------------------------------------"
@@ -1939,33 +1859,11 @@ def dash_review() -> None:
         checker_dialog.add_entry(
             "Adjacent dashes (expected at least 8 emdash or keyboard '-' as a separator)"
         )
-        checker_dialog.add_entry(
-            "NB Only first dash of each dash-sequence instance is highlighted here"
-        )
 
         for record in a_hh:
             line_number = record[0]
             line = record[1]
-
-            # Highlight only first dash in each sequence in report but whole sequence
-            # in the file when report line clicked.
-            for match_obj in re.finditer(r"(\p{Pd}\p{Pd}+)", line):
-                # Get start/end of error in file; i.e. whole dash-sequence instance.
-                error_start = str(line_number) + "." + str(match_obj.start(0))
-                error_end = str(line_number) + "." + str(match_obj.end(0))
-                # Store in structure for file row/col positions & ranges.
-                start_rowcol = IndexRowCol(error_start)
-                end_rowcol = IndexRowCol(error_end)
-                # Highlight just the first dash in this dash-sequence instance.
-                hilite_start = match_obj.start(0)
-                hilite_end = match_obj.start(0) + 1
-                # Add record to the dialog.
-                checker_dialog.add_entry(
-                    line,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
-                )
+            report_all_occurrences_on_line(r"(\p{Pd}\p{Pd}+)", line, line_number)
 
     # Report hyphen-minus
 
@@ -2040,34 +1938,11 @@ def dash_review() -> None:
             first_header = False
         else:
             checker_dialog.add_entry("")
-        checker_dialog.add_entry(
-            "Em-dash (if sequence of two or more only first em-dash is highlighted)"
-        )
+        checker_dialog.add_entry("Em-dash")
         for record in a_em:
             line_number = record[0]
             line = record[1]
-
-            # Highlight only first em-dash in the report of any sequence of two or
-            # more em-dash but highlight whole sequence in the file when report line
-            # is clicked. Note there may be single em-dashes and sequences of two or
-            # more em-dashes on the same line, all to be highlighted as just described.
-            for match_obj in re.finditer(r"(——*)", line):
-                # Get start/end of error in file; i.e. whole dash-sequence instance.
-                error_start = str(line_number) + "." + str(match_obj.start(0))
-                error_end = str(line_number) + "." + str(match_obj.end(0))
-                # Store in structure for file row/col positions & ranges.
-                start_rowcol = IndexRowCol(error_start)
-                end_rowcol = IndexRowCol(error_end)
-                # Highlight just the first dash in this dash-sequence instance.
-                hilite_start = match_obj.start(0)
-                hilite_end = match_obj.start(0) + 1
-                # Add record to the dialog.
-                checker_dialog.add_entry(
-                    line,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
-                )
+            report_all_occurrences_on_line(ch_em, line, line_number)
 
     # Report unrecognised dash
 
@@ -2618,7 +2493,7 @@ def build_scanno_dictionary() -> Dict[str, int]:
 ##
 
 
-def pptxt() -> None:
+def pptxt(project_dict: ProjectDict) -> None:
     """Top-level pptxt function."""
     global checker_dialog
     global book, word_list_map_count, word_list_map_lines, word_list_map_words
@@ -2629,7 +2504,9 @@ def pptxt() -> None:
     found_long_doctype_declaration = False
 
     # Create the checker dialog to show results
-    checker_dialog = CheckerDialog.show_dialog("PPtxt Results", rerun_command=pptxt)
+    checker_dialog = CheckerDialog.show_dialog(
+        "PPtxt Results", rerun_command=lambda: pptxt(project_dict)
+    )
     checker_dialog.reset()
 
     # Get the whole of the file from the main text widget
@@ -2723,7 +2600,7 @@ def pptxt() -> None:
     html_check()
     unicode_numeric_character_check()
     # This final one does multiple checks.
-    specials_check()
+    specials_check(project_dict)
 
     # Add final divider line to dialog.
 

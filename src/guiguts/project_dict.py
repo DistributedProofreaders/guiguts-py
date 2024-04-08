@@ -9,6 +9,7 @@ GOOD_WORDS_KEY = "good words"
 BAD_WORDS_KEY = "bad words"
 GOOD_WORDS_FILENAME = "good_words.txt"
 BAD_WORDS_FILENAME = "bad_words.txt"
+PROJECT_DICT_FILENAME = "project_dict.json"
 
 
 class ProjectDict:
@@ -80,17 +81,16 @@ class ProjectDict:
         return load_wordfile_into_dict(path, target_dict)
 
     def _dict_name_from_file_name(self, file_name: str) -> str:
-        """Get dictionary name for given file name.
+        """Set project dictionary path name from given file name.
 
         Args:
-            file_name: name of main text file.
+            file_name: path name of main text file.
 
         Returns:
-            Name of dictionary file.
+            path name of project dictionary file.
         """
-        root, _ = os.path.splitext(file_name)
-        root += "_dict"
-        return root + ".json"
+        dir_name = os.path.dirname(file_name)
+        return os.path.join(dir_name, PROJECT_DICT_FILENAME)
 
     def contains_words(self) -> bool:
         """Return whether project dictionary contains any good/bad words.

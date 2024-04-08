@@ -397,7 +397,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
                 self.file.project_dict, self.file.add_good_word_to_project_dictionary
             ),
         )
-        menu_edit.add_button("PP~txt", pptxt)
+        menu_edit.add_button("PP~txt", lambda: pptxt(self.file.project_dict))
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
