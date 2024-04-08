@@ -22,8 +22,6 @@ _the_jeebies_checker = None  # pylint: disable=invalid-name
 # Go author: Roger Franks (DP:rfrank) - 2020
 # Python author: Quentin Campbell (DP:qgc) - 2024
 ########################################################
-# 2024.04.06 Used sentence case with full stop for first
-#            sentence of docstrings. Ditto for args.
 
 
 class DictionaryNotFoundError(Exception):
@@ -105,74 +103,39 @@ class JeebiesChecker:
         self, hebe: str, wbs: list, wbl: list, checker_dialog: CheckerDialog
     ) -> int:
         """Look for suspect "w1 be w2" or "w1 he w2" phrases in paragraphs."""
-
         suspects_count = 0
-        if hebe == "be":
-            # Search for 3-form pattern "w1 be w2" in a lower-case copy of paragraph.
-            for rec_num, para_lc in enumerate(wbl):
-                for match_obj in re.finditer(r"[a-z’]+ be [a-z’]+", para_lc):
-                    # Have a 3-word form here ("must be taken").
-                    # See if it's in the list.
-                    be_form = para_lc[match_obj.start(0) : match_obj.end(0)]
-                    be_count = self.find_in_dictionary(be_form)
-                    # Change 'be' to 'he' and lookup that 3-word form.
-                    he_form = re.sub("be", "he", be_form)
-                    he_count = self.find_in_dictionary(he_form)
-                    # At this point we have the 'be' form and how common that is in
-                    # be_count and the 'he' form and how common that is in he_count.
+        # Get the opposite word to the one being reported on.
+        behe = "he" if hebe == "be" else "be"
 
-                    # Improved Golang/PPWB format and values calculation
-                    if he_count > 0 and (
-                        be_count == 0 or he_count / be_count > PARANOID_LEVEL_3WORDS
-                    ):
-                        suspects_count += 1
-                        info = f"({he_count}/{be_count} - 'he' is seen more frequently than 'be' in this phrase)"
+        # Search for 3-form pattern "w1 he/be w2" in a lower-case copy of paragraph.
+        for rec_num, para_lc in enumerate(wbl):
+            for match_obj in re.finditer(rf"[a-z’]+ {hebe} [a-z’]+", para_lc):
+                # Have a 3-word form here (e.g. "must be taken" or "long he remained").
+                # See if it's in the list. If so get its frequency of occurrence.
+                hebe_form = para_lc[match_obj.start(0) : match_obj.end(0)]
+                hebe_count = self.find_in_dictionary(hebe_form)
+                # Swap 'he' for 'be' (or vice versa) in 3-word form and lookup that.
+                behe_form = re.sub(hebe, behe, hebe_form)
+                behe_count = self.find_in_dictionary(behe_form)
+                # At this point we have the two forms and how common each are as
+                # the variables hebe_count and behe_count.
 
-                        # Add this 3-form and its info to the dialog
+                # Improved Golang/PPWB format and values calculation
+                if behe_count > 0 and (
+                    hebe_count == 0 or behe_count / hebe_count > PARANOID_LEVEL_3WORDS
+                ):
+                    suspects_count += 1
+                    info = f"({behe_count}/{hebe_count} - '{behe}' is seen more frequently than '{hebe}' in this phrase)"
 
-                        header = f'Query phrase "{be_form}" {info}'
-                        # Get whole-words slice from original para text that is approximately
-                        # centered on the 3-form phrase.
-                        _, _, centered_slice = self.get_para_slice(
-                            match_obj.start(0), wbs[rec_num]
-                        )
-                        self.add_to_dialog(header, centered_slice, checker_dialog)
+                    # Add this 3-form and its info to the dialog
 
-        elif hebe == "he":
-            # Search for 3-form pattern "w1 he w2" in a lower-case copy of paragraph.
-            for rec_num, para_lc in enumerate(wbl):
-                for match_obj in re.finditer(r"[a-z’]+ he [a-z’]+", para_lc):
-                    # Have a 3-word form here ("where he expected").
-                    # See if it's in the list.
-                    he_form = para_lc[match_obj.start(0) : match_obj.end(0)]
-                    he_count = self.find_in_dictionary(he_form)
-                    # Change 'he' to 'be' and lookup that 3-word form.
-                    be_form = re.sub("he", "be", he_form)
-                    be_count = self.find_in_dictionary(be_form)
-                    # At this point we have the 'he' form and how common that is in
-                    # he_count and the 'be' form and how common that is in be_count.
-
-                    # Improved Golang/PPWB format and values calculation
-                    if be_count > 0 and (
-                        he_count == 0 or be_count / he_count > PARANOID_LEVEL_3WORDS
-                    ):
-                        suspects_count += 1
-                        info = f"({be_count}/{he_count} - 'be' is seen more frequently than 'he' in this phrase)"
-
-                        # Add this 3-form and its info to the dialog
-
-                        header = f'Query phrase "{he_form}" {info}'
-                        # Get whole-words slice from original para text that is approximately
-                        # centered on the 3-form phrase.
-                        _, _, centered_slice = self.get_para_slice(
-                            match_obj.start(0), wbs[rec_num]
-                        )
-                        self.add_to_dialog(header, centered_slice, checker_dialog)
-
-        else:
-            # Shouldn't reach here as the only argument values for hebe are 'be' or 'he'.
-            pass
-
+                    header = f'Query phrase "{hebe_form}" {info}'
+                    # Get whole-words slice from original para text that is approximately
+                    # centered on the 3-form phrase.
+                    _, _, centered_slice = self.get_para_slice(
+                        match_obj.start(0), wbs[rec_num]
+                    )
+                    self.add_to_dialog(header, centered_slice, checker_dialog)
         return suspects_count
 
     def get_para_slice(self, indx: int, para: str) -> tuple[int, int, str]:
