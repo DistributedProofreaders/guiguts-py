@@ -379,6 +379,17 @@ class CheckerDialog(ToplevelDialog):
             maintext().set_insert_index(IndexRowCol(start), focus=not is_mac())
         self.lift()
 
+    def highlight_entry(self, entry_index: int) -> None:
+        """Highlight the line of text corresponding to the entry_index.
+
+        Args:
+            entry_index: Index into self.entries list.
+        """
+        self.text.tag_remove(SELECT_TAG_NAME, "1.0", tk.END)
+        self.text.tag_add(
+            SELECT_TAG_NAME, f"{entry_index + 1}.0", f"{entry_index + 2}.0"
+        )
+
     @classmethod
     def mark_from_rowcol(cls, rowcol: IndexRowCol) -> str:
         """Return name to use to mark given location in text file.
