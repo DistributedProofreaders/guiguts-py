@@ -122,8 +122,6 @@ class CheckerDialog(ToplevelDialog):
             SELECT_TAG_NAME, background="#dddddd", foreground="#000000"
         )
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
-        # Reduce length of common part of mark names
-        self.mark_prefix = self.__class__.__name__.removesuffix("Dialog")
         self.reset()
 
     @classmethod
@@ -150,7 +148,7 @@ class CheckerDialog(ToplevelDialog):
         self.update_count_label()
         self.text.delete("1.0", tk.END)
         for mark in maintext().mark_names():
-            if mark.startswith(self.mark_prefix):
+            if mark.startswith(self.get_mark_prefix()):
                 maintext().mark_unset(mark)
 
     def add_entry(
@@ -188,10 +186,10 @@ class CheckerDialog(ToplevelDialog):
         self.entries.append(entry)
         if text_range is not None:
             maintext().mark_set(
-                self._mark_from_rowcol(text_range.start), text_range.start.index()
+                self.mark_from_rowcol(text_range.start), text_range.start.index()
             )
             maintext().mark_set(
-                self._mark_from_rowcol(text_range.end), text_range.end.index()
+                self.mark_from_rowcol(text_range.end), text_range.end.index()
             )
             # If none selected, select the first message with a text range
             if self.current_entry_index() is None:
@@ -376,8 +374,8 @@ class CheckerDialog(ToplevelDialog):
         self.text.focus_set()
         entry = self.entries[entry_index]
         if entry.text_range is not None:
-            start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
-            end = maintext().index(self._mark_from_rowcol(entry.text_range.end))
+            start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
+            end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
             maintext().do_select(IndexRange(start, end))
             maintext().set_insert_index(IndexRowCol(start), focus=False)
         self.lift()
@@ -393,7 +391,8 @@ class CheckerDialog(ToplevelDialog):
             SELECT_TAG_NAME, f"{entry_index + 1}.0", f"{entry_index + 2}.0"
         )
 
-    def _mark_from_rowcol(self, rowcol: IndexRowCol) -> str:
+    @classmethod
+    def mark_from_rowcol(cls, rowcol: IndexRowCol) -> str:
         """Return name to use to mark given location in text file.
 
         Args:
@@ -402,4 +401,10 @@ class CheckerDialog(ToplevelDialog):
         Returns:
             Name for mark, e.g. "Checker123.45"
         """
-        return f"{self.mark_prefix}{rowcol.index()}"
+        return f"{cls.get_mark_prefix()}{rowcol.index()}"
+
+    @classmethod
+    def get_mark_prefix(cls) -> str:
+        """pass"""
+        # Reduce length of common part of mark names
+        return cls.__name__.removesuffix("Dialog")

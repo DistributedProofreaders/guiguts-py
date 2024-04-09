@@ -21,6 +21,7 @@ from guiguts.mainwindow import (
     statusbar,
     ErrorHandler,
 )
+from guiguts.misc_tools import basic_fixup_check
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences
 from guiguts.root import root
@@ -391,6 +392,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         menu_edit = Menu(menubar(), "~Tools")
+        menu_edit.add_button("Basic Fi~xup", basic_fixup_check)
         menu_edit.add_button(
             "~Spelling Check",
             lambda: spell_check(

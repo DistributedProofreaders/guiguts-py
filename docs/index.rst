@@ -72,3 +72,8 @@ PPtxt
 ============
     
 .. automodule:: tools.pptxt
+ 
+Misc. Tools
+===========
+    
+.. automodule:: misc_tools
