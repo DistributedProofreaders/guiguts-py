@@ -15,32 +15,32 @@ POEM_TYPES = "[Pp]"
 
 def process_fixup(checker_entry: CheckerEntry) -> None:
     """Process the fixup error."""
-    if checker_entry.text_range:
-        entry_type = checker_entry.text.split(":", 1)[0]
-        start_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.start)
-        end_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
-        match_text = maintext().get(start_mark, end_mark)
-        print(match_text, flush=True)
-        # Several fixup errors are "Spaced ..." and need spaces removing.
-        if entry_type.startswith("Spaced "):
-            replacement_text = match_text.replace(" ", "")
-            maintext().replace(start_mark, end_mark, replacement_text)
-        elif entry_type == "Trailing spaces":
-            replacement_text = match_text.replace(" ", "")
-            maintext().replace(start_mark, end_mark, replacement_text)
-        elif entry_type == "Multiple spaces":
-            # Leave the non-space and first space alone
-            replacement_text = match_text[2:].replace(" ", "")
-            maintext().replace(f"{start_mark} + 2c", end_mark, replacement_text)
-        elif entry_type == "Thought break":
-            maintext().replace(start_mark, end_mark, "<tb>")
-        elif entry_type == "1/l scanno":
-            match_text = match_text.replace("llth", "11th").replace("lst", "1st")
-            maintext().replace(start_mark, end_mark, match_text)
-        elif entry_type == "Ellipsis spacing":
-            maintext().replace(start_mark, end_mark, " ...")
-        else:
-            return
+    if checker_entry.text_range is None:
+        return
+    entry_type = checker_entry.text.split(":", 1)[0]
+    start_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.start)
+    end_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
+    match_text = maintext().get(start_mark, end_mark)
+    # Several fixup errors are "Spaced ..." and need spaces removing.
+    if entry_type.startswith("Spaced "):
+        replacement_text = match_text.replace(" ", "")
+        maintext().replace(start_mark, end_mark, replacement_text)
+    elif entry_type == "Trailing spaces":
+        replacement_text = match_text.replace(" ", "")
+        maintext().replace(start_mark, end_mark, replacement_text)
+    elif entry_type == "Multiple spaces":
+        # Leave the non-space and first space alone
+        replacement_text = match_text[2:].replace(" ", "")
+        maintext().replace(f"{start_mark} + 2c", end_mark, replacement_text)
+    elif entry_type == "Thought break":
+        maintext().replace(start_mark, end_mark, "<tb>")
+    elif entry_type == "1/l scanno":
+        replacement_text = match_text.replace("llth", "11th").replace("lst", "1st")
+        maintext().replace(start_mark, end_mark, replacement_text)
+    elif entry_type == "Ellipsis spacing":
+        maintext().replace(start_mark, end_mark, " ...")
+    else:
+        return
 
 
 def basic_fixup_check() -> None:
