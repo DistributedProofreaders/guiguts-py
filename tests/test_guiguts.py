@@ -2,7 +2,7 @@
 
 from guiguts.file import File
 from guiguts.mainwindow import process_label, process_accel
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_mac, is_windows, is_x11, _is_system
 
 
@@ -21,20 +21,25 @@ def test_file() -> None:
 
 def test_preferences() -> None:
     """Test the Preferences class"""
-    assert preferences.get_default("pkey1") is None
-    preferences.set_default("pkey1", "pdefault1")
-    assert preferences.get_default("pkey1") == "pdefault1"
-    preferences.set("pkey1", "pvalue1")
-    assert preferences.get("pkey1") == "pvalue1"
-    assert preferences.get_default("pkey1") == "pdefault1"
+    # Accessing a pref that doesn't have a default should raise an AssertionError
+    try:
+        preferences.get_default(PrefKey.ROOTGEOMETRY)
+        raise RuntimeError("Failed to trap lack of preferences default")
+    except AssertionError:
+        pass
+    preferences.set_default(PrefKey.ROOTGEOMETRY, "TestGeometry")
+    assert preferences.get_default(PrefKey.ROOTGEOMETRY) == "TestGeometry"
+    preferences.set(PrefKey.ROOTGEOMETRY, "OtherGeometry")
+    assert preferences.get(PrefKey.ROOTGEOMETRY) == "OtherGeometry"
+    assert preferences.get_default(PrefKey.ROOTGEOMETRY) == "TestGeometry"
     keys = preferences.keys()
     assert len(keys) == 1
-    assert "pkey1" in keys
-    preferences.set_default("pkey2", "pdefault2")
+    assert PrefKey.ROOTGEOMETRY in keys
+    preferences.set_default(PrefKey.AUTOIMAGE, True)
     keys = preferences.keys()
     assert len(keys) == 2
-    assert "pkey1" in keys
-    assert "pkey2" in keys
+    assert PrefKey.ROOTGEOMETRY in keys
+    assert PrefKey.AUTOIMAGE in keys
 
 
 def test_mainwindow() -> None:

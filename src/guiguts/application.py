@@ -22,7 +22,7 @@ from guiguts.mainwindow import (
     ErrorHandler,
 )
 from guiguts.page_details import PageDetailsDialog
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.root import root
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
@@ -62,7 +62,7 @@ class Guiguts:
 
         self.init_statusbar(statusbar())
 
-        self.file.languages = preferences.get("DefaultLanguages")
+        self.file.languages = preferences.get(PrefKey.DEFAULTLANGUAGES)
 
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
@@ -116,7 +116,7 @@ class Guiguts:
         elif self.args.recent:
             index = self.args.recent - 1
             try:
-                self.file.load_file(preferences.get("RecentFiles")[index])
+                self.file.load_file(preferences.get(PrefKey.RECENTFILES)[index])
             except IndexError:
                 pass  # Not enough recent files to load the requested one
 
@@ -124,11 +124,11 @@ class Guiguts:
     def auto_image(self) -> bool:
         """Auto image flag: setting causes side effects in UI
         & starts repeating check."""
-        return preferences.get("AutoImage")
+        return preferences.get(PrefKey.AUTOIMAGE)
 
     @auto_image.setter
     def auto_image(self, value: bool) -> None:
-        preferences.set("AutoImage", value)
+        preferences.set(PrefKey.AUTOIMAGE, value)
         statusbar().set("see img", "Auto Img" if value else "See Img")
         if value:
             self.image_dir_check()
@@ -252,25 +252,29 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         def set_auto_image(value: bool) -> None:
             self.auto_image = value
 
-        preferences.set_default("AutoImage", False)
-        preferences.set_callback("AutoImage", set_auto_image)
-        preferences.set_default("Bell", "VisibleAudible")
-        preferences.set_default("ImageWindow", "Docked")
-        preferences.set_default("RecentFiles", [])
-        preferences.set_default("LineNumbers", True)
+        preferences.set_default(PrefKey.AUTOIMAGE, False)
+        preferences.set_callback(PrefKey.AUTOIMAGE, set_auto_image)
+        preferences.set_default(PrefKey.BELL, "VisibleAudible")
+        preferences.set_default(PrefKey.IMAGEWINDOW, "Docked")
+        preferences.set_default(PrefKey.RECENTFILES, [])
+        preferences.set_default(PrefKey.LINENUMBERS, True)
         preferences.set_callback(
-            "LineNumbers", lambda show: maintext().show_line_numbers(show)
+            PrefKey.LINENUMBERS, lambda show: maintext().show_line_numbers(show)
         )
-        preferences.set_default("SearchHistory", [])
-        preferences.set_default("ReplaceHistory", [])
-        preferences.set_default("SearchDialogReverse", False)
-        preferences.set_default("SearchDialogMatchcase", False)
-        preferences.set_default("SearchDialogWholeword", False)
-        preferences.set_default("SearchDialogWrap", True)
-        preferences.set_default("SearchDialogRegex", False)
-        preferences.set_default("DialogGeometry", {})
-        preferences.set_default("RootGeometry", "800x400")
-        preferences.set_default("DefaultLanguages", "en")
+        preferences.set_default(PrefKey.SEARCHHISTORY, [])
+        preferences.set_default(PrefKey.REPLACEHISTORY, [])
+        preferences.set_default(PrefKey.SEARCHDIALOGREVERSE, False)
+        preferences.set_default(PrefKey.SEARCHDIALOGMATCHCASE, False)
+        preferences.set_default(PrefKey.SEARCHDIALOGWHOLEWORD, False)
+        preferences.set_default(PrefKey.SEARCHDIALOGWRAP, True)
+        preferences.set_default(PrefKey.SEARCHDIALOGREGEX, False)
+        preferences.set_default(PrefKey.DIALOGGEOMETRY, {})
+        preferences.set_default(PrefKey.ROOTGEOMETRY, "800x400")
+        preferences.set_default(PrefKey.DEFAULTLANGUAGES, "en")
+
+        # Check all preferences have a default
+        for pref_key in PrefKey:
+            assert preferences.get_default(pref_key) is not None
 
         preferences.load()
 
@@ -320,7 +324,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_file_recent_menu(self, parent: Menu) -> None:
         """Create the Recent Documents menu."""
         recent_menu = Menu(parent, "Recent Doc~uments")
-        for count, file in enumerate(preferences.get("RecentFiles"), start=1):
+        for count, file in enumerate(preferences.get(PrefKey.RECENTFILES), start=1):
             recent_menu.add_button(
                 f"~{count}: {file}",
                 lambda fn=file: self.open_file(fn),  # type:ignore[misc]
@@ -406,7 +410,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "~Dock Image",
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
-            preferences.get("ImageWindow") == "Docked",
+            preferences.get(PrefKey.IMAGEWINDOW) == "Docked",
         )
         menu_view.add_button("~Show Image", self.show_image)
         menu_view.add_button("~Hide Image", self.hide_image)

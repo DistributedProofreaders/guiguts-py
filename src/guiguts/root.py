@@ -9,7 +9,7 @@ from types import TracebackType
 from typing import Any
 
 from guiguts.maintext import maintext
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.widgets import grab_focus
 
 logger = logging.getLogger(__package__)
@@ -26,7 +26,7 @@ class Root(tk.Tk):
         _the_root = self
 
         super().__init__(**kwargs)
-        self.geometry(preferences.get("RootGeometry"))
+        self.geometry(preferences.get(PrefKey.ROOTGEOMETRY))
         self.option_add("*tearOff", False)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -74,7 +74,7 @@ class Root(tk.Tk):
         root dialog creation and resizing. Only the first will actually
         do a save, because the flag will only be true on the first call."""
         if self.save_config:
-            preferences.set("RootGeometry", self.geometry())
+            preferences.set(PrefKey.ROOTGEOMETRY, self.geometry())
 
 
 def root() -> Root:

@@ -18,7 +18,7 @@ from guiguts.page_details import (
     STYLE_ARABIC,
     STYLE_DITTO,
 )
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.project_dict import ProjectDict, GOOD_WORDS_FILENAME, BAD_WORDS_FILENAME
 from guiguts.root import root
 from guiguts.spell import spell_check_clear_dictionary
@@ -125,7 +125,7 @@ class File:
             value = "en"
         self._languages = value
         self._languages_callback()
-        preferences.set("DefaultLanguages", value)
+        preferences.set(PrefKey.DEFAULTLANGUAGES, value)
         # Inform maintext, so text manipulation algorithms there can check languages
         maintext().set_languages(value)
         # Clear any existing spell checker dictionary
@@ -180,7 +180,7 @@ class File:
             self.filename = ""
             return
         maintext().set_insert_index(IndexRowCol(1, 0))
-        self.languages = preferences.get("DefaultLanguages")
+        self.languages = preferences.get(PrefKey.DEFAULTLANGUAGES)
         bin_matches_file = self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
@@ -353,10 +353,10 @@ class File:
             filename: Name of new file to add to list.
         """
         self.remove_recent_file(filename)
-        recents = preferences.get("RecentFiles")
+        recents = preferences.get(PrefKey.RECENTFILES)
         recents.insert(0, filename)
         del recents[NUM_RECENT_FILES:]
-        preferences.set("RecentFiles", recents)
+        preferences.set(PrefKey.RECENTFILES, recents)
 
     def remove_recent_file(self, filename: str) -> None:
         """Remove given filename from list of recent files.
@@ -364,10 +364,10 @@ class File:
         Args:
             filename: Name of new file to add to list.
         """
-        recents = preferences.get("RecentFiles")
+        recents = preferences.get(PrefKey.RECENTFILES)
         if filename in recents:
             recents.remove(filename)
-            preferences.set("RecentFiles", recents)
+            preferences.set(PrefKey.RECENTFILES, recents)
 
     def set_page_marks(self, page_details: PageDetails) -> None:
         """Set page marks from keys/values in dictionary.
