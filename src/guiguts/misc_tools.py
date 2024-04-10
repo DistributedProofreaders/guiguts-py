@@ -42,6 +42,7 @@ def process_fixup(checker_entry: CheckerEntry) -> None:
     else:
         return
 
+
 def basic_fixup_check() -> None:
     """Check the currently loaded file for basic fixup errors."""
 
