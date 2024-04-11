@@ -244,7 +244,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
     def show_help_manual(self) -> None:
         """Display the manual."""
-        webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
+        webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual")
 
     def initialize_preferences(self) -> None:
         """Set default preferences and load settings from the GGPrefs file."""
