@@ -188,6 +188,7 @@ class MainText(tk.Text):
         func: Callable[[tk.Event], Optional[str]],
         add: bool = False,
         force_break: bool = True,
+        bind_all: bool = False,
     ) -> None:
         """Bind event string to given function. Provides ability to force
         a "break" return in order to stop class binding being executed.
@@ -197,6 +198,7 @@ class MainText(tk.Text):
             func: Function to bind to event - may handle return "break" itself.
             add: True to add this binding without removing existing binding.
             force_break: True to always return "break", regardless of return from `func`.
+            bind_all: True to bind keystroke to all other widgets as well as maintext
         """
 
         def break_func(event: tk.Event) -> Any:
@@ -205,6 +207,8 @@ class MainText(tk.Text):
             return "break" if force_break else func_ret
 
         super().bind(event_string, break_func, add)
+        if bind_all:
+            self.bind_all(event_string, break_func, add)
 
     # The following methods are simply calling the Text widget method
     # then updating the linenumbers widget
@@ -274,7 +278,7 @@ class MainText(tk.Text):
 
     def key_bind(self, keyevent: str, handler: Callable[[Any], None]) -> None:
         """Bind lower & uppercase versions of ``keyevent`` to ``handler``
-        in main text window.
+        in main text window, and all other widgets.
 
         If this is not done, then use of Caps Lock key causes confusing
         behavior, because pressing ``Ctrl`` and ``s`` sends ``Ctrl+S``.
@@ -286,8 +290,8 @@ class MainText(tk.Text):
         lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
         uk = re.sub("[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
-        self.bind_event(lk, handler)
-        self.bind_event(uk, handler)
+        self.bind_event(lk, handler, bind_all=True)
+        self.bind_event(uk, handler, bind_all=True)
 
     #
     # Handle "modified" flag
