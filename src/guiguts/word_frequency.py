@@ -441,6 +441,25 @@ class WordFrequencyDialog(ToplevelDialog):
             message = f"{entry.frequency:<7} {word}{suspect}\n"
             self.text.insert(tk.END, message)
 
+    def whole_word_search(self, word: str) -> bool:
+        """Return if a whole word search should be done for given word.
+
+        Args:
+            word: The "word" being searched for (may be multiple word string).
+
+        Returns:
+            True if "word" should be searched for with "wholeword" flag. This is
+            not the case for character count or words that begin/end with
+            a non-word character."""
+        # Generally want "wholeword" search, but not for character count or marked-up phrases
+        return not (
+            self.display_type.get() == WFDisplayType.CHAR_COUNTS
+            or (
+                self.display_type.get() == WFDisplayType.MARKEDUP
+                and word.startswith("<")
+            )
+        )
+
     def goto_word(self, event: tk.Event) -> str:
         """Go to first/next occurrence of word selected by `event`.
 
@@ -457,12 +476,13 @@ class WordFrequencyDialog(ToplevelDialog):
             start.col += 1
         else:
             start = maintext().start()
+        # Generally want "wholeword" search, but not for character count or marked-up phrases
         match = maintext().find_match(
             word,
             IndexRange(start, maintext().end()),
             nocase=self.ignore_case.get(),
             regexp=False,
-            wholeword=(self.display_type.get() != WFDisplayType.CHAR_COUNTS),
+            wholeword=self.whole_word_search(word),
             backwards=False,
         )
         if match is None:
@@ -480,11 +500,12 @@ class WordFrequencyDialog(ToplevelDialog):
         except IndexError:
             return "break"
         self.text.select_line(entry_index + 1)
+        word = self.entries[entry_index].word
 
         dlg = SearchDialog.show_dialog()
-        dlg.search_box_set(self.entries[entry_index].word)
+        dlg.search_box_set(word)
         SearchDialog.matchcase.set(not WordFrequencyDialog.ignore_case.get())
-        SearchDialog.wholeword.set(True)
+        SearchDialog.wholeword.set(self.whole_word_search(word))
         SearchDialog.regex.set(False)
 
         return "break"
