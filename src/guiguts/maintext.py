@@ -276,7 +276,9 @@ class MainText(tk.Text):
         """
         return self.linenumbers.winfo_viewable()
 
-    def key_bind(self, keyevent: str, handler: Callable[[Any], None]) -> None:
+    def key_bind(
+        self, keyevent: str, handler: Callable[[Any], None], bind_all: bool
+    ) -> None:
         """Bind lower & uppercase versions of ``keyevent`` to ``handler``
         in main text window, and all other widgets.
 
@@ -286,12 +288,13 @@ class MainText(tk.Text):
         Args:
             keyevent: Key event to trigger call to ``handler``.
             handler: Callback function to be bound to ``keyevent``.
+            bind_all: True to bind keystroke to all other widgets as well as maintext
         """
         lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
         uk = re.sub("[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
-        self.bind_event(lk, handler, bind_all=True)
-        self.bind_event(uk, handler, bind_all=True)
+        self.bind_event(lk, handler, bind_all=bind_all)
+        self.bind_event(uk, handler, bind_all=bind_all)
 
     #
     # Handle "modified" flag
