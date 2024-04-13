@@ -476,9 +476,12 @@ class WordFrequencyDialog(ToplevelDialog):
             start.col += 1
         else:
             start = maintext().start()
+        # Special handling for newline characters (displayed as RETURN_ARROW)
+        match_word = re.sub(RETURN_ARROW, "\n", word) if RETURN_ARROW in word else word
+
         # Generally want "wholeword" search, but not for character count or marked-up phrases
         match = maintext().find_match(
-            word,
+            match_word,
             IndexRange(start, maintext().end()),
             nocase=self.ignore_case.get(),
             regexp=False,
@@ -502,8 +505,11 @@ class WordFrequencyDialog(ToplevelDialog):
         self.text.select_line(entry_index + 1)
         word = self.entries[entry_index].word
 
+        # Special handling for newline characters (displayed as RETURN_ARROW)
+        match_word = re.sub(RETURN_ARROW, "\n", word) if RETURN_ARROW in word else word
+
         dlg = SearchDialog.show_dialog()
-        dlg.search_box_set(word)
+        dlg.search_box_set(match_word)
         SearchDialog.matchcase.set(not WordFrequencyDialog.ignore_case.get())
         SearchDialog.wholeword.set(self.whole_word_search(word))
         SearchDialog.regex.set(False)
@@ -796,7 +802,7 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
             unmarked_search,
             IndexRange(maintext().start(), maintext().end()),
             nocase=False,
-            regexp=True,
+            regexp=False,
             wholeword=True,
         )
         unmarked_count = len(matches) - marked_count
