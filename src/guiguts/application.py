@@ -464,7 +464,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             row, col = maintext().get_insert_index().rowcol()
             return f"L:{row} C:{col}"
 
-        the_statusbar.add("rowcol", update=rowcol_str)
+        the_statusbar.add(
+            "rowcol",
+            tooltip="Left click: Go to line\nRight click: Toggle line numbers",
+            update=rowcol_str,
+        )
         the_statusbar.add_binding("rowcol", "ButtonRelease-1", self.file.goto_line)
         the_statusbar.add_binding(
             "rowcol", "ButtonRelease-3", maintext().toggle_line_numbers
@@ -472,14 +476,20 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         the_statusbar.add(
             "img",
+            tooltip="Left click: Go to image",
             update=lambda: "Img: " + self.file.get_current_image_name(),
         )
         the_statusbar.add_binding("img", "ButtonRelease-1", self.file.goto_image)
 
-        the_statusbar.add("prev img", text="<", width=1)
+        the_statusbar.add("prev img", tooltip="Previous image", text="<", width=1)
         the_statusbar.add_binding("prev img", "ButtonRelease-1", self.file.prev_page)
 
-        the_statusbar.add("see img", text="See Img", width=9)
+        the_statusbar.add(
+            "see img",
+            tooltip="Left click: See image\nDouble click: Toggle auto-image\nRight click: Choose scans folder",
+            text="See Img",
+            width=9,
+        )
         the_statusbar.add_binding(
             "see img",
             "ButtonRelease-1",
@@ -490,11 +500,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         the_statusbar.add_binding("see img", "Double-Button-1", self.toggle_auto_image)
 
-        the_statusbar.add("next img", text=">", width=1)
+        the_statusbar.add("next img", tooltip="Next image", text=">", width=1)
         the_statusbar.add_binding("next img", "ButtonRelease-1", self.file.next_page)
 
         the_statusbar.add(
             "page label",
+            tooltip="Left click: Go to page\nRight click: Configure page labels",
             text="Lbl: ",
             update=lambda: "Lbl: " + self.file.get_current_page_label(),
         )
@@ -519,12 +530,19 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             col_diff = abs(ranges[-1].end.col - ranges[0].start.col)
             return f"R:{row_diff} C:{col_diff}"
 
-        the_statusbar.add("selection", update=selection_str, width=16)
+        the_statusbar.add(
+            "selection",
+            tooltip="Left click: Restore previous selection",
+            update=selection_str,
+            width=16,
+        )
         the_statusbar.add_binding(
             "selection", "ButtonRelease-1", maintext().restore_selection_ranges
         )
 
-        the_statusbar.add("languages label", text="Lang: ")
+        the_statusbar.add(
+            "languages label", tooltip="Left click: Set language(s)", text="Lang: "
+        )
         the_statusbar.add_binding(
             "languages label", "ButtonRelease-1", self.file.set_languages
         )
@@ -540,7 +558,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
                 name = "LINE FEED" if char == "\n" else ""
             return f"U+{ord(char):04x}: {name}"
 
-        the_statusbar.add("ordinal", update=ordinal_str)
+        the_statusbar.add(
+            "ordinal", tooltip="Character after the cursor", update=ordinal_str
+        )
 
     def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""
