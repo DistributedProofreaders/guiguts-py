@@ -405,17 +405,35 @@ class WordFrequencyDialog(ToplevelDialog):
         """Display all the stored entries in the dialog according to
         the sort setting."""
 
-        def sort_key_alpha(entry: WordFrequencyEntry) -> tuple[str, str, str]:
-            no_dia = DiacriticRemover.remove_diacritics(entry.word)
-            return (no_dia.lower(), no_dia, entry.word)
+        def no_markup_key(word: str) -> tuple[str, ...]:
+            """Return additional sort keys to keep identical marked-up and non_marked-up phrases together."""
+            if self.display_type.get() == WFDisplayType.MARKEDUP:
+                no_markup = re.sub("<.*?>", "", word)
+                return (no_markup.lower(), no_markup)
+            return ()
 
-        def sort_key_freq(entry: WordFrequencyEntry) -> tuple[int, str, str, str]:
+        def sort_key_alpha(
+            entry: WordFrequencyEntry,
+        ) -> tuple[str, ...]:
             no_dia = DiacriticRemover.remove_diacritics(entry.word)
-            return (-entry.frequency, no_dia.lower(), no_dia, entry.word)
+            return no_markup_key(no_dia) + (no_dia.lower(), no_dia, entry.word)
 
-        def sort_key_len(entry: WordFrequencyEntry) -> tuple[int, str, str, str]:
+        def sort_key_freq(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
             no_dia = DiacriticRemover.remove_diacritics(entry.word)
-            return (-len(entry.word), no_dia.lower(), no_dia, entry.word)
+            return (
+                (-entry.frequency,)
+                + no_markup_key(no_dia)
+                + (no_dia.lower(), no_dia, entry.word)
+            )
+
+        def sort_key_len(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
+            no_dia = DiacriticRemover.remove_diacritics(entry.word)
+            no_markup = no_markup_key(no_dia)
+            if len(no_markup) == 0:
+                length = len(entry.word)
+            else:
+                length = len(no_markup[0])
+            return (-length,) + no_markup + (no_dia.lower(), no_dia, entry.word)
 
         key: Callable[[WordFrequencyEntry], tuple]
         match self.sort_type.get():
@@ -451,13 +469,9 @@ class WordFrequencyDialog(ToplevelDialog):
             True if "word" should be searched for with "wholeword" flag. This is
             not the case for character count or words that begin/end with
             a non-word character."""
-        # Generally want "wholeword" search, but not for character count or marked-up phrases
         return not (
             self.display_type.get() == WFDisplayType.CHAR_COUNTS
-            or (
-                self.display_type.get() == WFDisplayType.MARKEDUP
-                and word.startswith("<")
-            )
+            or re.search(r"^\W|\W$", word)
         )
 
     def goto_word(self, event: tk.Event) -> str:
@@ -476,16 +490,26 @@ class WordFrequencyDialog(ToplevelDialog):
             start.col += 1
         else:
             start = maintext().start()
+        regexp = False
+        wholeword = self.whole_word_search(word)
         # Special handling for newline characters (displayed as RETURN_ARROW)
         match_word = re.sub(RETURN_ARROW, "\n", word) if RETURN_ARROW in word else word
+        # Also special handling for non-marked-up phrase from marked-up check
+        # (Regex to specifically find non-marked-up version)
+        if self.display_type.get() == WFDisplayType.MARKEDUP and not word.startswith(
+            "<"
+        ):
+            regexp = True
+            match_word = r"(^|[^>\w])" + re.escape(match_word) + r"($|[^<\w])"
+            wholeword = False
 
         # Generally want "wholeword" search, but not for character count or marked-up phrases
         match = maintext().find_match(
             match_word,
             IndexRange(start, maintext().end()),
             nocase=self.ignore_case.get(),
-            regexp=False,
-            wholeword=self.whole_word_search(word),
+            regexp=regexp,
+            wholeword=wholeword,
             backwards=False,
         )
         if match is None:
@@ -773,7 +797,7 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
     matches = maintext().find_matches(
         rf"<({markup_types})>([^<]|\n)+</\1>",
         IndexRange(maintext().start(), maintext().end()),
-        nocase=False,
+        nocase=wf_dialog.ignore_case.get(),
         regexp=True,
         wholeword=False,
     )
@@ -784,12 +808,14 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
 
     total_cnt = 0
     suspect_cnt = 0
+    unmarked_count = {}
     for marked_phrase, marked_count in marked_dict.items():
         # Suspect if the bare phrase appears an excess number of times,
         # i.e. all occurrences > marked up occurrences
         unmarked_phrase = re.sub(rf"^<({markup_types})>", "", marked_phrase)
         unmarked_phrase = re.sub(rf"</({markup_types})>$", "", unmarked_phrase)
         unmarked_search = unmarked_phrase.replace(RETURN_ARROW, "\n")
+        unmarked_search = r"(^|[^>\w])" + re.escape(unmarked_search) + r"($|[^<\w])"
         num_words = len(unmarked_search.split())
         # If phrase is longer than "threshold" words, skip it - zero/empty threshold allows any length
         threshold_str = wf_dialog.threshold_box.get()
@@ -798,18 +824,30 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
         if num_words > threshold > 0:
             continue
         total_cnt += 1
-        matches = maintext().find_matches(
-            unmarked_search,
-            IndexRange(maintext().start(), maintext().end()),
-            nocase=False,
-            regexp=False,
-            wholeword=True,
-        )
-        unmarked_count = len(matches) - marked_count
-        if unmarked_count > 0:
-            suspect_cnt += 1
+
+        # Store unmarked counts so we don't do unmarked check twice,
+        # e.g. if <i>dog</i>, <b>dog</b> and dog all exist
+        if unmarked_phrase not in unmarked_count:
+            matches = maintext().find_matches(
+                unmarked_search,
+                IndexRange(maintext().start(), maintext().end()),
+                nocase=wf_dialog.ignore_case.get(),
+                regexp=True,
+                wholeword=False,
+            )
+            unmarked_count[unmarked_phrase] = len(matches)
+            if unmarked_count[unmarked_phrase] > 0:
+                wf_dialog.add_entry(
+                    unmarked_phrase, unmarked_count[unmarked_phrase], suspect=True
+                )
+                suspect_cnt += 1
+
+        if (
+            unmarked_count[unmarked_phrase] > 0
+            or not WordFrequencyDialog.suspects_only.get()
+        ):
             wf_dialog.add_entry(marked_phrase, marked_count)
-            wf_dialog.add_entry(unmarked_phrase, unmarked_count, suspect=True)
+
         elif not WordFrequencyDialog.suspects_only.get():
             wf_dialog.add_entry(marked_phrase, marked_count)
     wf_dialog.display_entries()
