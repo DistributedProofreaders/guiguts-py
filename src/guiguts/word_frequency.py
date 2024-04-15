@@ -18,7 +18,7 @@ from guiguts.utilities import (
     IndexRange,
     IndexRowCol,
     sound_bell,
-    is_mac,
+    process_accel,
 )
 from guiguts.widgets import ToplevelDialog, Combobox
 
@@ -89,7 +89,7 @@ class WFWordLists:
                 line = line.lower()
             line = re.sub(r"<\/?[a-z]*>", " ", line)  # throw away DP tags
             # get rid of nonalphanumeric (retaining combining characters)
-            line = re.sub(r"[^'’\.,\p{Alnum}\p{Mark}\*-]", " ", line)
+            line = re.sub(r"[^'’\.,\p{Alnum}\p{Mark}*-]", " ", line)
 
             def strip_punc(word: str) -> str:
                 """Strip relevant leading/trailing punctuation from word."""
@@ -373,11 +373,8 @@ class WordFrequencyDialog(ToplevelDialog):
         )
         self.text.grid(row=1, column=0, sticky="NSEW")
         self.text.bind("<1>", self.goto_word)
-        if is_mac():
-            self.text.bind("<2>", self.search_word)
-            self.text.bind("<Control-1>", self.search_word)
-        else:
-            self.text.bind("<3>", self.search_word)
+        _, event = process_accel("Cmd/Ctrl+1")
+        self.text.bind(event, self.search_word)
 
         self.previous_word = ""
 
@@ -490,20 +487,32 @@ class WordFrequencyDialog(ToplevelDialog):
             start.col += 1
         else:
             start = maintext().start()
-        regexp = False
-        wholeword = self.whole_word_search(word)
         # Special handling for newline characters (displayed as RETURN_ARROW)
-        match_word = re.sub(RETURN_ARROW, "\n", word) if RETURN_ARROW in word else word
+        newline_word = (
+            re.sub(RETURN_ARROW, "\n", word) if RETURN_ARROW in word else word
+        )
         # Also special handling for non-marked-up phrase from marked-up check
-        # (Regex to specifically find non-marked-up version)
+        # (Regex to specifically find non-marked-up version), for char count,
+        # and for words that begin/end with non-word chars
         if self.display_type.get() == WFDisplayType.MARKEDUP and not word.startswith(
             "<"
         ):
             regexp = True
-            match_word = r"(^|[^>\w])" + re.escape(match_word) + r"($|[^<\w])"
+            match_word = r"(^|[^>\w])" + re.escape(newline_word) + r"($|[^<\w])"
+            wholeword = False
+        elif self.display_type.get() == WFDisplayType.CHAR_COUNTS:
+            regexp = False
+            match_word = newline_word
+            wholeword = False
+        elif self.whole_word_search(word):
+            regexp = False
+            match_word = newline_word
+            wholeword = True
+        else:  # Word begins/ends with non-word char - do manual whole-word
+            regexp = True
+            match_word = r"(^|\W)" + re.escape(newline_word) + r"($|\W)"
             wholeword = False
 
-        # Generally want "wholeword" search, but not for character count or marked-up phrases
         match = maintext().find_match(
             match_word,
             IndexRange(start, maintext().end()),
@@ -515,6 +524,13 @@ class WordFrequencyDialog(ToplevelDialog):
         if match is None:
             sound_bell()
         else:
+            # If searched with regex, it may have matched up to 1 extra character each side,
+            # so adjust match length (count) and start column to match the actual word.
+            if regexp:
+                match_str = maintext().get_match_text(match)
+                match.count = len(newline_word)
+                if match_str[1 : match.count + 1] == newline_word:
+                    match.rowcol.col += 1
             maintext().set_insert_index(match.rowcol, focus=False)
             maintext().select_match_text(match)
             self.previous_word = word
@@ -666,36 +682,43 @@ def wf_populate_hyphens(wf_dialog: WordFrequencyDialog) -> None:
     word_pairs = _the_word_lists.get_word_pairs()
     suspect_cnt = 0
     total_cnt = 0
+    word_output = {}
     for word, freq in all_words.items():
-        if "-" in word:
-            total_cnt += 1
-            word_output = False
-            if not WordFrequencyDialog.suspects_only.get():
+        if "-" not in word:
+            continue
+        total_cnt += 1
+        if not WordFrequencyDialog.suspects_only.get():
+            wf_dialog.add_entry(word, freq)
+            word_output[word] = True
+        # Check for suspects - given "w1-w2", then "w1w2", "w1 w2" and "w1--w2" are suspects.
+        word_pair = re.sub(r"-\*?", " ", word)
+        if word_pair in word_pairs:
+            if word not in word_output:
                 wf_dialog.add_entry(word, freq)
-                word_output = True
-            # Check for suspects - given "w1-w2", then "w1w2", "w1 w2" and "w1--w2" are suspects.
-            word_pair = re.sub("-", " ", word)
-            if word_pair in word_pairs:
-                if not word_output:
-                    wf_dialog.add_entry(word, freq)
-                    word_output = True
+                word_output[word] = True
+            if word_pair not in word_output:
                 wf_dialog.add_entry(word_pair, word_pairs[word_pair], suspect=True)
+                word_output[word_pair] = True
                 suspect_cnt += 1
-            nohyp_word = re.sub("-", "", word)
-            if nohyp_word in all_words:
-                if not word_output:
-                    wf_dialog.add_entry(word, freq)
-                    word_output = True
+        nohyp_word = re.sub(r"-\*?", "", word)
+        if nohyp_word in all_words:
+            if word not in word_output:
+                wf_dialog.add_entry(word, freq)
+                word_output[word] = True
+            if nohyp_word not in word_output:
                 wf_dialog.add_entry(nohyp_word, all_words[nohyp_word], suspect=True)
+                word_output[nohyp_word] = True
                 suspect_cnt += 1
-            twohyp_word = re.sub("-", "--", word)
-            if twohyp_word in emdash_words:
-                if not word_output:
-                    wf_dialog.add_entry(word, freq)
-                    word_output = True
+        twohyp_word = re.sub(r"-\*?", "--", word)
+        if twohyp_word in emdash_words:
+            if word not in word_output:
+                wf_dialog.add_entry(word, freq)
+                word_output[word] = True
+            if twohyp_word not in word_output:
                 wf_dialog.add_entry(
                     twohyp_word, emdash_words[twohyp_word], suspect=True
                 )
+                word_output[twohyp_word] = True
                 suspect_cnt += 1
     wf_dialog.display_entries()
     wf_dialog.message.set(
@@ -766,7 +789,7 @@ def wf_populate_mixedcase(wf_dialog: WordFrequencyDialog) -> None:
         "MiXeD CasE",
         lambda word: re.search(r"\p{IsUpper}", word)
         and re.search(r"\p{IsLower}", word)
-        and not re.fullmatch(r"\p{Upper}[\p{IsLower}\p{Mark}\d'’-]+", word),
+        and not re.fullmatch(r"\p{Upper}[\p{IsLower}\p{Mark}\d'’*-]+", word),
     )
 
 
