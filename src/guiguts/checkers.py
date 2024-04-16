@@ -6,12 +6,12 @@ from typing import Any, Optional, Callable
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.utilities import IndexRowCol, IndexRange, is_mac
+from guiguts.root import root
+from guiguts.utilities import IndexRowCol, IndexRange, is_mac, sing_plur
 from guiguts.widgets import ToplevelDialog, TlDlg
 
 MARK_REMOVED_ENTRY = "MarkRemovedEntry"
 HILITE_TAG_NAME = "chk_hilite"
-SELECT_TAG_NAME = "chk_select"
 
 
 class CheckerEntry:
@@ -118,9 +118,6 @@ class CheckerDialog(ToplevelDialog):
             )
 
         self.process_command = process_command
-        self.text.tag_configure(
-            SELECT_TAG_NAME, background="#dddddd", foreground="#000000"
-        )
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
         # Reduce length of common part of mark names
         self.mark_prefix = self.__class__.__name__.removesuffix("Dialog")
@@ -203,8 +200,9 @@ class CheckerDialog(ToplevelDialog):
 
     def update_count_label(self) -> None:
         """Update the label showing how many linked entries are in dialog."""
-        word = "Entry" if self.count_linked_entries == 1 else "Entries"
-        self.count_label["text"] = f"{self.count_linked_entries} {word}"
+        self.count_label["text"] = sing_plur(
+            self.count_linked_entries, "Entry", "Entries"
+        )
 
     def select_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the
@@ -360,9 +358,8 @@ class CheckerDialog(ToplevelDialog):
         Returns:
             Index into self.entries array, or None if no message selected.
         """
-        if tag_range := self.text.tag_nextrange(SELECT_TAG_NAME, "1.0"):
-            return IndexRowCol(tag_range[0]).row - 1
-        return None
+        line_num = self.text.get_select_line_num()
+        return None if line_num is None else line_num - 1
 
     def select_entry(self, entry_index: int) -> None:
         """Select line in dialog corresponding to given entry index,
@@ -371,27 +368,18 @@ class CheckerDialog(ToplevelDialog):
         Args:
             event: Event object containing mouse click position.
         """
-        self.highlight_entry(entry_index)
+        self.text.select_line(entry_index + 1)
         self.text.mark_set(tk.INSERT, f"{entry_index + 1}.0")
         self.text.focus_set()
         entry = self.entries[entry_index]
         if entry.text_range is not None:
+            if root().state() == "iconic":
+                root().deiconify()
             start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self._mark_from_rowcol(entry.text_range.end))
             maintext().do_select(IndexRange(start, end))
-            maintext().set_insert_index(IndexRowCol(start), focus=False)
+            maintext().set_insert_index(IndexRowCol(start), focus=not is_mac())
         self.lift()
-
-    def highlight_entry(self, entry_index: int) -> None:
-        """Highlight the line of text corresponding to the entry_index.
-
-        Args:
-            entry_index: Index into self.entries list.
-        """
-        self.text.tag_remove(SELECT_TAG_NAME, "1.0", tk.END)
-        self.text.tag_add(
-            SELECT_TAG_NAME, f"{entry_index + 1}.0", f"{entry_index + 2}.0"
-        )
 
     def _mark_from_rowcol(self, rowcol: IndexRowCol) -> str:
         """Return name to use to mark given location in text file.

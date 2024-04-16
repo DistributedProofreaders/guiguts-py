@@ -7,6 +7,7 @@ from typing import Any, Optional, TypeVar
 import regex as re
 
 from guiguts.preferences import preferences, PrefKey
+from guiguts.utilities import is_windows
 
 NUM_HISTORY = 10
 
@@ -242,6 +243,8 @@ class Combobox(ttk.Combobox):
         super().__init__(parent, *args, **kwargs)
         self.prefs_key = prefs_key
         self["values"] = preferences.get(self.prefs_key)
+        # If user selects value from dropdown, add it to top of history list
+        self.bind("<<ComboboxSelected>>", lambda *_: self.add_to_history(self.get()))
 
     def add_to_history(self, string: str) -> None:
         """Store given string in history list.
@@ -262,6 +265,13 @@ class Combobox(ttk.Combobox):
             preferences.set(self.prefs_key, history)
             self["values"] = history
 
+    def display_latest_value(self) -> None:
+        """Display most recent value (if any) from history list."""
+        try:
+            self.current(0)
+        except tk.TclError:
+            self.set("")
+
 
 def grab_focus(
     toplevel: tk.Toplevel | tk.Tk,
@@ -275,10 +285,10 @@ def grab_focus(
     Args:
         toplevel: Toplevel widget to receive focus
         focus_widget: Optional widget within the toplevel tree to take keyboard focus
-        icon_deicon: True if iconify/deiconify hack required
+        icon_deicon: True if iconify/deiconify Windows hack required
     """
     toplevel.lift()
-    if icon_deicon:
+    if icon_deicon and is_windows():
         toplevel.iconify()
         toplevel.deiconify()
     toplevel.focus_force()

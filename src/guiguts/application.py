@@ -27,7 +27,9 @@ from guiguts.root import root
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
+from guiguts.tools.jeebies import jeebies_check
 from guiguts.utilities import is_mac
+from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
 logger = logging.getLogger(__package__)
 
@@ -244,7 +246,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
     def show_help_manual(self) -> None:
         """Display the manual."""
-        webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
+        webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual")
 
     def initialize_preferences(self) -> None:
         """Set default preferences and load settings from the GGPrefs file."""
@@ -275,6 +277,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         # Check all preferences have a default
         for pref_key in PrefKey:
             assert preferences.get_default(pref_key) is not None
+        preferences.set_default("WordFrequencyDialogSuspectsOnly", False)
+        preferences.set_default("WordFrequencyDialogIgnoreCase", False)
+        preferences.set_default(
+            "WordFrequencyDialogDisplayType", WFDisplayType.ALL_WORDS
+        )
+        preferences.set_default("WordFrequencyDialogSortType", WFSortType.ALPHABETIC)
+        preferences.set_default("WordFrequencyDialogItalThreshold", ["4"])
+        preferences.set_default("WordFrequencyDialogRegex", [])
 
         preferences.load()
 
@@ -395,6 +405,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         menu_edit = Menu(menubar(), "~Tools")
+        menu_edit.add_button("~Word Frequency", word_frequency)
         menu_edit.add_button(
             "~Spelling Check",
             lambda: spell_check(
@@ -402,6 +413,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             ),
         )
         menu_edit.add_button("PP~txt", pptxt)
+        menu_edit.add_button("~Jeebies", jeebies_check)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
@@ -483,6 +495,32 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "page label", "<ButtonRelease-3>", self.show_page_details_dialog
         )
 
+        def selection_str() -> str:
+            """Format current selection range for statusbar.
+
+            Returns:
+                "Start-End" for a regualar selection, and "R:rows C:cols" for column selection.
+            """
+            ranges = maintext().selected_ranges()
+            maintext().save_selection_ranges()
+            if not ranges:
+                return "No selection"
+            if len(ranges) == 1:
+                return f"{ranges[0].start.index()}-{ranges[-1].end.index()}"
+            row_diff = abs(ranges[-1].end.row - ranges[0].start.row) + 1
+            col_diff = abs(ranges[-1].end.col - ranges[0].start.col)
+            return f"R:{row_diff} C:{col_diff}"
+
+        the_statusbar.add("selection", update=selection_str, width=16)
+        the_statusbar.add_binding(
+            "selection", "<ButtonRelease-1>", maintext().restore_selection_ranges
+        )
+
+        the_statusbar.add("languages label", text="Lang: ")
+        the_statusbar.add_binding(
+            "languages label", "<ButtonRelease-1>", self.file.set_languages
+        )
+
         def ordinal_str() -> str:
             """Format ordinal of char at current insert index for statusbar."""
             char = maintext().get(maintext().get_insert_index().index())
@@ -495,11 +533,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             return f"U+{ord(char):04x}: {name}"
 
         the_statusbar.add("ordinal", update=ordinal_str)
-
-        the_statusbar.add("languages label", text="Lang: ")
-        the_statusbar.add_binding(
-            "languages label", "<ButtonRelease-1>", self.file.set_languages
-        )
 
     def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""
