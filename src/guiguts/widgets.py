@@ -151,6 +151,21 @@ class ToplevelDialog(tk.Toplevel):
             return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
         return None
 
+    def reset(self) -> None:
+        """Reset the dialog, including tidying up when it is closed.
+
+        Can be overridden if derived dialog creates marks, tags, etc., that need removing.
+        """
+
+    @classmethod
+    def close_all(cls) -> None:
+        """Close all open ToplevelDialogs."""
+        for dlg in ToplevelDialog._toplevel_dialogs.values():
+            if dlg.winfo_exists():
+                dlg.destroy()
+                dlg.reset()
+        ToplevelDialog._toplevel_dialogs.clear()
+
     def _do_config(self) -> None:
         """Configure the geometry of the ToplevelDialog.
 

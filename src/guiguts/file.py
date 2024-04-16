@@ -29,7 +29,7 @@ from guiguts.utilities import (
     IndexRange,
     sound_bell,
 )
-from guiguts.widgets import grab_focus
+from guiguts.widgets import grab_focus, ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
@@ -134,11 +134,14 @@ class File:
         spell_check_clear_dictionary()
 
     def reset(self) -> None:
-        """Reset file internals to defaults, e.g. filename, page markers, etc"""
+        """Reset file internals to defaults, e.g. filename, page markers, etc.
+
+        Also close any open dialogs, since they will refer to the previous file."""
         self.filename = ""
         self.image_dir = ""
         self.remove_page_marks()
         self.page_details = PageDetails()
+        ToplevelDialog.close_all()
 
     def open_file(self, filename: str = "") -> str:
         """Open and load a text file.

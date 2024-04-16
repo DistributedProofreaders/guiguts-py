@@ -387,6 +387,8 @@ class WordFrequencyDialog(ToplevelDialog):
     def reset(self) -> None:
         """Reset dialog."""
         self.entries: list[WordFrequencyEntry] = []
+        if not self.winfo_exists():
+            return
         self.text.delete("1.0", tk.END)
         self.message.set("")
 
