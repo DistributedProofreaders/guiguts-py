@@ -9,7 +9,7 @@ import regex as re
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError
-from guiguts.preferences import preferences, PersistentBoolean
+from guiguts.preferences import preferences, PersistentBoolean, PrefKey
 from guiguts.utilities import (
     sound_bell,
     IndexRowCol,
@@ -54,11 +54,11 @@ class SearchDialog(ToplevelDialog):
         try:
             SearchDialog.reverse
         except AttributeError:
-            SearchDialog.reverse = PersistentBoolean("SearchDialogReverse")
-            SearchDialog.matchcase = PersistentBoolean("SearchDialogMatchcase")
-            SearchDialog.wholeword = PersistentBoolean("SearchDialogWholeword")
-            SearchDialog.wrap = PersistentBoolean("SearchDialogWrap")
-            SearchDialog.regex = PersistentBoolean("SearchDialogRegex")
+            SearchDialog.reverse = PersistentBoolean(PrefKey.SEARCHDIALOGREVERSE)
+            SearchDialog.matchcase = PersistentBoolean(PrefKey.SEARCHDIALOGMATCHCASE)
+            SearchDialog.wholeword = PersistentBoolean(PrefKey.SEARCHDIALOGWHOLEWORD)
+            SearchDialog.wrap = PersistentBoolean(PrefKey.SEARCHDIALOGWRAP)
+            SearchDialog.regex = PersistentBoolean(PrefKey.SEARCHDIALOGREGEX)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
         kwargs["resize_y"] = False
@@ -88,7 +88,7 @@ class SearchDialog(ToplevelDialog):
         message_frame.grid(row=3, column=0, columnspan=3, sticky="NSEW")
 
         # Search
-        self.search_box = Combobox(search_frame1, "SearchHistory", width=30)
+        self.search_box = Combobox(search_frame1, PrefKey.SEARCHHISTORY, width=30)
         self.search_box.grid(row=0, column=0, padx=2, pady=(5, 0), sticky="NSEW")
         self.search_box.focus()
 
@@ -162,7 +162,7 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=0, column=0, sticky="NSE")
 
         # Replace
-        self.replace_box = Combobox(search_frame1, "ReplaceHistory", width=30)
+        self.replace_box = Combobox(search_frame1, PrefKey.REPLACEHISTORY, width=30)
         self.replace_box.grid(row=1, column=0, padx=2, pady=(4, 6), sticky="NSEW")
 
         ttk.Button(
@@ -508,7 +508,7 @@ def find_next(backwards: bool = False) -> None:
         dlg.search_box.add_to_history(search_string)
     if not search_string:
         try:
-            search_string = preferences.get("SearchHistory")[0]
+            search_string = preferences.get(PrefKey.SEARCHHISTORY)[0]
         except IndexError:
             sound_bell()
             return  # No Search History

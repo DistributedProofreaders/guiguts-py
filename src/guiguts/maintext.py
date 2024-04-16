@@ -9,7 +9,7 @@ from typing import Any, Callable, Optional, Literal, Generator
 
 import regex as re
 
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import (
     is_mac,
     IndexRowCol,
@@ -266,7 +266,7 @@ class MainText(tk.Text):
             self.linenumbers.grid()
         else:
             self.linenumbers.grid_remove()
-        preferences.set("LineNumbers", show)
+        preferences.set(PrefKey.LINENUMBERS, show)
 
     def line_numbers_shown(self) -> bool:
         """Check if line numbers are shown.

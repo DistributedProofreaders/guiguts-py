@@ -6,7 +6,7 @@ from typing import Any, Optional, TypeVar
 
 import regex as re
 
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_windows
 
 NUM_HISTORY = 10
@@ -201,7 +201,7 @@ class ToplevelDialog(tk.Toplevel):
         Returns:
             String containing geometry, or empty string if none stored.
         """
-        config_dict = preferences.get("DialogGeometry")
+        config_dict = preferences.get(PrefKey.DIALOGGEOMETRY)
         try:
             return config_dict[self.__class__.__name__]
         except KeyError:
@@ -223,10 +223,10 @@ class ToplevelDialog(tk.Toplevel):
         dialog creation and resizing. Only the first will actually
         do a save, because the flag will only be true on the first call."""
         if self.save_config:
-            config_dict = preferences.get("DialogGeometry")
+            config_dict = preferences.get(PrefKey.DIALOGGEOMETRY)
             key = self.__class__.__name__
             config_dict[key] = self.geometry()
-            preferences.set("DialogGeometry", config_dict)
+            preferences.set(PrefKey.DIALOGGEOMETRY, config_dict)
             self.save_config = False
 
 
@@ -238,7 +238,7 @@ class Combobox(ttk.Combobox):
     """
 
     def __init__(
-        self, parent: tk.Widget, prefs_key: str, *args: Any, **kwargs: Any
+        self, parent: tk.Widget, prefs_key: PrefKey, *args: Any, **kwargs: Any
     ) -> None:
         super().__init__(parent, *args, **kwargs)
         self.prefs_key = prefs_key

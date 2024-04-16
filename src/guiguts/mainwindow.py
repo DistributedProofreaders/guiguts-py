@@ -13,7 +13,7 @@ from PIL import Image, ImageTk
 import regex as re
 
 from guiguts.maintext import MainText, maintext
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.root import Root, root
 from guiguts.utilities import (
     is_mac,
@@ -671,7 +671,7 @@ class MainWindow:
             tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.hide_image)  # type: ignore[call-overload]
         else:
             root().wm_forget(mainimage())  # type: ignore[arg-type]
-        preferences.set("ImageWindow", "Floated")
+        preferences.set(PrefKey.IMAGEWINDOW, "Floated")
 
     def dock_image(self, _event: Optional[tk.Event] = None) -> None:
         """Dock the image back into the main window"""
@@ -683,7 +683,7 @@ class MainWindow:
                 self.paned_window.forget(mainimage())
             except tk.TclError:
                 pass  # OK - image wasn't being managed by paned_window
-        preferences.set("ImageWindow", "Docked")
+        preferences.set(PrefKey.IMAGEWINDOW, "Docked")
 
     def load_image(self, filename: str) -> None:
         """Load the image for the given page.
@@ -692,7 +692,7 @@ class MainWindow:
             filename: Path to image file.
         """
         mainimage().load_image(filename)
-        if preferences.get("ImageWindow") == "Docked":
+        if preferences.get(PrefKey.IMAGEWINDOW) == "Docked":
             self.dock_image()
         else:
             self.float_image()
@@ -730,7 +730,7 @@ def do_sound_bell() -> None:
     Visible flashes the first statusbar button (must be ttk.Button)
     Preference "Bell" contains "Audible", "Visible", both or neither
     """
-    bell_pref = preferences.get("Bell")
+    bell_pref = preferences.get(PrefKey.BELL)
     if "Audible" in bell_pref:
         root().bell()
     if "Visible" in bell_pref:

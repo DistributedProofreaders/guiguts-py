@@ -10,7 +10,12 @@ import regex as re
 from guiguts.file import PAGE_SEPARATOR_REGEX
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.preferences import preferences, PersistentBoolean, PersistentString
+from guiguts.preferences import (
+    preferences,
+    PersistentBoolean,
+    PersistentString,
+    PrefKey,
+)
 from guiguts.search import SearchDialog
 from guiguts.utilities import (
     sing_plur,
@@ -85,7 +90,7 @@ class WFWordLists:
         for line, _ in maintext().get_lines():
             if re.search(PAGE_SEPARATOR_REGEX, line):
                 continue
-            if preferences.get("WordFrequencyDialogIgnoreCase"):
+            if preferences.get(PrefKey.WFDIALOGIGNORECASE):
                 line = line.lower()
             line = re.sub(r"<\/?[a-z]*>", " ", line)  # throw away DP tags
             # get rid of nonalphanumeric (retaining combining characters)
@@ -194,17 +199,15 @@ class WordFrequencyDialog(ToplevelDialog):
             WordFrequencyDialog.suspects_only
         except AttributeError:
             WordFrequencyDialog.suspects_only = PersistentBoolean(
-                "WordFrequencyDialogSuspectsOnly"
+                PrefKey.WFDIALOGSUSPECTSONLY
             )
             WordFrequencyDialog.ignore_case = PersistentBoolean(
-                "WordFrequencyDialogIgnoreCase"
+                PrefKey.WFDIALOGIGNORECASE
             )
             WordFrequencyDialog.display_type = PersistentString(
-                "WordFrequencyDialogDisplayType"
+                PrefKey.WFDIALOGDISPLAYTYPE
             )
-            WordFrequencyDialog.sort_type = PersistentString(
-                "WordFrequencyDialogSortType"
-            )
+            WordFrequencyDialog.sort_type = PersistentString(PrefKey.WFDIALOGSORTTYPE)
 
         super().__init__("Word Frequency")
         self.top_frame.rowconfigure(0, weight=0)
@@ -337,7 +340,7 @@ class WordFrequencyDialog(ToplevelDialog):
 
         self.threshold_box = Combobox(
             italic_frame,
-            "WordFrequencyDialogItalThreshold",
+            PrefKey.WFDIALOGITALTHRESHOLD,
             width=6,
             validate="all",
             validatecommand=(self.register(is_nonnegative_int), "%P"),
@@ -354,7 +357,7 @@ class WordFrequencyDialog(ToplevelDialog):
         self.threshold_box.bind("<<ComboboxSelected>>", display_markedup)
 
         display_radio(4, 0, "Regular Expression", WFDisplayType.REGEXP)
-        self.regex_box = Combobox(display_frame, "WordFrequencyDialogRegex")
+        self.regex_box = Combobox(display_frame, PrefKey.WFDIALOGREGEX)
         self.regex_box.grid(row=4, column=1, columnspan=2, sticky="NSEW", padx=(0, 5))
 
         def display_regexp(*_args: Any) -> None:

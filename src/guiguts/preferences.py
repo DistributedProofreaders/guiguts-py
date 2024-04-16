@@ -1,6 +1,7 @@
 """Handle preferences"""
 
 import copy
+from enum import StrEnum, auto
 import json
 import logging
 import os
@@ -13,6 +14,32 @@ from guiguts.utilities import is_x11, called_from_test, load_dict_from_json
 logger = logging.getLogger(__package__)
 
 
+class PrefKey(StrEnum):
+    """Enum class to store preferences keys."""
+
+    AUTOIMAGE = auto()
+    BELL = auto()
+    IMAGEWINDOW = auto()
+    RECENTFILES = auto()
+    LINENUMBERS = auto()
+    SEARCHHISTORY = auto()
+    REPLACEHISTORY = auto()
+    SEARCHDIALOGREVERSE = auto()
+    SEARCHDIALOGMATCHCASE = auto()
+    SEARCHDIALOGWHOLEWORD = auto()
+    SEARCHDIALOGWRAP = auto()
+    SEARCHDIALOGREGEX = auto()
+    WFDIALOGSUSPECTSONLY = auto()
+    WFDIALOGIGNORECASE = auto()
+    WFDIALOGDISPLAYTYPE = auto()
+    WFDIALOGSORTTYPE = auto()
+    WFDIALOGITALTHRESHOLD = auto()
+    WFDIALOGREGEX = auto()
+    DIALOGGEOMETRY = auto()
+    ROOTGEOMETRY = auto()
+    DEFAULTLANGUAGES = auto()
+
+
 class Preferences:
     """Handle setting/getting/saving/loading/defaulting preferences.
 
@@ -22,16 +49,6 @@ class Preferences:
     all required side effects.
 
     Load/Save preferences in temporary file when testing.
-
-    TODO: Currently 3 dictionaries: dict is the one loaded/save in JSON file.
-    Consider whether one dictionary with each item consisting of default, value
-    & callback would be better/safer.
-    Consider whether exception should be raised if unknown key is used, rather
-    than just returning None. Would probably need explicit call to load, rather
-    than loading on instantiation. Also, may be less forward/backward compatible
-    when new preferences are added in future releases.
-    Consider whether get/set should be typed, to trap error if preference is
-    expected to be a string, but is an int, for example.
 
     Attributes:
         dict: dictionary of values for prefs.
@@ -45,9 +62,9 @@ class Preferences:
 
     def __init__(self) -> None:
         """Initialize by loading from JSON file."""
-        self.dict: dict[str, Any] = {}
-        self.defaults: dict[str, Any] = {}
-        self.callbacks: dict[str, Callable[[Any], None]] = {}
+        self.dict: dict[PrefKey, Any] = {}
+        self.defaults: dict[PrefKey, Any] = {}
+        self.callbacks: dict[PrefKey, Callable[[Any], None]] = {}
         if is_x11():
             self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
         else:
@@ -63,7 +80,7 @@ class Preferences:
 
         self._remove_test_prefs_file()
 
-    def get(self, key: str) -> Any:
+    def get(self, key: PrefKey) -> Any:
         """Get preference value using key.
 
         Args:
@@ -75,7 +92,7 @@ class Preferences:
         """
         return copy.deepcopy(self.dict.get(key, self.defaults.get(key)))
 
-    def set(self, key: str, value: Any) -> None:
+    def set(self, key: PrefKey, value: Any) -> None:
         """Set preference value and save to file if value has changed.
 
         Args:
@@ -90,7 +107,7 @@ class Preferences:
         """Remove any test prefs file when finished."""
         self._remove_test_prefs_file()
 
-    def set_default(self, key: str, default: Any) -> None:
+    def set_default(self, key: PrefKey, default: Any) -> None:
         """Set default preference value.
 
         Args:
@@ -99,18 +116,22 @@ class Preferences:
         """
         self.defaults[key] = default
 
-    def get_default(self, key: str) -> Any:
+    def get_default(self, key: PrefKey) -> Any:
         """Get default preference value.
 
         Args:
             key: Name of preference.
 
         Returns:
-            Default value for preference; ``None`` if no default for ``key``
+            Default value for preference; ``None`` (with assertion) if no default for ``key``
         """
-        return self.defaults.get(key)
+        assert key in self.defaults  # Raise assertion if no default set
+        try:
+            return self.defaults[key]
+        except KeyError:
+            return None
 
-    def set_callback(self, key: str, callback: Callable[[Any], None]) -> None:
+    def set_callback(self, key: PrefKey, callback: Callable[[Any], None]) -> None:
         """Add a callback for preference. Callback will be run when all
           prefs are loaded and UI is ready.
 
@@ -121,7 +142,7 @@ class Preferences:
         """
         self.callbacks[key] = callback
 
-    def keys(self) -> list[str]:
+    def keys(self) -> list[PrefKey]:
         """Return list of preferences keys.
 
         Also includes preferences that have not been set, so only exist
@@ -136,10 +157,15 @@ class Preferences:
             json.dump(self.dict, fp, indent=2, ensure_ascii=False)
 
     def load(self) -> None:
-        """Load preferences dictionary from JSON file."""
-        prefs_dict = load_dict_from_json(self.prefsfile)
-        if prefs_dict is not None:
-            self.dict = prefs_dict
+        """Load dictionary from JSON file, and use PrefKeys
+        to store values in preferences dictionary."""
+        self.dict = {}
+        if loaded_dict := load_dict_from_json(self.prefsfile):
+            for key, value in loaded_dict.items():
+                try:
+                    self.dict[PrefKey(key)] = value
+                except ValueError:
+                    assert False, f"'{key}' is not a valid PrefKey"
 
     def run_callbacks(self) -> None:
         """Run all defined callbacks, passing value as argument.
@@ -162,7 +188,7 @@ class PersistentBoolean(tk.BooleanVar):
     `initialize_preferences`
     """
 
-    def __init__(self, prefs_key: str) -> None:
+    def __init__(self, prefs_key: PrefKey) -> None:
         """Initialize persistent boolean.
 
         Args:
@@ -179,7 +205,7 @@ class PersistentString(tk.StringVar):
     `initialize_preferences`
     """
 
-    def __init__(self, prefs_key: str) -> None:
+    def __init__(self, prefs_key: PrefKey) -> None:
         """Initialize persistent string.
 
         Args:
