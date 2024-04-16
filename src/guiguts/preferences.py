@@ -29,6 +29,12 @@ class PrefKey(StrEnum):
     SEARCHDIALOGWHOLEWORD = auto()
     SEARCHDIALOGWRAP = auto()
     SEARCHDIALOGREGEX = auto()
+    WFDIALOGSUSPECTSONLY = auto()
+    WFDIALOGIGNORECASE = auto()
+    WFDIALOGDISPLAYTYPE = auto()
+    WFDIALOGSORTTYPE = auto()
+    WFDIALOGITALTHRESHOLD = auto()
+    WFDIALOGREGEX = auto()
     DIALOGGEOMETRY = auto()
     ROOTGEOMETRY = auto()
     DEFAULTLANGUAGES = auto()
@@ -199,7 +205,7 @@ class PersistentString(tk.StringVar):
     `initialize_preferences`
     """
 
-    def __init__(self, prefs_key: str) -> None:
+    def __init__(self, prefs_key: PrefKey) -> None:
         """Initialize persistent string.
 
         Args:

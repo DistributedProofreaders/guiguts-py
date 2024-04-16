@@ -273,18 +273,16 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.DIALOGGEOMETRY, {})
         preferences.set_default(PrefKey.ROOTGEOMETRY, "800x400")
         preferences.set_default(PrefKey.DEFAULTLANGUAGES, "en")
+        preferences.set_default(PrefKey.WFDIALOGSUSPECTSONLY, False)
+        preferences.set_default(PrefKey.WFDIALOGIGNORECASE, False)
+        preferences.set_default(PrefKey.WFDIALOGDISPLAYTYPE, WFDisplayType.ALL_WORDS)
+        preferences.set_default(PrefKey.WFDIALOGSORTTYPE, WFSortType.ALPHABETIC)
+        preferences.set_default(PrefKey.WFDIALOGITALTHRESHOLD, ["4"])
+        preferences.set_default(PrefKey.WFDIALOGREGEX, [])
 
         # Check all preferences have a default
         for pref_key in PrefKey:
             assert preferences.get_default(pref_key) is not None
-        preferences.set_default("WordFrequencyDialogSuspectsOnly", False)
-        preferences.set_default("WordFrequencyDialogIgnoreCase", False)
-        preferences.set_default(
-            "WordFrequencyDialogDisplayType", WFDisplayType.ALL_WORDS
-        )
-        preferences.set_default("WordFrequencyDialogSortType", WFSortType.ALPHABETIC)
-        preferences.set_default("WordFrequencyDialogItalThreshold", ["4"])
-        preferences.set_default("WordFrequencyDialogRegex", [])
 
         preferences.load()
 
