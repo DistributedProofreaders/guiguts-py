@@ -101,7 +101,7 @@ def basic_fixup_check() -> None:
             "Spaced close bracket: ": r"( [])}])",
             "Trailing spaces: ": r"(.? +$)",
             "Thought break: ": r"^(\s*(\*\s*){4,})$",
-            "1/l scanno: ": r"((?!<[^\d\s])llth|lst)\b",
+            "1/l scanno: ": r"(?<!\p{Letter})(lst|llth)\b",
             "Ellipsis spacing: ": r"(?<=[^\.\!\? \"'‘“])(\.{3})(?![\.\!\?])",
             "Spaced guillemet: ": r"(«\s+|\s+»)",
         }
