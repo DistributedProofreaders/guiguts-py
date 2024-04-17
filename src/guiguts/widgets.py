@@ -296,6 +296,7 @@ class ToolTip(tk.Toplevel):
         self,
         widget: tk.Widget,
         msg: str,
+        use_pointer_pos: bool = False,
     ):
         """Create a ToolTip.
 
@@ -305,21 +306,29 @@ class ToolTip(tk.Toplevel):
         """
         self.widget = widget
         self.widget_tl = widget.winfo_toplevel()
-        tk.Toplevel.__init__(self, bg="black", padx=1, pady=1)
-        self.withdraw()  # Hide initially in case there is a delay
+        self.use_pointer_pos = use_pointer_pos
+
+        tk.Toplevel.__init__(self)
         self.overrideredirect(True)
+        # Make tooltip transparent initially, in case it appears briefly on startup
+        self.wm_attributes("-alpha", 0.0)
+        # Move it off screen too - belt & suspenders - "alpha" not necessarily supported
+        self.geometry("+-1000+-1000")
 
         self.delay = 0.5
         self.inside = False
-        frame = ttk.Frame(self, borderwidth=1, relief=tk.FLAT)
-        frame.grid()
+        frame = ttk.Frame(self, borderwidth=1, relief=tk.SOLID)
+        frame.grid(padx=1, pady=1)
         ttk.Label(frame, text=msg).grid()
         self.enter_bind = self.widget.bind("<Enter>", self.on_enter, add="+")
         self.leave_bind = self.widget.bind("<Leave>", self.on_leave, add="+")
         self.press_bind = self.widget.bind("<ButtonPress>", self.on_leave, add="+")
-        self.update()
+        self.update_idletasks()
         self.width = self.winfo_width()
         self.height = self.winfo_height()
+        # Hide tooltip then make non-transparent for later use
+        self.withdraw()
+        self.wm_attributes("-alpha", 1.0)
 
     def on_enter(self, _event: tk.Event) -> None:
         """When mouse enters widget, prepare to show tooltip"""
@@ -335,20 +344,33 @@ class ToolTip(tk.Toplevel):
         """Displays the ToolTip if mouse still inside."""
         if not self.inside:
             return
-        # Attempt to center horizontally below widget
-        x_pos = self.widget.winfo_rootx() + int(
-            self.widget.winfo_width() / 2 - self.width / 2
-        )
-        y_pos = self.widget.winfo_rooty() + int(self.widget.winfo_height())
-        # Keep tooltip inside horizontal screen limits
-        x_pos = min(max(x_pos, 0), self.winfo_screenwidth() - self.width)
-        # If tooltip would go below bottom of main window or dialog
-        # that widget is in, display it above the widget instead
-        if (
-            y_pos + self.height
-            > self.widget_tl.winfo_rooty() + self.widget_tl.winfo_height()
-        ):
-            y_pos = self.widget.winfo_rooty() - self.height
+        if self.use_pointer_pos:
+            x_pos = self.widget.winfo_pointerx() + 20
+            y_pos = self.widget.winfo_pointery() + 10
+        else:
+            # Attempt to center horizontally below widget
+            x_pos = self.widget.winfo_rootx() + int(
+                self.widget.winfo_width() / 2 - self.width / 2
+            )
+            y_pos = self.widget.winfo_rooty() + int(self.widget.winfo_height())
+            # Keep tooltip just inside main window/dialog horizontal limits
+            x_pos = max(x_pos, self.widget_tl.winfo_rootx())
+            if (
+                x_pos + self.width
+                > self.widget_tl.winfo_rootx() + self.widget_tl.winfo_width()
+            ):
+                x_pos = (
+                    self.widget_tl.winfo_rootx()
+                    + self.widget_tl.winfo_width()
+                    - self.width
+                )
+            # If tooltip would go below bottom of main window or dialog
+            # that widget is in, display it above the widget instead
+            if (
+                y_pos + self.height
+                > self.widget_tl.winfo_rooty() + self.widget_tl.winfo_height()
+            ):
+                y_pos = self.widget.winfo_rooty() - self.height
         self.geometry(f"+{x_pos}+{y_pos}")
         print(
             f"tooltip: geom: +{x_pos}+{y_pos}, size: {self.width}x{self.height}",
@@ -360,10 +382,6 @@ class ToolTip(tk.Toplevel):
         )
         print(
             f"widget_tl: pos: {self.widget_tl.winfo_rootx()},{self.widget_tl.winfo_rootx()}, size: {self.widget_tl.winfo_width()}x{self.widget_tl.winfo_height()}",
-            flush=True,
-        )
-        print(
-            f"screen: {self.winfo_screenwidth()}x{self.winfo_screenheight()}\n",
             flush=True,
         )
         self.deiconify()
