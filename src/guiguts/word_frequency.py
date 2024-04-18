@@ -25,7 +25,7 @@ from guiguts.utilities import (
     sound_bell,
     process_accel,
 )
-from guiguts.widgets import ToplevelDialog, Combobox, mouse_bind
+from guiguts.widgets import ToplevelDialog, Combobox, ToolTip, mouse_bind
 
 _the_word_lists = None  # pylint: disable=invalid-name
 
@@ -347,6 +347,10 @@ class WordFrequencyDialog(ToplevelDialog):
         )
         self.threshold_box.grid(row=0, column=1, sticky="NSEW", padx=(0, 5))
         self.threshold_box.display_latest_value()
+        ToolTip(
+            self.threshold_box,
+            "Only show marked up phrases with no more than this number of words",
+        )
 
         def display_markedup(*_args: Any) -> None:
             """Callback to display the marked up words with new threshold value."""
@@ -359,6 +363,7 @@ class WordFrequencyDialog(ToplevelDialog):
         display_radio(4, 0, "Regular Expression", WFDisplayType.REGEXP)
         self.regex_box = Combobox(display_frame, PrefKey.WFDIALOGREGEX)
         self.regex_box.grid(row=4, column=1, columnspan=2, sticky="NSEW", padx=(0, 5))
+        ToolTip(self.regex_box, "Only show words matching this regular expression")
 
         def display_regexp(*_args: Any) -> None:
             """Callback to display the regex-matching words with new regex."""
