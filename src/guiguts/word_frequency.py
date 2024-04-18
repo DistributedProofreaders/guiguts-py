@@ -25,7 +25,7 @@ from guiguts.utilities import (
     sound_bell,
     process_accel,
 )
-from guiguts.widgets import ToplevelDialog, Combobox
+from guiguts.widgets import ToplevelDialog, Combobox, mouse_bind
 
 _the_word_lists = None  # pylint: disable=invalid-name
 
@@ -375,7 +375,7 @@ class WordFrequencyDialog(ToplevelDialog):
             self.top_frame, context_menu=False, wrap=tk.NONE
         )
         self.text.grid(row=1, column=0, sticky="NSEW")
-        self.text.bind("<1>", self.goto_word)
+        mouse_bind(self.text, "1", self.goto_word)
         _, event = process_accel("Cmd/Ctrl+1")
         self.text.bind(event, self.search_word)
 

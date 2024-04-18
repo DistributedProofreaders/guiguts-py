@@ -8,7 +8,7 @@ from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.root import root
 from guiguts.utilities import IndexRowCol, IndexRange, is_mac, sing_plur
-from guiguts.widgets import ToplevelDialog, TlDlg
+from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind
 
 MARK_REMOVED_ENTRY = "MarkRemovedEntry"
 HILITE_TAG_NAME = "chk_hilite"
@@ -73,49 +73,20 @@ class CheckerDialog(ToplevelDialog):
         )
         self.text.grid(column=0, row=1, sticky="NSEW")
 
-        self.text.bind("<1>", self.select_entry_by_click)
-        # On Mac, equivalent of mouse button 3 is button 2 (2-button mice) or
-        # Control with button 1 (1 button mice), so 2 bindings per function
-        if is_mac():
-            self.text.bind("<2>", self.remove_entry_by_click)
-            self.text.bind("<Control-1>", self.remove_entry_by_click)
-            self.text.bind(
-                "<Shift-2>",
-                lambda event: self.remove_entry_by_click(event, all_matching=True),
-            )
-            self.text.bind(
-                "<Shift-Control-1>",
-                lambda event: self.remove_entry_by_click(event, all_matching=True),
-            )
-            self.text.bind("<Command-1>", self.process_entry_by_click)
-            self.text.bind("<Command-2>", self.process_remove_entry_by_click)
-            self.text.bind("<Command-Control-1>", self.process_remove_entry_by_click)
-            self.text.bind(
-                "<Shift-Command-2>",
-                lambda event: self.process_remove_entry_by_click(
-                    event, all_matching=True
-                ),
-            )
-            self.text.bind(
-                "<Shift-Command-Control-1>",
-                lambda event: self.process_remove_entry_by_click(
-                    event, all_matching=True
-                ),
-            )
-        else:
-            self.text.bind("<3>", self.remove_entry_by_click)
-            self.text.bind(
-                "<Shift-3>",
-                lambda event: self.remove_entry_by_click(event, all_matching=True),
-            )
-            self.text.bind("<Control-1>", self.process_entry_by_click)
-            self.text.bind("<Control-3>", self.process_remove_entry_by_click)
-            self.text.bind(
-                "<Shift-Control-3>",
-                lambda event: self.process_remove_entry_by_click(
-                    event, all_matching=True
-                ),
-            )
+        mouse_bind(self.text, "1", self.select_entry_by_click)
+        mouse_bind(self.text, "3", self.remove_entry_by_click)
+        mouse_bind(
+            self.text,
+            "Shift+3",
+            lambda event: self.remove_entry_by_click(event, all_matching=True),
+        )
+        mouse_bind(self.text, "Cmd/Ctrl+1", self.process_entry_by_click)
+        mouse_bind(self.text, "Cmd/Ctrl+3", self.process_remove_entry_by_click)
+        mouse_bind(
+            self.text,
+            "Shift+Cmd/Ctrl+3",
+            lambda event: self.process_remove_entry_by_click(event, all_matching=True),
+        )
 
         self.process_command = process_command
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")

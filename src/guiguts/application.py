@@ -465,46 +465,42 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             return f"L:{row} C:{col}"
 
         the_statusbar.add("rowcol", update=rowcol_str)
-        the_statusbar.add_binding("rowcol", "<ButtonRelease-1>", self.file.goto_line)
+        the_statusbar.add_binding("rowcol", "ButtonRelease-1", self.file.goto_line)
         the_statusbar.add_binding(
-            "rowcol", "<ButtonRelease-3>", maintext().toggle_line_numbers
+            "rowcol", "ButtonRelease-3", maintext().toggle_line_numbers
         )
 
         the_statusbar.add(
             "img",
             update=lambda: "Img: " + self.file.get_current_image_name(),
         )
-        the_statusbar.add_binding("img", "<ButtonRelease-1>", self.file.goto_image)
+        the_statusbar.add_binding("img", "ButtonRelease-1", self.file.goto_image)
 
         the_statusbar.add("prev img", text="<", width=1)
-        the_statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
+        the_statusbar.add_binding("prev img", "ButtonRelease-1", self.file.prev_page)
 
         the_statusbar.add("see img", text="See Img", width=9)
         the_statusbar.add_binding(
             "see img",
-            "<ButtonRelease-1>",
+            "ButtonRelease-1",
             self.show_image,
         )
         the_statusbar.add_binding(
-            "see img", "<ButtonRelease-3>", self.file.choose_image_dir
+            "see img", "ButtonRelease-3", self.file.choose_image_dir
         )
-        the_statusbar.add_binding(
-            "see img", "<Double-Button-1>", self.toggle_auto_image
-        )
+        the_statusbar.add_binding("see img", "Double-Button-1", self.toggle_auto_image)
 
         the_statusbar.add("next img", text=">", width=1)
-        the_statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
+        the_statusbar.add_binding("next img", "ButtonRelease-1", self.file.next_page)
 
         the_statusbar.add(
             "page label",
             text="Lbl: ",
             update=lambda: "Lbl: " + self.file.get_current_page_label(),
         )
+        the_statusbar.add_binding("page label", "ButtonRelease-1", self.file.goto_page)
         the_statusbar.add_binding(
-            "page label", "<ButtonRelease-1>", self.file.goto_page
-        )
-        the_statusbar.add_binding(
-            "page label", "<ButtonRelease-3>", self.show_page_details_dialog
+            "page label", "ButtonRelease-3", self.show_page_details_dialog
         )
 
         def selection_str() -> str:
@@ -525,12 +521,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         the_statusbar.add("selection", update=selection_str, width=16)
         the_statusbar.add_binding(
-            "selection", "<ButtonRelease-1>", maintext().restore_selection_ranges
+            "selection", "ButtonRelease-1", maintext().restore_selection_ranges
         )
 
         the_statusbar.add("languages label", text="Lang: ")
         the_statusbar.add_binding(
-            "languages label", "<ButtonRelease-1>", self.file.set_languages
+            "languages label", "ButtonRelease-1", self.file.set_languages
         )
 
         def ordinal_str() -> str:
