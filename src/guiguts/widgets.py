@@ -372,18 +372,6 @@ class ToolTip(tk.Toplevel):
             ):
                 y_pos = self.widget.winfo_rooty() - self.height
         self.geometry(f"+{x_pos}+{y_pos}")
-        print(
-            f"tooltip: geom: +{x_pos}+{y_pos}, size: {self.width}x{self.height}",
-            flush=True,
-        )
-        print(
-            f"widget: pos: {self.widget.winfo_rootx()},{self.widget.winfo_rootx()}, size: {self.widget.winfo_width()}x{self.widget.winfo_height()}",
-            flush=True,
-        )
-        print(
-            f"widget_tl: pos: {self.widget_tl.winfo_rootx()},{self.widget_tl.winfo_rootx()}, size: {self.widget_tl.winfo_width()}x{self.widget_tl.winfo_height()}",
-            flush=True,
-        )
         self.deiconify()
 
     def destroy(self) -> None:
