@@ -121,6 +121,13 @@ class CheckerDialog(ToplevelDialog):
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
         self.reset()
 
+        def delete_dialog() -> None:
+            """Call its reset method, then destroy the dialog"""
+            self.reset()
+            self.destroy()
+
+        self.wm_protocol("WM_DELETE_WINDOW", delete_dialog)
+
     @classmethod
     def show_dialog(
         cls: type[TlDlg],
@@ -143,7 +150,8 @@ class CheckerDialog(ToplevelDialog):
         self.entries: list[CheckerEntry] = []
         self.count_linked_entries = 0  # Not the same as len(self.entries)
         self.update_count_label()
-        self.text.delete("1.0", tk.END)
+        if self.text.winfo_exists():
+            self.text.delete("1.0", tk.END)
         for mark in maintext().mark_names():
             if mark.startswith(self.get_mark_prefix()):
                 maintext().mark_unset(mark)
@@ -198,9 +206,10 @@ class CheckerDialog(ToplevelDialog):
 
     def update_count_label(self) -> None:
         """Update the label showing how many linked entries are in dialog."""
-        self.count_label["text"] = sing_plur(
-            self.count_linked_entries, "Entry", "Entries"
-        )
+        if self.count_label.winfo_exists():
+            self.count_label["text"] = sing_plur(
+                self.count_linked_entries, "Entry", "Entries"
+            )
 
     def select_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the
