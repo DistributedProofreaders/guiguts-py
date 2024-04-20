@@ -483,6 +483,7 @@ def show_search_dialog() -> None:
     to the selected text if any (up to first newline)."""
     dlg = SearchDialog.show_dialog()
     dlg.search_box_set(maintext().selected_text().split("\n", 1)[0])
+    dlg.display_message()
 
 
 def find_next(backwards: bool = False) -> None:
