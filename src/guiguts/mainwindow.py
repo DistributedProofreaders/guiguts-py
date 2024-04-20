@@ -10,7 +10,6 @@ from tkinter import ttk, messagebox
 from typing import Any, Callable, Optional
 
 from PIL import Image, ImageTk
-import regex as re
 
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences, PrefKey
@@ -23,7 +22,7 @@ from guiguts.utilities import (
     process_label,
     IndexRowCol,
 )
-from guiguts.widgets import ToplevelDialog
+from guiguts.widgets import ToplevelDialog, mouse_bind
 
 logger = logging.getLogger(__package__)
 
@@ -702,27 +701,6 @@ class MainWindow:
         mainimage().clear_image()
 
 
-def mouse_bind(
-    widget: tk.Widget, event: str, callback: Callable[[tk.Event], object]
-) -> None:
-    """Bind mouse button callback to event on widget.
-
-    If binding is to mouse button 2 or 3, also bind the other button
-    to support all platforms and 2-button mice.
-
-    Args:
-        widget: Widget to bind to
-        event: Event string to trigger callback
-        callback: Function to be called when event occurs
-    """
-    widget.bind(event, callback)
-
-    if match := re.match(r"(<.*Button.*)([23])(>)", event):
-        other_button = "2" if match.group(2) == "3" else "3"
-        other_event = match.group(1) + other_button + match.group(3)
-        widget.bind(other_event, callback)
-
-
 def do_sound_bell() -> None:
     """Sound warning bell audibly and/or visually.
 
@@ -775,11 +753,7 @@ def add_text_context_menu(text_widget: tk.Text, read_only: bool = False) -> None
         event.widget.focus_set()
         menu_context.post(event.x_root, event.y_root)
 
-    if is_mac():
-        text_widget.bind("<2>", post_context_menu)
-        text_widget.bind("<Control-1>", post_context_menu)
-    else:
-        text_widget.bind("<3>", post_context_menu)
+    mouse_bind(text_widget, "3", post_context_menu)
 
 
 def mainimage() -> MainImage:

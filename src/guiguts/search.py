@@ -18,7 +18,7 @@ from guiguts.utilities import (
     is_mac,
     sing_plur,
 )
-from guiguts.widgets import ToplevelDialog, Combobox
+from guiguts.widgets import ToplevelDialog, Combobox, mouse_bind
 
 logger = logging.getLogger(__package__)
 
@@ -100,8 +100,9 @@ class SearchDialog(ToplevelDialog):
             command=self.search_clicked,
         )
         search_button.grid(row=0, column=1, pady=(5, 0), sticky="NSEW")
-        search_button.bind(
-            "<Shift-Button-1>",
+        mouse_bind(
+            search_button,
+            "Shift+1",
             lambda *args: self.search_clicked(opposite_dir=True),
         )
         self.bind("<Return>", lambda *args: self.search_clicked())
@@ -178,8 +179,9 @@ class SearchDialog(ToplevelDialog):
             command=lambda *args: self.replace_clicked(search_again=True),
         )
         rands_button.grid(row=0, column=0, padx=(0, 2), pady=(2, 6), sticky="NSEW")
-        rands_button.bind(
-            "<Shift-Button-1>",
+        mouse_bind(
+            rands_button,
+            "Shift+1",
             lambda *args: self.replace_clicked(opposite_dir=True, search_again=True),
         )
         ttk.Button(

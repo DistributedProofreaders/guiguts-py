@@ -2,12 +2,12 @@
 
 import tkinter as tk
 from tkinter import simpledialog, ttk
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional, TypeVar, Callable
 
 import regex as re
 
 from guiguts.preferences import preferences, PrefKey
-from guiguts.utilities import is_windows
+from guiguts.utilities import is_windows, is_mac, process_accel
 
 NUM_HISTORY = 10
 
@@ -309,3 +309,29 @@ def grab_focus(
     toplevel.focus_force()
     if focus_widget is not None:
         focus_widget.focus_set()
+
+
+def mouse_bind(
+    widget: tk.Widget, event: str, callback: Callable[[tk.Event], object]
+) -> None:
+    """Bind mouse button callback to event on widget.
+
+    If binding is to mouse button 3, then if on a Mac bind
+    to mouse-2 and Control-mouse-1 instead
+
+    Args:
+        widget: Widget to bind to
+        event: Event string to trigger callback
+        callback: Function to be called when event occurs
+    """
+    assert not event.startswith("<") and not event.endswith(">")
+    # Convert to event format and handle Cmd/Ctrl
+    _, event = process_accel(event)
+
+    if is_mac() and (match := re.match(r"<(.*)3>", event)):
+        button2 = f"<{match[1]}2>"
+        widget.bind(button2, callback)
+        control1 = f"<Control-{match[1]}1>"
+        widget.bind(control1, callback)
+    else:
+        widget.bind(event, callback)

@@ -6,7 +6,7 @@ from tkinter import simpledialog, ttk
 import roman  # type: ignore[import-untyped]
 
 from guiguts.maintext import maintext
-from guiguts.widgets import OkCancelDialog
+from guiguts.widgets import OkCancelDialog, mouse_bind
 
 STYLE_COLUMN = "#2"
 STYLE_ARABIC = "Arabic"
@@ -142,7 +142,7 @@ class PageDetailsDialog(OkCancelDialog):
             )
             self.list.heading(f"#{col + 1}", text=column)
 
-        self.list.bind("<ButtonRelease-1>", self.item_clicked)
+        mouse_bind(self.list, "1", self.item_clicked)
         self.list.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.scrollbar = ttk.Scrollbar(
