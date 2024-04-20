@@ -236,6 +236,18 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         if self.file.open_file(filename):
             self.mainwindow.clear_image()
 
+    def close_command(self) -> None:
+        """Close top-level dialog with focus, or close the file if it's
+        the main window."""
+        focus_widget = maintext().focus_get()
+        if focus_widget is None:
+            return
+        focus_tl = focus_widget.winfo_toplevel()
+        if focus_tl == maintext().winfo_toplevel():
+            self.close_file()
+        else:
+            focus_tl.destroy()
+
     def close_file(self) -> None:
         """Close currently loaded file and associated image."""
         self.file.close_file()
@@ -316,7 +328,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S"
         )
         self.menu_file.add_button(
-            "~Close", self.close_file, "Cmd+W" if is_mac() else ""
+            "~Close", self.close_command, "Cmd+W" if is_mac() else ""
         )
         page_menu = Menu(self.menu_file, "Page ~Markers")
         page_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)
