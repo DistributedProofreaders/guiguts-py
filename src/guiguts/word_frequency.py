@@ -558,6 +558,7 @@ class WordFrequencyDialog(ToplevelDialog):
         SearchDialog.matchcase.set(not WordFrequencyDialog.ignore_case.get())
         SearchDialog.wholeword.set(self.whole_word_search(word))
         SearchDialog.regex.set(False)
+        dlg.display_message()
 
         return "break"
 
