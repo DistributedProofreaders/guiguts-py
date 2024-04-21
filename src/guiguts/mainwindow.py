@@ -22,7 +22,7 @@ from guiguts.utilities import (
     process_label,
     IndexRowCol,
 )
-from guiguts.widgets import ToplevelDialog, mouse_bind
+from guiguts.widgets import ToplevelDialog, mouse_bind, ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -422,7 +422,11 @@ class StatusBar(ttk.Frame):
         self._update()
 
     def add(
-        self, key: str, update: Optional[Callable[[], str]] = None, **kwargs: Any
+        self,
+        key: str,
+        tooltip: str = "",
+        update: Optional[Callable[[], str]] = None,
+        **kwargs: Any,
     ) -> None:
         """Add field to status bar
 
@@ -436,6 +440,8 @@ class StatusBar(ttk.Frame):
         self.fields[key] = ttk.Button(self, takefocus=0, **kwargs)
         self.callbacks[key] = update
         self.fields[key].grid(column=len(self.fields), row=0)
+        if tooltip:
+            ToolTip(self.fields[key], msg=tooltip)
 
     def set(self, key: str, value: str) -> None:
         """Set field in statusbar to given value.

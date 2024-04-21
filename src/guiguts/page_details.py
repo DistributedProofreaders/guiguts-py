@@ -6,7 +6,7 @@ from tkinter import simpledialog, ttk
 import roman  # type: ignore[import-untyped]
 
 from guiguts.maintext import maintext
-from guiguts.widgets import OkCancelDialog, mouse_bind
+from guiguts.widgets import OkCancelDialog, mouse_bind, ToolTip
 
 STYLE_COLUMN = "#2"
 STYLE_ARABIC = "Arabic"
@@ -131,6 +131,11 @@ class PageDetailsDialog(OkCancelDialog):
         widths = (50, 80, 80, 120)
         self.list = ttk.Treeview(
             master, columns=columns, show="headings", height=10, selectmode=tk.BROWSE
+        )
+        ToolTip(
+            self.list,
+            "Click in style column to cycle Arabic/Roman/Ditto\nClick in number column to cycle +1/No Count/Set Number",
+            use_pointer_pos=True,
         )
         for col, column in enumerate(columns):
             self.list.column(
