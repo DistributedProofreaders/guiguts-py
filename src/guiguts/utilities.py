@@ -276,6 +276,16 @@ def process_accel(accel: str) -> tuple[str, str]:
     return (accel, f"<{keyevent}>")
 
 
+def folder_dir_str(lowercase: bool = False) -> str:
+    """Return "Folder" or "Directory" depending on platform.
+
+    Args:
+        lowercase: If True, return lowercase version.
+    """
+    fd_string = "Folder" if is_windows() else "Directory"
+    return fd_string.lower() if lowercase else fd_string
+
+
 def force_tcl_wholeword(string: str, regex: bool) -> tuple[str, bool]:
     """Change string to only match whole word(s) by converting to
     a regex (if not already), then prepending and appending Tcl-style

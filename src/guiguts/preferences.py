@@ -22,6 +22,7 @@ class PrefKey(StrEnum):
     IMAGEWINDOW = auto()
     RECENTFILES = auto()
     LINENUMBERS = auto()
+    ORDINALNAMES = auto()
     SEARCHHISTORY = auto()
     REPLACEHISTORY = auto()
     SEARCHDIALOGREVERSE = auto()

@@ -23,17 +23,16 @@ from guiguts.project_dict import ProjectDict, GOOD_WORDS_FILENAME, BAD_WORDS_FIL
 from guiguts.root import root
 from guiguts.spell import spell_check_clear_dictionary
 from guiguts.utilities import (
-    is_windows,
     load_dict_from_json,
     IndexRowCol,
     IndexRange,
     sound_bell,
+    folder_dir_str,
 )
 from guiguts.widgets import grab_focus, ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
-FOLDER_DIR = "folder" if is_windows() else "directory"
 NUM_RECENT_FILES = 9
 PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".json"
@@ -514,7 +513,7 @@ class File:
     def choose_image_dir(self) -> None:
         """Allow user to select directory containing png image files"""
         self.image_dir = filedialog.askdirectory(
-            mustexist=True, title="Select " + FOLDER_DIR + " containing scans"
+            mustexist=True, title=f"Select {folder_dir_str(True)} containing scans"
         )
 
     def get_current_page_label(self) -> str:
