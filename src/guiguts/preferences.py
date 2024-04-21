@@ -37,6 +37,7 @@ class PrefKey(StrEnum):
     WFDIALOGSORTTYPE = auto()
     WFDIALOGITALTHRESHOLD = auto()
     WFDIALOGREGEX = auto()
+    CHECKERDIALOGSORTTYPE = auto()
     DIALOGGEOMETRY = auto()
     ROOTGEOMETRY = auto()
     DEFAULTLANGUAGES = auto()

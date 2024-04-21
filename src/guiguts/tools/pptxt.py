@@ -4,9 +4,10 @@ from typing import Dict, Sequence, List
 import regex as re
 
 from guiguts.checkers import CheckerDialog
+from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
 from guiguts.utilities import IndexRowCol, IndexRange
-from guiguts.file import ProjectDict
+from guiguts.widgets import ToolTip
 
 REPORT_LIMIT = 5  # Max number of times to report same issue for some checks
 
@@ -169,7 +170,7 @@ def get_words_on_line(line: str) -> list[str]:
 def spacing_check() -> None:
     """Blank line spacing check that flags other than 4121, 421 or 411 spacing."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Paragraph spacing check - expecting 4121, 421 or 411 spacing -------------"
     )
 
@@ -260,18 +261,16 @@ def spacing_check() -> None:
             checker_dialog.add_entry(record, IndexRange(start_rowcol, end_rowcol))
 
     if not four_line_spacing_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry(
-            "    No 4-line spacing found in book - that is unusual."
+        checker_dialog.add_footer(
+            "", "    No 4-line spacing found in book - that is unusual."
         )
     elif no_other_spacing_issues:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry(
-            "    Book appears to conform to DP paragraph/block spacing standards."
+        checker_dialog.add_footer(
+            "", "    Book appears to conform to DP paragraph/block spacing standards."
         )
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -282,7 +281,7 @@ def spacing_check() -> None:
 def repeated_words_check() -> None:
     """Repeated words check."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Repeated words check - can be last word on a line and first on next ------"
     )
 
@@ -454,11 +453,10 @@ def repeated_words_check() -> None:
                 )
 
     if none_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No repeated words found.")
+        checker_dialog.add_footer("", "    No repeated words found.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -469,7 +467,7 @@ def repeated_words_check() -> None:
 def hyphenated_words_check() -> None:
     """Repeated words check."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Hyphenated/non-hyphenated words check ------------------------------------"
     )
 
@@ -492,9 +490,9 @@ def hyphenated_words_check() -> None:
                 if first_header:
                     first_header = False
                 else:
-                    checker_dialog.add_entry("")
+                    checker_dialog.add_header("")
                 # Add header record to dialog.
-                checker_dialog.add_entry(record)
+                checker_dialog.add_header(record)
 
                 # Under the header add to the dialog every line containing an instance of the
                 # hyphenated word. If there are more than 5 lines we stop reporting them and warn.
@@ -528,13 +526,13 @@ def hyphenated_words_check() -> None:
                     prev_line_number = line_number
 
                 if count < 0:
-                    checker_dialog.add_entry("  ...more")
+                    checker_dialog.add_footer("  ...more")
 
                 # We do the same for the non-hyphenated version of the word. Separate this
                 # list of lines from the ones above with a rule. Limit the number of lines
                 # reported to REPORT_LIMIT (5).
 
-                checker_dialog.add_entry("-----")
+                checker_dialog.add_header("-----")
 
                 line_number_list = word_list_map_lines[word_with_no_hyphen]
                 prev_line_number = -1
@@ -561,16 +559,16 @@ def hyphenated_words_check() -> None:
                     prev_line_number = line_number
 
                 if count < 0:
-                    checker_dialog.add_entry("  ...more")
+                    checker_dialog.add_footer("  ...more")
 
     if none_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry(
+        checker_dialog.add_footer("")
+        checker_dialog.add_footer(
             "    No non-hyphenated versions of hyphenated words found."
         )
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -585,7 +583,7 @@ def weird_characters() -> None:
     are grouped by unusual character and each instance of the character
     on a report line is highlighted."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Character checks ---------------------------------------------------------"
     )
 
@@ -628,9 +626,9 @@ def weird_characters() -> None:
             if first_header:
                 first_header = False
             else:
-                checker_dialog.add_entry("")
+                checker_dialog.add_header("")
             # Add header record to dialog.
-            checker_dialog.add_entry(record)
+            checker_dialog.add_header(record)
 
             # Under the header add to the dialog every line containing an instance of the weirdo.
             # If there are multiple instances of a weirdo on a line then the line will appear in
@@ -659,14 +657,13 @@ def weird_characters() -> None:
                 prev_line_number = line_number
 
             if count < 0:
-                checker_dialog.add_entry("  ...more")
+                checker_dialog.add_footer("  ...more")
 
     if none_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No unusual characters found.")
+        checker_dialog.add_footer("", "    No unusual characters found.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -678,7 +675,7 @@ def weird_characters() -> None:
 def specials_check(project_dict: ProjectDict) -> None:
     """A series of textual checks done on a single read of the book lines."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Special situations checks ------------------------------------------------"
     )
 
@@ -1113,9 +1110,9 @@ def specials_check(project_dict: ProjectDict) -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
+            checker_dialog.add_header("")
         # Add header record to dialog.
-        checker_dialog.add_entry(header_line)
+        checker_dialog.add_header(header_line)
         # Generate the dialog messages
         for tple in tuples_list:
             line = tple[0]
@@ -1134,11 +1131,11 @@ def specials_check(project_dict: ProjectDict) -> None:
             )
 
     if none_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No special situations reports.")
+        checker_dialog.add_footer("")
+        checker_dialog.add_footer("    No special situations reports.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -1149,7 +1146,7 @@ def specials_check(project_dict: ProjectDict) -> None:
 def html_check() -> None:
     """Abandoned HTML tag check."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Abandoned HTML tag check -------------------------------------------------"
     )
 
@@ -1174,10 +1171,8 @@ def html_check() -> None:
         # number of HTML tags found so far then exit loop.
 
         if abandoned_html_tag_count > courtesy_limit:
-            checker_dialog.add_entry("")
             record = f"Source file not plain text: {lines_with_html_tags} book lines with {abandoned_html_tag_count} markup instances so far..."
-            checker_dialog.add_entry(record)
-            checker_dialog.add_entry("...abandoning check.")
+            checker_dialog.add_footer("", record, "...abandoning check.")
             # Don't search any more book lines for HTML tags.
             break
 
@@ -1185,11 +1180,10 @@ def html_check() -> None:
 
     # All book lines scanned or scanning abandoned.
     if abandoned_html_tag_count == 0:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No abandoned HTML tags found.")
+        checker_dialog.add_footer("", "    No abandoned HTML tags found.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -1200,7 +1194,7 @@ def html_check() -> None:
 def unicode_numeric_character_check() -> None:
     """Unicode numeric character references check."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Unicode numeric character references check -------------------------------"
     )
 
@@ -1236,11 +1230,12 @@ def unicode_numeric_character_check() -> None:
 
     # All book lines scanned.
     if numeric_char_reference_count == 0:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No unicode numeric character references found.")
+        checker_dialog.add_footer(
+            "", "    No unicode numeric character references found."
+        )
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -1252,7 +1247,7 @@ def unicode_numeric_character_check() -> None:
 def adjacent_spaces_check() -> None:
     """Scans text of each book line for adjacent spaces."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Adjacent spaces check (poetry, block-quotes, etc., are ignored) ----------"
     )
 
@@ -1275,11 +1270,10 @@ def adjacent_spaces_check() -> None:
 
     # All book lines scanned.
     if no_adjacent_spaces_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No lines with adjacent spaces found.")
+        checker_dialog.add_footer("", "    No lines with adjacent spaces found.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -1290,7 +1284,7 @@ def adjacent_spaces_check() -> None:
 def trailing_spaces_check() -> None:
     """Scans each book line for trailing spaces."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Trailing spaces check ----------------------------------------------------"
     )
 
@@ -1319,11 +1313,10 @@ def trailing_spaces_check() -> None:
 
     # All book lines scanned.
     if no_trailing_spaces_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No lines with trailing spaces found.")
+        checker_dialog.add_footer("", "    No lines with trailing spaces found.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 def double_dash_replace(matchobj: re.Match) -> str:
@@ -1376,7 +1369,7 @@ def report_all_occurrences_on_line(pattern: str, line: str, line_number: int) ->
 def ellipsis_check() -> None:
     """Ellipses check."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Ellipsis check -----------------------------------------------------------"
     )
 
@@ -1433,11 +1426,10 @@ def ellipsis_check() -> None:
         line_number += 1
 
     if no_suspect_ellipsis_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No suspect ellipsis found.")
+        checker_dialog.add_footer("", "    No suspect ellipsis found.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -1448,7 +1440,7 @@ def ellipsis_check() -> None:
 def curly_quote_check() -> None:
     """Curly quote check."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Basic (positional) curly-quote check -------------------------------------"
     )
 
@@ -1463,21 +1455,21 @@ def curly_quote_check() -> None:
         if re.search(pattern, line):
             if first_match:
                 first_match = False
-                checker_dialog.add_entry("floating quote (single or double)")
+                checker_dialog.add_header("floating quote (single or double)")
             report_all_occurrences_on_line(pattern, line, line_number)
             no_suspect_curly_quote_found = False
         pattern = r"^[“”\‘\’](?= )"
         if re.search(pattern, line):
             if first_match:
                 first_match = False
-                checker_dialog.add_entry("floating quote (single or double)")
+                checker_dialog.add_header("floating quote (single or double)")
             report_all_occurrences_on_line(pattern, line, line_number)
             no_suspect_curly_quote_found = False
         pattern = r"(?<= )[“”\‘\’]$"
         if re.search(pattern, line):
             if first_match:
                 first_match = False
-                checker_dialog.add_entry("floating quote (single or double)")
+                checker_dialog.add_header("floating quote (single or double)")
             report_all_occurrences_on_line(pattern, line, line_number)
             no_suspect_curly_quote_found = False
 
@@ -1494,32 +1486,31 @@ def curly_quote_check() -> None:
         if re.search(pattern, line):
             if first_match:
                 first_match = False
-                checker_dialog.add_entry("quote direction")
+                checker_dialog.add_header("quote direction")
             report_all_occurrences_on_line(pattern, line, line_number)
             no_suspect_curly_quote_found = False
         pattern = r"(?<=\p{L})[\‘\“]"
         if re.search(pattern, line):
             if first_match:
                 first_match = False
-                checker_dialog.add_entry("quote direction")
+                checker_dialog.add_header("quote direction")
             report_all_occurrences_on_line(pattern, line, line_number)
             no_suspect_curly_quote_found = False
         pattern = r"”(?=[\p{L}])"
         if re.search(pattern, line):
             if first_match:
                 first_match = False
-                checker_dialog.add_entry("quote direction")
+                checker_dialog.add_header("quote direction")
             report_all_occurrences_on_line(pattern, line, line_number)
             no_suspect_curly_quote_found = False
 
         line_number += 1
 
     if no_suspect_curly_quote_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No suspect curly quotes found.")
+        checker_dialog.add_footer("", "    No suspect curly quotes found.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -1530,35 +1521,33 @@ def curly_quote_check() -> None:
 def quote_type_checks() -> None:
     """Check for mixed straight/curly quotes."""
 
-    checker_dialog.add_entry(
-        "----- Quotes types check -------------------------------------------------------"
+    checker_dialog.add_header(
+        "----- Quotes types check -------------------------------------------------------",
+        "",
     )
-
-    # Add line spacer at start of this checker section.
-    checker_dialog.add_entry("")
 
     # Any straight single/double quotes?
     if ssq > 0 or sdq > 0:
         # Yep, so what about any curly single and double quotes?
         if csq == 0 and cdq == 0:
-            checker_dialog.add_entry(
+            checker_dialog.add_header(
                 "    Only straight quotes found in this file (maybe single and/or double)."
             )
         elif csq > 0 or cdq > 0:
-            checker_dialog.add_entry(
+            checker_dialog.add_header(
                 "    Both straight and curly quotes found in this file (maybe single and/or double)."
             )
     elif (ssq == 0 and sdq == 0) and (csq > 0 or cdq > 0):
-        checker_dialog.add_entry(
+        checker_dialog.add_header(
             "    Only curly quotes found in this file (maybe single and/or double)."
         )
     elif ssq == 0 and sdq == 0 and csq == 0 and cdq == 0:
-        checker_dialog.add_entry(
+        checker_dialog.add_header(
             "    No single or double quotes of any type found in file - that is unusual."
         )
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -1569,7 +1558,7 @@ def quote_type_checks() -> None:
 def dash_review() -> None:
     """Hyphen/dashes check."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Hyphen/dashes check (one or more present on line) ------------------------"
     )
 
@@ -1826,8 +1815,8 @@ def dash_review() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
-        checker_dialog.add_entry("Pairs of '--' (keyboard '-') found")
+            checker_dialog.add_header("")
+        checker_dialog.add_header("Pairs of '--' (keyboard '-') found")
 
         count = 0
         for record in a_h2:
@@ -1842,11 +1831,11 @@ def dash_review() -> None:
                 output_record = "  ...1 more line"
             else:
                 output_record = f"  ...{len(a_h2) - 5} more lines"
-            checker_dialog.add_entry(output_record)
+            checker_dialog.add_footer(output_record)
         if counth2 > 5:
-            checker_dialog.add_entry("")
-            checker_dialog.add_entry(
-                "    [Book seems to use '--' as em-dash so not reporting these further]"
+            checker_dialog.add_footer(
+                "",
+                "    [Book seems to use '--' as em-dash so not reporting these further]",
             )
 
     # Report other consecutive dashes
@@ -1855,8 +1844,8 @@ def dash_review() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
-        checker_dialog.add_entry(
+            checker_dialog.add_header("")
+        checker_dialog.add_header(
             "Adjacent dashes (expected at least 8 emdash or keyboard '-' as a separator)"
         )
 
@@ -1871,8 +1860,8 @@ def dash_review() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
-        checker_dialog.add_entry("Hyphen-minus (single keyboard '-')")
+            checker_dialog.add_header("")
+        checker_dialog.add_header("Hyphen-minus (single keyboard '-')")
         for record in a_hm:
             line_number = record[0]
             line = record[1]
@@ -1885,8 +1874,8 @@ def dash_review() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
-        checker_dialog.add_entry("Hyphen")
+            checker_dialog.add_header("")
+        checker_dialog.add_header("Hyphen")
         for record in a_hy:
             line_number = record[0]
             line = record[1]
@@ -1898,8 +1887,8 @@ def dash_review() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
-        checker_dialog.add_entry("Non-breaking hyphen")
+            checker_dialog.add_header("")
+        checker_dialog.add_header("Non-breaking hyphen")
         for record in a_nb:
             line_number = record[0]
             line = record[1]
@@ -1911,8 +1900,8 @@ def dash_review() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
-        checker_dialog.add_entry("Figure dash")
+            checker_dialog.add_header("")
+        checker_dialog.add_header("Figure dash")
         for record in a_fd:
             line_number = record[0]
             line = record[1]
@@ -1924,8 +1913,8 @@ def dash_review() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
-        checker_dialog.add_entry("En-dash")
+            checker_dialog.add_header("")
+        checker_dialog.add_header("En-dash")
         for record in a_en:
             line_number = record[0]
             line = record[1]
@@ -1937,8 +1926,8 @@ def dash_review() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
-        checker_dialog.add_entry("Em-dash")
+            checker_dialog.add_header("")
+        checker_dialog.add_header("Em-dash")
         for record in a_em:
             line_number = record[0]
             line = record[1]
@@ -1950,8 +1939,8 @@ def dash_review() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
-        checker_dialog.add_entry("Unrecognised dash")
+            checker_dialog.add_header("")
+        checker_dialog.add_header("Unrecognised dash")
         for record in a_un:
             line_number = record[0]
             line = record[1]
@@ -1959,11 +1948,10 @@ def dash_review() -> None:
 
     # All book lines scanned.
     if not dash_suspects_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No dash suspects found.")
+        checker_dialog.add_footer("", "    No dash suspects found.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -1975,7 +1963,7 @@ def scanno_check() -> None:
     """Checks the 'words' on a line against a long list
     of commonly misspelled words."""
 
-    checker_dialog.add_entry(
+    checker_dialog.add_header(
         "----- Scannos check ------------------------------------------------------------"
     )
 
@@ -2029,9 +2017,9 @@ def scanno_check() -> None:
         if first_header:
             first_header = False
         else:
-            checker_dialog.add_entry("")
+            checker_dialog.add_header("")
         # Header is the scanno.
-        checker_dialog.add_entry(scanno)
+        checker_dialog.add_header(scanno)
 
         for tple in tple_list:
             line_number = tple[0]
@@ -2061,11 +2049,11 @@ def scanno_check() -> None:
                 )
 
     if no_scannos_found:
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("    No scannos found.")
+        checker_dialog.add_footer("")
+        checker_dialog.add_footer("    No scannos found.")
 
     # Add line spacer at end of this checker section.
-    checker_dialog.add_entry("")
+    checker_dialog.add_footer("")
 
 
 ######################################################################
@@ -2507,6 +2495,17 @@ def pptxt(project_dict: ProjectDict) -> None:
     checker_dialog = CheckerDialog.show_dialog(
         "PPtxt Results", rerun_command=lambda: pptxt(project_dict)
     )
+    ToolTip(
+        checker_dialog.text,
+        "\n".join(
+            [
+                "Left click: Select & find issue",
+                "Right click: Remove issue from list",
+                "Shift Right click: Remove all matching issues",
+            ]
+        ),
+        use_pointer_pos=True,
+    )
     checker_dialog.reset()
 
     # Get the whole of the file from the main text widget
@@ -2604,4 +2603,5 @@ def pptxt(project_dict: ProjectDict) -> None:
 
     # Add final divider line to dialog.
 
-    checker_dialog.add_entry(f"{'-' * 80}")
+    checker_dialog.add_footer(f"{'-' * 80}")
+    checker_dialog.display_entries()

@@ -12,7 +12,13 @@ from guiguts.file import ProjectDict
 from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.maintext import maintext, FindMatch
 from guiguts.preferences import preferences
-from guiguts.utilities import IndexRowCol, IndexRange, load_wordfile_into_dict
+from guiguts.utilities import (
+    IndexRowCol,
+    IndexRange,
+    load_wordfile_into_dict,
+    cmd_ctrl_string,
+)
+from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -307,6 +313,18 @@ def spell_check(
         rerun_command=lambda: spell_check(project_dict, add_project_word_callback),
         process_command=process_spelling,
     )
+    ToolTip(
+        checker_dialog.text,
+        "\n".join(
+            [
+                "Left click: Select & find spelling error",
+                "Right click: Remove spelling error from list",
+                "Shift Right click: Remove all occurrences of spelling error from list",
+                f"With {cmd_ctrl_string()} key: Also add spelling to project dictionary",
+            ]
+        ),
+        use_pointer_pos=True,
+    )
     frame = ttk.Frame(checker_dialog.header_frame)
     frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
     project_dict_button = ttk.Button(
@@ -330,8 +348,7 @@ def spell_check(
 
     checker_dialog.reset()
     # Construct opening line describing the search
-    checker_dialog.add_entry("Start of Spelling Check")
-    checker_dialog.add_entry("")
+    checker_dialog.add_header("Start of Spelling Check", "")
 
     for spelling in bad_spellings:
         end_rowcol = IndexRowCol(
@@ -344,8 +361,8 @@ def spell_check(
             0,
             spelling.count,
         )
-    checker_dialog.add_entry("")
-    checker_dialog.add_entry("End of Spelling Check")
+    checker_dialog.add_footer("", "End of Spelling Check")
+    checker_dialog.display_entries()
 
 
 def spell_check_clear_dictionary() -> None:

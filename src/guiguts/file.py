@@ -690,13 +690,13 @@ class File:
             )
 
     def add_good_word_to_project_dictionary(self, word: str) -> None:
-        """Add a good word to the project dictionary & save it.
+        """Add a good word to the project dictionary. Save if word was added.
 
         Args:
             word: The word to be added.
         """
-        self.project_dict.add_good_word(word)
-        self.project_dict.save(self.filename)
+        if self.project_dict.add_good_word(word):
+            self.project_dict.save(self.filename)
 
 
 def page_mark_previous(mark: str) -> str:

@@ -18,7 +18,7 @@ from guiguts.utilities import (
     is_mac,
     sing_plur,
 )
-from guiguts.widgets import ToplevelDialog, Combobox, mouse_bind
+from guiguts.widgets import ToplevelDialog, Combobox, mouse_bind, ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -339,6 +339,17 @@ class SearchDialog(ToplevelDialog):
         checker_dialog = FindAllCheckerDialog.show_dialog(
             "Search Results", rerun_command=self.findall_clicked
         )
+        ToolTip(
+            checker_dialog.text,
+            "\n".join(
+                [
+                    "Left click: Select & find string",
+                    "Right click: Remove string from this list",
+                    "Shift Right click: Remove all occurrences of string from this list",
+                ]
+            ),
+            use_pointer_pos=True,
+        )
         checker_dialog.reset()
         # Construct opening line describing the search
         desc_reg = "regex" if SearchDialog.regex.get() else "string"
@@ -350,8 +361,7 @@ class SearchDialog(ToplevelDialog):
             desc += ", whole words only"
         if SearchDialog.selection.get():
             desc += ", within selection"
-        checker_dialog.add_entry(desc, None, len(prefix), len(prefix + search_string))
-        checker_dialog.add_entry("")
+        checker_dialog.add_header(desc, "")
 
         for match in matches:
             line = maintext().get(
@@ -368,8 +378,8 @@ class SearchDialog(ToplevelDialog):
             checker_dialog.add_entry(
                 line, IndexRange(match.rowcol, end_rowcol), hilite_start, hilite_end
             )
-        checker_dialog.add_entry("")
-        checker_dialog.add_entry("End of search results")
+        checker_dialog.add_footer("", "End of search results")
+        checker_dialog.display_entries()
 
     def replace_clicked(
         self, opposite_dir: bool = False, search_again: bool = False

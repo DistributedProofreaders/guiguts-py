@@ -16,6 +16,7 @@ from guiguts.preferences import (
     PrefKey,
 )
 from guiguts.utilities import IndexRowCol, IndexRange
+from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -94,6 +95,17 @@ class JeebiesChecker:
             value=JeebiesParanoiaLevel.TOLERANT,
             takefocus=False,
         ).grid(row=0, column=4, sticky="NSE", padx=2)
+        ToolTip(
+            checker_dialog.text,
+            "\n".join(
+                [
+                    "Left click: Select & find he/be error",
+                    "Right click: Remove he/be error from list",
+                    "Shift Right click: Remove all matching he/be errors",
+                ]
+            ),
+            use_pointer_pos=True,
+        )
         checker_dialog.reset()
 
         # Check level used last time Jeebies was run or default if first run.
@@ -128,16 +140,16 @@ class JeebiesChecker:
         # the words 'he' and 'be' don't appear in a text. Pretty rare!
 
         if (be_cnt_in_file + he_cnt_in_file) == 0:
-            checker_dialog.add_entry(
+            checker_dialog.add_header(
                 f"  --> 'be' counted {be_cnt_in_file} times and 'he' counted {he_cnt_in_file} times in file."
             )
-            checker_dialog.add_entry("")
-            checker_dialog.add_entry("    There are no he/be phrases to check.")
+            checker_dialog.add_header("")
+            checker_dialog.add_header("    There are no he/be phrases to check.")
         else:
-            checker_dialog.add_entry(
+            checker_dialog.add_header(
                 f"  --> 'be' counted {be_cnt_in_file} times and 'he' counted {he_cnt_in_file} times in file."
             )
-            checker_dialog.add_entry("")
+            checker_dialog.add_header("")
 
             # For each paragraph in book ...
 
@@ -185,7 +197,9 @@ class JeebiesChecker:
             # Tell user if no suspect hebe phrases found in the paragraphs.
 
             if suspects_count == 0:
-                checker_dialog.add_entry("    No suspect phrases found.")
+                checker_dialog.add_footer("    No suspect phrases found.")
+
+        checker_dialog.display_entries()
 
     def build_paragraph_structures(self) -> tuple[List, List, List, List]:
         """Make the paragraph strings and the ancillary lists that allow
