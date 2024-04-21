@@ -22,16 +22,8 @@ COL_HEAD_NUMBER = "Number"
 COL_HEAD_LABEL = "Label"
 PAGE_LABEL_PREFIX = "Pg "
 
-STYLE_NEXT = {
-    STYLE_ARABIC: STYLE_ROMAN,
-    STYLE_ROMAN: STYLE_DITTO,
-    STYLE_DITTO: STYLE_ARABIC,
-}
-NUMBER_NEXT = {
-    NUMBER_PAGENUM: NUMBER_INCREMENT,
-    NUMBER_INCREMENT: NUMBER_NONE,
-    NUMBER_NONE: NUMBER_PAGENUM,
-}
+STYLES = [STYLE_ARABIC, STYLE_ROMAN, STYLE_DITTO]
+NUMBERS = [NUMBER_PAGENUM, NUMBER_INCREMENT, NUMBER_NONE]
 
 
 class PageDetail(dict):
@@ -134,7 +126,13 @@ class PageDetailsDialog(OkCancelDialog):
         )
         ToolTip(
             self.list,
-            "Click in style column to cycle Arabic/Roman/Ditto\nClick in number column to cycle +1/No Count/Set Number",
+            "\n".join(
+                [
+                    "Click in style column to cycle Arabic/Roman/Ditto",
+                    "Click in number column to cycle +1/No Count/Set Number",
+                    "Shift click to cycle in reverse order",
+                ]
+            ),
             use_pointer_pos=True,
         )
         for col, column in enumerate(columns):
@@ -147,7 +145,12 @@ class PageDetailsDialog(OkCancelDialog):
             )
             self.list.heading(f"#{col + 1}", text=column)
 
-        mouse_bind(self.list, "1", self.item_clicked)
+        mouse_bind(
+            self.list, "1", lambda event: self.item_clicked(event, reverse=False)
+        )
+        mouse_bind(
+            self.list, "Shift+1", lambda event: self.item_clicked(event, reverse=True)
+        )
         self.list.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.scrollbar = ttk.Scrollbar(
@@ -179,11 +182,15 @@ class PageDetailsDialog(OkCancelDialog):
             self.list.see(children[see_index])
             self.list.selection_set(children[see_index])
 
-    def item_clicked(self, event: tk.Event) -> None:
+    def item_clicked(self, event: tk.Event, reverse: bool) -> None:
         """Called when page detail item is clicked.
 
         If click is in style or number column, then advance style/number
         setting to the next value. Refresh the list to show new labels.
+
+        Args:
+            event: Event containing location of mouse click
+            reverse: True to "advance" in reverse!
         """
         col_id = self.list.identify_column(event.x)
         if col_id not in (STYLE_COLUMN, NUMBER_COLUMN):
@@ -195,18 +202,31 @@ class PageDetailsDialog(OkCancelDialog):
         if col_id == STYLE_COLUMN:
             if COL_HEAD_STYLE not in row:
                 return
-            # Click in style column advances style
-            new_value = STYLE_NEXT[row[COL_HEAD_STYLE]]
-            self.details[row[COL_HEAD_IMG]]["style"] = new_value
+            # Click in style column advances/retreats style
+            style_index = STYLES.index(row[COL_HEAD_STYLE])
+            if reverse:
+                style_index = len(STYLES) - 1 if style_index == 0 else style_index - 1
+            else:
+                style_index = 0 if style_index == len(STYLES) - 1 else style_index + 1
+            self.details[row[COL_HEAD_IMG]]["style"] = STYLES[style_index]
         elif col_id == NUMBER_COLUMN:
             if COL_HEAD_NUMBER not in row:
                 return
-            # Click in number column advances number type.
+            # Click in number column advances/retreats number type.
             # May need to prompt user for page number.
             value = row[COL_HEAD_NUMBER]
             if value.isdecimal():
                 value = NUMBER_PAGENUM
-            new_value = NUMBER_NEXT[value]
+            number_index = NUMBERS.index(value)
+            if reverse:
+                number_index = (
+                    len(NUMBERS) - 1 if number_index == 0 else number_index - 1
+                )
+            else:
+                number_index = (
+                    0 if number_index == len(NUMBERS) - 1 else number_index + 1
+                )
+            new_value = NUMBERS[number_index]
             if new_value == NUMBER_PAGENUM:
                 pagenum = simpledialog.askinteger(
                     "Set Number", "Enter page number", parent=self
