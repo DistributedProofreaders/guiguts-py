@@ -345,10 +345,14 @@ class MainText(tk.Text):
         Args:
             fname: Name of file to load text from.
         """
-        with open(fname, "r", encoding="utf-8") as fh:
-            self.delete("1.0", tk.END)
-            self.insert(tk.END, fh.read())
-            self.set_modified(False)
+        self.delete("1.0", tk.END)
+        try:
+            with open(fname, "r", encoding="utf-8") as fh:
+                self.insert(tk.END, fh.read())
+        except UnicodeDecodeError:
+            with open(fname, "r", encoding="iso-8859-1") as fh:
+                self.insert(tk.END, fh.read())
+        self.set_modified(False)
         self.edit_reset()
 
     def do_close(self) -> None:
