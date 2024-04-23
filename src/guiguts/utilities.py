@@ -86,11 +86,16 @@ def load_wordfile_into_dict(path: TraversablePath, target_dict: dict) -> bool:
         True if file opened successfully, False if file not found.
     """
     try:
-        with path.open("r", encoding="utf-8") as fp:
-            for line in fp:
-                word = line.strip()
-                if word:
-                    target_dict[word] = True
+        try:
+            with path.open("r", encoding="utf-8") as fp:
+                data = fp.read()
+        except UnicodeDecodeError:
+            with path.open("r", encoding="iso-8859-1") as fp:
+                data = fp.read()
+        for line in data.split("\n"):
+            word = line.strip()
+            if word:
+                target_dict[word] = True
         return True
     except FileNotFoundError:
         return False
