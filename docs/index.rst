@@ -13,7 +13,7 @@ Checkers
 .. automodule:: checkers
  
 File
-=========
+====
     
 .. automodule:: file
 
@@ -73,9 +73,14 @@ Word Frequency
 .. automodule:: word_frequency
 
 PPtxt
-============
+=====
     
 .. automodule:: tools.pptxt
+ 
+Misc. Dialogs
+=============
+    
+.. automodule:: misc_dialogs
  
 Misc. Tools
 ===========

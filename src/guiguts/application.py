@@ -21,6 +21,7 @@ from guiguts.mainwindow import (
     statusbar,
     ErrorHandler,
 )
+from guiguts.misc_dialogs import PreferencesDialog
 from guiguts.misc_tools import basic_fixup_check
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
@@ -123,15 +124,8 @@ class Guiguts:
             except IndexError:
                 pass  # Not enough recent files to load the requested one
 
-    @property
-    def auto_image(self) -> bool:
-        """Auto image flag: setting causes side effects in UI
-        & starts repeating check."""
-        return preferences.get(PrefKey.AUTOIMAGE)
-
-    @auto_image.setter
-    def auto_image(self, value: bool) -> None:
-        preferences.set(PrefKey.AUTOIMAGE, value)
+    def auto_image_callback(self, value: bool) -> None:
+        """Callback when auto_image preference is changed."""
         statusbar().set("see img", "Auto Img" if value else "See Img")
         if value:
             self.image_dir_check()
@@ -139,13 +133,9 @@ class Guiguts:
 
     def auto_image_check(self) -> None:
         """Function called repeatedly to check whether an image needs loading."""
-        if self.auto_image:
+        if preferences.get(PrefKey.AUTOIMAGE):
             self.mainwindow.load_image(self.file.get_current_image_path())
             root().after(200, self.auto_image_check)
-
-    def toggle_auto_image(self) -> None:
-        """Toggle the auto image flag."""
-        self.auto_image = not self.auto_image
 
     def show_image(self) -> None:
         """Show the image corresponding to current location."""
@@ -154,7 +144,7 @@ class Guiguts:
 
     def hide_image(self) -> None:
         """Hide the image."""
-        self.auto_image = False
+        preferences.set(PrefKey.AUTOIMAGE, False)
         self.mainwindow.hide_image()
 
     def image_dir_check(self) -> None:
@@ -172,7 +162,7 @@ class Guiguts:
         """Handle side effects needed when filename changes."""
         self.init_file_menu()  # Recreate file menu to reflect recent files
         self.update_title()
-        if self.auto_image:
+        if preferences.get(PrefKey.AUTOIMAGE):
             self.image_dir_check()
         maintext().after_idle(maintext().focus_set)
 
@@ -263,19 +253,16 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
     def initialize_preferences(self) -> None:
         """Set default preferences and load settings from the GGPrefs file."""
-
-        def set_auto_image(value: bool) -> None:
-            self.auto_image = value
-
         preferences.set_default(PrefKey.AUTOIMAGE, False)
-        preferences.set_callback(PrefKey.AUTOIMAGE, set_auto_image)
-        preferences.set_default(PrefKey.BELL, "VisibleAudible")
+        preferences.set_callback(PrefKey.AUTOIMAGE, self.auto_image_callback)
+        preferences.set_default(PrefKey.BELLAUDIBLE, True)
+        preferences.set_default(PrefKey.BELLVISUAL, True)
         preferences.set_default(PrefKey.IMAGEWINDOW, "Docked")
         preferences.set_default(PrefKey.RECENTFILES, [])
         preferences.set_default(PrefKey.LINENUMBERS, True)
         preferences.set_default(PrefKey.ORDINALNAMES, True)
         preferences.set_callback(
-            PrefKey.LINENUMBERS, lambda show: maintext().show_line_numbers(show)
+            PrefKey.LINENUMBERS, lambda value: maintext().show_line_numbers(value)
         )
         preferences.set_default(PrefKey.SEARCHHISTORY, [])
         preferences.set_default(PrefKey.REPLACEHISTORY, [])
@@ -312,6 +299,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.init_os_menu()
 
         if is_mac():
+            root().createcommand(
+                "tk::mac::ShowPreferences", PreferencesDialog.show_dialog
+            )
             root().createcommand("tk::mac::OpenDocument", self.open_document)
             root().createcommand("tk::mac::Quit", self.quit_program)
 
@@ -398,6 +388,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             lambda: maintext().transform_selection(str.upper),
             "",
         )
+        if not is_mac():
+            menu_edit.add_separator()
+            menu_edit.add_button("Pre~ferences...", PreferencesDialog.show_dialog)
 
     def init_search_menu(self) -> None:
         """Create the View menu."""
@@ -479,7 +472,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         the_statusbar.add_binding("rowcol", "ButtonRelease-1", self.file.goto_line)
         the_statusbar.add_binding(
-            "rowcol", "Shift-ButtonRelease-1", maintext().toggle_line_numbers
+            "rowcol", "Shift-ButtonRelease-1", lambda: preferences.toggle(PrefKey.LINENUMBERS)
         )
 
         the_statusbar.add(
@@ -506,7 +499,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             self.show_image,
         )
         the_statusbar.add_binding(
-            "see img", "Shift-ButtonRelease-1", self.toggle_auto_image
+            "see img", "Shift-ButtonRelease-1", lambda: preferences.toggle(PrefKey.AUTOIMAGE)
         )
 
         the_statusbar.add(
