@@ -18,7 +18,8 @@ class PrefKey(StrEnum):
     """Enum class to store preferences keys."""
 
     AUTOIMAGE = auto()
-    BELL = auto()
+    BELLAUDIBLE = auto()
+    BELLVISUAL = auto()
     IMAGEWINDOW = auto()
     RECENTFILES = auto()
     LINENUMBERS = auto()
@@ -46,9 +47,10 @@ class Preferences:
     """Handle setting/getting/saving/loading/defaulting preferences.
 
     Call `add` to create/define each preference, giving its default value,
-    and optionally a callback function, e.g. if loading a pref requires an
-    initial UI setting. Once UI is ready, call `run_callbacks` to deal with
-    all required side effects.
+    and optionally a callback function, e.g. if loading or setting a pref
+    requires a UI change or other side effect. Once UI is initially ready,
+    call `run_callbacks` to deal with all required side effects from loading
+    the GGprefs file.
 
     Load/Save preferences in temporary file when testing.
 
@@ -56,8 +58,8 @@ class Preferences:
         dict: dictionary of values for prefs.
         defaults: dictionary of values for defaults.
         callbacks: dictionary of callbacks - typically a function to
-          deal with initial side effect of loading the pref, which will be
-          called after all prefs have been loaded and UI is ready. Not called
+          deal with side effect of loading/setting the pref, which will be
+          called after all prefs have been loaded and UI is ready. Also called
           each time pref is changed.
         prefsdir: directory containing user prefs & data files
     """
@@ -97,6 +99,8 @@ class Preferences:
     def set(self, key: PrefKey, value: Any) -> None:
         """Set preference value and save to file if value has changed.
 
+        If key has an associated callback, call it.
+
         Args:
             key: Name of preference.
             value: Value for preference.
@@ -104,6 +108,16 @@ class Preferences:
         if self.get(key) != value:
             self.dict[key] = value
             self.save()
+            if key in self.callbacks:
+                self.callbacks[key](value)
+
+    def toggle(self, key: PrefKey) -> None:
+        """Toggle the value of a boolean preference.
+
+        Args:
+            key: Name of preference.
+        """
+        self.set(key, not self.get(key))
 
     def __del__(self) -> None:
         """Remove any test prefs file when finished."""

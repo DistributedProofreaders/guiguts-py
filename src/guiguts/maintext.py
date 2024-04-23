@@ -252,7 +252,7 @@ class MainText(tk.Text):
 
     def toggle_line_numbers(self) -> None:
         """Toggle whether line numbers are shown."""
-        self.show_line_numbers(not self.line_numbers_shown())
+        preferences.set(PrefKey.LINENUMBERS, not preferences.get(PrefKey.LINENUMBERS))
 
     def show_line_numbers(self, show: bool) -> None:
         """Show or hide line numbers.
@@ -260,21 +260,10 @@ class MainText(tk.Text):
         Args:
             show: True to show, False to hide.
         """
-        if self.line_numbers_shown() == show:
-            return
         if show:
             self.linenumbers.grid()
         else:
             self.linenumbers.grid_remove()
-        preferences.set(PrefKey.LINENUMBERS, show)
-
-    def line_numbers_shown(self) -> bool:
-        """Check if line numbers are shown.
-
-        Returns:
-            True if shown, False if not.
-        """
-        return self.linenumbers.winfo_viewable()
 
     def key_bind(
         self, keyevent: str, handler: Callable[[Any], None], bind_all: bool

@@ -712,22 +712,20 @@ def do_sound_bell() -> None:
 
     Audible uses the default system bell sound.
     Visible flashes the first statusbar button (must be ttk.Button)
-    Preference "Bell" contains "Audible", "Visible", both or neither
     """
-    bell_pref = preferences.get(PrefKey.BELL)
-    if "Audible" in bell_pref:
+    if preferences.get(PrefKey.BELLAUDIBLE):
         root().bell()
-    if "Visible" in bell_pref:
+    if preferences.get(PrefKey.BELLVISUAL):
         bell_button = statusbar().fields["rowcol"]
         # Belt & suspenders: uses the "disabled" state of button in temporary style,
         # but also restores setting in temporary style, and restores default style.
         style = ttk.Style()
-        # Set temporary style's disabled bg to red, inherting
+        # Set temporary style's disabled bg to red
         style.map("W.TButton", foreground=[("disabled", "red")])
         # Save current disabled bg default for buttons
         save_bg = style.lookup("TButton", "background", state=[("disabled")])
         # Save style currently used by button
-        cur_style = statusbar().fields["rowcol"]["style"]
+        cur_style = bell_button["style"]
         # Set button to use temporary style
         bell_button.configure(style="W.TButton")
         # Flash 3 times
