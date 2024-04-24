@@ -2,22 +2,20 @@
 
 from enum import StrEnum, auto
 from tkinter import ttk
-
 from typing import List
 
 import importlib.resources
 import logging
-
 import regex as re
 
-from guiguts.data import dictionaries
 from guiguts.checkers import CheckerDialog
+from guiguts.data import dictionaries
 from guiguts.maintext import maintext
-from guiguts.utilities import IndexRowCol, IndexRange
 from guiguts.preferences import (
     PersistentString,
     PrefKey,
 )
+from guiguts.utilities import IndexRowCol, IndexRange
 
 logger = logging.getLogger(__package__)
 
@@ -53,22 +51,11 @@ class DictionaryNotFoundError(Exception):
 class JeebiesChecker:
     """Provides jeebies check functionality."""
 
-    # Cannot be initialized here, since Tk root may not be created yet.
-    paranoia_level: PersistentString
-
     def __init__(self) -> None:
         """Initialize SpellChecker class."""
         self.dictionary: dict[str, int] = {}
         self.load_phrases_file_into_dictionary()
-
-        # Initialize class variable on first instantiation, then remember
-        # value for subsequent uses of dialog.
-        try:
-            JeebiesChecker.paranoia_level
-        except AttributeError:
-            JeebiesChecker.paranoia_level = PersistentString(
-                PrefKey.JEEBIESPARANOIALEVEL
-            )
+        self.paranoia_level = PersistentString(PrefKey.JEEBIESPARANOIALEVEL)
 
     def check_for_jeebies_in_file(self) -> None:
         """Check for jeebies in the currently loaded file."""
@@ -82,35 +69,35 @@ class JeebiesChecker:
         ttk.Label(
             frame,
             text="Check Level:",
-        ).grid(row=0, column=1, sticky="NSE", padx=5)
+        ).grid(row=0, column=1, sticky="NSE", padx=(0, 5))
         ttk.Radiobutton(
             frame,
             text="Paranoid",
-            command=lambda: jeebies_check(),  # pylint: disable=unnecessary-lambda
-            variable=JeebiesChecker.paranoia_level,
+            command=jeebies_check,
+            variable=self.paranoia_level,
             value=JeebiesParanoiaLevel.PARANOID,
             takefocus=False,
         ).grid(row=0, column=2, sticky="NSE", padx=2)
         ttk.Radiobutton(
             frame,
             text="Normal",
-            command=lambda: jeebies_check(),  # pylint: disable=unnecessary-lambda
-            variable=JeebiesChecker.paranoia_level,
+            command=jeebies_check,
+            variable=self.paranoia_level,
             value=JeebiesParanoiaLevel.NORMAL,
             takefocus=False,
         ).grid(row=0, column=3, sticky="NSE", padx=2)
         ttk.Radiobutton(
             frame,
             text="Tolerant",
-            command=lambda: jeebies_check(),  # pylint: disable=unnecessary-lambda
-            variable=JeebiesChecker.paranoia_level,
+            command=jeebies_check,
+            variable=self.paranoia_level,
             value=JeebiesParanoiaLevel.TOLERANT,
             takefocus=False,
         ).grid(row=0, column=4, sticky="NSE", padx=2)
         checker_dialog.reset()
 
         # Check level used last time Jeebies was run or default if first run.
-        check_level = JeebiesChecker.paranoia_level.get()
+        check_level = self.paranoia_level.get()
 
         # Get the paragraph strings and the ancillary lists that allow
         # us to map a hebe in a paragraph string to its actual line/col
@@ -380,9 +367,14 @@ class JeebiesChecker:
 
                 # The algorithm that follows improves on the Golang/PPWB method of identifying
                 # suspect hebe phrases.
-                if check_level == "tolerant" and hebe_count > 0:
+
+                if check_level == "tolerant" and (
+                    hebe_count > 0 or hebe_count == 0 and behe_count == 0
+                ):
                     # Even if the behe_count > hebe_count (see values calculation below) we
-                    # won't query the phrase.
+                    # won't query the phrase. That is, the 'tolerant' check passes if there
+                    # are any 'good' occurrences or no 'bad' occurrences in the dictionary
+                    # of examples.
                     continue
 
                 if behe_count > 0 and (
@@ -412,9 +404,6 @@ class JeebiesChecker:
                         hebe_position_on_line,
                         checker_dialog,
                     )
-
-                elif check_level == "tolerant" and hebe_count == 0 and behe_count == 0:
-                    continue
 
                 elif (
                     check_level in ("normal", "paranoid")
@@ -475,9 +464,14 @@ class JeebiesChecker:
 
                 # The algorithm that follows improves on the Golang/PPWB method of identifying
                 # suspect hebe phrases.
-                if check_level == "tolerant" and hebe_count > 0:
+
+                if check_level == "tolerant" and (
+                    hebe_count > 0 or hebe_count == 0 and behe_count == 0
+                ):
                     # Even if the behe_count > hebe_count (see values calculation below) we
-                    # won't query the phrase.
+                    # won't query the phrase. That is, the 'tolerant' check passes if there
+                    # are any 'good' occurrences or no 'bad' occurrences in the dictionary
+                    # of examples.
                     continue
 
                 if behe_count > 0 and (
@@ -507,9 +501,6 @@ class JeebiesChecker:
                         hebe_position_on_line,
                         checker_dialog,
                     )
-
-                elif check_level == "tolerant" and hebe_count == 0 and behe_count == 0:
-                    continue
 
                 elif (
                     check_level in ("normal", "paranoid")
@@ -588,6 +579,7 @@ class JeebiesChecker:
 
             # The algorithm that follows improves on the Golang/PPWB method of identifying
             # suspect hebe phrases.
+
             if check_level == "tolerant" and hebe_count > 0:
                 # Even if the behe_count > hebe_count (see values calculation below) we
                 # won't query the phrase.
@@ -651,6 +643,11 @@ class JeebiesChecker:
                     hebe_start,
                     paragraph_start_line_numbers,
                     paragraph_line_boundaries,
+                )
+                line = file_lines_list[line_number - 1]
+
+                self.add_to_dialog(
+                    info, line, line_number, hebe_position_on_line, checker_dialog
                 )
 
             elif check_level == "paranoid" and hebe_count == 0 and behe_count == 0:
