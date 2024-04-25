@@ -29,7 +29,7 @@ from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.jeebies import jeebies_check
-from guiguts.utilities import is_mac
+from guiguts.utilities import is_mac, is_windows
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
 logger = logging.getLogger(__package__)
@@ -273,6 +273,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.IMAGEWINDOW, "Docked")
         preferences.set_default(PrefKey.RECENTFILES, [])
         preferences.set_default(PrefKey.LINENUMBERS, True)
+        preferences.set_default(PrefKey.ORDINALNAMES, True)
         preferences.set_callback(
             PrefKey.LINENUMBERS, lambda show: maintext().show_line_numbers(show)
         )
@@ -333,10 +334,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         page_menu = Menu(self.menu_file, "Page ~Markers")
         page_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)
         page_menu.add_button("~Remove Page Marker Flags", self.file.remove_page_flags)
-        page_menu = Menu(self.menu_file, "~Project")
-        page_menu.add_button(
+        proj_menu = Menu(self.menu_file, "~Project")
+        proj_menu.add_button(
             "~Add Good/Bad Words to Project Dictionary",
             self.file.add_good_and_bad_words,
+        )
+        proj_menu.add_button(
+            f"Set ~Scan Image {'Folder' if is_windows() else 'Directory'}",
+            self.file.choose_image_dir,
         )
         if not is_mac():
             self.menu_file.add_separator()
@@ -455,9 +460,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             # Window menu
             Menu(menubar(), "Window", name="window")
 
-    # Lay out statusbar
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
-        """Add labels to initialize the statusbar"""
+        """Add labels to initialize the statusbar.
+
+        Functions are bound to Button Release, rather than Button Press, since
+        that is how buttons normally operate.
+        """
 
         def rowcol_str() -> str:
             """Format current insert index for statusbar."""
@@ -466,27 +474,29 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         the_statusbar.add(
             "rowcol",
-            tooltip="Left click: Go to line\nRight click: Toggle line numbers",
+            tooltip="Click: Go to line\nShift click: Toggle line numbers",
             update=rowcol_str,
         )
         the_statusbar.add_binding("rowcol", "ButtonRelease-1", self.file.goto_line)
         the_statusbar.add_binding(
-            "rowcol", "ButtonRelease-3", maintext().toggle_line_numbers
+            "rowcol", "Shift-ButtonRelease-1", maintext().toggle_line_numbers
         )
 
         the_statusbar.add(
             "img",
-            tooltip="Left click: Go to image",
+            tooltip="Click: Go to image",
             update=lambda: "Img: " + self.file.get_current_image_name(),
         )
         the_statusbar.add_binding("img", "ButtonRelease-1", self.file.goto_image)
 
-        the_statusbar.add("prev img", tooltip="Previous image", text="<", width=1)
+        the_statusbar.add(
+            "prev img", tooltip="Click: Go to previous image", text="<", width=1
+        )
         the_statusbar.add_binding("prev img", "ButtonRelease-1", self.file.prev_page)
 
         the_statusbar.add(
             "see img",
-            tooltip="Left click: See image\nDouble click: Toggle auto-image\nRight click: Choose scans folder",
+            tooltip="Click: See image\nShift click: Toggle auto-image",
             text="See Img",
             width=9,
         )
@@ -496,22 +506,23 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             self.show_image,
         )
         the_statusbar.add_binding(
-            "see img", "ButtonRelease-3", self.file.choose_image_dir
+            "see img", "Shift-ButtonRelease-1", self.toggle_auto_image
         )
-        the_statusbar.add_binding("see img", "Double-Button-1", self.toggle_auto_image)
 
-        the_statusbar.add("next img", tooltip="Next image", text=">", width=1)
+        the_statusbar.add(
+            "next img", tooltip="Click: Go to next image", text=">", width=1
+        )
         the_statusbar.add_binding("next img", "ButtonRelease-1", self.file.next_page)
 
         the_statusbar.add(
             "page label",
-            tooltip="Left click: Go to page\nRight click: Configure page labels",
+            tooltip="Click: Go to page\nShift click: Configure page labels",
             text="Lbl: ",
             update=lambda: "Lbl: " + self.file.get_current_page_label(),
         )
         the_statusbar.add_binding("page label", "ButtonRelease-1", self.file.goto_page)
         the_statusbar.add_binding(
-            "page label", "ButtonRelease-3", self.show_page_details_dialog
+            "page label", "Shift-ButtonRelease-1", self.show_page_details_dialog
         )
 
         def selection_str() -> str:
@@ -532,7 +543,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         the_statusbar.add(
             "selection",
-            tooltip="Left click: Restore previous selection",
+            tooltip="Click: Restore previous selection",
             update=selection_str,
             width=16,
         )
@@ -541,26 +552,42 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
 
         the_statusbar.add(
-            "languages label", tooltip="Left click: Set language(s)", text="Lang: "
+            "languages label", tooltip="Click: Set language(s)", text="Lang: "
         )
         the_statusbar.add_binding(
             "languages label", "ButtonRelease-1", self.file.set_languages
         )
+
+        def ordinal_name_display(force: Optional[bool] = None) -> None:
+            """Set, unset, or toggle, name display in ordinal button.
+
+            Args:
+                Force: True to set, False to unset, omit to toggle.
+            """
+            if force is None:
+                force = not preferences.get(PrefKey.ORDINALNAMES)
+            preferences.set(PrefKey.ORDINALNAMES, force)
 
         def ordinal_str() -> str:
             """Format ordinal of char at current insert index for statusbar."""
             char = maintext().get(maintext().get_insert_index().index())
             # unicodedata.name fails to return name for "control" characters
             # but the only one we care about is line feed
-            try:
-                name = unicodedata.name(char)
-            except ValueError:
-                name = "LINE FEED" if char == "\n" else ""
-            return f"U+{ord(char):04x}: {name}"
+            if preferences.get(PrefKey.ORDINALNAMES):
+                try:
+                    name = f": {unicodedata.name(char)}"
+                except ValueError:
+                    name = ": LINE FEED" if char == "\n" else ""
+            else:
+                name = ""
+            return f"U+{ord(char):04x}{name}"
 
         the_statusbar.add(
-            "ordinal", tooltip="Character after the cursor", update=ordinal_str
+            "ordinal",
+            tooltip="Character after the cursor\nClick to toggle name display",
+            update=ordinal_str,
         )
+        the_statusbar.add_binding("ordinal", "ButtonRelease-1", ordinal_name_display)
 
     def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""
