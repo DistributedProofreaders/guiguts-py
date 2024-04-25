@@ -144,89 +144,43 @@ class JeebiesChecker:
             for paragraph_number, paragraph_text in enumerate(paragraph_strings):
                 # Search through paragraph text looking for three-word 'be' suspects.
 
-                suspects_count += self.find_and_report_3_word_hebe_phrases(
-                    "be",
-                    paragraph_text,
-                    paragraph_number,
-                    paragraph_start_line_numbers,
-                    paragraph_line_boundaries,
-                    input_lines,
-                    checker_dialog,
-                    check_level,
-                )
+                # Dialog functionality will rearrange dialog output so that line.col numbers
+                # appear in correct sequence in the report after the six function calls below
+                # are completed. Without that sorting it is possible that some line.col numbers
+                # will be out of sequence. This occurs if one of the function calls reports a
+                # suspect jeebie at the end of the paragraph then the next function call reports
+                # a different suspect at the start of that paragraph. This can happen because
+                # each function call rescans paragraph_text looking for a particular jeebies
+                # suspect type.
 
-                # Search through paragraph text looking for three-word 'he' suspects.
+                # There are two function calls below to identify and report suspect 3-word jeebie
+                # phrases and four function calls to report suspect 2-word jeebie phrases; that is,
+                # 'he' as first word of a 2-word phrase then 'he' as second word of a 2-word phrase
+                # then repeated for 'be'.
 
-                suspects_count += self.find_and_report_3_word_hebe_phrases(
-                    "he",
-                    paragraph_text,
-                    paragraph_number,
-                    paragraph_start_line_numbers,
-                    paragraph_line_boundaries,
-                    input_lines,
-                    checker_dialog,
-                    check_level,
-                )
-
-                # Search through paragraph text looking for two-word 'be' suspects - two types.
-
-                # Type 1 with 'be' as first word..
-
-                suspects_count += self.find_and_report_2_word_hebe_phrases(
-                    "be",
-                    paragraph_text,
-                    paragraph_number,
-                    paragraph_start_line_numbers,
-                    paragraph_line_boundaries,
-                    input_lines,
-                    checker_dialog,
-                    "first",
-                    check_level,
-                )
-
-                # Type 2 with 'be' as second word.
-
-                suspects_count += self.find_and_report_2_word_hebe_phrases(
-                    "be",
-                    paragraph_text,
-                    paragraph_number,
-                    paragraph_start_line_numbers,
-                    paragraph_line_boundaries,
-                    input_lines,
-                    checker_dialog,
-                    "second",
-                    check_level,
-                )
-
-                # Search through paragraph text looking for two-word 'he' suspects - two types.
-
-                # Type 1 with 'he' as first word..
-
-                suspects_count += self.find_and_report_2_word_hebe_phrases(
-                    "he",
-                    paragraph_text,
-                    paragraph_number,
-                    paragraph_start_line_numbers,
-                    paragraph_line_boundaries,
-                    input_lines,
-                    checker_dialog,
-                    "first",
-                    check_level,
-                )
-
-                # Type 2 with 'he' as second word.
-
-                suspects_count += self.find_and_report_2_word_hebe_phrases(
-                    "he",
-                    paragraph_text,
-                    paragraph_number,
-                    paragraph_start_line_numbers,
-                    paragraph_line_boundaries,
-                    input_lines,
-                    checker_dialog,
-                    "second",
-                    check_level,
-                )
+                for he_be in ("he", "be"):
+                    suspects_count += self.find_and_report_3_word_hebe_suspects(
+                        he_be,
+                        paragraph_text,
+                        paragraph_number,
+                        paragraph_start_line_numbers,
+                        paragraph_line_boundaries,
+                        input_lines,
+                        checker_dialog,
+                        check_level,
+                    )
+                    for first_second in ("first", "second"):
+                        suspects_count += self.find_and_report_2_word_hebe_suspects(
+                            he_be,
+                            paragraph_text,
+                            paragraph_number,
+                            paragraph_start_line_numbers,
+                            paragraph_line_boundaries,
+                            input_lines,
+                            checker_dialog,
+                            first_second,
+                            check_level,
+                        )
 
             # Tell user if no suspect hebe phrases found in the paragraphs.
 
@@ -307,7 +261,7 @@ class JeebiesChecker:
             paragraph_line_boundaries,
         )
 
-    def find_and_report_2_word_hebe_phrases(
+    def find_and_report_2_word_hebe_suspects(
         self,
         hebe: str,
         paragraph_text: str,
@@ -320,6 +274,127 @@ class JeebiesChecker:
         check_level: str,
     ) -> int:
         """Look for suspect "word be/he" or "be/he word" phrases in paragraphs."""
+
+        def do_finditer_and_report() -> int:
+            """Helper function for abstraction of repeated code."""
+
+            count_of_suspects = 0
+            for match_obj in re.finditer(regx, para_lc):
+                if order == "first":
+                    # Have a 2-word phrase starting with a hebe and prefixed by punctuation.
+                    # E.g. '"Be careful!"' or ', he said.'
+                    # See if it's in the list. If so get its frequency of occurrence.
+                    hebe_form = para_lc[match_obj.start(0) : match_obj.end(0)]
+                    hebe_count = self.find_in_dictionary(hebe_form)
+                    hebe_start = match_obj.start(0) + hebe_form.index(hebe)
+                    # Swap 'he' for 'be' (or vice versa) in 2-word phrase and lookup that.
+                    # Avoid the "be behoven" or "he headed" trap.
+                    s_hebe = f"{hebe} "
+                    s_behe = f"{behe} "
+                    behe_form = re.sub(s_hebe, s_behe, hebe_form)
+                    behe_count = self.find_in_dictionary(behe_form)
+                elif order == "second":
+                    # Have a 2-word phrase ending with a hebe followed by punctuation.
+                    # E.g. 'could be.'
+                    # See if it's in the list. If so get its frequency of occurrence.
+                    hebe_form = para_lc[match_obj.start(0) : match_obj.end(0)]
+                    hebe_count = self.find_in_dictionary(hebe_form)
+                    # Avoid the "the he-goats" trap when indexing for a hebe.
+                    s_hebe = f" {hebe}"
+                    # The result of 'hebe_form.index(s_hebe)' below will a pointer to the
+                    # space in the 's_hebe' string, not the hebe itself. Add 1 so that
+                    # 'hebe_start' correctly points at the hebe in the string.
+                    hebe_start = match_obj.start(0) + hebe_form.index(s_hebe) + 1
+                    # Swap 'he' for 'be' (or vice versa) in 2-word phrase and lookup that.
+                    s_behe = f" {behe}"
+                    behe_form = re.sub(s_hebe, s_behe, hebe_form)
+                    behe_count = self.find_in_dictionary(behe_form)
+                else:
+                    pass  # Shouldn't reach here.
+
+                # At this point we have the two versions of the phrase. The variables
+                # hebe_count and behe_count are integer frequencies of occurrence of
+                # those phrases in a large corpus of DP texts.
+
+                # The algorithm that follows improves on the Golang/PPWB method of identifying
+                # suspect hebe phrases.
+
+                if check_level == "tolerant" and (
+                    hebe_count > 0 or hebe_count == 0 and behe_count == 0
+                ):
+                    # Even if the behe_count > hebe_count (see values calculation below) we
+                    # won't query the phrase. That is, the 'tolerant' check passes if there
+                    # are any 'good' occurrences or no 'bad' occurrences in the dictionary
+                    # of examples.
+                    continue
+
+                if behe_count > 0 and (
+                    hebe_count == 0 or behe_count / hebe_count > DISCRIMINATOR_LEVEL
+                ):
+                    count_of_suspects += 1
+                    info = f"({behe_count}/{hebe_count})"
+
+                    # Add this 2-form and its info to the dialog
+
+                    # We have the start position in the paragraph string of this hebe.
+                    # Now locate the actual file line and corresponding position on that
+                    # line of this hebe.
+
+                    line_number, hebe_position_on_line = self.locate_file_line(
+                        paragraph_number,
+                        hebe_start,
+                        paragraph_start_line_numbers,
+                        paragraph_line_boundaries,
+                    )
+                    line = file_lines_list[line_number - 1]
+
+                    self.add_to_dialog(
+                        info,
+                        line,
+                        line_number,
+                        hebe_position_on_line,
+                        checker_dialog,
+                    )
+
+                elif (
+                    check_level in ("normal", "paranoid")
+                    and hebe_count == 0
+                    and behe_count == 0
+                ):
+                    # Neither 'he' nor 'be' versions of our 2-form phrase are in the
+                    # dictionary.
+
+                    count_of_suspects += 1
+                    info = f"({behe_count}/{hebe_count})"
+
+                    # Query this 2-form phrase in the report.
+
+                    # We have the start position in the paragraph string of its hebe.
+                    # Locate the corresponding file line and its column position on
+                    # that line.
+
+                    line_number, hebe_position_on_line = self.locate_file_line(
+                        paragraph_number,
+                        hebe_start,
+                        paragraph_start_line_numbers,
+                        paragraph_line_boundaries,
+                    )
+                    line = file_lines_list[line_number - 1]
+
+                    self.add_to_dialog(
+                        info,
+                        line,
+                        line_number,
+                        hebe_position_on_line,
+                        checker_dialog,
+                    )
+
+            return count_of_suspects
+
+        ####
+        # Find and report 2-word hebe suspects in paragraph text
+        ####
+
         suspects_count = 0
         # Get the opposite word to the one being reported on.
         behe = "he" if hebe == "be" else "be"
@@ -347,96 +422,7 @@ class JeebiesChecker:
             para_lc = re.sub(qs_hebe, ss_hebe, para_lc)
             # Look for type 1, 2-form hebe phrases in the edited paragraph string.
             regx = r"(?<=^|\p{P}|\p{P} )" + f"{hebe}" + " [a-z]+"
-            for match_obj in re.finditer(regx, para_lc):
-                # Have a 2-word phrase starting with a hebe and prefixed by punctuation.
-                # E.g. '"Be careful!"' or ', he said.'
-                # See if it's in the list. If so get its frequency of occurrence.
-                hebe_form = para_lc[match_obj.start(0) : match_obj.end(0)]
-                hebe_count = self.find_in_dictionary(hebe_form)
-                hebe_start = match_obj.start(0) + hebe_form.index(hebe)
-                # Swap 'he' for 'be' (or vice versa) in 2-word phrase and lookup that.
-                # Avoid the "be behoven" or "he headed" trap.
-                s_hebe = f"{hebe} "
-                s_behe = f"{behe} "
-                behe_form = re.sub(s_hebe, s_behe, hebe_form)
-                behe_count = self.find_in_dictionary(behe_form)
-
-                # At this point we have the two versions of the phrase. The variables
-                # hebe_count and behe_count are integer frequencies of occurrence of
-                # those phrases in a large corpus of DP texts.
-
-                # The algorithm that follows improves on the Golang/PPWB method of identifying
-                # suspect hebe phrases.
-
-                if check_level == "tolerant" and (
-                    hebe_count > 0 or hebe_count == 0 and behe_count == 0
-                ):
-                    # Even if the behe_count > hebe_count (see values calculation below) we
-                    # won't query the phrase. That is, the 'tolerant' check passes if there
-                    # are any 'good' occurrences or no 'bad' occurrences in the dictionary
-                    # of examples.
-                    continue
-
-                if behe_count > 0 and (
-                    hebe_count == 0 or behe_count / hebe_count > DISCRIMINATOR_LEVEL
-                ):
-                    suspects_count += 1
-                    info = f"({behe_count}/{hebe_count})"
-
-                    # Add this 2-form and its info to the dialog
-
-                    # We have the start position in the paragraph string of this hebe.
-                    # Now locate the actual file line and corresponding position on that
-                    # line of this hebe.
-
-                    line_number, hebe_position_on_line = self.locate_file_line(
-                        paragraph_number,
-                        hebe_start,
-                        paragraph_start_line_numbers,
-                        paragraph_line_boundaries,
-                    )
-                    line = file_lines_list[line_number - 1]
-
-                    self.add_to_dialog(
-                        info,
-                        line,
-                        line_number,
-                        hebe_position_on_line,
-                        checker_dialog,
-                    )
-
-                elif (
-                    check_level in ("normal", "paranoid")
-                    and hebe_count == 0
-                    and behe_count == 0
-                ):
-                    # Neither 'he' nor 'be' versions of our 2-form phrase are in the
-                    # dictionary.
-
-                    suspects_count += 1
-                    info = f"({behe_count}/{hebe_count})"
-
-                    # Query this 2-form phrase in the report.
-
-                    # We have the start position in the paragraph string of its hebe.
-                    # Locate the corresponding file line and its column position on
-                    # that line.
-
-                    line_number, hebe_position_on_line = self.locate_file_line(
-                        paragraph_number,
-                        hebe_start,
-                        paragraph_start_line_numbers,
-                        paragraph_line_boundaries,
-                    )
-                    line = file_lines_list[line_number - 1]
-
-                    self.add_to_dialog(
-                        info,
-                        line,
-                        line_number,
-                        hebe_position_on_line,
-                        checker_dialog,
-                    )
+            suspects_count += do_finditer_and_report()
 
         elif order == "second":
             # Looking for hebe as second word of 2-word punctuation delimited phrase.
@@ -444,96 +430,7 @@ class JeebiesChecker:
             para_lc = paragraph_text.lower()
 
             regx = "[a-z]+ " + f"{hebe}" + r"(?=\p{P}|$)"
-            for match_obj in re.finditer(regx, para_lc):
-                # Have a 2-word phrase ending with a hebe followed by punctuation.
-                # E.g. 'could be.'
-                # See if it's in the list. If so get its frequency of occurrence.
-                hebe_form = para_lc[match_obj.start(0) : match_obj.end(0)]
-                hebe_count = self.find_in_dictionary(hebe_form)
-                # Avoid the "the he-goats" trap when indexing for a hebe.
-                s_hebe = f" {hebe}"
-                hebe_start = match_obj.start(0) + hebe_form.index(s_hebe) + 1
-                # Swap 'he' for 'be' (or vice versa) in 2-word phrase and lookup that.
-                s_behe = f" {behe}"
-                behe_form = re.sub(s_hebe, s_behe, hebe_form)
-                behe_count = self.find_in_dictionary(behe_form)
-
-                # At this point we have the two versions of the phrase. The variables
-                # hebe_count and behe_count are integer frequencies of occurrence of
-                # those phrases in a large corpus of DP texts.
-
-                # The algorithm that follows improves on the Golang/PPWB method of identifying
-                # suspect hebe phrases.
-
-                if check_level == "tolerant" and (
-                    hebe_count > 0 or hebe_count == 0 and behe_count == 0
-                ):
-                    # Even if the behe_count > hebe_count (see values calculation below) we
-                    # won't query the phrase. That is, the 'tolerant' check passes if there
-                    # are any 'good' occurrences or no 'bad' occurrences in the dictionary
-                    # of examples.
-                    continue
-
-                if behe_count > 0 and (
-                    hebe_count == 0 or behe_count / hebe_count > DISCRIMINATOR_LEVEL
-                ):
-                    suspects_count += 1
-                    info = f"({behe_count}/{hebe_count})"
-
-                    # Query this 2-form phrase in the report.
-
-                    # We have the start position in the paragraph string of its hebe.
-                    # Locate the corresponding file line and its column position on
-                    # that line.
-
-                    line_number, hebe_position_on_line = self.locate_file_line(
-                        paragraph_number,
-                        hebe_start,
-                        paragraph_start_line_numbers,
-                        paragraph_line_boundaries,
-                    )
-                    line = file_lines_list[line_number - 1]
-
-                    self.add_to_dialog(
-                        info,
-                        line,
-                        line_number,
-                        hebe_position_on_line,
-                        checker_dialog,
-                    )
-
-                elif (
-                    check_level in ("normal", "paranoid")
-                    and hebe_count == 0
-                    and behe_count == 0
-                ):
-                    # Neither 'he' nor 'be' versions of our 2-form phrase are in the
-                    # dictionary.
-
-                    suspects_count += 1
-                    info = f"({behe_count}/{hebe_count})"
-
-                    # Add this 2-form and its info to the dialog
-
-                    # We have the start position in the paragraph string of this hebe.
-                    # Now locate the actual file line and corresponding position on that
-                    # line of this hebe.
-
-                    line_number, hebe_position_on_line = self.locate_file_line(
-                        paragraph_number,
-                        hebe_start,
-                        paragraph_start_line_numbers,
-                        paragraph_line_boundaries,
-                    )
-                    line = file_lines_list[line_number - 1]
-
-                    self.add_to_dialog(
-                        info,
-                        line,
-                        line_number,
-                        hebe_position_on_line,
-                        checker_dialog,
-                    )
+            suspects_count += do_finditer_and_report()
 
         else:
             # Should never get here. Variable 'order' value either 'first' or 'second'.
@@ -541,7 +438,7 @@ class JeebiesChecker:
 
         return suspects_count
 
-    def find_and_report_3_word_hebe_phrases(
+    def find_and_report_3_word_hebe_suspects(
         self,
         hebe: str,
         paragraph_text: str,
@@ -553,6 +450,30 @@ class JeebiesChecker:
         check_level: str,
     ) -> int:
         """Look for suspect "w1 be w2" or "w1 he w2" phrases in paragraphs."""
+
+        def make_dialog_line() -> None:
+            """Helper function for abstraction of repeated code."""
+
+            # We have the start position in the paragraph string of a suspect hebe.
+            # Locate the corresponding file line and its column position on that
+            # line.
+
+            line_number, hebe_position_on_line = self.locate_file_line(
+                paragraph_number,
+                hebe_start,
+                paragraph_start_line_numbers,
+                paragraph_line_boundaries,
+            )
+            line = file_lines_list[line_number - 1]
+
+            self.add_to_dialog(
+                info, line, line_number, hebe_position_on_line, checker_dialog
+            )
+
+        ####
+        # Find and report 3-word hebe suspects in paragraph text
+        ####
+
         suspects_count = 0
         # Get the opposite word to the one being reported on.
         behe = "he" if hebe == "be" else "be"
@@ -594,21 +515,7 @@ class JeebiesChecker:
 
                 # Query this 3-form phrase in the report.
 
-                # We have the start position in the paragraph string of its hebe.
-                # Locate the corresponding file line and its column position on
-                # that line.
-
-                line_number, hebe_position_on_line = self.locate_file_line(
-                    paragraph_number,
-                    hebe_start,
-                    paragraph_start_line_numbers,
-                    paragraph_line_boundaries,
-                )
-                line = file_lines_list[line_number - 1]
-
-                self.add_to_dialog(
-                    info, line, line_number, hebe_position_on_line, checker_dialog
-                )
+                make_dialog_line()
 
             elif check_level == "normal" and hebe_count == 0 and behe_count == 0:
                 # Neither 'he' nor 'be' versions of our 3-form phrase are in the
@@ -634,21 +541,7 @@ class JeebiesChecker:
 
                 # Query this 3-form phrase in the report.
 
-                # We have the start position in the paragraph string of its hebe.
-                # Locate the corresponding file line and its column position on
-                # that line.
-
-                line_number, hebe_position_on_line = self.locate_file_line(
-                    paragraph_number,
-                    hebe_start,
-                    paragraph_start_line_numbers,
-                    paragraph_line_boundaries,
-                )
-                line = file_lines_list[line_number - 1]
-
-                self.add_to_dialog(
-                    info, line, line_number, hebe_position_on_line, checker_dialog
-                )
+                make_dialog_line()
 
             elif check_level == "paranoid" and hebe_count == 0 and behe_count == 0:
                 # Neither 'he' nor 'be' versions of our 3-form phrase are in the
@@ -658,21 +551,7 @@ class JeebiesChecker:
 
                 # Query this 3-form phrase in the report.
 
-                # We have the start position in the paragraph string of its hebe.
-                # Locate the corresponding file line and its column position on
-                # that line.
-
-                line_number, hebe_position_on_line = self.locate_file_line(
-                    paragraph_number,
-                    hebe_start,
-                    paragraph_start_line_numbers,
-                    paragraph_line_boundaries,
-                )
-                line = file_lines_list[line_number - 1]
-
-                self.add_to_dialog(
-                    info, line, line_number, hebe_position_on_line, checker_dialog
-                )
+                make_dialog_line()
 
         return suspects_count
 
