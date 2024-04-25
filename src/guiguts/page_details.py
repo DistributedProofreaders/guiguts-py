@@ -6,7 +6,7 @@ from tkinter import simpledialog, ttk
 import roman  # type: ignore[import-untyped]
 
 from guiguts.maintext import maintext
-from guiguts.widgets import OkCancelDialog, mouse_bind, ToolTip
+from guiguts.widgets import OkApplyCancelDialog, mouse_bind, ToolTip
 
 STYLE_COLUMN = "#2"
 STYLE_ARABIC = "Arabic"
@@ -96,7 +96,7 @@ class PageDetails(dict[str, PageDetail]):
         self.recalculate()
 
 
-class PageDetailsDialog(OkCancelDialog):
+class PageDetailsDialog(OkApplyCancelDialog):
     """A dialog that allows the user to view/edit page details.
 
     Attributes:
@@ -105,24 +105,22 @@ class PageDetailsDialog(OkCancelDialog):
         changed: True if any changes have been made in dialog.
     """
 
-    def __init__(self, parent: tk.Tk, page_details: PageDetails) -> None:
-        """Initialize ``labels`` and ``entries`` to empty dictionaries."""
+    def __init__(self, page_details: PageDetails) -> None:
+        """Initialize class members from page details."""
+        super().__init__("Configure Page Labels")
         self.master_details = page_details
         self.details = PageDetails()
         self.details.copy_details_from(self.master_details)
         self.changed = False
-        super().__init__(parent, "Configure Page Labels")
-
-    def body(self, master: tk.Frame) -> tk.Frame:
-        """Override default to construct widgets needed to show page labels"""
-        master.columnconfigure(0, weight=1)
-        master.rowconfigure(0, weight=1)
-        master.pack(expand=True, fill=tk.BOTH)
 
         columns = (COL_HEAD_IMG, COL_HEAD_STYLE, COL_HEAD_NUMBER, COL_HEAD_LABEL)
         widths = (50, 80, 80, 120)
         self.list = ttk.Treeview(
-            master, columns=columns, show="headings", height=10, selectmode=tk.BROWSE
+            self.top_frame,
+            columns=columns,
+            show="headings",
+            height=10,
+            selectmode=tk.BROWSE,
         )
         ToolTip(
             self.list,
@@ -154,13 +152,12 @@ class PageDetailsDialog(OkCancelDialog):
         self.list.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.scrollbar = ttk.Scrollbar(
-            master, orient=tk.VERTICAL, command=self.list.yview
+            self.top_frame, orient=tk.VERTICAL, command=self.list.yview
         )
         self.list.configure(yscroll=self.scrollbar.set)  # type: ignore[call-overload]
         self.scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
         self.populate_list(self.details)
-        return master
 
     def populate_list(self, details: PageDetails, see_index: int = 0) -> None:
         """Populate the page details list from the given details.
@@ -239,7 +236,7 @@ class PageDetailsDialog(OkCancelDialog):
         self.populate_list(self.details, self.list.index(row_id))
         self.changed = True
 
-    def ok_press_complete(self) -> bool:
+    def apply_changes(self) -> bool:
         """Overridden to update page label settings from the dialog."""
         if self.changed:
             self.master_details.copy_details_from(self.details)
