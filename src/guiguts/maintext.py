@@ -502,14 +502,19 @@ class MainText(tk.Text):
         """
         ranges = maintext().selected_ranges()
         # Inequality tests below rely on IndexCol/IndexRange having `__eq__` method
-        if ranges and ranges != self.current_sel_ranges:
+        if ranges != self.current_sel_ranges:
             # Problem is when the user drags to select, you can get multiple calls to this function,
             # which are really all the same selection. Possible better solution in future, but for now,
-            # Only save into prev if both the start and end are different to the last call.
-            if (
-                self.current_sel_ranges
-                and ranges[0].start != self.current_sel_ranges[0].start
-                and ranges[-1].end != self.current_sel_ranges[-1].end
+            # only save into prev if both the start and end are different to the last call.
+            # Also save into prev if there were ranges on previous call, but not this one, i.e. the
+            # selection has been cancelled.
+            if self.current_sel_ranges and (
+                (
+                    ranges
+                    and ranges[0].start != self.current_sel_ranges[0].start
+                    and ranges[-1].end != self.current_sel_ranges[-1].end
+                )
+                or not ranges
             ):
                 self.prev_sel_ranges = self.current_sel_ranges.copy()
             self.current_sel_ranges = ranges.copy()
