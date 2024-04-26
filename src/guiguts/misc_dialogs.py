@@ -13,12 +13,10 @@ class PreferencesDialog(ToplevelDialog):
         """Initialize preferences dialog."""
         super().__init__("Settings", resize_y=False)
         self.minsize(250, 10)
-        self.notebook = ttk.Notebook(self.top_frame, takefocus=False)
-        self.notebook.grid(column=0, row=0, sticky="NSEW")
-        self.notebook.enable_traversal()
 
-        # Appearance tab
-        appearance_frame = ttk.Frame(self.notebook, padding=10)
+        # Appearance
+        appearance_frame = ttk.LabelFrame(self.top_frame, text="Appearance", padding=10)
+        appearance_frame.grid(column=0, row=0, sticky="NSEW")
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
@@ -42,11 +40,10 @@ class PreferencesDialog(ToplevelDialog):
             text="Visual",
             variable=PersistentBoolean(PrefKey.BELLVISUAL),
         ).grid(column=2, row=0, sticky="NEW")
-        self.notebook.add(appearance_frame, text="Appearance", underline=0)
 
         # Processing tab
-        processing_frame = ttk.Frame(self.notebook, padding=10)
+        processing_frame = ttk.LabelFrame(self.top_frame, text="Processing", padding=10)
+        processing_frame.grid(column=0, row=1, sticky="NSEW", pady=(10, 0))
         ttk.Label(processing_frame, text="Nothing to see here yet").grid(
             column=0, row=0, sticky="NEW"
         )
-        self.notebook.add(processing_frame, text="Processing", underline=0)
