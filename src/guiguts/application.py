@@ -472,7 +472,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         the_statusbar.add_binding("rowcol", "ButtonRelease-1", self.file.goto_line)
         the_statusbar.add_binding(
-            "rowcol", "Shift-ButtonRelease-1", lambda: preferences.toggle(PrefKey.LINENUMBERS)
+            "rowcol",
+            "Shift-ButtonRelease-1",
+            lambda: preferences.toggle(PrefKey.LINENUMBERS),
         )
 
         the_statusbar.add(
@@ -499,7 +501,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             self.show_image,
         )
         the_statusbar.add_binding(
-            "see img", "Shift-ButtonRelease-1", lambda: preferences.toggle(PrefKey.AUTOIMAGE)
+            "see img",
+            "Shift-ButtonRelease-1",
+            lambda: preferences.toggle(PrefKey.AUTOIMAGE),
         )
 
         the_statusbar.add(

@@ -19,7 +19,6 @@ class PreferencesDialog(ToplevelDialog):
 
         # Appearance tab
         appearance_frame = ttk.Frame(self.notebook, padding=10)
-        appearance_frame.grid(column=0, sticky="NSEW")
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
@@ -47,7 +46,6 @@ class PreferencesDialog(ToplevelDialog):
 
         # Processing tab
         processing_frame = ttk.Frame(self.notebook, padding=10)
-        processing_frame.grid(column=0, sticky="NSEW")
         ttk.Label(processing_frame, text="Nothing to see here yet").grid(
             column=0, row=0, sticky="NEW"
         )
