@@ -240,7 +240,7 @@ class JeebiesChecker:
                 paragraph_start_line_numbers.append(line_number)
                 open_paragraph = True
                 # Start paragraph text string
-                s = line + " "
+                s = f"{line} "
                 # Mark end of this first line in paragraph
                 line_end = len(line) + 1
                 paragraph_line_ends.append(line_end)
@@ -248,7 +248,7 @@ class JeebiesChecker:
             else:
                 # Not a blank line and previous line was not blank so
                 # continuation of a paragraph
-                s = s + line + " "
+                s = s + f"{line} "
                 line_end = line_end + len(line) + 1
                 paragraph_line_ends.append(line_end)
 
@@ -417,11 +417,11 @@ class JeebiesChecker:
             #    been processed as a 3-form phrase. Avoid it being processed again as a
             #    2-form phrase. Obscure the right curly quote characters whenever they
             #    and a space precede a hebe.
-            qs_hebe = r"’ " + f"{hebe}"
-            ss_hebe = r"  " + f"{hebe}"
+            qs_hebe = f"’ {hebe}"
+            ss_hebe = f"  {hebe}"
             para_lc = re.sub(qs_hebe, ss_hebe, para_lc)
             # Look for type 1, 2-form hebe phrases in the edited paragraph string.
-            regx = r"(?<=^|\p{P}|\p{P} )" + f"{hebe}" + " [a-z]+"
+            regx = rf"(?<=^|\p{{P}}|\p{{P}} ){hebe} [a-z]+"
             suspects_count += do_finditer_and_report()
 
         elif order == "second":
@@ -429,7 +429,7 @@ class JeebiesChecker:
 
             para_lc = paragraph_text.lower()
 
-            regx = "[a-z]+ " + f"{hebe}" + r"(?=\p{P}|$)"
+            regx = rf"[a-z]+ {hebe}(?=\p{{P}}|$)"
             suspects_count += do_finditer_and_report()
 
         else:
@@ -525,7 +525,7 @@ class JeebiesChecker:
                 # 'be contracted' could be. If either in the dictionary don't
                 # query the 3-form phrase they're part of.
 
-                # Isolate the 2-form phrases and see if either in the dictionary.
+                # Isolate the 2-form phrases and see if either is in the dictionary.
                 parts = hebe_form.split()
                 phrase1 = parts[0] + " " + parts[1]
                 phrase2 = parts[1] + " " + parts[2]
@@ -585,12 +585,12 @@ class JeebiesChecker:
         if freq != 0:
             return freq
         # Try again with a prefixing " " character
-        key = " " + phrase
+        key = f" {phrase}"
         freq = self.dictionary.get(key, 0)
         if freq != 0:
             return freq
         # Try finally with a trailing " " character
-        key = phrase + " "
+        key = f"{phrase} "
         freq = self.dictionary.get(key, 0)
         return freq
 
@@ -612,8 +612,8 @@ class JeebiesChecker:
             checker_dialog: Where report text is written.
         """
         # Get start/end of 'he' or 'be' string in file.
-        error_start = str(line_number) + "." + str(hebe_start)
-        error_end = str(line_number) + "." + str(hebe_start + 2)
+        error_start = f"{line_number}.{hebe_start}"
+        error_end = f"{line_number}.{hebe_start + 2}"
         # Store in structure for file row/col positions & ranges.
         start_rowcol = IndexRowCol(error_start)
         end_rowcol = IndexRowCol(error_end)
@@ -622,7 +622,7 @@ class JeebiesChecker:
         # To RESTORE ratios in report lines uncomment the following
         # two lines and comment out the third line.
         ############################################################
-        # line = info + " " + line
+        # line = f"{info} {line}"
         # highlight_start = hebe_start + len(info) + 1
         highlight_start = hebe_start
         highlight_end = highlight_start + 2
