@@ -218,7 +218,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
     def show_page_details_dialog(self) -> None:
         """Show the page details display/edit dialog."""
-        PageDetailsDialog(root(), self.file.page_details)
+        PageDetailsDialog.show_dialog(page_details=self.file.page_details)
 
     def open_document(self, args: list[str]) -> None:
         """Handle drag/drop on Macs.

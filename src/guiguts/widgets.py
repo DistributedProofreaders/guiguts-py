@@ -2,7 +2,7 @@
 
 from contextlib import suppress
 import tkinter as tk
-from tkinter import simpledialog, ttk
+from tkinter import ttk
 from typing import Any, Optional, TypeVar, Callable
 
 import regex as re
@@ -11,51 +11,6 @@ from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_windows, is_mac, process_accel
 
 NUM_HISTORY = 10
-
-
-class OkCancelDialog(simpledialog.Dialog):
-    """A Tk simpledialog with OK and Cancel buttons and some overridden
-    methods to avoid duplicated application code.
-    """
-
-    def __init__(self, parent: tk.Tk, title: str) -> None:
-        """Initialize the dialog."""
-        super().__init__(parent, title)
-
-    def buttonbox(self) -> None:
-        """Override default to set up OK and Cancel buttons."""
-        frame = ttk.Frame(self, padding=5)
-        frame.pack()
-        ok_button = ttk.Button(
-            frame, text="OK", default="active", command=self.ok_pressed
-        )
-        ok_button.grid(column=1, row=1)
-        cancel_button = ttk.Button(
-            frame, text="Cancel", default="normal", command=self.cancel_pressed
-        )
-        cancel_button.grid(column=2, row=1)
-        self.bind("<Return>", lambda event: self.ok_pressed())
-        self.bind("<Escape>", lambda event: self.cancel_pressed())
-
-    def ok_press_complete(self) -> bool:
-        """Complete processing needed when OK is pressed, e.g. storing
-        dialog values in persistent variables.
-
-        Will usually be overridden.
-
-            Returns:
-                True if OK to close dialog, False if not
-        """
-        return True
-
-    def ok_pressed(self) -> None:
-        """Update page label settings from the dialog."""
-        if self.ok_press_complete():
-            self.destroy()
-
-    def cancel_pressed(self) -> None:
-        """Destroy dialog."""
-        self.destroy()
 
 
 TlDlg = TypeVar("TlDlg", bound="ToplevelDialog")
@@ -244,6 +199,53 @@ class ToplevelDialog(tk.Toplevel):
             config_dict[key] = self.geometry()
             preferences.set(PrefKey.DIALOGGEOMETRY, config_dict)
             self.save_config = False
+
+
+class OkApplyCancelDialog(ToplevelDialog):
+    """A ToplevelDialog with OK, Apply & Cancel buttons."""
+
+    def __init__(self, title: str) -> None:
+        """Initialize the dialog."""
+        super().__init__(title)
+        button_frame = ttk.Frame(self, padding=5)
+        button_frame.grid(row=1, column=0, sticky="NSEW")
+        button_frame.columnconfigure(0, weight=1)
+        ok_button = ttk.Button(
+            button_frame, text="OK", default="active", command=self.ok_pressed
+        )
+        ok_button.grid(row=0, column=0)
+        button_frame.columnconfigure(1, weight=1)
+        apply_button = ttk.Button(
+            button_frame, text="Apply", default="normal", command=self.apply_changes
+        )
+        apply_button.grid(row=0, column=1)
+        button_frame.columnconfigure(2, weight=1)
+        cancel_button = ttk.Button(
+            button_frame, text="Cancel", default="normal", command=self.cancel_pressed
+        )
+        cancel_button.grid(row=0, column=2)
+        self.bind("<Return>", lambda event: self.ok_pressed())
+        self.bind("<Escape>", lambda event: self.cancel_pressed())
+
+    def apply_changes(self) -> bool:
+        """Complete processing needed when Apply/OK are pressed, e.g. storing
+        dialog values in persistent variables.
+
+        Will usually be overridden.
+
+            Returns:
+                True if OK to close dialog, False if not
+        """
+        return True
+
+    def ok_pressed(self) -> None:
+        """Apply changes and destroy dialog."""
+        if self.apply_changes():
+            self.destroy()
+
+    def cancel_pressed(self) -> None:
+        """Destroy dialog."""
+        self.destroy()
 
 
 class Combobox(ttk.Combobox):
