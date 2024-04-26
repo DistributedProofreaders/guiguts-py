@@ -6,7 +6,7 @@ from tkinter import simpledialog, ttk
 import roman  # type: ignore[import-untyped]
 
 from guiguts.maintext import maintext
-from guiguts.widgets import OkCancelDialog
+from guiguts.widgets import OkApplyCancelDialog, mouse_bind, ToolTip
 
 STYLE_COLUMN = "#2"
 STYLE_ARABIC = "Arabic"
@@ -22,16 +22,8 @@ COL_HEAD_NUMBER = "Number"
 COL_HEAD_LABEL = "Label"
 PAGE_LABEL_PREFIX = "Pg "
 
-STYLE_NEXT = {
-    STYLE_ARABIC: STYLE_ROMAN,
-    STYLE_ROMAN: STYLE_DITTO,
-    STYLE_DITTO: STYLE_ARABIC,
-}
-NUMBER_NEXT = {
-    NUMBER_PAGENUM: NUMBER_INCREMENT,
-    NUMBER_INCREMENT: NUMBER_NONE,
-    NUMBER_NONE: NUMBER_PAGENUM,
-}
+STYLES = [STYLE_ARABIC, STYLE_ROMAN, STYLE_DITTO]
+NUMBERS = [NUMBER_PAGENUM, NUMBER_INCREMENT, NUMBER_NONE]
 
 
 class PageDetail(dict):
@@ -104,7 +96,7 @@ class PageDetails(dict[str, PageDetail]):
         self.recalculate()
 
 
-class PageDetailsDialog(OkCancelDialog):
+class PageDetailsDialog(OkApplyCancelDialog):
     """A dialog that allows the user to view/edit page details.
 
     Attributes:
@@ -113,24 +105,33 @@ class PageDetailsDialog(OkCancelDialog):
         changed: True if any changes have been made in dialog.
     """
 
-    def __init__(self, parent: tk.Tk, page_details: PageDetails) -> None:
-        """Initialize ``labels`` and ``entries`` to empty dictionaries."""
+    def __init__(self, page_details: PageDetails) -> None:
+        """Initialize class members from page details."""
+        super().__init__("Configure Page Labels")
         self.master_details = page_details
         self.details = PageDetails()
         self.details.copy_details_from(self.master_details)
         self.changed = False
-        super().__init__(parent, "Configure Page Labels")
-
-    def body(self, master: tk.Frame) -> tk.Frame:
-        """Override default to construct widgets needed to show page labels"""
-        master.columnconfigure(0, weight=1)
-        master.rowconfigure(0, weight=1)
-        master.pack(expand=True, fill=tk.BOTH)
 
         columns = (COL_HEAD_IMG, COL_HEAD_STYLE, COL_HEAD_NUMBER, COL_HEAD_LABEL)
         widths = (50, 80, 80, 120)
         self.list = ttk.Treeview(
-            master, columns=columns, show="headings", height=10, selectmode=tk.BROWSE
+            self.top_frame,
+            columns=columns,
+            show="headings",
+            height=10,
+            selectmode=tk.BROWSE,
+        )
+        ToolTip(
+            self.list,
+            "\n".join(
+                [
+                    "Click in style column to cycle Arabic/Roman/Ditto",
+                    "Click in number column to cycle +1/No Count/Set Number",
+                    "Shift click to cycle in reverse order",
+                ]
+            ),
+            use_pointer_pos=True,
         )
         for col, column in enumerate(columns):
             self.list.column(
@@ -142,17 +143,21 @@ class PageDetailsDialog(OkCancelDialog):
             )
             self.list.heading(f"#{col + 1}", text=column)
 
-        self.list.bind("<ButtonRelease-1>", self.item_clicked)
+        mouse_bind(
+            self.list, "1", lambda event: self.item_clicked(event, reverse=False)
+        )
+        mouse_bind(
+            self.list, "Shift+1", lambda event: self.item_clicked(event, reverse=True)
+        )
         self.list.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.scrollbar = ttk.Scrollbar(
-            master, orient=tk.VERTICAL, command=self.list.yview
+            self.top_frame, orient=tk.VERTICAL, command=self.list.yview
         )
         self.list.configure(yscroll=self.scrollbar.set)  # type: ignore[call-overload]
         self.scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
         self.populate_list(self.details)
-        return master
 
     def populate_list(self, details: PageDetails, see_index: int = 0) -> None:
         """Populate the page details list from the given details.
@@ -174,11 +179,15 @@ class PageDetailsDialog(OkCancelDialog):
             self.list.see(children[see_index])
             self.list.selection_set(children[see_index])
 
-    def item_clicked(self, event: tk.Event) -> None:
+    def item_clicked(self, event: tk.Event, reverse: bool) -> None:
         """Called when page detail item is clicked.
 
         If click is in style or number column, then advance style/number
         setting to the next value. Refresh the list to show new labels.
+
+        Args:
+            event: Event containing location of mouse click
+            reverse: True to "advance" in reverse!
         """
         col_id = self.list.identify_column(event.x)
         if col_id not in (STYLE_COLUMN, NUMBER_COLUMN):
@@ -190,18 +199,31 @@ class PageDetailsDialog(OkCancelDialog):
         if col_id == STYLE_COLUMN:
             if COL_HEAD_STYLE not in row:
                 return
-            # Click in style column advances style
-            new_value = STYLE_NEXT[row[COL_HEAD_STYLE]]
-            self.details[row[COL_HEAD_IMG]]["style"] = new_value
+            # Click in style column advances/retreats style
+            style_index = STYLES.index(row[COL_HEAD_STYLE])
+            if reverse:
+                style_index = len(STYLES) - 1 if style_index == 0 else style_index - 1
+            else:
+                style_index = 0 if style_index == len(STYLES) - 1 else style_index + 1
+            self.details[row[COL_HEAD_IMG]]["style"] = STYLES[style_index]
         elif col_id == NUMBER_COLUMN:
             if COL_HEAD_NUMBER not in row:
                 return
-            # Click in number column advances number type.
+            # Click in number column advances/retreats number type.
             # May need to prompt user for page number.
             value = row[COL_HEAD_NUMBER]
             if value.isdecimal():
                 value = NUMBER_PAGENUM
-            new_value = NUMBER_NEXT[value]
+            number_index = NUMBERS.index(value)
+            if reverse:
+                number_index = (
+                    len(NUMBERS) - 1 if number_index == 0 else number_index - 1
+                )
+            else:
+                number_index = (
+                    0 if number_index == len(NUMBERS) - 1 else number_index + 1
+                )
+            new_value = NUMBERS[number_index]
             if new_value == NUMBER_PAGENUM:
                 pagenum = simpledialog.askinteger(
                     "Set Number", "Enter page number", parent=self
@@ -214,7 +236,7 @@ class PageDetailsDialog(OkCancelDialog):
         self.populate_list(self.details, self.list.index(row_id))
         self.changed = True
 
-    def ok_press_complete(self) -> bool:
+    def apply_changes(self) -> bool:
         """Overridden to update page label settings from the dialog."""
         if self.changed:
             self.master_details.copy_details_from(self.details)

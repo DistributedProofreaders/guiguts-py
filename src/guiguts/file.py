@@ -18,22 +18,21 @@ from guiguts.page_details import (
     STYLE_ARABIC,
     STYLE_DITTO,
 )
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.project_dict import ProjectDict, GOOD_WORDS_FILENAME, BAD_WORDS_FILENAME
 from guiguts.root import root
 from guiguts.spell import spell_check_clear_dictionary
 from guiguts.utilities import (
-    is_windows,
     load_dict_from_json,
     IndexRowCol,
     IndexRange,
     sound_bell,
+    folder_dir_str,
 )
-from guiguts.widgets import grab_focus
+from guiguts.widgets import grab_focus, ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
-FOLDER_DIR = "folder" if is_windows() else "directory"
 NUM_RECENT_FILES = 9
 PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".json"
@@ -47,6 +46,8 @@ BINFILE_KEY_LANGUAGES: Final = "languages"
 PAGE_FLAGS_NONE = 0
 PAGE_FLAGS_SOME = 1
 PAGE_FLAGS_ALL = 2
+
+PAGE_SEPARATOR_REGEX = r"File:.+?([^/\\ ]+)\.(png|jpg)"
 
 
 class BinDict(TypedDict):
@@ -125,18 +126,21 @@ class File:
             value = "en"
         self._languages = value
         self._languages_callback()
-        preferences.set("DefaultLanguages", value)
+        preferences.set(PrefKey.DEFAULTLANGUAGES, value)
         # Inform maintext, so text manipulation algorithms there can check languages
         maintext().set_languages(value)
         # Clear any existing spell checker dictionary
         spell_check_clear_dictionary()
 
     def reset(self) -> None:
-        """Reset file internals to defaults, e.g. filename, page markers, etc"""
+        """Reset file internals to defaults, e.g. filename, page markers, etc.
+
+        Also close any open dialogs, since they will refer to the previous file."""
         self.filename = ""
         self.image_dir = ""
         self.remove_page_marks()
         self.page_details = PageDetails()
+        ToplevelDialog.close_all()
 
     def open_file(self, filename: str = "") -> str:
         """Open and load a text file.
@@ -180,7 +184,7 @@ class File:
             self.filename = ""
             return
         maintext().set_insert_index(IndexRowCol(1, 0))
-        self.languages = preferences.get("DefaultLanguages")
+        self.languages = preferences.get(PrefKey.DEFAULTLANGUAGES)
         bin_matches_file = self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
@@ -353,10 +357,10 @@ class File:
             filename: Name of new file to add to list.
         """
         self.remove_recent_file(filename)
-        recents = preferences.get("RecentFiles")
+        recents = preferences.get(PrefKey.RECENTFILES)
         recents.insert(0, filename)
         del recents[NUM_RECENT_FILES:]
-        preferences.set("RecentFiles", recents)
+        preferences.set(PrefKey.RECENTFILES, recents)
 
     def remove_recent_file(self, filename: str) -> None:
         """Remove given filename from list of recent files.
@@ -364,10 +368,10 @@ class File:
         Args:
             filename: Name of new file to add to list.
         """
-        recents = preferences.get("RecentFiles")
+        recents = preferences.get(PrefKey.RECENTFILES)
         if filename in recents:
             recents.remove(filename)
-            preferences.set("RecentFiles", recents)
+            preferences.set(PrefKey.RECENTFILES, recents)
 
     def set_page_marks(self, page_details: PageDetails) -> None:
         """Set page marks from keys/values in dictionary.
@@ -413,11 +417,10 @@ class File:
         page_num_style = STYLE_ARABIC
         page_num = "1"
 
-        page_separator_regex = r"File:.+?([^/\\ ]+)\.(png|jpg)"
-        pattern = re.compile(page_separator_regex)
+        pattern = re.compile(PAGE_SEPARATOR_REGEX)
         search_start = "1.0"
         while page_index := maintext().search(
-            page_separator_regex, search_start, regexp=True, stopindex="end"
+            PAGE_SEPARATOR_REGEX, search_start, regexp=True, stopindex="end"
         ):
             line_start = maintext().index(page_index + " linestart")
             line_end = page_index + " lineend"
@@ -510,7 +513,7 @@ class File:
     def choose_image_dir(self) -> None:
         """Allow user to select directory containing png image files"""
         self.image_dir = filedialog.askdirectory(
-            mustexist=True, title="Select " + FOLDER_DIR + " containing scans"
+            mustexist=True, title=f"Select {folder_dir_str(True)} containing scans"
         )
 
     def get_current_page_label(self) -> str:

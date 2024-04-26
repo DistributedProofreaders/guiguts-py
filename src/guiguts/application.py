@@ -21,13 +21,16 @@ from guiguts.mainwindow import (
     statusbar,
     ErrorHandler,
 )
+from guiguts.misc_tools import basic_fixup_check
 from guiguts.page_details import PageDetailsDialog
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.root import root
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
-from guiguts.utilities import is_mac
+from guiguts.tools.jeebies import jeebies_check
+from guiguts.utilities import is_mac, is_windows
+from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
 logger = logging.getLogger(__package__)
 
@@ -62,7 +65,7 @@ class Guiguts:
 
         self.init_statusbar(statusbar())
 
-        self.file.languages = preferences.get("DefaultLanguages")
+        self.file.languages = preferences.get(PrefKey.DEFAULTLANGUAGES)
 
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
@@ -116,7 +119,7 @@ class Guiguts:
         elif self.args.recent:
             index = self.args.recent - 1
             try:
-                self.file.load_file(preferences.get("RecentFiles")[index])
+                self.file.load_file(preferences.get(PrefKey.RECENTFILES)[index])
             except IndexError:
                 pass  # Not enough recent files to load the requested one
 
@@ -124,11 +127,11 @@ class Guiguts:
     def auto_image(self) -> bool:
         """Auto image flag: setting causes side effects in UI
         & starts repeating check."""
-        return preferences.get("AutoImage")
+        return preferences.get(PrefKey.AUTOIMAGE)
 
     @auto_image.setter
     def auto_image(self, value: bool) -> None:
-        preferences.set("AutoImage", value)
+        preferences.set(PrefKey.AUTOIMAGE, value)
         statusbar().set("see img", "Auto Img" if value else "See Img")
         if value:
             self.image_dir_check()
@@ -215,7 +218,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
     def show_page_details_dialog(self) -> None:
         """Show the page details display/edit dialog."""
-        PageDetailsDialog(root(), self.file.page_details)
+        PageDetailsDialog.show_dialog(page_details=self.file.page_details)
 
     def open_document(self, args: list[str]) -> None:
         """Handle drag/drop on Macs.
@@ -233,6 +236,18 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         if self.file.open_file(filename):
             self.mainwindow.clear_image()
 
+    def close_command(self) -> None:
+        """Close top-level dialog with focus, or close the file if it's
+        the main window."""
+        focus_widget = maintext().focus_get()
+        if focus_widget is None:
+            return
+        focus_tl = focus_widget.winfo_toplevel()
+        if focus_tl == maintext().winfo_toplevel():
+            self.close_file()
+        else:
+            focus_tl.destroy()
+
     def close_file(self) -> None:
         """Close currently loaded file and associated image."""
         self.file.close_file()
@@ -244,7 +259,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
     def show_help_manual(self) -> None:
         """Display the manual."""
-        webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_Manual")
+        webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual")
 
     def initialize_preferences(self) -> None:
         """Set default preferences and load settings from the GGPrefs file."""
@@ -252,25 +267,36 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         def set_auto_image(value: bool) -> None:
             self.auto_image = value
 
-        preferences.set_default("AutoImage", False)
-        preferences.set_callback("AutoImage", set_auto_image)
-        preferences.set_default("Bell", "VisibleAudible")
-        preferences.set_default("ImageWindow", "Docked")
-        preferences.set_default("RecentFiles", [])
-        preferences.set_default("LineNumbers", True)
+        preferences.set_default(PrefKey.AUTOIMAGE, False)
+        preferences.set_callback(PrefKey.AUTOIMAGE, set_auto_image)
+        preferences.set_default(PrefKey.BELL, "VisibleAudible")
+        preferences.set_default(PrefKey.IMAGEWINDOW, "Docked")
+        preferences.set_default(PrefKey.RECENTFILES, [])
+        preferences.set_default(PrefKey.LINENUMBERS, True)
+        preferences.set_default(PrefKey.ORDINALNAMES, True)
         preferences.set_callback(
-            "LineNumbers", lambda show: maintext().show_line_numbers(show)
+            PrefKey.LINENUMBERS, lambda show: maintext().show_line_numbers(show)
         )
-        preferences.set_default("SearchHistory", [])
-        preferences.set_default("ReplaceHistory", [])
-        preferences.set_default("SearchDialogReverse", False)
-        preferences.set_default("SearchDialogMatchcase", False)
-        preferences.set_default("SearchDialogWholeword", False)
-        preferences.set_default("SearchDialogWrap", True)
-        preferences.set_default("SearchDialogRegex", False)
-        preferences.set_default("DialogGeometry", {})
-        preferences.set_default("RootGeometry", "800x400")
-        preferences.set_default("DefaultLanguages", "en")
+        preferences.set_default(PrefKey.SEARCHHISTORY, [])
+        preferences.set_default(PrefKey.REPLACEHISTORY, [])
+        preferences.set_default(PrefKey.SEARCHDIALOGREVERSE, False)
+        preferences.set_default(PrefKey.SEARCHDIALOGMATCHCASE, False)
+        preferences.set_default(PrefKey.SEARCHDIALOGWHOLEWORD, False)
+        preferences.set_default(PrefKey.SEARCHDIALOGWRAP, True)
+        preferences.set_default(PrefKey.SEARCHDIALOGREGEX, False)
+        preferences.set_default(PrefKey.DIALOGGEOMETRY, {})
+        preferences.set_default(PrefKey.ROOTGEOMETRY, "800x400")
+        preferences.set_default(PrefKey.DEFAULTLANGUAGES, "en")
+        preferences.set_default(PrefKey.WFDIALOGSUSPECTSONLY, False)
+        preferences.set_default(PrefKey.WFDIALOGIGNORECASE, False)
+        preferences.set_default(PrefKey.WFDIALOGDISPLAYTYPE, WFDisplayType.ALL_WORDS)
+        preferences.set_default(PrefKey.WFDIALOGSORTTYPE, WFSortType.ALPHABETIC)
+        preferences.set_default(PrefKey.WFDIALOGITALTHRESHOLD, ["4"])
+        preferences.set_default(PrefKey.WFDIALOGREGEX, [])
+
+        # Check all preferences have a default
+        for pref_key in PrefKey:
+            assert preferences.get_default(pref_key) is not None
 
         preferences.load()
 
@@ -303,15 +329,19 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S"
         )
         self.menu_file.add_button(
-            "~Close", self.close_file, "Cmd+W" if is_mac() else ""
+            "~Close", self.close_command, "Cmd+W" if is_mac() else ""
         )
         page_menu = Menu(self.menu_file, "Page ~Markers")
         page_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)
         page_menu.add_button("~Remove Page Marker Flags", self.file.remove_page_flags)
-        page_menu = Menu(self.menu_file, "~Project")
-        page_menu.add_button(
+        proj_menu = Menu(self.menu_file, "~Project")
+        proj_menu.add_button(
             "~Add Good/Bad Words to Project Dictionary",
             self.file.add_good_and_bad_words,
+        )
+        proj_menu.add_button(
+            f"Set ~Scan Image {'Folder' if is_windows() else 'Directory'}",
+            self.file.choose_image_dir,
         )
         if not is_mac():
             self.menu_file.add_separator()
@@ -320,7 +350,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_file_recent_menu(self, parent: Menu) -> None:
         """Create the Recent Documents menu."""
         recent_menu = Menu(parent, "Recent Doc~uments")
-        for count, file in enumerate(preferences.get("RecentFiles"), start=1):
+        for count, file in enumerate(preferences.get(PrefKey.RECENTFILES), start=1):
             recent_menu.add_button(
                 f"~{count}: {file}",
                 lambda fn=file: self.open_file(fn),  # type:ignore[misc]
@@ -391,6 +421,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         menu_edit = Menu(menubar(), "~Tools")
+        menu_edit.add_button("Basic Fi~xup", basic_fixup_check)
+        menu_edit.add_button("~Word Frequency", word_frequency)
         menu_edit.add_button(
             "~Spelling Check",
             lambda: spell_check(
@@ -398,6 +430,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             ),
         )
         menu_edit.add_button("PP~txt", lambda: pptxt(self.file.project_dict))
+        menu_edit.add_button("~Jeebies", jeebies_check)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
@@ -406,7 +439,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "~Dock Image",
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
-            preferences.get("ImageWindow") == "Docked",
+            preferences.get(PrefKey.IMAGEWINDOW) == "Docked",
         )
         menu_view.add_button("~Show Image", self.show_image)
         menu_view.add_button("~Hide Image", self.hide_image)
@@ -427,75 +460,134 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             # Window menu
             Menu(menubar(), "Window", name="window")
 
-    # Lay out statusbar
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
-        """Add labels to initialize the statusbar"""
+        """Add labels to initialize the statusbar.
+
+        Functions are bound to Button Release, rather than Button Press, since
+        that is how buttons normally operate.
+        """
 
         def rowcol_str() -> str:
             """Format current insert index for statusbar."""
             row, col = maintext().get_insert_index().rowcol()
             return f"L:{row} C:{col}"
 
-        the_statusbar.add("rowcol", update=rowcol_str)
-        the_statusbar.add_binding("rowcol", "<ButtonRelease-1>", self.file.goto_line)
+        the_statusbar.add(
+            "rowcol",
+            tooltip="Click: Go to line\nShift click: Toggle line numbers",
+            update=rowcol_str,
+        )
+        the_statusbar.add_binding("rowcol", "ButtonRelease-1", self.file.goto_line)
         the_statusbar.add_binding(
-            "rowcol", "<ButtonRelease-3>", maintext().toggle_line_numbers
+            "rowcol", "Shift-ButtonRelease-1", maintext().toggle_line_numbers
         )
 
         the_statusbar.add(
             "img",
+            tooltip="Click: Go to image",
             update=lambda: "Img: " + self.file.get_current_image_name(),
         )
-        the_statusbar.add_binding("img", "<ButtonRelease-1>", self.file.goto_image)
+        the_statusbar.add_binding("img", "ButtonRelease-1", self.file.goto_image)
 
-        the_statusbar.add("prev img", text="<", width=1)
-        the_statusbar.add_binding("prev img", "<ButtonRelease-1>", self.file.prev_page)
+        the_statusbar.add(
+            "prev img", tooltip="Click: Go to previous image", text="<", width=1
+        )
+        the_statusbar.add_binding("prev img", "ButtonRelease-1", self.file.prev_page)
 
-        the_statusbar.add("see img", text="See Img", width=9)
+        the_statusbar.add(
+            "see img",
+            tooltip="Click: See image\nShift click: Toggle auto-image",
+            text="See Img",
+            width=9,
+        )
         the_statusbar.add_binding(
             "see img",
-            "<ButtonRelease-1>",
+            "ButtonRelease-1",
             self.show_image,
         )
         the_statusbar.add_binding(
-            "see img", "<ButtonRelease-3>", self.file.choose_image_dir
-        )
-        the_statusbar.add_binding(
-            "see img", "<Double-Button-1>", self.toggle_auto_image
+            "see img", "Shift-ButtonRelease-1", self.toggle_auto_image
         )
 
-        the_statusbar.add("next img", text=">", width=1)
-        the_statusbar.add_binding("next img", "<ButtonRelease-1>", self.file.next_page)
+        the_statusbar.add(
+            "next img", tooltip="Click: Go to next image", text=">", width=1
+        )
+        the_statusbar.add_binding("next img", "ButtonRelease-1", self.file.next_page)
 
         the_statusbar.add(
             "page label",
+            tooltip="Click: Go to page\nShift click: Configure page labels",
             text="Lbl: ",
             update=lambda: "Lbl: " + self.file.get_current_page_label(),
         )
+        the_statusbar.add_binding("page label", "ButtonRelease-1", self.file.goto_page)
         the_statusbar.add_binding(
-            "page label", "<ButtonRelease-1>", self.file.goto_page
+            "page label", "Shift-ButtonRelease-1", self.show_page_details_dialog
+        )
+
+        def selection_str() -> str:
+            """Format current selection range for statusbar.
+
+            Returns:
+                "Start-End" for a regualar selection, and "R:rows C:cols" for column selection.
+            """
+            ranges = maintext().selected_ranges()
+            maintext().save_selection_ranges()
+            if not ranges:
+                return "No selection"
+            if len(ranges) == 1:
+                return f"{ranges[0].start.index()}-{ranges[-1].end.index()}"
+            row_diff = abs(ranges[-1].end.row - ranges[0].start.row) + 1
+            col_diff = abs(ranges[-1].end.col - ranges[0].start.col)
+            return f"R:{row_diff} C:{col_diff}"
+
+        the_statusbar.add(
+            "selection",
+            tooltip="Click: Restore previous selection",
+            update=selection_str,
+            width=16,
         )
         the_statusbar.add_binding(
-            "page label", "<ButtonRelease-3>", self.show_page_details_dialog
+            "selection", "ButtonRelease-1", maintext().restore_selection_ranges
         )
+
+        the_statusbar.add(
+            "languages label", tooltip="Click: Set language(s)", text="Lang: "
+        )
+        the_statusbar.add_binding(
+            "languages label", "ButtonRelease-1", self.file.set_languages
+        )
+
+        def ordinal_name_display(force: Optional[bool] = None) -> None:
+            """Set, unset, or toggle, name display in ordinal button.
+
+            Args:
+                Force: True to set, False to unset, omit to toggle.
+            """
+            if force is None:
+                force = not preferences.get(PrefKey.ORDINALNAMES)
+            preferences.set(PrefKey.ORDINALNAMES, force)
 
         def ordinal_str() -> str:
             """Format ordinal of char at current insert index for statusbar."""
             char = maintext().get(maintext().get_insert_index().index())
             # unicodedata.name fails to return name for "control" characters
             # but the only one we care about is line feed
-            try:
-                name = unicodedata.name(char)
-            except ValueError:
-                name = "LINE FEED" if char == "\n" else ""
-            return f"U+{ord(char):04x}: {name}"
+            if preferences.get(PrefKey.ORDINALNAMES):
+                try:
+                    name = f": {unicodedata.name(char)}"
+                except ValueError:
+                    name = ": LINE FEED" if char == "\n" else ""
+            else:
+                name = ""
+            return f"U+{ord(char):04x}{name}"
 
-        the_statusbar.add("ordinal", update=ordinal_str)
-
-        the_statusbar.add("languages label", text="Lang: ")
-        the_statusbar.add_binding(
-            "languages label", "<ButtonRelease-1>", self.file.set_languages
+        the_statusbar.add(
+            "ordinal",
+            tooltip="Character after the cursor\nClick to toggle name display",
+            update=ordinal_str,
         )
+        the_statusbar.add_binding("ordinal", "ButtonRelease-1", ordinal_name_display)
 
     def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""

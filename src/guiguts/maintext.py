@@ -9,7 +9,7 @@ from typing import Any, Callable, Optional, Literal, Generator
 
 import regex as re
 
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import (
     is_mac,
     IndexRowCol,
@@ -177,6 +177,9 @@ class MainText(tk.Text):
         if "inactiveselect" not in kwargs:
             self["inactiveselect"] = self["selectbackground"]
 
+        self.current_sel_ranges: list[IndexRange] = []
+        self.prev_sel_ranges: list[IndexRange] = []
+
         maintext(self)  # Register this single instance of MainText
 
     def bind_event(
@@ -185,6 +188,7 @@ class MainText(tk.Text):
         func: Callable[[tk.Event], Optional[str]],
         add: bool = False,
         force_break: bool = True,
+        bind_all: bool = False,
     ) -> None:
         """Bind event string to given function. Provides ability to force
         a "break" return in order to stop class binding being executed.
@@ -194,6 +198,7 @@ class MainText(tk.Text):
             func: Function to bind to event - may handle return "break" itself.
             add: True to add this binding without removing existing binding.
             force_break: True to always return "break", regardless of return from `func`.
+            bind_all: True to bind keystroke to all other widgets as well as maintext
         """
 
         def break_func(event: tk.Event) -> Any:
@@ -202,6 +207,8 @@ class MainText(tk.Text):
             return "break" if force_break else func_ret
 
         super().bind(event_string, break_func, add)
+        if bind_all:
+            self.bind_all(event_string, break_func, add)
 
     # The following methods are simply calling the Text widget method
     # then updating the linenumbers widget
@@ -259,7 +266,7 @@ class MainText(tk.Text):
             self.linenumbers.grid()
         else:
             self.linenumbers.grid_remove()
-        preferences.set("LineNumbers", show)
+        preferences.set(PrefKey.LINENUMBERS, show)
 
     def line_numbers_shown(self) -> bool:
         """Check if line numbers are shown.
@@ -269,9 +276,11 @@ class MainText(tk.Text):
         """
         return self.linenumbers.winfo_viewable()
 
-    def key_bind(self, keyevent: str, handler: Callable[[Any], None]) -> None:
+    def key_bind(
+        self, keyevent: str, handler: Callable[[Any], None], bind_all: bool
+    ) -> None:
         """Bind lower & uppercase versions of ``keyevent`` to ``handler``
-        in main text window.
+        in main text window, and all other widgets.
 
         If this is not done, then use of Caps Lock key causes confusing
         behavior, because pressing ``Ctrl`` and ``s`` sends ``Ctrl+S``.
@@ -279,12 +288,13 @@ class MainText(tk.Text):
         Args:
             keyevent: Key event to trigger call to ``handler``.
             handler: Callback function to be bound to ``keyevent``.
+            bind_all: True to bind keystroke to all other widgets as well as maintext
         """
         lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
         uk = re.sub("[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
-        self.bind_event(lk, handler)
-        self.bind_event(uk, handler)
+        self.bind_event(lk, handler, bind_all=bind_all)
+        self.bind_event(uk, handler, bind_all=bind_all)
 
     #
     # Handle "modified" flag
@@ -335,10 +345,14 @@ class MainText(tk.Text):
         Args:
             fname: Name of file to load text from.
         """
-        with open(fname, "r", encoding="utf-8") as fh:
-            self.delete("1.0", tk.END)
-            self.insert(tk.END, fh.read())
-            self.set_modified(False)
+        self.delete("1.0", tk.END)
+        try:
+            with open(fname, "r", encoding="utf-8") as fh:
+                self.insert(tk.END, fh.read())
+        except UnicodeDecodeError:
+            with open(fname, "r", encoding="iso-8859-1") as fh:
+                self.insert(tk.END, fh.read())
+        self.set_modified(False)
         self.edit_reset()
 
     def do_close(self) -> None:
@@ -441,13 +455,13 @@ class MainText(tk.Text):
         """Clear any current text selection."""
         self.tag_remove("sel", "1.0", tk.END)
 
-    def do_select(self, _range: IndexRange) -> None:
+    def do_select(self, sel_range: IndexRange) -> None:
         """Select the given range of text.
 
         Args:
-            IndexRange containing start and end of text to be selected."""
+            sel_range: IndexRange containing start and end of text to be selected."""
         self.clear_selection()
-        self.tag_add("sel", _range.start.index(), _range.end.index())
+        self.tag_add("sel", sel_range.start.index(), sel_range.end.index())
 
     def selected_ranges(self) -> list[IndexRange]:
         """Get the ranges of text marked with the `sel` tag.
@@ -490,6 +504,36 @@ class MainText(tk.Text):
         if ranges:
             return self.get(ranges[0], ranges[1])
         return ""
+
+    def save_selection_ranges(self) -> None:
+        """Save current selection ranges if they have changed since last call.
+
+        Also save previous selection ranges, if beginning and end have both changed,
+        so they can be restored if needed.
+        """
+        ranges = maintext().selected_ranges()
+        # Inequality tests below rely on IndexCol/IndexRange having `__eq__` method
+        if ranges and ranges != self.current_sel_ranges:
+            # Problem is when the user drags to select, you can get multiple calls to this function,
+            # which are really all the same selection. Possible better solution in future, but for now,
+            # Only save into prev if both the start and end are different to the last call.
+            if (
+                self.current_sel_ranges
+                and ranges[0].start != self.current_sel_ranges[0].start
+                and ranges[-1].end != self.current_sel_ranges[-1].end
+            ):
+                self.prev_sel_ranges = self.current_sel_ranges.copy()
+            self.current_sel_ranges = ranges.copy()
+
+    def restore_selection_ranges(self) -> None:
+        """Restore previous selection ranges."""
+        if len(self.prev_sel_ranges) == 1:
+            self.do_select(self.prev_sel_ranges[0])
+        elif len(self.prev_sel_ranges) > 1:
+            col_range = IndexRange(
+                self.prev_sel_ranges[0].start, self.prev_sel_ranges[-1].end
+            )
+            self.do_column_select(col_range)
 
     def column_delete(self) -> None:
         """Delete the selected column text."""
@@ -840,6 +884,26 @@ class MainText(tk.Text):
                 matches.append(FindMatch(IndexRowCol(start), count_var.get()))
                 start += f"+{count_var.get()}c"
         return matches
+
+    def get_match_text(self, match: FindMatch) -> str:
+        """Return text indicated by given match.
+
+        Args:
+            match: Start and length of matched text - assumed to be valid.
+        """
+        start_index = match.rowcol.index()
+        end_index = maintext().index(start_index + f"+{match.count}c")
+        return maintext().get(start_index, end_index)
+
+    def select_match_text(self, match: FindMatch) -> None:
+        """Select text indicated by given match.
+
+        Args:
+            match: Start and length of matched text - assumed to be valid.
+        """
+        start_index = match.rowcol.index()
+        end_index = maintext().index(start_index + f"+{match.count}c")
+        maintext().do_select(IndexRange(start_index, end_index))
 
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.

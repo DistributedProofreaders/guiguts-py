@@ -9,9 +9,16 @@ import regex as re
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError
-from guiguts.preferences import preferences, PersistentBoolean
-from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, process_accel, is_mac
-from guiguts.widgets import ToplevelDialog, Combobox
+from guiguts.preferences import preferences, PersistentBoolean, PrefKey
+from guiguts.utilities import (
+    sound_bell,
+    IndexRowCol,
+    IndexRange,
+    process_accel,
+    is_mac,
+    sing_plur,
+)
+from guiguts.widgets import ToplevelDialog, Combobox, mouse_bind
 
 logger = logging.getLogger(__package__)
 
@@ -47,11 +54,11 @@ class SearchDialog(ToplevelDialog):
         try:
             SearchDialog.reverse
         except AttributeError:
-            SearchDialog.reverse = PersistentBoolean("SearchDialogReverse")
-            SearchDialog.matchcase = PersistentBoolean("SearchDialogMatchcase")
-            SearchDialog.wholeword = PersistentBoolean("SearchDialogWholeword")
-            SearchDialog.wrap = PersistentBoolean("SearchDialogWrap")
-            SearchDialog.regex = PersistentBoolean("SearchDialogRegex")
+            SearchDialog.reverse = PersistentBoolean(PrefKey.SEARCHDIALOGREVERSE)
+            SearchDialog.matchcase = PersistentBoolean(PrefKey.SEARCHDIALOGMATCHCASE)
+            SearchDialog.wholeword = PersistentBoolean(PrefKey.SEARCHDIALOGWHOLEWORD)
+            SearchDialog.wrap = PersistentBoolean(PrefKey.SEARCHDIALOGWRAP)
+            SearchDialog.regex = PersistentBoolean(PrefKey.SEARCHDIALOGREGEX)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
         kwargs["resize_y"] = False
@@ -81,7 +88,7 @@ class SearchDialog(ToplevelDialog):
         message_frame.grid(row=3, column=0, columnspan=3, sticky="NSEW")
 
         # Search
-        self.search_box = Combobox(search_frame1, "SearchHistory", width=30)
+        self.search_box = Combobox(search_frame1, PrefKey.SEARCHHISTORY, width=30)
         self.search_box.grid(row=0, column=0, padx=2, pady=(5, 0), sticky="NSEW")
         self.search_box.focus()
 
@@ -93,8 +100,9 @@ class SearchDialog(ToplevelDialog):
             command=self.search_clicked,
         )
         search_button.grid(row=0, column=1, pady=(5, 0), sticky="NSEW")
-        search_button.bind(
-            "<Shift-Button-1>",
+        mouse_bind(
+            search_button,
+            "Shift+1",
             lambda *args: self.search_clicked(opposite_dir=True),
         )
         self.bind("<Return>", lambda *args: self.search_clicked())
@@ -155,7 +163,7 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=0, column=0, sticky="NSE")
 
         # Replace
-        self.replace_box = Combobox(search_frame1, "ReplaceHistory", width=30)
+        self.replace_box = Combobox(search_frame1, PrefKey.REPLACEHISTORY, width=30)
         self.replace_box.grid(row=1, column=0, padx=2, pady=(4, 6), sticky="NSEW")
 
         ttk.Button(
@@ -171,8 +179,9 @@ class SearchDialog(ToplevelDialog):
             command=lambda *args: self.replace_clicked(search_again=True),
         )
         rands_button.grid(row=0, column=0, padx=(0, 2), pady=(2, 6), sticky="NSEW")
-        rands_button.bind(
-            "<Shift-Button-1>",
+        mouse_bind(
+            rands_button,
+            "Shift+1",
             lambda *args: self.replace_clicked(opposite_dir=True, search_again=True),
         )
         ttk.Button(
@@ -287,8 +296,8 @@ class SearchDialog(ToplevelDialog):
                 sound_bell()
                 return
             count = len(matches)
-            match_str = "match" if count == 1 else "matches"
-            self.display_message(f"Count: {count} {match_str} {range_name}")
+            match_str = sing_plur(count, "match", "matches")
+            self.display_message(f"Count: {match_str} {range_name}")
         else:
             self.display_message('No text selected for "In selection" count')
             sound_bell()
@@ -315,8 +324,8 @@ class SearchDialog(ToplevelDialog):
                 sound_bell()
                 return
             count = len(matches)
-            match_str = "match" if count == 1 else "matches"
-            self.display_message(f"Found: {count} {match_str} {range_name}")
+            match_str = sing_plur(count, "match", "matches")
+            self.display_message(f"Found: {match_str} {range_name}")
         else:
             matches = []
             self.display_message('No text selected for "In selection" find')
@@ -454,8 +463,8 @@ class SearchDialog(ToplevelDialog):
                     MARK_END_RANGE
                 )  # Refresh end index
                 count += 1
-            match_str = "match" if count == 1 else "matches"
-            self.display_message(f"Replaced: {count} {match_str} {range_name}")
+            match_str = sing_plur(count, "match", "matches")
+            self.display_message(f"Replaced: {match_str} {range_name}")
         else:
             self.display_message('No text selected for "In selection" replace')
             sound_bell()
@@ -474,6 +483,7 @@ def show_search_dialog() -> None:
     to the selected text if any (up to first newline)."""
     dlg = SearchDialog.show_dialog()
     dlg.search_box_set(maintext().selected_text().split("\n", 1)[0])
+    dlg.display_message()
 
 
 def find_next(backwards: bool = False) -> None:
@@ -501,7 +511,7 @@ def find_next(backwards: bool = False) -> None:
         dlg.search_box.add_to_history(search_string)
     if not search_string:
         try:
-            search_string = preferences.get("SearchHistory")[0]
+            search_string = preferences.get(PrefKey.SEARCHHISTORY)[0]
         except IndexError:
             sound_bell()
             return  # No Search History

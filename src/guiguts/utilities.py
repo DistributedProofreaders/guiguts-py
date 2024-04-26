@@ -7,7 +7,8 @@ import logging
 from pathlib import Path
 import os.path
 from tkinter import _tkinter
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, Mapping
+from unicodedata import combining, normalize
 
 import regex as re
 
@@ -85,11 +86,16 @@ def load_wordfile_into_dict(path: TraversablePath, target_dict: dict) -> bool:
         True if file opened successfully, False if file not found.
     """
     try:
-        with path.open("r", encoding="utf-8") as fp:
-            for line in fp:
-                word = line.strip()
-                if word:
-                    target_dict[word] = True
+        try:
+            with path.open("r", encoding="utf-8") as fp:
+                data = fp.read()
+        except UnicodeDecodeError:
+            with path.open("r", encoding="iso-8859-1") as fp:
+                data = fp.read()
+        for line in data.split("\n"):
+            word = line.strip()
+            if word:
+                target_dict[word] = True
         return True
     except FileNotFoundError:
         return False
@@ -135,6 +141,12 @@ class IndexRowCol:
         """Return row, col tuple."""
         return self.row, self.col
 
+    def __eq__(self, other: object) -> bool:
+        """Override equality test to check row and col."""
+        if not isinstance(other, IndexRowCol):
+            return NotImplemented
+        return (self.row, self.col) == (other.row, other.col)
+
 
 class IndexRange:
     """Class to store/manipulate a Text range defined by two indexes.
@@ -170,6 +182,34 @@ class IndexRange:
         else:
             assert isinstance(start, IndexRowCol)
             self.end = end
+
+    def __eq__(self, other: object) -> bool:
+        """Override equality test to check start and end of range."""
+        if not isinstance(other, IndexRange):
+            return NotImplemented
+        return (self.start, self.end) == (other.start, other.end)
+
+
+def sing_plur(count: int, singular: str, plural: str = "") -> str:
+    """Return singular/plural phrase depending on count.
+
+    Args:
+        count: Number of items.
+        singular: Singular version of item name.
+        plural: Plural version of item name (default - add `s` to singular).
+
+    Examples:
+        sing_plur(1, "word") -> "1 word"
+        sing_plur(2, "error") -> "2 errors"
+        sing_plur(3, "match", "matches") -> "3 matches"
+    """
+    if count == 1:
+        word = singular
+    elif plural == "":
+        word = singular + "s"
+    else:
+        word = plural
+    return f"{count} {word}"
 
 
 # Store callback that sounds bell, and provide function to call it.
@@ -236,6 +276,16 @@ def process_accel(accel: str) -> tuple[str, str]:
     return (accel, f"<{keyevent}>")
 
 
+def folder_dir_str(lowercase: bool = False) -> str:
+    """Return "Folder" or "Directory" depending on platform.
+
+    Args:
+        lowercase: If True, return lowercase version.
+    """
+    fd_string = "Folder" if is_windows() else "Directory"
+    return fd_string.lower() if lowercase else fd_string
+
+
 def force_tcl_wholeword(string: str, regex: bool) -> tuple[str, bool]:
     """Change string to only match whole word(s) by converting to
     a regex (if not already), then prepending and appending Tcl-style
@@ -266,3 +316,40 @@ def convert_to_tcl_regex(regex: str) -> str:
         Converted regex.
     """
     return re.sub(r"(?<!\\)\\b", r"\\y", regex)
+
+
+class DiacriticRemover:
+    """Supports removal of diacritics from strings."""
+
+    outliers: Mapping
+    source_outliers = "ä  æ  ǽ  đ ð ƒ ħ ı ł ø ǿ ö  œ  ß  ŧ ü  Ä  Æ  Ǽ  Đ Ð Ƒ Ħ I Ł Ø Ǿ Ö  Œ  ẞ  Ŧ Ü  Þ  þ"
+    target_outliers = "ae ae ae d d f h i l o o oe oe ss t ue AE AE AE D D F H I L O O OE OE SS T UE TH th"
+
+    @classmethod
+    def setup_outliers(cls, source_outliers: str, target_outliers: str) -> None:
+        """Setup the outliers mapping from source & target strings.
+
+        Should be called with the relevant outliers when the language is changed."""
+        DiacriticRemover.outliers = str.maketrans(
+            dict(zip(source_outliers.split(), target_outliers.split()))
+        )
+
+    @classmethod
+    def remove_diacritics(cls, string: str) -> str:
+        """Remove accents, etc., from string.
+
+        Based on https://stackoverflow.com/a/71408065
+        First fixes a few outliers, like ǿ --> o, then uses Unicode Normalization
+        to decompose string, then discards combining characters.
+        """
+        try:
+            DiacriticRemover.outliers
+        except AttributeError:
+            DiacriticRemover.setup_outliers(
+                DiacriticRemover.source_outliers, DiacriticRemover.target_outliers
+            )
+        return "".join(
+            char
+            for char in normalize("NFD", string.translate(DiacriticRemover.outliers))
+            if not combining(char)
+        )

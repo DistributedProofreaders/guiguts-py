@@ -6,12 +6,12 @@ from typing import Any, Optional, Callable
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.utilities import IndexRowCol, IndexRange, is_mac
-from guiguts.widgets import ToplevelDialog, TlDlg
+from guiguts.root import root
+from guiguts.utilities import IndexRowCol, IndexRange, is_mac, sing_plur
+from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind
 
 MARK_REMOVED_ENTRY = "MarkRemovedEntry"
 HILITE_TAG_NAME = "chk_hilite"
-SELECT_TAG_NAME = "chk_select"
 
 
 class CheckerEntry:
@@ -73,58 +73,31 @@ class CheckerDialog(ToplevelDialog):
         )
         self.text.grid(column=0, row=1, sticky="NSEW")
 
-        self.text.bind("<1>", self.select_entry_by_click)
-        # On Mac, equivalent of mouse button 3 is button 2 (2-button mice) or
-        # Control with button 1 (1 button mice), so 2 bindings per function
-        if is_mac():
-            self.text.bind("<2>", self.remove_entry_by_click)
-            self.text.bind("<Control-1>", self.remove_entry_by_click)
-            self.text.bind(
-                "<Shift-2>",
-                lambda event: self.remove_entry_by_click(event, all_matching=True),
-            )
-            self.text.bind(
-                "<Shift-Control-1>",
-                lambda event: self.remove_entry_by_click(event, all_matching=True),
-            )
-            self.text.bind("<Command-1>", self.process_entry_by_click)
-            self.text.bind("<Command-2>", self.process_remove_entry_by_click)
-            self.text.bind("<Command-Control-1>", self.process_remove_entry_by_click)
-            self.text.bind(
-                "<Shift-Command-2>",
-                lambda event: self.process_remove_entry_by_click(
-                    event, all_matching=True
-                ),
-            )
-            self.text.bind(
-                "<Shift-Command-Control-1>",
-                lambda event: self.process_remove_entry_by_click(
-                    event, all_matching=True
-                ),
-            )
-        else:
-            self.text.bind("<3>", self.remove_entry_by_click)
-            self.text.bind(
-                "<Shift-3>",
-                lambda event: self.remove_entry_by_click(event, all_matching=True),
-            )
-            self.text.bind("<Control-1>", self.process_entry_by_click)
-            self.text.bind("<Control-3>", self.process_remove_entry_by_click)
-            self.text.bind(
-                "<Shift-Control-3>",
-                lambda event: self.process_remove_entry_by_click(
-                    event, all_matching=True
-                ),
-            )
+        mouse_bind(self.text, "1", self.select_entry_by_click)
+        mouse_bind(self.text, "3", self.remove_entry_by_click)
+        mouse_bind(
+            self.text,
+            "Shift+3",
+            lambda event: self.remove_entry_by_click(event, all_matching=True),
+        )
+        mouse_bind(self.text, "Cmd/Ctrl+1", self.process_entry_by_click)
+        mouse_bind(self.text, "Cmd/Ctrl+3", self.process_remove_entry_by_click)
+        mouse_bind(
+            self.text,
+            "Shift+Cmd/Ctrl+3",
+            lambda event: self.process_remove_entry_by_click(event, all_matching=True),
+        )
 
         self.process_command = process_command
-        self.text.tag_configure(
-            SELECT_TAG_NAME, background="#dddddd", foreground="#000000"
-        )
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
-        # Reduce length of common part of mark names
-        self.mark_prefix = self.__class__.__name__.removesuffix("Dialog")
         self.reset()
+
+        def delete_dialog() -> None:
+            """Call its reset method, then destroy the dialog"""
+            self.reset()
+            self.destroy()
+
+        self.wm_protocol("WM_DELETE_WINDOW", delete_dialog)
 
     @classmethod
     def show_dialog(
@@ -148,9 +121,10 @@ class CheckerDialog(ToplevelDialog):
         self.entries: list[CheckerEntry] = []
         self.count_linked_entries = 0  # Not the same as len(self.entries)
         self.update_count_label()
-        self.text.delete("1.0", tk.END)
+        if self.text.winfo_exists():
+            self.text.delete("1.0", tk.END)
         for mark in maintext().mark_names():
-            if mark.startswith(self.mark_prefix):
+            if mark.startswith(self.get_mark_prefix()):
                 maintext().mark_unset(mark)
 
     def add_entry(
@@ -188,10 +162,10 @@ class CheckerDialog(ToplevelDialog):
         self.entries.append(entry)
         if text_range is not None:
             maintext().mark_set(
-                self._mark_from_rowcol(text_range.start), text_range.start.index()
+                self.mark_from_rowcol(text_range.start), text_range.start.index()
             )
             maintext().mark_set(
-                self._mark_from_rowcol(text_range.end), text_range.end.index()
+                self.mark_from_rowcol(text_range.end), text_range.end.index()
             )
             # If none selected, select the first message with a text range
             if self.current_entry_index() is None:
@@ -203,8 +177,10 @@ class CheckerDialog(ToplevelDialog):
 
     def update_count_label(self) -> None:
         """Update the label showing how many linked entries are in dialog."""
-        word = "Entry" if self.count_linked_entries == 1 else "Entries"
-        self.count_label["text"] = f"{self.count_linked_entries} {word}"
+        if self.count_label.winfo_exists():
+            self.count_label["text"] = sing_plur(
+                self.count_linked_entries, "Entry", "Entries"
+            )
 
     def select_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the
@@ -360,9 +336,8 @@ class CheckerDialog(ToplevelDialog):
         Returns:
             Index into self.entries array, or None if no message selected.
         """
-        if tag_range := self.text.tag_nextrange(SELECT_TAG_NAME, "1.0"):
-            return IndexRowCol(tag_range[0]).row - 1
-        return None
+        line_num = self.text.get_select_line_num()
+        return None if line_num is None else line_num - 1
 
     def select_entry(self, entry_index: int) -> None:
         """Select line in dialog corresponding to given entry index,
@@ -371,29 +346,21 @@ class CheckerDialog(ToplevelDialog):
         Args:
             event: Event object containing mouse click position.
         """
-        self.highlight_entry(entry_index)
+        self.text.select_line(entry_index + 1)
         self.text.mark_set(tk.INSERT, f"{entry_index + 1}.0")
         self.text.focus_set()
         entry = self.entries[entry_index]
         if entry.text_range is not None:
-            start = maintext().index(self._mark_from_rowcol(entry.text_range.start))
-            end = maintext().index(self._mark_from_rowcol(entry.text_range.end))
+            if root().state() == "iconic":
+                root().deiconify()
+            start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
+            end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
             maintext().do_select(IndexRange(start, end))
-            maintext().set_insert_index(IndexRowCol(start), focus=False)
+            maintext().set_insert_index(IndexRowCol(start), focus=not is_mac())
         self.lift()
 
-    def highlight_entry(self, entry_index: int) -> None:
-        """Highlight the line of text corresponding to the entry_index.
-
-        Args:
-            entry_index: Index into self.entries list.
-        """
-        self.text.tag_remove(SELECT_TAG_NAME, "1.0", tk.END)
-        self.text.tag_add(
-            SELECT_TAG_NAME, f"{entry_index + 1}.0", f"{entry_index + 2}.0"
-        )
-
-    def _mark_from_rowcol(self, rowcol: IndexRowCol) -> str:
+    @classmethod
+    def mark_from_rowcol(cls, rowcol: IndexRowCol) -> str:
         """Return name to use to mark given location in text file.
 
         Args:
@@ -402,4 +369,10 @@ class CheckerDialog(ToplevelDialog):
         Returns:
             Name for mark, e.g. "Checker123.45"
         """
-        return f"{self.mark_prefix}{rowcol.index()}"
+        return f"{cls.get_mark_prefix()}{rowcol.index()}"
+
+    @classmethod
+    def get_mark_prefix(cls) -> str:
+        """pass"""
+        # Reduce length of common part of mark names
+        return cls.__name__.removesuffix("Dialog")
