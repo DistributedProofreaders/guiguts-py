@@ -324,7 +324,7 @@ class ToolTip(tk.Toplevel):
         ttk.Label(frame, text=msg).grid()
         self.enter_bind = self.widget.bind("<Enter>", self.on_enter, add="+")
         self.leave_bind = self.widget.bind("<Leave>", self.on_leave, add="+")
-        self.press_bind = self.widget.bind("<ButtonPress>", self.on_leave, add="+")
+        self.press_bind = self.widget.bind("<ButtonRelease>", self.on_leave, add="+")
         self.update_idletasks()
         self.width = self.winfo_width()
         self.height = self.winfo_height()

@@ -100,10 +100,17 @@ class ProjectDict:
         """
         return len(self.good_words) > 0 or len(self.bad_words) > 0
 
-    def add_good_word(self, word: str) -> None:
+    def add_good_word(self, word: str) -> bool:
         """Add a good word to the project dictionary.
 
         Args:
             word: The word to be added.
+
+        Returns:
+            True if word was added, False if word was already in dictionary.
         """
-        self.good_words[word] = True
+        try:
+            return not self.good_words[word]
+        except KeyError:
+            self.good_words[word] = True
+        return True

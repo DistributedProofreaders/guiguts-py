@@ -533,6 +533,7 @@ class ScrolledReadOnlyText(tk.Text):
         self.tag_add(
             ScrolledReadOnlyText.SELECT_TAG_NAME, f"{line_num}.0", f"{line_num + 1}.0"
         )
+        self.see(f"{line_num}.0")
 
     def get_select_line_num(self) -> Optional[int]:
         """Get the line number of the currently selected line.

@@ -5,7 +5,8 @@ import regex as re
 
 from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.maintext import maintext
-from guiguts.utilities import IndexRowCol, IndexRange
+from guiguts.utilities import IndexRowCol, IndexRange, cmd_ctrl_string
+from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -43,6 +44,25 @@ def process_fixup(checker_entry: CheckerEntry) -> None:
         return
 
 
+def sort_key_type(
+    entry: CheckerEntry,
+) -> tuple[int, str, int, int]:
+    """Sort key function to sort Fixup entries by text, putting identical upper
+        and lower case versions together.
+
+    Differs from default alpha sort in using the text up to the colon
+    (the type of error) as the primary sort key. No need to deal with different
+    entry types for Fixup, and all entries have a text_range.
+    """
+    assert entry.text_range is not None
+    return (
+        entry.section,
+        entry.text.split(":")[0],
+        entry.text_range.start.row,
+        entry.text_range.start.col,
+    )
+
+
 def basic_fixup_check() -> None:
     """Check the currently loaded file for basic fixup errors."""
 
@@ -50,6 +70,19 @@ def basic_fixup_check() -> None:
         "Basic Fixup Check Results",
         rerun_command=basic_fixup_check,
         process_command=process_fixup,
+        sort_key_alpha=sort_key_type,
+    )
+    ToolTip(
+        checker_dialog.text,
+        "\n".join(
+            [
+                "Left click: Select & find issue",
+                "Right click: Remove issue from list",
+                f"With {cmd_ctrl_string()} key: Also fix issue",
+                "With Shift key: Also remove/fix matching issues",
+            ]
+        ),
+        use_pointer_pos=True,
     )
     checker_dialog.reset()
 
@@ -128,3 +161,4 @@ def basic_fixup_check() -> None:
                     match.start(group) + prefix_len,
                     match.end(group) + prefix_len,
                 )
+    checker_dialog.display_entries()

@@ -286,6 +286,11 @@ def folder_dir_str(lowercase: bool = False) -> str:
     return fd_string.lower() if lowercase else fd_string
 
 
+def cmd_ctrl_string() -> str:
+    """Return "Command" or "Control" depending on platform."""
+    return "Command" if is_mac() else "Control"
+
+
 def force_tcl_wholeword(string: str, regex: bool) -> tuple[str, bool]:
     """Change string to only match whole word(s) by converting to
     a regex (if not already), then prepending and appending Tcl-style

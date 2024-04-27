@@ -10,7 +10,7 @@ from typing import Optional
 import unicodedata
 import webbrowser
 
-
+from guiguts.checkers import CheckerSortType
 from guiguts.file import File, NUM_RECENT_FILES
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
@@ -278,6 +278,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.WFDIALOGIGNORECASE, False)
         preferences.set_default(PrefKey.WFDIALOGDISPLAYTYPE, WFDisplayType.ALL_WORDS)
         preferences.set_default(PrefKey.WFDIALOGSORTTYPE, WFSortType.ALPHABETIC)
+        preferences.set_default(PrefKey.CHECKERDIALOGSORTTYPE, CheckerSortType.ROWCOL)
         preferences.set_default(PrefKey.WFDIALOGITALTHRESHOLD, ["4"])
         preferences.set_default(PrefKey.WFDIALOGREGEX, [])
         preferences.set_default(
