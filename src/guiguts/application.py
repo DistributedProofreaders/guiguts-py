@@ -28,7 +28,7 @@ from guiguts.root import root
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
-from guiguts.tools.jeebies import jeebies_check
+from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.utilities import is_mac, is_windows
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
@@ -293,6 +293,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.WFDIALOGSORTTYPE, WFSortType.ALPHABETIC)
         preferences.set_default(PrefKey.WFDIALOGITALTHRESHOLD, ["4"])
         preferences.set_default(PrefKey.WFDIALOGREGEX, [])
+        preferences.set_default(
+            PrefKey.JEEBIESPARANOIALEVEL, JeebiesParanoiaLevel.NORMAL
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:

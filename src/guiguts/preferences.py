@@ -39,6 +39,7 @@ class PrefKey(StrEnum):
     DIALOGGEOMETRY = auto()
     ROOTGEOMETRY = auto()
     DEFAULTLANGUAGES = auto()
+    JEEBIESPARANOIALEVEL = auto()
 
 
 class Preferences:

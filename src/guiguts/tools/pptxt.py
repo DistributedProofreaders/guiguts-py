@@ -1210,7 +1210,7 @@ def unicode_numeric_character_check() -> None:
     lines_with_numeric_char_references = 0
 
     line_number = 1
-    regx = r"(&#[0-9]{1,4};|&#x[0-9a-fA-F]{1,4};)"
+    regx = r"(&#[0-9]{1,5};|&#x[0-9a-fA-F]{1,4};)"
     for line in book:
         if re.search(regx, line):
             # Generate a new dialog line for each match on the line, keeping
