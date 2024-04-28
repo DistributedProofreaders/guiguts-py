@@ -54,11 +54,11 @@ class SearchDialog(ToplevelDialog):
         try:
             SearchDialog.reverse
         except AttributeError:
-            SearchDialog.reverse = PersistentBoolean(PrefKey.SEARCHDIALOGREVERSE)
-            SearchDialog.matchcase = PersistentBoolean(PrefKey.SEARCHDIALOGMATCHCASE)
-            SearchDialog.wholeword = PersistentBoolean(PrefKey.SEARCHDIALOGWHOLEWORD)
-            SearchDialog.wrap = PersistentBoolean(PrefKey.SEARCHDIALOGWRAP)
-            SearchDialog.regex = PersistentBoolean(PrefKey.SEARCHDIALOGREGEX)
+            SearchDialog.reverse = PersistentBoolean(PrefKey.SEARCHDIALOG_REVERSE)
+            SearchDialog.matchcase = PersistentBoolean(PrefKey.SEARCHDIALOG_MATCH_CASE)
+            SearchDialog.wholeword = PersistentBoolean(PrefKey.SEARCHDIALOG_WHOLE_WORD)
+            SearchDialog.wrap = PersistentBoolean(PrefKey.SEARCHDIALOG_WRAP)
+            SearchDialog.regex = PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
         kwargs["resize_y"] = False
@@ -88,7 +88,7 @@ class SearchDialog(ToplevelDialog):
         message_frame.grid(row=3, column=0, columnspan=3, sticky="NSEW")
 
         # Search
-        self.search_box = Combobox(search_frame1, PrefKey.SEARCHHISTORY, width=30)
+        self.search_box = Combobox(search_frame1, PrefKey.SEARCH_HISTORY, width=30)
         self.search_box.grid(row=0, column=0, padx=2, pady=(5, 0), sticky="NSEW")
         self.search_box.focus()
 
@@ -163,7 +163,7 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=0, column=0, sticky="NSE")
 
         # Replace
-        self.replace_box = Combobox(search_frame1, PrefKey.REPLACEHISTORY, width=30)
+        self.replace_box = Combobox(search_frame1, PrefKey.REPLACE_HISTORY, width=30)
         self.replace_box.grid(row=1, column=0, padx=2, pady=(4, 6), sticky="NSEW")
 
         ttk.Button(
@@ -521,7 +521,7 @@ def find_next(backwards: bool = False) -> None:
         dlg.search_box.add_to_history(search_string)
     if not search_string:
         try:
-            search_string = preferences.get(PrefKey.SEARCHHISTORY)[0]
+            search_string = preferences.get(PrefKey.SEARCH_HISTORY)[0]
         except IndexError:
             sound_bell()
             return  # No Search History

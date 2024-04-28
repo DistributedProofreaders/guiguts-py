@@ -20,12 +20,12 @@ class PreferencesDialog(ToplevelDialog):
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
-            variable=PersistentBoolean(PrefKey.LINENUMBERS),
+            variable=PersistentBoolean(PrefKey.LINE_NUMBERS),
         ).grid(column=0, row=0, sticky="NEW")
         ttk.Checkbutton(
             appearance_frame,
             text="Automatically show current page image",
-            variable=PersistentBoolean(PrefKey.AUTOIMAGE),
+            variable=PersistentBoolean(PrefKey.AUTO_IMAGE),
         ).grid(column=0, row=1, sticky="NEW")
         bell_frame = ttk.Frame(appearance_frame)
         bell_frame.grid(column=0, row=2, sticky="NEW")
@@ -33,12 +33,12 @@ class PreferencesDialog(ToplevelDialog):
         ttk.Checkbutton(
             bell_frame,
             text="Audible",
-            variable=PersistentBoolean(PrefKey.BELLAUDIBLE),
+            variable=PersistentBoolean(PrefKey.BELL_AUDIBLE),
         ).grid(column=1, row=0, sticky="NEW", padx=20)
         ttk.Checkbutton(
             bell_frame,
             text="Visual",
-            variable=PersistentBoolean(PrefKey.BELLVISUAL),
+            variable=PersistentBoolean(PrefKey.BELL_VISUAL),
         ).grid(column=2, row=0, sticky="NEW")
 
         # Processing tab

@@ -56,7 +56,7 @@ class JeebiesChecker:
         """Initialize SpellChecker class."""
         self.dictionary: dict[str, int] = {}
         self.load_phrases_file_into_dictionary()
-        self.paranoia_level = PersistentString(PrefKey.JEEBIESPARANOIALEVEL)
+        self.paranoia_level = PersistentString(PrefKey.JEEBIES_PARANOIA_LEVEL)
 
     def check_for_jeebies_in_file(self) -> None:
         """Check for jeebies in the currently loaded file."""
