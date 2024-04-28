@@ -21,7 +21,7 @@ from guiguts.page_details import (
 from guiguts.preferences import preferences, PrefKey
 from guiguts.project_dict import ProjectDict, GOOD_WORDS_FILENAME, BAD_WORDS_FILENAME
 from guiguts.root import root
-from guiguts.spell import spell_check_clear_dictionary
+
 from guiguts.utilities import (
     load_dict_from_json,
     IndexRowCol,
@@ -129,8 +129,6 @@ class File:
         preferences.set(PrefKey.DEFAULTLANGUAGES, value)
         # Inform maintext, so text manipulation algorithms there can check languages
         maintext().set_languages(value)
-        # Clear any existing spell checker dictionary
-        spell_check_clear_dictionary()
 
     def reset(self) -> None:
         """Reset file internals to defaults, e.g. filename, page markers, etc.
@@ -775,3 +773,18 @@ def bin_name(basename: str) -> str:
         Name of associated bin file.
     """
     return basename + BINFILE_SUFFIX
+
+
+# For convenient access, store the single File instance here,
+# with a function to set/query it.
+_the_file = None  # pylint: disable=invalid-name
+
+
+def the_file(file: Optional[File] = None) -> File:
+    """Store and return the single File widget"""
+    global _the_file
+    if file is not None:
+        assert _the_file is None
+        _the_file = file
+    assert _the_file is not None
+    return _the_file

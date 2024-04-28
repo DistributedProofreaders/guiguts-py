@@ -4,13 +4,14 @@ import importlib.resources
 import logging
 from pathlib import Path
 from tkinter import ttk
-from typing import Callable
+from typing import Callable, Optional
 import regex as re
 
 from guiguts.data import dictionaries
 from guiguts.file import ProjectDict
 from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.maintext import maintext, FindMatch
+from guiguts.misc_tools import tool_save
 from guiguts.preferences import preferences
 from guiguts.utilities import (
     IndexRowCol,
@@ -28,7 +29,7 @@ SPELL_CHECK_OK_YES = 0
 SPELL_CHECK_OK_NO = 1
 SPELL_CHECK_OK_BAD = 2
 
-_the_spell_checker = None  # pylint: disable=invalid-name
+_the_spell_checker: Optional["SpellChecker"] = None  # pylint: disable=invalid-name
 
 
 class DictionaryNotFoundError(Exception):
@@ -63,7 +64,8 @@ class SpellChecker:
     def __init__(self) -> None:
         """Initialize SpellChecker class."""
         self.dictionary: dict[str, bool] = {}
-        for lang in maintext().get_language_list():
+        self.language_list = maintext().get_language_list()
+        for lang in self.language_list:
             self.add_words_from_language(lang)
 
     def spell_check_file(self, project_dict: ProjectDict) -> list[SpellingError]:
@@ -294,6 +296,15 @@ def spell_check(
     """Spell check the currently loaded file."""
     global _the_spell_checker
 
+    if not tool_save():
+        return
+
+    # If we already have a spell checker with the wrong languages, delete it
+    if (
+        _the_spell_checker is not None
+        and _the_spell_checker.language_list != maintext().get_language_list()
+    ):
+        _the_spell_checker = None
     if _the_spell_checker is None:
         try:
             _the_spell_checker = SpellChecker()
@@ -363,9 +374,3 @@ def spell_check(
         )
     checker_dialog.add_footer("", "End of Spelling Check")
     checker_dialog.display_entries()
-
-
-def spell_check_clear_dictionary() -> None:
-    """Clear the spell check dictionary."""
-    global _the_spell_checker
-    _the_spell_checker = None

@@ -6,6 +6,7 @@ import regex as re
 from guiguts.checkers import CheckerDialog
 from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
+from guiguts.misc_tools import tool_save
 from guiguts.utilities import IndexRowCol, IndexRange
 from guiguts.widgets import ToolTip
 
@@ -2488,6 +2489,9 @@ def pptxt(project_dict: ProjectDict) -> None:
     global hyphenated_words_dictionary
     global found_long_doctype_declaration
     global ssq, sdq, csq, cdq
+
+    if not tool_save():
+        return
 
     found_long_doctype_declaration = False
 
