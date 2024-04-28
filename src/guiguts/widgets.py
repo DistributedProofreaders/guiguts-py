@@ -60,6 +60,9 @@ class ToplevelDialog(tk.Toplevel):
         self.save_config = False
         self.bind("<Configure>", self._handle_config)
 
+        self.tooltip_list: list[ToolTip] = []
+        self.bind("<Destroy>", self.tidy_up)
+
         grab_focus(self)
 
     @classmethod
@@ -107,8 +110,32 @@ class ToplevelDialog(tk.Toplevel):
             return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
         return None
 
+    def register_tooltip(self, tooltip: "ToolTip") -> None:
+        """Register a tooltip as being attached to a widget in this
+        TopleveDialog so it can be destroyed when the dialog is destroyed.
+
+        Args:
+            tooltip - the ToolTip widget to register"""
+        self.tooltip_list.append(tooltip)
+
+    def tidy_up(self, event: tk.Event) -> None:
+        """Tidy up when the dialog is destroyed.
+
+        Calls the reset method which may be overridden.
+
+        Args:
+            event: identifies the widget being destroyed.
+        """
+        # Since this method is bound to the "<Destroy>" event on the dialog,
+        # it will also be called for all child widgets - ignore them.
+        if not issubclass(type(event.widget), ToplevelDialog):
+            return
+        for tooltip in self.tooltip_list:
+            tooltip.destroy()
+        self.tooltip_list = []
+
     def reset(self) -> None:
-        """Reset the dialog, including tidying up when it is closed.
+        """Reset the dialog.
 
         Can be overridden if derived dialog creates marks, tags, etc., that need removing.
         """
@@ -308,6 +335,9 @@ class ToolTip(tk.Toplevel):
         """
         self.widget = widget
         self.widget_tl = widget.winfo_toplevel()
+
+        if issubclass(type(self.widget_tl), ToplevelDialog):
+            self.widget_tl.register_tooltip(self)  # type: ignore[union-attr]
         self.use_pointer_pos = use_pointer_pos
 
         tk.Toplevel.__init__(self)

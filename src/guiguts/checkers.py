@@ -295,6 +295,7 @@ class CheckerDialog(ToplevelDialog):
 
     def reset(self) -> None:
         """Reset dialog and associated structures & marks."""
+        super().reset()
         self.entries: list[CheckerEntry] = []
         self.count_linked_entries = 0
         self.section_count = 0

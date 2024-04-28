@@ -391,6 +391,7 @@ class WordFrequencyDialog(ToplevelDialog):
 
     def reset(self) -> None:
         """Reset dialog."""
+        super().reset()
         self.entries: list[WordFrequencyEntry] = []
         if not self.winfo_exists():
             return
