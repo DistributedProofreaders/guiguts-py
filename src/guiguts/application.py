@@ -11,7 +11,7 @@ import unicodedata
 import webbrowser
 
 from guiguts.checkers import CheckerSortType
-from guiguts.file import File, NUM_RECENT_FILES
+from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
     MainWindow,
@@ -55,6 +55,7 @@ class Guiguts:
         self.initialize_preferences()
 
         self.file = File(self.filename_changed, self.languages_changed)
+        the_file(self.file)
 
         self.mainwindow = MainWindow()
         self.update_title()

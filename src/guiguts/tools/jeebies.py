@@ -11,6 +11,7 @@ import regex as re
 from guiguts.checkers import CheckerDialog
 from guiguts.data import dictionaries
 from guiguts.maintext import maintext
+from guiguts.misc_tools import tool_save
 from guiguts.preferences import (
     PersistentString,
     PrefKey,
@@ -670,6 +671,9 @@ class JeebiesChecker:
 def jeebies_check() -> None:
     """Check for jeebies in the currently loaded file."""
     global _the_jeebies_checker
+
+    if not tool_save():
+        return
 
     if _the_jeebies_checker is None:
         try:

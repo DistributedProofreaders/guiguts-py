@@ -1,9 +1,12 @@
 """Miscellaneous tools."""
 
 import logging
+from tkinter import messagebox
+
 import regex as re
 
 from guiguts.checkers import CheckerDialog, CheckerEntry
+from guiguts.file import the_file
 from guiguts.maintext import maintext
 from guiguts.utilities import IndexRowCol, IndexRange, cmd_ctrl_string
 from guiguts.widgets import ToolTip
@@ -12,6 +15,25 @@ logger = logging.getLogger(__package__)
 
 BLOCK_TYPES = "[$*XxFf]"
 POEM_TYPES = "[Pp]"
+
+
+def tool_save() -> bool:
+    """File must be saved before running tool, so check if it has been,
+    and if not, check if user wants to save, or cancel the tool run.
+
+    Returns:
+        True if OK to continue with intended operation.
+    """
+    if the_file().filename:
+        return True
+
+    save = messagebox.askokcancel(
+        title="Save document",
+        message="Document must be saved before running tool",
+        icon=messagebox.INFO,
+    )
+    # User could cancel from messagebox or save-as dialog
+    return save and bool(the_file().save_file())
 
 
 def process_fixup(checker_entry: CheckerEntry) -> None:
@@ -65,6 +87,9 @@ def sort_key_type(
 
 def basic_fixup_check() -> None:
     """Check the currently loaded file for basic fixup errors."""
+
+    if not tool_save():
+        return
 
     checker_dialog = CheckerDialog.show_dialog(
         "Basic Fixup Check Results",

@@ -10,6 +10,7 @@ import regex as re
 from guiguts.file import PAGE_SEPARATOR_REGEX
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
+from guiguts.misc_tools import tool_save
 from guiguts.preferences import (
     preferences,
     PersistentBoolean,
@@ -587,6 +588,9 @@ class WordFrequencyDialog(ToplevelDialog):
 def word_frequency() -> None:
     """Do word frequency analysis on file."""
     global _the_word_lists
+
+    if not tool_save():
+        return
 
     _the_word_lists = WFWordLists()
 
