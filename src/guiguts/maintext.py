@@ -112,7 +112,8 @@ class MainText(tk.Text):
         self.linenumbers = TextLineNumbers(self.frame, self)
         self.linenumbers.grid(column=0, row=0, sticky="NSEW")
         self.bind_event("<Configure>", self._on_change, add=True, force_break=False)
-        self.bind_event("<KeyPress>", self._on_change, add=True, force_break=False)
+        # Use KeyRelease not KeyPress since KeyPress might be caught earlier and not propagated to this point.
+        self.bind_event("<KeyRelease>", self._on_change, add=True, force_break=False)
         self.numbers_need_updating = True
 
         def hscroll_set(*args: Any) -> None:
