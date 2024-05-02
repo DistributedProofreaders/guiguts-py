@@ -23,23 +23,23 @@ def test_preferences() -> None:
     """Test the Preferences class"""
     # Accessing a pref that doesn't have a default should raise an AssertionError
     try:
-        preferences.get_default(PrefKey.ROOTGEOMETRY)
+        preferences.get_default(PrefKey.ROOT_GEOMETRY)
         raise RuntimeError("Failed to trap lack of preferences default")
     except AssertionError:
         pass
-    preferences.set_default(PrefKey.ROOTGEOMETRY, "TestGeometry")
-    assert preferences.get_default(PrefKey.ROOTGEOMETRY) == "TestGeometry"
-    preferences.set(PrefKey.ROOTGEOMETRY, "OtherGeometry")
-    assert preferences.get(PrefKey.ROOTGEOMETRY) == "OtherGeometry"
-    assert preferences.get_default(PrefKey.ROOTGEOMETRY) == "TestGeometry"
+    preferences.set_default(PrefKey.ROOT_GEOMETRY, "TestGeometry")
+    assert preferences.get_default(PrefKey.ROOT_GEOMETRY) == "TestGeometry"
+    preferences.set(PrefKey.ROOT_GEOMETRY, "OtherGeometry")
+    assert preferences.get(PrefKey.ROOT_GEOMETRY) == "OtherGeometry"
+    assert preferences.get_default(PrefKey.ROOT_GEOMETRY) == "TestGeometry"
     keys = preferences.keys()
     assert len(keys) == 1
-    assert PrefKey.ROOTGEOMETRY in keys
-    preferences.set_default(PrefKey.AUTOIMAGE, True)
+    assert PrefKey.ROOT_GEOMETRY in keys
+    preferences.set_default(PrefKey.AUTO_IMAGE, True)
     keys = preferences.keys()
     assert len(keys) == 2
-    assert PrefKey.ROOTGEOMETRY in keys
-    assert PrefKey.AUTOIMAGE in keys
+    assert PrefKey.ROOT_GEOMETRY in keys
+    assert PrefKey.AUTO_IMAGE in keys
 
 
 def test_mainwindow() -> None:

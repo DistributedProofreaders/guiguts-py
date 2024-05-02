@@ -172,7 +172,7 @@ class ToplevelDialog(tk.Toplevel):
         Returns:
             String containing geometry, or empty string if none stored.
         """
-        config_dict = preferences.get(PrefKey.DIALOGGEOMETRY)
+        config_dict = preferences.get(PrefKey.DIALOG_GEOMETRY)
         try:
             return config_dict[self.__class__.__name__]
         except KeyError:
@@ -194,10 +194,10 @@ class ToplevelDialog(tk.Toplevel):
         dialog creation and resizing. Only the first will actually
         do a save, because the flag will only be true on the first call."""
         if self.save_config:
-            config_dict = preferences.get(PrefKey.DIALOGGEOMETRY)
+            config_dict = preferences.get(PrefKey.DIALOG_GEOMETRY)
             key = self.__class__.__name__
             config_dict[key] = self.geometry()
-            preferences.set(PrefKey.DIALOGGEOMETRY, config_dict)
+            preferences.set(PrefKey.DIALOG_GEOMETRY, config_dict)
             self.save_config = False
 
 

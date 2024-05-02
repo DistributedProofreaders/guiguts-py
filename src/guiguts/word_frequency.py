@@ -91,7 +91,7 @@ class WFWordLists:
         for line, _ in maintext().get_lines():
             if re.search(PAGE_SEPARATOR_REGEX, line):
                 continue
-            if preferences.get(PrefKey.WFDIALOGIGNORECASE):
+            if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE):
                 line = line.lower()
             line = re.sub(r"<\/?[a-z]*>", " ", line)  # throw away DP tags
             # get rid of nonalphanumeric (retaining combining characters)
@@ -200,15 +200,15 @@ class WordFrequencyDialog(ToplevelDialog):
             WordFrequencyDialog.suspects_only
         except AttributeError:
             WordFrequencyDialog.suspects_only = PersistentBoolean(
-                PrefKey.WFDIALOGSUSPECTSONLY
+                PrefKey.WFDIALOG_SUSPECTS_ONLY
             )
             WordFrequencyDialog.ignore_case = PersistentBoolean(
-                PrefKey.WFDIALOGIGNORECASE
+                PrefKey.WFDIALOG_IGNORE_CASE
             )
             WordFrequencyDialog.display_type = PersistentString(
-                PrefKey.WFDIALOGDISPLAYTYPE
+                PrefKey.WFDIALOG_DISPLAY_TYPE
             )
-            WordFrequencyDialog.sort_type = PersistentString(PrefKey.WFDIALOGSORTTYPE)
+            WordFrequencyDialog.sort_type = PersistentString(PrefKey.WFDIALOG_SORT_TYPE)
 
         super().__init__("Word Frequency")
         self.top_frame.rowconfigure(0, weight=0)
@@ -341,7 +341,7 @@ class WordFrequencyDialog(ToplevelDialog):
 
         self.threshold_box = Combobox(
             italic_frame,
-            PrefKey.WFDIALOGITALTHRESHOLD,
+            PrefKey.WFDIALOG_ITALIC_THRESHOLD,
             width=6,
             validate="all",
             validatecommand=(self.register(is_nonnegative_int), "%P"),
@@ -362,7 +362,7 @@ class WordFrequencyDialog(ToplevelDialog):
         self.threshold_box.bind("<<ComboboxSelected>>", display_markedup)
 
         display_radio(4, 0, "Regular Expression", WFDisplayType.REGEXP)
-        self.regex_box = Combobox(display_frame, PrefKey.WFDIALOGREGEX)
+        self.regex_box = Combobox(display_frame, PrefKey.WFDIALOG_REGEX)
         self.regex_box.grid(row=4, column=1, columnspan=2, sticky="NSEW", padx=(0, 5))
         ToolTip(self.regex_box, "Only show words matching this regular expression")
 

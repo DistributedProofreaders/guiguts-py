@@ -252,7 +252,7 @@ class MainText(tk.Text):
 
     def toggle_line_numbers(self) -> None:
         """Toggle whether line numbers are shown."""
-        preferences.set(PrefKey.LINENUMBERS, not preferences.get(PrefKey.LINENUMBERS))
+        preferences.set(PrefKey.LINE_NUMBERS, not preferences.get(PrefKey.LINE_NUMBERS))
 
     def show_line_numbers(self, show: bool) -> None:
         """Show or hide line numbers.

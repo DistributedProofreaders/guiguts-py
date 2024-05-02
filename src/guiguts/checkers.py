@@ -112,7 +112,7 @@ class CheckerDialog(ToplevelDialog):
         try:
             CheckerDialog.sort_type
         except AttributeError:
-            CheckerDialog.sort_type = PersistentString(PrefKey.CHECKERDIALOGSORTTYPE)
+            CheckerDialog.sort_type = PersistentString(PrefKey.CHECKERDIALOG_SORT_TYPE)
 
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)

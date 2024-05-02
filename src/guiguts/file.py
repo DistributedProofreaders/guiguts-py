@@ -126,7 +126,7 @@ class File:
             value = "en"
         self._languages = value
         self._languages_callback()
-        preferences.set(PrefKey.DEFAULTLANGUAGES, value)
+        preferences.set(PrefKey.DEFAULT_LANGUAGES, value)
         # Inform maintext, so text manipulation algorithms there can check languages
         maintext().set_languages(value)
 
@@ -182,7 +182,7 @@ class File:
             self.filename = ""
             return
         maintext().set_insert_index(IndexRowCol(1, 0))
-        self.languages = preferences.get(PrefKey.DEFAULTLANGUAGES)
+        self.languages = preferences.get(PrefKey.DEFAULT_LANGUAGES)
         bin_matches_file = self.load_bin(filename)
         if not self.contains_page_marks():
             self.mark_page_boundaries()
@@ -355,10 +355,10 @@ class File:
             filename: Name of new file to add to list.
         """
         self.remove_recent_file(filename)
-        recents = preferences.get(PrefKey.RECENTFILES)
+        recents = preferences.get(PrefKey.RECENT_FILES)
         recents.insert(0, filename)
         del recents[NUM_RECENT_FILES:]
-        preferences.set(PrefKey.RECENTFILES, recents)
+        preferences.set(PrefKey.RECENT_FILES, recents)
 
     def remove_recent_file(self, filename: str) -> None:
         """Remove given filename from list of recent files.
@@ -366,10 +366,10 @@ class File:
         Args:
             filename: Name of new file to add to list.
         """
-        recents = preferences.get(PrefKey.RECENTFILES)
+        recents = preferences.get(PrefKey.RECENT_FILES)
         if filename in recents:
             recents.remove(filename)
-            preferences.set(PrefKey.RECENTFILES, recents)
+            preferences.set(PrefKey.RECENT_FILES, recents)
 
     def set_page_marks(self, page_details: PageDetails) -> None:
         """Set page marks from keys/values in dictionary.

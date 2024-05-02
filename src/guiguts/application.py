@@ -67,7 +67,7 @@ class Guiguts:
 
         self.init_statusbar(statusbar())
 
-        self.file.languages = preferences.get(PrefKey.DEFAULTLANGUAGES)
+        self.file.languages = preferences.get(PrefKey.DEFAULT_LANGUAGES)
 
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
@@ -121,7 +121,7 @@ class Guiguts:
         elif self.args.recent:
             index = self.args.recent - 1
             try:
-                self.file.load_file(preferences.get(PrefKey.RECENTFILES)[index])
+                self.file.load_file(preferences.get(PrefKey.RECENT_FILES)[index])
             except IndexError:
                 pass  # Not enough recent files to load the requested one
 
@@ -134,7 +134,7 @@ class Guiguts:
 
     def auto_image_check(self) -> None:
         """Function called repeatedly to check whether an image needs loading."""
-        if preferences.get(PrefKey.AUTOIMAGE):
+        if preferences.get(PrefKey.AUTO_IMAGE):
             self.mainwindow.load_image(self.file.get_current_image_path())
             root().after(200, self.auto_image_check)
 
@@ -145,7 +145,7 @@ class Guiguts:
 
     def hide_image(self) -> None:
         """Hide the image."""
-        preferences.set(PrefKey.AUTOIMAGE, False)
+        preferences.set(PrefKey.AUTO_IMAGE, False)
         self.mainwindow.hide_image()
 
     def image_dir_check(self) -> None:
@@ -163,7 +163,7 @@ class Guiguts:
         """Handle side effects needed when filename changes."""
         self.init_file_menu()  # Recreate file menu to reflect recent files
         self.update_title()
-        if preferences.get(PrefKey.AUTOIMAGE):
+        if preferences.get(PrefKey.AUTO_IMAGE):
             self.image_dir_check()
         maintext().after_idle(maintext().focus_set)
 
@@ -254,36 +254,36 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
     def initialize_preferences(self) -> None:
         """Set default preferences and load settings from the GGPrefs file."""
-        preferences.set_default(PrefKey.AUTOIMAGE, False)
-        preferences.set_callback(PrefKey.AUTOIMAGE, self.auto_image_callback)
-        preferences.set_default(PrefKey.BELLAUDIBLE, True)
-        preferences.set_default(PrefKey.BELLVISUAL, True)
-        preferences.set_default(PrefKey.IMAGEWINDOW, "Docked")
-        preferences.set_default(PrefKey.RECENTFILES, [])
-        preferences.set_default(PrefKey.LINENUMBERS, True)
-        preferences.set_default(PrefKey.ORDINALNAMES, True)
+        preferences.set_default(PrefKey.AUTO_IMAGE, False)
+        preferences.set_callback(PrefKey.AUTO_IMAGE, self.auto_image_callback)
+        preferences.set_default(PrefKey.BELL_AUDIBLE, True)
+        preferences.set_default(PrefKey.BELL_VISUAL, True)
+        preferences.set_default(PrefKey.IMAGE_WINDOW, "Docked")
+        preferences.set_default(PrefKey.RECENT_FILES, [])
+        preferences.set_default(PrefKey.LINE_NUMBERS, True)
+        preferences.set_default(PrefKey.ORDINAL_NAMES, True)
         preferences.set_callback(
-            PrefKey.LINENUMBERS, lambda value: maintext().show_line_numbers(value)
+            PrefKey.LINE_NUMBERS, lambda value: maintext().show_line_numbers(value)
         )
-        preferences.set_default(PrefKey.SEARCHHISTORY, [])
-        preferences.set_default(PrefKey.REPLACEHISTORY, [])
-        preferences.set_default(PrefKey.SEARCHDIALOGREVERSE, False)
-        preferences.set_default(PrefKey.SEARCHDIALOGMATCHCASE, False)
-        preferences.set_default(PrefKey.SEARCHDIALOGWHOLEWORD, False)
-        preferences.set_default(PrefKey.SEARCHDIALOGWRAP, True)
-        preferences.set_default(PrefKey.SEARCHDIALOGREGEX, False)
-        preferences.set_default(PrefKey.DIALOGGEOMETRY, {})
-        preferences.set_default(PrefKey.ROOTGEOMETRY, "800x400")
-        preferences.set_default(PrefKey.DEFAULTLANGUAGES, "en")
-        preferences.set_default(PrefKey.WFDIALOGSUSPECTSONLY, False)
-        preferences.set_default(PrefKey.WFDIALOGIGNORECASE, False)
-        preferences.set_default(PrefKey.WFDIALOGDISPLAYTYPE, WFDisplayType.ALL_WORDS)
-        preferences.set_default(PrefKey.WFDIALOGSORTTYPE, WFSortType.ALPHABETIC)
-        preferences.set_default(PrefKey.CHECKERDIALOGSORTTYPE, CheckerSortType.ROWCOL)
-        preferences.set_default(PrefKey.WFDIALOGITALTHRESHOLD, ["4"])
-        preferences.set_default(PrefKey.WFDIALOGREGEX, [])
+        preferences.set_default(PrefKey.SEARCH_HISTORY, [])
+        preferences.set_default(PrefKey.REPLACE_HISTORY, [])
+        preferences.set_default(PrefKey.SEARCHDIALOG_REVERSE, False)
+        preferences.set_default(PrefKey.SEARCHDIALOG_MATCH_CASE, False)
+        preferences.set_default(PrefKey.SEARCHDIALOG_WHOLE_WORD, False)
+        preferences.set_default(PrefKey.SEARCHDIALOG_WRAP, True)
+        preferences.set_default(PrefKey.SEARCHDIALOG_REGEX, False)
+        preferences.set_default(PrefKey.DIALOG_GEOMETRY, {})
+        preferences.set_default(PrefKey.ROOT_GEOMETRY, "800x400")
+        preferences.set_default(PrefKey.DEFAULT_LANGUAGES, "en")
+        preferences.set_default(PrefKey.WFDIALOG_SUSPECTS_ONLY, False)
+        preferences.set_default(PrefKey.WFDIALOG_IGNORE_CASE, False)
+        preferences.set_default(PrefKey.WFDIALOG_DISPLAY_TYPE, WFDisplayType.ALL_WORDS)
+        preferences.set_default(PrefKey.WFDIALOG_SORT_TYPE, WFSortType.ALPHABETIC)
+        preferences.set_default(PrefKey.CHECKERDIALOG_SORT_TYPE, CheckerSortType.ROWCOL)
+        preferences.set_default(PrefKey.WFDIALOG_ITALIC_THRESHOLD, ["4"])
+        preferences.set_default(PrefKey.WFDIALOG_REGEX, [])
         preferences.set_default(
-            PrefKey.JEEBIESPARANOIALEVEL, JeebiesParanoiaLevel.NORMAL
+            PrefKey.JEEBIES_PARANOIA_LEVEL, JeebiesParanoiaLevel.NORMAL
         )
 
         # Check all preferences have a default
@@ -345,7 +345,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_file_recent_menu(self, parent: Menu) -> None:
         """Create the Recent Documents menu."""
         recent_menu = Menu(parent, "Recent Doc~uments")
-        for count, file in enumerate(preferences.get(PrefKey.RECENTFILES), start=1):
+        for count, file in enumerate(preferences.get(PrefKey.RECENT_FILES), start=1):
             recent_menu.add_button(
                 f"~{count}: {file}",
                 lambda fn=file: self.open_file(fn),  # type:ignore[misc]
@@ -437,7 +437,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "~Dock Image",
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
-            preferences.get(PrefKey.IMAGEWINDOW) == "Docked",
+            preferences.get(PrefKey.IMAGE_WINDOW) == "Docked",
         )
         menu_view.add_button("~Show Image", self.show_image)
         menu_view.add_button("~Hide Image", self.hide_image)
@@ -479,7 +479,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         the_statusbar.add_binding(
             "rowcol",
             "Shift-ButtonRelease-1",
-            lambda: preferences.toggle(PrefKey.LINENUMBERS),
+            lambda: preferences.toggle(PrefKey.LINE_NUMBERS),
         )
 
         the_statusbar.add(
@@ -508,7 +508,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         the_statusbar.add_binding(
             "see img",
             "Shift-ButtonRelease-1",
-            lambda: preferences.toggle(PrefKey.AUTOIMAGE),
+            lambda: preferences.toggle(PrefKey.AUTO_IMAGE),
         )
 
         the_statusbar.add(
@@ -567,15 +567,15 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
                 Force: True to set, False to unset, omit to toggle.
             """
             if force is None:
-                force = not preferences.get(PrefKey.ORDINALNAMES)
-            preferences.set(PrefKey.ORDINALNAMES, force)
+                force = not preferences.get(PrefKey.ORDINAL_NAMES)
+            preferences.set(PrefKey.ORDINAL_NAMES, force)
 
         def ordinal_str() -> str:
             """Format ordinal of char at current insert index for statusbar."""
             char = maintext().get(maintext().get_insert_index().index())
             # unicodedata.name fails to return name for "control" characters
             # but the only one we care about is line feed
-            if preferences.get(PrefKey.ORDINALNAMES):
+            if preferences.get(PrefKey.ORDINAL_NAMES):
                 try:
                     name = f": {unicodedata.name(char)}"
                 except ValueError:
