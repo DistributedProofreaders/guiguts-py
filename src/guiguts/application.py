@@ -285,6 +285,15 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(
             PrefKey.JEEBIES_PARANOIA_LEVEL, JeebiesParanoiaLevel.NORMAL
         )
+        preferences.set_default(PrefKey.WRAP_LEFT_MARGIN, 0)
+        preferences.set_default(PrefKey.WRAP_RIGHT_MARGIN, 72)
+        preferences.set_default(PrefKey.WRAP_BLOCKQUOTE_INDENT, 2)
+        preferences.set_default(PrefKey.WRAP_BLOCKQUOTE_RIGHT_MARGIN, 72)
+        preferences.set_default(PrefKey.WRAP_BLOCK_INDENT, 2)
+        preferences.set_default(PrefKey.WRAP_POETRY_INDENT, 4)
+        preferences.set_default(PrefKey.WRAP_INDEX_MAIN_MARGIN, 2)
+        preferences.set_default(PrefKey.WRAP_INDEX_WRAP_MARGIN, 8)
+        preferences.set_default(PrefKey.WRAP_INDEX_RIGHT_MARGIN, 72)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -418,17 +427,20 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
-        menu_edit = Menu(menubar(), "~Tools")
-        menu_edit.add_button("Basic Fi~xup", basic_fixup_check)
-        menu_edit.add_button("~Word Frequency", word_frequency)
-        menu_edit.add_button(
+        menu_tools = Menu(menubar(), "~Tools")
+        menu_tools.add_button("Basic Fi~xup", basic_fixup_check)
+        menu_tools.add_button("~Word Frequency", word_frequency)
+        menu_tools.add_button(
             "~Spelling Check",
             lambda: spell_check(
                 self.file.project_dict, self.file.add_good_word_to_project_dictionary
             ),
         )
-        menu_edit.add_button("PP~txt", lambda: pptxt(self.file.project_dict))
-        menu_edit.add_button("~Jeebies", jeebies_check)
+        menu_tools.add_button("PP~txt", lambda: pptxt(self.file.project_dict))
+        menu_tools.add_button("~Jeebies", jeebies_check)
+        menu_tools.add_separator()
+        menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
+        menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""

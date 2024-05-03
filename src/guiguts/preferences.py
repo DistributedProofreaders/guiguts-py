@@ -42,6 +42,15 @@ class PrefKey(StrEnum):
     ROOT_GEOMETRY = auto()
     DEFAULT_LANGUAGES = auto()
     JEEBIES_PARANOIA_LEVEL = auto()
+    WRAP_LEFT_MARGIN = auto()
+    WRAP_RIGHT_MARGIN = auto()
+    WRAP_BLOCKQUOTE_INDENT = auto()
+    WRAP_BLOCKQUOTE_RIGHT_MARGIN = auto()
+    WRAP_BLOCK_INDENT = auto()
+    WRAP_POETRY_INDENT = auto()
+    WRAP_INDEX_MAIN_MARGIN = auto()
+    WRAP_INDEX_WRAP_MARGIN = auto()
+    WRAP_INDEX_RIGHT_MARGIN = auto()
 
 
 class Preferences:
@@ -213,6 +222,35 @@ class PersistentBoolean(tk.BooleanVar):
         """
         super().__init__(value=preferences.get(prefs_key))
         self.trace_add("write", lambda *_args: preferences.set(prefs_key, self.get()))
+
+
+class PersistentInt(tk.IntVar):
+    """Tk integer variable whose value is stored in user prefs file.
+
+    Note that, like all prefs, the default value must be set in
+    `initialize_preferences`
+    """
+
+    def __init__(self, prefs_key: PrefKey) -> None:
+        """Initialize persistent boolean.
+
+        Args:
+            prefs_key: Preferences key associated with the variable.
+        """
+        super().__init__(value=preferences.get(prefs_key))
+
+        def set_pref(*_args: Any) -> None:
+            """Set the preference if the IntVar holds an int.
+
+            If it's not, e.g. because the entry field it is linked to is empty,
+            or contains non-digits, a tk exception occurs, and we don't set the pref.
+            """
+            try:
+                preferences.set(prefs_key, self.get())
+            except tk.TclError:
+                pass
+
+        self.trace_add("write", set_pref)
 
 
 class PersistentString(tk.StringVar):

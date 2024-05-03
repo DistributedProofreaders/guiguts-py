@@ -2,6 +2,7 @@
 
 
 import logging
+from textwrap import TextWrapper
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tk_font
@@ -21,7 +22,11 @@ from guiguts.utilities import (
 logger = logging.getLogger(__package__)
 
 TK_ANCHOR_MARK = "tk::anchor1"
+WRAP_NEXT_LINE_MARK = "WrapParagraphStart"
+INDEX_NEXT_LINE_MARK = "IndexLineStart"
+WRAP_END_MARK = "WrapSectionEnd"
 PAGE_FLAG_TAG = "PageFlag"
+PAGEMARK_PIN = "\x7f"  # Temp char to pin page mark locations
 
 
 class FindMatch:
@@ -35,6 +40,22 @@ class FindMatch:
     def __init__(self, index: IndexRowCol, count: int):
         self.rowcol = index
         self.count = count
+
+
+class WrapParams:
+    """Stores parameters used when wrapping."""
+
+    def __init__(self, left: int, first: int, right: int):
+        """Initialize WrapParams object.
+
+        Args:
+            left: Left margin position.
+            first: Left margin for first line.
+            right: Right margin position.
+        """
+        self.left = left
+        self.first = first
+        self.right = right
 
 
 class TextLineNumbers(tk.Canvas):
@@ -349,6 +370,29 @@ class MainText(tk.Text):
         self.delete("1.0", tk.END)
         self.set_modified(False)
         self.edit_reset()
+
+    def undo_block_begin(self) -> None:
+        """Begin a block of changes that will be undone with one undo operation.
+
+        Block is automatically closed when system becomes idle.
+
+        Note: this version does not support nesting of blocks.
+        """
+        self.config(autoseparators=False)
+        self.edit_separator()
+        self.after_idle(self.undo_block_end)
+
+    def undo_block_end(self) -> None:
+        """End a block of changes that will be undone with one undo operation.
+
+        Normally called automatically when system becomes idle, but can safely be
+        called manually if required, e.g. to start & end two blocks within one
+        user operation.
+
+        Note: this version does not support nesting of blocks.
+        """
+        self.edit_separator()
+        self.config(autoseparators=True)
 
     def get_insert_index(self) -> IndexRowCol:
         """Return index of the insert cursor as IndexRowCol object.
@@ -1003,6 +1047,448 @@ class MainText(tk.Text):
             List of language strings.
         """
         return self.languages.split("+")
+
+    def rewrap_section(self, section_range: IndexRange) -> None:
+        """Wrap a section of the text.
+
+        Args:
+            section_range: Range of text to be wrapped.
+        """
+        default_left = preferences.get(PrefKey.WRAP_LEFT_MARGIN)
+        default_right = preferences.get(PrefKey.WRAP_RIGHT_MARGIN)
+        block_indent = preferences.get(PrefKey.WRAP_BLOCK_INDENT)
+        poetry_indent = preferences.get(PrefKey.WRAP_POETRY_INDENT)
+        bq_indent = preferences.get(PrefKey.WRAP_BLOCKQUOTE_INDENT)
+        bq_right = preferences.get(PrefKey.WRAP_BLOCKQUOTE_RIGHT_MARGIN)
+
+        bq_depth = 0
+        paragraph = ""
+        paragraph_complete = False
+        section_start = section_range.start.index()
+        # Mark end since line numbers will change during wrapping process
+        self.set_mark_position(WRAP_END_MARK, section_range.end, tk.RIGHT)
+        line_start = section_start
+        paragraph_start = section_start
+        self.set_mark_position(
+            WRAP_NEXT_LINE_MARK, IndexRowCol(section_start), tk.RIGHT
+        )
+        # For efficiency with many wrap operations, it is recommended to
+        # re-use a single TextWrapper object, rather than creating new ones.
+        wrapper = TextWrapper(break_long_words=False, break_on_hyphens=False)
+        # Keep list of wrap_params so user can nest block quotes
+        # First is depth=0, i.e. not blockquote
+        block_params_list: list[WrapParams] = [
+            WrapParams(default_left, default_left, default_right)
+        ]
+        paragraph_complete = False
+
+        # Loop until we reach the end of the whole section we want to rewrap
+        while self.compare(WRAP_NEXT_LINE_MARK, "<", WRAP_END_MARK):
+            line_start = self.index(WRAP_NEXT_LINE_MARK)
+            start_rowcol = IndexRowCol(line_start)
+            self.set_mark_position(
+                WRAP_NEXT_LINE_MARK,
+                IndexRowCol(self.index(f"{line_start} +1l")),
+                tk.RIGHT,
+            )
+            line = self.get(line_start, WRAP_NEXT_LINE_MARK)
+
+            bq_depth_change = 0
+            # Split for non-blank/blank lines
+            if re.search(r"\S", line):
+                paragraph_complete = False
+                # Check for various block markup types
+                trimmed = line.lower().rstrip(" \n").replace(PAGEMARK_PIN, "")
+                # Begin block quote (maybe customized)
+                if match := re.fullmatch(r"/#(\[\d+)?(\.\d+)?(,\d+)?]?", trimmed):
+                    bq_depth_change = 1
+                    # Default is to just indent left margins by block_indent
+                    # Special case if block depth currently zero - use default block right margin not general right margin
+                    (
+                        new_block_left,
+                        new_block_first,
+                        new_block_right,
+                    ) = self.wrap_interpret_margins(
+                        match[1],
+                        match[2],
+                        match[3],
+                        block_params_list[-1].left + bq_indent,
+                        block_params_list[-1].left + bq_indent,
+                        block_params_list[-1].right if bq_depth > 0 else bq_right,
+                    )
+                    # Save latest wrap params
+                    block_params_list.append(
+                        WrapParams(new_block_left, new_block_first, new_block_right)
+                    )
+                    paragraph_complete = True
+                # End block quote
+                elif trimmed == "#/":
+                    bq_depth_change = -1
+                    paragraph_complete = True
+                # Some common code for start of all other block types
+                elif match := re.fullmatch(
+                    r"/([\$xf\*plrci])(\[\d+)?(\.\d+)?(,\d+)?]?", trimmed
+                ):
+                    block_type = match[1]
+                    # Output any previous paragraph
+                    if paragraph:
+                        self.wrap_paragraph(
+                            paragraph_start,
+                            line_start,
+                            paragraph,
+                            block_params_list[bq_depth],
+                            wrapper,
+                        )
+                        paragraph = ""
+                    # Reposition line_start in case above wrapping changed line numbering
+                    # to be the line after the markup line
+                    line_start = self.index(WRAP_NEXT_LINE_MARK)
+
+                    # Find matching close markup
+                    if close_index := self.search(
+                        rf"^{re.escape(block_type)}/\s*$",
+                        line_start,
+                        nocase=True,
+                        regexp=True,
+                    ):
+                        self.set_mark_position(
+                            WRAP_NEXT_LINE_MARK,
+                            IndexRowCol(self.index(f"{close_index} +1l")),
+                            tk.RIGHT,
+                        )
+                    else:
+                        logger.error(
+                            f"No closing {block_type}/ markup found for line {start_rowcol.row}"
+                        )
+                        return
+
+                    # Handle complete no-indent block by skipping the whole thing
+                    if block_type in "$xf":
+                        pass
+
+                    # Handle complete fixed-indent block
+                    elif block_type in "*pl":
+                        indent = poetry_indent if block_type == "p" else block_indent
+                        left_margin = self.wrap_interpret_single_margin(
+                            match[2], block_params_list[-1].left + indent
+                        )
+                        block_min_left, _ = self.wrap_get_block_limits(
+                            line_start, close_index
+                        )
+                        self.wrap_reindent_block(
+                            line_start,
+                            close_index,
+                            left_margin - block_min_left,
+                        )
+
+                    # Handle complete right-align block
+                    elif block_type == "r":
+                        right_margin = self.wrap_interpret_single_margin(
+                            match[2], block_params_list[-1].right
+                        )
+                        block_min_left, block_max_right = self.wrap_get_block_limits(
+                            line_start, close_index
+                        )
+                        # Ideally, we'd like to insert/delete this number of spaces (negative for delete)
+                        # But check we're not deleting so much that block is to the left of left margin
+                        n_spaces = right_margin - block_max_right
+                        if (
+                            n_spaces > 0
+                            or -n_spaces <= block_min_left - block_params_list[-1].left
+                        ):
+                            self.wrap_reindent_block(line_start, close_index, n_spaces)
+
+                    # Handle complete center block
+                    elif block_type == "c":
+                        self.wrap_center_block(
+                            line_start,
+                            close_index,
+                            block_params_list[-1].left,
+                            block_params_list[-1].right,
+                        )
+
+                    # Handle complete index block
+                    elif block_type == "i":
+                        (
+                            index_wrap_margin,
+                            index_main,
+                            index_right,
+                        ) = self.wrap_interpret_margins(
+                            match[2],
+                            match[3],
+                            match[4],
+                            preferences.get(PrefKey.WRAP_INDEX_WRAP_MARGIN),
+                            preferences.get(PrefKey.WRAP_INDEX_MAIN_MARGIN),
+                            preferences.get(PrefKey.WRAP_INDEX_RIGHT_MARGIN),
+                        )
+                        self.wrap_index_block(
+                            line_start,
+                            close_index,
+                            index_wrap_margin,
+                            index_main,
+                            index_right,
+                            wrapper,
+                        )
+
+                # End blocks should have been dealt with by the begin block code
+                elif match := re.fullmatch(r"([\$\*xfcrpl]/)", trimmed):
+                    logger.error(
+                        f"{match[1]} markup error near line {start_rowcol.row}"
+                    )
+                    return
+                else:
+                    # Is it the first line of a paragraph?
+                    if not paragraph:
+                        paragraph_start = line_start
+                    paragraph += line
+            else:
+                # Blank line - end of paragraph
+                paragraph_complete = True
+
+            if paragraph_complete and paragraph:
+                self.wrap_paragraph(
+                    paragraph_start,
+                    line_start,
+                    paragraph,
+                    block_params_list[bq_depth],
+                    wrapper,
+                )
+                paragraph = ""
+
+            if bq_depth_change < 0:
+                # Exiting a block level - discard the params
+                try:
+                    block_params_list.pop()
+                    if len(block_params_list) <= 0:
+                        raise IndexError
+                except IndexError:
+                    logger.error(
+                        f"Block quote markup error near line {start_rowcol.row}"
+                    )
+                    return
+            bq_depth += bq_depth_change
+
+        # Output any last paragraph
+        if paragraph:
+            self.wrap_paragraph(
+                paragraph_start,
+                f"{line_start} +1l",
+                paragraph,
+                block_params_list[bq_depth],
+                wrapper,
+            )
+
+    def wrap_paragraph(
+        self,
+        paragraph_start: str,
+        paragraph_end: str,
+        paragraph: str,
+        wrap_params: WrapParams,
+        wrapper: TextWrapper,
+    ) -> None:
+        """Wrap a complete paragraph and replace it in the text.
+
+        Args:
+            paragraph_start: Index of start of paragraph.
+            paragraph_end: Index of end of paragraph (beginning of line following paragraph).
+            paragraph: Text of the paragraph to be wrapped.
+            wrap_params: Wrapping parameters.
+            wrapper: TextWrapper object to perform the wrapping - re-used for efficiency.
+        """
+        # Remove leading/trailing space
+        paragraph = paragraph.strip()
+        # Replace all multiple whitespace with single space
+        paragraph = re.sub(r"\s+", " ", paragraph)
+        # Don't want pagemark pins to trap spaces around them, so...
+        # Remove space between pagemark pins
+        paragraph = re.sub(rf"(?<={PAGEMARK_PIN}) (?={PAGEMARK_PIN})", "", paragraph)
+        # Remove space after pagemark pins if space (or linestart) before
+        paragraph = re.sub(rf"(( |^){PAGEMARK_PIN}+) ", r"\1", paragraph)
+        # Remove space before pagemark pins if space (or lineend) after
+        paragraph = re.sub(rf" ({PAGEMARK_PIN}+( |$)) ", r"\1", paragraph)
+
+        wrapper.width = wrap_params.right
+        wrapper.initial_indent = wrap_params.first * " "
+        wrapper.subsequent_indent = wrap_params.left * " "
+
+        wrapped = wrapper.fill(paragraph)
+        self.delete(paragraph_start, paragraph_end)
+        self.insert(paragraph_start, wrapped + "\n")
+
+    def wrap_center_block(
+        self, start_index: str, end_index: str, left_margin: int, right_margin: int
+    ) -> None:
+        """Center each line in the block between start_index and end_index
+        within the given margins.
+
+        Args:
+            start_index: Beginning of first line to center.
+            end_index: Beginning of line immediately after text block (the "c/" line).
+            left_margin: Left margin to wrap between.
+            right_margin: Right margin to wrap between.
+        """
+        line_start = start_index
+        while self.compare(line_start, "<", end_index):
+            next_start = self.index(f"{line_start} +1l")
+            left_limit, right_limit = self.wrap_get_block_limits(line_start, next_start)
+            indent = int((right_margin - left_margin - (right_limit - left_limit)) / 2)
+            self.wrap_reindent_block(line_start, next_start, indent)
+            line_start = next_start
+
+    def wrap_index_block(
+        self,
+        start_index: str,
+        end_index: str,
+        wrap_margin: int,
+        main_margin: int,
+        right_margin: int,
+        wrapper: TextWrapper,
+    ) -> None:
+        """Wrap the index section between start_index and end_index.
+
+        Index must have been formatted according to DP guidelines, i.e one entry per line,
+        indented for sublevels, etc.
+
+        Args:
+            start_index: Beginning of first line to center.
+            end_index: Beginning of line immediately after text block (the "c/" line).
+            left_margin: Left margin that long lines wrap to.
+            main_margin: Left margin for main index entries
+            right_margin: Right margin to wrap between.
+            wrapper: TextWrapper object to perform the wrapping - re-used for efficiency.
+        """
+        line_start = start_index
+        while self.compare(line_start, "<", end_index):
+            line_end = self.index(f"{line_start} lineend")
+            line = self.get(line_start, line_end).rstrip()
+            # Don't include pagemark pins in calculations, since removed after wrapping
+            line_no_pin = line.replace(PAGEMARK_PIN, "")
+            match = re.match(r"( +)", line_no_pin)
+            indent = len(match[1]) if match else 0
+
+            # Mark next line postion in case wrapping below changes line numbering
+            self.set_mark_position(
+                INDEX_NEXT_LINE_MARK,
+                IndexRowCol(self.index(f"{line_start} +1l")),
+                tk.RIGHT,
+            )
+            self.wrap_paragraph(
+                line_start,
+                f"{line_start}+1l",
+                line,
+                WrapParams(wrap_margin, main_margin + indent, right_margin),
+                wrapper,
+            )
+            line_start = self.index(INDEX_NEXT_LINE_MARK)
+
+    def wrap_reindent_block(
+        self, start_index: str, end_index: str, n_spaces: int
+    ) -> None:
+        """Re-indent the block by adding/removing spaces at start of lines.
+
+        Args:
+            start_index: Beginning of first line to center.
+            end_index: Beginning of line immediately after text block (the "c/" line).
+            n_spaces: Number of spaces to insert (positive) or delete (negative).
+        """
+        if n_spaces == 0:
+            return
+        line_start = start_index
+        while self.compare(line_start, "<", end_index):
+            line = self.get(line_start, f"{line_start} lineend")
+            # Don't include pagemark pins in calculations, since removed after wrapping
+            line_no_pin = line.replace(PAGEMARK_PIN, "")
+            if length := len(line_no_pin):
+                if n_spaces < 0 and length >= -n_spaces:
+                    # Can't just delete first few chars, since they may be pagemark pins, not spaces
+                    # So, replace just spaces in the line, then replace whole line in text widget
+                    line = line.replace(" ", "", -n_spaces)
+                    self.delete(line_start, f"{line_start} lineend")
+                    self.insert(line_start, line)
+                else:
+                    self.insert(line_start, n_spaces * " ")
+            line_start = self.index(f"{line_start} +1l")
+
+    def wrap_get_block_limits(
+        self, start_index: str, end_index: str
+    ) -> tuple[int, int]:
+        """Get the min left and max right non-space columns of the given block. Also ignore
+        pagemark pin characters.
+
+        Args:
+            start_index: Beginning of first line of block.
+            end_index: Beginning of line immediately after text block (the closing markup line).
+
+        Returns:
+            Tuple contain columns of leftmost & rightmost non-space chars in block.
+        """
+        line_start = start_index
+        min_left = 1000
+        max_right = 0
+        while self.compare(line_start, "<", end_index):
+            line_end = self.index(f"{line_start} lineend")
+            strip_line = (
+                self.get(line_start, line_end).replace(PAGEMARK_PIN, "").rstrip()
+            )
+            right_col = len(strip_line)
+            max_right = max(max_right, right_col)
+            if right_col > 0:
+                left_col = right_col - len(strip_line.lstrip())
+                min_left = min(min_left, left_col)
+            line_start = self.index(f"{line_start} +1l")
+        return min_left, max_right
+
+    def wrap_interpret_margins(
+        self,
+        match_left: Optional[str],
+        match_first: Optional[str],
+        match_right: Optional[str],
+        default_left: int,
+        default_first: int,
+        default_right: int,
+    ) -> tuple[int, int, int]:
+        """Interpret margins from markup, e.g. `/#[6.4,72]`.
+
+        Args:
+            match_left: Matched string for left margin.
+            match_first: Matched string for first line's left margin.
+            match_right: Matched string for right margin.
+            default_left: Default value for left margin if not specified in match.
+            default_first: Default value for first line's left margin if neither first nor left specified in match.
+            default_right: Default value for right margin if not specified in match.
+
+        Returns:
+            Tuple containing the three values.
+        """
+        new_left = default_left if match_left is None else int(match_left[1:])
+        if match_first is None:
+            new_first = default_first if match_left is None else new_left
+        else:
+            new_first = int(match_first[1:])
+        new_right = default_right if match_right is None else int(match_right[1:])
+        return new_left, new_first, new_right
+
+    def wrap_interpret_single_margin(
+        self,
+        match_group: Optional[str],
+        default_value: int,
+    ) -> int:
+        """Interpret single margin from markup, e.g. `/*[6]`.
+
+        Args:
+            match_group: Matched string for single value.
+            default_value: Default value for margin if not specified in match.
+
+        Returns:
+            The margin value.
+        """
+        return default_value if match_group is None else int(match_group[1:])
+
+    def strip_end_of_line_spaces(self) -> None:
+        """Remove end-of-line spaces from all lines."""
+        start = "1.0"
+        while start := self.search(" +$", start, regexp=True):
+            self.delete(start, f"{start} lineend")
 
 
 class TclRegexCompileError(Exception):

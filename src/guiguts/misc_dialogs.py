@@ -2,8 +2,12 @@
 
 from tkinter import ttk
 
-from guiguts.preferences import PrefKey, PersistentBoolean
-from guiguts.widgets import ToplevelDialog
+from guiguts.preferences import (
+    PrefKey,
+    PersistentBoolean,
+    PersistentInt,
+)
+from guiguts.widgets import ToplevelDialog, ToolTip
 
 
 class PreferencesDialog(ToplevelDialog):
@@ -41,9 +45,78 @@ class PreferencesDialog(ToplevelDialog):
             variable=PersistentBoolean(PrefKey.BELL_VISUAL),
         ).grid(column=2, row=0, sticky="NEW")
 
-        # Processing tab
-        processing_frame = ttk.LabelFrame(self.top_frame, text="Processing", padding=10)
-        processing_frame.grid(column=0, row=1, sticky="NSEW", pady=(10, 0))
-        ttk.Label(processing_frame, text="Nothing to see here yet").grid(
-            column=0, row=0, sticky="NEW"
+        # Wrapping tab
+        wrapping_frame = ttk.LabelFrame(self.top_frame, text="Wrapping", padding=10)
+        wrapping_frame.grid(column=0, row=1, sticky="NSEW", pady=(10, 0))
+
+        def add_label_spinbox(row: int, label: str, key: PrefKey, tooltip: str) -> None:
+            """Add a label and spinbox to the wrapping frame.
+            Args:
+                label: Text for label.
+                key: Prefs key to use to store preference.
+                tooltip: Text for tooltip.
+            """
+            ttk.Label(wrapping_frame, text=label).grid(
+                column=0, row=row, sticky="NE", pady=2
+            )
+            spinbox = ttk.Spinbox(
+                wrapping_frame,
+                textvariable=PersistentInt(key),
+                from_=0,
+                to=999,
+                width=5,
+            )
+            spinbox.grid(column=1, row=row, sticky="NW", padx=5, pady=2)
+            ToolTip(spinbox, tooltip)
+
+        add_label_spinbox(
+            0, "Left Margin:", PrefKey.WRAP_LEFT_MARGIN, "Left margin for normal text."
+        )
+        add_label_spinbox(
+            1,
+            "Right Margin:",
+            PrefKey.WRAP_RIGHT_MARGIN,
+            "Right margin for normal text.",
+        )
+        add_label_spinbox(
+            2,
+            "Blockquote Indent:",
+            PrefKey.WRAP_BLOCKQUOTE_INDENT,
+            "Extra indent for each level of blockquotes.",
+        )
+        add_label_spinbox(
+            3,
+            "Blockquote Right Margin:",
+            PrefKey.WRAP_BLOCKQUOTE_RIGHT_MARGIN,
+            "Right margin for blockquotes.",
+        )
+        add_label_spinbox(
+            4,
+            "Block Indent:",
+            PrefKey.WRAP_BLOCK_INDENT,
+            "Indent for /*, /P, /L blocks.",
+        )
+        add_label_spinbox(
+            5,
+            "Poetry Indent:",
+            PrefKey.WRAP_POETRY_INDENT,
+            "Indent for /P poetry blocks.",
+        )
+        add_label_spinbox(
+            6,
+            "Index Main Entry Margin:",
+            PrefKey.WRAP_INDEX_MAIN_MARGIN,
+            "Indent for main entries in index - sub-entries retain their indent relative to this.",
+        )
+        add_label_spinbox(
+            8,
+            "Index Wrap Margin:",
+            PrefKey.WRAP_INDEX_WRAP_MARGIN,
+            "Left margin for all lines rewrapped in index.",
+        )
+        add_label_spinbox(
+            9,
+            "Index Right Margin:",
+            PrefKey.WRAP_INDEX_RIGHT_MARGIN,
+            "Right margin for index entries.",
         )

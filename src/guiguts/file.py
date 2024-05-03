@@ -10,7 +10,7 @@ from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 import regex as re
 
-from guiguts.maintext import maintext, PAGE_FLAG_TAG
+from guiguts.maintext import maintext, PAGE_FLAG_TAG, PAGEMARK_PIN
 from guiguts.page_details import (
     PageDetail,
     PageDetails,
@@ -695,6 +695,71 @@ class File:
         """
         if self.project_dict.add_good_word(word):
             self.project_dict.save(self.filename)
+
+    def rewrap_selection(self) -> None:
+        """Wrap selected text."""
+        ranges = maintext().selected_ranges()
+        if not ranges:
+            sound_bell()
+            return
+        # Adjust selection to begin & end at start of lines
+        ranges[0].start.col = min(ranges[0].start.col, 0)
+        if ranges[0].end.col > 0:
+            ranges[0].end.col = 0
+            ranges[0].end.row += 1
+        self.rewrap_section(ranges[0])
+
+    def rewrap_all(self) -> None:
+        """Wrap whole text."""
+        self.rewrap_section(IndexRange("1.0", maintext().index(tk.END)))
+
+    def rewrap_section(self, section_range: IndexRange) -> None:
+        """Wrap a section of the text, preserving page mark locations.
+
+        Args:
+            section_range: Range of text to be wrapped.
+        """
+        maintext().undo_block_begin()
+        maintext().strip_end_of_line_spaces()
+        mark_list = self.pin_page_marks()
+        maintext().rewrap_section(section_range)
+        self.unpin_page_marks(mark_list)
+
+    def pin_page_marks(self) -> list[str]:
+        """Pin the page marks to locations in the text, by inserting a special
+        character at each page mark.
+
+        This allows operations such as rewrapping to happen without losing
+        page mark positions. Marks are unpinned by `unpin_page_marks`.
+
+        Returns:
+            List of page mark names in reverse order to pass to `unpin_page_marks`.
+        """
+        mark_list = []
+        mark: str = tk.END
+        while mark := page_mark_previous(mark):
+            mark_list.append(mark)
+            maintext().insert(mark, PAGEMARK_PIN)
+        return mark_list
+
+    def unpin_page_marks(self, mark_list: list[str]) -> None:
+        """Unpin the page marks by setting them to the locations of the special
+        characters inserted by `pin_page_marks`.
+
+        Args:
+            mark_list: List of page mark names in reverse order from `pin_page_marks`.
+        """
+        # First set each page mark to the pinned location - this avoids setting two
+        # page marks adjacent to one another (due to the pin character) because their
+        # order isn't guaranteed if you do that, so they can end up swapped.
+        found = "1.0"
+        while found := maintext().search(PAGEMARK_PIN, found, "end"):
+            maintext().mark_set(mark_list.pop(), found)
+            found = f"{found} +1c"
+        # Now it's safe to remove the pins, in reverse order to simplify loop
+        found = tk.END
+        while found := maintext().search(PAGEMARK_PIN, found, backwards=True):
+            maintext().delete(found, f"{found} +1c")
 
 
 def page_mark_previous(mark: str) -> str:
