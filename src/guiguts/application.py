@@ -14,6 +14,9 @@ import webbrowser
 from guiguts.checkers import CheckerSortType
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
+from guiguts.highlight import (
+    highlight_quotbrac_on, highlight_quotbrac_off, highlight_quotbrac
+)
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
     MainWindow,
@@ -320,6 +323,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             ),
         )
         preferences.set_default(PrefKey.TEAROFF_MENUS, False)
+        preferences.set_default(PrefKey.HIGHLIGHT_QUOTBRAC, False)
+        preferences.set_callback(PrefKey.HIGHLIGHT_QUOTBRAC, highlight_quotbrac)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -449,6 +454,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Find ~Previous",
             lambda: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
+        )
+        menu_view.add_checkbox(
+            "Highlight S~urrounding Quotes & Brackets",
+            highlight_quotbrac_on,
+            highlight_quotbrac_off,
+            preferences.get(PrefKey.HIGHLIGHT_QUOTBRAC),
         )
 
     def init_tools_menu(self) -> None:

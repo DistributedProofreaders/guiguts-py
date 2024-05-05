@@ -54,6 +54,7 @@ class PrefKey(StrEnum):
     PAGESEP_AUTO_TYPE = auto()
     THEME_NAME = auto()
     TEAROFF_MENUS = auto()
+    HIGHLIGHT_QUOTBRAC = auto()
 
 
 class Preferences:
