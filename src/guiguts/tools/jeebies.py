@@ -8,10 +8,11 @@ import importlib.resources
 import logging
 import regex as re
 
-from guiguts.checkers import CheckerDialog
+from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.data import dictionaries
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
+from guiguts.utilities import cmd_ctrl_string
 from guiguts.preferences import (
     PersistentString,
     PrefKey,
@@ -64,7 +65,9 @@ class JeebiesChecker:
 
         # Create the checker dialog to show results
         checker_dialog = CheckerDialog.show_dialog(
-            "Jeebies Results", rerun_command=jeebies_check
+            "Jeebies Results",
+            rerun_command=jeebies_check,
+            process_command=self.process_jeebies,
         )
         frame = ttk.Frame(checker_dialog.header_frame)
         frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
@@ -102,7 +105,8 @@ class JeebiesChecker:
                 [
                     "Left click: Select & find he/be error",
                     "Right click: Remove he/be error from list",
-                    "Shift Right click: Remove all matching he/be errors",
+                    f"With {cmd_ctrl_string()} key: Also toggle queried he/be",
+                    "Shift Right click: Also remove all matching he/be errors",
                 ]
             ),
             use_pointer_pos=True,
@@ -666,6 +670,17 @@ class JeebiesChecker:
                         self.dictionary[key] = int(value)
         except FileNotFoundError as exc:
             raise DictionaryNotFoundError(file) from exc
+
+    def process_jeebies(self, checker_entry: CheckerEntry) -> None:
+        """Process the Jeebies query."""
+        if checker_entry.text_range is None:
+            return
+        start_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.start)
+        end_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
+        match_text = maintext().get(start_mark, end_mark)
+        # Toggle match text
+        replacement_text = "he" if match_text == "be" else "be"
+        maintext().replace(start_mark, end_mark, replacement_text)
 
 
 def jeebies_check() -> None:

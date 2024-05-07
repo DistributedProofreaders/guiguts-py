@@ -380,11 +380,13 @@ class CheckerDialog(ToplevelDialog):
         self.entries.append(entry)
 
         if text_range is not None:
-            maintext().mark_set(
-                self.mark_from_rowcol(text_range.start), text_range.start.index()
+            maintext().set_mark_position(
+                self.mark_from_rowcol(text_range.start),
+                text_range.start,
+                gravity=tk.LEFT,
             )
-            maintext().mark_set(
-                self.mark_from_rowcol(text_range.end), text_range.end.index()
+            maintext().set_mark_position(
+                self.mark_from_rowcol(text_range.end), text_range.end, gravity=tk.RIGHT
             )
 
     def display_entries(self) -> None:
