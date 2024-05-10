@@ -6,6 +6,7 @@ from tkinter import ttk
 from typing import Any, Optional, TypeVar, Callable
 
 import regex as re
+from ttkbootstrap import Style
 
 from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_windows, is_mac, process_accel
@@ -365,7 +366,7 @@ class ToolTip(tk.Toplevel):
         self.inside = False
         frame = ttk.Frame(self, borderwidth=1, relief=tk.SOLID)
         frame.grid(padx=1, pady=1)
-        ttk.Label(frame, text=msg).grid()
+        ttk.Label(frame, text=msg, style="info.TLabel").grid()
         self.enter_bind = self.widget.bind("<Enter>", self.on_enter, add="+")
         self.leave_bind = self.widget.bind("<Leave>", self.on_leave, add="+")
         self.press_bind = self.widget.bind("<ButtonRelease>", self.on_leave, add="+")
@@ -476,3 +477,18 @@ def mouse_bind(
         widget.bind(control1, callback)
     else:
         widget.bind(event, callback)
+
+
+# For convenient access, store the single Style instance here,
+# with a function to set/query it.
+_single_style = None  # pylint: disable=invalid-name
+
+
+def themed_style(style: Optional[Style] = None) -> Style:
+    """Store and return the single Style object"""
+    global _single_style
+    if style is not None:
+        assert _single_style is None
+        _single_style = style
+    assert _single_style is not None
+    return _single_style

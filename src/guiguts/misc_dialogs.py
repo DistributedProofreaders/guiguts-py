@@ -5,9 +5,10 @@ from tkinter import ttk
 from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
+    PersistentString,
     PersistentInt,
 )
-from guiguts.widgets import ToplevelDialog, ToolTip
+from guiguts.widgets import ToplevelDialog, ToolTip, themed_style
 
 
 class PreferencesDialog(ToplevelDialog):
@@ -21,18 +22,24 @@ class PreferencesDialog(ToplevelDialog):
         # Appearance
         appearance_frame = ttk.LabelFrame(self.top_frame, text="Appearance", padding=10)
         appearance_frame.grid(column=0, row=0, sticky="NSEW")
+        cb = ttk.Combobox(
+            appearance_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
+        )
+        cb.grid(column=0, row=0, sticky="NEW")
+        cb["values"] = sorted(themed_style().theme_names())
+        cb["state"] = "readonly"
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
             variable=PersistentBoolean(PrefKey.LINE_NUMBERS),
-        ).grid(column=0, row=0, sticky="NEW")
+        ).grid(column=0, row=1, sticky="NEW")
         ttk.Checkbutton(
             appearance_frame,
             text="Automatically show current page image",
             variable=PersistentBoolean(PrefKey.AUTO_IMAGE),
-        ).grid(column=0, row=1, sticky="NEW")
+        ).grid(column=0, row=2, sticky="NEW")
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=2, sticky="NEW")
+        bell_frame.grid(column=0, row=3, sticky="NEW")
         ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
         ttk.Checkbutton(
             bell_frame,
