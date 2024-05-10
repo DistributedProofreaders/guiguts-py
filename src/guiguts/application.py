@@ -22,7 +22,7 @@ from guiguts.mainwindow import (
     ErrorHandler,
 )
 from guiguts.misc_dialogs import PreferencesDialog
-from guiguts.misc_tools import basic_fixup_check
+from guiguts.misc_tools import basic_fixup_check, page_separator_fixup, PageSepAutoType
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
 from guiguts.root import root
@@ -294,6 +294,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.WRAP_INDEX_MAIN_MARGIN, 2)
         preferences.set_default(PrefKey.WRAP_INDEX_WRAP_MARGIN, 8)
         preferences.set_default(PrefKey.WRAP_INDEX_RIGHT_MARGIN, 72)
+        preferences.set_default(PrefKey.PAGESEP_AUTO_TYPE, PageSepAutoType.AUTO_FIX)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -438,6 +439,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         menu_tools.add_button("PP~txt", lambda: pptxt(self.file.project_dict))
         menu_tools.add_button("~Jeebies", jeebies_check)
+        menu_tools.add_separator()
+        menu_tools.add_button("Fixup ~Page Separators", page_separator_fixup)
         menu_tools.add_separator()
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)

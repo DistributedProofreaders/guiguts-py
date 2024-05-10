@@ -1,15 +1,19 @@
 """Miscellaneous tools."""
 
+from enum import StrEnum, auto
 import logging
-from tkinter import messagebox
+import tkinter as tk
+from tkinter import ttk, messagebox
+from typing import Optional
 
 import regex as re
 
 from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.file import the_file
 from guiguts.maintext import maintext
-from guiguts.utilities import IndexRowCol, IndexRange, cmd_ctrl_string
-from guiguts.widgets import ToolTip
+from guiguts.preferences import PrefKey, PersistentString, preferences
+from guiguts.utilities import IndexRowCol, IndexRange, cmd_ctrl_string, is_mac
+from guiguts.widgets import ToolTip, ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
@@ -187,3 +191,382 @@ def basic_fixup_check() -> None:
                     match.end(group) + prefix_len,
                 )
     checker_dialog.display_entries()
+
+
+class PageSepAutoType(StrEnum):
+    """Enum class to store Page Separator sort types."""
+
+    NO_AUTO = auto()
+    AUTO_ADVANCE = auto()
+    AUTO_FIX = auto()
+
+
+class PageSeparatorDialog(ToplevelDialog):
+    """Dialog for fixing page separators."""
+
+    SEPARATOR_REGEX = r"^-----File: .+"
+    BTN_WIDTH = 16
+
+    def __init__(self) -> None:
+        """Initialize messagelog dialog."""
+        super().__init__("Page Separator Fixup", resize_x=False, resize_y=False)
+        for col in range(0, 3):
+            self.top_frame.columnconfigure(col, pad=2, weight=1)
+
+        btn_frame = ttk.Frame(
+            self.top_frame, borderwidth=1, relief=tk.GROOVE, padding=5
+        )
+        btn_frame.grid(column=0, row=0, columnspan=3, sticky="NSEW")
+
+        for row in range(0, 3):
+            btn_frame.rowconfigure(row, pad=2)
+        for col in range(0, 3):
+            btn_frame.columnconfigure(col, pad=2, weight=1)
+        join_button = ttk.Button(
+            btn_frame,
+            text="Join",
+            underline=0,
+            command=lambda: self.join(False),
+            width=self.BTN_WIDTH,
+        )
+        join_button.grid(column=0, row=0, sticky="NSEW")
+        self.key_bind("j", join_button.invoke)
+
+        keep_button = ttk.Button(
+            btn_frame,
+            text="Join, Keep Hyphen",
+            underline=6,
+            command=lambda: self.join(True),
+            width=self.BTN_WIDTH,
+        )
+        keep_button.grid(column=1, row=0, sticky="NSEW")
+        self.key_bind("k", keep_button.invoke)
+
+        delete_button = ttk.Button(
+            btn_frame,
+            text="Delete",
+            underline=0,
+            command=self.delete,
+            width=self.BTN_WIDTH,
+        )
+        delete_button.grid(column=2, row=0, sticky="NSEW")
+        self.key_bind("d", delete_button.invoke)
+
+        blank_button = ttk.Button(
+            btn_frame,
+            text="Blank (1 line)",
+            underline=0,
+            command=lambda: self.blank(1),
+            width=self.BTN_WIDTH,
+        )
+        blank_button.grid(column=0, row=1, sticky="NSEW")
+        self.key_bind("b", blank_button.invoke)
+        self.key_bind("Key-1", blank_button.invoke)
+
+        section_button = ttk.Button(
+            btn_frame,
+            underline=0,
+            text="Section (2 lines)",
+            command=lambda: self.blank(2),
+            width=self.BTN_WIDTH,
+        )
+        section_button.grid(column=1, row=1, sticky="NSEW")
+        self.key_bind("s", section_button.invoke)
+        self.key_bind("Key-2", section_button.invoke)
+
+        chapter_button = ttk.Button(
+            btn_frame,
+            underline=0,
+            text="Chapter (4 lines)",
+            command=lambda: self.blank(4),
+            width=self.BTN_WIDTH,
+        )
+        chapter_button.grid(column=2, row=1, sticky="NSEW")
+        self.key_bind("c", chapter_button.invoke)
+        self.key_bind("Key-4", chapter_button.invoke)
+
+        self.auto_type = PersistentString(PrefKey.PAGESEP_AUTO_TYPE)
+        ttk.Radiobutton(
+            self.top_frame,
+            text="No Auto",
+            command=self.refresh,
+            variable=self.auto_type,
+            value=PageSepAutoType.NO_AUTO,
+            takefocus=False,
+        ).grid(column=0, row=1, sticky="NSEW", padx=(20, 2), pady=2)
+        ttk.Radiobutton(
+            self.top_frame,
+            text="Auto Advance",
+            command=self.refresh,
+            variable=self.auto_type,
+            value=PageSepAutoType.AUTO_ADVANCE,
+            takefocus=False,
+        ).grid(column=1, row=1, sticky="NSEW", padx=2, pady=2)
+        ttk.Radiobutton(
+            self.top_frame,
+            text="Auto Fix",
+            command=self.refresh,
+            variable=self.auto_type,
+            value=PageSepAutoType.AUTO_FIX,
+            takefocus=False,
+        ).grid(column=2, row=1, sticky="NSEW", padx=2, pady=2)
+
+        end_frame = ttk.Frame(
+            self.top_frame, borderwidth=1, relief=tk.GROOVE, padding=5
+        )
+        end_frame.grid(column=0, row=2, columnspan=3, sticky="NSEW")
+        for col in range(0, 3):
+            end_frame.columnconfigure(col, pad=2, weight=1)
+
+        undo_button = ttk.Button(
+            end_frame,
+            text="Undo",
+            command=self.undo,
+            underline=0,
+            width=self.BTN_WIDTH,
+        )
+        undo_button.grid(column=0, row=0, sticky="NSEW")
+        self.key_bind("u", undo_button.invoke)
+        self.key_bind("Cmd/Ctrl+Z", undo_button.invoke)
+
+        redo_button = ttk.Button(
+            end_frame,
+            text="Redo",
+            command=self.redo,
+            underline=1,
+            width=self.BTN_WIDTH,
+        )
+        redo_button.grid(column=1, row=0, sticky="NSEW")
+        self.key_bind("e", redo_button.invoke)
+        self.key_bind("Cmd+Shift+Z" if is_mac() else "Ctrl+Y", redo_button.invoke)
+
+        refresh_button = ttk.Button(
+            end_frame,
+            text="Refresh",
+            command=self.refresh,
+            underline=0,
+            width=self.BTN_WIDTH,
+        )
+        refresh_button.grid(column=2, row=0, sticky="NSEW")
+        self.key_bind("r", refresh_button.invoke)
+
+    def do_join(self, keep_hyphen: bool) -> None:
+        """Join 2 lines if hyphenated, otherwise just remove separator line.
+
+        Args:
+            keep_hyphen: True to keep hyphen when lines are joined.
+        """
+        if (sep_range := self.find()) is None:
+            return
+
+        maintext().delete(sep_range.start.index(), sep_range.end.index())
+        prev_eol = f"{sep_range.start.index()} -1l lineend"
+        maybe_hyphen = maintext().get(f"{prev_eol}-1c", prev_eol)
+        # If "*" at end of line, check previous character for "-"
+        if maybe_hyphen == "*":
+            prev_eol = f"{prev_eol} -1c"
+            maybe_hyphen = maintext().get(f"{prev_eol}-1c", prev_eol)
+
+        # If word is hyphenated, join previous end of line to next beg of line
+        if maybe_hyphen == "-":
+            # Adjust effective end of line position depending if hyphen is being kept
+            if not keep_hyphen:
+                prev_eol = f"{prev_eol} -1c"
+            # Omit any "*" at beginning of next line
+            next_bol = f"{sep_range.start.index()} linestart"
+            if maintext().get(next_bol, f"{next_bol}+1c") == "*":
+                next_bol = f"{next_bol}+1c"
+            # Replace space with newline after second half of word
+            if space_pos := maintext().search(" ", next_bol, f"{next_bol} lineend"):
+                maintext().replace(space_pos, f"{space_pos}+1c", "\n")
+            # Delete hyphen, asterisks & newline to join the word
+            maintext().delete(prev_eol, next_bol)
+        maintext().set_insert_index(sep_range.start, focus=False)
+
+    def do_delete(self) -> None:
+        """Just remove separator line."""
+        if (sep_range := self.find()) is None:
+            return
+        maintext().delete(sep_range.start.index(), sep_range.end.index())
+        maintext().set_insert_index(sep_range.start, focus=False)
+
+    def do_blank(self, num_lines: int) -> None:
+        """Replace separator & adjacent blank lines with given number of blank lines.
+
+        Args:
+            num_lines: How many blank lines to use.
+        """
+        if (sep_range := self.find()) is None:
+            return
+        # Find previous end and next start of non-whitespace, to replace with given number of blank lines
+        end_prev = maintext().search(
+            r"\S",
+            sep_range.start.index(),
+            "1.0",
+            backwards=True,
+            regexp=True,
+        )
+        end_prev = f"{end_prev}+1l linestart" if end_prev else "1.0"
+        beg_next = maintext().search(r"\S", sep_range.end.index(), tk.END, regexp=True)
+        beg_next = f"{beg_next} linestart" if beg_next else tk.END
+        maintext().replace(end_prev, beg_next, num_lines * "\n")
+        maintext().set_insert_index(sep_range.start, focus=False)
+
+    def refresh(self) -> None:
+        """Refresh to show the first available page separator."""
+        self.undo_block_begin()
+        self.do_auto()
+        self.view()
+        self.undo_block_end()
+
+    def join(self, keep_hyphen: bool) -> None:
+        """Handle click on Join buttons.
+
+        Args:
+            keep_hyphen: True to keep hyphen when lines are joined.
+        """
+        self.undo_block_begin()
+        self.do_join(keep_hyphen)
+        self.do_auto()
+        self.undo_block_end()
+
+    def delete(self) -> None:
+        """Handle click on Delete button."""
+        self.undo_block_begin()
+        self.do_delete()
+        self.do_auto()
+        self.undo_block_end()
+
+    def blank(self, num_lines: int) -> None:
+        """Handle click on Blank buttons.
+
+        Args:
+            num_lines: How many blank lines to use.
+        """
+        self.undo_block_begin()
+        self.do_blank(num_lines)
+        self.do_auto()
+        self.undo_block_end()
+
+    def undo(self) -> None:
+        """Handle click on Undo button, by undoing latest changes and re-viewing
+        the first available page separator."""
+        maintext().event_generate("<<Undo>>")
+        self.view()
+
+    def redo(self) -> None:
+        """Handle click on Redo button, by re-doing latest undo and re-viewing
+        the first available page separator."""
+        maintext().event_generate("<<Redo>>")
+        self.view()
+
+    def view(self) -> None:
+        """Show the first available separator line to be processed."""
+        if (sep_range := self.find()) is None:
+            return
+        maintext().do_select(sep_range)
+        maintext().set_insert_index(sep_range.start, focus=False)
+
+    def find(self) -> Optional[IndexRange]:
+        """Find the first available separator line.
+
+        Returns:
+            IndexRange containing start & end of separator, or None.
+        """
+        match = maintext().find_match(
+            PageSeparatorDialog.SEPARATOR_REGEX,
+            IndexRange(maintext().start(), maintext().end()),
+            nocase=False,
+            regexp=True,
+            wholeword=False,
+            backwards=False,
+        )
+        if match is None:
+            return None
+        end_rowcol = IndexRowCol(match.rowcol.row + 1, match.rowcol.col)
+        return IndexRange(match.rowcol, end_rowcol)
+
+    def fix_pagebreak_markup(self, sep_range: IndexRange) -> None:
+        """Remove inline close markup, e.g. italics, immediately before page break
+        if same markup is reopened immediately afterwards.
+
+        Args:
+            sep_range: Range of page separator line.
+        """
+        markup_prev = maintext().get(
+            f"{sep_range.start.index()}-1l lineend -6c",
+            f"{sep_range.start.index()}-1l lineend",
+        )
+        markup_next = maintext().get(
+            f"{sep_range.end.index()}",
+            f"{sep_range.end.index()} +4c",
+        )
+        if match := re.search(r"</(i|b|f|g|sc)>([,;*]?)$", markup_prev):
+            markup_type = match[1]
+            len_markup = len(markup_type)
+            len_punc = len(match[2])
+            if re.search(rf"^<{markup_type}>", markup_next):
+                maintext().delete(
+                    f"{sep_range.end.index()}",
+                    f"{sep_range.end.index()} +{len_markup+2}c",
+                )
+                maintext().delete(
+                    f"{sep_range.start.index()}-1l lineend -{len_markup+len_punc+3}c",
+                    f"{sep_range.start.index()}-1l lineend -{len_punc}c",
+                )
+
+    def do_auto(self) -> None:
+        """Do auto page separator fixing if allowed by settings."""
+        if preferences.get(PrefKey.PAGESEP_AUTO_TYPE) == PageSepAutoType.NO_AUTO:
+            return
+        if preferences.get(PrefKey.PAGESEP_AUTO_TYPE) == PageSepAutoType.AUTO_ADVANCE:
+            self.view()
+            return
+
+        # Auto-fix: Loop through page separators, fixing them if possible
+        while sep_range := self.find():
+            self.fix_pagebreak_markup(sep_range)
+            line_prev = maintext().get(
+                f"{sep_range.start.index()}-1l lineend -10c",
+                f"{sep_range.start.index()}-1l lineend",
+            )
+            line_next = maintext().get(
+                f"{sep_range.end.index()}",
+                f"{sep_range.end.index()}+10c",
+            )
+            if line_next.startswith(4 * "\n"):
+                self.do_blank(4)
+            elif line_next.startswith(2 * "\n"):
+                self.do_blank(2)
+            elif line_next.startswith(1 * "\n"):
+                self.do_blank(1)
+            elif line_next.startswith("-----File:"):
+                self.do_delete()
+            elif not (re.search(r"^\*?-", line_next) or re.search(r"-\*?$", line_prev)):
+                # No hyphen before/after page break, so OK to join
+                self.do_join(False)
+            else:
+                break
+        self.view()
+
+    def undo_block_begin(self) -> None:
+        """Begin a block of changes that will be undone with one undo operation.
+
+        Will be replaced with a method in MainText.
+        """
+        maintext().config(autoseparators=False)
+        maintext().edit_separator()
+
+    def undo_block_end(self) -> None:
+        """End a block of changes that will be undone with one undo operation.
+
+        Will be replaced with a method in MainText.
+        """
+        maintext().edit_separator()
+        maintext().config(autoseparators=True)
+
+
+def page_separator_fixup() -> None:
+    """Fix and remove page separator lines."""
+    dlg = PageSeparatorDialog.show_dialog()
+    dlg.view()
