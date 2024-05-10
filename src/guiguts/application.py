@@ -39,6 +39,7 @@ from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.utilities import is_mac, is_windows
+from guiguts.widgets import themed_style
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
 logger = logging.getLogger(__package__)
@@ -303,6 +304,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.WRAP_INDEX_WRAP_MARGIN, 8)
         preferences.set_default(PrefKey.WRAP_INDEX_RIGHT_MARGIN, 72)
         preferences.set_default(PrefKey.PAGESEP_AUTO_TYPE, PageSepAutoType.AUTO_FIX)
+        preferences.set_default(PrefKey.THEME_NAME, "flatly")
+        preferences.set_callback(
+            PrefKey.THEME_NAME, lambda value: themed_style().theme_use(value)
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:

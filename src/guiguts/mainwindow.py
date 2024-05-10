@@ -10,6 +10,7 @@ from tkinter import ttk, messagebox
 from typing import Any, Callable, Optional
 
 from PIL import Image, ImageTk
+from ttkbootstrap import Style
 
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences, PrefKey
@@ -22,7 +23,7 @@ from guiguts.utilities import (
     process_label,
     IndexRowCol,
 )
-from guiguts.widgets import ToplevelDialog, mouse_bind, ToolTip
+from guiguts.widgets import ToplevelDialog, mouse_bind, ToolTip, themed_style
 
 logger = logging.getLogger(__package__)
 
@@ -437,7 +438,9 @@ class StatusBar(ttk.Frame):
               the string returned by ``update()``. If argument not given,
               application is responsible for updating, using ``set(key)``.
         """
-        self.fields[key] = ttk.Button(self, takefocus=0, **kwargs)
+        self.fields[key] = ttk.Button(
+            self, takefocus=0, style="secondary.Outline.TButton", **kwargs
+        )
         self.callbacks[key] = update
         self.fields[key].grid(column=len(self.fields), row=0)
         if tooltip:
@@ -623,6 +626,7 @@ class MainWindow:
 
     def __init__(self) -> None:
         Root()
+        themed_style(Style(theme=preferences.get(PrefKey.THEME_NAME)))
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()
         MainWindow.messagelog = MessageLog()
