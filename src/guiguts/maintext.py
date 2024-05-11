@@ -1048,11 +1048,14 @@ class MainText(tk.Text):
         """
         return self.languages.split("+")
 
-    def rewrap_section(self, section_range: IndexRange) -> None:
+    def rewrap_section(
+        self, section_range: IndexRange, tidy_function: Callable[[], None]
+    ) -> None:
         """Wrap a section of the text.
 
         Args:
             section_range: Range of text to be wrapped.
+            tidy_function: Function to call to tidy up before returning.
         """
         default_left = preferences.get(PrefKey.WRAP_LEFT_MARGIN)
         default_right = preferences.get(PrefKey.WRAP_RIGHT_MARGIN)
@@ -1144,10 +1147,11 @@ class MainText(tk.Text):
                     # to be the line after the markup line
                     line_start = self.index(WRAP_NEXT_LINE_MARK)
 
-                    # Find matching close markup
+                    # Find matching close markup within section being wrapped
                     if close_index := self.search(
                         rf"^{re.escape(block_type)}/\s*$",
                         line_start,
+                        stopindex=WRAP_END_MARK,
                         nocase=True,
                         regexp=True,
                     ):
@@ -1157,8 +1161,9 @@ class MainText(tk.Text):
                             tk.RIGHT,
                         )
                     else:
+                        tidy_function()
                         logger.error(
-                            f"No closing {block_type}/ markup found for line {start_rowcol.row}"
+                            f"No closing markup found to match /{block_type} near line {start_rowcol.row}"
                         )
                         return
 
@@ -1232,6 +1237,7 @@ class MainText(tk.Text):
 
                 # End blocks should have been dealt with by the begin block code
                 elif match := re.fullmatch(r"([\$\*xfcrpl]/)", trimmed):
+                    tidy_function()
                     logger.error(
                         f"{match[1]} markup error near line {start_rowcol.row}"
                     )
@@ -1262,6 +1268,7 @@ class MainText(tk.Text):
                     if len(block_params_list) <= 0:
                         raise IndexError
                 except IndexError:
+                    tidy_function()
                     logger.error(
                         f"Block quote markup error near line {start_rowcol.row}"
                     )
@@ -1277,6 +1284,7 @@ class MainText(tk.Text):
                 block_params_list[bq_depth],
                 wrapper,
             )
+        tidy_function()
 
     def wrap_paragraph(
         self,
@@ -1331,7 +1339,10 @@ class MainText(tk.Text):
         while self.compare(line_start, "<", end_index):
             next_start = self.index(f"{line_start} +1l")
             left_limit, right_limit = self.wrap_get_block_limits(line_start, next_start)
-            indent = int((right_margin - left_margin - (right_limit - left_limit)) / 2)
+            indent = (
+                int((right_margin - left_margin - (right_limit - left_limit)) / 2)
+                - left_limit
+            )
             self.wrap_reindent_block(line_start, next_start, indent)
             line_start = next_start
 

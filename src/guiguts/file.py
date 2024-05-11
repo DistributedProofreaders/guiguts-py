@@ -720,10 +720,18 @@ class File:
             section_range: Range of text to be wrapped.
         """
         maintext().undo_block_begin()
+
+        # Dummy insert & delete, so that if user undoes the wrap, the insert
+        # cursor returns to its previous point, not the first pin page mark position.
+        insert_index = maintext().get_insert_index()
+        maintext().insert(insert_index.index(), " ")
+        maintext().delete(insert_index.index())
+
         maintext().strip_end_of_line_spaces()
         mark_list = self.pin_page_marks()
-        maintext().rewrap_section(section_range)
-        self.unpin_page_marks(mark_list)
+        maintext().rewrap_section(
+            section_range, lambda: self.unpin_page_marks(mark_list)
+        )
 
     def pin_page_marks(self) -> list[str]:
         """Pin the page marks to locations in the text, by inserting a special
@@ -735,6 +743,12 @@ class File:
         Returns:
             List of page mark names in reverse order to pass to `unpin_page_marks`.
         """
+        # Ensure no pins left around from previous wraps - should never happen,
+        # but if it has, we want to clear them.
+        found: str = tk.END
+        while found := maintext().search(PAGEMARK_PIN, found, backwards=True):
+            maintext().delete(found, f"{found} +1c")
+
         mark_list = []
         mark: str = tk.END
         while mark := page_mark_previous(mark):
