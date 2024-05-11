@@ -1277,6 +1277,12 @@ class MainText(tk.Text):
 
         # Output any last paragraph
         if paragraph:
+            # If paragraph runs right to end of file, ensure it has a terminating newline
+            if (
+                IndexRowCol(maintext().index(f"{line_start} +1l")).row
+                == maintext().end().row
+            ):
+                maintext().insert(tk.END, "\n")
             self.wrap_paragraph(
                 paragraph_start,
                 f"{line_start} +1l",
