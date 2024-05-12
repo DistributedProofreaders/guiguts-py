@@ -23,6 +23,7 @@ logger = logging.getLogger(__package__)
 
 TK_ANCHOR_MARK = "tk::anchor1"
 WRAP_NEXT_LINE_MARK = "WrapParagraphStart"
+INDEX_END_MARK = "IndexEnd"
 INDEX_NEXT_LINE_MARK = "IndexLineStart"
 WRAP_END_MARK = "WrapSectionEnd"
 PAGE_FLAG_TAG = "PageFlag"
@@ -1367,14 +1368,20 @@ class MainText(tk.Text):
 
         Args:
             start_index: Beginning of first line to center.
-            end_index: Beginning of line immediately after text block (the "c/" line).
+            end_index: Beginning of line immediately after text block (the "i/" line).
             left_margin: Left margin that long lines wrap to.
             main_margin: Left margin for main index entries
             right_margin: Right margin to wrap between.
             wrapper: TextWrapper object to perform the wrapping - re-used for efficiency.
         """
+        # Mark end_index in case wrapping below changes line numbering
+        self.set_mark_position(
+            INDEX_END_MARK,
+            IndexRowCol(end_index),
+            tk.RIGHT,
+        )
         line_start = start_index
-        while self.compare(line_start, "<", end_index):
+        while self.compare(line_start, "<", INDEX_END_MARK):
             line_end = self.index(f"{line_start} lineend")
             line = self.get(line_start, line_end).rstrip()
             # Don't include pagemark pins in calculations, since removed after wrapping
