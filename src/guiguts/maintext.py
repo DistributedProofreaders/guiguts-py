@@ -1205,12 +1205,15 @@ class MainText(tk.Text):
 
                     # Handle complete center block
                     elif block_type == "c":
-                        self.wrap_center_block(
-                            line_start,
-                            close_index,
-                            block_params_list[-1].left,
-                            block_params_list[-1].right,
+                        default_center = int(
+                            (block_params_list[-1].left + block_params_list[-1].right)
+                            / 2
                         )
+                        center_point = self.wrap_interpret_single_margin(
+                            match[2],
+                            default_center,
+                        )
+                        self.wrap_center_block(line_start, close_index, center_point)
 
                     # Handle complete index block
                     elif block_type == "i":
@@ -1330,7 +1333,7 @@ class MainText(tk.Text):
         self.insert(paragraph_start, wrapped + "\n")
 
     def wrap_center_block(
-        self, start_index: str, end_index: str, left_margin: int, right_margin: int
+        self, start_index: str, end_index: str, center_point: int
     ) -> None:
         """Center each line in the block between start_index and end_index
         within the given margins.
@@ -1338,16 +1341,13 @@ class MainText(tk.Text):
         Args:
             start_index: Beginning of first line to center.
             end_index: Beginning of line immediately after text block (the "c/" line).
-            left_margin: Left margin to wrap between.
-            right_margin: Right margin to wrap between.
+            center_point: Column to center on.
         """
         line_start = start_index
         while self.compare(line_start, "<", end_index):
             next_start = self.index(f"{line_start} +1l")
             left_limit, right_limit = self.wrap_get_block_limits(line_start, next_start)
-            # Indent required is the difference between half the margin range and
-            # half the block width, i.e. move the block center to the margin center.
-            indent = int((right_margin + left_margin - (right_limit + left_limit)) / 2)
+            indent = center_point - int((right_limit + left_limit) / 2)
             self.wrap_reindent_block(line_start, next_start, indent)
             line_start = next_start
 
