@@ -1345,10 +1345,9 @@ class MainText(tk.Text):
         while self.compare(line_start, "<", end_index):
             next_start = self.index(f"{line_start} +1l")
             left_limit, right_limit = self.wrap_get_block_limits(line_start, next_start)
-            indent = (
-                int((right_margin - left_margin - (right_limit - left_limit)) / 2)
-                - left_limit
-            )
+            # Indent required is the difference between half the margin range and
+            # half the block width, i.e. move the block center to the margin center.
+            indent = int((right_margin + left_margin - (right_limit + left_limit)) / 2)
             self.wrap_reindent_block(line_start, next_start, indent)
             line_start = next_start
 
