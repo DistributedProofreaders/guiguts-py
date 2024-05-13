@@ -22,7 +22,7 @@ from guiguts.mainwindow import (
     ErrorHandler,
 )
 from guiguts.misc_dialogs import PreferencesDialog
-from guiguts.misc_tools import basic_fixup_check
+from guiguts.misc_tools import basic_fixup_check, unmatched_markup_dp
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
 from guiguts.root import root
@@ -441,6 +441,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_separator()
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)
+        menu_tools.add_separator()
+        menu_tools.add_button("~Unmatched DP Markup", unmatched_markup_dp)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
