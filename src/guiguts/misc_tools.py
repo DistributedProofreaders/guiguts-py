@@ -16,7 +16,7 @@ logger = logging.getLogger(__package__)
 
 BLOCK_TYPES = "[$*XxFf]"
 POEM_TYPES = "[Pp]"
-ALL_BLOCKS_REG = f"[{re.escape('#$*FfIiLlPpXxCcRr')}]"
+ALL_BLOCKS_REG = f"[{re.escape('#$*FILPXCR')}]"
 
 
 def tool_save() -> bool:
@@ -195,34 +195,34 @@ def unmatched_brackets() -> None:
     """Check for unmatched brackets."""
 
     def toggle_bracket(bracket_in: str) -> tuple[str, bool]:
-        """Convert open bracket to closed and vice versa.
+        """Get regex that matches open and close bracket.
 
         Args:
             bracket_in: Bracket - must be one of ( [ { ) ] }
 
         Returns:
-            Tuple with opposite bracket, True if bracket_in was close bracket.
+            Tuple with regex, True if bracket_in was close bracket.
         """
         match bracket_in:
             case "(":
-                return ")", False
+                return "[)(]", False
             case ")":
-                return "(", True
+                return "[)(]", True
             case "{":
-                return "}", False
+                return "[}{]", False
             case "}":
-                return "{", True
+                return "[}{]", True
             case "[":
-                return "]", False
+                return "[][]", False
             case "]":
-                return "[", True
+                return "[][]", True
         assert False, f"'{bracket_in}' is not a bracket character"
 
     unmatched_markup_check(
         "Unmatched Brackets",
         rerun_command=unmatched_brackets,
         match_reg="[][}{)(]",
-        toggle_func=toggle_bracket,
+        match_pair_func=toggle_bracket,
     )
 
 
@@ -230,44 +230,44 @@ def unmatched_curly_quotes() -> None:
     """Check for unmatched curly quotes."""
 
     def toggle_quote(quote_in: str) -> tuple[str, bool]:
-        """Convert open quote to closed and vice versa.
+        """Get regex that matches open and close quote.
 
         Args:
             quote_in: Quote - must be one of ‘ ’ “ ”
 
         Returns:
-            Tuple with opposite bracket, True if bracket_in was close bracket.
+            Tuple with regex, True if bracket_in was close bracket.
         """
         match quote_in:
             case "‘":
-                return "’", False
+                return "[‘’]", False
             case "’":
-                return "‘", True
+                return "[‘’]", True
             case "“":
-                return "”", False
+                return "[“”]", False
             case "”":
-                return "“", True
+                return "[“”]", True
         assert False, f"'{quote_in}' is not a curly quote"
 
     unmatched_markup_check(
         "Unmatched Curly Quotes",
         rerun_command=unmatched_curly_quotes,
         match_reg="[‘’“”]",
-        toggle_func=toggle_quote,
+        match_pair_func=toggle_quote,
     )
 
 
 def unmatched_dp_markup() -> None:
     """Check for unmatched DP markup."""
 
-    def toggle_dp_markup(markup_in: str) -> tuple[str, bool]:
-        """Convert open DP markup to closed and vice versa.
+    def matched_pair_dp_markup(markup_in: str) -> tuple[str, bool]:
+        """Get regex that matches open and close DP markup.
 
         Args:
             markup_in: Markup string - must be "<i>", "</b>", "<sc>", etc.
 
         Returns:
-            Tuple with opposite markup to markup_in, True if markup_in was close markup.
+            Tuple with regex, True if markup_in was close markup.
         """
         if markup_in[1] == "/":
             return markup_in[:1] + markup_in[2:], True
@@ -277,7 +277,7 @@ def unmatched_dp_markup() -> None:
         "Unmatched DP markup",
         rerun_command=unmatched_dp_markup,
         match_reg="<[a-z]+>|</[a-z]+>",
-        toggle_func=toggle_dp_markup,
+        match_pair_func=matched_pair_dp_markup,
         ignore_reg="<tb>",
     )
 
@@ -285,24 +285,25 @@ def unmatched_dp_markup() -> None:
 def unmatched_block_markup() -> None:
     """Check for unmatched block markup."""
 
-    def toggle_block_markup(markup_in: str) -> tuple[str, bool]:
-        """Convert open block markup to closed and vice versa.
+    def match_pair_block_markup(markup_in: str) -> tuple[str, bool]:
+        """Get regex that matches open and close block markup.
 
         Args:
             markup_in: Markup string - must be "/#", "/*", "C/", etc.
 
         Returns:
-            Tuple with opposite markup to markup_in, True if markup_in was close markup.
+            Tuple with regex, True if markup_in was close markup.
         """
-        if markup_in[1] == "/":
-            return "/" + markup_in[0], True
-        return markup_in[1] + "/", False
+        close = markup_in[1] == "/"
+        block_type = markup_in[0] if close else markup_in[1]
+        block_type = re.escape(block_type)
+        return f"^(/{block_type}|{block_type}/)", close
 
     unmatched_markup_check(
-        "Unmatched DP markup",
+        "Unmatched Block markup",
         rerun_command=unmatched_block_markup,
         match_reg=f"^(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/)",
-        toggle_func=toggle_block_markup,
+        match_pair_func=match_pair_block_markup,
         nest_reg="/#|#/",
     )
 
@@ -311,7 +312,7 @@ def unmatched_markup_check(
     title: str,
     rerun_command: Callable[[], None],
     match_reg: str,
-    toggle_func: Callable[[str], tuple[str, bool]],
+    match_pair_func: Callable[[str], tuple[str, bool]],
     nest_reg: Optional[str] = None,
     ignore_reg: Optional[str] = None,
 ) -> None:
@@ -339,21 +340,27 @@ def unmatched_markup_check(
 
     search_range = IndexRange(maintext().start(), maintext().end())
     # Find each piece of markup that matches the regex
-    while match := maintext().find_match(match_reg, search_range, regexp=True):
+    while match := maintext().find_match(
+        match_reg, search_range, regexp=True, nocase=True
+    ):
         match_index = match.rowcol.index()
         after_match = maintext().index(f"{match_index}+{match.count}c")
         search_range = IndexRange(after_match, maintext().end())
         match_str = maintext().get_match_text(match)
         # Ignore if it matches the ignore regex
-        if ignore_reg and re.fullmatch(ignore_reg, match_str):
+        if ignore_reg and re.fullmatch(ignore_reg, match_str, flags=re.IGNORECASE):
             continue
-        # Get the pair to the match (e.g. </i> for <i>)
-        pair_str, reverse = toggle_func(match_str)
+        # Get a regex that will find the match and the pair( e.g. "(<i>|</i>)")
+        match_pair_reg, reverse = match_pair_func(match_str)
         # Is this markup permitted to nest?
-        nestable = bool(nest_reg and re.fullmatch(nest_reg, match_str))
+        nestable = bool(
+            nest_reg and re.fullmatch(nest_reg, match_str, flags=re.IGNORECASE)
+        )
         prefix = "Unmatched "
         # Search for the matching pair to this markup
-        if not find_match_pair(match_index, match_str, pair_str, reverse, nestable):
+        if not find_match_pair(
+            match_index, match_str, match_pair_reg, reverse, nestable
+        ):
             checker_dialog.add_entry(
                 f"{prefix}{match_str}",
                 IndexRange(match_index, after_match),
@@ -364,7 +371,7 @@ def unmatched_markup_check(
 
 
 def find_match_pair(
-    match_index: str, match_str: str, pair_str: str, reverse: bool, nestable: bool
+    match_index: str, match_str: str, match_pair_reg: str, reverse: bool, nestable: bool
 ) -> str:
     """Find the pair to the given match.
 
@@ -376,7 +383,6 @@ def find_match_pair(
         nestable: True if markup is allowed to nest.
     """
     found = ""
-    regex = f"{re.escape(match_str)}|{re.escape(pair_str)}"
     match_len = len(match_str)
     depth = 1
     start = match_index if reverse else maintext().index(f"{match_index}+{match_len}c")
@@ -386,13 +392,19 @@ def find_match_pair(
     while depth > 0:
         # Search for the given markup and its pair in order to spot nesting
         match = maintext().find_match(
-            regex, IndexRange(start, end), regexp=True, backwards=reverse
+            match_pair_reg,
+            IndexRange(start, end),
+            regexp=True,
+            backwards=reverse,
+            nocase=True,
         )
         if match is None:
             found = ""
             break
 
-        depth += 1 if maintext().get_match_text(match) == match_str else -1
+        depth += (
+            1 if maintext().get_match_text(match).lower() == match_str.lower() else -1
+        )
         # Check it's not nested when nesting isn't allowed
         if depth > 1 and not nestable:
             found = ""
