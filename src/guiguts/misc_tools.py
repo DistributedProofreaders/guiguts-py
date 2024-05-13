@@ -16,6 +16,7 @@ logger = logging.getLogger(__package__)
 
 BLOCK_TYPES = "[$*XxFf]"
 POEM_TYPES = "[Pp]"
+ALL_BLOCKS_REG = f"[{re.escape('#$*FfIiLlPpXxCcRr')}]"
 
 
 def tool_save() -> bool:
@@ -190,7 +191,73 @@ def basic_fixup_check() -> None:
     checker_dialog.display_entries()
 
 
-def unmatched_markup_dp() -> None:
+def unmatched_brackets() -> None:
+    """Check for unmatched brackets."""
+
+    def toggle_bracket(bracket_in: str) -> tuple[str, bool]:
+        """Convert open bracket to closed and vice versa.
+
+        Args:
+            bracket_in: Bracket - must be one of ( [ { ) ] }
+
+        Returns:
+            Tuple with opposite bracket, True if bracket_in was close bracket.
+        """
+        match bracket_in:
+            case "(":
+                return ")", False
+            case ")":
+                return "(", True
+            case "{":
+                return "}", False
+            case "}":
+                return "{", True
+            case "[":
+                return "]", False
+            case "]":
+                return "[", True
+        assert False, f"'{bracket_in}' is not a bracket character"
+
+    unmatched_markup_check(
+        "Unmatched Brackets",
+        rerun_command=unmatched_brackets,
+        match_reg="[][}{)(]",
+        toggle_func=toggle_bracket,
+    )
+
+
+def unmatched_curly_quotes() -> None:
+    """Check for unmatched curly quotes."""
+
+    def toggle_quote(quote_in: str) -> tuple[str, bool]:
+        """Convert open quote to closed and vice versa.
+
+        Args:
+            quote_in: Quote - must be one of ‘ ’ “ ”
+
+        Returns:
+            Tuple with opposite bracket, True if bracket_in was close bracket.
+        """
+        match quote_in:
+            case "‘":
+                return "’", False
+            case "’":
+                return "‘", True
+            case "“":
+                return "”", False
+            case "”":
+                return "“", True
+        assert False, f"'{quote_in}' is not a curly quote"
+
+    unmatched_markup_check(
+        "Unmatched Curly Quotes",
+        rerun_command=unmatched_curly_quotes,
+        match_reg="[‘’“”]",
+        toggle_func=toggle_quote,
+    )
+
+
+def unmatched_dp_markup() -> None:
     """Check for unmatched DP markup."""
 
     def toggle_dp_markup(markup_in: str) -> tuple[str, bool]:
@@ -208,10 +275,35 @@ def unmatched_markup_dp() -> None:
 
     unmatched_markup_check(
         "Unmatched DP markup",
-        rerun_command=unmatched_markup_dp,
+        rerun_command=unmatched_dp_markup,
         match_reg="<[a-z]+>|</[a-z]+>",
         toggle_func=toggle_dp_markup,
         ignore_reg="<tb>",
+    )
+
+
+def unmatched_block_markup() -> None:
+    """Check for unmatched block markup."""
+
+    def toggle_block_markup(markup_in: str) -> tuple[str, bool]:
+        """Convert open block markup to closed and vice versa.
+
+        Args:
+            markup_in: Markup string - must be "/#", "/*", "C/", etc.
+
+        Returns:
+            Tuple with opposite markup to markup_in, True if markup_in was close markup.
+        """
+        if markup_in[1] == "/":
+            return "/" + markup_in[0], True
+        return markup_in[1] + "/", False
+
+    unmatched_markup_check(
+        "Unmatched DP markup",
+        rerun_command=unmatched_block_markup,
+        match_reg=f"^(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/)",
+        toggle_func=toggle_block_markup,
+        nest_reg="/#|#/",
     )
 
 
@@ -259,7 +351,7 @@ def unmatched_markup_check(
         pair_str, reverse = toggle_func(match_str)
         # Is this markup permitted to nest?
         nestable = bool(nest_reg and re.fullmatch(nest_reg, match_str))
-        prefix = "Unmatched markup: "
+        prefix = "Unmatched "
         # Search for the matching pair to this markup
         if not find_match_pair(match_index, match_str, pair_str, reverse, nestable):
             checker_dialog.add_entry(
