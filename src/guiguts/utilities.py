@@ -180,7 +180,7 @@ class IndexRange:
         if isinstance(end, str):
             self.end = IndexRowCol(end)
         else:
-            assert isinstance(start, IndexRowCol)
+            assert isinstance(end, IndexRowCol)
             self.end = end
 
     def __eq__(self, other: object) -> bool:

@@ -4,7 +4,7 @@ from enum import StrEnum, auto
 import logging
 import tkinter as tk
 from tkinter import ttk, messagebox
-from typing import Optional
+from typing import Callable, Optional
 
 import regex as re
 
@@ -584,3 +584,129 @@ def page_separator_fixup() -> None:
     """Fix and remove page separator lines."""
     dlg = PageSeparatorDialog.show_dialog()
     dlg.view()
+
+
+def unmatched_markup_dp() -> None:
+    """Check for unmatched DP markup."""
+
+    def toggle_dp_markup(markup_in: str) -> tuple[str, bool]:
+        """Convert open DP markup to closed and vice versa.
+
+        Args:
+            markup_in: Markup string - must be "<i>", "</b>", "<sc>", etc.
+
+        Returns:
+            Tuple with opposite markup to markup_in, True if markup_in was close markup.
+        """
+        if markup_in[1] == "/":
+            return markup_in[:1] + markup_in[2:], True
+        return markup_in[:1] + "/" + markup_in[1:], False
+
+    unmatched_markup_check(
+        "Unmatched DP markup",
+        rerun_command=unmatched_markup_dp,
+        match_reg="<[a-z]+>|</[a-z]+>",
+        toggle_func=toggle_dp_markup,
+        ignore_reg="<tb>",
+    )
+
+
+def unmatched_markup_check(
+    title: str,
+    rerun_command: Callable[[], None],
+    match_reg: str,
+    toggle_func: Callable[[str], tuple[str, bool]],
+    nest_reg: Optional[str] = None,
+    ignore_reg: Optional[str] = None,
+) -> None:
+    """Check the currently loaded file for unmatched markup errors."""
+
+    if not tool_save():
+        return
+
+    checker_dialog = CheckerDialog.show_dialog(
+        title,
+        rerun_command=rerun_command,
+    )
+    ToolTip(
+        checker_dialog.text,
+        "\n".join(
+            [
+                "Left click: Select & find issue",
+                "Right click: Remove issue from list",
+                "Shift-Right click: Remove all matching issues",
+            ]
+        ),
+        use_pointer_pos=True,
+    )
+    checker_dialog.reset()
+
+    search_range = IndexRange(maintext().start(), maintext().end())
+    # Find each piece of markup that matches the regex
+    while match := maintext().find_match(match_reg, search_range, regexp=True):
+        match_index = match.rowcol.index()
+        after_match = maintext().index(f"{match_index}+{match.count}c")
+        search_range = IndexRange(after_match, maintext().end())
+        match_str = maintext().get_match_text(match)
+        # Ignore if it matches the ignore regex
+        if ignore_reg and re.fullmatch(ignore_reg, match_str):
+            continue
+        # Get the pair to the match (e.g. </i> for <i>)
+        pair_str, reverse = toggle_func(match_str)
+        # Is this markup permitted to nest?
+        nestable = bool(nest_reg and re.fullmatch(nest_reg, match_str))
+        prefix = "Unmatched markup: "
+        # Search for the matching pair to this markup
+        if not find_match_pair(match_index, match_str, pair_str, reverse, nestable):
+            checker_dialog.add_entry(
+                f"{prefix}{match_str}",
+                IndexRange(match_index, after_match),
+                len(prefix),
+                len(prefix) + match.count,
+            )
+    checker_dialog.display_entries()
+
+
+def find_match_pair(
+    match_index: str, match_str: str, pair_str: str, reverse: bool, nestable: bool
+) -> str:
+    """Find the pair to the given match.
+
+    Args:
+        match_index: Index of start of match_str in file.
+        match_str: String to find the pair of.
+        pair_str: The pair string to search for.
+        reverse: True to search backwards (i.e. given close, look for open).
+        nestable: True if markup is allowed to nest.
+    """
+    found = ""
+    regex = f"{re.escape(match_str)}|{re.escape(pair_str)}"
+    match_len = len(match_str)
+    depth = 1
+    start = match_index if reverse else maintext().index(f"{match_index}+{match_len}c")
+    end = maintext().start() if reverse else maintext().end()
+    # Keep searching until we find the markup that brings us back
+    # to the same depth as the given markup (or until there's an error)
+    while depth > 0:
+        # Search for the given markup and its pair in order to spot nesting
+        match = maintext().find_match(
+            regex, IndexRange(start, end), regexp=True, backwards=reverse
+        )
+        if match is None:
+            found = ""
+            break
+
+        depth += 1 if maintext().get_match_text(match) == match_str else -1
+        # Check it's not nested when nesting isn't allowed
+        if depth > 1 and not nestable:
+            found = ""
+            break
+
+        found = match.rowcol.index()
+        # Adjust start point for next search
+        start = (
+            match.rowcol.index()
+            if reverse
+            else maintext().index(f"{match.rowcol.index()}+{match.count}c")
+        )
+    return found

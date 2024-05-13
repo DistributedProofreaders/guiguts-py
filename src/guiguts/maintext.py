@@ -838,10 +838,10 @@ class MainText(tk.Text):
         self,
         search_string: str,
         start_range: IndexRowCol | IndexRange,
-        nocase: bool,
-        regexp: bool,
-        wholeword: bool,
-        backwards: bool,
+        nocase: bool = False,
+        regexp: bool = False,
+        wholeword: bool = False,
+        backwards: bool = False,
     ) -> Optional[FindMatch]:
         """Find occurrence of string/regex in given range.
 
