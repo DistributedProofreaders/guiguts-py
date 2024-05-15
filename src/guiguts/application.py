@@ -453,7 +453,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)
         menu_tools.add_separator()
-        menu_tools.add_button("~Unmatched DP Markup", unmatched_markup_dp)
+        menu_tools.add_button("~Unmatched DP Markup", unmatched_dp_markup)
         menu_tools.add_button("Unmatched Bloc~k Markup", unmatched_block_markup)
         menu_tools.add_button("Unmatched ~DP Markup", unmatched_dp_markup)
         menu_tools.add_button("Unmatched ~Brackets", unmatched_brackets)
