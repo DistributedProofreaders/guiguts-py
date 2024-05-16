@@ -359,6 +359,7 @@ class PageSeparatorDialog(ToplevelDialog):
         if (sep_range := self.find()) is None:
             return
 
+        self.fix_pagebreak_markup(sep_range)
         maintext().delete(sep_range.start.index(), sep_range.end.index())
         prev_eol = f"{sep_range.start.index()} -1l lineend"
         maybe_hyphen = maintext().get(f"{prev_eol}-1c", prev_eol)
@@ -525,6 +526,8 @@ class PageSeparatorDialog(ToplevelDialog):
 
         # Auto-fix: Loop through page separators, fixing them if possible
         while sep_range := self.find():
+            # Fix markup across page break, even though the join function would fix it later,
+            # because otherwise it would interfere with check for automated joining below.
             self.fix_pagebreak_markup(sep_range)
             line_prev = maintext().get(
                 f"{sep_range.start.index()}-1l lineend -10c",
