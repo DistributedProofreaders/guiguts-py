@@ -739,6 +739,7 @@ class MainText(tk.Text):
         minrow = max(minrow, toprow)
         maxrow = max(anchor_rowcol.row, cur_rowcol.row)
         maxlen = -1
+        y_maxlen = -1
         for row in range(minrow, maxrow + 1):
             geometry = self.bbox(f"{row}.0")
             if geometry is None:
