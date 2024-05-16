@@ -294,7 +294,7 @@ class JeebiesChecker:
     ) -> int:
         """Look for suspect "word be/he" or "be/he word" phrases in paragraphs."""
 
-        def do_finditer_and_report() -> int:
+        def do_finditer_and_report(regx: str, para_lc: str) -> int:
             """Helper function for abstraction of repeated code."""
 
             count_of_suspects = 0
@@ -329,7 +329,8 @@ class JeebiesChecker:
                     behe_form = re.sub(s_hebe, s_behe, hebe_form)
                     behe_count = self.find_in_dictionary(behe_form)
                 else:
-                    pass  # Shouldn't reach here.
+                    # Shouldn't reach here.
+                    hebe_count = behe_count = hebe_start = 0
 
                 # At this point we have the two versions of the phrase. The variables
                 # hebe_count and behe_count are integer frequencies of occurrence of
@@ -441,7 +442,7 @@ class JeebiesChecker:
             para_lc = re.sub(qs_hebe, ss_hebe, para_lc)
             # Look for type 1, 2-form hebe phrases in the edited paragraph string.
             regx = rf"(?<=^|\p{{P}}|\p{{P}} ){hebe} [a-z]+"
-            suspects_count += do_finditer_and_report()
+            suspects_count += do_finditer_and_report(regx, para_lc)
 
         elif order == "second":
             # Looking for hebe as second word of 2-word punctuation delimited phrase.
@@ -449,7 +450,7 @@ class JeebiesChecker:
             para_lc = paragraph_text.lower()
 
             regx = rf"[a-z]+ {hebe}(?=\p{{P}}|$)"
-            suspects_count += do_finditer_and_report()
+            suspects_count += do_finditer_and_report(regx, para_lc)
 
         else:
             # Should never get here. Variable 'order' value either 'first' or 'second'.
@@ -470,7 +471,7 @@ class JeebiesChecker:
     ) -> int:
         """Look for suspect "w1 be w2" or "w1 he w2" phrases in paragraphs."""
 
-        def make_dialog_line() -> None:
+        def make_dialog_line(info: str, checker_dialog: CheckerDialog) -> None:
             """Helper function for abstraction of repeated code."""
 
             # We have the start position in the paragraph string of a suspect hebe.
@@ -534,7 +535,7 @@ class JeebiesChecker:
 
                 # Query this 3-form phrase in the report.
 
-                make_dialog_line()
+                make_dialog_line(info, checker_dialog)
 
             elif check_level == "normal" and hebe_count == 0 and behe_count == 0:
                 # Neither 'he' nor 'be' versions of our 3-form phrase are in the
@@ -560,7 +561,7 @@ class JeebiesChecker:
 
                 # Query this 3-form phrase in the report.
 
-                make_dialog_line()
+                make_dialog_line(info, checker_dialog)
 
             elif check_level == "paranoid" and hebe_count == 0 and behe_count == 0:
                 # Neither 'he' nor 'be' versions of our 3-form phrase are in the
@@ -570,7 +571,7 @@ class JeebiesChecker:
 
                 # Query this 3-form phrase in the report.
 
-                make_dialog_line()
+                make_dialog_line(info, checker_dialog)
 
         return suspects_count
 
