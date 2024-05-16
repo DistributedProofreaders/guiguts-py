@@ -700,19 +700,6 @@ class MainText(tk.Text):
         self.column_delete()
         return "break"  # Skip default behavior
 
-    def xy_from_index(self, index: str) -> tuple[int, int]:
-        """Return top left xy of indexed character.
-
-        Args:
-            index: Index of character to be located.
-
-        Returns:
-            x,y tuple of top left corner ofcharacter.
-        """
-        geometry = self.bbox(index)
-        assert geometry is not None
-        return geometry[:2]
-
     def column_select_click(self, event: tk.Event) -> None:
         """Callback when column selection is started via mouse click.
 
@@ -734,21 +721,25 @@ class MainText(tk.Text):
         """
         anchor_rowcol = self.rowcol(TK_ANCHOR_MARK)
         cur_rowcol = self.rowcol(f"@{event.x},{event.y}")
-        # Find longest line between start of selection and current mouse location
+        # Find longest visible line between start of selection and current mouse location
         minrow = min(anchor_rowcol.row, cur_rowcol.row)
+        # No point starting before first line of screen
+        toprow = self.rowcol("@0,0").row
+        minrow = max(minrow, toprow)
         maxrow = max(anchor_rowcol.row, cur_rowcol.row)
         maxlen = -1
-        maxlenrow = None
         for row in range(minrow, maxrow + 1):
+            geometry = self.bbox(f"{row}.0")
+            if geometry is None:
+                continue
             line_len = len(self.get(f"{row}.0", f"{row}.0 lineend"))
             if line_len > maxlen:
                 maxlen = line_len
-                maxlenrow = row
+                y_maxlen = geometry[1]
         # Find which column mouse would be at if it was over the longest line
         # but in the same horizontal position - this is the "true" mouse column
         # Get y of longest line, and use actual x of mouse
-        _, anchor_y = self.xy_from_index(f"{maxlenrow}.0")
-        truecol_rowcol = self.rowcol(f"@{event.x},{anchor_y}")
+        truecol_rowcol = self.rowcol(f"@{event.x},{y_maxlen}")
         # At last, we can set the column in cur_rowcol to the "screen" column
         # which is what we need to pass to do_column_select().
         cur_rowcol.col = truecol_rowcol.col
