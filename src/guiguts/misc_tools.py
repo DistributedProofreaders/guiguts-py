@@ -367,16 +367,24 @@ class PageSeparatorDialog(ToplevelDialog):
         if maybe_hyphen == "*":
             prev_eol = f"{prev_eol} -1c"
             maybe_hyphen = maintext().get(f"{prev_eol}-1c", prev_eol)
-
-        # If word is hyphenated, join previous end of line to next beg of line
+        # Check for emdash (double-hyphen)
+        maybe_second_hyphen = ""
         if maybe_hyphen == "-":
-            # Adjust effective end of line position depending if hyphen is being kept
-            if not keep_hyphen:
-                prev_eol = f"{prev_eol} -1c"
-            # Omit any "*" at beginning of next line
-            next_bol = f"{sep_range.start.index()} linestart"
-            if maintext().get(next_bol, f"{next_bol}+1c") == "*":
-                next_bol = f"{next_bol}+1c"
+            maybe_second_hyphen = maintext().get(f"{prev_eol}-2c", f"{prev_eol} -1c")
+        # Adjust effective end of line position depending if hyphen is being kept
+        # (always keep emdash)
+        if not keep_hyphen and maybe_hyphen == "-" and maybe_second_hyphen != "-":
+            prev_eol = f"{prev_eol} -1c"
+        # If emdash at start of second page, also want to join,
+        # even if no hyphen at end of first page.
+        next_bol = f"{sep_range.start.index()} linestart"
+        # Omit any "*" at beginning of next line
+        if maintext().get(next_bol, f"{next_bol}+1c") == "*":
+            next_bol = f"{next_bol}+1c"
+        maybe_page2_emdash = maintext().get(next_bol, f"{next_bol}+2c")
+
+        # If word is hyphenated or emdash, join previous end of line to next beg of line
+        if maybe_hyphen == "-" or maybe_page2_emdash == "--":
             # Replace space with newline after second half of word
             if space_pos := maintext().search(" ", next_bol, f"{next_bol} lineend"):
                 maintext().replace(space_pos, f"{space_pos}+1c", "\n")
@@ -545,7 +553,10 @@ class PageSeparatorDialog(ToplevelDialog):
                 self.do_blank(1)
             elif line_next.startswith("-----File:"):
                 self.do_delete()
-            elif not (re.search(r"^\*?-", line_next) or re.search(r"-\*?$", line_prev)):
+            elif not (
+                re.search(r"^\*?-(?!-)", line_next)
+                or re.search(r"(?<!-)-\*?$", line_prev)
+            ):
                 # No hyphen before/after page break, so OK to join
                 self.do_join(False)
             else:
