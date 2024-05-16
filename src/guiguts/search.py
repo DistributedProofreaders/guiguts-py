@@ -394,6 +394,7 @@ class SearchDialog(ToplevelDialog):
             "break" to avoid calling other callbacks
         """
         search_string = self.search_box.get()
+        self.search_box.add_to_history(search_string)
         replace_string = self.replace_box.get()
         self.replace_box.add_to_history(replace_string)
 
@@ -430,6 +431,7 @@ class SearchDialog(ToplevelDialog):
         Replace in whole file or just in selection.
         """
         search_string = self.search_box.get()
+        self.search_box.add_to_history(search_string)
         replace_string = self.replace_box.get()
         self.replace_box.add_to_history(replace_string)
 
