@@ -24,6 +24,7 @@ logger = logging.getLogger(__package__)
 
 DEFAULT_DICTIONARY_DIR = importlib.resources.files(dictionaries)
 DISCRIMINATOR_LEVEL = 1.0
+HB_TOGGLE = {"h": "b", "H": "B", "b": "h", "B": "H"}
 
 _the_jeebies_checker = None  # pylint: disable=invalid-name
 
@@ -680,7 +681,7 @@ class JeebiesChecker:
         end_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
         match_text = maintext().get(start_mark, end_mark)
         # Toggle match text
-        replacement_text = "he" if match_text == "be" else "be"
+        replacement_text = HB_TOGGLE[match_text[0]] + match_text[1]
         maintext().replace(start_mark, end_mark, replacement_text)
 
 
