@@ -297,7 +297,7 @@ def unmatched_block_markup() -> None:
         close = markup_in[1] == "/"
         block_type = markup_in[0] if close else markup_in[1]
         block_type = re.escape(block_type)
-        return f"^(/{block_type}|{block_type}/)", close
+        return rf"^(/{block_type}(\[\d+)?(\.\d+)?(,\d+)?]?|{block_type}/)$", close
 
     unmatched_markup_check(
         "Unmatched Block markup",

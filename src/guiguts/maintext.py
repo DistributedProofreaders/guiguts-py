@@ -1093,7 +1093,6 @@ class MainText(tk.Text):
         # Loop until we reach the end of the whole section we want to rewrap
         while self.compare(WRAP_NEXT_LINE_MARK, "<", WRAP_END_MARK):
             line_start = self.index(WRAP_NEXT_LINE_MARK)
-            start_rowcol = IndexRowCol(line_start)
             self.set_mark_position(
                 WRAP_NEXT_LINE_MARK,
                 IndexRowCol(self.index(f"{line_start} +1l")),
@@ -1167,8 +1166,9 @@ class MainText(tk.Text):
                         )
                     else:
                         tidy_function()
+                        next_line_rowcol = IndexRowCol(self.index(WRAP_NEXT_LINE_MARK))
                         logger.error(
-                            f"No closing markup found to match /{block_type} near line {start_rowcol.row}"
+                            f"No closing markup found to match /{block_type} at line {next_line_rowcol.row-1}"
                         )
                         return
 
@@ -1246,8 +1246,9 @@ class MainText(tk.Text):
                 # End blocks should have been dealt with by the begin block code
                 elif match := re.fullmatch(r"([\$\*xfcrpl]/)", trimmed):
                     tidy_function()
+                    next_line_rowcol = IndexRowCol(self.index(WRAP_NEXT_LINE_MARK))
                     logger.error(
-                        f"{match[1]} markup error near line {start_rowcol.row}"
+                        f"{match[1]} markup error at line {next_line_rowcol.row-1}"
                     )
                     return
                 else:
@@ -1277,8 +1278,9 @@ class MainText(tk.Text):
                         raise IndexError
                 except IndexError:
                     tidy_function()
+                    next_line_rowcol = IndexRowCol(self.index(WRAP_NEXT_LINE_MARK))
                     logger.error(
-                        f"Block quote markup error near line {start_rowcol.row}"
+                        f"Block quote markup error at line {next_line_rowcol.row-1}"
                     )
                     return
             bq_depth += bq_depth_change
