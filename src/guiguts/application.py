@@ -557,12 +557,15 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         the_statusbar.add(
             "selection",
-            tooltip="Click: Restore previous selection",
+            tooltip="Click: Restore previous selection\nShift Click: Toggle column/regular selection",
             update=selection_str,
             width=16,
         )
         the_statusbar.add_binding(
             "selection", "ButtonRelease-1", maintext().restore_selection_ranges
+        )
+        the_statusbar.add_binding(
+            "selection", "Shift-ButtonRelease-1", maintext().toggle_selection_type
         )
 
         the_statusbar.add(

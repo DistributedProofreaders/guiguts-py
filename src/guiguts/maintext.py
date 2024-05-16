@@ -182,6 +182,10 @@ class MainText(tk.Text):
         self.bind_event(f"<{modifier}-B1-Motion>", self.column_select_motion)
         self.bind_event(f"<{modifier}-ButtonRelease-1>", self.column_select_release)
         self.bind_event("<KeyRelease-Alt_L>", lambda _event: self.column_select_stop())
+        # Make use of built-in Shift click functionality to extend selections,
+        # but adapt for column select with Option/Alt key
+        self.bind_event(f"<Shift-{modifier}-ButtonPress-1>", self.column_select_release)
+        self.bind_event(f"<Shift-{modifier}-ButtonRelease-1>", lambda _event: "break")
         self.column_selecting = False
 
         # Add common Mac key bindings for beginning/end of file
@@ -447,6 +451,14 @@ class MainText(tk.Text):
         for line_num in range(1, self.end().row):
             line = maintext().get(f"{line_num}.0", f"{line_num}.0 lineend")
             yield line, line_num
+
+    def toggle_selection_type(self) -> None:
+        """Switch regular selection to column selection or vice versa."""
+        sel_ranges = self.selected_ranges()
+        if len(sel_ranges) > 1:
+            self.do_select(IndexRange(sel_ranges[0].start, sel_ranges[-1].end))
+        else:
+            self.columnize_selection()
 
     def columnize_copy(self) -> None:
         """Columnize the current selection and copy it."""
