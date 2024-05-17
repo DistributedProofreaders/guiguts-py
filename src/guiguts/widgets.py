@@ -118,6 +118,20 @@ class ToplevelDialog(tk.Toplevel):
             tooltip - the ToolTip widget to register"""
         self.tooltip_list.append(tooltip)
 
+    def key_bind(self, accel: str, handler: Callable[[], None]) -> None:
+        """Convert given accelerator string to a key-event string and bind both
+        the upper & lower case versions to the given handler.
+
+        Args:
+            accel: Accelerator string, e.g. "Cmd/Ctrl+Z", to trigger call to ``handler``.
+            handler: Callback function to be bound to ``accel``.
+        """
+        _, key_event = process_accel(accel)
+        lk = re.sub("[A-Z]>?$", lambda m: m.group(0).lower(), key_event)
+        self.bind(lk, lambda _: handler())
+        uk = re.sub("[a-z]>?$", lambda m: m.group(0).upper(), key_event)
+        self.bind(uk, lambda _: handler())
+
     def tidy_up(self, event: tk.Event) -> None:
         """Tidy up when the dialog is destroyed.
 
