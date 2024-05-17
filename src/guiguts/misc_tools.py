@@ -666,8 +666,8 @@ def unmatched_dp_markup() -> None:
             Tuple with regex, True if markup_in was close markup.
         """
         if markup_in[1] == "/":
-            return markup_in[:1] + markup_in[2:], True
-        return markup_in[:1] + "/" + markup_in[1:], False
+            return f"(<{markup_in[2:-1]}>|{markup_in})", True
+        return f"({markup_in}|</{markup_in[1:-1]}>)", False
 
     unmatched_markup_check(
         "Unmatched DP markup",
