@@ -18,6 +18,7 @@ from guiguts.utilities import (
     force_tcl_wholeword,
     convert_to_tcl_regex,
 )
+from guiguts.widgets import themed_style
 
 logger = logging.getLogger(__package__)
 
@@ -196,6 +197,16 @@ class MainText(tk.Text):
             self.bind_event(
                 "<Command-Shift-Down>", lambda e_event: self.select_to_end()
             )
+
+        # Since Text widgets don't normally listen to theme changes,
+        # need to do it explicitly here.
+        def set_colors() -> None:
+            """Set bg & fg colors to match a button's theme colors"""
+            bg = themed_style().lookup("TButton", "background")
+            fg = themed_style().lookup("TButton", "foreground")
+            self.configure(background=bg, foreground=fg)
+
+        self.bind_event("<<ThemeChanged>>", lambda _event: set_colors())
 
         # Configure tags
         self.tag_configure(PAGE_FLAG_TAG, background="yellow")

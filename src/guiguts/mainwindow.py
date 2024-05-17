@@ -10,7 +10,6 @@ from tkinter import ttk, messagebox
 from typing import Any, Callable, Optional
 
 from PIL import Image, ImageTk
-from ttkbootstrap import Style
 
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences, PrefKey
@@ -626,7 +625,9 @@ class MainWindow:
 
     def __init__(self) -> None:
         Root()
-        themed_style(Style(theme=preferences.get(PrefKey.THEME_NAME)))
+        # Themes
+        themed_style(ttk.Style())
+
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()
         MainWindow.messagelog = MessageLog()

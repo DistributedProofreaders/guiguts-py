@@ -6,7 +6,6 @@ from tkinter import ttk
 from typing import Any, Optional, TypeVar, Callable
 
 import regex as re
-from ttkbootstrap import Style
 
 from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_windows, is_mac, process_accel
@@ -484,7 +483,7 @@ def mouse_bind(
 _single_style = None  # pylint: disable=invalid-name
 
 
-def themed_style(style: Optional[Style] = None) -> Style:
+def themed_style(style: Optional[ttk.Style] = None) -> ttk.Style:
     """Store and return the single Style object"""
     global _single_style
     if style is not None:

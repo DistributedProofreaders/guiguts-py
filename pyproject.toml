@@ -11,7 +11,7 @@ python = "^3.11"
 Pillow = "^9.5.0"
 roman = "^4.1"
 regex = "^2023.12"
-ttkbootstrap = "^1.10.1"
+sv-ttk = "^2.6.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12"
@@ -64,7 +64,3 @@ enable = ["c-extension-no-member"]
 
 [tool.pylint.SIMILARITIES]
 min-similarity-lines = 6
-
-[[tool.mypy.overrides]]
-module = "ttkbootstrap.*"
-ignore_missing_imports = true

@@ -22,10 +22,14 @@ class PreferencesDialog(ToplevelDialog):
         # Appearance
         appearance_frame = ttk.LabelFrame(self.top_frame, text="Appearance", padding=10)
         appearance_frame.grid(column=0, row=0, sticky="NSEW")
+        theme_frame = ttk.Frame(appearance_frame)
+        theme_frame.grid(column=0, row=0, sticky="NSEW")
+        theme_frame.columnconfigure(1, weight=1)
+        ttk.Label(theme_frame, text="Theme: ").grid(column=0, row=0, sticky="NE")
         cb = ttk.Combobox(
-            appearance_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
+            theme_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
         )
-        cb.grid(column=0, row=0, sticky="NEW")
+        cb.grid(column=1, row=0, sticky="NEW")
         cb["values"] = sorted(themed_style().theme_names())
         cb["state"] = "readonly"
         ttk.Checkbutton(

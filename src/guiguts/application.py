@@ -4,6 +4,7 @@
 
 import argparse
 import logging
+import importlib.resources
 import os.path
 from tkinter import messagebox
 from typing import Optional
@@ -11,6 +12,7 @@ import unicodedata
 import webbrowser
 
 from guiguts.checkers import CheckerSortType
+from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
@@ -46,6 +48,7 @@ logger = logging.getLogger(__package__)
 
 MESSAGE_FORMAT = "%(asctime)s: %(levelname)s - %(message)s"
 DEBUG_FORMAT = "%(asctime)s: %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+THEMES_DIR = importlib.resources.files(themes)
 
 
 class Guiguts:
@@ -68,6 +71,11 @@ class Guiguts:
 
         self.mainwindow = MainWindow()
         self.update_title()
+
+        theme_path = THEMES_DIR.joinpath("awthemes-10.4.0")
+        root().tk.call("lappend", "auto_path", theme_path)
+        root().tk.call("package", "require", "awdark")
+        root().tk.call("package", "require", "awlight")
 
         self.menu_file: Optional[
             Menu
@@ -304,7 +312,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.WRAP_INDEX_WRAP_MARGIN, 8)
         preferences.set_default(PrefKey.WRAP_INDEX_RIGHT_MARGIN, 72)
         preferences.set_default(PrefKey.PAGESEP_AUTO_TYPE, PageSepAutoType.AUTO_FIX)
-        preferences.set_default(PrefKey.THEME_NAME, "flatly")
+        preferences.set_default(PrefKey.THEME_NAME, "default")
         preferences.set_callback(
             PrefKey.THEME_NAME, lambda value: themed_style().theme_use(value)
         )
