@@ -416,6 +416,17 @@ class MainText(tk.Text):
             focus: Optional, False means focus will not be forced to maintext
         """
         self.mark_set(tk.INSERT, insert_pos.index())
+        # The `see` method can leave the desired line at the top or bottom of window.
+        # So, we "see" lines above and below desired line incrementally up to
+        # half window height each way, ensuring desired line is left in the middle.
+        # If performance turns out to be an issue, consider giving `step` to `range`.
+        # Step should be smaller than half minimum likely window height.
+        start_index = self.index(f"@0,{int(self.cget('borderwidth'))} linestart")
+        end_index = self.index(f"@0,{self.winfo_height()} linestart")
+        n_lines = IndexRowCol(end_index).row - IndexRowCol(start_index).row
+        for inc in range(1, int(n_lines / 2) + 1):
+            self.see(f"{tk.INSERT}-{inc}l")
+            self.see(f"{tk.INSERT}+{inc}l")
         self.see(tk.INSERT)
         if focus:
             self.focus_set()
