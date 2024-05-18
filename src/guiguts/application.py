@@ -22,7 +22,15 @@ from guiguts.mainwindow import (
     ErrorHandler,
 )
 from guiguts.misc_dialogs import PreferencesDialog
-from guiguts.misc_tools import basic_fixup_check, page_separator_fixup, PageSepAutoType
+from guiguts.misc_tools import (
+    basic_fixup_check,
+    page_separator_fixup,
+    PageSepAutoType,
+    unmatched_dp_markup,
+    unmatched_brackets,
+    unmatched_curly_quotes,
+    unmatched_block_markup,
+)
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
 from guiguts.root import root
@@ -444,6 +452,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_separator()
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)
+        menu_tools.add_separator()
+        menu_tools.add_button("Unmatched Bloc~k Markup", unmatched_block_markup)
+        menu_tools.add_button("Unmatched ~DP Markup", unmatched_dp_markup)
+        menu_tools.add_button("Unmatched ~Brackets", unmatched_brackets)
+        menu_tools.add_button("Unmatched Curly ~Quotes", unmatched_curly_quotes)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
