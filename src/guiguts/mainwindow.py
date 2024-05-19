@@ -22,7 +22,13 @@ from guiguts.utilities import (
     process_label,
     IndexRowCol,
 )
-from guiguts.widgets import ToplevelDialog, mouse_bind, ToolTip
+from guiguts.widgets import (
+    ToplevelDialog,
+    mouse_bind,
+    ToolTip,
+    themed_style,
+    theme_set_tk_widget_colors,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -516,6 +522,14 @@ class ScrolledReadOnlyText(tk.Text):
             foreground="#000000",
         )
 
+        # Since Text widgets don't normally listen to theme changes,
+        # need to do it explicitly here.
+        super().bind(
+            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
+        )
+        # Also on creation, so it's correct for the current theme
+        theme_set_tk_widget_colors(self)
+
         if context_menu:
             add_text_context_menu(self, read_only=True)
 
@@ -623,6 +637,9 @@ class MainWindow:
 
     def __init__(self) -> None:
         Root()
+        # Themes
+        themed_style(ttk.Style())
+
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()
         MainWindow.messagelog = MessageLog()

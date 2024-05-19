@@ -476,3 +476,86 @@ def mouse_bind(
         widget.bind(control1, callback)
     else:
         widget.bind(event, callback)
+
+
+# For convenient access, store the single Style instance here,
+# with a function to set/query it.
+# Also store the default colors for a Text widget that are not
+# altered by the default themes.
+_single_style = None  # pylint: disable=invalid-name
+_theme_default_text_bg = ""  # pylint: disable=invalid-name
+_theme_default_text_fg = ""  # pylint: disable=invalid-name
+_theme_default_text_ibg = ""  # pylint: disable=invalid-name
+
+
+def themed_style(style: Optional[ttk.Style] = None) -> ttk.Style:
+    """Store and return the single Style object"""
+    global _single_style
+    if style is not None:
+        assert _single_style is None
+        _single_style = style
+        _theme_init_tk_widget_colors()
+    assert _single_style is not None
+    return _single_style
+
+
+def theme_name_internal_from_user(user_theme: str) -> str:
+    """Return the internal theme name given the name the user will see.
+
+    Args:
+        user_theme: Name user will see in Preferences dialog.
+
+    Returns:
+        Internal name for theme.
+    """
+    match user_theme:
+        case "Default":
+            if is_mac():
+                return "aqua"
+            if is_windows():
+                return "vista"
+            return "default"
+        case "Dark":
+            return "awdark"
+        case "Light":
+            return "awlight"
+        case _:
+            assert False, "Bad user theme name"
+
+
+def theme_set_tk_widget_colors(widget: tk.Text) -> None:
+    """Set bg & fg colors of a Text (non-themed) widget to match
+    the theme colors.
+
+    Args:
+        widget: The widget to be customized.
+    """
+    theme_name = preferences.get(PrefKey.THEME_NAME)
+    if theme_name == "Dark":
+        widget.configure(
+            background="black", foreground="white", insertbackground="white"
+        )
+    elif theme_name == "Light":
+        widget.configure(
+            background="white", foreground="black", insertbackground="black"
+        )
+    elif theme_name == "Default":
+        widget.configure(
+            background=_theme_default_text_bg,
+            foreground=_theme_default_text_fg,
+            insertbackground=_theme_default_text_ibg,
+        )
+
+
+def _theme_init_tk_widget_colors() -> None:
+    """Get default bg & fg colors of a Text (non-themed) widget,
+    by creating one, getting the colors, then destroying it.
+
+    Needs to be called before theme is changed from default theme.
+    """
+    global _theme_default_text_bg, _theme_default_text_fg, _theme_default_text_ibg
+    temp_text = tk.Text()
+    _theme_default_text_bg = temp_text.cget("background")
+    _theme_default_text_fg = temp_text.cget("foreground")
+    _theme_default_text_ibg = temp_text.cget("insertbackground")
+    temp_text.destroy()

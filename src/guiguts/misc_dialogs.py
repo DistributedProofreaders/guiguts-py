@@ -6,6 +6,7 @@ from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
     PersistentInt,
+    PersistentString,
 )
 from guiguts.widgets import ToplevelDialog, ToolTip
 
@@ -21,18 +22,31 @@ class PreferencesDialog(ToplevelDialog):
         # Appearance
         appearance_frame = ttk.LabelFrame(self.top_frame, text="Appearance", padding=10)
         appearance_frame.grid(column=0, row=0, sticky="NSEW")
+        theme_frame = ttk.Frame(appearance_frame)
+        theme_frame.grid(column=0, row=0, sticky="NSEW")
+        theme_frame.columnconfigure(1, weight=1)
+        ttk.Label(theme_frame, text="Theme: ").grid(column=0, row=0, sticky="NE")
+        cb = ttk.Combobox(
+            theme_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
+        )
+        cb.grid(column=1, row=0, sticky="NEW")
+        cb["values"] = ["Default", "Dark", "Light"]
+        cb["state"] = "readonly"
+        ttk.Label(
+            appearance_frame, text="(May need to restart program for full effect)"
+        ).grid(column=0, row=1, sticky="NSEW")
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
             variable=PersistentBoolean(PrefKey.LINE_NUMBERS),
-        ).grid(column=0, row=0, sticky="NEW")
+        ).grid(column=0, row=2, sticky="NEW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
             text="Automatically show current page image",
             variable=PersistentBoolean(PrefKey.AUTO_IMAGE),
-        ).grid(column=0, row=1, sticky="NEW")
+        ).grid(column=0, row=3, sticky="NEW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=2, sticky="NEW")
+        bell_frame.grid(column=0, row=4, sticky="NEW", pady=(5, 0))
         ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
         ttk.Checkbutton(
             bell_frame,
