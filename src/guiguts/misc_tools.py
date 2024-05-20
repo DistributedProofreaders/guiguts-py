@@ -695,12 +695,49 @@ def unmatched_block_markup() -> None:
         block_type = re.escape(block_type)
         return rf"^(/{block_type}(\[\d+)?(\.\d+)?(,\d+)?]?|{block_type}/)$", close
 
+    def malformed_block_markup(dialog: CheckerDialog) -> None:
+        """Add warnings about malformed block markup to given dialog.
+
+        Args:
+            dialog: Checkerdialog to receive error messages.
+        """
+        search_range = IndexRange(maintext().start(), maintext().end())
+        prefix = "Badly formed markup: "
+        while match := maintext().find_match(
+            f"(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/)",
+            search_range,
+            regexp=True,
+            nocase=True,
+        ):
+            match_index = match.rowcol.index()
+            after_match = maintext().index(f"{match_index}+{match.count}c")
+            search_range = IndexRange(after_match, maintext().end())
+            match_str = maintext().get_match_text(match)
+            # Now check if markup is malformed - get whole line and check against regex
+            line = maintext().get(f"{match_index} linestart", f"{match_index} lineend")
+            try:
+                idx_start = len(prefix) + line.index(match_str)
+                idx_end = idx_start + len(match_str)
+            except ValueError:
+                idx_start = None
+                idx_end = None
+            block_type = re.escape(match_str.replace("/", ""))
+            regex = rf"^(/{block_type}(\[\d+)?(\.\d+)?(,\d+)?]?|{block_type}/)$"
+            if not re.fullmatch(regex, line):
+                dialog.add_entry(
+                    f"{prefix}{line}",
+                    IndexRange(match_index, after_match),
+                    idx_start,
+                    idx_end,
+                )
+
     unmatched_markup_check(
         "Unmatched Block markup",
         rerun_command=unmatched_block_markup,
         match_reg=f"^(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/)",
         match_pair_func=match_pair_block_markup,
         nest_reg="/#|#/",
+        additional_check_command=malformed_block_markup,
     )
 
 
@@ -711,15 +748,46 @@ def unmatched_markup_check(
     match_pair_func: Callable[[str], tuple[str, bool]],
     nest_reg: Optional[str] = None,
     ignore_reg: Optional[str] = None,
+    additional_check_command: Optional[Callable[[CheckerDialog], None]] = None,
 ) -> None:
-    """Check the currently loaded file for unmatched markup errors."""
+    """Check the currently loaded file for unmatched markup errors.
+
+    Args:
+        title: Title for dialog.
+        rerun_command: Function to re-run check.
+        match_reg: Regex matching open & close markup.
+        nest_reg: Regex matching markup that is allowed to be nested.
+        ignore_reg: Regex matching markup that is to be ignored during check.
+        additional_check_command: Function to perform extra checks
+    """
 
     if not tool_save():
         return
 
+    def sort_key_markup(
+        entry: CheckerEntry,
+    ) -> tuple[str, str, int, int, int]:
+        """Sort key function to sort bad markup entries by casefolded text.
+
+        Order is type of error (badly formed or unmatched), type of markup (e.g. #, *, P),
+        open/close markup, row, col.
+        """
+        assert entry.text_range is not None
+        text = entry.text[entry.hilite_start : entry.hilite_end]
+        type_lower = text.lower().replace("/", "")
+        open_close_index = text.index("/")
+        return (
+            entry.text.split(":")[0],
+            type_lower,
+            open_close_index,
+            entry.text_range.start.row,
+            entry.text_range.start.col,
+        )
+
     checker_dialog = CheckerDialog.show_dialog(
         title,
         rerun_command=rerun_command,
+        sort_key_alpha=sort_key_markup,
     )
     ToolTip(
         checker_dialog.text,
@@ -763,6 +831,9 @@ def unmatched_markup_check(
                 len(prefix),
                 len(prefix) + match.count,
             )
+
+    if additional_check_command:
+        additional_check_command(checker_dialog)
     checker_dialog.display_entries()
 
 
