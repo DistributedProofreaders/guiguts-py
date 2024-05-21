@@ -713,6 +713,9 @@ def unmatched_block_markup() -> None:
             after_match = maintext().index(f"{match_index}+{match.count}c")
             search_range = IndexRange(after_match, maintext().end())
             match_str = maintext().get_match_text(match)
+            # Don't report if open markup preceded by "<", e.g. "</i>"
+            if match_str[0] == "/" and maintext().get(f"{match_index}-1c") == "<":
+                continue
             # Now check if markup is malformed - get whole line and check against regex
             line = maintext().get(f"{match_index} linestart", f"{match_index} lineend")
             try:
