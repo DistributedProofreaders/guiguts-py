@@ -18,6 +18,7 @@ from guiguts.utilities import (
     force_tcl_wholeword,
     convert_to_tcl_regex,
 )
+from guiguts.widgets import theme_set_tk_widget_colors, themed_style
 
 logger = logging.getLogger(__package__)
 
@@ -78,11 +79,15 @@ class TextLineNumbers(tk.Canvas):
     ) -> None:
         self.textwidget = text_widget
         self.font = tk_font.nametofont(self.textwidget.cget("font"))
-        self.offset = 5
+        self.offset = 10
         # Allow for 5 digit line numbers
         width = self.font.measure("88888") + self.offset
-        tk.Canvas.__init__(self, parent, *args, width=width, **kwargs)
-        self.textwidget = text_widget
+        tk.Canvas.__init__(
+            self, parent, *args, width=width, highlightthickness=0, **kwargs
+        )
+        # Canvas needs to listen for theme change
+        self.bind("<<ThemeChanged>>", lambda event: self.theme_change())
+        self.text_color = "black"
 
     def redraw(self) -> None:
         """Redraw line numbers."""
@@ -95,9 +100,19 @@ class TextLineNumbers(tk.Canvas):
                 break
             linenum = IndexRowCol(index).row
             self.create_text(
-                text_pos, dline[1], anchor="ne", font=self.font, text=linenum
+                text_pos,
+                dline[1],
+                anchor="ne",
+                font=self.font,
+                text=linenum,
+                fill=self.text_color,
             )
             index = self.textwidget.index(index + "+1l")
+
+    def theme_change(self) -> None:
+        """Handle change of color theme"""
+        self.configure(background=themed_style().lookup("TButton", "background"))
+        self.text_color = themed_style().lookup("TButton", "foreground")
 
 
 class MainText(tk.Text):
@@ -196,6 +211,12 @@ class MainText(tk.Text):
             self.bind_event(
                 "<Command-Shift-Down>", lambda e_event: self.select_to_end()
             )
+
+        # Since Text widgets don't normally listen to theme changes,
+        # need to do it explicitly here.
+        self.bind_event(
+            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
+        )
 
         # Configure tags
         self.tag_configure(PAGE_FLAG_TAG, background="yellow")
