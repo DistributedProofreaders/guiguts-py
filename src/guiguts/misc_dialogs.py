@@ -84,53 +84,53 @@ class PreferencesDialog(ToplevelDialog):
             ToolTip(spinbox, tooltip)
 
         add_label_spinbox(
-            0, "Left Margin:", PrefKey.WRAP_LEFT_MARGIN, "Left margin for normal text."
+            0, "Left Margin:", PrefKey.WRAP_LEFT_MARGIN, "Left margin for normal text"
         )
         add_label_spinbox(
             1,
             "Right Margin:",
             PrefKey.WRAP_RIGHT_MARGIN,
-            "Right margin for normal text.",
+            "Right margin for normal text",
         )
         add_label_spinbox(
             2,
             "Blockquote Indent:",
             PrefKey.WRAP_BLOCKQUOTE_INDENT,
-            "Extra indent for each level of blockquotes.",
+            "Extra indent for each level of blockquotes",
         )
         add_label_spinbox(
             3,
             "Blockquote Right Margin:",
             PrefKey.WRAP_BLOCKQUOTE_RIGHT_MARGIN,
-            "Right margin for blockquotes.",
+            "Right margin for blockquotes",
         )
         add_label_spinbox(
             4,
             "Block Indent:",
             PrefKey.WRAP_BLOCK_INDENT,
-            "Indent for /*, /P, /L blocks.",
+            "Indent for /*, /P, /L blocks",
         )
         add_label_spinbox(
             5,
             "Poetry Indent:",
             PrefKey.WRAP_POETRY_INDENT,
-            "Indent for /P poetry blocks.",
+            "Indent for /P poetry blocks",
         )
         add_label_spinbox(
             6,
             "Index Main Entry Margin:",
             PrefKey.WRAP_INDEX_MAIN_MARGIN,
-            "Indent for main entries in index - sub-entries retain their indent relative to this.",
+            "Indent for main entries in index - sub-entries retain their indent relative to this",
         )
         add_label_spinbox(
             8,
             "Index Wrap Margin:",
             PrefKey.WRAP_INDEX_WRAP_MARGIN,
-            "Left margin for all lines rewrapped in index.",
+            "Left margin for all lines rewrapped in index",
         )
         add_label_spinbox(
             9,
             "Index Right Margin:",
             PrefKey.WRAP_INDEX_RIGHT_MARGIN,
-            "Right margin for index entries.",
+            "Right margin for index entries",
         )
