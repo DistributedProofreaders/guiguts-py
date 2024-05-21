@@ -319,6 +319,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
                 theme_name_internal_from_user(value)
             ),
         )
+        preferences.set_default(PrefKey.TEAROFF_MENUS, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:

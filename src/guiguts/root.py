@@ -27,7 +27,7 @@ class Root(tk.Tk):
 
         super().__init__(**kwargs)
         self.geometry(preferences.get(PrefKey.ROOT_GEOMETRY))
-        self.option_add("*tearOff", False)
+        self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.after_idle(lambda: grab_focus(self, maintext(), True))

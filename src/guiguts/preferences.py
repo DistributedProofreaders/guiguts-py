@@ -53,6 +53,7 @@ class PrefKey(StrEnum):
     WRAP_INDEX_RIGHT_MARGIN = auto()
     PAGESEP_AUTO_TYPE = auto()
     THEME_NAME = auto()
+    TEAROFF_MENUS = auto()
 
 
 class Preferences:
