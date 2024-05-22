@@ -181,6 +181,8 @@ class CheckerDialog(ToplevelDialog):
             "Shift+Cmd/Ctrl+3",
             lambda event: self.process_remove_entry_by_click(event, all_matching=True),
         )
+        self.bind("<Up>", lambda _e: self.select_entry_by_arrow(-1))
+        self.bind("<Down>", lambda _e: self.select_entry_by_arrow(1))
 
         self.process_command = process_command
         self.rowcol_key = sort_key_rowcol or CheckerDialog.sort_key_rowcol
@@ -444,6 +446,22 @@ class CheckerDialog(ToplevelDialog):
                 self.count_linked_entries, "Entry", "Entries"
             )
 
+    def select_entry_by_arrow(self, increment: int) -> None:
+        """Select next/previous line in dialog, and jump to the line in the
+        main text widget that corresponds to it.
+
+        Args:
+            increment: +1 to move to next line, -1 to move to previous line.
+        """
+        entry_index = self.current_entry_index()
+        if (
+            entry_index is None
+            or entry_index + increment < 0
+            or entry_index + increment >= len(self.entries)
+        ):
+            return
+        self.select_entry(entry_index + increment, focus=False)
+
     def select_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the
         main text widget that corresponds to it.
@@ -623,7 +641,7 @@ class CheckerDialog(ToplevelDialog):
         line_num = self.text.get_select_line_num()
         return None if line_num is None else line_num - 1
 
-    def select_entry(self, entry_index: int) -> None:
+    def select_entry(self, entry_index: int, focus: bool = True) -> None:
         """Select line in dialog corresponding to given entry index,
         and jump to the line in the main text widget that corresponds to it.
 
@@ -642,7 +660,9 @@ class CheckerDialog(ToplevelDialog):
             start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
             maintext().do_select(IndexRange(start, end))
-            maintext().set_insert_index(IndexRowCol(start), focus=not is_mac())
+            maintext().set_insert_index(
+                IndexRowCol(start), focus=(focus and not is_mac())
+            )
         self.lift()
 
     @classmethod

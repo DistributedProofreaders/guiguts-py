@@ -353,6 +353,9 @@ class WordFrequencyDialog(ToplevelDialog):
             self.threshold_box,
             "Only show marked up phrases with no more than this number of words",
         )
+        # Override default behavior for combobox up/down arrow
+        self.threshold_box.bind("<Up>", lambda _e: self.goto_word_by_arrow(-1))
+        self.threshold_box.bind("<Down>", lambda _e: self.goto_word_by_arrow(1))
 
         def display_markedup(*_args: Any) -> None:
             """Callback to display the marked up words with new threshold value."""
@@ -366,6 +369,9 @@ class WordFrequencyDialog(ToplevelDialog):
         self.regex_box = Combobox(display_frame, PrefKey.WFDIALOG_REGEX)
         self.regex_box.grid(row=4, column=1, columnspan=2, sticky="NSEW", padx=(0, 5))
         ToolTip(self.regex_box, "Only show words matching this regular expression")
+        # Override default behavior for combobox up/down arrow
+        self.regex_box.bind("<Up>", lambda _e: self.goto_word_by_arrow(-1))
+        self.regex_box.bind("<Down>", lambda _e: self.goto_word_by_arrow(1))
 
         def display_regexp(*_args: Any) -> None:
             """Callback to display the regex-matching words with new regex."""
@@ -382,7 +388,7 @@ class WordFrequencyDialog(ToplevelDialog):
             self.top_frame, context_menu=False, wrap=tk.NONE
         )
         self.text.grid(row=1, column=0, sticky="NSEW")
-        mouse_bind(self.text, "1", self.goto_word)
+        mouse_bind(self.text, "1", self.goto_word_by_click)
         _, event = process_accel("Cmd/Ctrl+1")
         self.text.bind(event, self.search_word)
         ToolTip(
@@ -395,6 +401,9 @@ class WordFrequencyDialog(ToplevelDialog):
             ),
             use_pointer_pos=True,
         )
+
+        self.bind("<Up>", lambda _e: self.goto_word_by_arrow(-1))
+        self.bind("<Down>", lambda _e: self.goto_word_by_arrow(1))
 
         self.previous_word = ""
 
@@ -494,15 +503,53 @@ class WordFrequencyDialog(ToplevelDialog):
             or re.search(r"^\W|\W$", word)
         )
 
-    def goto_word(self, event: tk.Event) -> str:
+    def goto_word_by_click(self, event: tk.Event) -> str:
         """Go to first/next occurrence of word selected by `event`.
 
         If a different word to last click, then start search from beginning
-        of file, otherwise just continue from current location."""
+        of file, otherwise just continue from current location.
+
+        Args:
+            event: Event containing mouse click coordinates.
+
+        Returns:
+            "break" to stop further processing of event
+        """
         try:
             entry_index = self.entry_index_from_click(event)
         except IndexError:
             return "break"
+        self.goto_word(entry_index)
+        return "break"
+
+    def goto_word_by_arrow(self, increment: int) -> str:
+        """Select next/previous line in dialog, and jump to the line in the
+        main text widget that corresponds to it.
+
+        Args:
+            increment: +1 to move to next line, -1 to move to previous line.
+        """
+        entry_index = self.text.get_select_line_num()
+        if entry_index is not None:
+            entry_index -= 1
+        if (
+            entry_index is None
+            or entry_index + increment < 0
+            or entry_index + increment >= len(self.entries)
+        ):
+            return "break"
+        self.goto_word(entry_index + increment)
+        return "break"
+
+    def goto_word(self, entry_index: int) -> None:
+        """Go to first/next occurrence of word listed at `entry_index`.
+
+        If a different word to last click, then start search from beginning
+        of file, otherwise just continue from current location.
+
+        Args:
+            entry_index: Index into `self.entries` indicating which to select.
+        """
         self.text.select_line(entry_index + 1)
         word = self.entries[entry_index].word
         if word == self.previous_word:
@@ -557,7 +604,6 @@ class WordFrequencyDialog(ToplevelDialog):
             maintext().set_insert_index(match.rowcol, focus=False)
             maintext().select_match_text(match)
             self.previous_word = word
-        return "break"
 
     def search_word(self, event: tk.Event) -> str:
         """Open search dialog ready to search for selected word."""
