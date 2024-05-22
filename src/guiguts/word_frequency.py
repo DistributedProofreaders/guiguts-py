@@ -25,6 +25,7 @@ from guiguts.utilities import (
     IndexRowCol,
     sound_bell,
     process_accel,
+    cmd_ctrl_string,
 )
 from guiguts.widgets import ToplevelDialog, Combobox, ToolTip, mouse_bind
 
@@ -384,6 +385,16 @@ class WordFrequencyDialog(ToplevelDialog):
         mouse_bind(self.text, "1", self.goto_word)
         _, event = process_accel("Cmd/Ctrl+1")
         self.text.bind(event, self.search_word)
+        ToolTip(
+            self.text,
+            "\n".join(
+                [
+                    "Left click: Find first match, click again for other matches",
+                    f"{cmd_ctrl_string()}-left click: Find using Search dialog",
+                ]
+            ),
+            use_pointer_pos=True,
+        )
 
         self.previous_word = ""
 
