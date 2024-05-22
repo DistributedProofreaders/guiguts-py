@@ -1,5 +1,6 @@
 """Miscellaneous dialogs."""
 
+import tkinter as tk
 from tkinter import ttk
 
 from guiguts.preferences import (
@@ -8,6 +9,7 @@ from guiguts.preferences import (
     PersistentInt,
     PersistentString,
 )
+from guiguts.utilities import is_mac
 from guiguts.widgets import ToplevelDialog, ToolTip
 
 
@@ -35,18 +37,27 @@ class PreferencesDialog(ToplevelDialog):
         ttk.Label(
             appearance_frame, text="(May need to restart program for full effect)"
         ).grid(column=0, row=1, sticky="NSEW")
+        tearoff_check = ttk.Checkbutton(
+            appearance_frame,
+            text="Use Tear-Off Menus (requires restart)",
+            variable=PersistentBoolean(PrefKey.TEAROFF_MENUS),
+        )
+        tearoff_check.grid(column=0, row=2, sticky="NEW", pady=5)
+        if is_mac():
+            tearoff_check["state"] = tk.DISABLED
+            ToolTip(tearoff_check, "Not available on macOS")
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
             variable=PersistentBoolean(PrefKey.LINE_NUMBERS),
-        ).grid(column=0, row=2, sticky="NEW", pady=5)
+        ).grid(column=0, row=3, sticky="NEW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
             text="Automatically show current page image",
             variable=PersistentBoolean(PrefKey.AUTO_IMAGE),
-        ).grid(column=0, row=3, sticky="NEW", pady=5)
+        ).grid(column=0, row=4, sticky="NEW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=4, sticky="NEW", pady=(5, 0))
+        bell_frame.grid(column=0, row=5, sticky="NEW", pady=(5, 0))
         ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
         ttk.Checkbutton(
             bell_frame,
