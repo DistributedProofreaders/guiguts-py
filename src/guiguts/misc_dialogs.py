@@ -9,7 +9,7 @@ from guiguts.preferences import (
     PersistentInt,
     PersistentString,
 )
-from guiguts.utilities import is_windows
+from guiguts.utilities import is_mac
 from guiguts.widgets import ToplevelDialog, ToolTip
 
 
@@ -43,7 +43,7 @@ class PreferencesDialog(ToplevelDialog):
             variable=PersistentBoolean(PrefKey.TEAROFF_MENUS),
         )
         tearoff_check.grid(column=0, row=2, sticky="NEW", pady=5)
-        if is_windows():
+        if is_mac():
             tearoff_check["state"] = tk.DISABLED
             ToolTip(tearoff_check, "Not available on macOS")
         ttk.Checkbutton(
