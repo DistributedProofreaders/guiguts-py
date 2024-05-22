@@ -1,5 +1,6 @@
 """Miscellaneous dialogs."""
 
+import tkinter as tk
 from tkinter import ttk
 
 from guiguts.preferences import (
@@ -8,6 +9,7 @@ from guiguts.preferences import (
     PersistentInt,
     PersistentString,
 )
+from guiguts.utilities import is_windows
 from guiguts.widgets import ToplevelDialog, ToolTip
 
 
@@ -35,11 +37,15 @@ class PreferencesDialog(ToplevelDialog):
         ttk.Label(
             appearance_frame, text="(May need to restart program for full effect)"
         ).grid(column=0, row=1, sticky="NSEW")
-        ttk.Checkbutton(
+        tearoff_check = ttk.Checkbutton(
             appearance_frame,
             text="Use Tear-Off Menus (requires restart)",
             variable=PersistentBoolean(PrefKey.TEAROFF_MENUS),
-        ).grid(column=0, row=2, sticky="NEW", pady=5)
+        )
+        tearoff_check.grid(column=0, row=2, sticky="NEW", pady=5)
+        if is_windows():
+            tearoff_check["state"] = tk.DISABLED
+            ToolTip(tearoff_check, "Not available on macOS")
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
