@@ -669,12 +669,30 @@ def unmatched_dp_markup() -> None:
             return f"(<{markup_in[2:-1]}>|{markup_in})", True
         return f"({markup_in}|</{markup_in[1:-1]}>)", False
 
+    def sort_key_dp_markup(
+        entry: CheckerEntry,
+    ) -> tuple[str, bool, int, int]:
+        """Sort key function to sort bad DP  entries by casefolded text.
+
+        Order is type of markup (e.g. b, i, sc), open/close, row, col.
+        """
+        assert entry.text_range is not None
+        text = entry.text[entry.hilite_start : entry.hilite_end]
+        type_lower = text.lower().replace("/", "")[1:-1]
+        return (
+            type_lower,
+            "/" in text,
+            entry.text_range.start.row,
+            entry.text_range.start.col,
+        )
+
     unmatched_markup_check(
         "Unmatched DP markup",
         rerun_command=unmatched_dp_markup,
         match_reg="<[a-z]+>|</[a-z]+>",
         match_pair_func=matched_pair_dp_markup,
         ignore_reg="<tb>",
+        sort_key_alpha=sort_key_dp_markup,
     )
 
 
@@ -734,40 +752,7 @@ def unmatched_block_markup() -> None:
                     idx_end,
                 )
 
-    unmatched_markup_check(
-        "Unmatched Block markup",
-        rerun_command=unmatched_block_markup,
-        match_reg=f"^(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/)",
-        match_pair_func=match_pair_block_markup,
-        nest_reg="/#|#/",
-        additional_check_command=malformed_block_markup,
-    )
-
-
-def unmatched_markup_check(
-    title: str,
-    rerun_command: Callable[[], None],
-    match_reg: str,
-    match_pair_func: Callable[[str], tuple[str, bool]],
-    nest_reg: Optional[str] = None,
-    ignore_reg: Optional[str] = None,
-    additional_check_command: Optional[Callable[[CheckerDialog], None]] = None,
-) -> None:
-    """Check the currently loaded file for unmatched markup errors.
-
-    Args:
-        title: Title for dialog.
-        rerun_command: Function to re-run check.
-        match_reg: Regex matching open & close markup.
-        nest_reg: Regex matching markup that is allowed to be nested.
-        ignore_reg: Regex matching markup that is to be ignored during check.
-        additional_check_command: Function to perform extra checks
-    """
-
-    if not tool_save():
-        return
-
-    def sort_key_markup(
+    def sort_key_block_markup(
         entry: CheckerEntry,
     ) -> tuple[str, str, int, int, int]:
         """Sort key function to sort bad markup entries by casefolded text.
@@ -787,10 +772,46 @@ def unmatched_markup_check(
             entry.text_range.start.col,
         )
 
+    unmatched_markup_check(
+        "Unmatched Block markup",
+        rerun_command=unmatched_block_markup,
+        match_reg=f"^(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/)",
+        match_pair_func=match_pair_block_markup,
+        nest_reg="/#|#/",
+        sort_key_alpha=sort_key_block_markup,
+        additional_check_command=malformed_block_markup,
+    )
+
+
+def unmatched_markup_check(
+    title: str,
+    rerun_command: Callable[[], None],
+    match_reg: str,
+    match_pair_func: Callable[[str], tuple[str, bool]],
+    nest_reg: Optional[str] = None,
+    ignore_reg: Optional[str] = None,
+    sort_key_alpha: Optional[Callable[[CheckerEntry], tuple]] = None,
+    additional_check_command: Optional[Callable[[CheckerDialog], None]] = None,
+) -> None:
+    """Check the currently loaded file for unmatched markup errors.
+
+    Args:
+        title: Title for dialog.
+        rerun_command: Function to re-run check.
+        match_reg: Regex matching open & close markup.
+        nest_reg: Regex matching markup that is allowed to be nested.
+        ignore_reg: Regex matching markup that is to be ignored during check.
+        sort_key_alpha: Function to provide type/alphabetic sorting
+        additional_check_command: Function to perform extra checks
+    """
+
+    if not tool_save():
+        return
+
     checker_dialog = CheckerDialog.show_dialog(
         title,
         rerun_command=rerun_command,
-        sort_key_alpha=sort_key_markup,
+        sort_key_alpha=sort_key_alpha,
     )
     ToolTip(
         checker_dialog.text,
@@ -823,7 +844,7 @@ def unmatched_markup_check(
         nestable = bool(
             nest_reg and re.fullmatch(nest_reg, match_str, flags=re.IGNORECASE)
         )
-        prefix = "Unmatched "
+        prefix = "Unmatched: "
         # Search for the matching pair to this markup
         if not find_match_pair(
             match_index, match_str, match_pair_reg, reverse, nestable
