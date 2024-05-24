@@ -1,6 +1,5 @@
 """Common code/classes relating to Tk widgets."""
 
-from contextlib import suppress
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Optional, TypeVar, Callable
@@ -388,7 +387,7 @@ class ToolTip(tk.Toplevel):
 
     def _show(self) -> None:
         """Displays the ToolTip if mouse still inside."""
-        if not self.inside:
+        if not (self.inside and self.widget.winfo_exists()):
             return
         if self.use_pointer_pos:
             x_pos = self.widget.winfo_pointerx() + 20
@@ -422,11 +421,11 @@ class ToolTip(tk.Toplevel):
 
     def destroy(self) -> None:
         """Destroy the ToolTip and unbind all the bindings."""
-        with suppress(tk.TclError):
+        if self.widget.winfo_exists():
             self.widget.unbind("<Enter>", self.enter_bind)
             self.widget.unbind("<Leave>", self.leave_bind)
             self.widget.unbind("<ButtonPress>", self.press_bind)
-            super().destroy()
+        super().destroy()
 
 
 def grab_focus(
