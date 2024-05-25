@@ -22,6 +22,7 @@ from guiguts.mainwindow import (
     StatusBar,
     statusbar,
     ErrorHandler,
+    process_accel,
 )
 from guiguts.misc_dialogs import PreferencesDialog
 from guiguts.misc_tools import (
@@ -450,6 +451,42 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             lambda: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
+        self.init_bookmark_menu(menu_view)
+
+    def init_bookmark_menu(self, parent: Menu) -> None:
+        """Create the Bookmarks menu."""
+        bookmark_menu = Menu(parent, "~Bookmarks")
+        # Because keyboard layouts are different, need to bind to several keys for some bookmarks
+        shortcuts = [
+            ("exclam",),
+            ("at", "quotedbl"),
+            ("numbersign", "sterling", "section", "periodcentered"),
+            ("dollar", "currency"),
+            ("percent",),
+        ]
+        for bm, keys in enumerate(shortcuts, start=1):
+            bookmark_menu.add_button(
+                f"Set Bookmark {bm}",
+                lambda num=bm: self.file.set_bookmark(num),  # type:ignore[misc]
+                f"Shift+Cmd/Ctrl+Key-{bm}",
+            )
+            # Add extra shortcuts to cope with keyboard layout differences
+            for key in keys:
+                (_, key_event) = process_accel(f"Shift+Cmd/Ctrl+{key}")
+                maintext().key_bind(
+                    key_event,
+                    lambda _event, num=bm: self.file.set_bookmark(  # type:ignore[misc]
+                        num
+                    ),
+                    bind_all=True,
+                )
+
+        for bm in range(1, 6):
+            bookmark_menu.add_button(
+                f"Go To Bookmark {bm}",
+                lambda num=bm: self.file.goto_bookmark(num),  # type:ignore[misc]
+                f"Cmd/Ctrl+Key-{bm}",
+            )
 
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""

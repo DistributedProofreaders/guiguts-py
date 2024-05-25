@@ -29,6 +29,7 @@ INDEX_NEXT_LINE_MARK = "IndexLineStart"
 WRAP_END_MARK = "WrapSectionEnd"
 PAGE_FLAG_TAG = "PageFlag"
 PAGEMARK_PIN = "\x7f"  # Temp char to pin page mark locations
+BOOKMARK_TAG = "Bookmark"
 
 
 class FindMatch:
@@ -220,6 +221,7 @@ class MainText(tk.Text):
 
         # Configure tags
         self.tag_configure(PAGE_FLAG_TAG, background="yellow")
+        self.tag_configure(BOOKMARK_TAG, background="lime")
 
         # Ensure text still shows selected when focus is in another dialog
         if "inactiveselect" not in kwargs:
@@ -327,8 +329,8 @@ class MainText(tk.Text):
             handler: Callback function to be bound to ``keyevent``.
             bind_all: True to bind keystroke to all other widgets as well as maintext
         """
-        lk = re.sub("[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
-        uk = re.sub("[a-z]>$", lambda m: m.group(0).upper(), keyevent)
+        lk = re.sub("(?<=[^A-Za-z])[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
+        uk = re.sub("(?<=[^A-Za-z])[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
         self.bind_event(lk, handler, bind_all=bind_all)
         self.bind_event(uk, handler, bind_all=bind_all)

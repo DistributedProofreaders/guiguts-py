@@ -273,6 +273,7 @@ def process_accel(accel: str) -> tuple[str, str]:
         keyevent = keyevent.replace("Alt+", "Option-")
     else:
         keyevent = keyevent.replace("Alt+", "Alt-")
+    accel = accel.replace("Key-", "")
     return (accel, f"<{keyevent}>")
 
 

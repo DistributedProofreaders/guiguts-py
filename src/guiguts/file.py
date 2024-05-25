@@ -10,7 +10,7 @@ from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 import regex as re
 
-from guiguts.maintext import maintext, PAGE_FLAG_TAG, PAGEMARK_PIN
+from guiguts.maintext import maintext, PAGE_FLAG_TAG, PAGEMARK_PIN, BOOKMARK_TAG
 from guiguts.page_details import (
     PageDetail,
     PageDetails,
@@ -42,12 +42,15 @@ BINFILE_KEY_PAGEDETAILS: Final = "pagedetails"
 BINFILE_KEY_INSERTPOS: Final = "insertpos"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
 BINFILE_KEY_LANGUAGES: Final = "languages"
+BINFILE_KEY_BOOKMARKS: Final = "bookmarks"
 
 PAGE_FLAGS_NONE = 0
 PAGE_FLAGS_SOME = 1
 PAGE_FLAGS_ALL = 2
 
 PAGE_SEPARATOR_REGEX = r"File:.+?([^/\\ ]+)\.(png|jpg)"
+
+BOOKMARK_BASE = "Bookmark"
 
 
 class BinDict(TypedDict):
@@ -58,6 +61,7 @@ class BinDict(TypedDict):
     insertpos: str
     imagedir: str
     languages: str
+    bookmarks: dict[str, str]
 
 
 class File:
@@ -319,6 +323,10 @@ class File:
         self.set_page_marks(self.page_details)
         self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
         self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES)
+        bookmarks: Optional[dict[str, str]]
+        if bookmarks := bin_dict.get(BINFILE_KEY_BOOKMARKS):
+            for key, value in bookmarks.items():
+                self.set_bookmark_index(key, value)
 
         md5checksum = bin_dict.get(BINFILE_KEY_MD5CHECKSUM)
         return not md5checksum or md5checksum == self.get_md5_checksum()
@@ -337,6 +345,7 @@ class File:
             BINFILE_KEY_PAGEDETAILS: self.page_details,
             BINFILE_KEY_IMAGEDIR: self.image_dir,
             BINFILE_KEY_LANGUAGES: self.languages,
+            BINFILE_KEY_BOOKMARKS: self.get_bookmarks(),
         }
         return bin_dict
 
@@ -774,6 +783,69 @@ class File:
         found = tk.END
         while found := maintext().search(PAGEMARK_PIN, found, backwards=True):
             maintext().delete(found, f"{found} +1c")
+
+    def set_bookmark_index(self, bm_name: str, idx: str) -> None:
+        """Set the position of a bookmark via name & index string.
+
+        Args:
+            bm_name: Name of bookmark to set (assumed valid).
+            idx: Index of bookmark position in file.
+        """
+        maintext().set_mark_position(bm_name, maintext().rowcol(idx))
+
+    def set_bookmark(self, bm_num: int) -> None:
+        """Set the position of the given bookmark at the current insert location.
+
+        Args:
+            bm_num: Number of bookmark to add (must be 1 to 5).
+        """
+        assert 1 <= bm_num <= 5
+        maintext().set_mark_position(
+            f"{BOOKMARK_BASE}{bm_num}", maintext().get_insert_index()
+        )
+        self.highlight_bookmark(bm_num)
+
+    def goto_bookmark(self, bm_num: int) -> None:
+        """Set the insert position to the location of the given bookmark.
+
+        Args:
+            bm_num: Number of bookmark to find (must be 1 to 5).
+        """
+        assert 1 <= bm_num <= 5
+        try:
+            maintext().set_insert_index(
+                maintext().rowcol(f"{BOOKMARK_BASE}{bm_num}"), focus=False
+            )
+        except tk.TclError:
+            sound_bell()  # Bookmark hasn't been set
+            return
+        self.highlight_bookmark(bm_num)
+
+    def highlight_bookmark(self, bm_num: int) -> None:
+        """Temporarily highlight bookmark position.
+
+        Args:
+            bm_num: Number of bookmark to find (must be 1 to 5).
+        """
+        assert 1 <= bm_num <= 5
+        maintext().tag_add(BOOKMARK_TAG, maintext().index(f"{BOOKMARK_BASE}{bm_num}"))
+        maintext().after(1000, self.remove_bookmark_tags)
+
+    def get_bookmarks(self) -> dict[str, str]:
+        """Get dictionary of bookmark names:locations.
+
+        Assumes if a mark begins with `BOOKMARK_BASE` it's a bookmark.
+        """
+        bookmarks: dict[str, str] = {}
+        for name in maintext().mark_names():
+            if name.startswith(BOOKMARK_BASE):
+                assert re.fullmatch(f"{BOOKMARK_BASE}[1-5]", name)
+                bookmarks[name] = maintext().index(name)
+        return bookmarks
+
+    def remove_bookmark_tags(self) -> None:
+        """Remove all bookmark highlightling."""
+        maintext().tag_remove(BOOKMARK_TAG, "1.0", "end")
 
 
 def page_mark_previous(mark: str) -> str:
