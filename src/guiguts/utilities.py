@@ -268,8 +268,9 @@ def process_accel(accel: str) -> tuple[str, str]:
         accel = accel.replace("Cmd/", "")
     keyevent = accel.replace("Ctrl+", "Control-")
     keyevent = keyevent.replace("Shift+", "Shift-")
-    keyevent = keyevent.replace("Cmd+", "Command-")
     if is_mac():
+        keyevent = keyevent.replace("Cmd+", "Command-")
+        keyevent = keyevent.replace("Option+", "Option-")
         keyevent = keyevent.replace("Alt+", "Option-")
     else:
         keyevent = keyevent.replace("Alt+", "Alt-")

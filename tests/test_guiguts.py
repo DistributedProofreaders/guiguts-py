@@ -57,12 +57,12 @@ def test_mainwindow() -> None:
     if is_mac():
         assert accel == "Cmd+y"
         assert event == "<Meta-y>"
+        (accel, event) = process_accel("Cmd+?")
+        assert accel == "Cmd+?"
+        assert event == "<Command-?>"
     else:
         assert accel == "Ctrl+y"
         assert event == "<Control-y>"
     (accel, event) = process_accel("Shift+Ctrl+Z")
     assert accel == "Shift+Ctrl+Z"
     assert event == "<Shift-Control-Z>"
-    (accel, event) = process_accel("Cmd+?")
-    assert accel == "Cmd+?"
-    assert event == "<Command-?>"
