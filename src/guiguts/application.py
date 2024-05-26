@@ -465,16 +465,18 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             ("percent",),
         ]
         # Shift+Cmd+number no good for Mac due to clash with screen capture shortcuts
-        modifier = "Option" if is_mac() else "Shift"
+        # Ctrl+number could also clash on Mac with virtual desktop switching, but
+        # the best option we have that works at the moment.
+        modifier = "Shift"
         for bm, keys in enumerate(shortcuts, start=1):
             bookmark_menu.add_button(
                 f"Set Bookmark {bm}",
                 lambda num=bm: self.file.set_bookmark(num),  # type:ignore[misc]
-                f"{modifier}+Cmd/Ctrl+Key-{bm}",
+                f"{modifier}+Ctrl+Key-{bm}",
             )
             # Add extra shortcuts to cope with keyboard layout differences
             for key in keys:
-                (_, key_event) = process_accel(f"{modifier}+Cmd/Ctrl+{key}")
+                (_, key_event) = process_accel(f"{modifier}+Ctrl+{key}")
                 maintext().key_bind(
                     key_event,
                     lambda _event, num=bm: self.file.set_bookmark(  # type:ignore[misc]
@@ -487,7 +489,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             bookmark_menu.add_button(
                 f"Go To Bookmark {bm}",
                 lambda num=bm: self.file.goto_bookmark(num),  # type:ignore[misc]
-                f"Cmd/Ctrl+Key-{bm}",
+                f"Ctrl+Key-{bm}",
             )
 
     def init_tools_menu(self) -> None:
