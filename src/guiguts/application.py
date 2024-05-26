@@ -7,9 +7,11 @@ import logging
 import importlib.resources
 import os.path
 from tkinter import messagebox
-from typing import Optional
+from typing import Optional, Callable, Any
 import unicodedata
 import webbrowser
+
+import regex as re
 
 from guiguts.checkers import CheckerSortType
 from guiguts.data import themes
@@ -22,7 +24,6 @@ from guiguts.mainwindow import (
     StatusBar,
     statusbar,
     ErrorHandler,
-    process_accel,
 )
 from guiguts.misc_dialogs import PreferencesDialog
 from guiguts.misc_tools import (
@@ -456,36 +457,53 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_bookmark_menu(self, parent: Menu) -> None:
         """Create the Bookmarks menu."""
         bookmark_menu = Menu(parent, "~Bookmarks")
-        # Because keyboard layouts are different, need to bind to several keys for some bookmarks
-        shortcuts = [
-            ("exclam",),
-            ("at", "quotedbl"),
-            ("numbersign", "sterling", "section", "periodcentered"),
-            ("dollar", "currency"),
-            ("percent",),
-        ]
-        for bm, keys in enumerate(shortcuts, start=1):
-            bookmark_menu.add_button(
+
+        def add_bookmark_button(
+            menu: Menu,
+            label: str,
+            handler: Callable[[], Any],
+            accel: str,
+            key_event: str,
+        ) -> None:
+            """Add a bookmark button to the menu. Needed because of two-key binding (e.g. Ctrl-b, 1)
+
+            Args:
+                label: Label string for button (no tilde).
+                handler: Callback function.
+                accel: String describing accelerator key.
+                key_event: Key event string for binding.
+            """
+
+            key_event = re.sub("b>", "B>", key_event)
+            maintext().key_bind(key_event, lambda _event: handler(), bind_all=True)
+            key_event = re.sub("B>", "b>", key_event)
+            maintext().key_bind(key_event, lambda _event: handler(), bind_all=True)
+
+            command_args = {
+                "label": label,
+                "command": handler,
+                "accelerator": accel,
+            }
+            menu.add_command(command_args)
+
+        cmd_ctrl = "Cmd" if is_mac() else "Ctrl"
+        command_control = "Command" if is_mac() else "Control"
+        for bm in range(1, 6):
+            add_bookmark_button(
+                bookmark_menu,
                 f"Set Bookmark {bm}",
                 lambda num=bm: self.file.set_bookmark(num),  # type:ignore[misc]
-                f"Shift+Cmd/Ctrl+Key-{bm}",
+                f"Shift+{cmd_ctrl}+B, {bm}",
+                f"<Shift-{command_control}-B>{bm}",
             )
-            # Add extra shortcuts to cope with keyboard layout differences
-            for key in keys:
-                (_, key_event) = process_accel(f"Shift+Cmd/Ctrl+{key}")
-                maintext().key_bind(
-                    key_event,
-                    lambda _event, num=bm: self.file.set_bookmark(  # type:ignore[misc]
-                        num
-                    ),
-                    bind_all=True,
-                )
 
         for bm in range(1, 6):
-            bookmark_menu.add_button(
+            add_bookmark_button(
+                bookmark_menu,
                 f"Go To Bookmark {bm}",
                 lambda num=bm: self.file.goto_bookmark(num),  # type:ignore[misc]
-                f"Cmd/Ctrl+Key-{bm}",
+                f"{cmd_ctrl}+B, {bm}",
+                f"<{command_control}-B>{bm}",
             )
 
     def init_tools_menu(self) -> None:
