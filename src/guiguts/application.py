@@ -451,7 +451,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             lambda: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
-        self.init_bookmark_menu(menu_view)
+        self.init_bookmark_menu(menu_search)
 
     def init_bookmark_menu(self, parent: Menu) -> None:
         """Create the Bookmarks menu."""
@@ -464,15 +464,17 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             ("dollar", "currency"),
             ("percent",),
         ]
+        # Shift+Cmd+number no good for Mac due to clash with screen capture shortcuts
+        modifier = "Option" if is_mac() else "Shift"
         for bm, keys in enumerate(shortcuts, start=1):
             bookmark_menu.add_button(
                 f"Set Bookmark {bm}",
                 lambda num=bm: self.file.set_bookmark(num),  # type:ignore[misc]
-                f"Shift+Cmd/Ctrl+Key-{bm}",
+                f"{modifier}+Cmd/Ctrl+Key-{bm}",
             )
             # Add extra shortcuts to cope with keyboard layout differences
             for key in keys:
-                (_, key_event) = process_accel(f"Shift+Cmd/Ctrl+{key}")
+                (_, key_event) = process_accel(f"{modifier}+Cmd/Ctrl+{key}")
                 maintext().key_bind(
                     key_event,
                     lambda _event, num=bm: self.file.set_bookmark(  # type:ignore[misc]
