@@ -433,19 +433,19 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             menu_edit.add_button("Pre~ferences...", PreferencesDialog.show_dialog)
 
     def init_search_menu(self) -> None:
-        """Create the View menu."""
-        menu_view = Menu(menubar(), "~Search")
-        menu_view.add_button(
+        """Create the Search menu."""
+        menu_search = Menu(menubar(), "~Search")
+        menu_search.add_button(
             "~Search & Replace...",
             show_search_dialog,
             "Cmd/Ctrl+F",
         )
-        menu_view.add_button(
+        menu_search.add_button(
             "Find ~Next",
             find_next,
             "Cmd+G" if is_mac() else "F3",
         )
-        menu_view.add_button(
+        menu_search.add_button(
             "Find ~Previous",
             lambda: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
