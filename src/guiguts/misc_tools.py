@@ -424,10 +424,9 @@ class PageSeparatorDialog(ToplevelDialog):
 
     def refresh(self) -> None:
         """Refresh to show the first available page separator."""
-        self.undo_block_begin()
+        maintext().undo_block_begin()
         self.do_auto()
         self.view()
-        self.undo_block_end()
 
     def join(self, keep_hyphen: bool) -> None:
         """Handle click on Join buttons.
@@ -435,17 +434,15 @@ class PageSeparatorDialog(ToplevelDialog):
         Args:
             keep_hyphen: True to keep hyphen when lines are joined.
         """
-        self.undo_block_begin()
+        maintext().undo_block_begin()
         self.do_join(keep_hyphen)
         self.do_auto()
-        self.undo_block_end()
 
     def delete(self) -> None:
         """Handle click on Delete button."""
-        self.undo_block_begin()
+        maintext().undo_block_begin()
         self.do_delete()
         self.do_auto()
-        self.undo_block_end()
 
     def blank(self, num_lines: int) -> None:
         """Handle click on Blank buttons.
@@ -453,10 +450,9 @@ class PageSeparatorDialog(ToplevelDialog):
         Args:
             num_lines: How many blank lines to use.
         """
-        self.undo_block_begin()
+        maintext().undo_block_begin()
         self.do_blank(num_lines)
         self.do_auto()
-        self.undo_block_end()
 
     def undo(self) -> None:
         """Handle click on Undo button, by undoing latest changes and re-viewing
@@ -563,22 +559,6 @@ class PageSeparatorDialog(ToplevelDialog):
             else:
                 break
         self.view()
-
-    def undo_block_begin(self) -> None:
-        """Begin a block of changes that will be undone with one undo operation.
-
-        Will be replaced with a method in MainText.
-        """
-        maintext().config(autoseparators=False)
-        maintext().edit_separator()
-
-    def undo_block_end(self) -> None:
-        """End a block of changes that will be undone with one undo operation.
-
-        Will be replaced with a method in MainText.
-        """
-        maintext().edit_separator()
-        maintext().config(autoseparators=True)
 
 
 def page_separator_fixup() -> None:
