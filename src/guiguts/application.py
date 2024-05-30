@@ -33,6 +33,8 @@ from guiguts.misc_tools import (
     unmatched_brackets,
     unmatched_curly_quotes,
     unmatched_block_markup,
+    FractionConvertType,
+    fraction_convert,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
@@ -515,6 +517,20 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button("Unmatched ~DP Markup", unmatched_dp_markup)
         menu_tools.add_button("Unmatched ~Brackets", unmatched_brackets)
         menu_tools.add_button("Unmatched Curly ~Quotes", unmatched_curly_quotes)
+
+        fraction_menu = Menu(menu_tools, "Convert ~Fractions")
+        fraction_menu.add_button(
+            "~Unicode Fractions Only",
+            lambda: fraction_convert(FractionConvertType.UNICODE),
+        )
+        fraction_menu.add_button(
+            "Unicode Fractions ~Or Super/Subscript",
+            lambda: fraction_convert(FractionConvertType.MIXED),
+        )
+        fraction_menu.add_button(
+            "All to ~Super/Subscript",
+            lambda: fraction_convert(FractionConvertType.SUPSUB),
+        )
 
     def init_view_menu(self) -> None:
         """Create the View menu."""

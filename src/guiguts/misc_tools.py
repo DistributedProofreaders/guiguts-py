@@ -1,6 +1,6 @@
 """Miscellaneous tools."""
 
-from enum import StrEnum, auto
+from enum import Enum, StrEnum, auto
 import logging
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -889,3 +889,95 @@ def find_match_pair(
             else maintext().index(f"{match.rowcol.index()}+{match.count}c")
         )
     return found
+
+
+class FractionConvertType(Enum):
+    """Enum class to store fraction conversion types."""
+
+    UNICODE = auto()  # convert only those that have a Unicode fraction
+    MIXED = auto()  # convert to Unicode if possible, otherwise super/subscript
+    SUPSUB = auto()  # convert all to super/subscript form
+
+
+def fraction_convert(conversion_type: FractionConvertType) -> None:
+    """Convert fractions in selection or whole file, e.g. 1/2 --> ½
+
+    Args:
+        type: Determines which/how fractions will be converted.
+    """
+
+    unicode_fractions = {
+        "1/4": "¼",
+        "1/2": "½",
+        "3/4": "¾",
+        "1/7": "⅐",
+        "1/9": "⅑",
+        "1/10": "⅒",
+        "1/3": "⅓",
+        "2/3": "⅔",
+        "1/5": "⅕",
+        "2/5": "⅖",
+        "3/5": "⅗",
+        "4/5": "⅘",
+        "1/6": "⅙",
+        "5/6": "⅚",
+        "1/8": "⅛",
+        "3/8": "⅜",
+        "5/8": "⅝",
+        "7/8": "⅝",
+    }
+    superscripts = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+    subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+
+    maintext().undo_block_begin()
+
+    sel_ranges = maintext().selected_ranges()
+    if not sel_ranges:
+        sel_ranges = [IndexRange(maintext().start(), maintext().end())]
+
+    frac_slash = "⁄"
+    any_slash = f"[/{frac_slash}]"
+    for sel_range in sel_ranges:
+        # Use mark for the end of the range, since end index can move as changes are made
+        maintext().set_mark_position("TempEndSelection", sel_range.end)
+
+        search_range = IndexRange(
+            sel_range.start, maintext().rowcol("TempEndSelection")
+        )
+        match_regex = rf"(\d-)?(\d+){any_slash}(\d+)(?!\d*,\d)"
+        while match := maintext().find_match(match_regex, search_range, regexp=True):
+            match_str = maintext().get_match_text(match)
+            gmatch = re.fullmatch(match_regex, match_str)
+            assert gmatch is not None  # Has to match because we used the same regex
+
+            # Allow for matching the "1-" in "1-2/3"
+            # match_index is start of section being replaced, i.e. "-2/3"
+            offset = 0 if gmatch[1] is None else 1
+            match_index = f"{match.rowcol.index()}+{offset}c"
+
+            base_frac = f"{gmatch[2]}/{gmatch[3]}"
+            new_frac = ""
+            if (
+                base_frac in unicode_fractions
+                and conversion_type != FractionConvertType.SUPSUB
+            ):
+                new_frac = unicode_fractions[base_frac]
+            elif conversion_type != FractionConvertType.UNICODE:
+                new_frac = f"{gmatch[2].translate(superscripts)}{frac_slash}{gmatch[3].translate(subscripts)}"
+            # Only convert if we found one that should be converted. Don't convert strings like
+            # "B1/2" or "C-1/3" - probably a plate/serial number, but not a fraction
+            prefix = maintext().get(f"{match.rowcol.index()}-2c", match.rowcol.index())
+            if new_frac and not re.search(r"(\p{L}-|\p{L}$)", prefix):
+                len_frac = len(new_frac)
+                maintext().insert(match_index, new_frac)
+                maintext().delete(
+                    f"{match_index}+{len(new_frac)}c",
+                    f"{match_index}+{len(new_frac)+len(gmatch[0])-offset}c",
+                )
+            else:
+                len_frac = len(base_frac) - offset
+
+            after_match = maintext().rowcol(f"{match_index}+{len_frac}c")
+            search_range = IndexRange(
+                after_match, maintext().rowcol("TempEndSelection")
+            )
