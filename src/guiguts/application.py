@@ -373,7 +373,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             self.file.add_good_and_bad_words,
         )
         proj_menu.add_button(
-            f"Set ~Scan Image {'Folder' if is_windows() else 'Directory'}",
+            f"Set ~Scan Image {'Folder' if is_windows() else 'Directory'}...",
             self.file.choose_image_dir,
         )
         if not is_mac():
@@ -497,26 +497,27 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         menu_tools = Menu(menubar(), "~Tools")
-        menu_tools.add_button("Basic Fi~xup", basic_fixup_check)
-        menu_tools.add_button("~Word Frequency", word_frequency)
+        menu_tools.add_button("Basic Fi~xup...", basic_fixup_check)
+        menu_tools.add_button("~Word Frequency...", word_frequency)
         menu_tools.add_button(
-            "~Spelling Check",
+            "~Spelling Check...",
             lambda: spell_check(
                 self.file.project_dict, self.file.add_good_word_to_project_dictionary
             ),
         )
-        menu_tools.add_button("PP~txt", lambda: pptxt(self.file.project_dict))
-        menu_tools.add_button("~Jeebies", jeebies_check)
+        menu_tools.add_button("PP~txt...", lambda: pptxt(self.file.project_dict))
+        menu_tools.add_button("~Jeebies...", jeebies_check)
         menu_tools.add_separator()
-        menu_tools.add_button("Fixup ~Page Separators", page_separator_fixup)
+        menu_tools.add_button("Fixup ~Page Separators...", page_separator_fixup)
         menu_tools.add_separator()
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)
         menu_tools.add_separator()
-        menu_tools.add_button("Unmatched Bloc~k Markup", unmatched_block_markup)
-        menu_tools.add_button("Unmatched ~DP Markup", unmatched_dp_markup)
-        menu_tools.add_button("Unmatched ~Brackets", unmatched_brackets)
-        menu_tools.add_button("Unmatched Curly ~Quotes", unmatched_curly_quotes)
+        unmatched_menu = Menu(menu_tools, "~Unmatched")
+        unmatched_menu.add_button("Bloc~k Markup...", unmatched_block_markup)
+        unmatched_menu.add_button("~DP Markup...", unmatched_dp_markup)
+        unmatched_menu.add_button("~Brackets...", unmatched_brackets)
+        unmatched_menu.add_button("Curly ~Quotes...", unmatched_curly_quotes)
 
         fraction_menu = Menu(menu_tools, "Convert ~Fractions")
         fraction_menu.add_button(
