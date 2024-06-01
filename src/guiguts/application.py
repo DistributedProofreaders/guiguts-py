@@ -409,25 +409,26 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Colu~mn Paste", maintext().columnize_paste, "Cmd/Ctrl+Shift+V"
         )
         menu_edit.add_separator()
-        menu_edit.add_button(
-            "lo~wercase selection",
+        case_menu = Menu(menu_edit, "C~hange Case")
+        case_menu.add_button(
+            "~lowercase selection",
             lambda: maintext().transform_selection(str.lower),
             "",
         )
-        menu_edit.add_button(
+        case_menu.add_button(
             "~Sentence case selection",
             lambda: maintext().transform_selection(
                 maintext().sentence_case_transformer
             ),
             "",
         )
-        menu_edit.add_button(
-            "T~itle Case Selection",
+        case_menu.add_button(
+            "~Title Case Selection",
             lambda: maintext().transform_selection(maintext().title_case_transformer),
             "",
         )
-        menu_edit.add_button(
-            "UPP~ERCASE SELECTION",
+        case_menu.add_button(
+            "~UPPERCASE SELECTION",
             lambda: maintext().transform_selection(str.upper),
             "",
         )
