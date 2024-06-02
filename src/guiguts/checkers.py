@@ -5,6 +5,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any, Optional, Callable
 
+import regex as re
+
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.preferences import PersistentString, PrefKey
@@ -363,13 +365,13 @@ class CheckerDialog(ToplevelDialog):
         Use this for content; use add_header & add_footer for headers & footers.
 
         Args:
-            msg: Entry to be displayed - only first line will be displayed.
+            msg: Entry to be displayed - only first non-empty line will be displayed.
             text_range: Optional start & end of point of interest in main text widget.
             hilite_start: Optional column to begin higlighting entry in dialog.
             hilite_end: Optional column to end higlighting entry in dialog.
             entry_type: Defaults to content
         """
-        line = msg.splitlines()[0] if msg else ""
+        line = re.sub(r"\n*([^\n]*)\n?.*", r"\1", msg)
         entry = CheckerEntry(
             line,
             text_range,

@@ -365,13 +365,17 @@ class SearchDialog(ToplevelDialog):
 
         for match in matches:
             line = maintext().get(
-                f"{match.rowcol.index()} linestart", f"{match.rowcol.index()} lineend"
+                f"{match.rowcol.index()} linestart",
+                f"{match.rowcol.index()}+{match.count}c lineend",
             )
             end_rowcol = IndexRowCol(
                 maintext().index(match.rowcol.index() + f"+{match.count}c")
             )
             hilite_start = match.rowcol.col
-            if end_rowcol.row > match.rowcol.row:
+            # If multiline, and there are lines after the one that will be shown,
+            # higlight to end of line
+            strip_line = line.lstrip("\n")
+            if end_rowcol.row > match.rowcol.row and "\n" in strip_line:
                 hilite_end = len(line)
             else:
                 hilite_end = end_rowcol.col
