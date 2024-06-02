@@ -14,6 +14,7 @@ import webbrowser
 from guiguts.checkers import CheckerSortType
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
+from guiguts.footnotes import footnote_check
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
     MainWindow,
@@ -510,6 +511,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button("~Jeebies...", jeebies_check)
         menu_tools.add_separator()
         menu_tools.add_button("Fixup ~Page Separators...", page_separator_fixup)
+        menu_tools.add_button("Fixup ~Footnotes...", footnote_check)
         menu_tools.add_separator()
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)

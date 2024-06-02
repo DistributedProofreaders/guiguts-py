@@ -71,6 +71,11 @@ Word Frequency
 ==============
     
 .. automodule:: word_frequency
+ 
+Footnotes
+==============
+    
+.. automodule:: footnotes
 
 PPtxt
 =====
