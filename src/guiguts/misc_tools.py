@@ -5,6 +5,7 @@ import logging
 import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Callable, Optional
+import unicodedata
 
 import regex as re
 
@@ -981,3 +982,29 @@ def fraction_convert(conversion_type: FractionConvertType) -> None:
             search_range = IndexRange(
                 after_match, maintext().rowcol("TempEndSelection")
             )
+
+
+def unicode_normalize() -> None:
+    """Normalize selected characters into Unicode Normalization Form C.
+
+    Replaces one line at a time to avoid page marker drift.
+    """
+    sel_ranges = maintext().selected_ranges()
+    if not sel_ranges:
+        return
+
+    for sel_range in sel_ranges:
+        for row in range(sel_range.start.row, sel_range.end.row + 1):
+            # Set start/end columns of first/last rows, else normalize whole line
+            if row == sel_range.start.row:
+                start_idx = f"{row}.{sel_range.start.col}"
+            else:
+                start_idx = f"{row}.0"
+            if row == sel_range.end.row:
+                end_idx = f"{row}.{sel_range.end.col}"
+            else:
+                end_idx = f"{row}.end"
+            text = maintext().get(start_idx, end_idx)
+            if not unicodedata.is_normalized("NFC", text):
+                normalized_text = unicodedata.normalize("NFC", text)
+                maintext().replace(start_idx, end_idx, normalized_text)

@@ -36,6 +36,7 @@ from guiguts.misc_tools import (
     unmatched_block_markup,
     FractionConvertType,
     fraction_convert,
+    unicode_normalize,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
@@ -534,6 +535,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         fraction_menu.add_button(
             "All to ~Super/Subscript",
             lambda: fraction_convert(FractionConvertType.SUPSUB),
+        )
+        unicode_menu = Menu(menu_tools, "~Unicode")
+        unicode_menu.add_button(
+            "~Normalize Selected Characters",
+            unicode_normalize,
         )
 
     def init_view_menu(self) -> None:
