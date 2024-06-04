@@ -221,7 +221,7 @@ class MainText(tk.Text):
         )
 
         # Configure tags
-        self.tag_configure(PAGE_FLAG_TAG, background="yellow")
+        self.tag_configure(PAGE_FLAG_TAG, background="gold")
         self.tag_configure(BOOKMARK_TAG, background="lime")
 
         # Ensure text still shows selected when focus is in another dialog
