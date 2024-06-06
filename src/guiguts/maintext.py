@@ -2,6 +2,7 @@
 
 
 import logging
+import subprocess
 from textwrap import TextWrapper
 import tkinter as tk
 from tkinter import ttk
@@ -706,8 +707,25 @@ class MainText(tk.Text):
         rowcol = self.rowcol(f"{start_rowcol.index()} + {len(clipline)}c")
         self.set_insert_index(rowcol)
 
+    def affirm_clipboard_contents(self) -> None:
+        """Ensure clipboard is set to its "current" contents.
+
+        The purpose of this is to set the clipboard by non-Tcl/Tk means.
+        This should bypass the bug where Tcl/Tk doesn't update the
+        system clipboard counter. Some apps, e.g. BBEdit, need this to detect the
+        clipboard has changed: https://github.com/python/cpython/issues/104613
+        """
+        if not is_mac():
+            raise NotImplementedError("This function only works on macOS")
+
+        # Use pbcopy macOS command to "touch" the clipboard contents
+        with subprocess.Popen(["/usr/bin/pbcopy"], stdin=subprocess.PIPE) as proc:
+            proc.communicate(input=self.clipboard_get().encode())
+
     def smart_copy(self) -> str:
         """Do column copy if multiple ranges selected, else default copy."""
+        if is_mac():
+            self.after_idle(self.affirm_clipboard_contents)
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_copy_cut()
@@ -715,6 +733,8 @@ class MainText(tk.Text):
 
     def smart_cut(self) -> str:
         """Do column cut if multiple ranges selected, else default cut."""
+        if is_mac():
+            self.after_idle(self.affirm_clipboard_contents)
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_copy_cut(cut=True)
