@@ -188,8 +188,7 @@ class File:
         maintext().set_insert_index(IndexRowCol(1, 0))
         self.languages = preferences.get(PrefKey.DEFAULT_LANGUAGES)
         bin_matches_file = self.load_bin(filename)
-        if not self.contains_page_marks():
-            self.mark_page_boundaries()
+        self.mark_page_boundaries()
         flags_found = self.update_page_marks_from_flags()
         if not bin_matches_file:
             # Inform user that bin doesn't match
@@ -419,8 +418,8 @@ class File:
         are in standard format, and setting page marks at the
         start of each page separator line.
         """
-
-        self.page_details = PageDetails()
+        if not self.contains_page_marks():
+            self.page_details = PageDetails()
         page_num_style = STYLE_ARABIC
         page_num = "1"
 
@@ -437,16 +436,22 @@ class File:
                 (page, ext) = match.group(1, 2)
                 standard_line = f"-----File: {page}.{ext}"
                 standard_line += "-" * (75 - len(standard_line))
-                if line != standard_line:
+                # Don't standarize line if it has a page marker flag on it, or you'll delete the flag!
+                if line != standard_line and not re.search(
+                    rf"\[{PAGEMARK_PREFIX}\S+?\]", line
+                ):
                     maintext().delete(line_start, line_end)
                     maintext().insert(line_start, standard_line)
                 page_mark = page_mark_from_img(page)
                 maintext().set_mark_position(page_mark, IndexRowCol(line_start))
-                self.page_details[page] = PageDetail(
-                    line_start, page_num_style, page_num
-                )
-                page_num_style = STYLE_DITTO
-                page_num = "+1"
+                try:
+                    self.page_details[page]["index"] = line_start
+                except KeyError:
+                    self.page_details[page] = PageDetail(
+                        line_start, page_num_style, page_num
+                    )
+                    page_num_style = STYLE_DITTO
+                    page_num = "+1"
 
             search_start = line_end
 
@@ -649,7 +654,6 @@ class File:
         """
         search_range = IndexRange(maintext().start(), maintext().end())
         mark = "1.0"
-        mark_locations_updated = False
         flag_found = False
         flag_not_found = False
         while mark := page_mark_next(mark):
@@ -665,7 +669,6 @@ class File:
             ):
                 if maintext().compare(mark, "!=", match.rowcol.index()):
                     maintext().mark_set(mark, match.rowcol.index())
-                    mark_locations_updated = True
                 maintext().tag_add(
                     PAGE_FLAG_TAG,
                     match.rowcol.index(),
@@ -674,8 +677,6 @@ class File:
                 flag_found = True
             else:
                 flag_not_found = True
-        if mark_locations_updated:
-            maintext().set_modified(True)  # Bin file needs saving
         if flag_found:
             return PAGE_FLAGS_SOME if flag_not_found else PAGE_FLAGS_ALL
         return PAGE_FLAGS_NONE

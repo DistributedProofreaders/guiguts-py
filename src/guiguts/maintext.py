@@ -221,8 +221,8 @@ class MainText(tk.Text):
         )
 
         # Configure tags
-        self.tag_configure(PAGE_FLAG_TAG, background="yellow")
-        self.tag_configure(BOOKMARK_TAG, background="lime")
+        self.tag_configure(PAGE_FLAG_TAG, background="gold", foreground="black")
+        self.tag_configure(BOOKMARK_TAG, background="lime", foreground="black")
 
         # Ensure text still shows selected when focus is in another dialog
         if "inactiveselect" not in kwargs:
