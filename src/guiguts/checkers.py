@@ -21,6 +21,7 @@ from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind
 
 MARK_ENTRY_TO_SELECT = "MarkEntryToSelect"
 HILITE_TAG_NAME = "chk_hilite"
+ERROR_PREFIX_TAG_NAME = "chk_error_prefix"
 
 
 class CheckerEntryType(Enum):
@@ -36,14 +37,6 @@ class CheckerEntry:
 
     Current implementation enforces (on creation) and assumes (in use) that
     no section contains Entries of more than one type.
-
-    Attributes:
-            text: Single line of text to display in checker dialog.
-            text_range: Optional start and end of point of interest in main text widget.
-            hilite_start: Optional column to begin higlighting entry in dialog.
-            hilite_end: Optional column to end higlighting entry in dialog.
-            section: Section entry belongs to.
-            initial_pos: Position of entry during initial creation.
     """
 
     def __init__(
@@ -55,6 +48,7 @@ class CheckerEntry:
         section: int,
         initial_pos: int,
         entry_type: CheckerEntryType,
+        error_prefix: str,
     ) -> None:
         """Initialize CheckerEntry object.
 
@@ -65,6 +59,8 @@ class CheckerEntry:
             hilite_end: Optional column to end higlighting entry in dialog.
             section: Section entry belongs to.
             initial_pos: Position of entry during initial creation.
+            entry_type: Type of entry: header, footer, content, etc.
+            error_prefix: Prefix string indicating an error - empty if no error.
         """
         self.text = text
         self.text_range = text_range
@@ -73,6 +69,7 @@ class CheckerEntry:
         self.section = section
         self.initial_pos = initial_pos
         self.entry_type = entry_type
+        self.error_prefix = error_prefix
 
 
 class CheckerSortType(StrEnum):
@@ -190,6 +187,7 @@ class CheckerDialog(ToplevelDialog):
         self.rowcol_key = sort_key_rowcol or CheckerDialog.sort_key_rowcol
         self.alpha_key = sort_key_alpha or CheckerDialog.sort_key_alpha
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
+        self.text.tag_configure(ERROR_PREFIX_TAG_NAME, foreground="red")
         self.count_linked_entries = 0  # Not the same as len(self.entries)
         self.section_count = 0
         self.selected_text = ""
@@ -358,6 +356,7 @@ class CheckerDialog(ToplevelDialog):
         hilite_start: Optional[int] = None,
         hilite_end: Optional[int] = None,
         entry_type: CheckerEntryType = CheckerEntryType.CONTENT,
+        error_prefix: str = "",
     ) -> None:
         """Add an entry ready to be displayed in the dialog.
 
@@ -370,6 +369,7 @@ class CheckerDialog(ToplevelDialog):
             hilite_start: Optional column to begin higlighting entry in dialog.
             hilite_end: Optional column to end higlighting entry in dialog.
             entry_type: Defaults to content
+            error_prefix: Optional string prefix to indicate error
         """
         line = re.sub(r"\n*([^\n]*)\n?.*", r"\1", msg)
         entry = CheckerEntry(
@@ -380,6 +380,7 @@ class CheckerDialog(ToplevelDialog):
             self.section_count,
             len(self.entries),
             entry_type,
+            error_prefix,
         )
         self.entries.append(entry)
 
@@ -415,16 +416,31 @@ class CheckerDialog(ToplevelDialog):
                 if entry.text_range.start.col < 10:
                     rowcol_str += " "
                 self.count_linked_entries += 1
-            self.text.insert(tk.END, rowcol_str + entry.text + "\n")
+            self.text.insert(
+                tk.END, rowcol_str + entry.error_prefix + entry.text + "\n"
+            )
             if entry.hilite_start is not None and entry.hilite_end is not None:
                 start_rowcol = IndexRowCol(self.text.index(tk.END + "-2line"))
-                start_rowcol.col = entry.hilite_start + len(rowcol_str)
+                start_rowcol.col = (
+                    entry.hilite_start + len(rowcol_str) + len(entry.error_prefix)
+                )
                 end_rowcol = IndexRowCol(
-                    start_rowcol.row, entry.hilite_end + len(rowcol_str)
+                    start_rowcol.row,
+                    entry.hilite_end + len(rowcol_str) + len(entry.error_prefix),
                 )
                 self.text.tag_add(
                     HILITE_TAG_NAME, start_rowcol.index(), end_rowcol.index()
                 )
+            if entry.error_prefix:
+                start_rowcol = IndexRowCol(self.text.index(tk.END + "-2line"))
+                start_rowcol.col = len(rowcol_str)
+                end_rowcol = IndexRowCol(
+                    start_rowcol.row, len(rowcol_str) + len(entry.error_prefix)
+                )
+                self.text.tag_add(
+                    ERROR_PREFIX_TAG_NAME, start_rowcol.index(), end_rowcol.index()
+                )
+
         # Highlight previously selected line, or if none, the first suitable line
         if self.selected_text:
             for index, entry in enumerate(self.entries):
