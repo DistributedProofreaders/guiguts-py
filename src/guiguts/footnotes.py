@@ -40,7 +40,7 @@ class AnchorRecord:
             start - Start rowcol of anchor in file.
             end - End rowcol of anchor in file.
             hilite_start - Start column of highlighting in text.
-            hilite_start - End column of highlighting in text.
+            hilite_end - End column of highlighting in text.
             fn_index - Index into footnotes array of linked footnote.
         """
         self.text = text
@@ -70,7 +70,7 @@ class FootnoteRecord:
             start - Start rowcol of footnote in file.
             end - End rowcol of footnote in file.
             hilite_start - Start column of highlighting in text.
-            hilite_start - End column of highlighting in text.
+            hilite_end - End column of highlighting in text.
             fn_index - Index into anchors array of linked anchor.
         """
         self.text = text
