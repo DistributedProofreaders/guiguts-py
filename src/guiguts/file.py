@@ -10,7 +10,13 @@ from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 import regex as re
 
-from guiguts.maintext import maintext, PAGE_FLAG_TAG, PAGEMARK_PIN, BOOKMARK_TAG
+from guiguts.maintext import (
+    maintext,
+    PAGE_FLAG_TAG,
+    PAGEMARK_PIN,
+    BOOKMARK_TAG,
+    PAGEMARK_PREFIX,
+)
 from guiguts.page_details import (
     PageDetail,
     PageDetails,
@@ -34,7 +40,6 @@ from guiguts.widgets import grab_focus, ToplevelDialog
 logger = logging.getLogger(__package__)
 
 NUM_RECENT_FILES = 9
-PAGEMARK_PREFIX = "Pg"
 BINFILE_SUFFIX = ".json"
 
 BINFILE_KEY_MD5CHECKSUM: Final = "md5checksum"
@@ -408,7 +413,7 @@ class File:
             page_details: Dictionary of page details, including indexes.
         """
         mark = "1.0"
-        while mark := page_mark_next(mark):
+        while mark := maintext().page_mark_next(mark):
             img = img_from_page_mark(mark)
             assert img in page_details
             page_details[img]["index"] = maintext().index(mark)
@@ -459,7 +464,7 @@ class File:
         """Remove any existing page marks."""
         marklist = []
         mark = "1.0"
-        while mark := page_mark_next(mark):
+        while mark := maintext().page_mark_next(mark):
             marklist.append(mark)
         for mark in marklist:
             maintext().mark_unset(mark)
@@ -470,7 +475,7 @@ class File:
         Returns:
             True if file contains page marks.
         """
-        return page_mark_next("1.0") != ""
+        return maintext().page_mark_next("1.0") != ""
 
     def get_current_page_mark(self) -> str:
         """Find page mark corresponding to where the insert cursor is.
@@ -482,15 +487,17 @@ class File:
         mark = insert
         good_mark = ""
         # First check for page marks at the current cursor position & return last one
-        while (mark := page_mark_next(mark)) and maintext().compare(mark, "==", insert):
+        while (mark := maintext().page_mark_next(mark)) and maintext().compare(
+            mark, "==", insert
+        ):
             good_mark = mark
         # If not, then find page mark before current position
         if not good_mark:
-            if mark := page_mark_previous(insert):
+            if mark := maintext().page_mark_previous(insert):
                 good_mark = mark
         # If not, then maybe we're before the first page mark, so search forward
         if not good_mark:
-            if mark := page_mark_next(insert):
+            if mark := maintext().page_mark_next(insert):
                 good_mark = mark
         return good_mark
 
@@ -613,7 +620,7 @@ class File:
         insert = maintext().get_insert_index().index()
         cur_page = self.get_current_image_name()
         mark = page_mark_from_img(cur_page) if cur_page else insert
-        while mark := page_mark_next_previous(mark, direction):
+        while mark := maintext().page_mark_next_previous(mark, direction):
             if maintext().compare(mark, "!=", insert):
                 maintext().set_insert_index(maintext().rowcol(mark))
                 return
@@ -625,7 +632,7 @@ class File:
         Done in reverse order so two adjacent boundaries preserve their order.
         """
         mark: str = tk.END
-        while mark := page_mark_previous(mark):
+        while mark := maintext().page_mark_previous(mark):
             maintext().insert(mark, "[" + mark + "]", PAGE_FLAG_TAG)
 
     def remove_page_flags(self) -> None:
@@ -656,7 +663,7 @@ class File:
         mark = "1.0"
         flag_found = False
         flag_not_found = False
-        while mark := page_mark_next(mark):
+        while mark := maintext().page_mark_next(mark):
             img = img_from_page_mark(mark)
             assert img in self.page_details
             if match := maintext().find_match(
@@ -761,7 +768,7 @@ class File:
 
         mark_list = []
         mark: str = tk.END
-        while mark := page_mark_previous(mark):
+        while mark := maintext().page_mark_previous(mark):
             mark_list.append(mark)
             maintext().insert(mark, PAGEMARK_PIN)
         return mark_list
@@ -847,45 +854,6 @@ class File:
     def remove_bookmark_tags(self) -> None:
         """Remove all bookmark highlightling."""
         maintext().tag_remove(BOOKMARK_TAG, "1.0", "end")
-
-
-def page_mark_previous(mark: str) -> str:
-    """Return page mark previous to given one, or empty string if none."""
-    return page_mark_next_previous(mark, -1)
-
-
-def page_mark_next(mark: str) -> str:
-    """Return page mark after given one, or empty string if none."""
-    return page_mark_next_previous(mark, 1)
-
-
-def page_mark_next_previous(mark: str, direction: Literal[1, -1]) -> str:
-    """Return page mark before/after given one, or empty string if none.
-
-    Args:
-        mark: Mark to begin search from
-        direction: +1 to go to next page; -1 for previous page
-    """
-    if direction < 0:
-        mark_next_previous = maintext().mark_previous
-    else:
-        mark_next_previous = maintext().mark_next
-    while mark := mark_next_previous(mark):  # type: ignore[assignment]
-        if is_page_mark(mark):
-            return mark
-    return ""
-
-
-def is_page_mark(mark: str) -> bool:
-    """Check whether mark is a page mark, e.g. "Pg027".
-
-    Args:
-        mark: String containing name of mark to be checked.
-
-    Returns:
-        True if string matches the format of page mark names.
-    """
-    return mark.startswith(PAGEMARK_PREFIX)
 
 
 def img_from_page_mark(mark: str) -> str:
