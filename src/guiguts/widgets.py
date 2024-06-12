@@ -244,9 +244,9 @@ class ToplevelDialog(tk.Toplevel):
 class OkApplyCancelDialog(ToplevelDialog):
     """A ToplevelDialog with OK, Apply & Cancel buttons."""
 
-    def __init__(self, title: str) -> None:
+    def __init__(self, title: str, **kwargs: Any) -> None:
         """Initialize the dialog."""
-        super().__init__(title)
+        super().__init__(title, **kwargs)
         button_frame = ttk.Frame(self, padding=5)
         button_frame.grid(row=1, column=0, sticky="NSEW")
         button_frame.columnconfigure(0, weight=1)
@@ -558,3 +558,43 @@ def _theme_init_tk_widget_colors() -> None:
     _theme_default_text_fg = temp_text.cget("foreground")
     _theme_default_text_ibg = temp_text.cget("insertbackground")
     temp_text.destroy()
+
+
+# Keep track of which Text/Entry widget of interest last had focus.
+# "Of interest" means those we might want to paste special characters into,
+# e.g. main text widget, search dialog fields, etc., but not the entry field
+# in dialogs like Compose Sequence (which are used to create the special
+# characters).
+
+_text_focus_widget: Optional[tk.Widget] = None
+
+
+def register_focus_widget(widget: tk.Entry | tk.Text) -> None:
+    """Register a widget as being "of interest", i.e. to track when it gets focus.
+
+    Args:
+        widget: The widget whose focus is to be tracked.
+    """
+    global _text_focus_widget
+    assert isinstance(widget, (tk.Entry, tk.Text))
+
+    def set_focus_widget(event: tk.Event) -> None:
+        """Store the widget that triggered the event."""
+        global _text_focus_widget
+        _text_focus_widget = event.widget
+
+    widget.bind("<FocusIn>", set_focus_widget)
+    if _text_focus_widget is None:
+        _text_focus_widget = widget
+
+
+def insert_in_focus_widget(string: str) -> None:
+    """Insert given string in the text/entry widget of interest that most recently had focus.
+
+    Args:
+        string: String to be inserted.
+    """
+    if _text_focus_widget is None or not _text_focus_widget.winfo_exists():
+        return
+    assert isinstance(_text_focus_widget, (tk.Entry, tk.Text))
+    _text_focus_widget.insert(tk.INSERT, string)

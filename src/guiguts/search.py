@@ -18,7 +18,13 @@ from guiguts.utilities import (
     is_mac,
     sing_plur,
 )
-from guiguts.widgets import ToplevelDialog, Combobox, mouse_bind, ToolTip
+from guiguts.widgets import (
+    ToplevelDialog,
+    Combobox,
+    mouse_bind,
+    ToolTip,
+    register_focus_widget,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -90,6 +96,8 @@ class SearchDialog(ToplevelDialog):
         # Search
         self.search_box = Combobox(search_frame1, PrefKey.SEARCH_HISTORY, width=30)
         self.search_box.grid(row=0, column=0, padx=2, pady=(5, 0), sticky="NSEW")
+        # Register search box to have its focus tracked for inserting special characters
+        register_focus_widget(self.search_box)
         self.search_box.focus()
 
         search_button = ttk.Button(
@@ -165,6 +173,8 @@ class SearchDialog(ToplevelDialog):
         # Replace
         self.replace_box = Combobox(search_frame1, PrefKey.REPLACE_HISTORY, width=30)
         self.replace_box.grid(row=1, column=0, padx=2, pady=(4, 6), sticky="NSEW")
+        # Register replace box to have its focus tracked for inserting special characters
+        register_focus_widget(self.replace_box)
 
         ttk.Button(
             search_frame1,

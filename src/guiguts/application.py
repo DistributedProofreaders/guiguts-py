@@ -25,7 +25,7 @@ from guiguts.mainwindow import (
     ErrorHandler,
     process_accel,
 )
-from guiguts.misc_dialogs import PreferencesDialog
+from guiguts.misc_dialogs import PreferencesDialog, ComposeSequenceDialog
 from guiguts.misc_tools import (
     basic_fixup_check,
     page_separator_fixup,
@@ -539,6 +539,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         unicode_menu.add_button(
             "~Normalize Selected Characters",
             unicode_normalize,
+        )
+        unicode_menu.add_button(
+            "~~Compose Sequence...",
+            ComposeSequenceDialog.show_dialog,
+            "Cmd/Ctrl+;",
         )
 
     def init_view_menu(self) -> None:
