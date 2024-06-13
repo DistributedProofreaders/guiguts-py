@@ -26,17 +26,29 @@ class AnchorRecord:
 
     def __init__(
         self,
-        fn: str,
+        text: str,
         start: IndexRowCol,
         end: IndexRowCol,
         hilite_start: int,
         hilite_end: int,
+        fn_index: int,
     ) -> None:
-        self.anchor = fn
+        """Initialize AnchorRecord.
+
+        Args:
+            text - Text of the anchor.
+            start - Start rowcol of anchor in file.
+            end - End rowcol of anchor in file.
+            hilite_start - Start column of highlighting in text.
+            hilite_end - End column of highlighting in text.
+            fn_index - Index into footnotes array of linked footnote.
+        """
+        self.text = text
         self.start = start
         self.end = end
         self.hilite_start = hilite_start
         self.hilite_end = hilite_end
+        self.fn_index = fn_index
 
 
 class FootnoteRecord:
@@ -44,26 +56,39 @@ class FootnoteRecord:
 
     def __init__(
         self,
-        fn: str,
+        text: str,
         start: IndexRowCol,
         end: IndexRowCol,
         hilite_start: int,
         hilite_end: int,
+        an_index: int,
     ) -> None:
-        self.footnote = fn
+        """Initialize FootnoteRecord.
+
+        Args:
+            text - Text of the footnote.
+            start - Start rowcol of footnote in file.
+            end - End rowcol of footnote in file.
+            hilite_start - Start column of highlighting in text.
+            hilite_end - End column of highlighting in text.
+            fn_index - Index into anchors array of linked anchor.
+        """
+        self.text = text
         self.start = start
         self.end = end
         self.hilite_start = hilite_start
         self.hilite_end = hilite_end
+        self.an_index = an_index
 
 
 class FootnoteChecker:
     """Find, check & record footnotes."""
 
-    def __init__(self) -> None:
+    def __init__(self, checker_dialog: CheckerDialog) -> None:
         """Initialize footnote checker."""
         self.fn_records: list[FootnoteRecord] = []
         self.an_records: list[AnchorRecord] = []
+        self.checker_dialog: CheckerDialog = checker_dialog
 
     def reset(self) -> None:
         """Reset FootnoteChecker."""
@@ -148,8 +173,10 @@ class FootnoteChecker:
                     break
                 start_point = anchor_match.rowcol
 
+            fn_index = len(self.fn_records)
+            an_index = -1 if anchor_match is None else len(self.an_records)
             fnr = FootnoteRecord(
-                fn_line, start, end_point, start.col + 1, colon_pos.col
+                fn_line, start, end_point, start.col + 1, colon_pos.col, an_index
             )
             self.fn_records.append(fnr)
 
@@ -165,6 +192,7 @@ class FootnoteChecker:
                     ),
                     anchor_match.rowcol.col,
                     anchor_match.rowcol.col + anchor_match.count,
+                    fn_index,
                 )
                 self.an_records.append(anr)
 
@@ -195,14 +223,16 @@ def footnote_check() -> None:
     if not tool_save():
         return
 
-    if _the_footnote_checker is None:
-        _the_footnote_checker = FootnoteChecker()
-
     checker_dialog = CheckerDialog.show_dialog(
         "Footnote Check Results",
         rerun_command=footnote_check,
         sort_key_alpha=sort_key_type,
     )
+    if _the_footnote_checker is None:
+        _the_footnote_checker = FootnoteChecker(checker_dialog)
+    elif not _the_footnote_checker.checker_dialog.winfo_exists():
+        _the_footnote_checker.checker_dialog = checker_dialog
+
     ToolTip(
         checker_dialog.text,
         "\n".join(
@@ -215,19 +245,64 @@ def footnote_check() -> None:
     frame = ttk.Frame(checker_dialog.header_frame)
     frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
 
-    checker_dialog.reset()
-
     _the_footnote_checker.run_check()
-    for fn_record in _the_footnote_checker.get_fn_records():
+    display_footnote_entries()
+
+
+def display_footnote_entries() -> None:
+    """(Re-)display the footnotes in the checker dialog."""
+    assert _the_footnote_checker is not None
+    checker_dialog = _the_footnote_checker.checker_dialog
+    checker_dialog.reset()
+    fn_records = _the_footnote_checker.get_fn_records()
+    an_records = _the_footnote_checker.get_an_records()
+    for fn_index, fn_record in enumerate(fn_records):
+        error_prefix = ""
+        if fn_record.an_index < 0:
+            error_prefix = "NO ANCHOR: "
+        else:
+            an_record = an_records[fn_record.an_index]
+            # Check that no other footnote has the same anchor as this one
+            for fni2, fn2 in enumerate(fn_records):
+                an2 = an_records[fn2.an_index]
+                if fn_index != fni2 and an_record.start == an2.start:
+                    error_prefix = "SAME ANCHOR: "
+                    break
+            # Check anchor of previous footnote and this one are in order (footnotes are always in order)
+            if (
+                fn_index > 0
+                and fn_record.an_index >= 0
+                and fn_records[fn_index - 1].an_index >= 0
+            ):
+                an_prev = an_records[fn_records[fn_index - 1].an_index]
+                if an_prev.start.row > an_record.start.row or (
+                    an_prev.start.row == an_record.start.row
+                    and an_prev.start.col > an_record.start.col
+                ):
+                    error_prefix += "SEQUENCE: "
+            # Check anchor of next footnote and this one are in order (footnotes are always in order)
+            if (
+                "SEQUENCE: " not in error_prefix
+                and fn_index < len(fn_records) - 1
+                and fn_record.an_index >= 0
+                and fn_records[fn_index + 1].an_index >= 0
+            ):
+                an_next = an_records[fn_records[fn_index + 1].an_index]
+                if an_next.start.row < an_record.start.row or (
+                    an_next.start.row == an_record.start.row
+                    and an_next.start.col < an_record.start.col
+                ):
+                    error_prefix += "SEQUENCE: "
         checker_dialog.add_entry(
-            fn_record.footnote,
+            fn_record.text,
             IndexRange(fn_record.start, fn_record.end),
             fn_record.hilite_start,
             fn_record.hilite_end,
+            error_prefix=error_prefix,
         )
     for an_record in _the_footnote_checker.get_an_records():
         checker_dialog.add_entry(
-            an_record.anchor,
+            an_record.text,
             IndexRange(an_record.start, an_record.end),
             an_record.hilite_start,
             an_record.hilite_end,
