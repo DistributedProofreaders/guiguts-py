@@ -541,7 +541,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             unicode_normalize,
         )
         unicode_menu.add_button(
-            "~~Compose Sequence...",
+            "~Compose Sequence...",
             ComposeSequenceDialog.show_dialog,
             "Cmd/Ctrl+;",
         )
