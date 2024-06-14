@@ -19,7 +19,11 @@ from guiguts.utilities import (
     force_tcl_wholeword,
     convert_to_tcl_regex,
 )
-from guiguts.widgets import theme_set_tk_widget_colors, themed_style
+from guiguts.widgets import (
+    theme_set_tk_widget_colors,
+    themed_style,
+    register_focus_widget,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -221,6 +225,9 @@ class MainText(tk.Text):
         self.bind_event(
             "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
         )
+
+        # Register this widget to have its focus tracked for inserting special characters
+        register_focus_widget(self)
 
         # Configure tags
         self.tag_configure(PAGE_FLAG_TAG, background="gold", foreground="black")

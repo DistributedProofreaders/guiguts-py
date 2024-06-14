@@ -3,6 +3,8 @@
 import tkinter as tk
 from tkinter import ttk
 
+import regex as re
+
 from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
@@ -10,7 +12,12 @@ from guiguts.preferences import (
     PersistentString,
 )
 from guiguts.utilities import is_mac
-from guiguts.widgets import ToplevelDialog, ToolTip
+from guiguts.widgets import (
+    ToplevelDialog,
+    ToolTip,
+    insert_in_focus_widget,
+    OkApplyCancelDialog,
+)
 
 
 class PreferencesDialog(ToplevelDialog):
@@ -145,3 +152,68 @@ class PreferencesDialog(ToplevelDialog):
             PrefKey.WRAP_INDEX_RIGHT_MARGIN,
             "Right margin for index entries",
         )
+
+
+class ComposeSequenceDialog(OkApplyCancelDialog):
+    """Dialog to enter Compose Sequences."""
+
+    def __init__(self) -> None:
+        """Initialize compose sequence dialog."""
+        super().__init__("Compose Sequence", resize_x=False, resize_y=False)
+        ttk.Label(self.top_frame, text="Compose: ").grid(column=0, row=0, sticky="NSEW")
+        self.string = tk.StringVar()
+        entry = ttk.Entry(self.top_frame, textvariable=self.string, name="entry1")
+        entry.grid(column=1, row=0, sticky="NSEW")
+        # In tkinter, binding order is widget, class, toplevel, all
+        # Swap first two, so that class binding has time to set textvariable
+        # before the widget binding below is executed.
+        bindings = entry.bindtags()
+        entry.bindtags((bindings[1], bindings[0], bindings[2], bindings[3]))
+        entry.bind("<Key>", lambda _event: self.interpret_and_insert())
+        entry.focus()
+
+    def apply_changes(self) -> bool:
+        """Overridden function called when Apply/OK buttons are pressed.
+
+        Call to attempt to interpret compose sequence
+
+        Returns:
+            Always returns True, meaning OK button (or Return key) will close dialog.
+        """
+        self.interpret_and_insert(force=True)
+        self.string.set("")
+        return True
+
+    def interpret_and_insert(self, force: bool = False) -> None:
+        """Interpret string from Entry field as a compose sequence and insert it.
+
+        If compose sequence is complete, then the composed character will be
+        inserted in the most recently focused text/entry widget and the Compose
+        dialog will be closed. If sequence is not complete, then nothing will be done,
+        unless `force` is True.
+
+        Args:
+            force: True if string should be interpreted/inserted as-is,
+                rather than waiting for further input.
+        """
+        sequence = self.string.get()
+        char = ""
+        if match := re.fullmatch(r"[0-9a-f]{4}", sequence, re.IGNORECASE):
+            # Exactly 4 hex digits translates to a single Unicode character
+            char = chr(int(sequence, 16))
+        elif force:
+            if match := re.fullmatch(
+                r"(0x|\\x|x|U\+?)?([0-9a-fA-F]{2,})", sequence, re.IGNORECASE
+            ):
+                # Or user can force interpretation as hex with fewer than 4 digits,
+                # or with more than 4 by using a prefix: 0x, \x, x, U or U+
+                char = chr(int(match[2], 16))
+            elif match := re.fullmatch(r"#(\d{2,})", sequence):
+                # Or specify in decimal following '#' character
+                char = chr(int(match[1]))
+        # Unprintable characters shouldn't be inserted
+        if not char or not char.isprintable():
+            return
+        insert_in_focus_widget(char)
+        if not force:
+            self.destroy()
