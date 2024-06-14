@@ -415,14 +415,15 @@ class SearchDialog(ToplevelDialog):
             replace_string = get_regex_replacement(
                 search_string, replace_string, match_text
             )
+        maintext().undo_block_begin()
         maintext().replace(start_index, end_index, replace_string)
         # "Reverse flag XOR Shift-key" searches backwards
         backwards = SearchDialog.reverse.get() ^ opposite_dir
-        # Replace leaves cursor at end of string - if going backwards
-        # need to position it at beginning or search could find
-        # the same match again.
-        if backwards:
-            maintext().set_insert_index(IndexRowCol(start_index), focus=False)
+        # Ensure cursor is at correct end of replaced string - depends on direction.
+        maintext().set_insert_index(
+            maintext().rowcol(MARK_FOUND_START if backwards else MARK_FOUND_END),
+            focus=False,
+        )
         maintext().mark_unset(MARK_FOUND_START, MARK_FOUND_END)
         if search_again:
             find_next(backwards=backwards)
@@ -447,6 +448,7 @@ class SearchDialog(ToplevelDialog):
             # Use a mark for the end of the range, otherwise early replacements with longer
             # or shorter strings will invalidate the index of the range end.
             maintext().mark_set(MARK_END_RANGE, replace_range.end.index())
+            maintext().undo_block_begin()
             while True:
                 try:
                     match = maintext().find_match(

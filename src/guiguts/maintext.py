@@ -31,6 +31,8 @@ WRAP_END_MARK = "WrapSectionEnd"
 PAGE_FLAG_TAG = "PageFlag"
 PAGEMARK_PIN = "\x7f"  # Temp char to pin page mark locations
 BOOKMARK_TAG = "Bookmark"
+PAGEMARK_PREFIX = "Pg"
+REPLACE_END_MARK = "ReplaceEnd"
 
 
 class FindMatch:
@@ -275,7 +277,7 @@ class MainText(tk.Text):
 
     def replace(self, index1: Any, index2: Any, chars: str, *args: Any) -> None:
         """Override method to ensure line numbers are updated."""
-        super().replace(index1, index2, chars, *args)
+        self.replace_preserving_pagemarks(index1, index2, chars, *args)
         self._on_change()
 
     def _do_linenumbers_redraw(self) -> None:
@@ -877,6 +879,115 @@ class MainText(tk.Text):
         """Select from current position to start of text."""
         self.do_select(IndexRange(self.get_insert_index(), self.end()))
         self.set_insert_index(self.end())
+
+    def page_mark_previous(self, mark: str) -> str:
+        """Return page mark previous to given one, or empty string if none."""
+        return self.page_mark_next_previous(mark, -1)
+
+    def page_mark_next(self, mark: str) -> str:
+        """Return page mark after given one, or empty string if none."""
+        return self.page_mark_next_previous(mark, 1)
+
+    def page_mark_next_previous(self, mark: str, direction: Literal[1, -1]) -> str:
+        """Return page mark before/after given one, or empty string if none.
+
+        Args:
+            mark: Mark to begin search from
+            direction: +1 to go to next page; -1 for previous page
+        """
+        if direction < 0:
+            mark_next_previous = self.mark_previous
+        else:
+            mark_next_previous = self.mark_next
+        while mark := mark_next_previous(mark):  # type: ignore[assignment]
+            if self.is_page_mark(mark):
+                return mark
+        return ""
+
+    def is_page_mark(self, mark: str) -> bool:
+        """Check whether mark is a page mark, e.g. "Pg027".
+
+        Args:
+            mark: String containing name of mark to be checked.
+
+        Returns:
+            True if string matches the format of page mark names.
+        """
+        return mark.startswith(PAGEMARK_PREFIX)
+
+    def replace_preserving_pagemarks(
+        self, start_index: Any, end_index: Any, replacement: str, *tags: Any
+    ) -> None:
+        """Replace text indicated by indexes with given string (& optional tags).
+
+        If text being replaced contains page markers, preserve the location of those markers
+        in the same proportions along the replacement text. E.g. if a marker exists at the mid-point
+        of the replaced text, then put that marker at the mid-point of the replacement text.
+        Without this, all page markers within replaced text end up at the beginning (or end
+        depending on gravity) of the replacement text.
+
+        Algorithm works backwards through file so that early partial replacements do not
+        affect locations for subsequent partial replacements.
+
+        Args:
+            start_index: Start of text to be replaced.
+            end_index: End of text to be replaced.
+            replacement:  Replacement text.
+            tags: Optional tuple of tags to be applied to inserted text.
+        """
+        # Get lengths from start of replacement to each page marker
+        len_to_marks: list[int] = []
+        mark = end_index
+        while mark := self.page_mark_previous(mark):
+            if self.compare(mark, "<", start_index):
+                break
+            len_to_marks.append(len(self.get(start_index, mark)))
+        # Scale any lengths by the ratio of new string length to old string length
+        if len_to_marks:
+            ratio = len(replacement) / len(self.get(start_index, end_index))
+            len_to_marks = [round(x * ratio) for x in len_to_marks]
+        # First length is the whole string length
+        len_to_marks.insert(0, len(replacement))
+
+        # Set gravity of page markers immediately after old text to "right" so they stay at the end
+        end_marks: list[str] = []
+        mark = end_index
+        while mark := self.page_mark_next(mark):
+            if self.compare(mark, ">", end_index):
+                break
+            end_marks.append(mark)
+        for mark in end_marks:  # Safe to set the gravity now we have the list
+            self.mark_gravity(mark, tk.RIGHT)
+
+        mark = end_index
+        prev_mark = mark
+        len_idx = 0
+
+        # Replace inter-page-marker chunks
+        def replace_chunk(
+            mark: str, prev_mark: str, beg_idx: int, end_idx: int
+        ) -> None:
+            """Convenience function to replace one chunk."""
+            ins_str = replacement[beg_idx:end_idx]
+            self.mark_set(REPLACE_END_MARK, prev_mark)
+            self.insert(mark, ins_str, tags)
+            self.delete(f"{mark}+{len(ins_str)}c", REPLACE_END_MARK)
+
+        while mark := self.page_mark_previous(mark):
+            if self.compare(mark, "<", start_index):
+                break
+            replace_chunk(
+                mark, prev_mark, len_to_marks[len_idx + 1], len_to_marks[len_idx]
+            )
+            prev_mark = mark
+            len_idx += 1
+
+        # Replace final chunk (actually the earliest since going in reverse)
+        replace_chunk(start_index, prev_mark, 0, len_to_marks[len_idx])
+
+        # Restore gravity to left for marks at the end of the string
+        for mark in end_marks:
+            self.mark_gravity(mark, tk.LEFT)
 
     def find_match(
         self,
