@@ -1,6 +1,6 @@
 """Support running of checking tools"""
 
-from enum import Enum, StrEnum, auto
+from enum import Enum, IntEnum, StrEnum, auto
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Optional, Callable
@@ -9,7 +9,12 @@ import regex as re
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.preferences import PersistentString, PrefKey
+from guiguts.preferences import (
+    PersistentString,
+    PersistentBoolean,
+    PrefKey,
+    preferences,
+)
 from guiguts.root import root
 from guiguts.utilities import (
     IndexRowCol,
@@ -30,6 +35,21 @@ class CheckerEntryType(Enum):
     HEADER = auto()
     CONTENT = auto()
     FOOTER = auto()
+
+
+class CheckerEntrySeverity(IntEnum):
+    """Enum class to store severity of Checker Entry (info/warning/error/etc).
+
+    IntEnums can be used as integers, and auto() allocates incrementing values,
+    so code such as `severity > CheckerEntrySeverity.INFO` is valid.
+
+    If additional severities such as WARNING or CRITICAL are added, they must
+    be inserted in the list below to maintain an order of increasing severity.
+    """
+
+    OTHER = auto()  # Headers, blank lines, etc.
+    INFO = auto()  # Messages that do not indicate a problem
+    ERROR = auto()  # Messages that indicate a problem
 
 
 class CheckerEntry:
@@ -70,6 +90,13 @@ class CheckerEntry:
         self.initial_pos = initial_pos
         self.entry_type = entry_type
         self.error_prefix = error_prefix
+        self.severity = (
+            CheckerEntrySeverity.OTHER
+            if text_range is None
+            else CheckerEntrySeverity.ERROR
+            if error_prefix
+            else CheckerEntrySeverity.INFO
+        )
 
 
 class CheckerSortType(StrEnum):
@@ -97,6 +124,7 @@ class CheckerDialog(ToplevelDialog):
         process_command: Optional[Callable[[CheckerEntry], None]] = None,
         sort_key_rowcol: Optional[Callable[[CheckerEntry], tuple]] = None,
         sort_key_alpha: Optional[Callable[[CheckerEntry], tuple]] = None,
+        show_suspects_only: bool = False,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -104,7 +132,10 @@ class CheckerDialog(ToplevelDialog):
         Args:
             title: Title for dialog.
             rerun_command: Function to call to re-run the check.
-            process_command: Function to call to "process" the current error, e.g. swap he/be
+            process_command: Function to call to "process" the current error, e.g. swap he/be.
+            sort_key_rowcol: Function to sort by row & column.
+            sort_key_alpha: Function to sort by alpha/type.
+            show_suspects_only: True to show "Suspects only" checkbutton.
         """
         # Initialize class variables on first instantiation, then remember
         # values for subsequent uses of dialog.
@@ -121,13 +152,26 @@ class CheckerDialog(ToplevelDialog):
         self.header_frame.columnconfigure(0, weight=1)
         left_frame = ttk.Frame(self.header_frame)
         left_frame.grid(column=0, row=0, sticky="NSEW")
-        left_frame.columnconfigure(0, weight=1)
+        left_frame.columnconfigure(0, weight=0)
+        left_frame.columnconfigure(1, weight=1)
         self.count_label = ttk.Label(left_frame, text="No results")
         self.count_label.grid(column=0, row=0, sticky="NSW")
+        self.suspects_only_btn: Optional[ttk.Checkbutton]
+        if show_suspects_only:
+            self.suspects_only_btn = ttk.Checkbutton(
+                left_frame,
+                text="Suspects Only",
+                variable=PersistentBoolean(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY),
+                command=self.display_entries,
+                takefocus=False,
+            )
+            self.suspects_only_btn.grid(column=1, row=0, sticky="NSW", padx=(10, 0))
+        else:
+            self.suspects_only_btn = None
         ttk.Label(
             left_frame,
             text="Sort:",
-        ).grid(row=0, column=1, sticky="NSE", padx=5)
+        ).grid(row=0, column=2, sticky="NSE", padx=5)
         ttk.Radiobutton(
             left_frame,
             text="Line & Col",
@@ -135,7 +179,7 @@ class CheckerDialog(ToplevelDialog):
             variable=CheckerDialog.sort_type,
             value=CheckerSortType.ROWCOL,
             takefocus=False,
-        ).grid(row=0, column=2, sticky="NSE", padx=2)
+        ).grid(row=0, column=3, sticky="NSE", padx=2)
         ttk.Radiobutton(
             left_frame,
             text="Alpha/Type",
@@ -143,7 +187,7 @@ class CheckerDialog(ToplevelDialog):
             variable=CheckerDialog.sort_type,
             value=CheckerSortType.ALPHABETIC,
             takefocus=False,
-        ).grid(row=0, column=3, sticky="NSE", padx=2)
+        ).grid(row=0, column=4, sticky="NSE", padx=2)
 
         self.rerun_button = ttk.Button(
             self.header_frame, text="Re-run", command=rerun_command
@@ -189,6 +233,7 @@ class CheckerDialog(ToplevelDialog):
         self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
         self.text.tag_configure(ERROR_PREFIX_TAG_NAME, foreground="red")
         self.count_linked_entries = 0  # Not the same as len(self.entries)
+        self.count_suspects = 0
         self.section_count = 0
         self.selected_text = ""
         self.selected_text_range: Optional[IndexRange] = None
@@ -300,6 +345,7 @@ class CheckerDialog(ToplevelDialog):
         super().reset()
         self.entries: list[CheckerEntry] = []
         self.count_linked_entries = 0
+        self.count_suspects = 0
         self.section_count = 0
         self.selected_text = ""
         self.selected_text_range = None
@@ -406,16 +452,22 @@ class CheckerDialog(ToplevelDialog):
         self.entries.sort(key=sort_key)
         self.text.delete("1.0", tk.END)
         self.count_linked_entries = 0
+        self.count_suspects = 0
 
         for entry in self.entries:
+            if self.skip_suspect_entry(entry):
+                continue
             rowcol_str = ""
+            if entry.severity >= CheckerEntrySeverity.INFO:
+                self.count_linked_entries += 1
+            if entry.severity >= CheckerEntrySeverity.ERROR:
+                self.count_suspects += 1
             if entry.text_range is not None:
                 rowcol_str = (
                     f"{entry.text_range.start.row}.{entry.text_range.start.col}: "
                 )
                 if entry.text_range.start.col < 10:
                     rowcol_str += " "
-                self.count_linked_entries += 1
             self.text.insert(
                 tk.END, rowcol_str + entry.error_prefix + entry.text + "\n"
             )
@@ -442,27 +494,50 @@ class CheckerDialog(ToplevelDialog):
                 )
 
         # Highlight previously selected line, or if none, the first suitable line
+        selection_made = False
         if self.selected_text:
             for index, entry in enumerate(self.entries):
                 if (
                     entry.text == self.selected_text
                     and entry.text_range == self.selected_text_range
+                    and not self.skip_suspect_entry(entry)
                 ):
                     self.select_entry(index)
+                    selection_made = True
                     break
-        else:
+        if not selection_made:
             for index, entry in enumerate(self.entries):
+                if self.skip_suspect_entry(entry):
+                    continue
                 if entry.text_range:
                     self.select_entry(index)
                     break
         self.update_count_label()
 
+    def skip_suspect_entry(self, entry: CheckerEntry) -> bool:
+        """Return whether to skip an entry when showing Suspects OInly.
+
+        Args:
+            entry: Entry to be checked.
+
+        Returns: True if there's a Suspects Only button that is switched on, but the entry isn't a suspect.
+        """
+        return (
+            self.suspects_only_btn is not None
+            and preferences.get(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY)
+            and entry.severity < CheckerEntrySeverity.ERROR
+        )
+
     def update_count_label(self) -> None:
-        """Update the label showing how many linked entries are in dialog."""
+        """Update the label showing how many linked entries & suspects are in dialog."""
         if self.count_label.winfo_exists():
-            self.count_label["text"] = sing_plur(
-                self.count_linked_entries, "Entry", "Entries"
+            es = sing_plur(self.count_linked_entries, "Entry", "Entries")
+            ss = (
+                f"({sing_plur(self.count_suspects, 'Suspect')})"
+                if self.count_suspects > 0
+                else ""
             )
+            self.count_label["text"] = f"{es} {ss}"
 
     def select_entry_by_arrow(self, increment: int) -> None:
         """Select next/previous line in dialog, and jump to the line in the
@@ -604,8 +679,10 @@ class CheckerDialog(ToplevelDialog):
                 if process and self.process_command:
                     self.process_command(self.entries[ii])
                 if remove:
-                    if self.entries[ii].text_range:
+                    if self.entries[ii].severity >= CheckerEntrySeverity.INFO:
                         self.count_linked_entries -= 1
+                    if self.entries[ii].severity >= CheckerEntrySeverity.ERROR:
+                        self.count_suspects -= 1
                     del self.entries[ii]
                     self.text.delete(f"{ii + 1}.0", f"{ii + 2}.0")
         self.update_count_label()

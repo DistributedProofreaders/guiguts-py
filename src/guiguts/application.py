@@ -302,6 +302,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.WFDIALOG_DISPLAY_TYPE, WFDisplayType.ALL_WORDS)
         preferences.set_default(PrefKey.WFDIALOG_SORT_TYPE, WFSortType.ALPHABETIC)
         preferences.set_default(PrefKey.CHECKERDIALOG_SORT_TYPE, CheckerSortType.ROWCOL)
+        preferences.set_default(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY, False)
         preferences.set_default(PrefKey.WFDIALOG_ITALIC_THRESHOLD, ["4"])
         preferences.set_default(PrefKey.WFDIALOG_REGEX, [])
         preferences.set_default(
