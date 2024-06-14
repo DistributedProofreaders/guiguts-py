@@ -198,17 +198,15 @@ class ComposeSequenceDialog(OkApplyCancelDialog):
         """
         sequence = self.string.get()
         char = ""
-        # Allow 0x, \x, x or U+ as optional prefix to hex Unicode ordinal
-        if match := re.fullmatch(
-            r"(0x|\\x|x|U\+)?([0-9a-f]{4})", sequence, re.IGNORECASE
-        ):
-            # If 4 hex digits, it's complete
-            char = chr(int(match[2], 16))
+        if match := re.fullmatch(r"[0-9a-f]{4}", sequence, re.IGNORECASE):
+            # Exactly 4 hex digits translates to a single Unicode character
+            char = chr(int(sequence, 16))
         elif force:
             if match := re.fullmatch(
-                r"(0x|\\x|x|U\+)?([0-9a-fA-F]{2,4})", sequence, re.IGNORECASE
+                r"(0x|\\x|x|U\+?)?([0-9a-fA-F]{2,})", sequence, re.IGNORECASE
             ):
-                # Or user can force conversion with fewer than 4 hex digits
+                # Or user can force interpretation as hex with fewer than 4 digits,
+                # or with more than 4 by using a prefix: 0x, \x, x, U or U+
                 char = chr(int(match[2], 16))
             elif match := re.fullmatch(r"#(\d{2,})", sequence):
                 # Or specify in decimal following '#' character
