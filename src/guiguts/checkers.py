@@ -502,7 +502,7 @@ class CheckerDialog(ToplevelDialog):
                     and entry.text_range == self.selected_text_range
                     and not self.skip_suspect_entry(entry)
                 ):
-                    self.select_entry(index)
+                    self.select_entry_by_index(index)
                     selection_made = True
                     break
         if not selection_made:
@@ -510,22 +510,29 @@ class CheckerDialog(ToplevelDialog):
                 if self.skip_suspect_entry(entry):
                     continue
                 if entry.text_range:
-                    self.select_entry(index)
+                    self.select_entry_by_index(index)
                     break
         self.update_count_label()
 
+    def showing_suspects_only(self) -> bool:
+        """Return whether dialog is showing Suspects Only.
+
+        Returns: True if there's a Suspects Only button that is switched on.
+        """
+        return self.suspects_only_btn is not None and preferences.get(
+            PrefKey.CHECKERDIALOG_SUSPECTS_ONLY
+        )
+
     def skip_suspect_entry(self, entry: CheckerEntry) -> bool:
-        """Return whether to skip an entry when showing Suspects OInly.
+        """Return whether to skip an entry when showing Suspects Only.
 
         Args:
             entry: Entry to be checked.
 
-        Returns: True if there's a Suspects Only button that is switched on, but the entry isn't a suspect.
+        Returns: True if showing Suspects Only, but the entry isn't a suspect.
         """
         return (
-            self.suspects_only_btn is not None
-            and preferences.get(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY)
-            and entry.severity < CheckerEntrySeverity.ERROR
+            self.showing_suspects_only() and entry.severity < CheckerEntrySeverity.ERROR
         )
 
     def update_count_label(self) -> None:
@@ -546,14 +553,14 @@ class CheckerDialog(ToplevelDialog):
         Args:
             increment: +1 to move to next line, -1 to move to previous line.
         """
-        entry_index = self.current_entry_index()
-        if (
-            entry_index is None
-            or entry_index + increment < 0
-            or entry_index + increment >= len(self.entries)
-        ):
+        line_num = self.text.get_select_line_num()
+        if line_num is None:
             return
-        self.select_entry(entry_index + increment, focus=False)
+        try:
+            entry_index = self.entry_index_from_linenum(line_num + increment)
+        except IndexError:
+            return
+        self.select_entry_by_index(entry_index, focus=False)
 
     def select_entry_by_click(self, event: tk.Event) -> str:
         """Select clicked line in dialog, and jump to the line in the
@@ -569,7 +576,7 @@ class CheckerDialog(ToplevelDialog):
             entry_index = self.entry_index_from_click(event)
         except IndexError:
             return "break"
-        self.select_entry(entry_index)
+        self.select_entry_by_index(entry_index)
         return "break"
 
     def process_entry_by_click(
@@ -589,7 +596,7 @@ class CheckerDialog(ToplevelDialog):
             entry_index = self.entry_index_from_click(event)
         except IndexError:
             return "break"
-        self.select_entry(entry_index)
+        self.select_entry_by_index(entry_index)
         self.process_entry_current(all_matching=all_matching)
         return "break"
 
@@ -608,7 +615,7 @@ class CheckerDialog(ToplevelDialog):
             entry_index = self.entry_index_from_click(event)
         except IndexError:
             return "break"
-        self.select_entry(entry_index)
+        self.select_entry_by_index(entry_index)
         self.remove_entry_current(all_matching=all_matching)
         return "break"
 
@@ -631,7 +638,7 @@ class CheckerDialog(ToplevelDialog):
             entry_index = self.entry_index_from_click(event)
         except IndexError:
             return "break"
-        self.select_entry(entry_index)
+        self.select_entry_by_index(entry_index)
         self.process_remove_entry_current(all_matching=all_matching)
         return "break"
 
@@ -646,11 +653,58 @@ class CheckerDialog(ToplevelDialog):
             Index into self.entries list
             Raises IndexError exception if out of range
         """
-        click_rowcol = IndexRowCol(self.text.index(f"@{event.x},{event.y}"))
-        entry_index = click_rowcol.row - 1
-        if entry_index < 0 or entry_index >= len(self.entries):
-            raise IndexError
-        return entry_index
+        linenum = self.linenum_from_click(event)
+        return self.entry_index_from_linenum(linenum)
+
+    def linenum_from_click(self, event: tk.Event) -> int:
+        """Get the line number based on the mouse position in the click event.
+
+        Args:
+            event: Event object containing mouse click position.
+
+        Returns:
+            Line number that was clicked in the list of entries
+        """
+        return IndexRowCol(self.text.index(f"@{event.x},{event.y}")).row
+
+    def entry_index_from_linenum(self, linenum: int) -> int:
+        """Get the index into the entries array from a line number in the list,
+        taking into account "Suspects Only" setting.
+
+        Args:
+            linenum: Line number in the list of entries.
+
+        Returns:
+            Index into entries array.
+            Raises IndexError exception if out of range.
+        """
+        count = 0
+        for index, entry in enumerate(self.entries):
+            if self.skip_suspect_entry(entry):
+                continue
+            count += 1
+            if linenum == count:
+                return index
+        raise IndexError
+
+    def linenum_from_entry_index(self, entry_index: int) -> int:
+        """Get the line number in the list, from the entry_index,
+        taking into account "Suspects Only" setting.
+
+        Args:
+            entry_index: Index into entries array.
+
+        Returns:
+            Line number in the list of entries, or 0 if not in range.
+        """
+        linenum = 0
+        for index, entry in enumerate(self.entries):
+            if self.skip_suspect_entry(entry):
+                continue
+            linenum += 1
+            if index == entry_index:
+                return linenum
+        return 0
 
     def process_remove_entries(
         self, process: bool, remove: bool, all_matching: bool
@@ -666,8 +720,11 @@ class CheckerDialog(ToplevelDialog):
         entry_index = self.current_entry_index()
         if entry_index is None:
             return
+        linenum = self.text.get_select_line_num()
+        if linenum is None:
+            return
         # Mark before starting so location can be selected later
-        self.text.mark_set(MARK_ENTRY_TO_SELECT, f"{entry_index + 1}.0")
+        self.text.mark_set(MARK_ENTRY_TO_SELECT, f"{linenum}.0")
         match_text = self.entries[entry_index].text
         if all_matching:
             # Work in reverse since may be deleting from list while iterating
@@ -683,14 +740,21 @@ class CheckerDialog(ToplevelDialog):
                         self.count_linked_entries -= 1
                     if self.entries[ii].severity >= CheckerEntrySeverity.ERROR:
                         self.count_suspects -= 1
+                    linenum = self.linenum_from_entry_index(ii)
+                    self.text.delete(f"{linenum}.0", f"{linenum + 1}.0")
                     del self.entries[ii]
-                    self.text.delete(f"{ii + 1}.0", f"{ii + 2}.0")
         self.update_count_label()
         # Select line that is now where the first processed/removed line was
         entry_rowcol = IndexRowCol(self.text.index(MARK_ENTRY_TO_SELECT))
-        entry_index = min(entry_rowcol.row - 1, len(self.entries) - 1)
-        if len(self.entries) > 0:
-            self.select_entry(entry_index)
+        last_row = IndexRowCol(self.text.index(tk.END)).row - 1
+        if last_row > 0:
+            try:
+                entry_index = self.entry_index_from_linenum(
+                    min(entry_rowcol.row, last_row)
+                )
+            except IndexError:
+                return
+            self.select_entry_by_index(entry_index)
 
     def process_entry_current(self, all_matching: bool = False) -> None:
         """Call the "process" callback function, if any, on the
@@ -734,17 +798,18 @@ class CheckerDialog(ToplevelDialog):
             Index into self.entries array, or None if no message selected.
         """
         line_num = self.text.get_select_line_num()
-        return None if line_num is None else line_num - 1
+        return None if line_num is None else self.entry_index_from_linenum(line_num)
 
-    def select_entry(self, entry_index: int, focus: bool = True) -> None:
+    def select_entry_by_index(self, entry_index: int, focus: bool = True) -> None:
         """Select line in dialog corresponding to given entry index,
         and jump to the line in the main text widget that corresponds to it.
 
         Args:
             event: Event object containing mouse click position.
         """
-        self.text.select_line(entry_index + 1)
-        self.text.mark_set(tk.INSERT, f"{entry_index + 1}.0")
+        linenum = self.linenum_from_entry_index(entry_index)
+        self.text.select_line(linenum)
+        self.text.mark_set(tk.INSERT, f"{linenum}.0")
         self.text.focus_set()
         entry = self.entries[entry_index]
         self.selected_text = entry.text

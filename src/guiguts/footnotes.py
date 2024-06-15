@@ -1,7 +1,6 @@
 """Footnote checking, fixing and tidying functionality"""
 
 import logging
-from tkinter import ttk
 from typing import Optional
 import regex as re
 
@@ -239,12 +238,12 @@ def footnote_check() -> None:
         "\n".join(
             [
                 "Left click: Select & find footnote",
+                "Right click: Remove item from list",
+                "Shift-Right click: Remove all matching items",
             ]
         ),
         use_pointer_pos=True,
     )
-    frame = ttk.Frame(checker_dialog.header_frame)
-    frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
 
     _the_footnote_checker.run_check()
     display_footnote_entries()
