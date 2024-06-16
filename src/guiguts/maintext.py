@@ -1133,9 +1133,8 @@ class MainText(tk.Text):
             start = _range.start.index()
             end = _range.end.index()
             string = self.get(start, end)
-            self.delete(start, end)
-            # apply transform, then insert at start position
-            self.insert(start, fn(string))
+            # apply transform, then replace old string with new
+            self.replace(start, end, fn(string))
 
     def sentence_case_transformer(self, s: str) -> str:
         """Text transformer to convert a string to "Sentence case".
