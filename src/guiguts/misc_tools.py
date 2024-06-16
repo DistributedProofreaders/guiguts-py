@@ -287,12 +287,12 @@ class PageSeparatorDialog(ToplevelDialog):
         self.key_bind("c", chapter_button.invoke)
         self.key_bind("Key-4", chapter_button.invoke)
 
-        self.auto_type = PersistentString(PrefKey.PAGESEP_AUTO_TYPE)
+        auto_type = PersistentString(PrefKey.PAGESEP_AUTO_TYPE)
         ttk.Radiobutton(
             self.top_frame,
             text="No Auto",
             command=self.refresh,
-            variable=self.auto_type,
+            variable=auto_type,
             value=PageSepAutoType.NO_AUTO,
             takefocus=False,
         ).grid(column=0, row=1, sticky="NSEW", padx=(20, 2), pady=2)
@@ -300,7 +300,7 @@ class PageSeparatorDialog(ToplevelDialog):
             self.top_frame,
             text="Auto Advance",
             command=self.refresh,
-            variable=self.auto_type,
+            variable=auto_type,
             value=PageSepAutoType.AUTO_ADVANCE,
             takefocus=False,
         ).grid(column=1, row=1, sticky="NSEW", padx=2, pady=2)
@@ -308,7 +308,7 @@ class PageSeparatorDialog(ToplevelDialog):
             self.top_frame,
             text="Auto Fix",
             command=self.refresh,
-            variable=self.auto_type,
+            variable=auto_type,
             value=PageSepAutoType.AUTO_FIX,
             takefocus=False,
         ).grid(column=2, row=1, sticky="NSEW", padx=2, pady=2)

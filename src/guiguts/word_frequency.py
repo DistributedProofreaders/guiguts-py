@@ -179,12 +179,6 @@ class WordFrequencyDialog(ToplevelDialog):
         text: Text widget to contain results.
     """
 
-    # Cannot be initialized here, since Tk root may not yet be created yet
-    suspects_only: PersistentBoolean
-    ignore_case: PersistentBoolean
-    display_type: PersistentString
-    sort_type: PersistentString
-
     CHAR_DISPLAY: dict[str, str] = {
         " ": "*space*",
         "\u00a0": "*nbsp*",
@@ -195,22 +189,6 @@ class WordFrequencyDialog(ToplevelDialog):
         self,
     ) -> None:
         """Initialize the dialog."""
-        # Initialize class variables on first instantiation, then remember
-        # values for subsequent uses of dialog.
-        try:
-            WordFrequencyDialog.suspects_only
-        except AttributeError:
-            WordFrequencyDialog.suspects_only = PersistentBoolean(
-                PrefKey.WFDIALOG_SUSPECTS_ONLY
-            )
-            WordFrequencyDialog.ignore_case = PersistentBoolean(
-                PrefKey.WFDIALOG_IGNORE_CASE
-            )
-            WordFrequencyDialog.display_type = PersistentString(
-                PrefKey.WFDIALOG_DISPLAY_TYPE
-            )
-            WordFrequencyDialog.sort_type = PersistentString(PrefKey.WFDIALOG_SORT_TYPE)
-
         super().__init__("Word Frequency")
         self.top_frame.rowconfigure(0, weight=0)
         header_frame = ttk.Frame(self.top_frame, padding=2)
@@ -236,7 +214,7 @@ class WordFrequencyDialog(ToplevelDialog):
             rerun_frame,
             text="Ignore Case",
             command=word_frequency,
-            variable=WordFrequencyDialog.ignore_case,
+            variable=PersistentBoolean(PrefKey.WFDIALOG_IGNORE_CASE),
             takefocus=False,
         ).grid(row=1, column=0, sticky="NSEW", padx=5, pady=2)
 
@@ -249,7 +227,7 @@ class WordFrequencyDialog(ToplevelDialog):
         ttk.Checkbutton(
             options_frame,
             text="Suspects Only",
-            variable=WordFrequencyDialog.suspects_only,
+            variable=PersistentBoolean(PrefKey.WFDIALOG_SUSPECTS_ONLY),
             command=lambda: wf_populate(self),
             takefocus=False,
         ).grid(row=0, column=0, sticky="NSW", padx=5)
@@ -257,11 +235,12 @@ class WordFrequencyDialog(ToplevelDialog):
             options_frame,
             text="Sort:",
         ).grid(row=0, column=1, sticky="NSE", padx=5)
+        sort_type = PersistentString(PrefKey.WFDIALOG_SORT_TYPE)
         ttk.Radiobutton(
             options_frame,
             text="Alph",
             command=lambda: wf_populate(self),
-            variable=WordFrequencyDialog.sort_type,
+            variable=sort_type,
             value=WFSortType.ALPHABETIC,
             takefocus=False,
         ).grid(row=0, column=2, sticky="NSE", padx=2)
@@ -269,7 +248,7 @@ class WordFrequencyDialog(ToplevelDialog):
             options_frame,
             text="Freq",
             command=lambda: wf_populate(self),
-            variable=WordFrequencyDialog.sort_type,
+            variable=sort_type,
             value=WFSortType.FREQUENCY,
             takefocus=False,
         ).grid(row=0, column=3, sticky="NSE", padx=2)
@@ -277,7 +256,7 @@ class WordFrequencyDialog(ToplevelDialog):
             options_frame,
             text="Len",
             command=lambda: wf_populate(self),
-            variable=WordFrequencyDialog.sort_type,
+            variable=sort_type,
             value=WFSortType.LENGTH,
             takefocus=False,
         ).grid(row=0, column=4, sticky="NSE", padx=(2, 5))
@@ -289,6 +268,8 @@ class WordFrequencyDialog(ToplevelDialog):
         display_frame.grid(row=2, column=0, columnspan=2, sticky="NSEW", padx=(0, 15))
         for col in range(0, 4):
             display_frame.columnconfigure(index=col, weight=1)
+
+        display_type = PersistentString(PrefKey.WFDIALOG_DISPLAY_TYPE)
 
         def display_radio(
             row: int,
@@ -309,7 +290,7 @@ class WordFrequencyDialog(ToplevelDialog):
                 frame,
                 text=text,
                 command=lambda: wf_populate(self),
-                variable=WordFrequencyDialog.display_type,
+                variable=display_type,
                 value=value,
                 takefocus=False,
             ).grid(row=row, column=column, sticky="NSW", padx=5)
@@ -359,7 +340,7 @@ class WordFrequencyDialog(ToplevelDialog):
 
         def display_markedup(*_args: Any) -> None:
             """Callback to display the marked up words with new threshold value."""
-            WordFrequencyDialog.display_type.set(WFDisplayType.MARKEDUP)
+            preferences.set(PrefKey.WFDIALOG_DISPLAY_TYPE, WFDisplayType.MARKEDUP)
             wf_populate(self)
 
         self.threshold_box.bind("<Return>", display_markedup)
@@ -375,7 +356,7 @@ class WordFrequencyDialog(ToplevelDialog):
 
         def display_regexp(*_args: Any) -> None:
             """Callback to display the regex-matching words with new regex."""
-            WordFrequencyDialog.display_type.set(WFDisplayType.REGEXP)
+            preferences.set(PrefKey.WFDIALOG_DISPLAY_TYPE, WFDisplayType.REGEXP)
             wf_populate(self)
 
         self.regex_box.bind("<Return>", display_regexp)
@@ -436,7 +417,7 @@ class WordFrequencyDialog(ToplevelDialog):
 
         def no_markup_key(word: str) -> tuple[str, ...]:
             """Return additional sort keys to keep identical marked-up and non_marked-up phrases together."""
-            if self.display_type.get() == WFDisplayType.MARKEDUP:
+            if preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.MARKEDUP:
                 no_markup = re.sub("<.*?>", "", word)
                 return (no_markup.lower(), no_markup)
             return ()
@@ -465,7 +446,7 @@ class WordFrequencyDialog(ToplevelDialog):
             return (-length,) + no_markup + (no_dia.lower(), no_dia, entry.word)
 
         key: Callable[[WordFrequencyEntry], tuple]
-        match self.sort_type.get():
+        match preferences.get(PrefKey.WFDIALOG_SORT_TYPE):
             case WFSortType.ALPHABETIC:
                 key = sort_key_alpha
             case WFSortType.FREQUENCY:
@@ -499,7 +480,7 @@ class WordFrequencyDialog(ToplevelDialog):
             not the case for character count or words that begin/end with
             a non-word character."""
         return not (
-            self.display_type.get() == WFDisplayType.CHAR_COUNTS
+            preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.CHAR_COUNTS
             or re.search(r"^\W|\W$", word)
         )
 
@@ -564,13 +545,15 @@ class WordFrequencyDialog(ToplevelDialog):
         # Also special handling for non-marked-up phrase from marked-up check
         # (Regex to specifically find non-marked-up version), for char count,
         # and for words that begin/end with non-word chars
-        if self.display_type.get() == WFDisplayType.MARKEDUP and not word.startswith(
-            "<"
-        ):
+        if preferences.get(
+            PrefKey.WFDIALOG_DISPLAY_TYPE
+        ) == WFDisplayType.MARKEDUP and not word.startswith("<"):
             regexp = True
             match_word = r"(^|[^>\w])" + re.escape(newline_word) + r"($|[^<\w])"
             wholeword = False
-        elif self.display_type.get() == WFDisplayType.CHAR_COUNTS:
+        elif (
+            preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.CHAR_COUNTS
+        ):
             regexp = False
             match_word = newline_word
             wholeword = False
@@ -586,7 +569,7 @@ class WordFrequencyDialog(ToplevelDialog):
         match = maintext().find_match(
             match_word,
             IndexRange(start, maintext().end()),
-            nocase=self.ignore_case.get(),
+            nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
             regexp=regexp,
             wholeword=wholeword,
             backwards=False,
@@ -617,11 +600,14 @@ class WordFrequencyDialog(ToplevelDialog):
         # Special handling for newline characters (displayed as RETURN_ARROW)
         match_word = re.sub(RETURN_ARROW, "\n", word) if RETURN_ARROW in word else word
 
+        preferences.set(
+            PrefKey.SEARCHDIALOG_MATCH_CASE,
+            not preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
+        )
+        preferences.set(PrefKey.SEARCHDIALOG_WHOLE_WORD, self.whole_word_search(word))
+        preferences.set(PrefKey.SEARCHDIALOG_REGEX, False)
         dlg = SearchDialog.show_dialog()
         dlg.search_box_set(match_word)
-        SearchDialog.matchcase.set(not WordFrequencyDialog.ignore_case.get())
-        SearchDialog.wholeword.set(self.whole_word_search(word))
-        SearchDialog.regex.set(False)
         dlg.display_message()
 
         return "break"
@@ -662,7 +648,7 @@ def wf_populate(wf_dialog: WordFrequencyDialog) -> None:
     Args:
         wf_dialog: The word frequency dialog.
     """
-    match WordFrequencyDialog.display_type.get():
+    match preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE):
         case WFDisplayType.ALL_WORDS:
             wf_populate_all(wf_dialog)
         case WFDisplayType.EMDASHES:
@@ -727,7 +713,7 @@ def wf_populate_emdashes(wf_dialog: WordFrequencyDialog) -> None:
         # Check for suspect, i.e. also seen with a single hyphen
         word = re.sub("(--|—)", "-", emdash_word)
         word_output = False
-        if not WordFrequencyDialog.suspects_only.get():
+        if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
             wf_dialog.add_entry(emdash_word, freq)
             word_output = True
         if word in all_words:
@@ -760,7 +746,7 @@ def wf_populate_hyphens(wf_dialog: WordFrequencyDialog) -> None:
         if "-" not in word:
             continue
         total_cnt += 1
-        if not WordFrequencyDialog.suspects_only.get():
+        if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
             wf_dialog.add_entry(word, freq)
             word_output[word] = True
         # Check for suspects - given "w1-w2", then "w1w2", "w1 w2" and "w1--w2" are suspects.
@@ -893,7 +879,7 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
     matches = maintext().find_matches(
         rf"<({markup_types})>([^<]|\n)+</\1>",
         IndexRange(maintext().start(), maintext().end()),
-        nocase=wf_dialog.ignore_case.get(),
+        nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
         regexp=True,
         wholeword=False,
     )
@@ -927,7 +913,7 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
             matches = maintext().find_matches(
                 unmarked_search,
                 IndexRange(maintext().start(), maintext().end()),
-                nocase=wf_dialog.ignore_case.get(),
+                nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
                 regexp=True,
                 wholeword=False,
             )
@@ -938,13 +924,12 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
                 )
                 suspect_cnt += 1
 
-        if (
-            unmarked_count[unmarked_phrase] > 0
-            or not WordFrequencyDialog.suspects_only.get()
+        if unmarked_count[unmarked_phrase] > 0 or not preferences.get(
+            PrefKey.WFDIALOG_SUSPECTS_ONLY
         ):
             wf_dialog.add_entry(marked_phrase, marked_count)
 
-        elif not WordFrequencyDialog.suspects_only.get():
+        elif not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
             wf_dialog.add_entry(marked_phrase, marked_count)
     wf_dialog.display_entries()
     wf_dialog.message.set(
@@ -969,7 +954,7 @@ def wf_populate_accents(wf_dialog: WordFrequencyDialog) -> None:
         if no_accent_word != word:
             total_cnt += 1
             word_output = False
-            if not WordFrequencyDialog.suspects_only.get():
+            if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
                 wf_dialog.add_entry(word, freq)
                 word_output = True
             # Check for suspect, i.e. also seen without accents
@@ -1003,7 +988,7 @@ def wf_populate_ligatures(wf_dialog: WordFrequencyDialog) -> None:
             total_cnt += 1
             # If actual ligature, only output it here if not suspects-only
             if re.search("(æ|Æ|œ|Œ)", word):
-                if not WordFrequencyDialog.suspects_only.get():
+                if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
                     wf_dialog.add_entry(word, freq)
             # Use the non-ligature version to check for suspects - because AE and Ae are both Æ
             else:
@@ -1013,7 +998,7 @@ def wf_populate_ligatures(wf_dialog: WordFrequencyDialog) -> None:
                 lig_word = re.sub("(OE|Oe)", "Œ", lig_word)
                 if lig_word in all_words:
                     suspect_cnt += 1
-                    if WordFrequencyDialog.suspects_only.get():
+                    if preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
                         wf_dialog.add_entry(lig_word, all_words[lig_word])
                     wf_dialog.add_entry(word, freq, suspect=True)
                 else:

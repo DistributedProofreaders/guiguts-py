@@ -74,6 +74,10 @@ class Preferences:
           deal with side effect of loading/setting the pref, which will be
           called after all prefs have been loaded and UI is ready. Also called
           each time pref is changed.
+        persistent_vars: dictionary of Persistent variables (inherit from Tk.Variable),
+          stored here so the variable can be set whenever the pref is set. The Persistent
+          classes below handle the reverse, i.e. they set the pref whenever the variable
+          is set.
         prefsdir: directory containing user prefs & data files
     """
 
@@ -82,6 +86,7 @@ class Preferences:
         self.dict: dict[PrefKey, Any] = {}
         self.defaults: dict[PrefKey, Any] = {}
         self.callbacks: dict[PrefKey, Callable[[Any], None]] = {}
+        self.persistent_vars: dict[PrefKey, tk.Variable] = {}
         if is_x11():
             self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
         else:
@@ -118,11 +123,14 @@ class Preferences:
             key: Name of preference.
             value: Value for preference.
         """
-        if self.get(key) != value:
-            self.dict[key] = value
-            self.save()
-            if key in self.callbacks:
-                self.callbacks[key](value)
+        if self.get(key) == value:
+            return
+        self.dict[key] = value
+        self.save()
+        if key in self.callbacks:
+            self.callbacks[key](value)
+        if key in self.persistent_vars:
+            self.persistent_vars[key].set(value)
 
     def toggle(self, key: PrefKey) -> None:
         """Toggle the value of a boolean preference.
@@ -170,6 +178,16 @@ class Preferences:
               update UI to reflect a setting.
         """
         self.callbacks[key] = callback
+
+    def link_persistent_var(self, key: PrefKey, var: tk.Variable) -> None:
+        """Link a persistent variable to a preference. Variable will be set
+        whenever the preference gets set.
+
+        Args:
+            key: Name of preference.
+            var: Persistent variable to link to preference.
+        """
+        self.persistent_vars[key] = var
 
     def keys(self) -> list[PrefKey]:
         """Return list of preferences keys.
@@ -225,6 +243,7 @@ class PersistentBoolean(tk.BooleanVar):
         """
         super().__init__(value=preferences.get(prefs_key))
         self.trace_add("write", lambda *_args: preferences.set(prefs_key, self.get()))
+        preferences.link_persistent_var(prefs_key, self)
 
 
 class PersistentInt(tk.IntVar):
@@ -254,6 +273,7 @@ class PersistentInt(tk.IntVar):
                 pass
 
         self.trace_add("write", set_pref)
+        preferences.link_persistent_var(prefs_key, self)
 
 
 class PersistentString(tk.StringVar):
@@ -271,6 +291,7 @@ class PersistentString(tk.StringVar):
         """
         super().__init__(value=preferences.get(prefs_key))
         self.trace_add("write", lambda *_args: preferences.set(prefs_key, self.get()))
+        preferences.link_persistent_var(prefs_key, self)
 
 
 preferences = Preferences()

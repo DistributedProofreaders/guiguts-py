@@ -44,27 +44,17 @@ class SearchDialog(ToplevelDialog):
         selection: True to restrict counting, replacing, etc., to selected text.
     """
 
-    # Cannot be initialized here, since Tk root may not yet be created yet
-    reverse: PersistentBoolean
-    matchcase: PersistentBoolean
-    wholeword: PersistentBoolean
-    wrap: PersistentBoolean
-    regex: PersistentBoolean
+    # Cannot be initialized here, since Tk root may not be created yet
     selection: tk.BooleanVar
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize Search dialog."""
 
-        # Initialize class variables on first instantiation, then remember
-        # values for subsequent uses of dialog.
+        # Initialize "Selection" variable on first instantiation.
+        # Persistent only during this run of the program.
         try:
-            SearchDialog.reverse
+            SearchDialog.selection
         except AttributeError:
-            SearchDialog.reverse = PersistentBoolean(PrefKey.SEARCHDIALOG_REVERSE)
-            SearchDialog.matchcase = PersistentBoolean(PrefKey.SEARCHDIALOG_MATCH_CASE)
-            SearchDialog.wholeword = PersistentBoolean(PrefKey.SEARCHDIALOG_WHOLE_WORD)
-            SearchDialog.wrap = PersistentBoolean(PrefKey.SEARCHDIALOG_WRAP)
-            SearchDialog.regex = PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX)
             SearchDialog.selection = tk.BooleanVar(value=False)
 
         kwargs["resize_y"] = False
@@ -136,31 +126,31 @@ class SearchDialog(ToplevelDialog):
         ttk.Checkbutton(
             options_frame,
             text="Reverse",
-            variable=SearchDialog.reverse,
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REVERSE),
             takefocus=False,
         ).grid(row=0, column=0, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
             text="Match case",
-            variable=SearchDialog.matchcase,
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MATCH_CASE),
             takefocus=False,
         ).grid(row=0, column=1, padx=2, columnspan=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
             text="Whole word",
-            variable=SearchDialog.wholeword,
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WHOLE_WORD),
             takefocus=False,
         ).grid(row=1, column=0, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
             text="Wrap around",
-            variable=SearchDialog.wrap,
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WRAP),
             takefocus=False,
         ).grid(row=1, column=1, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
             text="Regex",
-            variable=SearchDialog.regex,
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX),
             takefocus=False,
         ).grid(row=1, column=2, padx=2, sticky="NSEW")
         ttk.Checkbutton(
@@ -250,7 +240,7 @@ class SearchDialog(ToplevelDialog):
         self.search_box.add_to_history(search_string)
 
         # "Reverse flag XOR Shift-key" searches backwards
-        backwards = SearchDialog.reverse.get() ^ opposite_dir
+        backwards = preferences.get(PrefKey.SEARCHDIALOG_REVERSE) ^ opposite_dir
         start_rowcol = get_search_start(backwards)
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
@@ -269,7 +259,7 @@ class SearchDialog(ToplevelDialog):
         Returns:
             "break" to avoid calling other callbacks
         """
-        self.search_clicked(opposite_dir=SearchDialog.reverse.get())
+        self.search_clicked(opposite_dir=preferences.get(PrefKey.SEARCHDIALOG_REVERSE))
         return "break"
 
     def search_backwards(self) -> str:
@@ -278,7 +268,9 @@ class SearchDialog(ToplevelDialog):
         Returns:
             "break" to avoid calling other callbacks
         """
-        self.search_clicked(opposite_dir=not SearchDialog.reverse.get())
+        self.search_clicked(
+            opposite_dir=not preferences.get(PrefKey.SEARCHDIALOG_REVERSE)
+        )
         return "break"
 
     def count_clicked(self) -> None:
@@ -297,9 +289,9 @@ class SearchDialog(ToplevelDialog):
                 matches = maintext().find_matches(
                     search_string,
                     count_range,
-                    nocase=not SearchDialog.matchcase.get(),
-                    regexp=SearchDialog.regex.get(),
-                    wholeword=SearchDialog.wholeword.get(),
+                    nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
+                    regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
+                    wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
                 )
             except TclRegexCompileError as exc:
                 self.display_message(str(exc))
@@ -325,9 +317,9 @@ class SearchDialog(ToplevelDialog):
                 matches = maintext().find_matches(
                     search_string,
                     find_range,
-                    nocase=not SearchDialog.matchcase.get(),
-                    regexp=SearchDialog.regex.get(),
-                    wholeword=SearchDialog.wholeword.get(),
+                    nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
+                    regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
+                    wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
                 )
             except TclRegexCompileError as exc:
                 self.display_message(str(exc))
@@ -362,12 +354,12 @@ class SearchDialog(ToplevelDialog):
         )
         checker_dialog.reset()
         # Construct opening line describing the search
-        desc_reg = "regex" if SearchDialog.regex.get() else "string"
+        desc_reg = "regex" if preferences.get(PrefKey.SEARCHDIALOG_REGEX) else "string"
         prefix = f'Search for {desc_reg} "'
         desc = f'{prefix}{search_string}"'
-        if SearchDialog.matchcase.get():
+        if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE):
             desc += ", matching case"
-        if SearchDialog.wholeword.get():
+        if preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD):
             desc += ", whole words only"
         if SearchDialog.selection.get():
             desc += ", within selection"
@@ -421,14 +413,14 @@ class SearchDialog(ToplevelDialog):
             return "break"
 
         match_text = maintext().get(start_index, end_index)
-        if SearchDialog.regex.get():
+        if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
             replace_string = get_regex_replacement(
                 search_string, replace_string, match_text
             )
         maintext().undo_block_begin()
         maintext().replace(start_index, end_index, replace_string)
         # "Reverse flag XOR Shift-key" searches backwards
-        backwards = SearchDialog.reverse.get() ^ opposite_dir
+        backwards = preferences.get(PrefKey.SEARCHDIALOG_REVERSE) ^ opposite_dir
         # Ensure cursor is at correct end of replaced string - depends on direction.
         maintext().set_insert_index(
             maintext().rowcol(MARK_FOUND_START if backwards else MARK_FOUND_END),
@@ -464,9 +456,9 @@ class SearchDialog(ToplevelDialog):
                     match = maintext().find_match(
                         search_string,
                         replace_range,
-                        nocase=not SearchDialog.matchcase.get(),
-                        regexp=SearchDialog.regex.get(),
-                        wholeword=SearchDialog.wholeword.get(),
+                        nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
+                        regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
+                        wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
                         backwards=False,
                     )
                 except TclRegexCompileError as exc:
@@ -479,7 +471,7 @@ class SearchDialog(ToplevelDialog):
                 start_index = match.rowcol.index()
                 end_index = maintext().index(start_index + f"+{match.count}c")
                 match_text = maintext().get(start_index, end_index)
-                if SearchDialog.regex.get():
+                if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
                     replace_match = get_regex_replacement(
                         search_string, replace_string, match_text
                     )
@@ -526,7 +518,7 @@ def find_next(backwards: bool = False) -> None:
             setting in dialog).
     """
     try:
-        SearchDialog.reverse
+        SearchDialog.selection
     except AttributeError:
         sound_bell()
         return  # Dialog has never been instantiated
@@ -565,10 +557,12 @@ def _do_find_next(
     try:
         match = maintext().find_match(
             search_string,
-            search_limits.start if SearchDialog.wrap.get() else search_limits,
-            nocase=not SearchDialog.matchcase.get(),
-            regexp=SearchDialog.regex.get(),
-            wholeword=SearchDialog.wholeword.get(),
+            search_limits.start
+            if preferences.get(PrefKey.SEARCHDIALOG_WRAP)
+            else search_limits,
+            nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
+            regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
+            wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
             backwards=backwards,
         )
     except tk.TclError:
@@ -623,7 +617,7 @@ def get_regex_replacement(
     Returns:
         Replacement string.
     """
-    flags = 0 if SearchDialog.matchcase.get() else re.IGNORECASE
+    flags = 0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
     return re.sub(search_regex, replace_regex, match_text, flags=flags)
 
 
@@ -640,10 +634,10 @@ def get_search_range() -> Tuple[Optional[IndexRange], str]:
         if sel_ranges := maintext().selected_ranges():
             replace_range = sel_ranges[0]
     else:
-        if SearchDialog.wrap.get():
+        if preferences.get(PrefKey.SEARCHDIALOG_WRAP):
             range_name = "in entire file"
             replace_range = IndexRange(maintext().start(), maintext().end())
-        elif SearchDialog.reverse.get():
+        elif preferences.get(PrefKey.SEARCHDIALOG_REVERSE):
             range_name = "from start of file to current location"
             replace_range = IndexRange(
                 maintext().start(), maintext().get_insert_index()
