@@ -175,7 +175,7 @@ class FootnoteChecker:
             fn_index = len(self.fn_records)
             an_index = None if anchor_match is None else len(self.an_records)
             fnr = FootnoteRecord(
-                fn_line, start, end_point, start.col + 1, colon_pos.col, an_index
+                fn_line, start, end_point, 1, colon_pos.col - start.col, an_index
             )
             self.fn_records.append(fnr)
 
