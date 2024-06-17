@@ -115,8 +115,6 @@ class CheckerDialog(ToplevelDialog):
         count_label: Label showing how many linked entries there are in the dialog
     """
 
-    sort_type: PersistentString
-
     def __init__(
         self,
         title: str,
@@ -137,13 +135,6 @@ class CheckerDialog(ToplevelDialog):
             sort_key_alpha: Function to sort by alpha/type.
             show_suspects_only: True to show "Suspects only" checkbutton.
         """
-        # Initialize class variables on first instantiation, then remember
-        # values for subsequent uses of dialog.
-        try:
-            CheckerDialog.sort_type
-        except AttributeError:
-            CheckerDialog.sort_type = PersistentString(PrefKey.CHECKERDIALOG_SORT_TYPE)
-
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
         self.header_frame = ttk.Frame(self.top_frame, padding=2)
@@ -172,11 +163,12 @@ class CheckerDialog(ToplevelDialog):
             left_frame,
             text="Sort:",
         ).grid(row=0, column=2, sticky="NSE", padx=5)
+        sort_type = PersistentString(PrefKey.CHECKERDIALOG_SORT_TYPE)
         ttk.Radiobutton(
             left_frame,
             text="Line & Col",
             command=self.display_entries,
-            variable=CheckerDialog.sort_type,
+            variable=sort_type,
             value=CheckerSortType.ROWCOL,
             takefocus=False,
         ).grid(row=0, column=3, sticky="NSE", padx=2)
@@ -184,7 +176,7 @@ class CheckerDialog(ToplevelDialog):
             left_frame,
             text="Alpha/Type",
             command=self.display_entries,
-            variable=CheckerDialog.sort_type,
+            variable=sort_type,
             value=CheckerSortType.ALPHABETIC,
             takefocus=False,
         ).grid(row=0, column=4, sticky="NSE", padx=2)
@@ -445,7 +437,10 @@ class CheckerDialog(ToplevelDialog):
         the sort setting."""
 
         sort_key: Callable[[CheckerEntry], tuple]
-        if CheckerDialog.sort_type.get() == CheckerSortType.ALPHABETIC:
+        if (
+            preferences.get(PrefKey.CHECKERDIALOG_SORT_TYPE)
+            == CheckerSortType.ALPHABETIC
+        ):
             sort_key = self.alpha_key
         else:
             sort_key = self.rowcol_key
