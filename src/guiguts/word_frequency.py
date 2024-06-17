@@ -210,10 +210,16 @@ class WordFrequencyDialog(ToplevelDialog):
         ttk.Button(rerun_frame, text="Re-run", command=word_frequency).grid(
             row=0, column=0, sticky="NSEW", padx=5, pady=2
         )
+
+        def change_ignore_case() -> None:
+            """Handle changing of ignore case flag - enable/disable buttons & re-run tool."""
+            self.set_case_sensitive_btns()
+            word_frequency()
+
         ttk.Checkbutton(
             rerun_frame,
             text="Ignore Case",
-            command=word_frequency,
+            command=change_ignore_case,
             variable=PersistentBoolean(PrefKey.WFDIALOG_IGNORE_CASE),
             takefocus=False,
         ).grid(row=1, column=0, sticky="NSEW", padx=5, pady=2)
@@ -277,7 +283,7 @@ class WordFrequencyDialog(ToplevelDialog):
             text: str,
             value: str,
             frame: ttk.Frame = display_frame,
-        ) -> None:
+        ) -> ttk.Radiobutton:
             """Add a radio button to change display type.
 
             Args:
@@ -286,21 +292,27 @@ class WordFrequencyDialog(ToplevelDialog):
                 text: Text for button.
                 value: Value to be set when button is selected - a constant from WFDisplayType
             """
-            ttk.Radiobutton(
+            button = ttk.Radiobutton(
                 frame,
                 text=text,
                 command=lambda: wf_populate(self),
                 variable=display_type,
                 value=value,
                 takefocus=False,
-            ).grid(row=row, column=column, sticky="NSW", padx=5)
+            )
+            button.grid(row=row, column=column, sticky="NSW", padx=5)
+            return button
 
         display_radio(0, 0, "All Words", WFDisplayType.ALL_WORDS)
         display_radio(0, 1, "Emdashes", WFDisplayType.EMDASHES)
         display_radio(0, 2, "Hyphens", WFDisplayType.HYPHENS)
-        display_radio(1, 0, "ALL CAPITALS", WFDisplayType.ALL_CAPS)
-        display_radio(1, 1, "MiXeD CasE", WFDisplayType.MIXED_CASE)
-        display_radio(1, 2, "Initial Capitals", WFDisplayType.INITIAL_CAPS)
+        self.all_caps_btn = display_radio(1, 0, "ALL CAPITALS", WFDisplayType.ALL_CAPS)
+        self.mixed_case_btn = display_radio(
+            1, 1, "MiXeD CasE", WFDisplayType.MIXED_CASE
+        )
+        self.initial_caps_btn = display_radio(
+            1, 2, "Initial Capitals", WFDisplayType.INITIAL_CAPS
+        )
         display_radio(2, 0, "Alpha/Num", WFDisplayType.ALPHANUM)
         display_radio(2, 1, "Accents", WFDisplayType.ACCENTS)
         display_radio(2, 2, "Ligatures", WFDisplayType.LIGATURES)
@@ -387,6 +399,9 @@ class WordFrequencyDialog(ToplevelDialog):
         self.bind("<Down>", lambda _e: self.goto_word_by_arrow(1))
 
         self.previous_word = ""
+        # Store tooltips so they can be added/destroyed depending on Ignore Case
+        self.tooltip_dict: dict[ttk.Widget, ToolTip] = {}
+        self.set_case_sensitive_btns()
 
         self.minsize(450, 100)
         self.reset()
@@ -399,6 +414,24 @@ class WordFrequencyDialog(ToplevelDialog):
             return
         self.text.delete("1.0", tk.END)
         self.message.set("")
+
+    def set_case_sensitive_btns(self) -> None:
+        """Enable/disable buttons depending on Ignore Case setting.
+
+        Show/hide a tooltip to explain to the user.
+        """
+        ignore_case = preferences.get(PrefKey.WFDIALOG_IGNORE_CASE)
+        for widget in (self.all_caps_btn, self.mixed_case_btn, self.initial_caps_btn):
+            widget["state"] = tk.DISABLED if ignore_case else tk.NORMAL
+            if ignore_case:
+                self.tooltip_dict[widget] = ToolTip(
+                    widget, "Cannot be used with 'Ignore Case'"
+                )
+            else:
+                try:
+                    self.tooltip_dict[widget].destroy()
+                except (tk.TclError, KeyError):
+                    pass  # OK for tooltip not to exist
 
     def add_entry(self, word: str, frequency: int, suspect: bool = False) -> None:
         """Add an entry to be displayed in the dialog.
