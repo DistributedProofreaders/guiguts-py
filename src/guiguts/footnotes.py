@@ -1,7 +1,6 @@
 """Footnote checking, fixing and tidying functionality"""
 
 import logging
-from tkinter import ttk
 from typing import Optional
 import regex as re
 
@@ -61,7 +60,7 @@ class FootnoteRecord:
         end: IndexRowCol,
         hilite_start: int,
         hilite_end: int,
-        an_index: int,
+        an_index: Optional[int],
     ) -> None:
         """Initialize FootnoteRecord.
 
@@ -71,7 +70,7 @@ class FootnoteRecord:
             end - End rowcol of footnote in file.
             hilite_start - Start column of highlighting in text.
             hilite_end - End column of highlighting in text.
-            fn_index - Index into anchors array of linked anchor.
+            an_index - Index into anchors array of linked anchor.
         """
         self.text = text
         self.start = start
@@ -174,9 +173,9 @@ class FootnoteChecker:
                 start_point = anchor_match.rowcol
 
             fn_index = len(self.fn_records)
-            an_index = -1 if anchor_match is None else len(self.an_records)
+            an_index = None if anchor_match is None else len(self.an_records)
             fnr = FootnoteRecord(
-                fn_line, start, end_point, start.col + 1, colon_pos.col, an_index
+                fn_line, start, end_point, 1, colon_pos.col - start.col, an_index
             )
             self.fn_records.append(fnr)
 
@@ -227,6 +226,7 @@ def footnote_check() -> None:
         "Footnote Check Results",
         rerun_command=footnote_check,
         sort_key_alpha=sort_key_type,
+        show_suspects_only=True,
     )
     if _the_footnote_checker is None:
         _the_footnote_checker = FootnoteChecker(checker_dialog)
@@ -238,12 +238,12 @@ def footnote_check() -> None:
         "\n".join(
             [
                 "Left click: Select & find footnote",
+                "Right click: Remove item from list",
+                "Shift-Right click: Remove all matching items",
             ]
         ),
         use_pointer_pos=True,
     )
-    frame = ttk.Frame(checker_dialog.header_frame)
-    frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
 
     _the_footnote_checker.run_check()
     display_footnote_entries()
@@ -258,12 +258,14 @@ def display_footnote_entries() -> None:
     an_records = _the_footnote_checker.get_an_records()
     for fn_index, fn_record in enumerate(fn_records):
         error_prefix = ""
-        if fn_record.an_index < 0:
+        if fn_record.an_index is None:
             error_prefix = "NO ANCHOR: "
         else:
             an_record = an_records[fn_record.an_index]
             # Check that no other footnote has the same anchor as this one
             for fni2, fn2 in enumerate(fn_records):
+                if fn2.an_index is None:
+                    continue
                 an2 = an_records[fn2.an_index]
                 if fn_index != fni2 and an_record.start == an2.start:
                     error_prefix = "SAME ANCHOR: "
@@ -271,10 +273,10 @@ def display_footnote_entries() -> None:
             # Check anchor of previous footnote and this one are in order (footnotes are always in order)
             if (
                 fn_index > 0
-                and fn_record.an_index >= 0
-                and fn_records[fn_index - 1].an_index >= 0
+                and fn_record.an_index is not None
+                and fn_records[fn_index - 1].an_index is not None
             ):
-                an_prev = an_records[fn_records[fn_index - 1].an_index]
+                an_prev = an_records[fn_records[fn_index - 1].an_index]  # type: ignore[index]
                 if an_prev.start.row > an_record.start.row or (
                     an_prev.start.row == an_record.start.row
                     and an_prev.start.col > an_record.start.col
@@ -284,10 +286,10 @@ def display_footnote_entries() -> None:
             if (
                 "SEQUENCE: " not in error_prefix
                 and fn_index < len(fn_records) - 1
-                and fn_record.an_index >= 0
-                and fn_records[fn_index + 1].an_index >= 0
+                and fn_record.an_index is not None
+                and fn_records[fn_index + 1].an_index is not None
             ):
-                an_next = an_records[fn_records[fn_index + 1].an_index]
+                an_next = an_records[fn_records[fn_index + 1].an_index]  # type: ignore[index]
                 if an_next.start.row < an_record.start.row or (
                     an_next.start.row == an_record.start.row
                     and an_next.start.col < an_record.start.col
