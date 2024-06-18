@@ -5,6 +5,7 @@
 import argparse
 import logging
 import importlib.resources
+from importlib.metadata import version
 import os.path
 from tkinter import messagebox
 from typing import Optional
@@ -197,7 +198,7 @@ class Guiguts:
         """Update the window title to reflect current status."""
         modtitle = " - edited" if maintext().is_modified() else ""
         filetitle = " - " + self.file.filename if self.file.filename else ""
-        root().title("Guiguts 2.0" + modtitle + filetitle)
+        root().title(f"Guiguts {version('guiguts')}" + modtitle + filetitle)
 
     def quit_program(self) -> None:
         """Exit the program."""
