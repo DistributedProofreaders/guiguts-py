@@ -16,6 +16,11 @@ from guiguts.checkers import CheckerSortType
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check
+from guiguts.highlight import (
+    highlight_single_quotes,
+    highlight_double_quotes,
+    remove_highlights,
+)
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
     MainWindow,
@@ -456,6 +461,21 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Find ~Previous",
             lambda: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
+        )
+        menu_search.add_button(
+            "Highlight Single Quotes in Selection",
+            highlight_single_quotes,
+            "",
+        )
+        menu_search.add_button(
+            "Highlight Double Quotes in Selection",
+            highlight_double_quotes,
+            "",
+        )
+        menu_search.add_button(
+            "Remove Highlights",
+            remove_highlights,
+            "",
         )
         self.init_bookmark_menu(menu_search)
 
