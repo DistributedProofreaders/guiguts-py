@@ -428,8 +428,8 @@ class ToolTip(tk.Toplevel):
         super().destroy()
 
 
-def unbind_from(widget: tk.Widget, seq: str, funcid: str) -> None:
-    """Unbind function associated with `funcid`.
+def unbind_from(widget: tk.Widget, sequence: str, func_id: str) -> None:
+    """Unbind function associated with `func_id`.
 
     Based on: https://github.com/python/cpython/issues/75666#issuecomment-1877547466
     Necessary due to long-standing bug in tkinter: when `unbind` is called
@@ -438,15 +438,17 @@ def unbind_from(widget: tk.Widget, seq: str, funcid: str) -> None:
 
     Args:
         widget: Widget to unbind from.
-        seq: Sequence function was bound to.
-        funcid: Function ID returned by original `bind` call.
+        sequence: Sequence function was bound to.
+        func_id: Function ID returned by original `bind` call.
     """
     # Make dictionary of all bindings to seq
-    bindings = {x.split()[1][3:]: x for x in widget.bind(seq).splitlines() if x.strip()}
+    bindings = {
+        x.split()[1][3:]: x for x in widget.bind(sequence).splitlines() if x.strip()
+    }
     # Delete the binding associated with `funcid`
-    del bindings[funcid]
+    del bindings[func_id]
     # Re-bind all the other bindings to the widget
-    widget.bind(seq, "\n".join(list(bindings.values())))
+    widget.bind(sequence, "\n".join(list(bindings.values())))
 
 
 def grab_focus(
