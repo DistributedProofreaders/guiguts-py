@@ -31,7 +31,11 @@ from guiguts.mainwindow import (
     ErrorHandler,
     process_accel,
 )
-from guiguts.misc_dialogs import PreferencesDialog, ComposeSequenceDialog
+from guiguts.misc_dialogs import (
+    PreferencesDialog,
+    ComposeSequenceDialog,
+    ComposeHelpDialog,
+)
 from guiguts.misc_tools import (
     basic_fixup_check,
     page_separator_fixup,
@@ -586,6 +590,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_help = Menu(menubar(), "~Help")
         menu_help.add_button("Guiguts ~Manual", self.show_help_manual)
         menu_help.add_button("About ~Guiguts", self.help_about)
+        menu_help.add_button("~Compose Sequences", ComposeHelpDialog.show_dialog)
 
     def init_os_menu(self) -> None:
         """Create the OS-specific menu.
