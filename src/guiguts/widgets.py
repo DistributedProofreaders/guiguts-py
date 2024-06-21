@@ -422,10 +422,31 @@ class ToolTip(tk.Toplevel):
     def destroy(self) -> None:
         """Destroy the ToolTip and unbind all the bindings."""
         if self.widget.winfo_exists():
-            self.widget.unbind("<Enter>", self.enter_bind)
-            self.widget.unbind("<Leave>", self.leave_bind)
-            self.widget.unbind("<ButtonPress>", self.press_bind)
+            unbind_from(self.widget, "<Enter>", self.enter_bind)
+            unbind_from(self.widget, "<Leave>", self.leave_bind)
+            unbind_from(self.widget, "<ButtonPress>", self.press_bind)
         super().destroy()
+
+
+def unbind_from(widget: tk.Widget, seq: str, funcid: str) -> None:
+    """Unbind function associated with `funcid`.
+
+    Based on: https://github.com/python/cpython/issues/75666#issuecomment-1877547466
+    Necessary due to long-standing bug in tkinter: when `unbind` is called
+    all bindings to the given sequence are removed, not just the one associated
+    with `func_id`.
+
+    Args:
+        widget: Widget to unbind from.
+        seq: Sequence function was bound to.
+        funcid: Function ID returned by original `bind` call.
+    """
+    # Make dictionary of all bindings to seq
+    bindings = {x.split()[1][3:]: x for x in widget.bind(seq).splitlines() if x.strip()}
+    # Delete the binding associated with `funcid`
+    del bindings[funcid]
+    # Re-bind all the other bindings to the widget
+    widget.bind(seq, "\n".join(list(bindings.values())))
 
 
 def grab_focus(
