@@ -236,6 +236,46 @@ def init_compose_dict() -> None:
     """Initialize dictionary of compose sequences."""
     if _compose_dict:
         return  # Already initialized
+    init_char_reversible("‘", "'<")
+    init_char_reversible("’", "'>")
+    init_char_reversible("“", '"<')
+    init_char_reversible("”", '">')
+    init_chars("±", "+-")
+    init_chars("·", "^.", "*.", ".*")
+    init_chars("×", "*x", "x*")
+    init_chars("÷", ":-")
+    init_char_reversible("°", "oo", "*o")
+    init_char_reversible("′", "1'")
+    init_char_reversible("″", "2'")
+    init_char_reversible("‴", "3'")
+    init_char_reversible(" ", "  ", "* ")
+    init_chars("—", "--")
+    init_char_reversible("–", "- ")
+    init_chars("⁂", "**")
+    init_char_reversible("º", "o_")
+    init_char_reversible("ª", "a_")
+    init_chars("‖", "||")
+    init_chars("¡", "!!")
+    init_chars("¿", "??")
+    init_chars("«", "<<")
+    init_chars("»", ">>")
+    init_char_case("Æ", "AE")
+    init_char_case("Œ", "OE")
+    init_char_case("ẞ", "SS")
+    init_char_case("Ð", "DH", "ETH")
+    init_char_case("Þ", "TH")
+    init_chars("©", "(c)", "(C)")
+    init_chars("†", "dag", "DAG")
+    init_chars("‡", "ddag", "DDAG")
+    init_accent("£", "L", "-")
+    init_accent("¢", "C", "/", "|")
+    init_chars("§", "sec", "s*", "*s", "SEC", "S*", "*S")
+    init_chars("¶", "pil", "p*", "*p", "PIL", "P*", "*P")
+    init_chars("ſ", "sf", "SF")
+    init_chars("‚", ",'")
+    init_chars("‛", "^'")
+    init_chars("„", ',"')
+    init_chars("‟", '^"')
     init_chars("½", "1/2")
     init_chars("⅓", "1/3")
     init_chars("⅔", "2/3")
@@ -254,52 +294,10 @@ def init_compose_dict() -> None:
     init_chars("⅞", "7/8")
     init_chars("⅑", "1/9")
     init_chars("⅒", "1/10")
-    init_chars("¡", "!!")
-    init_chars("¿", "??")
-    init_chars("«", "<<")
-    init_chars("»", ">>")
-    init_char_case("Æ", "AE")
-    init_char_case("Œ", "OE")
-    init_char_case("ẞ", "SS")
-    init_char_case("Ð", "DH", "ETH")
-    init_char_case("Þ", "TH")
-    init_char_case("©", "CO", "(C)")
-    init_char_case("†", "DAG")
-    init_char_case("‡", "DDAG")
-    init_char_case("§", "SEC", "S*", "*S")
-    init_char_case("¶", "PIL", "P*", "*P")
-    init_char_case(
-        "ſ",
-        "SF",
-    )
-    init_char_reversible("‘", "'<", "'6")
-    init_char_reversible("’", "'>", "'9")
-    init_char_reversible("“", '"<', '"6')
-    init_char_reversible("”", '">', '"9')
-    init_char_reversible("‚", "',")
-    init_char_reversible("‛", "'^")
-    init_char_reversible("„", '",')
-    init_char_reversible("‟", '"^')
-    init_char_reversible("±", "*+", "+-")
-    init_char_reversible("·", ".^", "*.")
-    init_char_reversible("×", "xx", "*x")
-    init_char_reversible("÷", ":-")
-    init_char_reversible("°", "oo", "*o")
-    init_char_reversible("′", "*'", "1'")
-    init_char_reversible("″", '*"', "2'")
-    init_char_reversible("‴", "3'")
-    init_char_reversible("‰", "%0", r"%o")
-    init_char_reversible(" ", "  ", "* ")
-    init_char_reversible("—", "--")
-    init_char_reversible("–", "- ")
-    init_char_reversible("⁂", "**")
-    init_char_reversible("º", "o_")
-    init_char_reversible("ª", "a_")
-    init_char_reversible("‖", "||")
     for num, char in enumerate("⁰ⁱ²³⁴⁵⁶⁷⁸⁹"):
-        init_char_reversible(char, f"^{num}")
+        init_chars(char, f"^{num}")
     for num, char in enumerate("₀₁₂₃₄₅₆₇₈₉"):
-        init_char_reversible(char, f",{num}")
+        init_chars(char, f",{num}")
 
     # Accented characters
     init_accent("À", "A", "`", "\\")
@@ -335,8 +333,6 @@ def init_compose_dict() -> None:
     init_accent("Ñ", "N", "~")
     init_accent("Ÿ", "Y", '"', ":")
     init_accent("Ý", "Y", "'", "/")
-    init_accent("£", "L", "/", "\\")
-    init_accent("¢", "C", "/", "|")
 
     # Combining characters
     init_combining("\u0300", "\u0316", "\\", "`")  # grave
@@ -349,8 +345,8 @@ def init_compose_dict() -> None:
     init_combining("\u0307", "\u0323", ".")  # dot
     init_combining("\u0308", "\u0324", ":", '"')  # diaresis
     init_combining("\u0309", "", "?")  # hook above
-    init_combining("\u030A", "\u0325", "o", "O", "*")  # ring
-    init_combining("\u030C", "\u032C", "v", "V")  # caron
+    init_combining("\u030A", "\u0325", "*")  # ring
+    init_combining("\u030C", "\u032C", "v")  # caron
     init_combining("", "\u0327", ",")  # cedilla
     init_combining("", "\u0328", ";")  # ogonek
 
@@ -415,7 +411,7 @@ def init_char_case(char: str, *sequences: str) -> None:
 
     Args:
         char: Character to be added.
-        *sequences: Sequences of reversible keys to generate the character.
+        *sequences: Sequences of keys to generate the character.
     """
     lchar = char.lower()
     for sequence in sequences:
@@ -522,7 +518,7 @@ class ComposeHelpDialog(ToplevelDialog):
         super().__init__("Compose Sequences")
 
         self.column_headings = ("Character", "Sequence", "Name")
-        widths = (70, 70, 320)
+        widths = (70, 70, 600)
         self.help = ttk.Treeview(
             self.top_frame,
             columns=self.column_headings,
@@ -559,11 +555,31 @@ class ComposeHelpDialog(ToplevelDialog):
         mouse_bind(self.help, "1", self.insert_char)
 
         init_compose_dict()
-        for sequence, char in sorted(_compose_dict.items(), key=lambda x: x[1]):
+
+        # Avoid displaying help for reversed 2-char sequence, e.g. "o*" and "*o"
+        # Remember ones that have been entered already
+        reverse_done = {}
+        for sequence, char in _compose_dict.items():
+            seq_display = sequence.replace(" ", "␣")
+            if len(sequence) == 2:
+                rev_sequence = sequence[::-1]
+                if rev_sequence in reverse_done:
+                    continue
+                rev_char = _compose_dict.get(rev_sequence)
+                if rev_char == char and rev_sequence != sequence:
+                    seq_display += f"  or  {rev_sequence.replace(' ', '␣')}"
+                    reverse_done[sequence] = char
+            # Don't add uppercase version if it leads to identical character, e.g. "dag"/"DAG" for dagger
+            if (
+                char == _compose_dict.get(sequence.lower())
+                and sequence != sequence.lower()
+            ):
+                continue
             try:
-                entry = (char, sequence, unicodedata.name(char))
+                name = unicodedata.name(char)
             except ValueError:
                 continue  # Some Greek combinations don't exist
+            entry = (char, seq_display, name)
             self.help.insert("", tk.END, values=entry)
 
         children = self.help.get_children()
@@ -578,4 +594,8 @@ class ComposeHelpDialog(ToplevelDialog):
         """
         row_id = self.help.identify_row(event.y)
         row = self.help.set(row_id)
-        insert_in_focus_widget(row[self.column_headings[0]])
+        try:
+            char = row[self.column_headings[0]]
+        except KeyError:
+            return
+        insert_in_focus_widget(char)
