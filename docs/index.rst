@@ -17,6 +17,11 @@ File
     
 .. automodule:: file
 
+Highlight
+=========
+
+.. automodule:: highlight
+
 MainText
 ========
      
