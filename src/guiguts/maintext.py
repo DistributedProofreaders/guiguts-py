@@ -146,8 +146,13 @@ class MainText(tk.Text):
         self.frame.columnconfigure(1, weight=1)
         self.frame.rowconfigure(0, weight=1)
 
+        # Set up font
+        self.font = tk_font.Font(
+            family=preferences.get(PrefKey.TEXT_FONT_FAMILY),
+            size=preferences.get(PrefKey.TEXT_FONT_SIZE),
+        )
         # Create Text itself & place in Frame
-        super().__init__(self.frame, **kwargs)
+        super().__init__(self.frame, font=self.font, **kwargs)
         tk.Text.grid(self, column=1, row=0, sticky="NSEW")
 
         self.languages = ""

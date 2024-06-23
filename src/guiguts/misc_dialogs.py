@@ -1,7 +1,7 @@
 """Miscellaneous dialogs."""
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, font
 import unicodedata
 
 import regex as re
@@ -56,18 +56,39 @@ class PreferencesDialog(ToplevelDialog):
         if is_mac():
             tearoff_check["state"] = tk.DISABLED
             ToolTip(tearoff_check, "Not available on macOS")
+
+        # Font
+        font_frame = ttk.Frame(appearance_frame)
+        font_frame.grid(column=0, row=3, sticky="NEW", pady=(5, 0))
+        ttk.Label(font_frame, text="Font: ").grid(column=0, row=0, sticky="NEW")
+        cb = ttk.Combobox(
+            font_frame, textvariable=PersistentString(PrefKey.TEXT_FONT_FAMILY)
+        )
+        cb.grid(column=1, row=0, sticky="NEW")
+        cb["values"] = sorted(font.families(), key=str.lower)
+        cb["state"] = "readonly"
+        spinbox = ttk.Spinbox(
+            font_frame,
+            textvariable=PersistentInt(PrefKey.TEXT_FONT_SIZE),
+            from_=1,
+            to=99,
+            width=5,
+        )
+        spinbox.grid(column=2, row=0, sticky="NEW", padx=2)
+        ToolTip(spinbox, "Font size")
+
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
             variable=PersistentBoolean(PrefKey.LINE_NUMBERS),
-        ).grid(column=0, row=3, sticky="NEW", pady=5)
+        ).grid(column=0, row=4, sticky="NEW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
             text="Automatically show current page image",
             variable=PersistentBoolean(PrefKey.AUTO_IMAGE),
-        ).grid(column=0, row=4, sticky="NEW", pady=5)
+        ).grid(column=0, row=5, sticky="NEW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=5, sticky="NEW", pady=(5, 0))
+        bell_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))
         ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
         ttk.Checkbutton(
             bell_frame,

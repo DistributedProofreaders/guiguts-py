@@ -57,6 +57,8 @@ class PrefKey(StrEnum):
     THEME_NAME = auto()
     TEAROFF_MENUS = auto()
     COMPOSE_HISTORY = auto()
+    TEXT_FONT_FAMILY = auto()
+    TEXT_FONT_SIZE = auto()
 
 
 class Preferences:
