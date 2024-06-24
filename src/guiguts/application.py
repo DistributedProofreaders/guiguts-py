@@ -341,12 +341,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.TEXT_FONT_FAMILY, "Courier")
         preferences.set_callback(
             PrefKey.TEXT_FONT_FAMILY,
-            lambda value: maintext().font.config(family=value),  # type:ignore[arg-type]
+            lambda *value: maintext().set_font(),
         )
         preferences.set_default(PrefKey.TEXT_FONT_SIZE, 10)
         preferences.set_callback(
             PrefKey.TEXT_FONT_SIZE,
-            lambda value: maintext().font.config(size=value),  # type:ignore[arg-type]
+            lambda *value: maintext().set_font(),
         )
 
         # Check all preferences have a default

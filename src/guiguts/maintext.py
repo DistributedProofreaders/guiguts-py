@@ -87,9 +87,11 @@ class TextLineNumbers(tk.Canvas):
     ) -> None:
         self.textwidget = text_widget
         self.font = tk_font.nametofont(self.textwidget.cget("font"))
-        self.offset = 10
+        self.x_offset = 10
+        # Allow for non-zero additional line spacing in text widget
+        self.y_offset = self.textwidget["spacing1"]
         # Allow for 5 digit line numbers
-        width = self.font.measure("88888") + self.offset
+        width = self.font.measure("88888") + self.x_offset
         tk.Canvas.__init__(
             self, parent, *args, width=width, highlightthickness=0, **kwargs
         )
@@ -100,7 +102,7 @@ class TextLineNumbers(tk.Canvas):
     def redraw(self) -> None:
         """Redraw line numbers."""
         self.delete("all")
-        text_pos = self.winfo_width() - self.offset
+        text_pos = self.winfo_width() - self.x_offset
         index = self.textwidget.index("@0,0")
         while True:
             dline = self.textwidget.dlineinfo(index)
@@ -109,7 +111,7 @@ class TextLineNumbers(tk.Canvas):
             linenum = IndexRowCol(index).row
             self.create_text(
                 text_pos,
-                dline[1],
+                dline[1] + self.y_offset,
                 anchor="ne",
                 font=self.font,
                 text=linenum,
@@ -151,8 +153,10 @@ class MainText(tk.Text):
             family=preferences.get(PrefKey.TEXT_FONT_FAMILY),
             size=preferences.get(PrefKey.TEXT_FONT_SIZE),
         )
+        # For some reason line spacing on Mac is very tight, so pad a bit here
+        line_spacing = 3 if is_mac() else 0
         # Create Text itself & place in Frame
-        super().__init__(self.frame, font=self.font, **kwargs)
+        super().__init__(self.frame, font=self.font, spacing1=line_spacing, **kwargs)
         tk.Text.grid(self, column=1, row=0, sticky="NSEW")
 
         self.languages = ""
@@ -314,6 +318,19 @@ class MainText(tk.Text):
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
         return self.frame.grid(*args, **kwargs)
+
+    def set_font(self) -> None:
+        """Set the font for the main text widget, based on the current Prefs values."""
+        self.font.config(
+            family=preferences.get(PrefKey.TEXT_FONT_FAMILY),
+            size=preferences.get(PrefKey.TEXT_FONT_SIZE),
+        )
+        # Mac doesn't update window properly, so temporarily select all
+        # then restore selection to force it to update
+        if is_mac():
+            self.save_selection_ranges()
+            self.do_select(IndexRange(self.start(), self.end()))
+            self.restore_selection_ranges(self.current_sel_ranges)
 
     def toggle_line_numbers(self) -> None:
         """Toggle whether line numbers are shown."""
@@ -626,14 +643,20 @@ class MainText(tk.Text):
                 self.prev_sel_ranges = self.current_sel_ranges.copy()
             self.current_sel_ranges = ranges.copy()
 
-    def restore_selection_ranges(self) -> None:
-        """Restore previous selection ranges."""
-        if len(self.prev_sel_ranges) == 1:
-            self.do_select(self.prev_sel_ranges[0])
-        elif len(self.prev_sel_ranges) > 1:
-            col_range = IndexRange(
-                self.prev_sel_ranges[0].start, self.prev_sel_ranges[-1].end
-            )
+    def restore_selection_ranges(
+        self, ranges: Optional[list[IndexRange]] = None
+    ) -> None:
+        """Restore previous selection ranges.
+
+        Args:
+            ranges: Selection ranges to restore - defaults to previous selection range
+        """
+        if ranges is None:
+            ranges = self.prev_sel_ranges
+        if len(ranges) == 1:
+            self.do_select(ranges[0])
+        elif len(ranges) > 1:
+            col_range = IndexRange(ranges[0].start, ranges[-1].end)
             self.do_column_select(col_range)
 
     def column_delete(self) -> None:
