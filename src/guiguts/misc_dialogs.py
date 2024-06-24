@@ -294,7 +294,7 @@ def init_compose_dict() -> None:
     init_chars("⅞", "7/8")
     init_chars("⅑", "1/9")
     init_chars("⅒", "1/10")
-    for num, char in enumerate("⁰ⁱ²³⁴⁵⁶⁷⁸⁹"):
+    for num, char in enumerate("⁰¹²³⁴⁵⁶⁷⁸⁹"):
         init_chars(char, f"^{num}")
     for num, char in enumerate("₀₁₂₃₄₅₆₇₈₉"):
         init_chars(char, f",{num}")
@@ -515,7 +515,7 @@ class ComposeHelpDialog(ToplevelDialog):
 
     def __init__(self) -> None:
         """Initialize class members from page details."""
-        super().__init__("Compose Sequences")
+        super().__init__("List of Compose Sequences")
 
         self.column_headings = ("Character", "Sequence", "Name")
         widths = (70, 70, 600)
