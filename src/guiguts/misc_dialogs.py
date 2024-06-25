@@ -11,6 +11,7 @@ from guiguts.preferences import (
     PersistentBoolean,
     PersistentInt,
     PersistentString,
+    preferences,
 )
 from guiguts.utilities import is_mac
 from guiguts.widgets import (
@@ -21,6 +22,8 @@ from guiguts.widgets import (
     mouse_bind,
     Combobox,
 )
+
+COMBO_SEPARATOR = "――――――――――――――――――――――――――――――"
 
 
 class PreferencesDialog(ToplevelDialog):
@@ -58,15 +61,39 @@ class PreferencesDialog(ToplevelDialog):
             ToolTip(tearoff_check, "Not available on macOS")
 
         # Font
+        def is_valid_font(new_value: str) -> bool:
+            """Validation routine for Combobox - if separator has been selected,
+            select Courier instead.
+
+            Args:
+                new_value: New font family selected by user.
+
+            Returns:
+                True, because if invalid, it is fixed in this routine.
+            """
+            if new_value == COMBO_SEPARATOR:
+                preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier")
+            return True
+
         font_frame = ttk.Frame(appearance_frame)
         font_frame.grid(column=0, row=3, sticky="NEW", pady=(5, 0))
         ttk.Label(font_frame, text="Font: ").grid(column=0, row=0, sticky="NEW")
+        font_list = sorted(font.families(), key=str.lower)
+        font_list.insert(0, COMBO_SEPARATOR)
+        for preferred_font in "Courier", "DejaVu Sans Mono", "DP Sans Mono":
+            if preferred_font in font_list:
+                font_list.insert(0, preferred_font)
         cb = ttk.Combobox(
-            font_frame, textvariable=PersistentString(PrefKey.TEXT_FONT_FAMILY)
+            font_frame,
+            textvariable=PersistentString(PrefKey.TEXT_FONT_FAMILY),
+            width=30,
+            validate="all",
+            validatecommand=(self.register(is_valid_font), "%P"),
+            values=font_list,
+            state="readonly",
         )
         cb.grid(column=1, row=0, sticky="NEW")
-        cb["values"] = sorted(font.families(), key=str.lower)
-        cb["state"] = "readonly"
+
         spinbox = ttk.Spinbox(
             font_frame,
             textvariable=PersistentInt(PrefKey.TEXT_FONT_SIZE),

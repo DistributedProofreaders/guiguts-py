@@ -90,17 +90,16 @@ class TextLineNumbers(tk.Canvas):
         self.x_offset = 10
         # Allow for non-zero additional line spacing in text widget
         self.y_offset = self.textwidget["spacing1"]
-        # Allow for 5 digit line numbers
-        width = self.font.measure("88888") + self.x_offset
-        tk.Canvas.__init__(
-            self, parent, *args, width=width, highlightthickness=0, **kwargs
-        )
+        tk.Canvas.__init__(self, parent, *args, highlightthickness=0, **kwargs)
         # Canvas needs to listen for theme change
         self.bind("<<ThemeChanged>>", lambda event: self.theme_change())
         self.text_color = "black"
 
     def redraw(self) -> None:
         """Redraw line numbers."""
+        # Allow for 5 digit line numbers
+        width = self.font.measure("88888") + self.x_offset + 5
+        self["width"] = width
         self.delete("all")
         text_pos = self.winfo_width() - self.x_offset
         index = self.textwidget.index("@0,0")
@@ -149,8 +148,16 @@ class MainText(tk.Text):
         self.frame.rowconfigure(0, weight=1)
 
         # Set up font
+        family = preferences.get(PrefKey.TEXT_FONT_FAMILY)
+        # If preference has never been set, then choose one of the preferred fonts
+        if not family:
+            families = tk_font.families()
+            for pref_font in "DP Sans Mono", "DejaVu Sans Mono", "Courier":
+                if pref_font in families:
+                    family = pref_font
+                    break
         self.font = tk_font.Font(
-            family=preferences.get(PrefKey.TEXT_FONT_FAMILY),
+            family=family,
             size=preferences.get(PrefKey.TEXT_FONT_SIZE),
         )
         # For some reason line spacing on Mac is very tight, so pad a bit here
@@ -251,6 +258,9 @@ class MainText(tk.Text):
 
         maintext(self)  # Register this single instance of MainText
 
+        # Need to wait until maintext has been registered to set the font preference
+        preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
+
     def bind_event(
         self,
         event_string: str,
@@ -328,9 +338,9 @@ class MainText(tk.Text):
         # Mac doesn't update window properly, so temporarily select all
         # then restore selection to force it to update
         if is_mac():
-            self.save_selection_ranges()
+            ranges = self.selected_ranges()
             self.do_select(IndexRange(self.start(), self.end()))
-            self.restore_selection_ranges(self.current_sel_ranges)
+            self.restore_selection_ranges(ranges)
 
     def toggle_line_numbers(self) -> None:
         """Toggle whether line numbers are shown."""
@@ -653,7 +663,9 @@ class MainText(tk.Text):
         """
         if ranges is None:
             ranges = self.prev_sel_ranges
-        if len(ranges) == 1:
+        if len(ranges) == 0:
+            self.clear_selection()
+        elif len(ranges) == 1:
             self.do_select(ranges[0])
         elif len(ranges) > 1:
             col_range = IndexRange(ranges[0].start, ranges[-1].end)
