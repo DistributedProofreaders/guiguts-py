@@ -41,6 +41,7 @@ class PrefKey(StrEnum):
     CHECKERDIALOG_SUSPECTS_ONLY = auto()
     DIALOG_GEOMETRY = auto()
     ROOT_GEOMETRY = auto()
+    ROOT_GEOMETRY_STATE = auto()
     DEFAULT_LANGUAGES = auto()
     JEEBIES_PARANOIA_LEVEL = auto()
     WRAP_LEFT_MARGIN = auto()
