@@ -19,6 +19,7 @@ from guiguts.widgets import (
     insert_in_focus_widget,
     OkApplyCancelDialog,
     mouse_bind,
+    Combobox,
 )
 
 
@@ -171,15 +172,18 @@ class ComposeSequenceDialog(OkApplyCancelDialog):
         super().__init__("Compose Sequence", resize_x=False, resize_y=False)
         ttk.Label(self.top_frame, text="Compose: ").grid(column=0, row=0, sticky="NSEW")
         self.string = tk.StringVar()
-        entry = ttk.Entry(self.top_frame, textvariable=self.string, name="entry1")
-        entry.grid(column=1, row=0, sticky="NSEW")
+        self.entry = Combobox(
+            self.top_frame, PrefKey.COMPOSE_HISTORY, textvariable=self.string
+        )
+        # self.entry = ttk.Entry(self.top_frame, textvariable=self.string, name="entry1")
+        self.entry.grid(column=1, row=0, sticky="NSEW")
         # In tkinter, binding order is widget, class, toplevel, all
         # Swap first two, so that class binding has time to set textvariable
         # before the widget binding below is executed.
-        bindings = entry.bindtags()
-        entry.bindtags((bindings[1], bindings[0], bindings[2], bindings[3]))
-        entry.bind("<Key>", lambda _event: self.interpret_and_insert())
-        entry.focus()
+        bindings = self.entry.bindtags()
+        self.entry.bindtags((bindings[1], bindings[0], bindings[2], bindings[3]))
+        self.entry.bind("<Key>", lambda _event: self.interpret_and_insert())
+        self.entry.focus()
         init_compose_dict()
 
     def apply_changes(self) -> bool:
@@ -191,7 +195,7 @@ class ComposeSequenceDialog(OkApplyCancelDialog):
             Always returns True, meaning OK button (or Return key) will close dialog.
         """
         self.interpret_and_insert(force=True)
-        self.string.set("")
+        self.entry.select_range(0, tk.END)
         return True
 
     def interpret_and_insert(self, force: bool = False) -> None:
@@ -228,6 +232,7 @@ class ComposeSequenceDialog(OkApplyCancelDialog):
         if not char or not char.isprintable():
             return
         insert_in_focus_widget(char)
+        self.entry.add_to_history(self.string.get())
         if not force:
             self.destroy()
 
