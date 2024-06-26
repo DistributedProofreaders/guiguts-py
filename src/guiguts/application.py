@@ -345,7 +345,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             PrefKey.TEXT_FONT_FAMILY,
             lambda *value: maintext().set_font(),
         )
-        preferences.set_default(PrefKey.TEXT_FONT_SIZE, 10)
+        preferences.set_default(PrefKey.TEXT_FONT_SIZE, 12)
         preferences.set_callback(
             PrefKey.TEXT_FONT_SIZE,
             lambda *value: maintext().set_font(),

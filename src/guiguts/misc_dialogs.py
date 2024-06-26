@@ -23,7 +23,7 @@ from guiguts.widgets import (
     Combobox,
 )
 
-COMBO_SEPARATOR = "――――――――――――――――――――――――――――――"
+COMBO_SEPARATOR = "―" * 20
 
 
 class PreferencesDialog(ToplevelDialog):
@@ -63,7 +63,7 @@ class PreferencesDialog(ToplevelDialog):
         # Font
         def is_valid_font(new_value: str) -> bool:
             """Validation routine for Combobox - if separator has been selected,
-            select Courier instead.
+            select Courier New instead.
 
             Args:
                 new_value: New font family selected by user.
@@ -73,6 +73,7 @@ class PreferencesDialog(ToplevelDialog):
             """
             if new_value == COMBO_SEPARATOR:
                 preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier")
+                preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier New")
             return True
 
         font_frame = ttk.Frame(appearance_frame)
@@ -80,9 +81,11 @@ class PreferencesDialog(ToplevelDialog):
         ttk.Label(font_frame, text="Font: ").grid(column=0, row=0, sticky="NEW")
         font_list = sorted(font.families(), key=str.lower)
         font_list.insert(0, COMBO_SEPARATOR)
-        for preferred_font in "Courier", "DejaVu Sans Mono", "DP Sans Mono":
+        for preferred_font in "Courier New", "DejaVu Sans Mono", "DP Sans Mono":
             if preferred_font in font_list:
                 font_list.insert(0, preferred_font)
+            elif preferred_font == "Courier New" and "Courier" in font_list:
+                font_list.insert(0, "Courier")
         cb = ttk.Combobox(
             font_frame,
             textvariable=PersistentString(PrefKey.TEXT_FONT_FAMILY),

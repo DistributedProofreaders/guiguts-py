@@ -152,7 +152,12 @@ class MainText(tk.Text):
         # If preference has never been set, then choose one of the preferred fonts
         if not family:
             families = tk_font.families()
-            for pref_font in "DP Sans Mono", "DejaVu Sans Mono", "Courier":
+            for pref_font in (
+                "DP Sans Mono",
+                "DejaVu Sans Mono",
+                "Courier New",
+                "Courier",
+            ):
                 if pref_font in families:
                     family = pref_font
                     break
@@ -161,7 +166,7 @@ class MainText(tk.Text):
             size=preferences.get(PrefKey.TEXT_FONT_SIZE),
         )
         # For some reason line spacing on Mac is very tight, so pad a bit here
-        line_spacing = 3 if is_mac() else 0
+        line_spacing = 4 if is_mac() else 0
         # Create Text itself & place in Frame
         super().__init__(self.frame, font=self.font, spacing1=line_spacing, **kwargs)
         tk.Text.grid(self, column=1, row=0, sticky="NSEW")
@@ -335,12 +340,16 @@ class MainText(tk.Text):
             family=preferences.get(PrefKey.TEXT_FONT_FAMILY),
             size=preferences.get(PrefKey.TEXT_FONT_SIZE),
         )
-        # Mac doesn't update window properly, so temporarily select all
+
+        # On some systems, window isn't updated properly, so temporarily select all
         # then restore selection to force it to update
-        if is_mac():
+        def refresh_selection() -> None:
+            """Stash the selection, select all, then restore selection."""
             ranges = self.selected_ranges()
             self.do_select(IndexRange(self.start(), self.end()))
             self.restore_selection_ranges(ranges)
+
+        self.after_idle(refresh_selection)
 
     def toggle_line_numbers(self) -> None:
         """Toggle whether line numbers are shown."""
