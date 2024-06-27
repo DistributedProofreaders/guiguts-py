@@ -342,14 +342,12 @@ class MainText(tk.Text):
         )
 
         # On some systems, window isn't updated properly, so temporarily select all
-        # then restore selection to force it to update
-        def refresh_selection() -> None:
-            """Stash the selection, select all, then restore selection."""
-            ranges = self.selected_ranges()
-            self.do_select(IndexRange(self.start(), self.end()))
-            self.restore_selection_ranges(ranges)
-
-        self.after_idle(refresh_selection)
+        # then restore selection to force it to update.
+        # Also restore after idle, or Linux version doesn't update.
+        ranges = self.selected_ranges()
+        self.do_select(IndexRange(self.start(), self.end()))
+        self.restore_selection_ranges(ranges)
+        self.after_idle(lambda: self.restore_selection_ranges(ranges))
 
     def toggle_line_numbers(self) -> None:
         """Toggle whether line numbers are shown."""
