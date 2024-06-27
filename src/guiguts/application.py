@@ -302,6 +302,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.SEARCHDIALOG_REGEX, False)
         preferences.set_default(PrefKey.DIALOG_GEOMETRY, {})
         preferences.set_default(PrefKey.ROOT_GEOMETRY, "800x400")
+        preferences.set_default(PrefKey.ROOT_GEOMETRY_STATE, "normal")
         preferences.set_default(PrefKey.DEFAULT_LANGUAGES, "en")
         preferences.set_default(PrefKey.WFDIALOG_SUSPECTS_ONLY, False)
         preferences.set_default(PrefKey.WFDIALOG_IGNORE_CASE, False)

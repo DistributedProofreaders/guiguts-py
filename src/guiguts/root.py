@@ -27,6 +27,7 @@ class Root(tk.Tk):
 
         super().__init__(**kwargs)
         self.geometry(preferences.get(PrefKey.ROOT_GEOMETRY))
+        self.state(preferences.get(PrefKey.ROOT_GEOMETRY_STATE))
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -74,7 +75,13 @@ class Root(tk.Tk):
         root dialog creation and resizing. Only the first will actually
         do a save, because the flag will only be true on the first call."""
         if self.save_config:
-            preferences.set(PrefKey.ROOT_GEOMETRY, self.geometry())
+            # Bug in maximized geometry leads to size being full screen size,
+            # but top-left is non-maximized top left, i.e. mid-screen.
+            # So, if maximized, don't save geometry, just save "normal/zoomed" state.
+            # Then when de-maximize happens, you have the correct size AND top-left.
+            if self.state() != "zoomed":
+                preferences.set(PrefKey.ROOT_GEOMETRY, self.geometry())
+            preferences.set(PrefKey.ROOT_GEOMETRY_STATE, self.state())
 
 
 def root() -> Root:
