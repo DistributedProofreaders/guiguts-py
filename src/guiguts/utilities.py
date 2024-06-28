@@ -360,3 +360,318 @@ class DiacriticRemover:
             for char in normalize("NFD", string.translate(DiacriticRemover.outliers))
             if not combining(char)
         )
+
+
+class TextWrapper:
+    """Provides Knuth-Plass rewrapping functionality.
+
+    Can be replaced with Python's textwrap/TextWrapper if "greedy" wrapping is preferred:
+        ``from textwrap import TextWrapper``
+
+        ``wrapper = TextWrapper(break_long_words=False, break_on_hyphens=False)``
+    """
+
+    def __init__(self) -> None:
+        """Initialize rewrap parameters."""
+
+        # The four attributes below match the Perl version's four
+        # options. However the Python version is normally passed
+        # just three of them, namely:
+        #
+        #    width
+        #    first_indent
+        #    subsequent_indent
+        #
+        # The Python version will calculate a default value for
+        # 'optimum_width' (see 'def fill' below) unless the caller
+        # sets a value for this attribute.
+        #
+        # Only consider setting a value for 'optimum_width' if you
+        # want to explore different optimal rewrappings. Using the
+        # default value means that Knuth-Plass wrapping behaviour
+        # is indentical in GG1 & GG2.
+
+        self.width = 72
+        self.optimum_width = -1
+        self.initial_indent = ""
+        self.subsequent_indent = ""
+
+    def fill(self, paragraph: str) -> str:
+        """Python implementation of ReflowGG.pm (Knuth-Plass)."""
+
+        ####
+        # The following are declared and accessed as 'nonlocal' variables
+        # by functions defined within the enclosing scope of this top-most
+        # function definition. The names must exist when first encountered
+        # as they cannot be created by a first assignment in a nested def.
+        ####
+
+        # Maximum possible line length. Caller sets this to the current
+        # 'rightmargin' value.
+        maximum = self.width
+        # Not normally passed by the caller so set default as per Perl
+        # version, namely 'width - rmargindiff'. The latter is normally
+        # '1'. Deal with situation when 'optimum_width' is set by the
+        # caller to change the default value.
+        if self.optimum_width == -1:
+            # Caller hasn't changed it so set default value for optimum.
+            optimum = [self.width - 1]
+        else:
+            # Use value set by caller for optimum.
+            optimum = [self.optimum_width]
+        # Indentation for first line.
+        indent1 = self.initial_indent
+        # Indentation for each line after the first.
+        indent2 = self.subsequent_indent
+
+        # Used by reflow_trial() in its calculation of the best breaks
+        # in lines to produce the optimal rewrapping.
+        penaltylimit = 0x2000000
+        # Will hold the newline-terminated lines that are split from
+        # the passed in paragraph text. This is the source of the
+        # lines to be rewrapped by the Knuth algorithm.
+        from_lines = []
+        # Will hold the trimmed and newline-terminated lines that are
+        # the result of the Knuth rewrapping.
+        to_lines = []
+        # Used by reflow_trial() to pick the break for the last line
+        # which gives the least penalties penalties for previous lines.
+        lastbreak = 0
+        # Is the list of breaks determined by reflow_trial. Will be used
+        # by print_output() to construct the each of the rewrapped lines.
+        linkbreak = []
+        # The list of words from the passed in paragraph that are used
+        # in the calculations by the Knuth algorithm to build rewrapped
+        # lines with optimal breaks.
+        words: list[str] = []
+        # The count of words in the above list.
+        wordcount = 0
+        # Length of each word (excluding spaces) in the above list.
+        word_len: list[int] = []
+        # Length of the space after each word in word_len.
+        space_len: list[int] = []
+        # Used as an interim buffer of rewrapped lines that are edited
+        # (e.g. to reinsert spaces in ellipses, etc.) before being
+        # written to 'to_lines'.
+        output: list[str] = []
+
+        # NB The variables above are declared in this enclosing function's
+        #    scope so that they exist when encountered as Python 'nonlocal'
+        #    variables within the nested functions that follow.
+
+        def reflow_trial() -> int:
+            """Finds the optimal Knuth-Plass wrapping for a text
+            within given margins and suggested optimum width.
+            """
+
+            nonlocal optimum, maximum, wordcount, penaltylimit
+            nonlocal word_len, space_len, linkbreak
+
+            totalpenalty = [0] * wordcount
+            best = penaltylimit * 21
+            for opt in optimum:
+                my_linkbreak = [0] * wordcount
+                j = 0
+                # Optimize preceding break
+                while j < wordcount:
+                    interval = 0
+                    totalpenalty[j] = penaltylimit * 2
+                    k = j
+                    while k >= 0:
+                        interval += word_len[k]
+                        if k < j and ((interval > opt + 10) or (interval >= maximum)):
+                            break
+                        penalty = (interval - opt) * (interval - opt)
+                        interval += space_len[k]
+                        if k > 0:
+                            penalty += totalpenalty[k - 1]
+                        if penalty < totalpenalty[j]:
+                            totalpenalty[j] = penalty
+                            my_linkbreak[j] = k - 1
+                        k -= 1
+                    j += 1
+                interval = 0
+                bestsofar = penaltylimit * 20
+                lastbreak = wordcount - 2
+                # Pick a break for the last line which gives the least
+                # penalties for previous lines.
+                k = wordcount - 2
+                while k >= -1:
+                    interval += word_len[k + 1]
+                    if (interval > opt + 10) or (interval > maximum):
+                        break
+                    # Don't make last line too long.
+                    if interval > opt:
+                        penalty = (interval - opt) * (interval - opt)
+                    else:
+                        penalty = 0
+                    interval += space_len[k + 1]
+                    if k >= 0:
+                        penalty += totalpenalty[k]
+                    if penalty <= bestsofar:
+                        bestsofar = penalty
+                        lastbreak = k
+                    k -= 1
+                # Save these breaks if they are an improvement.
+                if bestsofar < best:
+                    best_lastbreak = lastbreak
+                    linkbreak = my_linkbreak.copy()
+                    best = bestsofar
+                # Next opt
+            return best_lastbreak
+
+        def paragraph_to_lines(paragraph: str) -> None:
+            """Split paraqraph string into lines, keeping trailing empty lines.
+            The split is on newlines and then they are restored, being careful
+            not to add an extra newline at the end.
+
+            Args:
+                paragraph: String to be rewrapped. Usually one or more lines
+                           each terminated with a newline.
+            """
+
+            nonlocal from_lines
+
+            lines = paragraph.split("\n")
+            # Remove any additional newline at the end.
+            if len(lines) > 0 and lines[-1] == "":
+                lines.pop()
+            # Restore the terminating newlines.
+            lines_with_newlines = map(lambda s: f"{s}\n", lines)
+            # Create a global list of lines.
+            from_lines = list(lines_with_newlines)
+
+        def get_line() -> str:
+            """Returns the next element of global array 'from_lines'. Assumes
+            that no element in that list is zero length.
+            """
+
+            if len(from_lines) > 0:
+                tmp = from_lines[0]
+                del from_lines[0]
+            else:
+                tmp = ""
+            return tmp
+
+        def print_lines(lines: list[str]) -> None:
+            """Trim EOL spaces and store the lines in the output buffer."""
+
+            nonlocal to_lines
+
+            for line in lines:
+                to_lines.append(re.sub(r"[ \t]+\n", r"\n", line))
+
+        def reflow_penalties() -> None:
+            """Initialise global word- and space-length lists"""
+
+            nonlocal wordcount, words, word_len, space_len
+
+            wordcount = len(words)
+            # Add paragraph indentation to first word if there is one.
+            if wordcount > 0:
+                words[0] = f"{indent1}{words[0]}"
+            word_len = [0] * wordcount  # Length of each word (excluding spaces).
+            space_len = [0] * wordcount  # Length of the space after after this word.
+            for j in range(wordcount):
+                if re.findall(r" $", words[j]):
+                    word_len[j] = len(words[j]) - 1
+                    space_len[j] = 2
+                else:
+                    word_len[j] = len(words[j])
+                    space_len[j] = 1
+            # First word already has 'indent1' added and will not be indented further.
+            if wordcount > 0:
+                word_len[0] -= len(indent2)
+
+        def compute_output() -> None:
+            """Compute global 'output' list from 'wordcount', 'words' list,
+            lastbreak and linkbreak"""
+
+            nonlocal output, words, wordcount, lastbreak, linkbreak
+
+            output = []
+            terminus = wordcount - 1
+            while terminus >= 0:
+                # NB The lower bound is inclusive, the upper bound is noninclusive.
+                my_str = " ".join(words[lastbreak + 1 : terminus + 1]) + "\n"
+                output.append(my_str)
+                terminus = lastbreak
+                lastbreak = linkbreak[lastbreak]
+            output.reverse()
+            # Add the indent to all but the first line.
+            mapped = map(lambda s: f"{indent2}{s}", output[1 : len(output)])
+            output = [output[0]]
+            for m in mapped:
+                output.append(m)
+
+        def reflow_para() -> None:
+            """Rewrap pragraph"""
+
+            nonlocal words
+            nonlocal lastbreak, linkbreak, wordcount, output
+
+            if len(words) == 0:
+                return
+            reflow_penalties()
+            lastbreak = 0
+            lastbreak = reflow_trial()
+            compute_output()
+            # Restore spaces in ellipses
+            tmp = []
+            for line in output:
+                tmp.append(re.sub(r"\x9f", " ", line))
+            output = tmp.copy()
+            print_lines(output)
+            words = []
+
+        def process(line: str) -> None:
+            """Process a line by appending each word to global 'words' list.
+            If the line is blank, reflow the paragraph of words in 'words'.
+            """
+            nonlocal words
+
+            # Protect " . . ." ellipses by replacing space with unused byte \x9f.
+            line = re.sub(r" \. \. \.", r"\x9f.\x9f.\x9f.", line)
+            line = re.sub(r"\. \. \.", r".\x9f.\x9f.", line)
+            # Splitting assumes a single space between words in 'line'
+            line = re.sub(r"\s+", " ", line)
+            # Remove any extra space at end of line.
+            line = re.sub(r"\s$", "", line)
+            linewords = line.split(" ")
+            if len(linewords) != 0 and linewords[0] == "":
+                del linewords[0]
+            # If no words on this line then end of paragraph.
+            if len(linewords) == 0:
+                # No words on this line so end of paragraph.
+                reflow_para()
+                # Function expects a list of strings, each terminated with \n.
+                print_lines([f"{indent1}\n"])
+            else:
+                # Add contents of global 'linewords' list to global 'words' list.
+                for word in linewords:
+                    words.append(word)
+
+        ####
+        # Executable section of enclosing function 'fill'.
+        ####
+
+        # Split the passed in paragraph into lines and add them
+        # to the global list 'from_lines'.
+        paragraph_to_lines(paragraph)
+
+        # Adjust global variables 'optimum' and 'maximum' by
+        # 'indent2' length.
+        if indent2 != "":
+            maximum = maximum - len(indent2)
+            mapped = map(lambda s: s - len(indent2), optimum)
+            optimum = list(mapped)
+
+        # Do the rewrapping.
+        while line := get_line():
+            process(line)
+        # Reflow any remaining words in 'words' list.
+        reflow_para()
+        rewrapped_para = ""
+        for line in to_lines:
+            rewrapped_para = "".join((rewrapped_para, line))
+        return rewrapped_para
