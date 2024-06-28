@@ -570,7 +570,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         unicode_menu.add_button(
             "~Compose Sequence...",
             ComposeSequenceDialog.show_dialog,
-            "Cmd/Ctrl+M",
+            "Cmd/Ctrl+I",
         )
 
     def init_view_menu(self) -> None:
