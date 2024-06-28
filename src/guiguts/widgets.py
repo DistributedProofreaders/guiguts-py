@@ -251,17 +251,29 @@ class OkApplyCancelDialog(ToplevelDialog):
         button_frame.grid(row=1, column=0, sticky="NSEW")
         button_frame.columnconfigure(0, weight=1)
         ok_button = ttk.Button(
-            button_frame, text="OK", default="active", command=self.ok_pressed
+            button_frame,
+            text="OK",
+            default="active",
+            command=self.ok_pressed,
+            takefocus=False,
         )
         ok_button.grid(row=0, column=0)
         button_frame.columnconfigure(1, weight=1)
         apply_button = ttk.Button(
-            button_frame, text="Apply", default="normal", command=self.apply_changes
+            button_frame,
+            text="Apply",
+            default="normal",
+            command=self.apply_changes,
+            takefocus=False,
         )
         apply_button.grid(row=0, column=1)
         button_frame.columnconfigure(2, weight=1)
         cancel_button = ttk.Button(
-            button_frame, text="Cancel", default="normal", command=self.cancel_pressed
+            button_frame,
+            text="Cancel",
+            default="normal",
+            command=self.cancel_pressed,
+            takefocus=False,
         )
         cancel_button.grid(row=0, column=2)
         self.bind("<Return>", lambda event: self.ok_pressed())

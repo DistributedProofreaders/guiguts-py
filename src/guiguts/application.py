@@ -31,7 +31,11 @@ from guiguts.mainwindow import (
     ErrorHandler,
     process_accel,
 )
-from guiguts.misc_dialogs import PreferencesDialog, ComposeSequenceDialog
+from guiguts.misc_dialogs import (
+    PreferencesDialog,
+    ComposeSequenceDialog,
+    ComposeHelpDialog,
+)
 from guiguts.misc_tools import (
     basic_fixup_check,
     page_separator_fixup,
@@ -333,6 +337,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             ),
         )
         preferences.set_default(PrefKey.TEAROFF_MENUS, False)
+        preferences.set_default(PrefKey.COMPOSE_HISTORY, [])
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -539,7 +544,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)
         menu_tools.add_separator()
-        unmatched_menu = Menu(menu_tools, "~Unmatched")
+        unmatched_menu = Menu(menu_tools, "Un~matched")
         unmatched_menu.add_button("Bloc~k Markup...", unmatched_block_markup)
         unmatched_menu.add_button("~DP Markup...", unmatched_dp_markup)
         unmatched_menu.add_button("~Brackets...", unmatched_brackets)
@@ -566,7 +571,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         unicode_menu.add_button(
             "~Compose Sequence...",
             ComposeSequenceDialog.show_dialog,
-            "Cmd/Ctrl+;",
+            "Cmd/Ctrl+I",
         )
 
     def init_view_menu(self) -> None:
@@ -587,6 +592,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_help = Menu(menubar(), "~Help")
         menu_help.add_button("Guiguts ~Manual", self.show_help_manual)
         menu_help.add_button("About ~Guiguts", self.help_about)
+        menu_help.add_button(
+            "List of ~Compose Sequences", ComposeHelpDialog.show_dialog
+        )
 
     def init_os_menu(self) -> None:
         """Create the OS-specific menu.
