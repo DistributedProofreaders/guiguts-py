@@ -338,6 +338,18 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         preferences.set_default(PrefKey.TEAROFF_MENUS, False)
         preferences.set_default(PrefKey.COMPOSE_HISTORY, [])
+        # Since fonts aren't available until Tk has initialized, set default font family
+        # to be empty string here, and set the true default later in MainText.
+        preferences.set_default(PrefKey.TEXT_FONT_FAMILY, "")
+        preferences.set_callback(
+            PrefKey.TEXT_FONT_FAMILY,
+            lambda *value: maintext().set_font(),
+        )
+        preferences.set_default(PrefKey.TEXT_FONT_SIZE, 12)
+        preferences.set_callback(
+            PrefKey.TEXT_FONT_SIZE,
+            lambda *value: maintext().set_font(),
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:

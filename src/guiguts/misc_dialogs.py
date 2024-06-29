@@ -1,7 +1,7 @@
 """Miscellaneous dialogs."""
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, font
 import unicodedata
 
 import regex as re
@@ -11,6 +11,7 @@ from guiguts.preferences import (
     PersistentBoolean,
     PersistentInt,
     PersistentString,
+    preferences,
 )
 from guiguts.utilities import is_mac
 from guiguts.widgets import (
@@ -21,6 +22,8 @@ from guiguts.widgets import (
     mouse_bind,
     Combobox,
 )
+
+COMBO_SEPARATOR = "―" * 20
 
 
 class PreferencesDialog(ToplevelDialog):
@@ -56,18 +59,66 @@ class PreferencesDialog(ToplevelDialog):
         if is_mac():
             tearoff_check["state"] = tk.DISABLED
             ToolTip(tearoff_check, "Not available on macOS")
+
+        # Font
+        def is_valid_font(new_value: str) -> bool:
+            """Validation routine for Combobox - if separator has been selected,
+            select Courier New instead.
+
+            Args:
+                new_value: New font family selected by user.
+
+            Returns:
+                True, because if invalid, it is fixed in this routine.
+            """
+            if new_value == COMBO_SEPARATOR:
+                preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier")
+                preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier New")
+            return True
+
+        font_frame = ttk.Frame(appearance_frame)
+        font_frame.grid(column=0, row=3, sticky="NEW", pady=(5, 0))
+        ttk.Label(font_frame, text="Font: ").grid(column=0, row=0, sticky="NEW")
+        font_list = sorted(font.families(), key=str.lower)
+        font_list.insert(0, COMBO_SEPARATOR)
+        for preferred_font in "Courier New", "DejaVu Sans Mono", "DP Sans Mono":
+            if preferred_font in font_list:
+                font_list.insert(0, preferred_font)
+            elif preferred_font == "Courier New" and "Courier" in font_list:
+                font_list.insert(0, "Courier")
+        cb = ttk.Combobox(
+            font_frame,
+            textvariable=PersistentString(PrefKey.TEXT_FONT_FAMILY),
+            width=30,
+            validate="all",
+            validatecommand=(self.register(is_valid_font), "%P"),
+            values=font_list,
+            state="readonly",
+        )
+        cb.grid(column=1, row=0, sticky="NEW")
+
+        spinbox = ttk.Spinbox(
+            font_frame,
+            textvariable=PersistentInt(PrefKey.TEXT_FONT_SIZE),
+            from_=1,
+            to=99,
+            width=5,
+        )
+        spinbox.grid(column=2, row=0, sticky="NEW", padx=2)
+        ToolTip(spinbox, "Font size")
+
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
             variable=PersistentBoolean(PrefKey.LINE_NUMBERS),
-        ).grid(column=0, row=3, sticky="NEW", pady=5)
+        ).grid(column=0, row=4, sticky="NEW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
             text="Automatically show current page image",
             variable=PersistentBoolean(PrefKey.AUTO_IMAGE),
-        ).grid(column=0, row=4, sticky="NEW", pady=5)
+        ).grid(column=0, row=5, sticky="NEW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=5, sticky="NEW", pady=(5, 0))
+        bell_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))
         ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
         ttk.Checkbutton(
             bell_frame,
