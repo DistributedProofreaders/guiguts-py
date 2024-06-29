@@ -30,7 +30,7 @@ First alpha release, containing the following features:
 - Auto Img (shift-click See Img in status bar)
 - Recent documents (File menu)
 - Change case features (Edit menu)
-- Preferences (Edit menu) for theme, font, margins, etc
+- Preferences (Edit menu, or Python menu on Macs) for theme, margins, etc
 - Search & Replace (Search menu) with regex, match case, etc. Also, limit
   search/replace to current selection
 - Count and Find All search features
@@ -51,3 +51,8 @@ First alpha release, containing the following features:
 - Compose Sequences (Tools menu, and via Cmd+I/Ctrl+I shortcut) - only
   accented characters and Unicode ordinals. List of sequences (Help Menu)
 - Message log (View menu)
+- Command line arguments: 
+    - `-h`, `--help`: show help on command line arguments
+    - `-r1 (or 2...9)`, `--recent 1 (or 2...9)`: load most recent
+      (or 2nd...9th most recent) file
+    - `-d`: debug mode, mostly for developer use
