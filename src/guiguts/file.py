@@ -580,15 +580,20 @@ class File:
         """Go to page corresponding to the given image number.
 
         Args:
-            image_num: Number of image to go to, e.g. "001"
+            image_num: Number of image to go to, e.g. "001" (can omit leading zeroes)
         """
-        if image_num is not None:
+        if image_num is None:
+            return
+        for n_zero in range(5):
+            prefix = "0" * n_zero
             try:
-                index = maintext().rowcol(page_mark_from_img(image_num))
+                index = maintext().rowcol(page_mark_from_img(prefix + image_num))
             except tk.TclError:
                 # Bad image number
-                return
+                continue
             maintext().set_insert_index(index)
+            return
+        sound_bell()
 
     def goto_page(self) -> None:
         """Go to the page the user enters."""
