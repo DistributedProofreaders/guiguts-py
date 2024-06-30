@@ -3,7 +3,6 @@
 
 import logging
 import subprocess
-from textwrap import TextWrapper
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tk_font
@@ -18,6 +17,7 @@ from guiguts.utilities import (
     IndexRange,
     force_tcl_wholeword,
     convert_to_tcl_regex,
+    TextWrapper,
 )
 from guiguts.widgets import (
     theme_set_tk_widget_colors,
@@ -1301,7 +1301,7 @@ class MainText(tk.Text):
         )
         # For efficiency with many wrap operations, it is recommended to
         # re-use a single TextWrapper object, rather than creating new ones.
-        wrapper = TextWrapper(break_long_words=False, break_on_hyphens=False)
+        wrapper = TextWrapper()
         # Keep list of wrap_params so user can nest block quotes
         # First is depth=0, i.e. not blockquote
         block_params_list: list[WrapParams] = [
