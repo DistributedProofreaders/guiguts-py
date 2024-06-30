@@ -435,7 +435,7 @@ class TextWrapper:
         # the result of the Knuth rewrapping.
         to_lines = []
         # Used by reflow_trial() to pick the break for the last line
-        # which gives the least penalties penalties for previous lines.
+        # which gives the least penalties for previous lines.
         lastbreak = 0
         # Is the list of breaks determined by reflow_trial. Will be used
         # by print_output() to construct the each of the rewrapped lines.
@@ -521,7 +521,7 @@ class TextWrapper:
             return best_lastbreak
 
         def paragraph_to_lines(paragraph: str) -> None:
-            """Split paraqraph string into lines, keeping trailing empty lines.
+            """Split paragraph string into lines, keeping trailing empty lines.
             The split is on newlines and then they are restored, being careful
             not to add an extra newline at the end.
 
