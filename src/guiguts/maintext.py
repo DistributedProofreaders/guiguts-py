@@ -798,6 +798,8 @@ class MainText(tk.Text):
 
     def smart_paste(self) -> str:
         """Do column paste if multiple ranges selected, else default paste."""
+        # Afterwards, make sure insert cursor is visible
+        self.after_idle(lambda: self.see(tk.INSERT))
         if len(self.selected_ranges()) <= 1:
             return ""  # Permit default behavior to happen
         self.column_paste()
