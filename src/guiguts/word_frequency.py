@@ -1016,26 +1016,28 @@ def wf_populate_ligatures(wf_dialog: WordFrequencyDialog) -> None:
     all_words = _the_word_lists.get_all_words()
     suspect_cnt = 0
     total_cnt = 0
+    suspects_only = preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY)
     for word, freq in all_words.items():
-        if re.search("(ae|AE|Ae|oe|OE|Oe|æ|Æ|œ|Œ)", word):
-            total_cnt += 1
-            # If actual ligature, only output it here if not suspects-only
-            if re.search("(æ|Æ|œ|Œ)", word):
-                if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
-                    wf_dialog.add_entry(word, freq)
-            # Use the non-ligature version to check for suspects - because AE and Ae are both Æ
-            else:
-                lig_word = re.sub("ae", "æ", word)
-                lig_word = re.sub("(AE|Ae)", "Æ", lig_word)
-                lig_word = re.sub("oe", "œ", lig_word)
-                lig_word = re.sub("(OE|Oe)", "Œ", lig_word)
-                if lig_word in all_words:
-                    suspect_cnt += 1
-                    if preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
-                        wf_dialog.add_entry(lig_word, all_words[lig_word])
-                    wf_dialog.add_entry(word, freq, suspect=True)
-                else:
-                    wf_dialog.add_entry(word, freq)
+        if not re.search("(ae|AE|Ae|oe|OE|Oe|æ|Æ|œ|Œ)", word):
+            continue
+        total_cnt += 1
+        # If actual ligature, only output it here if not suspects-only
+        if re.search("(æ|Æ|œ|Œ)", word):
+            if not suspects_only:
+                wf_dialog.add_entry(word, freq)
+        # Use the non-ligature version to check for suspects - because AE and Ae are both Æ
+        else:
+            lig_word = re.sub("ae", "æ", word)
+            lig_word = re.sub("(AE|Ae)", "Æ", lig_word)
+            lig_word = re.sub("oe", "œ", lig_word)
+            lig_word = re.sub("(OE|Oe)", "Œ", lig_word)
+            if lig_word in all_words:
+                suspect_cnt += 1
+                if suspects_only:
+                    wf_dialog.add_entry(lig_word, all_words[lig_word])
+                wf_dialog.add_entry(word, freq, suspect=True)
+            elif not suspects_only:
+                wf_dialog.add_entry(word, freq)
     wf_dialog.display_entries()
     wf_dialog.message.set(
         f"{sing_plur(total_cnt, 'ligature word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
