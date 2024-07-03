@@ -448,35 +448,19 @@ class WordFrequencyDialog(ToplevelDialog):
         """Display all the stored entries in the dialog according to
         the sort setting."""
 
-        def no_markup_key(word: str) -> tuple[str, ...]:
-            """Return additional sort keys to keep identical marked-up and non_marked-up phrases together."""
-            if preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.MARKEDUP:
-                no_markup = re.sub("<.*?>", "", word)
-                return (no_markup.lower(), no_markup)
-            return ()
-
         def sort_key_alpha(
             entry: WordFrequencyEntry,
         ) -> tuple[str, ...]:
             no_dia = DiacriticRemover.remove_diacritics(entry.word)
-            return no_markup_key(no_dia) + (no_dia.lower(), no_dia, entry.word)
+            return (no_dia.lower(), no_dia, entry.word)
 
         def sort_key_freq(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
             no_dia = DiacriticRemover.remove_diacritics(entry.word)
-            return (
-                (-entry.frequency,)
-                + no_markup_key(no_dia)
-                + (no_dia.lower(), no_dia, entry.word)
-            )
+            return (-entry.frequency,) + (no_dia.lower(), no_dia, entry.word)
 
         def sort_key_len(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
             no_dia = DiacriticRemover.remove_diacritics(entry.word)
-            no_markup = no_markup_key(no_dia)
-            if len(no_markup) == 0:
-                length = len(entry.word)
-            else:
-                length = len(no_markup[0])
-            return (-length,) + no_markup + (no_dia.lower(), no_dia, entry.word)
+            return (-len(entry.word), no_dia.lower(), no_dia, entry.word)
 
         key: Callable[[WordFrequencyEntry], tuple]
         match preferences.get(PrefKey.WFDIALOG_SORT_TYPE):
@@ -908,7 +892,7 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
     wf_dialog.reset()
 
     marked_dict: WFDict = WFDict()
-    markup_types = "i|b|sc|f|g|u"
+    markup_types = "i|b|sc|f|g|u|cite|em|strong"
     matches = maintext().find_matches(
         rf"<({markup_types})>([^<]|\n)+</\1>",
         IndexRange(maintext().start(), maintext().end()),
