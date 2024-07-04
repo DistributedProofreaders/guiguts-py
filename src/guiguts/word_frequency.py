@@ -763,36 +763,44 @@ def wf_populate_hyphens(wf_dialog: WordFrequencyDialog) -> None:
         if "-" not in word:
             continue
         total_cnt += 1
-        if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
-            wf_dialog.add_entry(word, freq)
-            word_output[word] = True
         # Check for suspects - given "w1-w2", then "w1w2", "w1 w2" and "w1--w2" are suspects.
         word_pair = re.sub(r"-\*?", " ", word)
+        nohyp_word = re.sub(r"-\*?", "", word)
+        twohyp_word = re.sub(r"-\*?", "--", word)
+        suspect = (
+            word_pair in word_pairs
+            or nohyp_word in all_words
+            or twohyp_word in emdash_words
+        )
+
+        if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
+            wf_dialog.add_entry(word, freq, suspect=suspect)
+            word_output[word] = True
         if word_pair in word_pairs:
             if word not in word_output:
-                wf_dialog.add_entry(word, freq)
+                wf_dialog.add_entry(word, freq, suspect=suspect)
                 word_output[word] = True
             if word_pair not in word_output:
-                wf_dialog.add_entry(word_pair, word_pairs[word_pair], suspect=True)
+                wf_dialog.add_entry(word_pair, word_pairs[word_pair], suspect=suspect)
                 word_output[word_pair] = True
                 suspect_cnt += 1
         nohyp_word = re.sub(r"-\*?", "", word)
         if nohyp_word in all_words:
             if word not in word_output:
-                wf_dialog.add_entry(word, freq)
+                wf_dialog.add_entry(word, freq, suspect=suspect)
                 word_output[word] = True
             if nohyp_word not in word_output:
-                wf_dialog.add_entry(nohyp_word, all_words[nohyp_word], suspect=True)
+                wf_dialog.add_entry(nohyp_word, all_words[nohyp_word], suspect=suspect)
                 word_output[nohyp_word] = True
                 suspect_cnt += 1
         twohyp_word = re.sub(r"-\*?", "--", word)
         if twohyp_word in emdash_words:
             if word not in word_output:
-                wf_dialog.add_entry(word, freq)
+                wf_dialog.add_entry(word, freq, suspect=suspect)
                 word_output[word] = True
             if twohyp_word not in word_output:
                 wf_dialog.add_entry(
-                    twohyp_word, emdash_words[twohyp_word], suspect=True
+                    twohyp_word, emdash_words[twohyp_word], suspect=suspect
                 )
                 word_output[twohyp_word] = True
                 suspect_cnt += 1
