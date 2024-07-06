@@ -21,6 +21,7 @@ logger = logging.getLogger(__package__)
 BLOCK_TYPES = "[$*XxFf]"
 POEM_TYPES = "[Pp]"
 ALL_BLOCKS_REG = f"[{re.escape('#$*FILPXCR')}]"
+QUOTE_APOS_REG = "[[:alpha:]]’[[:alpha:]]"
 
 
 def tool_save() -> bool:
@@ -616,22 +617,83 @@ def unmatched_curly_quotes() -> None:
             Tuple with regex, True if bracket_in was close bracket.
         """
         match quote_in:
-            case "‘":
-                return "[‘’]", False
-            case "’":
-                return "[‘’]", True
             case "“":
                 return "[“”]", False
             case "”":
                 return "[“”]", True
         assert False, f"'{quote_in}' is not a curly quote"
 
+    def unmatched_single_quotes(dialog: CheckerDialog) -> None:
+        """Add warnings about unmatched single quotes to given dialog.
+
+        Args:
+            dialog: Checkerdialog to receive error messages.
+        """
+        prefix = "Unmatched: "
+        search_range = IndexRange(maintext().start(), maintext().end())
+        # Find open & close single quotes
+        while match := maintext().find_match("[‘’]", search_range, regexp=True):
+            quote_type = maintext().get_match_text(match)
+            match_index = match.rowcol.index()
+            after_match = maintext().index(f"{match_index}+1c")
+            search_range = IndexRange(after_match, maintext().end())
+            # If close quote surrounded by alphabetic characters, assume it's an apostrophe
+            context = maintext().get(f"{match_index}-1c", f"{match_index}+2c")
+            if re.fullmatch(QUOTE_APOS_REG, context):
+                continue
+            # Search for the matching pair to this markup
+            if not find_match_pair_sq(match_index, quote_type):
+                dialog.add_entry(
+                    f"{prefix}{quote_type}",
+                    IndexRange(match_index, after_match),
+                    len(prefix),
+                    len(prefix) + 1,
+                )
+
     unmatched_markup_check(
         "Unmatched Curly Quotes",
         rerun_command=unmatched_curly_quotes,
-        match_reg="[‘’“”]",
+        match_reg="[“”]",
         match_pair_func=toggle_quote,
+        additional_check_command=unmatched_single_quotes,
     )
+
+
+def find_match_pair_sq(match_index: str, match_str: str) -> str:
+    """Find the pair to the given match, allowing for single quote/apostrophe confusion.
+    Simplified version of `find_match_pair`, with specific apostrophe check.
+
+    Args:
+        match_index: Index of start of match_str in file.
+        match_str: String to find the pair of.
+    """
+    reverse = match_str == "’"
+    start = match_index if reverse else maintext().index(f"{match_index}+1c")
+    end = maintext().start() if reverse else maintext().end()
+    # Keep searching until we find the matching markup
+    found = ""
+    while not found:
+        # Search for the given markup and its pair in order to spot nesting
+        match = maintext().find_match(
+            "[‘’]",
+            IndexRange(start, end),
+            regexp=True,
+            backwards=reverse,
+        )
+        if match is None:
+            break
+        match_index = match.rowcol.index()
+        # Check it's not actually an apostrophe (close-quote surrounded by alphabetics)
+        context = maintext().get(f"{match_index}-1c", f"{match_index}+2c")
+        if not re.fullmatch(QUOTE_APOS_REG, context):
+            # If we get to here, we've either found the pair, or the same string again.
+            # Nesting is not allowed, so only return "found" position if not nested.
+            if maintext().get_match_text(match) != match_str:
+                found = match_index
+            break
+        # Adjust start point for next search
+        start = match_index if reverse else maintext().index(f"{match_index}+1c")
+    return found
 
 
 def unmatched_dp_markup() -> None:
