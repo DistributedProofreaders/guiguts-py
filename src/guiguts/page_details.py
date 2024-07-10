@@ -5,7 +5,7 @@ from tkinter import simpledialog, ttk
 
 import roman  # type: ignore[import-untyped]
 
-from guiguts.maintext import maintext
+from guiguts.maintext import maintext, page_mark_from_img
 from guiguts.widgets import OkApplyCancelDialog, mouse_bind, ToolTip
 
 STYLE_COLUMN = "#2"
@@ -189,12 +189,17 @@ class PageDetailsDialog(OkApplyCancelDialog):
             event: Event containing location of mouse click
             reverse: True to "advance" in reverse!
         """
+        row_id = self.list.identify_row(event.y)
+        row = self.list.set(row_id)
+
+        # Display the page
+        png = row[COL_HEAD_IMG]
+        index = maintext().rowcol(page_mark_from_img(png))
+        maintext().set_insert_index(index)
+
         col_id = self.list.identify_column(event.x)
         if col_id not in (STYLE_COLUMN, NUMBER_COLUMN):
             return
-
-        row_id = self.list.identify_row(event.y)
-        row = self.list.set(row_id)
 
         if col_id == STYLE_COLUMN:
             if COL_HEAD_STYLE not in row:

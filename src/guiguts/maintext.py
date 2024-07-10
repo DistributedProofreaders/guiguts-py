@@ -1741,6 +1741,33 @@ class MainText(tk.Text):
             self.delete(start, f"{start} lineend")
 
 
+def img_from_page_mark(mark: str) -> str:
+    """Get base image name from page mark, e.g. "Pg027" gives "027".
+
+    Args:
+        mark: String containing name of mark whose image is needed.
+          Does not check if mark is a page mark. If it is not, the
+          full string is returned.
+
+    Returns:
+        Image name.
+    """
+    return mark.removeprefix(PAGEMARK_PREFIX)
+
+
+def page_mark_from_img(img: str) -> str:
+    """Get page mark from base image name, e.g. "027" gives "Pg027".
+
+    Args:
+        img: Name of png img file whose mark is needed.
+          Does not check validity of png img file name.
+
+    Returns:
+        Page mark string.
+    """
+    return PAGEMARK_PREFIX + img
+
+
 class TclRegexCompileError(Exception):
     """Raise if Tcl fails to compile regex."""
 
