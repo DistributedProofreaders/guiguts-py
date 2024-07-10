@@ -22,7 +22,7 @@ from guiguts.utilities import (
     is_mac,
     sing_plur,
 )
-from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind
+from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind, Busy
 
 MARK_ENTRY_TO_SELECT = "MarkEntryToSelect"
 HILITE_TAG_NAME = "chk_hilite"
@@ -253,6 +253,7 @@ class CheckerDialog(ToplevelDialog):
             args: Optional args to pass to dialog constructor.
             kwargs: Optional kwargs to pass to dialog constructor.
         """
+        Busy.busy()
         return super().show_dialog(title, destroy, **kwargs)
 
     @classmethod
@@ -436,6 +437,7 @@ class CheckerDialog(ToplevelDialog):
         """Display all the stored entries in the dialog according to
         the sort setting."""
 
+        Busy.busy()
         sort_key: Callable[[CheckerEntry], tuple]
         if (
             preferences.get(PrefKey.CHECKERDIALOG_SORT_TYPE)
@@ -508,6 +510,7 @@ class CheckerDialog(ToplevelDialog):
                     self.select_entry_by_index(index)
                     break
         self.update_count_label()
+        Busy.unbusy()
 
     def showing_suspects_only(self) -> bool:
         """Return whether dialog is showing Suspects Only.

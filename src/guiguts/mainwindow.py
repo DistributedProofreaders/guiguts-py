@@ -28,6 +28,7 @@ from guiguts.widgets import (
     ToolTip,
     themed_style,
     theme_set_tk_widget_colors,
+    Busy,
 )
 
 logger = logging.getLogger(__package__)
@@ -36,8 +37,8 @@ TEXTIMAGE_WINDOW_ROW = 0
 TEXTIMAGE_WINDOW_COL = 0
 SEPARATOR_ROW = 1
 SEPARATOR_COL = 0
-STATUSBAR_ROW = 2
-STATUSBAR_COL = 0
+STATUS_ROW = 2
+STATUS_COL = 0
 MIN_PANE_WIDTH = 20
 
 
@@ -416,7 +417,7 @@ class StatusBar(ttk.Frame):
     Fields in statusbar can be automatically or manually updated.
     """
 
-    def __init__(self, parent: Root) -> None:
+    def __init__(self, parent: ttk.Frame) -> None:
         """Initialize statusbar within given frame.
 
         Args:
@@ -634,6 +635,7 @@ class MainWindow:
     mainimage: MainImage
     statusbar: StatusBar
     messagelog: MessageLog
+    busy_widget: ttk.Label
 
     def __init__(self) -> None:
         Root()
@@ -644,12 +646,27 @@ class MainWindow:
         root()["menu"] = menubar()
         MainWindow.messagelog = MessageLog()
 
-        MainWindow.statusbar = StatusBar(root())
-        statusbar().grid(
-            column=STATUSBAR_COL,
-            row=STATUSBAR_ROW,
+        status_frame = ttk.Frame(root())
+        status_frame.grid(
+            column=STATUS_COL,
+            row=STATUS_ROW,
             sticky="NSEW",
         )
+        status_frame.columnconfigure(0, weight=1)
+        MainWindow.statusbar = StatusBar(status_frame)
+        MainWindow.statusbar.grid(
+            column=0,
+            row=0,
+            sticky="NSW",
+        )
+        MainWindow.busy_widget = ttk.Label(status_frame, foreground="red")
+        MainWindow.busy_widget.grid(
+            column=1,
+            row=0,
+            sticky="NSE",
+            padx=10,
+        )
+        Busy.busy_widget_setup(MainWindow.busy_widget)
 
         ttk.Separator(root()).grid(
             column=SEPARATOR_COL,
