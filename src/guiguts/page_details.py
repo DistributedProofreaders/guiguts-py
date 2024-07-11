@@ -149,6 +149,17 @@ class PageDetailsDialog(OkApplyCancelDialog):
         mouse_bind(
             self.list, "Shift+1", lambda event: self.item_clicked(event, reverse=True)
         )
+
+        def display_page(_event: tk.Event) -> None:
+            """Display the page for the selected row."""
+            try:
+                png = self.list.set(self.list.focus())[COL_HEAD_IMG]
+            except KeyError:
+                return
+            index = maintext().rowcol(page_mark_from_img(png))
+            maintext().set_insert_index(index, focus=False)
+
+        self.list.bind("<<TreeviewSelect>>", display_page)
         self.list.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.scrollbar = ttk.Scrollbar(
@@ -191,11 +202,6 @@ class PageDetailsDialog(OkApplyCancelDialog):
         """
         row_id = self.list.identify_row(event.y)
         row = self.list.set(row_id)
-
-        # Display the page
-        png = row[COL_HEAD_IMG]
-        index = maintext().rowcol(page_mark_from_img(png))
-        maintext().set_insert_index(index)
 
         col_id = self.list.identify_column(event.x)
         if col_id not in (STYLE_COLUMN, NUMBER_COLUMN):
