@@ -170,6 +170,17 @@ class PageDetailsDialog(OkApplyCancelDialog):
 
         self.populate_list(self.details)
 
+        # Position list at current page
+        if cur_img := maintext().get_current_image_name():
+            children = self.list.get_children()
+            for idx, child in enumerate(children):
+                png = self.list.set(child)[COL_HEAD_IMG]
+                if png == cur_img:
+                    self.list.selection_set(child)
+                    # "see" puts item at top, so see the position a few earlier
+                    self.list.see(children[max(0, idx - 3)])
+                    break
+
     def populate_list(self, details: PageDetails, see_index: int = 0) -> None:
         """Populate the page details list from the given details.
 

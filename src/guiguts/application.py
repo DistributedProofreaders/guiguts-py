@@ -644,7 +644,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         the_statusbar.add(
             "img",
             tooltip="Click: Go to image",
-            update=lambda: "Img: " + self.file.get_current_image_name(),
+            update=lambda: "Img: " + maintext().get_current_image_name(),
         )
         the_statusbar.add_binding("img", "ButtonRelease-1", self.file.goto_image)
 

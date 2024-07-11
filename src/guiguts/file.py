@@ -479,42 +479,6 @@ class File:
         """
         return maintext().page_mark_next("1.0") != ""
 
-    def get_current_page_mark(self) -> str:
-        """Find page mark corresponding to where the insert cursor is.
-
-        Returns:
-            Name of preceding mark. Empty string if none found.
-        """
-        insert = maintext().get_insert_index().index()
-        mark = insert
-        good_mark = ""
-        # First check for page marks at the current cursor position & return last one
-        while (mark := maintext().page_mark_next(mark)) and maintext().compare(
-            mark, "==", insert
-        ):
-            good_mark = mark
-        # If not, then find page mark before current position
-        if not good_mark:
-            if mark := maintext().page_mark_previous(insert):
-                good_mark = mark
-        # If not, then maybe we're before the first page mark, so search forward
-        if not good_mark:
-            if mark := maintext().page_mark_next(insert):
-                good_mark = mark
-        return good_mark
-
-    def get_current_image_name(self) -> str:
-        """Find basename of the image file corresponding to where the
-        insert cursor is.
-
-        Returns:
-            Basename of image file. Empty string if none found.
-        """
-        mark = self.get_current_page_mark()
-        if mark == "":
-            return ""
-        return img_from_page_mark(mark)
-
     def get_current_image_path(self) -> str:
         """Return the path of the image file for the page where the insert
         cursor is located.
@@ -523,7 +487,7 @@ class File:
             Name of the image file for the current page, or the empty string
             if unable to get image file name.
         """
-        basename = self.get_current_image_name()
+        basename = maintext().get_current_image_name()
         if self.image_dir and basename:
             basename += ".png"
             path = os.path.join(self.image_dir, basename)
@@ -543,7 +507,7 @@ class File:
         Returns:
             Page label of current page. Empty string if none found.
         """
-        img = self.get_current_image_name()
+        img = maintext().get_current_image_name()
         if img == "":
             return ""
         return self.page_details[img]["label"]
@@ -625,7 +589,7 @@ class File:
             direction: +1 to go to next page; -1 for previous page
         """
         insert = maintext().get_insert_index().index()
-        cur_page = self.get_current_image_name()
+        cur_page = maintext().get_current_image_name()
         mark = page_mark_from_img(cur_page) if cur_page else insert
         while mark := maintext().page_mark_next_previous(mark, direction):
             if maintext().compare(mark, "!=", insert):
