@@ -633,3 +633,83 @@ def insert_in_focus_widget(string: str) -> None:
         return
     assert isinstance(_text_focus_widget, (tk.Entry, tk.Text))
     _text_focus_widget.insert(tk.INSERT, string)
+
+
+class Busy:
+    """Class to allow program to indicate to user that it is busy.
+
+    1. Change the busy label (registered via `busy_widget_setup`) to say "Working".
+    2. Change the mouse cursor to "watch" (widgets registered via `busy_cursor_setup`).
+    """
+
+    _busy_widget: Optional[ttk.Label] = None
+    _busy_widget_cursors: dict[tk.Widget | tk.Tk | tk.Toplevel, str] = {}
+
+    @classmethod
+    def busy_widget_setup(cls, widget: ttk.Label) -> None:
+        """Register the label widget that will show if process is busy.
+
+        Args:
+            widget: The label widget to use to show busyness."""
+        assert Busy._busy_widget is None
+        Busy._busy_widget = widget
+
+    @classmethod
+    def busy(cls) -> None:
+        """Tell the user the process is busy.
+
+        1. Change the busy label to say "Working".
+        2. Change the mouse cursor to "watch".
+
+        It is safe to call `busy` more than once during an operation.
+        Before control returns to the user, `unbusy` must be called.
+        """
+        assert Busy._busy_widget is not None
+        Busy._busy_widget.config(text="Working")
+        Busy._busy_widget.update()
+
+        def register_children(widget: tk.Widget | tk.Tk | tk.Toplevel) -> None:
+            """Register the given widget & all its children by calling
+            itself recursively.
+
+            Args:
+                widget: Widget to register.
+            """
+            # No need to register tooltips & menus  (nor their children).
+            if isinstance(widget, (ToolTip, tk.Menu)):
+                return
+            # Don't re-register widgets, because first call will likely have the default cursor.
+            # Also, No need to register frames, but do register their children
+            if widget not in Busy._busy_widget_cursors and not isinstance(
+                widget, ttk.Frame
+            ):
+                Busy._busy_widget_cursors[widget] = widget["cursor"]
+
+            for child in widget.winfo_children():
+                register_children(child)
+
+        # Assume the "busy widget" is in the root window.
+        register_children(Busy._busy_widget.winfo_toplevel())
+        Busy._busy_set_cursors("watch")
+
+    @classmethod
+    def unbusy(cls) -> None:
+        """Tell the user the process is no longer busy."""
+        assert Busy._busy_widget is not None
+        Busy._busy_widget.config(text="")
+        Busy._busy_set_cursors("")
+
+    @classmethod
+    def _busy_set_cursors(cls, cursor: str) -> None:
+        """Set/restore the cursor for the registered widgets.
+
+        Args:
+            cursor: Which cursor to use; empty string to restore defaults.
+        """
+        for widget in list(Busy._busy_widget_cursors.keys()):
+            if widget.winfo_exists():
+                widget["cursor"] = cursor or Busy._busy_widget_cursors[widget]
+                widget.update()
+            else:
+                # Remove old widgets from register
+                del Busy._busy_widget_cursors[widget]

@@ -27,7 +27,13 @@ from guiguts.utilities import (
     process_accel,
     cmd_ctrl_string,
 )
-from guiguts.widgets import ToplevelDialog, Combobox, ToolTip, mouse_bind
+from guiguts.widgets import (
+    ToplevelDialog,
+    Combobox,
+    ToolTip,
+    mouse_bind,
+    Busy,
+)
 
 _the_word_lists = None  # pylint: disable=invalid-name
 
@@ -665,6 +671,7 @@ def wf_populate(wf_dialog: WordFrequencyDialog) -> None:
     Args:
         wf_dialog: The word frequency dialog.
     """
+    Busy.busy()
     match preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE):
         case WFDisplayType.ALL_WORDS:
             wf_populate_all(wf_dialog)
@@ -692,6 +699,7 @@ def wf_populate(wf_dialog: WordFrequencyDialog) -> None:
             wf_populate_regexps(wf_dialog)
         case _ as bad_value:
             assert False, f"Invalid WFDisplayType: {bad_value}"
+    Busy.unbusy()
 
 
 def wf_populate_all(wf_dialog: WordFrequencyDialog) -> None:
