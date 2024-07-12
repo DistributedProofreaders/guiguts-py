@@ -50,7 +50,7 @@ from guiguts.misc_tools import (
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
-from guiguts.root import root
+from guiguts.root import root, RootWindowState
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
@@ -622,6 +622,13 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view.add_button("~Show Image", self.show_image)
         menu_view.add_button("~Hide Image", self.hide_image)
         menu_view.add_button("~Message Log", self.mainwindow.messagelog.show)
+        menu_view.add_separator()
+        menu_view.add_checkbox(
+            "~Full Screen",
+            lambda: root().wm_attributes("-fullscreen", True),
+            lambda: root().wm_attributes("-fullscreen", False),
+            preferences.get(PrefKey.ROOT_GEOMETRY_STATE) == RootWindowState.FULLSCREEN,
+        )
 
     def init_help_menu(self) -> None:
         """Create the Help menu."""
