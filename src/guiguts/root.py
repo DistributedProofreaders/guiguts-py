@@ -1,6 +1,7 @@
 """Handle Tk root window"""
 
 
+from enum import StrEnum, auto
 import logging
 import traceback
 import tkinter as tk
@@ -10,11 +11,20 @@ from typing import Any
 
 from guiguts.maintext import maintext
 from guiguts.preferences import preferences, PrefKey
+from guiguts.utilities import is_x11
 from guiguts.widgets import grab_focus
 
 logger = logging.getLogger(__package__)
 
 _the_root = None  # pylint: disable=invalid-name
+
+
+class RootWindowState(StrEnum):
+    """Enum class to store root window states."""
+
+    NORMAL = auto()
+    ZOOMED = auto()
+    FULLSCREEN = auto()
 
 
 class Root(tk.Tk):
@@ -27,7 +37,17 @@ class Root(tk.Tk):
 
         super().__init__(**kwargs)
         self.geometry(preferences.get(PrefKey.ROOT_GEOMETRY))
-        self.state(preferences.get(PrefKey.ROOT_GEOMETRY_STATE))
+
+        # Set zoomed/fullscreen state appropriately for platform
+        state = preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
+        if state == RootWindowState.ZOOMED:
+            if is_x11():
+                root().wm_attributes("-zoomed", True)
+            else:
+                self.state("zoomed")
+        elif state == RootWindowState.FULLSCREEN:
+            self.wm_attributes("-fullscreen", True)
+
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -75,13 +95,18 @@ class Root(tk.Tk):
         root dialog creation and resizing. Only the first will actually
         do a save, because the flag will only be true on the first call."""
         if self.save_config:
-            # Bug in maximized geometry leads to size being full screen size,
-            # but top-left is non-maximized top left, i.e. mid-screen.
-            # So, if maximized, don't save geometry, just save "normal/zoomed" state.
-            # Then when de-maximize happens, you have the correct size AND top-left.
-            if self.state() != "zoomed":
+            zoomed = (
+                root().wm_attributes("-zoomed")
+                if is_x11()
+                else (self.state() == "zoomed")
+            )
+            state = RootWindowState.ZOOMED if zoomed else RootWindowState.NORMAL
+            if root().wm_attributes("-fullscreen"):
+                state = RootWindowState.FULLSCREEN
+            # Only save geometry if "normal". Then de-maximize should restore correct size and top-left.
+            if state == RootWindowState.NORMAL:
                 preferences.set(PrefKey.ROOT_GEOMETRY, self.geometry())
-            preferences.set(PrefKey.ROOT_GEOMETRY_STATE, self.state())
+            preferences.set(PrefKey.ROOT_GEOMETRY_STATE, state)
 
 
 def root() -> Root:
