@@ -222,6 +222,8 @@ class Guiguts:
                 filetitle = "..." + filetitle[len_title - max_width :]
             filetitle = " - " + filetitle
         root().title(f"Guiguts {version('guiguts')}" + modtitle + filetitle)
+        if is_mac():
+            root().wm_attributes("-modified", maintext().is_modified())
 
     def quit_program(self) -> None:
         """Exit the program."""
