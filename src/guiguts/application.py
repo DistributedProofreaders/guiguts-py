@@ -208,6 +208,8 @@ class Guiguts:
         modtitle = " - edited" if maintext().is_modified() else ""
         filetitle = " - " + self.file.filename if self.file.filename else ""
         root().title(f"Guiguts {version('guiguts')}" + modtitle + filetitle)
+        if is_mac():
+            root().wm_attributes("-modified", maintext().is_modified())
 
     def quit_program(self) -> None:
         """Exit the program."""
