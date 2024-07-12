@@ -1740,6 +1740,67 @@ class MainText(tk.Text):
         while start := self.search(" +$", start, regexp=True):
             self.delete(start, f"{start} lineend")
 
+    def get_current_page_mark(self) -> str:
+        """Find page mark corresponding to where the insert cursor is.
+
+        Returns:
+            Name of preceding mark. Empty string if none found.
+        """
+        insert = self.get_insert_index().index()
+        mark = insert
+        good_mark = ""
+        # First check for page marks at the current cursor position & return last one
+        while (mark := self.page_mark_next(mark)) and self.compare(mark, "==", insert):
+            good_mark = mark
+        # If not, then find page mark before current position
+        if not good_mark:
+            if mark := self.page_mark_previous(insert):
+                good_mark = mark
+        # If not, then maybe we're before the first page mark, so search forward
+        if not good_mark:
+            if mark := self.page_mark_next(insert):
+                good_mark = mark
+        return good_mark
+
+    def get_current_image_name(self) -> str:
+        """Find basename of the image file corresponding to where the
+        insert cursor is.
+
+        Returns:
+            Basename of image file. Empty string if none found.
+        """
+        mark = self.get_current_page_mark()
+        if mark == "":
+            return ""
+        return img_from_page_mark(mark)
+
+
+def img_from_page_mark(mark: str) -> str:
+    """Get base image name from page mark, e.g. "Pg027" gives "027".
+
+    Args:
+        mark: String containing name of mark whose image is needed.
+          Does not check if mark is a page mark. If it is not, the
+          full string is returned.
+
+    Returns:
+        Image name.
+    """
+    return mark.removeprefix(PAGEMARK_PREFIX)
+
+
+def page_mark_from_img(img: str) -> str:
+    """Get page mark from base image name, e.g. "027" gives "Pg027".
+
+    Args:
+        img: Name of png img file whose mark is needed.
+          Does not check validity of png img file name.
+
+    Returns:
+        Page mark string.
+    """
+    return PAGEMARK_PREFIX + img
+
 
 class TclRegexCompileError(Exception):
     """Raise if Tcl fails to compile regex."""

@@ -5,7 +5,7 @@ from tkinter import simpledialog, ttk
 
 import roman  # type: ignore[import-untyped]
 
-from guiguts.maintext import maintext
+from guiguts.maintext import maintext, page_mark_from_img
 from guiguts.widgets import OkApplyCancelDialog, mouse_bind, ToolTip
 
 STYLE_COLUMN = "#2"
@@ -149,6 +149,17 @@ class PageDetailsDialog(OkApplyCancelDialog):
         mouse_bind(
             self.list, "Shift+1", lambda event: self.item_clicked(event, reverse=True)
         )
+
+        def display_page(_event: tk.Event) -> None:
+            """Display the page for the selected row."""
+            try:
+                png = self.list.set(self.list.focus())[COL_HEAD_IMG]
+            except KeyError:
+                return
+            index = maintext().rowcol(page_mark_from_img(png))
+            maintext().set_insert_index(index, focus=False)
+
+        self.list.bind("<<TreeviewSelect>>", display_page)
         self.list.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.scrollbar = ttk.Scrollbar(
@@ -158,6 +169,17 @@ class PageDetailsDialog(OkApplyCancelDialog):
         self.scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
         self.populate_list(self.details)
+
+        # Position list at current page
+        if cur_img := maintext().get_current_image_name():
+            children = self.list.get_children()
+            for idx, child in enumerate(children):
+                png = self.list.set(child)[COL_HEAD_IMG]
+                if png == cur_img:
+                    self.list.selection_set(child)
+                    # "see" puts item at top, so see the position a few earlier
+                    self.list.see(children[max(0, idx - 3)])
+                    break
 
     def populate_list(self, details: PageDetails, see_index: int = 0) -> None:
         """Populate the page details list from the given details.
@@ -189,12 +211,12 @@ class PageDetailsDialog(OkApplyCancelDialog):
             event: Event containing location of mouse click
             reverse: True to "advance" in reverse!
         """
+        row_id = self.list.identify_row(event.y)
+        row = self.list.set(row_id)
+
         col_id = self.list.identify_column(event.x)
         if col_id not in (STYLE_COLUMN, NUMBER_COLUMN):
             return
-
-        row_id = self.list.identify_row(event.y)
-        row = self.list.set(row_id)
 
         if col_id == STYLE_COLUMN:
             if COL_HEAD_STYLE not in row:
