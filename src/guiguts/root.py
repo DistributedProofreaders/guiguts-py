@@ -37,15 +37,11 @@ class Root(tk.Tk):
         super().__init__(**kwargs)
         self.geometry(preferences.get(PrefKey.ROOT_GEOMETRY))
 
-        # Set zoomed/fullscreen state appropriately for platform
-        state = preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
-        if state == RootWindowState.ZOOMED:
-            if is_x11():
-                root().wm_attributes("-zoomed", True)
-            else:
-                self.state("zoomed")
-        elif state == RootWindowState.FULLSCREEN:
-            self.wm_attributes("-fullscreen", True)
+        self.full_screen_var = tk.BooleanVar(
+            value=preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
+            == RootWindowState.FULLSCREEN
+        )
+        self.allow_config_saves = False
 
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)
@@ -92,20 +88,39 @@ class Root(tk.Tk):
 
         Several calls to this may be queued by config changes during
         root dialog creation and resizing. Only the first will actually
-        do a save, because the flag will only be true on the first call."""
-        if self.save_config:
+        do a save, because the flag will only be true on the first call.
+
+        Will do nothing until enabled via a call to set_zoom_fullscreen."""
+        if self.allow_config_saves and self.save_config:
             zoomed = (
                 root().wm_attributes("-zoomed")
                 if is_x11()
                 else (self.state() == "zoomed")
             )
             state = RootWindowState.ZOOMED if zoomed else RootWindowState.NORMAL
-            if root().wm_attributes("-fullscreen"):
+            fullscreen = root().wm_attributes("-fullscreen")
+            self.full_screen_var.set(fullscreen)
+            if fullscreen:
                 state = RootWindowState.FULLSCREEN
             # Only save geometry if "normal". Then de-maximize should restore correct size and top-left.
             if state == RootWindowState.NORMAL:
                 preferences.set(PrefKey.ROOT_GEOMETRY, self.geometry())
             preferences.set(PrefKey.ROOT_GEOMETRY_STATE, state)
+
+    def set_zoom_fullscreen(self) -> None:
+        """Set zoomed/fullscreen state appropriately for platform.
+
+        Also enable saving of config after this point, to avoid confusion as the window gets created.
+        """
+        state = preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
+        if state == RootWindowState.ZOOMED:
+            if is_x11():
+                root().wm_attributes("-zoomed", True)
+            else:
+                self.state("zoomed")
+        elif state == RootWindowState.FULLSCREEN:
+            self.wm_attributes("-fullscreen", True)
+        self.allow_config_saves = True
 
 
 def root() -> Root:
