@@ -50,7 +50,7 @@ from guiguts.misc_tools import (
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
-from guiguts.root import root, RootWindowState
+from guiguts.root import root
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
@@ -107,6 +107,9 @@ class Guiguts:
         # Known tkinter issue - must call this before any dialogs can get created,
         # or focus will not return to maintext on Windows
         root().update_idletasks()
+
+        # After menus, etc., have been created, set the zoomed/fullscreen state
+        root().set_zoom_fullscreen()
 
         self.logging_add_gui()
         logger.info("GUI initialized")
@@ -605,7 +608,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "~Full Screen",
             lambda: root().wm_attributes("-fullscreen", True),
             lambda: root().wm_attributes("-fullscreen", False),
-            preferences.get(PrefKey.ROOT_GEOMETRY_STATE) == RootWindowState.FULLSCREEN,
+            root().full_screen_var,
         )
 
     def init_help_menu(self) -> None:
