@@ -59,6 +59,9 @@ class ToplevelDialog(tk.Toplevel):
         self.save_config = False
         self.bind("<Configure>", self._handle_config)
 
+        # Stop macOS making all dialogs full screen if the root window is
+        self.wm_attributes("-fullscreen", False)
+
         self.tooltip_list: list[ToolTip] = []
         self.bind("<Destroy>", self.tidy_up)
 
