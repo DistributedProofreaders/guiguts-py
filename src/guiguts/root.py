@@ -117,7 +117,13 @@ class Root(tk.Tk):
             else:
                 self.state("zoomed")
         elif state == RootWindowState.FULLSCREEN:
+            # Fullscreen doesn't work quite right on macOS without withdraw
+            # and deiconify. Doesn't seem to hurt other platforms to do this.
+            # This is also needed to avoid the problem of dialogs on Mac
+            # becoming fullscreen tabs (see widgets.py:ToplevelDialog)
+            self.wm_withdraw()
             self.wm_attributes("-fullscreen", True)
+            self.wm_deiconify()
         self.allow_config_saves = True
 
 
