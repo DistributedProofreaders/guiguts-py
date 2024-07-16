@@ -23,6 +23,7 @@ from guiguts.widgets import (
     theme_set_tk_widget_colors,
     themed_style,
     register_focus_widget,
+    grab_focus,
 )
 
 logger = logging.getLogger(__package__)
@@ -265,6 +266,9 @@ class MainText(tk.Text):
 
         # Need to wait until maintext has been registered to set the font preference
         preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
+
+        # Force focus to maintext widget
+        self.after_idle(lambda: grab_focus(self.root, self, True))
 
     def bind_event(
         self,

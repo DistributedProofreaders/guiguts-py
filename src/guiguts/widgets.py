@@ -7,6 +7,7 @@ from typing import Any, Optional, TypeVar, Callable
 import regex as re
 
 from guiguts.preferences import preferences, PrefKey
+from guiguts.root import root
 from guiguts.utilities import is_windows, is_mac, process_accel
 
 NUM_HISTORY = 10
@@ -60,7 +61,10 @@ class ToplevelDialog(tk.Toplevel):
         self.bind("<Configure>", self._handle_config)
 
         # Stop macOS making all dialogs full screen if the root window is
+        self.wm_withdraw()
         self.wm_attributes("-fullscreen", False)
+        self.wm_deiconify()
+        self.transient(root())
 
         self.tooltip_list: list[ToolTip] = []
         self.bind("<Destroy>", self.tidy_up)
