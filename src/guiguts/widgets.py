@@ -7,7 +7,7 @@ from typing import Any, Optional, TypeVar, Callable
 import regex as re
 
 from guiguts.preferences import preferences, PrefKey
-from guiguts.root import root
+from guiguts.root import root, RootWindowState
 from guiguts.utilities import is_windows, is_mac, process_accel
 
 NUM_HISTORY = 10
@@ -60,11 +60,19 @@ class ToplevelDialog(tk.Toplevel):
         self.save_config = False
         self.bind("<Configure>", self._handle_config)
 
-        # Stop macOS making all dialogs full screen if the root window is
         self.wm_withdraw()
         self.wm_attributes("-fullscreen", False)
+        # In fullscreen mode on macOS, dialogs become *tabs* on the root
+        # window unless marked as transient. Side-effect of this is that
+        # dialogs are always-on-top windows. Only mark as transient on Mac,
+        # and then only when in fullscreen mode.
+        if (
+            is_mac()
+            and preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
+            == RootWindowState.FULLSCREEN
+        ):
+            self.transient(root())
         self.wm_deiconify()
-        self.transient(root())
 
         self.tooltip_list: list[ToolTip] = []
         self.bind("<Destroy>", self.tidy_up)
