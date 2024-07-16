@@ -9,10 +9,8 @@ import tkinter as tk
 from types import TracebackType
 from typing import Any
 
-from guiguts.maintext import maintext
 from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_x11
-from guiguts.widgets import grab_focus
 
 logger = logging.getLogger(__package__)
 
@@ -47,7 +45,6 @@ class Root(tk.Tk):
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.after_idle(lambda: grab_focus(self, maintext(), True))
         self.set_tcl_word_characters()
         self.save_config = False
         self.bind("<Configure>", self._handle_config)
