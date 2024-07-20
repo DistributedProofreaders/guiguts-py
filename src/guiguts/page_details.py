@@ -251,7 +251,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
                     "Set Number", "Enter page number", parent=self
                 )
                 new_value = pagenum if pagenum else value
-            self.details[row[COL_HEAD_IMG]]["number"] = new_value
+            self.details[row[COL_HEAD_IMG]]["number"] = str(new_value)
 
         # Refresh the list
         self.details.recalculate()
