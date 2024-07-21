@@ -18,7 +18,6 @@ book: list[str]
 word_list_map_count: dict[str, int]
 word_list_map_lines: dict[str, list[int]]
 word_list_map_words: list[list[str]]
-hyphenated_words_dictionary: dict[str, int]
 # quote-type counters/flags
 ssq: int
 sdq: int
@@ -119,16 +118,19 @@ def get_words_on_line(line: str) -> list[str]:
     line = re.sub(r"(?<= ’)(\p{L})", r" ②\1", line)
     # Peep o’ Day (?<=^| )(\p{L})’(?=$| )
     line = re.sub(r"(?<=^| )(\p{L})’(?=$| )", r"\1②", line)
+    # Lieut.-Col. (\p{L})\.\-(\p{L})
+    line = re.sub(r"(\p{L})\.\-(\p{L})", r"\1⑤①\2", line)
 
     # If user is using "--" in place of emdash convert
     # that to a space so it can be a word separator.
 
     line = re.sub(r"--", " ", line)
 
-    # Replace all characters other than letters, digits hyphen-minus
-    # and protected characters with " ".
+    # Replace all characters with " " other than letters, digits
+    # and protected characters. Note that ①, ①, ... are 'numeric'
+    # characters and are matched by \p{N}.
 
-    line = re.sub(r"[^\p{N}\p{L}\-]", " ", line)
+    line = re.sub(r"[^\p{N}\p{L}]", " ", line)
 
     # Restore protected characters
 
@@ -143,24 +145,8 @@ def get_words_on_line(line: str) -> list[str]:
     # Create a list of whole words from the line.
 
     line_list = line.split()
-    new_list = line_list.copy()
 
-    # Now split the hyphenated words in that list and add
-    # their parts to it.
-    #
-    # E.g. 'sand-hill' -> 'sand', '-hill'
-    #      'frien’-o’-mine' -> 'frien’', '-o’', '-mine'
-
-    for word in line_list:
-        if "-" in word:
-            # For each hyphenated word separate the hyphen(s) from
-            # the preceding character with a " ".
-            word_separated = re.sub(r"(’|\p{L})-", r"\1 -", word)
-            word_parts = word_separated.split()
-            for word_part in word_parts:
-                new_list.append(word_part)
-
-    return new_list
+    return line_list
 
 
 ######################################################################
@@ -475,9 +461,10 @@ def hyphenated_words_check() -> None:
     first_header = True
     none_found = True
 
-    if len(hyphenated_words_dictionary) != 0:
-        for word_with_hyphen in hyphenated_words_dictionary:
-            # Make a non-hyphenated version.
+    for word in word_list_map_count:
+        if re.search(r"-", word):
+            word_with_hyphen = word
+            # Hyphenated word found. Make a non-hyphenated version.
             word_with_no_hyphen = re.sub("-", "", word_with_hyphen)
             if word_with_no_hyphen in word_list_map_count:
                 # Here when hyphenated and non-hyphenated version of a word.
@@ -2486,7 +2473,6 @@ def pptxt(project_dict: ProjectDict) -> None:
     """Top-level pptxt function."""
     global checker_dialog
     global book, word_list_map_count, word_list_map_lines, word_list_map_words
-    global hyphenated_words_dictionary
     global found_long_doctype_declaration
     global ssq, sdq, csq, cdq
 
@@ -2524,7 +2510,6 @@ def pptxt(project_dict: ProjectDict) -> None:
     word_list_map_words = []
     word_list_map_count = {}
     word_list_map_lines = {}
-    hyphenated_words_dictionary = {}
 
     # Counters for each quote type
     ssq = 0
@@ -2575,12 +2560,6 @@ def pptxt(project_dict: ProjectDict) -> None:
             else:
                 word_list_map_lines[word] = [line_number]
 
-            # Build dictionary of hyphenated words and their frequency.
-            if re.search(r"-", word):
-                if word in hyphenated_words_dictionary:
-                    hyphenated_words_dictionary[word] += 1
-                else:
-                    hyphenated_words_dictionary[word] = 1
         line_number += 1
 
     ###################################################
