@@ -383,16 +383,22 @@ class PageSeparatorDialog(ToplevelDialog):
         next_bol = f"{sep_range.start.index()} linestart"
         # Omit any "*" at beginning of next line
         if maintext().get(next_bol, f"{next_bol}+1c") == "*":
-            next_bol = f"{next_bol}+1c"
+            maintext().delete(next_bol)
         maybe_page2_emdash = maintext().get(next_bol, f"{next_bol}+2c")
 
-        # If word is hyphenated or emdash, join previous end of line to next beg of line
+        # If word is hyphenated or emdash, move second part of word to end of first part
         if maybe_hyphen == "-" or maybe_page2_emdash == "--":
-            # Replace space with newline after second half of word
-            if space_pos := maintext().search(" ", next_bol, f"{next_bol} lineend"):
-                maintext().replace(space_pos, f"{space_pos}+1c", "\n")
-            # Delete hyphen, asterisks & newline to join the word
-            maintext().delete(prev_eol, next_bol)
+            word_end = maintext().search(" ", next_bol, f"{next_bol} lineend")
+            if not word_end:
+                word_end = maintext().index(f"{next_bol} lineend")
+            # Delete one character (space or newline) after second part of word
+            maintext().delete(word_end)
+            second_part = maintext().get(next_bol, word_end)
+            maintext().delete(next_bol, word_end)
+            # Delete maybe hyphen, & asterisks at end of prev line
+            maintext().delete(prev_eol, f"{prev_eol} lineend")
+            # Insert second part of word at end of prev line
+            maintext().insert(f"{prev_eol} lineend", second_part)
         maintext().set_insert_index(sep_range.start, focus=False)
 
     def do_delete(self) -> None:
