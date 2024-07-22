@@ -200,9 +200,10 @@ class MainText(tk.Text):
         self.vscroll.grid(column=2, row=0, sticky="NS")
         self["yscrollcommand"] = vscroll_set
 
+        self.config_callbacks: list[Callable[[], None]] = []
+
         # Set up response to text being modified
-        # pylint: disable-next=invalid-name
-        self.modifiedCallbacks: list[Callable[[], None]] = []
+        self.modified_callbacks: list[Callable[[], None]] = []
         self.bind_event(
             "<<Modified>>", lambda _event: self.modify_flag_changed_callback()
         )
@@ -321,6 +322,20 @@ class MainText(tk.Text):
             self.linenumbers.redraw()
         self.numbers_need_updating = False
 
+    def add_config_callback(self, func: Callable[[], None]) -> None:
+        """Add callback function to a list of functions to be called when
+        widget's configuration changes (e.g. width or height).
+
+        Args:
+            func: Callback function to be added to list.
+        """
+        self.config_callbacks.append(func)
+
+    def _call_config_callbacks(self) -> None:
+        """Causes all functions registered via ``add_config_callback`` to be called."""
+        for func in self.config_callbacks:
+            func()
+
     def _on_change(self, *_args: Any) -> None:
         """Callback when visible region of file may have changed.
 
@@ -329,6 +344,7 @@ class MainText(tk.Text):
         _do_linenumbers_redraw."""
         self.numbers_need_updating = True
         self.root.after_idle(self._do_linenumbers_redraw)
+        self.root.after_idle(self._call_config_callbacks)
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
@@ -394,7 +410,7 @@ class MainText(tk.Text):
         Args:
             func: Callback function to be added to list.
         """
-        self.modifiedCallbacks.append(func)
+        self.modified_callbacks.append(func)
 
     def modify_flag_changed_callback(self) -> None:
         """This method is bound to <<Modified>> event which happens whenever
@@ -402,7 +418,7 @@ class MainText(tk.Text):
 
         Causes all functions registered via ``add_modified_callback`` to be called.
         """
-        for func in self.modifiedCallbacks:
+        for func in self.modified_callbacks:
             func()
 
     def set_modified(self, mod: bool) -> None:
