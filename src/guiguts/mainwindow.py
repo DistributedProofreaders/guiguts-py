@@ -121,7 +121,7 @@ class Menu(tk.Menu):
         label: str,
         handler_on: Callable[[], None],
         handler_off: Callable[[], None],
-        initial_var: bool,
+        bool_var: tk.BooleanVar,
         accel: str = "",
     ) -> None:
         """Add a button to the menu.
@@ -131,7 +131,7 @@ class Menu(tk.Menu):
               navigation, e.g. "~Save".
             handler_on: Callback function for when checkbox gets checked
             handler_off: Callback function for when checkbox gets checked
-            var: To keep track of state
+            bool_var: Tk variable to keep track of state or set it from elsewhere
             accel: String describing optional accelerator key, used when a
               callback function is passed in as ``handler``. Will be displayed
               on the button, and will be bound to the same action as the menu
@@ -140,8 +140,6 @@ class Menu(tk.Menu):
         """
         (label_tilde, label_txt) = process_label(label)
         (accel, key_event) = process_accel(accel)
-
-        bool_var = tk.BooleanVar(value=initial_var)
 
         # If key binding given, then bind it
         if accel:
