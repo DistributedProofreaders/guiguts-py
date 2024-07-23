@@ -469,6 +469,7 @@ class TextWrapper:
 
             totalpenalty = [0] * wordcount
             best = penaltylimit * 21
+            best_lastbreak = 0
             for opt in optimum:
                 my_linkbreak = [0] * wordcount
                 j = 0

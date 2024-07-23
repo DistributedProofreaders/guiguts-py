@@ -92,9 +92,9 @@ class Guiguts:
         root().tk.call("package", "require", "awdark")
         root().tk.call("package", "require", "awlight")
 
-        self.menu_file: Optional[
-            Menu
-        ] = None  # File menu is saved to allow deletion & re-creation
+        self.menu_file: Optional[Menu] = (
+            None  # File menu is saved to allow deletion & re-creation
+        )
         self.init_menus()
 
         self.init_statusbar(statusbar())

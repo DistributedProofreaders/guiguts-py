@@ -15,9 +15,9 @@ from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
-_the_footnote_checker: Optional[
-    "FootnoteChecker"
-] = None  # pylint: disable=invalid-name
+_the_footnote_checker: Optional["FootnoteChecker"] = (
+    None  # pylint: disable=invalid-name
+)
 
 
 class AnchorRecord:
