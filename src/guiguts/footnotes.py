@@ -119,7 +119,7 @@ class FootnoteChecker:
             )
             if colon_match is None:
                 colon_pos = maintext().rowcol(
-                    f"{start.index()}+{beg_match.count+1}c wordend"
+                    f"{start.index()}+{beg_match.count + 1}c wordend"
                 )
             else:
                 colon_pos = colon_match.rowcol

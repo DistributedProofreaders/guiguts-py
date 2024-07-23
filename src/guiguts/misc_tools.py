@@ -516,10 +516,10 @@ class PageSeparatorDialog(ToplevelDialog):
             if re.search(rf"^<{markup_type}>", markup_next):
                 maintext().delete(
                     f"{sep_range.end.index()}",
-                    f"{sep_range.end.index()} +{len_markup+2}c",
+                    f"{sep_range.end.index()} +{len_markup + 2}c",
                 )
                 maintext().delete(
-                    f"{sep_range.start.index()}-1l lineend -{len_markup+len_punc+3}c",
+                    f"{sep_range.start.index()}-1l lineend -{len_markup + len_punc + 3}c",
                     f"{sep_range.start.index()}-1l lineend -{len_punc}c",
                 )
 
@@ -1035,7 +1035,7 @@ def fraction_convert(conversion_type: FractionConvertType) -> None:
                 maintext().insert(match_index, new_frac)
                 maintext().delete(
                     f"{match_index}+{len(new_frac)}c",
-                    f"{match_index}+{len(new_frac)+len(gmatch[0])-offset}c",
+                    f"{match_index}+{len(new_frac) + len(gmatch[0]) - offset}c",
                 )
             else:
                 len_frac = len(base_frac) - offset
