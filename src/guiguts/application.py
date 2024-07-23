@@ -103,6 +103,7 @@ class Guiguts:
 
         maintext().focus_set()
         maintext().add_modified_callback(self.update_title)
+        maintext().add_config_callback(self.update_title)
 
         # Known tkinter issue - must call this before any dialogs can get created,
         # or focus will not return to maintext on Windows
@@ -206,7 +207,14 @@ class Guiguts:
     def update_title(self) -> None:
         """Update the window title to reflect current status."""
         modtitle = " - edited" if maintext().is_modified() else ""
-        filetitle = " - " + self.file.filename if self.file.filename else ""
+        filetitle = self.file.filename
+        # Restrict filepath to rightmost W characters where W is maintext's visible width
+        len_title = len(filetitle) + len(modtitle) + len("...")
+        if len_title > 0:
+            max_width = int(maintext().winfo_width() / maintext().font.measure("0"))
+            if len_title > max_width:
+                filetitle = "..." + filetitle[len_title - max_width :]
+            filetitle = " - " + filetitle
         root().title(f"Guiguts {version('guiguts')}" + modtitle + filetitle)
 
     def quit_program(self) -> None:
