@@ -93,9 +93,11 @@ class CheckerEntry:
         self.severity = (
             CheckerEntrySeverity.OTHER
             if text_range is None
-            else CheckerEntrySeverity.ERROR
-            if error_prefix
-            else CheckerEntrySeverity.INFO
+            else (
+                CheckerEntrySeverity.ERROR
+                if error_prefix
+                else CheckerEntrySeverity.INFO
+            )
         )
 
 

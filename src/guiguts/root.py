@@ -1,6 +1,5 @@
 """Handle Tk root window"""
 
-
 import logging
 import traceback
 import tkinter as tk

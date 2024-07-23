@@ -1,6 +1,5 @@
 """Handle main text widget"""
 
-
 import logging
 import subprocess
 import tkinter as tk
