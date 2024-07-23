@@ -1404,7 +1404,7 @@ class MainText(tk.Text):
                         tidy_function()
                         next_line_rowcol = IndexRowCol(self.index(WRAP_NEXT_LINE_MARK))
                         logger.error(
-                            f"No closing markup found to match /{block_type} at line {next_line_rowcol.row-1}"
+                            f"No closing markup found to match /{block_type} at line {next_line_rowcol.row - 1}"
                         )
                         return
 
@@ -1484,7 +1484,7 @@ class MainText(tk.Text):
                     tidy_function()
                     next_line_rowcol = IndexRowCol(self.index(WRAP_NEXT_LINE_MARK))
                     logger.error(
-                        f"{match[1]} markup error at line {next_line_rowcol.row-1}"
+                        f"{match[1]} markup error at line {next_line_rowcol.row - 1}"
                     )
                     return
                 else:
@@ -1516,7 +1516,7 @@ class MainText(tk.Text):
                     tidy_function()
                     next_line_rowcol = IndexRowCol(self.index(WRAP_NEXT_LINE_MARK))
                     logger.error(
-                        f"Block quote markup error at line {next_line_rowcol.row-1}"
+                        f"Block quote markup error at line {next_line_rowcol.row - 1}"
                     )
                     return
             bq_depth += bq_depth_change
