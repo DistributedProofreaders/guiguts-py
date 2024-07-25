@@ -354,7 +354,7 @@ class PageSeparatorDialog(ToplevelDialog):
         self.key_bind("r", refresh_button.invoke)
 
     def do_join(self, keep_hyphen: bool) -> None:
-        """Join 2 lines if hyphenated, otherwise just remove separator line.
+        """Join 2 lines if hyphenated, otherwise just remove separator line(s).
 
         Args:
             keep_hyphen: True to keep hyphen when lines are joined.
@@ -362,7 +362,7 @@ class PageSeparatorDialog(ToplevelDialog):
         if (sep_range := self.find()) is None:
             return
 
-        self.fix_pagebreak_markup(sep_range)
+        sep_range = self.fix_pagebreak_markup(sep_range)
         maintext().delete(sep_range.start.index(), sep_range.end.index())
         prev_eol = f"{sep_range.start.index()} -1l lineend"
         maybe_hyphen = maintext().get(f"{prev_eol}-1c", prev_eol)
@@ -383,16 +383,22 @@ class PageSeparatorDialog(ToplevelDialog):
         next_bol = f"{sep_range.start.index()} linestart"
         # Omit any "*" at beginning of next line
         if maintext().get(next_bol, f"{next_bol}+1c") == "*":
-            next_bol = f"{next_bol}+1c"
+            maintext().delete(next_bol)
         maybe_page2_emdash = maintext().get(next_bol, f"{next_bol}+2c")
 
-        # If word is hyphenated or emdash, join previous end of line to next beg of line
+        # If word is hyphenated or emdash, move second part of word to end of first part
         if maybe_hyphen == "-" or maybe_page2_emdash == "--":
-            # Replace space with newline after second half of word
-            if space_pos := maintext().search(" ", next_bol, f"{next_bol} lineend"):
-                maintext().replace(space_pos, f"{space_pos}+1c", "\n")
-            # Delete hyphen, asterisks & newline to join the word
-            maintext().delete(prev_eol, next_bol)
+            word_end = maintext().search(" ", next_bol, f"{next_bol} lineend")
+            if not word_end:
+                word_end = maintext().index(f"{next_bol} lineend")
+            # Delete one character (space or newline) after second part of word
+            maintext().delete(word_end)
+            second_part = maintext().get(next_bol, word_end)
+            maintext().delete(next_bol, word_end)
+            # Delete maybe hyphen, & asterisks at end of prev line
+            maintext().delete(prev_eol, f"{prev_eol} lineend")
+            # Insert second part of word at end of prev line
+            maintext().insert(f"{prev_eol} lineend", second_part)
         maintext().set_insert_index(sep_range.start, focus=False)
 
     def do_delete(self) -> None:
@@ -494,34 +500,72 @@ class PageSeparatorDialog(ToplevelDialog):
         end_rowcol = IndexRowCol(match.rowcol.row + 1, match.rowcol.col)
         return IndexRange(match.rowcol, end_rowcol)
 
-    def fix_pagebreak_markup(self, sep_range: IndexRange) -> None:
-        """Remove inline close markup, e.g. italics, immediately before page break
-        if same markup is reopened immediately afterwards.
+    def fix_pagebreak_markup(self, sep_range: IndexRange) -> IndexRange:
+        """Remove markup, e.g. italics or blockquote, if closed immediately before
+        page break and same markup is reopened immediately afterwards.
 
         Args:
             sep_range: Range of page separator line.
+
+        Returns:
+            Updated page separator range (removal of markup may have affected page sep line number)
         """
-        markup_prev = maintext().get(
-            f"{sep_range.start.index()}-1l lineend -6c",
-            f"{sep_range.start.index()}-1l lineend",
-        )
-        markup_next = maintext().get(
-            f"{sep_range.end.index()}",
-            f"{sep_range.end.index()} +4c",
-        )
-        if match := re.search(r"</(i|b|f|g|sc)>([,;*]?)$", markup_prev):
-            markup_type = match[1]
-            len_markup = len(markup_type)
-            len_punc = len(match[2])
-            if re.search(rf"^<{markup_type}>", markup_next):
-                maintext().delete(
-                    f"{sep_range.end.index()}",
-                    f"{sep_range.end.index()} +{len_markup + 2}c",
-                )
-                maintext().delete(
-                    f"{sep_range.start.index()}-1l lineend -{len_markup + len_punc + 3}c",
-                    f"{sep_range.start.index()}-1l lineend -{len_punc}c",
-                )
+        # Remove all but one page sep lines at this location. As each is deleted
+        # the next will be move up to lie at the same location.
+        line = ""
+        while True:
+            del_range = self.find()
+            if del_range is None or del_range.start != sep_range.start:
+                break
+            line = maintext().get(sep_range.start.index(), sep_range.end.index())
+            maintext().delete(sep_range.start.index(), sep_range.end.index())
+        # Add last one back
+        maintext().insert(sep_range.start.index(), line)
+        ps_start = sep_range.start.index()
+        ps_end = sep_range.end.index()
+        maybe_more_to_remove = True
+        while maybe_more_to_remove:
+            maybe_more_to_remove = False
+            markup_prev = maintext().get(
+                f"{ps_start}-1l lineend -6c",
+                f"{ps_start}-1l lineend",
+            )
+            markup_next = maintext().get(
+                f"{ps_end}",
+                f"{ps_end} +4c",
+            )
+            # Remove blockquote or nowrap markup
+            if match := re.search(r"(\*|#)/$", markup_prev):
+                markup_type = re.escape(match[1])
+                if re.search(rf"^/{markup_type}", markup_next):
+                    maintext().delete(
+                        ps_end,
+                        f"{ps_end} +1l",
+                    )
+                    maintext().delete(
+                        f"{ps_start}-1l",
+                        ps_start,
+                    )
+                    # Compensate for having deleted a line before the page separator
+                    ps_start = maintext().index(f"{ps_start}-1l")
+                    ps_end = maintext().index(f"{ps_end}-1l")
+                    maybe_more_to_remove = True
+            # Remove inline markup
+            elif match := re.search(r"</(i|b|f|g|sc)>([,;*]?)$", markup_prev):
+                markup_type = match[1]
+                len_markup = len(markup_type)
+                len_punc = len(match[2])
+                if re.search(rf"^<{markup_type}>", markup_next):
+                    maintext().delete(
+                        f"{ps_end}",
+                        f"{ps_end} +{len_markup + 2}c",
+                    )
+                    maintext().delete(
+                        f"{ps_start}-1l lineend -{len_markup + len_punc + 3}c",
+                        f"{ps_start}-1l lineend -{len_punc}c",
+                    )
+                    maybe_more_to_remove = True
+        return IndexRange(ps_start, ps_end)
 
     def do_auto(self) -> None:
         """Do auto page separator fixing if allowed by settings."""
@@ -535,7 +579,7 @@ class PageSeparatorDialog(ToplevelDialog):
         while sep_range := self.find():
             # Fix markup across page break, even though the join function would fix it later,
             # because otherwise it would interfere with check for automated joining below.
-            self.fix_pagebreak_markup(sep_range)
+            sep_range = self.fix_pagebreak_markup(sep_range)
             line_prev = maintext().get(
                 f"{sep_range.start.index()}-1l lineend -10c",
                 f"{sep_range.start.index()}-1l lineend",
