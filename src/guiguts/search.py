@@ -557,9 +557,11 @@ def _do_find_next(
     try:
         match = maintext().find_match(
             search_string,
-            search_limits.start
-            if preferences.get(PrefKey.SEARCHDIALOG_WRAP)
-            else search_limits,
+            (
+                search_limits.start
+                if preferences.get(PrefKey.SEARCHDIALOG_WRAP)
+                else search_limits
+            ),
             nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
             regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
             wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),

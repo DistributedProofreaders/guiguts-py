@@ -15,9 +15,9 @@ from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
-_the_footnote_checker: Optional[
-    "FootnoteChecker"
-] = None  # pylint: disable=invalid-name
+_the_footnote_checker: Optional["FootnoteChecker"] = (
+    None  # pylint: disable=invalid-name
+)
 
 
 class AnchorRecord:
@@ -119,7 +119,7 @@ class FootnoteChecker:
             )
             if colon_match is None:
                 colon_pos = maintext().rowcol(
-                    f"{start.index()}+{beg_match.count+1}c wordend"
+                    f"{start.index()}+{beg_match.count + 1}c wordend"
                 )
             else:
                 colon_pos = colon_match.rowcol

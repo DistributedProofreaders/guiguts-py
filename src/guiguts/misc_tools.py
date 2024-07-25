@@ -567,6 +567,7 @@ class PageSeparatorDialog(ToplevelDialog):
                     maybe_more_to_remove = True
         return IndexRange(ps_start, ps_end)
 
+
     def do_auto(self) -> None:
         """Do auto page separator fixing if allowed by settings."""
         if preferences.get(PrefKey.PAGESEP_AUTO_TYPE) == PageSepAutoType.NO_AUTO:
@@ -1079,7 +1080,7 @@ def fraction_convert(conversion_type: FractionConvertType) -> None:
                 maintext().insert(match_index, new_frac)
                 maintext().delete(
                     f"{match_index}+{len(new_frac)}c",
-                    f"{match_index}+{len(new_frac)+len(gmatch[0])-offset}c",
+                    f"{match_index}+{len(new_frac) + len(gmatch[0]) - offset}c",
                 )
             else:
                 len_frac = len(base_frac) - offset

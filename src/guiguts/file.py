@@ -15,7 +15,6 @@ from guiguts.maintext import (
     PAGE_FLAG_TAG,
     PAGEMARK_PIN,
     BOOKMARK_TAG,
-    PAGEMARK_PREFIX,
     img_from_page_mark,
     page_mark_from_img,
 )
@@ -23,6 +22,7 @@ from guiguts.page_details import (
     PageDetail,
     PageDetails,
     PAGE_LABEL_PREFIX,
+    NUMBER_INCREMENT,
     STYLE_ARABIC,
     STYLE_DITTO,
 )
@@ -54,6 +54,18 @@ BINFILE_KEY_BOOKMARKS: Final = "bookmarks"
 PAGE_FLAGS_NONE = 0
 PAGE_FLAGS_SOME = 1
 PAGE_FLAGS_ALL = 2
+PAGE_FLAG_PREFIX = "Img"
+PAGE_FLAG_START = "["
+PAGE_FLAG_START_E = re.escape(PAGE_FLAG_START)
+PAGE_FLAG_END = "]"
+PAGE_FLAG_END_E = re.escape(PAGE_FLAG_END)
+PAGE_FLAG_SEP = "|"
+PAGE_FLAG_SEP_E = re.escape(PAGE_FLAG_SEP)
+PAGE_FLAG_ARABIC = "A"
+PAGE_FLAG_ROMAN = "R"
+# 3 capture groups for img, style (Roman/Arabic), number (or +1/None)
+# Label is calculated from other info after file load.
+PAGE_FLAG_REGEX = rf"{PAGE_FLAG_START_E}{PAGE_FLAG_PREFIX}(.+?){PAGE_FLAG_SEP_E}(.+?){PAGE_FLAG_SEP_E}(.+?){PAGE_FLAG_END_E}"
 
 PAGE_SEPARATOR_REGEX = r"File:.+?([^/\\ ]+)\.(png|jpg)"
 
@@ -206,18 +218,12 @@ class File:
                 "Main file and bin (.json) file do not match.\n"
                 "  File may have been edited in a different editor.\n"
             )
-            if flags_found == PAGE_FLAGS_ALL:
+            if flags_found:
                 logger.warning(
                     msg_start + "  However, page marker flags were detected,\n"
                     "  so page boundary positions were updated if necessary."
                 )
-            elif flags_found == PAGE_FLAGS_SOME:
-                logger.error(
-                    msg_start + "  Not all page marker flags are present,\n"
-                    "  so some boundary positions were not updated."
-                )
             else:
-                assert flags_found == PAGE_FLAGS_NONE
                 logger.error(
                     msg_start + "  You may continue, but page boundary positions\n"
                     "  may not be accurate."
@@ -444,9 +450,7 @@ class File:
                 standard_line = f"-----File: {page}.{ext}"
                 standard_line += "-" * (75 - len(standard_line))
                 # Don't standarize line if it has a page marker flag on it, or you'll delete the flag!
-                if line != standard_line and not re.search(
-                    rf"\[{PAGEMARK_PREFIX}\S+?\]", line
-                ):
+                if line != standard_line and not re.search(PAGE_FLAG_REGEX, line):
                     maintext().delete(line_start, line_end)
                     maintext().insert(line_start, standard_line)
                 page_mark = page_mark_from_img(page)
@@ -458,7 +462,7 @@ class File:
                         line_start, page_num_style, page_num
                     )
                     page_num_style = STYLE_DITTO
-                    page_num = "+1"
+                    page_num = NUMBER_INCREMENT
 
             search_start = line_end
 
@@ -597,21 +601,30 @@ class File:
                 return
         sound_bell()
 
+    # Note that the following code must match the equivalent code in Guiguts 1
+    # or file transfer between the two will be broken.
     def add_page_flags(self) -> None:
-        """Add [PgNNN] flag at each page boundary.
+        """Add page flag at each page boundary.
 
         Done in reverse order so two adjacent boundaries preserve their order.
         """
         mark: str = tk.END
         while mark := maintext().page_mark_previous(mark):
-            maintext().insert(mark, "[" + mark + "]", PAGE_FLAG_TAG)
+            img = img_from_page_mark(mark)
+            style = self.page_details[img]["style"]
+            number = self.page_details[img]["number"]
+            info = PAGE_FLAG_SEP.join([PAGE_FLAG_PREFIX + img, style, number])
+            maintext().insert(
+                mark,
+                PAGE_FLAG_START + info + PAGE_FLAG_END,
+                PAGE_FLAG_TAG,
+            )
 
     def remove_page_flags(self) -> None:
-        """Remove [PgNNN] flags."""
-        search_regex = r"\[" + PAGEMARK_PREFIX + r".+?\]"
+        """Remove page flags."""
         search_range = IndexRange(maintext().start(), maintext().end())
         while match := maintext().find_match(
-            search_regex,
+            PAGE_FLAG_REGEX,
             search_range,
             nocase=False,
             regexp=True,
@@ -621,43 +634,49 @@ class File:
             maintext().delete(
                 match.rowcol.index(), match.rowcol.index() + f"+{match.count}c"
             )
+            search_range = IndexRange(match.rowcol, maintext().end())
 
-    def update_page_marks_from_flags(self) -> int:
-        """Update page mark locations from flags in file.
+    def update_page_marks_from_flags(self) -> bool:
+        """If page marker flags in file, replace all existing page marks.
 
         Also tag flags to highlight them.
 
         Returns:
-            PAGE_FLAGS_ALL/SOME/NONE depending on what flags were present.
+            True if page marker flags were present.
         """
         search_range = IndexRange(maintext().start(), maintext().end())
         mark = "1.0"
-        flag_found = False
-        flag_not_found = False
-        while mark := maintext().page_mark_next(mark):
-            img = img_from_page_mark(mark)
-            assert img in self.page_details
-            if match := maintext().find_match(
-                f"[{mark}]",
-                search_range,
-                nocase=False,
-                regexp=False,
-                wholeword=False,
-                backwards=False,
-            ):
-                if maintext().compare(mark, "!=", match.rowcol.index()):
-                    maintext().mark_set(mark, match.rowcol.index())
-                maintext().tag_add(
-                    PAGE_FLAG_TAG,
-                    match.rowcol.index(),
-                    match.rowcol.index() + f"+{match.count}c",
-                )
-                flag_found = True
-            else:
-                flag_not_found = True
-        if flag_found:
-            return PAGE_FLAGS_SOME if flag_not_found else PAGE_FLAGS_ALL
-        return PAGE_FLAGS_NONE
+        flag_matches = maintext().find_matches(
+            PAGE_FLAG_REGEX,
+            search_range,
+            nocase=False,
+            regexp=True,
+            wholeword=False,
+        )
+        if not flag_matches:
+            return False
+
+        # Remove existing page marks, if any
+        self.remove_page_marks()
+        self.page_details = PageDetails()
+        for match in flag_matches:
+            flag_text = maintext().get_match_text(match)
+            extract = re.fullmatch(PAGE_FLAG_REGEX, flag_text)
+            # Will always match because same regex as above
+            assert extract is not None
+            img = extract[1]
+            style = extract[2]
+            number = extract[3]
+            mark = page_mark_from_img(img)
+            maintext().set_mark_position(mark, match.rowcol)
+            self.page_details[img] = PageDetail(match.rowcol.index(), style, number)
+            maintext().tag_add(
+                PAGE_FLAG_TAG,
+                match.rowcol.index(),
+                match.rowcol.index() + f"+{match.count}c",
+            )
+        maintext().set_modified(True)
+        return True
 
     def add_good_and_bad_words(self) -> None:
         """Load the words from the good and bad words files into the project dictionary."""

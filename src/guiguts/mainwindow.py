@@ -1,6 +1,5 @@
 """Define key components of main window"""
 
-
 from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found]
 import logging
 import os.path
