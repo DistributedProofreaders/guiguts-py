@@ -567,7 +567,6 @@ class PageSeparatorDialog(ToplevelDialog):
                     maybe_more_to_remove = True
         return IndexRange(ps_start, ps_end)
 
-
     def do_auto(self) -> None:
         """Do auto page separator fixing if allowed by settings."""
         if preferences.get(PrefKey.PAGESEP_AUTO_TYPE) == PageSepAutoType.NO_AUTO:
