@@ -55,7 +55,7 @@ from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
-from guiguts.utilities import is_mac, is_windows
+from guiguts.utilities import is_mac, folder_dir_str
 from guiguts.widgets import themed_style, theme_name_internal_from_user
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
@@ -405,7 +405,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             self.file.add_good_and_bad_words,
         )
         proj_menu.add_button(
-            f"Set ~Scan Image {'Folder' if is_windows() else 'Directory'}...",
+            f"Set ~Scan Image {folder_dir_str()}...",
             self.file.choose_image_dir,
         )
         proj_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)
