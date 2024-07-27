@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import os.path
+from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional
@@ -48,6 +49,7 @@ BINFILE_KEY_MD5CHECKSUM: Final = "md5checksum"
 BINFILE_KEY_PAGEDETAILS: Final = "pagedetails"
 BINFILE_KEY_INSERTPOS: Final = "insertpos"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
+BINFILE_KEY_PROJECTID: Final = "projectid"
 BINFILE_KEY_LANGUAGES: Final = "languages"
 BINFILE_KEY_BOOKMARKS: Final = "bookmarks"
 
@@ -79,6 +81,7 @@ class BinDict(TypedDict):
     pagedetails: PageDetails
     insertpos: str
     imagedir: str
+    projectid: str
     languages: str
     bookmarks: dict[str, str]
 
@@ -92,6 +95,7 @@ class File:
         _languages: Languages used in file.
         _languages_callback: Function to be called whenever languages are set.
         _image_dir: Directory containing scan images.
+        _project_id: Project ID.
     """
 
     def __init__(
@@ -106,6 +110,7 @@ class File:
         self._filename = ""
         self._filename_callback = filename_callback
         self._image_dir = ""
+        self._project_id = ""
         self._languages_callback = languages_callback
         self.page_details = PageDetails()
         self.project_dict = ProjectDict()
@@ -128,12 +133,37 @@ class File:
 
         If unset, defaults to pngs subdir of project dir"""
         if (not self._image_dir) and self.filename:
-            self._image_dir = os.path.join(os.path.dirname(self.filename), "pngs")
+            proj_dir = os.path.dirname(self.filename)
+            maybe_dir = os.path.join(proj_dir, "pngs")
+            if (not os.path.isdir(maybe_dir)) and self.project_id:
+                maybe_dir = os.path.join(proj_dir, self.project_id + "_images")
+            if os.path.isdir(maybe_dir):
+                self._image_dir = maybe_dir
         return self._image_dir
 
     @image_dir.setter
     def image_dir(self, value: str) -> None:
         self._image_dir = value
+
+    @property
+    def project_id(self) -> Any:
+        """ID of project, e.g. "projectID0123456789abc".
+
+        If unset, extract from project comments filename.
+        """
+        if (not self._project_id) and self.filename:
+            proj_dir = os.path.dirname(self.filename)
+            pathlist = Path(proj_dir).glob("projectID*_comments.html")
+            for path in pathlist:
+                path_str = str(path)
+                if match := re.search(r"(projectID[0-9a-f]*)_comments\.html", path_str):
+                    self._project_id = match[1]
+                    break
+        return self._project_id
+
+    @project_id.setter
+    def project_id(self, value: str) -> None:
+        self._project_id = value
 
     @property
     def languages(self) -> Any:
@@ -159,6 +189,7 @@ class File:
         Also close any open dialogs, since they will refer to the previous file."""
         self.filename = ""
         self.image_dir = ""
+        self.project_id = ""
         self.remove_page_marks()
         self.page_details = PageDetails()
         ToplevelDialog.close_all()
@@ -334,6 +365,7 @@ class File:
                 )
         self.set_page_marks(self.page_details)
         self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
+        self.project_id = bin_dict.get(BINFILE_KEY_PROJECTID)
         self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES)
         bookmarks: Optional[dict[str, str]]
         if bookmarks := bin_dict.get(BINFILE_KEY_BOOKMARKS):
@@ -356,6 +388,7 @@ class File:
             BINFILE_KEY_INSERTPOS: maintext().get_insert_index().index(),
             BINFILE_KEY_PAGEDETAILS: self.page_details,
             BINFILE_KEY_IMAGEDIR: self.image_dir,
+            BINFILE_KEY_PROJECTID: self.project_id,
             BINFILE_KEY_LANGUAGES: self.languages,
             BINFILE_KEY_BOOKMARKS: self.get_bookmarks(),
         }
