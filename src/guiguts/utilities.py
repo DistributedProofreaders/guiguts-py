@@ -284,7 +284,7 @@ def folder_dir_str(lowercase: bool = False) -> str:
     Args:
         lowercase: If True, return lowercase version.
     """
-    fd_string = "Folder" if is_windows() else "Directory"
+    fd_string = "Directory" if is_x11() else "Folder"
     return fd_string.lower() if lowercase else fd_string
 
 
