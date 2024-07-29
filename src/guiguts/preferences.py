@@ -8,9 +8,10 @@ import os
 import tkinter as tk
 from typing import Any, Callable
 
-from win32com.shell import shell, shellcon  # type: ignore # pylint: disable=import-error, no-name-in-module
-
 from guiguts.utilities import is_x11, is_windows, called_from_test, load_dict_from_json
+
+if is_windows():
+    from win32com.shell import shell, shellcon  # type: ignore # pylint: disable=import-error, no-name-in-module
 
 
 logger = logging.getLogger(__package__)
