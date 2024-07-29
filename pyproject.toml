@@ -9,6 +9,7 @@ packages = [{include = "guiguts", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 Pillow = "^10.1"
+pywin32 = "^306"
 roman = "^4.1"
 regex = "^2024.5"
 

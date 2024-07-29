@@ -8,7 +8,9 @@ import os
 import tkinter as tk
 from typing import Any, Callable
 
-from guiguts.utilities import is_x11, called_from_test, load_dict_from_json
+from win32com.shell import shell, shellcon  # type: ignore # pylint: disable=import-error, no-name-in-module
+
+from guiguts.utilities import is_x11, is_windows, called_from_test, load_dict_from_json
 
 
 logger = logging.getLogger(__package__)
@@ -94,6 +96,10 @@ class Preferences:
         self.persistent_vars: dict[PrefKey, tk.Variable] = {}
         if is_x11():
             self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
+        elif is_windows():
+            self.prefsdir = os.path.join(
+                shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, 0, 0), "GGprefs"
+            )
         else:
             self.prefsdir = os.path.join(
                 os.path.expanduser("~"), "Documents", "GGprefs"
@@ -106,6 +112,12 @@ class Preferences:
         self.prefsfile = os.path.join(self.prefsdir, prefs_name)
 
         self._remove_test_prefs_file()
+
+        # Create Prefs dir (including any parent dirs) if needed
+        try:
+            os.makedirs(self.prefsdir, exist_ok=True)
+        except OSError:
+            logger.error(f"Unable to create {self.prefsdir}")
 
     def get(self, key: PrefKey) -> Any:
         """Get preference value using key.
@@ -203,10 +215,11 @@ class Preferences:
 
     def save(self) -> None:
         """Save preferences dictionary to JSON file."""
-        if not os.path.isdir(self.prefsdir):
-            os.mkdir(self.prefsdir)
-        with open(self.prefsfile, "w", encoding="utf-8") as fp:
-            json.dump(self.dict, fp, indent=2, ensure_ascii=False)
+        try:
+            with open(self.prefsfile, "w", encoding="utf-8") as fp:
+                json.dump(self.dict, fp, indent=2, ensure_ascii=False)
+        except OSError:
+            logger.error(f"Unable to save preferences to {self.prefsfile}")
 
     def load(self) -> None:
         """Load dictionary from JSON file, and use PrefKeys
