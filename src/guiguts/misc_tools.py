@@ -292,7 +292,7 @@ class PageSeparatorDialog(ToplevelDialog):
         ttk.Radiobutton(
             self.top_frame,
             text="No Auto",
-            command=self.refresh,
+            command=self.view,
             variable=auto_type,
             value=PageSepAutoType.NO_AUTO,
             takefocus=False,
@@ -300,7 +300,7 @@ class PageSeparatorDialog(ToplevelDialog):
         ttk.Radiobutton(
             self.top_frame,
             text="Auto Advance",
-            command=self.refresh,
+            command=self.view,
             variable=auto_type,
             value=PageSepAutoType.AUTO_ADVANCE,
             takefocus=False,
@@ -308,7 +308,7 @@ class PageSeparatorDialog(ToplevelDialog):
         ttk.Radiobutton(
             self.top_frame,
             text="Auto Fix",
-            command=self.refresh,
+            command=self.view,
             variable=auto_type,
             value=PageSepAutoType.AUTO_FIX,
             takefocus=False,
