@@ -68,15 +68,37 @@ class SpellChecker:
         for lang in self.language_list:
             self.add_words_from_language(lang)
 
-    def spell_check_file(self, project_dict: ProjectDict) -> list[SpellingError]:
-        """Spell check the currently loaded file.
+    def do_spell_check(self, project_dict: ProjectDict) -> list[SpellingError]:
+        """Spell check the currently loaded file, or just the selected range(s).
 
         Returns:
-            List of spelling errors in file.
+            List of spelling errors.
         """
         spelling_errors = []
         spelling_counts: dict[str, int] = {}
+
+        minrow = mincol = maxrow = maxcol = 0
+        if sel_ranges := maintext().selected_ranges():
+            minrow = sel_ranges[0].start.row
+            mincol = sel_ranges[0].start.col
+            maxrow = sel_ranges[-1].end.row
+            maxcol = sel_ranges[-1].end.col
+        column_selection = len(sel_ranges) > 1
         for line, line_num in maintext().get_lines():
+            # Handle doing selection only
+            if sel_ranges:
+                # If haven't reached the line range, skip
+                if line_num < minrow:
+                    continue
+                # If past the line range, stop
+                if line_num > maxrow:
+                    break
+                # Clear the columns outside the selection
+                if column_selection or line_num == minrow:
+                    line = mincol * " " + line[mincol:]
+                if column_selection or line_num == maxrow:
+                    line = line[:maxcol]
+
             words = re.split(r"[^\p{Alnum}\p{Mark}'’]", line)
             next_col = 0
             for word in words:
@@ -312,7 +334,7 @@ def spell_check(
             logger.error(f"Dictionary not found for language: {exc.language}")
             return
 
-    bad_spellings = _the_spell_checker.spell_check_file(project_dict)
+    bad_spellings = _the_spell_checker.do_spell_check(project_dict)
 
     def process_spelling(checker_entry: CheckerEntry) -> None:
         """Process the spelling error by adding the word to the project dictionary."""
@@ -359,7 +381,8 @@ def spell_check(
 
     checker_dialog.reset()
     # Construct opening line describing the search
-    checker_dialog.add_header("Start of Spelling Check", "")
+    sel_only = " (selected text only)" if len(maintext().selected_ranges()) > 0 else ""
+    checker_dialog.add_header("Start of Spelling Check" + sel_only, "")
 
     for spelling in bad_spellings:
         end_rowcol = IndexRowCol(
@@ -372,5 +395,5 @@ def spell_check(
             0,
             spelling.count,
         )
-    checker_dialog.add_footer("", "End of Spelling Check")
+    checker_dialog.add_footer("", "End of Spelling Check" + sel_only)
     checker_dialog.display_entries()
