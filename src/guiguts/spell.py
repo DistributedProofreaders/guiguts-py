@@ -12,7 +12,7 @@ from guiguts.file import ProjectDict
 from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.maintext import maintext, FindMatch
 from guiguts.misc_tools import tool_save
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PersistentInt, PrefKey
 from guiguts.utilities import (
     IndexRowCol,
     IndexRange,
@@ -360,31 +360,51 @@ def spell_check(
     )
     frame = ttk.Frame(checker_dialog.header_frame)
     frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
+    ttk.Label(
+        frame,
+        text="Threshold ≤ ",
+    ).grid(column=0, row=0, sticky="NSW")
+    threshold_spinbox = ttk.Spinbox(
+        frame,
+        textvariable=PersistentInt(PrefKey.SPELL_THRESHOLD),
+        from_=1,
+        to=999,
+        width=4,
+    )
+    threshold_spinbox.grid(column=1, row=0, sticky="NW", padx=(0, 10))
+    ToolTip(
+        threshold_spinbox,
+        "Do not show errors that appear more than this number of times",
+    )
+
     project_dict_button = ttk.Button(
         frame,
         text="Add to Project Dict",
         command=lambda: checker_dialog.process_remove_entry_current(all_matching=True),
     )
-    project_dict_button.grid(column=0, row=0, sticky="NSW")
+    project_dict_button.grid(column=2, row=0, sticky="NSW")
     skip_button = ttk.Button(
         frame,
         text="Skip",
         command=lambda: checker_dialog.remove_entry_current(all_matching=False),
     )
-    skip_button.grid(column=1, row=0, sticky="NSW")
+    skip_button.grid(column=3, row=0, sticky="NSW")
     skip_all_button = ttk.Button(
         frame,
         text="Skip All",
         command=lambda: checker_dialog.remove_entry_current(all_matching=True),
     )
-    skip_all_button.grid(column=2, row=0, sticky="NSW")
+    skip_all_button.grid(column=4, row=0, sticky="NSW")
 
     checker_dialog.reset()
     # Construct opening line describing the search
     sel_only = " (selected text only)" if len(maintext().selected_ranges()) > 0 else ""
     checker_dialog.add_header("Start of Spelling Check" + sel_only, "")
 
+    threshold = preferences.get(PrefKey.SPELL_THRESHOLD)
     for spelling in bad_spellings:
+        if spelling.frequency > threshold:
+            continue
         end_rowcol = IndexRowCol(
             maintext().index(spelling.rowcol.index() + f"+{spelling.count}c")
         )

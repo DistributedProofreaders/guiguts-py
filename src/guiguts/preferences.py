@@ -62,6 +62,7 @@ class PrefKey(StrEnum):
     COMPOSE_HISTORY = auto()
     TEXT_FONT_FAMILY = auto()
     TEXT_FONT_SIZE = auto()
+    SPELL_THRESHOLD = auto()
 
 
 class Preferences:

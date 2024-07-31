@@ -363,6 +363,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             PrefKey.TEXT_FONT_SIZE,
             lambda *value: maintext().set_font(),
         )
+        preferences.set_default(PrefKey.SPELL_THRESHOLD, 3)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
