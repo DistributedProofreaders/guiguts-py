@@ -36,6 +36,8 @@ PAGEMARK_PIN = "\x7f"  # Temp char to pin page mark locations
 BOOKMARK_TAG = "Bookmark"
 PAGEMARK_PREFIX = "Pg"
 REPLACE_END_MARK = "ReplaceEnd"
+SELECTION_MARK_START = "SelectionMarkStart"
+SELECTION_MARK_END = "SelectionMarkEnd"
 
 
 class FindMatch:
@@ -692,6 +694,42 @@ class MainText(tk.Text):
         elif len(ranges) > 1:
             col_range = IndexRange(ranges[0].start, ranges[-1].end)
             self.do_column_select(col_range)
+
+    def selection_ranges_store_with_marks(self) -> None:
+        """Set marks at start and end of selection range(s).
+
+        This means selection can be restored even if line/col numbers have changed.
+        """
+        mark = "1.0"
+        # Delete all selection-range marks carefully to avoid accessing a deleted one
+        while mark_next := self.mark_next(mark):
+            if mark_next.startswith((SELECTION_MARK_START, SELECTION_MARK_END)):
+                mark = self.index(mark_next)
+                self.mark_unset(mark_next)
+            else:
+                mark = mark_next
+        for idx, sel_range in enumerate(self.selected_ranges()):
+            self.set_mark_position(
+                f"{SELECTION_MARK_START}{idx}", sel_range.start, gravity=tk.LEFT
+            )
+            self.set_mark_position(
+                f"{SELECTION_MARK_END}{idx}", sel_range.end, gravity=tk.RIGHT
+            )
+
+    def selection_ranges_restore_from_marks(self) -> None:
+        """Set selection range(s) from the selection-range marks.
+
+        Assumes marks occur in pairs at start/end of ranges."""
+        self.clear_selection()
+        next_mark = self.mark_next("1.0")
+        while next_mark:
+            mark = next_mark
+            if mark.startswith(SELECTION_MARK_START):
+                start_mark = mark
+            elif mark.startswith(SELECTION_MARK_END):
+                assert start_mark
+                self.tag_add("sel", start_mark, mark)
+            next_mark = self.mark_next(mark)
 
     def column_delete(self) -> None:
         """Delete the selected column text."""
