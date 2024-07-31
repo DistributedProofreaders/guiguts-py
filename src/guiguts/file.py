@@ -759,6 +759,7 @@ class File:
         Args:
             section_range: Range of text to be wrapped.
         """
+        maintext().selection_ranges_store_with_marks()
         maintext().undo_block_begin()
 
         # Dummy insert & delete, so that if user undoes the wrap, the insert
@@ -772,6 +773,7 @@ class File:
         maintext().rewrap_section(
             section_range, lambda: self.unpin_page_marks(mark_list)
         )
+        maintext().selection_ranges_restore_from_marks()
 
     def pin_page_marks(self) -> list[str]:
         """Pin the page marks to locations in the text, by inserting a special
