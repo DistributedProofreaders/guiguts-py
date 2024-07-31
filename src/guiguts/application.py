@@ -143,6 +143,11 @@ class Guiguts:
             action="store_true",
             help="Run in debug mode",
         )
+        parser.add_argument(
+            "--nohome",
+            action="store_true",
+            help="Do not load the Preferences file",
+        )
         self.args = parser.parse_args()
 
     def load_file_if_given(self) -> None:
@@ -363,6 +368,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         for pref_key in PrefKey:
             assert preferences.get_default(pref_key) is not None
 
+        # If `--nohome` argument given, Prefs are not loaded & saved in Prefs file
+        preferences.set_permanent(not self.args.nohome)
         preferences.load()
 
     # Lay out menus

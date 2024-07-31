@@ -113,12 +113,7 @@ class Preferences:
         self.prefsfile = os.path.join(self.prefsdir, prefs_name)
 
         self._remove_test_prefs_file()
-
-        # Create Prefs dir (including any parent dirs) if needed
-        try:
-            os.makedirs(self.prefsdir, exist_ok=True)
-        except OSError:
-            logger.error(f"Unable to create {self.prefsdir}")
+        self.permanent = False
 
     def get(self, key: PrefKey) -> Any:
         """Get preference value using key.
@@ -214,8 +209,28 @@ class Preferences:
         as defaults."""
         return list(set(list(self.dict.keys()) + list(self.defaults.keys())))
 
+    def set_permanent(self, permanent: bool) -> None:
+        """Set whether prefs should be loaded from and saved to Prefs file
+        for permanent storage.
+
+        Args:
+            permanent: True if Prefs file should be used.
+        """
+        self.permanent = permanent
+
     def save(self) -> None:
         """Save preferences dictionary to JSON file."""
+
+        if not self.permanent:
+            return
+
+        # Create Prefs dir (including any parent dirs) if needed
+        try:
+            os.makedirs(self.prefsdir, exist_ok=True)
+        except OSError:
+            logger.error(f"Unable to create {self.prefsdir}")
+            return
+
         try:
             with open(self.prefsfile, "w", encoding="utf-8") as fp:
                 json.dump(self.dict, fp, indent=2, ensure_ascii=False)
@@ -225,6 +240,10 @@ class Preferences:
     def load(self) -> None:
         """Load dictionary from JSON file, and use PrefKeys
         to store values in preferences dictionary."""
+
+        if not self.permanent:
+            return
+
         self.dict = {}
         if loaded_dict := load_dict_from_json(self.prefsfile):
             for key, value in loaded_dict.items():
