@@ -224,7 +224,11 @@ class CheckerDialog(ToplevelDialog):
         self.process_command = process_command
         self.rowcol_key = sort_key_rowcol or CheckerDialog.sort_key_rowcol
         self.alpha_key = sort_key_alpha or CheckerDialog.sort_key_alpha
-        self.text.tag_configure(HILITE_TAG_NAME, foreground="#2197ff")
+        self.text.tag_configure(
+            HILITE_TAG_NAME,
+            background=maintext()["selectbackground"],
+            foreground=maintext()["selectforeground"],
+        )
         self.text.tag_configure(ERROR_PREFIX_TAG_NAME, foreground="red")
         self.count_linked_entries = 0  # Not the same as len(self.entries)
         self.count_suspects = 0
