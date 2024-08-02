@@ -8,6 +8,7 @@ from typing import Any, Callable
 import regex as re
 
 from guiguts.file import PAGE_SEPARATOR_REGEX
+from guiguts.highlight import spotlight_range, remove_spotlights
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.misc_tools import tool_save
@@ -608,7 +609,10 @@ class WordFrequencyDialog(ToplevelDialog):
                 if match_str[1 : match.count + 1] == newline_word:
                     match.rowcol.col += 1
             maintext().set_insert_index(match.rowcol, focus=False)
-            maintext().select_match_text(match)
+            remove_spotlights()
+            start_index = match.rowcol.index()
+            end_index = maintext().index(start_index + f"+{match.count}c")
+            spotlight_range(IndexRange(start_index, end_index))
             self.previous_word = word
 
     def search_word(self, event: tk.Event) -> str:

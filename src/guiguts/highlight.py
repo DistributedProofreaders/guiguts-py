@@ -1,15 +1,16 @@
-"""Highlight functionality"""
+"""Highlight functionality."""
 
 from enum import auto
 
 from guiguts.maintext import maintext
 from guiguts.preferences import preferences, PrefKey
+from guiguts.utilities import IndexRange
 
 
 class Highlight:
-    """Global highlight settings"""
+    """Global highlight settings."""
 
-    TAG_QUOTEMARK = auto()
+    TAG_QUOTEMARK = str(auto())
 
     # Possible future enhancement:
     #
@@ -25,6 +26,14 @@ class Highlight:
         "Light": {"bg": "#a08dfc", "fg": "black"},
         "Dark": {"bg": "#a08dfc", "fg": "white"},
         "Default": {"bg": "#a08dfc", "fg": "black"},
+    }
+
+    TAG_SPOTLIGHT = str(auto())
+
+    COLORS_SPOTLIGHT = {
+        "Light": {"bg": "orange", "fg": "black"},
+        "Dark": {"bg": "orange", "fg": "white"},
+        "Default": {"bg": "orange", "fg": "black"},
     }
 
 
@@ -58,26 +67,16 @@ def highlight_selection(
             )
 
 
-def get_active_theme() -> str:
-    """Return the current theme name"""
-    return preferences.get(PrefKey.THEME_NAME)
-
-
 def remove_highlights() -> None:
-    """Remove acvite highlights"""
-    maintext().tag_delete(str(Highlight.TAG_QUOTEMARK))
+    """Remove active highlights."""
+    maintext().tag_delete(Highlight.TAG_QUOTEMARK)
 
 
 def highlight_quotemarks(pat: str) -> None:
-    """Highlight quote marks in current selection which match a pattern"""
-    theme = get_active_theme()
+    """Highlight quote marks in current selection which match a pattern."""
     remove_highlights()
-    maintext().tag_configure(
-        str(Highlight.TAG_QUOTEMARK),
-        background=Highlight.COLORS_QUOTEMARK[theme]["bg"],
-        foreground=Highlight.COLORS_QUOTEMARK[theme]["fg"],
-    )
-    highlight_selection(pat, str(Highlight.TAG_QUOTEMARK), regexp=True)
+    _highlight_configure_tag(Highlight.TAG_QUOTEMARK, Highlight.COLORS_QUOTEMARK)
+    highlight_selection(pat, Highlight.TAG_QUOTEMARK, regexp=True)
 
 
 def highlight_single_quotes() -> None:
@@ -100,3 +99,38 @@ def highlight_double_quotes() -> None:
     ‟„ DOUBLE {HIGH-REVERSED-9, LOW-9} QUOTATION MARK
     """
     highlight_quotemarks('["“”«»‟„]')
+
+
+def spotlight_range(spot_range: IndexRange) -> None:
+    """Highlight the given range in the spotlight color.
+
+    Args:
+        spot_range: The range to be spotlighted.
+    """
+    remove_spotlights()
+    _highlight_configure_tag(Highlight.TAG_SPOTLIGHT, Highlight.COLORS_SPOTLIGHT)
+    maintext().tag_add(
+        Highlight.TAG_SPOTLIGHT, spot_range.start.index(), spot_range.end.index()
+    )
+
+
+def remove_spotlights() -> None:
+    """Remove active spotlights"""
+    maintext().tag_delete(Highlight.TAG_SPOTLIGHT)
+
+
+def _highlight_configure_tag(
+    tag_name: str, tag_colors: dict[str, dict[str, str]]
+) -> None:
+    """Configure highlighting tag colors to match the theme.
+
+    Args:
+        tag_name: Tag to be configured.
+        tag_colors: Dictionary of fg/bg colors for each theme.
+    """
+    theme = preferences.get(PrefKey.THEME_NAME)
+    maintext().tag_configure(
+        tag_name,
+        background=tag_colors[theme]["bg"],
+        foreground=tag_colors[theme]["fg"],
+    )

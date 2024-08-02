@@ -7,6 +7,7 @@ from typing import Any, Optional, Callable
 
 import regex as re
 
+from guiguts.highlight import spotlight_range, remove_spotlights
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.preferences import (
@@ -818,12 +819,13 @@ class CheckerDialog(ToplevelDialog):
         entry = self.entries[entry_index]
         self.selected_text = entry.text
         self.selected_text_range = entry.text_range
+        remove_spotlights()
         if entry.text_range is not None:
             if root().state() == "iconic":
                 root().deiconify()
             start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
-            maintext().do_select(IndexRange(start, end))
+            spotlight_range(IndexRange(start, end))
             maintext().set_insert_index(
                 IndexRowCol(start), focus=(focus and not is_mac())
             )
