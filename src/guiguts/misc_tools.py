@@ -776,7 +776,7 @@ def unmatched_dp_markup() -> None:
     unmatched_markup_check(
         "Unmatched DP markup",
         rerun_command=unmatched_dp_markup,
-        match_reg="<[a-z]+>|</[a-z]+>",
+        match_reg="<(i|b|u|g|f|sc)>|</(i|b|u|g|f|sc)>",
         match_pair_func=matched_pair_dp_markup,
         ignore_reg="<tb>",
         sort_key_alpha=sort_key_dp_markup,
