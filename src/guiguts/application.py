@@ -364,6 +364,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             lambda *value: maintext().set_font(),
         )
         preferences.set_default(PrefKey.SPELL_THRESHOLD, 3)
+        preferences.set_default(PrefKey.UNMATCHED_NESTABLE, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
