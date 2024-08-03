@@ -1043,7 +1043,7 @@ def fraction_convert(conversion_type: FractionConvertType) -> None:
     if not sel_ranges:
         sel_ranges = [IndexRange(maintext().start(), maintext().end())]
 
-    replacement_made = False
+    last_match = ""
     frac_slash = "⁄"
     any_slash = f"[/{frac_slash}]"
     for sel_range in sel_ranges:
@@ -1083,7 +1083,7 @@ def fraction_convert(conversion_type: FractionConvertType) -> None:
                     f"{match_index}+{len(new_frac)}c",
                     f"{match_index}+{len(new_frac) + len(gmatch[0]) - offset}c",
                 )
-                replacement_made = True
+                last_match = f"{match_index}+{len(new_frac)}c"
             else:
                 len_frac = len(base_frac) - offset
 
@@ -1092,8 +1092,8 @@ def fraction_convert(conversion_type: FractionConvertType) -> None:
                 after_match, maintext().rowcol("TempEndSelection")
             )
     maintext().selection_ranges_restore_from_marks()
-    if replacement_made:
-        maintext().set_insert_index(after_match)
+    if last_match:
+        maintext().set_insert_index(IndexRowCol(maintext().index(last_match)))
 
 
 def unicode_normalize() -> None:
