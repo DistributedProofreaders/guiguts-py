@@ -558,7 +558,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button("Basic Fi~xup...", basic_fixup_check)
         menu_tools.add_button("~Word Frequency...", word_frequency)
         menu_tools.add_button(
-            "~Spelling Check...",
+            "~Spelling...",
             lambda: spell_check(
                 self.file.project_dict, self.file.add_good_word_to_project_dictionary
             ),
