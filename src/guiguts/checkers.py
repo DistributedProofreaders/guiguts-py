@@ -355,6 +355,7 @@ class CheckerDialog(ToplevelDialog):
         for mark in maintext().mark_names():
             if mark.startswith(self.get_mark_prefix()):
                 maintext().mark_unset(mark)
+        remove_spotlights()
 
     def new_section(self) -> None:
         """Start a new section in the dialog.
