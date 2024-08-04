@@ -63,6 +63,7 @@ class PrefKey(StrEnum):
     TEXT_FONT_FAMILY = auto()
     TEXT_FONT_SIZE = auto()
     SPELL_THRESHOLD = auto()
+    UNMATCHED_NESTABLE = auto()
 
 
 class Preferences:

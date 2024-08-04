@@ -12,7 +12,12 @@ import regex as re
 from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.file import the_file
 from guiguts.maintext import maintext
-from guiguts.preferences import PrefKey, PersistentString, preferences
+from guiguts.preferences import (
+    PrefKey,
+    PersistentString,
+    preferences,
+    PersistentBoolean,
+)
 from guiguts.utilities import IndexRowCol, IndexRange, cmd_ctrl_string, is_mac
 from guiguts.widgets import ToolTip, ToplevelDialog
 
@@ -22,6 +27,7 @@ BLOCK_TYPES = "[$*XxFf]"
 POEM_TYPES = "[Pp]"
 ALL_BLOCKS_REG = f"[{re.escape('#$*FILPXCR')}]"
 QUOTE_APOS_REG = "[[:alpha:]]’[[:alpha:]]"
+NEVER_MATCH_REG = r"(?!)"
 
 
 def tool_save() -> bool:
@@ -658,13 +664,17 @@ def unmatched_curly_quotes() -> None:
             quote_in: Quote - must be one of ‘ ’ “ ”
 
         Returns:
-            Tuple with regex, True if bracket_in was close bracket.
+            Tuple with regex, True if bracket_in was close quote.
         """
         match quote_in:
             case "“":
                 return "[“”]", False
             case "”":
                 return "[“”]", True
+            case "‘":
+                return "[‘’]", False
+            case "’":
+                return "[‘’]", True
         assert False, f"'{quote_in}' is not a curly quote"
 
     def unmatched_single_quotes(dialog: CheckerDialog) -> None:
@@ -673,11 +683,13 @@ def unmatched_curly_quotes() -> None:
         Args:
             dialog: Checkerdialog to receive error messages.
         """
+        nestable = preferences.get(PrefKey.UNMATCHED_NESTABLE)
         prefix = "Unmatched: "
         search_range = IndexRange(maintext().start(), maintext().end())
         # Find open & close single quotes
         while match := maintext().find_match("[‘’]", search_range, regexp=True):
             quote_type = maintext().get_match_text(match)
+            match_pair_reg, reverse = toggle_quote(quote_type)
             match_index = match.rowcol.index()
             after_match = maintext().index(f"{match_index}+1c")
             search_range = IndexRange(after_match, maintext().end())
@@ -686,7 +698,14 @@ def unmatched_curly_quotes() -> None:
             if re.fullmatch(QUOTE_APOS_REG, context):
                 continue
             # Search for the matching pair to this markup
-            if not find_match_pair_sq(match_index, quote_type):
+            if not find_match_pair(
+                match_index,
+                quote_type,
+                match_pair_reg,
+                reverse,
+                nestable,
+                ignore_func=ignore_apostrophes,
+            ):
                 dialog.add_entry(
                     f"{prefix}{quote_type}",
                     IndexRange(match_index, after_match),
@@ -703,41 +722,16 @@ def unmatched_curly_quotes() -> None:
     )
 
 
-def find_match_pair_sq(match_index: str, match_str: str) -> str:
-    """Find the pair to the given match, allowing for single quote/apostrophe confusion.
-    Simplified version of `find_match_pair`, with specific apostrophe check.
+def ignore_apostrophes(match_index: str) -> bool:
+    """Return whether to ignore match because context implies
+    it's an apostrophe rather than a close-quote, i.e. it's surrounded
+    by alphabetic characters.
 
     Args:
-        match_index: Index of start of match_str in file.
-        match_str: String to find the pair of.
+        match_index: Index to location of match.
     """
-    reverse = match_str == "’"
-    start = match_index if reverse else maintext().index(f"{match_index}+1c")
-    end = maintext().start() if reverse else maintext().end()
-    # Keep searching until we find the matching markup
-    found = ""
-    while not found:
-        # Search for the given markup and its pair in order to spot nesting
-        match = maintext().find_match(
-            "[‘’]",
-            IndexRange(start, end),
-            regexp=True,
-            backwards=reverse,
-        )
-        if match is None:
-            break
-        match_index = match.rowcol.index()
-        # Check it's not actually an apostrophe (close-quote surrounded by alphabetics)
-        context = maintext().get(f"{match_index}-1c", f"{match_index}+2c")
-        if not re.fullmatch(QUOTE_APOS_REG, context):
-            # If we get to here, we've either found the pair, or the same string again.
-            # Nesting is not allowed, so only return "found" position if not nested.
-            if maintext().get_match_text(match) != match_str:
-                found = match_index
-            break
-        # Adjust start point for next search
-        start = match_index if reverse else maintext().index(f"{match_index}+1c")
-    return found
+    context = maintext().get(f"{match_index}-1c", f"{match_index}+2c")
+    return bool(re.fullmatch(QUOTE_APOS_REG, context))
 
 
 def unmatched_dp_markup() -> None:
@@ -778,6 +772,7 @@ def unmatched_dp_markup() -> None:
         rerun_command=unmatched_dp_markup,
         match_reg="<(i|b|u|g|f|sc)>|</(i|b|u|g|f|sc)>",
         match_pair_func=matched_pair_dp_markup,
+        nest_reg=NEVER_MATCH_REG,
         ignore_reg="<tb>",
         sort_key_alpha=sort_key_dp_markup,
     )
@@ -887,6 +882,7 @@ def unmatched_markup_check(
         rerun_command: Function to re-run check.
         match_reg: Regex matching open & close markup.
         nest_reg: Regex matching markup that is allowed to be nested.
+            None means user-controlled via Pref.
         ignore_reg: Regex matching markup that is to be ignored during check.
         sort_key_alpha: Function to provide type/alphabetic sorting
         additional_check_command: Function to perform extra checks
@@ -911,6 +907,16 @@ def unmatched_markup_check(
         ),
         use_pointer_pos=True,
     )
+    # User can control nestability of some unmatched check types
+    if nest_reg is None:
+        frame = ttk.Frame(checker_dialog.header_frame)
+        frame.grid(column=0, row=1, sticky="NSEW")
+        ttk.Checkbutton(
+            frame,
+            text="Allow nesting",
+            variable=PersistentBoolean(PrefKey.UNMATCHED_NESTABLE),
+        ).grid(row=0, column=0, sticky="NSEW")
+
     checker_dialog.reset()
 
     search_range = IndexRange(maintext().start(), maintext().end())
@@ -928,9 +934,10 @@ def unmatched_markup_check(
         # Get a regex that will find the match and the pair( e.g. "(<i>|</i>)")
         match_pair_reg, reverse = match_pair_func(match_str)
         # Is this markup permitted to nest?
-        nestable = bool(
-            nest_reg and re.fullmatch(nest_reg, match_str, flags=re.IGNORECASE)
-        )
+        if nest_reg is None:
+            nestable = preferences.get(PrefKey.UNMATCHED_NESTABLE)
+        else:
+            nestable = bool(re.fullmatch(nest_reg, match_str, flags=re.IGNORECASE))
         prefix = "Unmatched: "
         # Search for the matching pair to this markup
         if not find_match_pair(
@@ -949,7 +956,12 @@ def unmatched_markup_check(
 
 
 def find_match_pair(
-    match_index: str, match_str: str, match_pair_reg: str, reverse: bool, nestable: bool
+    match_index: str,
+    match_str: str,
+    match_pair_reg: str,
+    reverse: bool,
+    nestable: bool,
+    ignore_func: Optional[Callable[[str], bool]] = None,
 ) -> str:
     """Find the pair to the given match.
 
@@ -959,6 +971,7 @@ def find_match_pair(
         pair_str: The pair string to search for.
         reverse: True to search backwards (i.e. given close, look for open).
         nestable: True if markup is allowed to nest.
+        ignore_func: Optional function that returns whether to ignore a potential match.
     """
     found = ""
     match_len = len(match_str)
@@ -980,20 +993,25 @@ def find_match_pair(
             found = ""
             break
 
-        depth += (
-            1 if maintext().get_match_text(match).lower() == match_str.lower() else -1
-        )
-        # Check it's not nested when nesting isn't allowed
-        if depth > 1 and not nestable:
-            found = ""
-            break
+        # If match shouldn't be ignored, adjust depth and check if nesting is allowed
+        match_index = match.rowcol.index()
+        if ignore_func is None or not ignore_func(match_index):
+            depth += (
+                1
+                if maintext().get_match_text(match).lower() == match_str.lower()
+                else -1
+            )
+            # Check it's not nested when nesting isn't allowed
+            if depth > 1 and not nestable:
+                found = ""
+                break
+            found = match_index
 
-        found = match.rowcol.index()
         # Adjust start point for next search
         start = (
-            match.rowcol.index()
+            match_index
             if reverse
-            else maintext().index(f"{match.rowcol.index()}+{match.count}c")
+            else maintext().index(f"{match_index}+{match.count}c")
         )
     return found
 
