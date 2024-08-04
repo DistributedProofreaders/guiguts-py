@@ -146,6 +146,7 @@ class ToplevelDialog(tk.Toplevel):
         for tooltip in self.tooltip_list:
             tooltip.destroy()
         self.tooltip_list = []
+        self.reset()
 
     def reset(self) -> None:
         """Reset the dialog.

@@ -238,13 +238,6 @@ class CheckerDialog(ToplevelDialog):
         self.selected_text_range: Optional[IndexRange] = None
         self.reset()
 
-        def delete_dialog() -> None:
-            """Call its reset method, then destroy the dialog"""
-            self.reset()
-            self.destroy()
-
-        self.wm_protocol("WM_DELETE_WINDOW", delete_dialog)
-
     @classmethod
     def show_dialog(
         cls: type[TlDlg],
