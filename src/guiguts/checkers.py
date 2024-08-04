@@ -238,13 +238,6 @@ class CheckerDialog(ToplevelDialog):
         self.selected_text_range: Optional[IndexRange] = None
         self.reset()
 
-        def delete_dialog() -> None:
-            """Call its reset method, then destroy the dialog"""
-            self.reset()
-            self.destroy()
-
-        self.wm_protocol("WM_DELETE_WINDOW", delete_dialog)
-
     @classmethod
     def show_dialog(
         cls: type[TlDlg],
@@ -349,12 +342,13 @@ class CheckerDialog(ToplevelDialog):
         self.section_count = 0
         self.selected_text = ""
         self.selected_text_range = None
-        self.update_count_label()
+        self.update_count_label(working=True)
         if self.text.winfo_exists():
             self.text.delete("1.0", tk.END)
         for mark in maintext().mark_names():
             if mark.startswith(self.get_mark_prefix()):
                 maintext().mark_unset(mark)
+        remove_spotlights()
 
     def new_section(self) -> None:
         """Start a new section in the dialog.
@@ -540,9 +534,17 @@ class CheckerDialog(ToplevelDialog):
             self.showing_suspects_only() and entry.severity < CheckerEntrySeverity.ERROR
         )
 
-    def update_count_label(self) -> None:
-        """Update the label showing how many linked entries & suspects are in dialog."""
+    def update_count_label(self, working: bool = False) -> None:
+        """Update the label showing how many linked entries & suspects are in dialog.
+
+        Args:
+            working: If set to True, display a "Working..." label instead.
+        """
         if self.count_label.winfo_exists():
+            if working:
+                self.count_label["text"] = "Working..."
+                self.count_label.update()
+                return
             es = sing_plur(self.count_linked_entries, "Entry", "Entries")
             ss = (
                 f"({sing_plur(self.count_suspects, 'Suspect')})"
