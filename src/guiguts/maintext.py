@@ -256,6 +256,22 @@ class MainText(tk.Text):
                 "<Command-Shift-Down>", lambda e_event: self.select_to_end()
             )
 
+        # Override default left/right arrow key behavior if there is a selection
+        self.bind_event(
+            "<Left>",
+            lambda _event: self.move_to_selection_start(),
+            force_break=False,
+        )
+        self.bind_event(
+            "<Right>",
+            lambda _event: self.move_to_selection_end(),
+            force_break=False,
+        )
+        # Above behavior would affect Shift-Left/Right, so bind those to null functions
+        # and allow default class behavior to happen
+        self.bind_event("<Shift-Right>", lambda _event: "", force_break=False)
+        self.bind_event("<Shift-Left>", lambda _event: "", force_break=False)
+
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
         self.bind_event(
@@ -982,6 +998,28 @@ class MainText(tk.Text):
     def end(self) -> IndexRowCol:
         """Return IndexRowCol for end of text in widget, i.e. "end"."""
         return self.rowcol(tk.END)
+
+    def move_to_selection_start(self) -> str:
+        """Set insert position to start of any selection text."""
+        return self._move_to_selection_edge(end=False)
+
+    def move_to_selection_end(self) -> str:
+        """Set insert position to end of any selection text."""
+        return self._move_to_selection_edge(end=True)
+
+    def _move_to_selection_edge(self, end: bool) -> str:
+        """Set insert position to start or end of selection text.
+
+        Args:
+            end: True for end, False for start.
+        """
+        sel_ranges = self.selected_ranges()
+        if not sel_ranges:
+            return ""
+        pos = sel_ranges[-1].end if end else sel_ranges[0].start
+        self.set_insert_index(pos)
+        self.clear_selection()
+        return "break"
 
     def move_to_start(self) -> None:
         """Set insert position to start of text & clear any selection."""
