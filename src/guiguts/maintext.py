@@ -102,6 +102,8 @@ class TextLineNumbers(tk.Canvas):
         width = self.font.measure("88888") + self.x_offset + 5
         self["width"] = width
         self.delete("all")
+        cur_line = IndexRowCol(self.textwidget.index(tk.INSERT)).row
+        cur_bg = self.textwidget["selectbackground"]
         text_pos = self.winfo_width() - self.x_offset
         index = self.textwidget.index("@0,0")
         while True:
@@ -109,7 +111,7 @@ class TextLineNumbers(tk.Canvas):
             if dline is None:
                 break
             linenum = IndexRowCol(index).row
-            self.create_text(
+            text = self.create_text(
                 text_pos,
                 dline[1] + self.y_offset,
                 anchor="ne",
@@ -117,6 +119,15 @@ class TextLineNumbers(tk.Canvas):
                 text=linenum,
                 fill=self.text_color,
             )
+            # Highlight the line number of the current line
+            if linenum == cur_line:
+                bbox = list(self.bbox(text))
+                rect = self.create_rectangle(
+                    (bbox[0] - 3, bbox[1] + 3, bbox[2] + self.x_offset - 3, bbox[3]),
+                    fill=cur_bg,
+                    width=0,
+                )
+                self.tag_lower(rect, text)
             index = self.textwidget.index(index + "+1l")
 
     def theme_change(self) -> None:
@@ -174,6 +185,19 @@ class MainText(tk.Text):
 
         self.languages = ""
 
+        # Column selection uses Alt key on Windows/Linux, Option key on macOS
+        # Key Release is reported as Alt_L on all platforms
+        modifier = "Option" if is_mac() else "Alt"
+        self.bind_event(f"<{modifier}-ButtonPress-1>", self.column_select_click)
+        self.bind_event(f"<{modifier}-B1-Motion>", self.column_select_motion)
+        self.bind_event(f"<{modifier}-ButtonRelease-1>", self.column_select_release)
+        self.bind_event("<KeyRelease-Alt_L>", lambda _event: self.column_select_stop())
+        # Make use of built-in Shift click functionality to extend selections,
+        # but adapt for column select with Option/Alt key
+        self.bind_event(f"<Shift-{modifier}-ButtonPress-1>", self.column_select_release)
+        self.bind_event(f"<Shift-{modifier}-ButtonRelease-1>", lambda _event: "break")
+        self.column_selecting = False
+
         # Create Line Numbers widget and bind update routine to all
         # events that might change which line numbers should be displayed
         self.linenumbers = TextLineNumbers(self.frame, self)
@@ -181,6 +205,8 @@ class MainText(tk.Text):
         self.bind_event("<Configure>", self._on_change, add=True, force_break=False)
         # Use KeyRelease not KeyPress since KeyPress might be caught earlier and not propagated to this point.
         self.bind_event("<KeyRelease>", self._on_change, add=True, force_break=False)
+        # Add mouse event here after column selection bindings above
+        self.bind_event("<ButtonRelease>", self._on_change, add=True, force_break=False)
         self.numbers_need_updating = True
 
         def hscroll_set(*args: Any) -> None:
@@ -220,19 +246,6 @@ class MainText(tk.Text):
         self.bind_event(
             "<Delete>", lambda _event: self.smart_delete(), force_break=False
         )
-
-        # Column selection uses Alt key on Windows/Linux, Option key on macOS
-        # Key Release is reported as Alt_L on all platforms
-        modifier = "Option" if is_mac() else "Alt"
-        self.bind_event(f"<{modifier}-ButtonPress-1>", self.column_select_click)
-        self.bind_event(f"<{modifier}-B1-Motion>", self.column_select_motion)
-        self.bind_event(f"<{modifier}-ButtonRelease-1>", self.column_select_release)
-        self.bind_event("<KeyRelease-Alt_L>", lambda _event: self.column_select_stop())
-        # Make use of built-in Shift click functionality to extend selections,
-        # but adapt for column select with Option/Alt key
-        self.bind_event(f"<Shift-{modifier}-ButtonPress-1>", self.column_select_release)
-        self.bind_event(f"<Shift-{modifier}-ButtonRelease-1>", lambda _event: "break")
-        self.column_selecting = False
 
         # Add common Mac key bindings for beginning/end of file
         if is_mac():
@@ -933,6 +946,7 @@ class MainText(tk.Text):
         """
         self.column_select_motion(event)
         self.column_select_stop()
+        self.mark_set(tk.INSERT, f"@{event.x},{event.y}")
 
     def column_select_start(self, anchor: IndexRowCol) -> None:
         """Begin column selection.
