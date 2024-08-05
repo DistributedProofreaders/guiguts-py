@@ -1,6 +1,38 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.4
+
+- Command line argument `--nohome` added which does not load the prefs file.
+  This is primarily for testing purposes.
+- Highlighted text in checker dialogs now uses the same colors as selected
+  text in the main window.
+- Text spotlighted in the main window by clicking on an error in a checker
+  dialog is now highlighted in orange, rather than using selection colors
+- Unmatched DP Markup now only checks for `i|b|u|g|f|sc`
+- After fraction conversion, the cursor is placed after the last fraction
+  converted, so it is clearer to the user what has happened
+- The Spelling checker now supports spellcheck within selected text only
+- The Spelling checker now has a threshold - if a word appears more times
+  than the threshold, it is assumed to be good
+- Unmatched Brackets and Curly Quotes now have a checkbutton to allow or
+  disallow nesting
+- A "working" label appears in checker dialogs when a tool is re-run, rather
+  than showing "0 Entries"
+- In the line numbers on the left, the number corresponding to the cursor's
+  current location is highlighted 
+
+### Bug Fixes
+
+- Default scan directory `projectID0123456789abc_images` was not supported
+- Errors occurred saving preferences if user's Documents directory was not
+  in their home folder on Windows
+- Page Separator Fixup started auto-fixing immediately if user changed
+  radio buttons to Auto instead of waiting for user to click Refresh
+- Additional blank lines were added during rewrapping
+- After rewrapping a selection, the wrong range was selected
+
+
 ## Version 2.0.0-alpha.3
 
 - Page Marker Flags now include the necessary information to generate the
