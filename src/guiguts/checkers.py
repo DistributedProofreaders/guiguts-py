@@ -345,10 +345,11 @@ class CheckerDialog(ToplevelDialog):
         self.update_count_label(working=True)
         if self.text.winfo_exists():
             self.text.delete("1.0", tk.END)
-        for mark in maintext().mark_names():
-            if mark.startswith(self.get_mark_prefix()):
-                maintext().mark_unset(mark)
-        remove_spotlights()
+        if maintext().winfo_exists():
+            for mark in maintext().mark_names():
+                if mark.startswith(self.get_mark_prefix()):
+                    maintext().mark_unset(mark)
+            remove_spotlights()
 
     def new_section(self) -> None:
         """Start a new section in the dialog.
