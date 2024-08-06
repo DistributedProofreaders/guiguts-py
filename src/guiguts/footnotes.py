@@ -151,7 +151,7 @@ class FootnoteChecker:
             # Get label of footnote, e.g. "[Footnote 4:..." has label "4"
             fn_line = maintext().get(start.index(), f"{start.row}.end")
             fn_label = fn_line[
-                beg_match.count - beg_match.rowcol.col : colon_pos.col
+                beg_match.count + 1 : colon_pos.col - beg_match.rowcol.col
             ].strip()
 
             # Find previous occurrence of matching anchor, e.g. "[4]"
@@ -259,7 +259,11 @@ def display_footnote_entries() -> None:
     for fn_index, fn_record in enumerate(fn_records):
         error_prefix = ""
         if fn_record.an_index is None:
-            error_prefix = "NO ANCHOR: "
+            fn_start = fn_record.start
+            if maintext().get(f"{fn_start.index()}-1c", fn_start.index()) == "*":
+                error_prefix = "CONTINUATION: "
+            else:
+                error_prefix = "NO ANCHOR: "
         else:
             an_record = an_records[fn_record.an_index]
             # Check that no other footnote has the same anchor as this one
