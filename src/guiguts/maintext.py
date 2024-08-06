@@ -1017,7 +1017,9 @@ class MainText(tk.Text):
         if not sel_ranges:
             return ""
         pos = sel_ranges[-1].end if end else sel_ranges[0].start
-        self.set_insert_index(pos)
+        # Use low-level calls to avoid "see" behavior of set_insert_index
+        self.mark_set(tk.INSERT, pos.index())
+        self.see(tk.INSERT)
         self.clear_selection()
         return "break"
 
