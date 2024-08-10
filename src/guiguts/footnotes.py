@@ -1,6 +1,7 @@
 """Footnote checking, fixing and tidying functionality"""
 
 import logging
+from tkinter import ttk
 from typing import Optional
 import regex as re
 
@@ -101,6 +102,47 @@ class FootnoteChecker:
     def get_an_records(self) -> list[AnchorRecord]:
         """Return the list of anchor records."""
         return self.an_records
+
+    def join_to_previous(self) -> None:
+        """Join the selected footnote to the previous one."""
+        assert _the_footnote_checker is not None
+        fn_index = self.get_selected_fn_index()
+        if fn_index < 0:
+            return  # No selection
+        if fn_index == 0:
+            return  # Can't join first footnote to previous
+        fn_records = _the_footnote_checker.get_fn_records()
+        fn_record = fn_records[fn_index]
+        fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
+        fn_cur_end = self.checker_dialog.mark_from_rowcol(fn_record.end)
+        prev_record = fn_records[fn_index - 1]
+        fn_prev_end = self.checker_dialog.mark_from_rowcol(prev_record.end)
+        continuation_text = maintext().get(fn_cur_start, fn_cur_end)[11:]
+        maintext().delete(
+            f"{fn_cur_start} -1l linestart", f"{fn_cur_end} +1l linestart"
+        )
+        maintext().delete(f"{fn_prev_end} -1c", f"{fn_prev_end} lineend")
+        maintext().insert(fn_prev_end, "\n" + continuation_text + "\n")
+        self.checker_dialog.remove_entry_current()
+        maintext().see(fn_prev_end)
+
+    def get_selected_fn_index(self) -> int:
+        """Get the index of the selected footnote.
+
+        Returns:
+            Index into self.fn_records array, negative if none selected."""
+        assert _the_footnote_checker is not None
+        cur_idx = self.checker_dialog.current_entry_index()
+        if cur_idx is None:
+            return -1
+        text_range = self.checker_dialog.entries[cur_idx].text_range
+        assert text_range is not None
+        fn_start = text_range.start
+        fn_records = _the_footnote_checker.get_fn_records()
+        for fn_index, fn_record in enumerate(fn_records):
+            if fn_record.start == fn_start:
+                return fn_index
+        return -1
 
     def run_check(self) -> None:
         """Run the initial footnote check."""
@@ -228,6 +270,7 @@ def footnote_check() -> None:
         sort_key_alpha=sort_key_type,
         show_suspects_only=True,
     )
+
     if _the_footnote_checker is None:
         _the_footnote_checker = FootnoteChecker(checker_dialog)
     elif not _the_footnote_checker.checker_dialog.winfo_exists():
@@ -244,6 +287,14 @@ def footnote_check() -> None:
         ),
         use_pointer_pos=True,
     )
+
+    frame = ttk.Frame(checker_dialog.header_frame)
+    frame.grid(column=0, row=1, sticky="NSEW")
+    ttk.Button(
+        frame,
+        text="Join to Previous",
+        command=_the_footnote_checker.join_to_previous,
+    ).grid(column=0, row=0, sticky="NSW")
 
     _the_footnote_checker.run_check()
     display_footnote_entries()
