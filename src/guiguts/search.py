@@ -225,6 +225,7 @@ class SearchDialog(ToplevelDialog):
         self.search_box.set(search_string)
         self.search_box.select_range(0, tk.END)
         self.search_box.icursor(tk.END)
+        self.search_box.focus()
 
     def search_clicked(self, opposite_dir: bool = False) -> str:
         """Search for the string in the search box.
