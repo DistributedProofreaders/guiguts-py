@@ -214,9 +214,9 @@ class WordFrequencyDialog(ToplevelDialog):
         # Re-run buttons
         rerun_frame = ttk.Frame(header_frame, borderwidth=1, relief=tk.GROOVE)
         rerun_frame.grid(row=0, column=1, rowspan=2, padx=(0, 15))
-        ttk.Button(rerun_frame, text="Re-run", command=word_frequency).grid(
-            row=0, column=0, sticky="NSEW", padx=5, pady=2
-        )
+        ttk.Button(
+            rerun_frame, text="Re-run", command=word_frequency, takefocus=False
+        ).grid(row=0, column=0, sticky="NSEW", padx=5, pady=2)
 
         def change_ignore_case() -> None:
             """Handle changing of ignore case flag - enable/disable buttons & re-run tool."""
@@ -391,6 +391,9 @@ class WordFrequencyDialog(ToplevelDialog):
         mouse_bind(self.text, "1", self.goto_word_by_click)
         _, event = process_accel("Cmd/Ctrl+1")
         self.text.bind(event, self.search_word)
+        self.text.bind("<Key>", self.goto_word_by_letter)
+        self.text.bind("<Home>", lambda _e: self.goto_word(0))
+        self.text.bind("<End>", lambda _e: self.goto_word(len(self.entries) - 1))
         ToolTip(
             self.text,
             "\n".join(
@@ -527,6 +530,24 @@ class WordFrequencyDialog(ToplevelDialog):
         self.goto_word(entry_index)
         return "break"
 
+    def goto_word_by_letter(self, event: tk.Event) -> str:
+        """Go to first occurrence of word beginning with the character in `event`.
+
+        Args:
+            event: Event containing keystroke.
+
+        Returns:
+            "break" to stop further processing of events if valid character
+        """
+        if not event.char:
+            return ""
+        low_char = event.char.lower()
+        for idx, entry in enumerate(self.entries):
+            if entry.word.lower().startswith(low_char):
+                self.goto_word(idx, force_first=True)
+                return "break"
+        return ""
+
     def goto_word_by_arrow(self, increment: int) -> str:
         """Select next/previous line in dialog, and jump to the line in the
         main text widget that corresponds to it.
@@ -546,7 +567,7 @@ class WordFrequencyDialog(ToplevelDialog):
         self.goto_word(entry_index + increment)
         return "break"
 
-    def goto_word(self, entry_index: int) -> None:
+    def goto_word(self, entry_index: int, force_first: bool = False) -> None:
         """Go to first/next occurrence of word listed at `entry_index`.
 
         If a different word to last click, then start search from beginning
@@ -554,10 +575,15 @@ class WordFrequencyDialog(ToplevelDialog):
 
         Args:
             entry_index: Index into `self.entries` indicating which to select.
+            force_first: True to force first occurrence, False for next occurrence.
         """
+        if entry_index >= len(self.entries):
+            return
         self.text.select_line(entry_index + 1)
+        self.text.mark_set(tk.INSERT, f"{entry_index + 1}.0")
+        self.text.focus()
         word = self.entries[entry_index].word
-        if word == self.previous_word:
+        if word == self.previous_word and not force_first:
             start = maintext().get_insert_index()
             start.col += 1
         else:
@@ -703,6 +729,7 @@ def wf_populate(wf_dialog: WordFrequencyDialog) -> None:
             wf_populate_regexps(wf_dialog)
         case _ as bad_value:
             assert False, f"Invalid WFDisplayType: {bad_value}"
+    wf_dialog.goto_word(0)
     Busy.unbusy()
 
 
