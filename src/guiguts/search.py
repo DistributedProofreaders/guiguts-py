@@ -554,21 +554,32 @@ def _do_find_next(
         backwards: True to search backwards.
         start_point: Point to search from.
     """
-    try:
-        match = maintext().find_match(
+    regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
+    if regexp:
+        match = maintext().find_match_regex(
             search_string,
-            (
-                search_limits.start
-                if preferences.get(PrefKey.SEARCHDIALOG_WRAP)
-                else search_limits
-            ),
+            search_limits.start,
             nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
-            regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
             wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
             backwards=backwards,
+            wrap=preferences.get(PrefKey.SEARCHDIALOG_WRAP),
         )
-    except tk.TclError:
-        pass
+    else:
+        try:
+            match = maintext().find_match(
+                search_string,
+                (
+                    search_limits.start
+                    if preferences.get(PrefKey.SEARCHDIALOG_WRAP)
+                    else search_limits
+                ),
+                nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
+                regexp=regexp,
+                wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
+                backwards=backwards,
+            )
+        except tk.TclError:
+            pass
     if match:
         rowcol_end = maintext().rowcol(match.rowcol.index() + f"+{match.count}c")
         maintext().set_insert_index(match.rowcol, focus=False)
@@ -620,6 +631,11 @@ def get_regex_replacement(
         Replacement string.
     """
     flags = 0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
+    replace_regex = re.sub(r"^\(\?<=.*?\)", "", replace_regex)
+    print(replace_regex, flush=True)
+    # $searchterm =~ s/\Q(?<=\E.*?\)//;
+    # $searchterm =~ s/\Q(?=\E.*?\)//;
+
     return re.sub(search_regex, replace_regex, match_text, flags=flags)
 
 

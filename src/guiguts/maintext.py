@@ -1277,6 +1277,74 @@ class MainText(tk.Text):
         end_index = maintext().index(start_index + f"+{match.count}c")
         maintext().do_select(IndexRange(start_index, end_index))
 
+    def find_match_regex(
+        self,
+        search_string: str,
+        start_point: IndexRowCol,
+        nocase: bool,
+        wholeword: bool,
+        backwards: bool,
+        wrap: bool,
+    ) -> Optional[FindMatch]:
+        """Find occurrence of regex in file by slurping text into string.
+
+        Args:
+            search_string: Regex to be searched for.
+            start_point: Start point for search.
+            nocase: True to ignore case.
+            wholeword: True to only search for whole words (i.e. word boundary at start & end).
+            backwards: True to search backwards through text.
+            wrap: True to wrap search round end (or start) of file.
+
+        Returns:
+            FindMatch containing index of start and count of characters in match.
+            None if no match.
+        """
+        slurp_text = self.get_text()
+
+        def find_nth_newline(haystack: str, n: int) -> int:
+            if n == 0:
+                return -1  # I.e. the zero-th needle immediately precedes the string
+            start = haystack.find("\n")
+            while start >= 0 and n > 1:
+                start = haystack.find("\n", start + 1)
+                n -= 1
+            return start
+
+        # Find index of start point in slurped text
+        start_idx = find_nth_newline(slurp_text, start_point.row - 1)
+        start_idx += start_point.col + 1
+
+        if wholeword:
+            search_string = r"\b" + search_string + r"\b"
+        if backwards:
+            search_string = "(?r)" + search_string
+        if nocase:
+            search_string = "(?i)" + search_string
+        search_string = "(?m)" + search_string
+
+        # Search first chunk from start point to beg/end of file
+        if backwards:
+            match = re.search(search_string, slurp_text, endpos=start_idx)
+        else:
+            match = re.search(search_string, slurp_text, pos=start_idx)
+
+        # If not found, and we're wrapping, search the other half of the file
+        if match is None and wrap:
+            if backwards:
+                match = re.search(search_string, slurp_text, pos=start_idx)
+            else:
+                match = re.search(search_string, slurp_text, endpos=start_idx)
+
+        if match is None:
+            return None
+
+        line_num = slurp_text.count("\n", 0, match.start()) + 1
+        nl_pos = slurp_text.rfind("\n", 0, match.start())
+        return FindMatch(
+            IndexRowCol(line_num, match.start() - nl_pos - 1), len(match[0])
+        )
+
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
 
