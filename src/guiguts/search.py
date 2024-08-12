@@ -631,10 +631,14 @@ def get_regex_replacement(
         Replacement string.
     """
     flags = 0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
-    replace_regex = re.sub(r"^\(\?<=.*?\)", "", replace_regex)
-    print(replace_regex, flush=True)
-    # $searchterm =~ s/\Q(?<=\E.*?\)//;
-    # $searchterm =~ s/\Q(?=\E.*?\)//;
+
+    # Since below we do a sub on the match text, rather than the whole text, we need
+    # to handle start/end word boundaries and look-behind/ahead by removing them.
+    # At some point the sub will be done manually, handing groups, execution of
+    # python code, etc., like in GG1. At that point, these fixes can probably go.
+    search_regex = re.sub(r"^\(\?<=.*?\)", "", search_regex)
+    search_regex = re.sub(r"\(\?=.*?\)$", "", search_regex)
+    search_regex = search_regex.removeprefix(r"\b").removesuffix(r"\b")
 
     return re.sub(search_regex, replace_regex, match_text, flags=flags)
 
