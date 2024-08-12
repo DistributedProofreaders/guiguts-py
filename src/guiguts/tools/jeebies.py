@@ -79,7 +79,6 @@ class JeebiesChecker:
         ttk.Radiobutton(
             frame,
             text="Paranoid",
-            command=jeebies_check,
             variable=self.paranoia_level,
             value=JeebiesParanoiaLevel.PARANOID,
             takefocus=False,
@@ -87,7 +86,6 @@ class JeebiesChecker:
         ttk.Radiobutton(
             frame,
             text="Normal",
-            command=jeebies_check,
             variable=self.paranoia_level,
             value=JeebiesParanoiaLevel.NORMAL,
             takefocus=False,
@@ -95,7 +93,6 @@ class JeebiesChecker:
         ttk.Radiobutton(
             frame,
             text="Tolerant",
-            command=jeebies_check,
             variable=self.paranoia_level,
             value=JeebiesParanoiaLevel.TOLERANT,
             takefocus=False,
