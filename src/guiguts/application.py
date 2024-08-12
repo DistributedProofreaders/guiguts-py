@@ -55,6 +55,7 @@ from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
+from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
 from guiguts.utilities import is_mac, folder_dir_str
 from guiguts.widgets import themed_style, theme_name_internal_from_user
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
@@ -332,6 +333,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(
             PrefKey.JEEBIES_PARANOIA_LEVEL, JeebiesParanoiaLevel.NORMAL
         )
+        preferences.set_default(
+            PrefKey.LEVENSHTEIN_EDIT_DISTANCE, LevenshteinEditDistance.ONE
+        )
         preferences.set_default(PrefKey.WRAP_LEFT_MARGIN, 0)
         preferences.set_default(PrefKey.WRAP_RIGHT_MARGIN, 72)
         preferences.set_default(PrefKey.WRAP_BLOCKQUOTE_INDENT, 2)
@@ -566,6 +570,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         menu_tools.add_button("PP~txt...", lambda: pptxt(self.file.project_dict))
         menu_tools.add_button("~Jeebies...", jeebies_check)
+        menu_tools.add_button(
+            "~Levenshtein...", lambda: levenshtein_check(self.file.project_dict)
+        )
         menu_tools.add_separator()
         menu_tools.add_button("~Page Separator Fixup...", page_separator_fixup)
         menu_tools.add_button("~Footnote Fixup...", footnote_check)
