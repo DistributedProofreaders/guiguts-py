@@ -2,6 +2,8 @@
 
 Guiguts - an application to support creation of ebooks for PG
 
+**If you want to use Guiguts for PPing, rather than to develop the code, see below for [User Installation Notes](#user-installation-notes).**
+
 ## Common Development Setup
 
 1. Install Python & Poetry, clone the repo and create a virtual environment,
@@ -229,7 +231,7 @@ Use the "Python: Select Interpreter" command to choose the appropriate Python en
 
 ## User Installation Notes
 
-Notes from users on installing Guiguts 2 from [PyPI](https://pypi.org/project/guiguts/)
+This section contains notes from users who have installed Guiguts 2 on various platforms to use for PPing. **If you are a developer, you probably want the [Development Installation Notes](#common-development-setup).**
 
 ### Windows
 
