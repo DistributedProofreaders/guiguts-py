@@ -1,4 +1,4 @@
-"""Levenshtein edit distance check functionality"""
+"""Levenshtein edit distance check tool"""
 
 import time
 import importlib.resources
