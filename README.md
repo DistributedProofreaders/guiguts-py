@@ -229,7 +229,15 @@ Use the "Python: Select Interpreter" command to choose the appropriate Python en
 
 ## User Installation Notes
 
-Notes from users on installing Guiguts from [PyPI](https://pypi.org/project/guiguts/)
+Notes from users on installing Guiguts 2 from [PyPI](https://pypi.org/project/guiguts/)
+
+### Windows
+
+1. Install Python 3.11 from [Python.org](https://www.python.org/downloads/windows/)
+if you haven't already done that.
+2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
+previous version of GG2).
+3. Type `guiguts` to run GG2
 
 ### Chromebook (after enabling Linux)
 
