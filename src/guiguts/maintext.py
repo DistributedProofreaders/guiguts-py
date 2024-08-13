@@ -1345,6 +1345,49 @@ class MainText(tk.Text):
             IndexRowCol(line_num, match.start() - nl_pos - 1), len(match[0])
         )
 
+    def find_match_regex_range(
+        self,
+        search_string: str,
+        search_range: IndexRange,
+        nocase: bool,
+        wholeword: bool,
+    ) -> Optional[FindMatch]:
+        """Find occurrence of regex in text range by slurping text into string.
+
+        Args:
+            search_string: Regex to be searched for.
+            start_range: Range to search within.
+            nocase: True to ignore case.
+            wholeword: True to only search for whole words (i.e. word boundary at start & end).
+
+        Returns:
+            FindMatch containing index of start and count of characters in match.
+            None if no match.
+        """
+        start_index = search_range.start.index()
+        stop_index = search_range.end.index()
+
+        slurp_text = self.get(start_index, stop_index)
+
+        if wholeword:
+            search_string = r"\b" + search_string + r"\b"
+        if nocase:
+            search_string = "(?i)" + search_string
+        search_string = "(?m)" + search_string
+
+        match = re.search(search_string, slurp_text)
+
+        if match is None:
+            return None
+
+        line_num = slurp_text.count("\n", 0, match.start())
+        if line_num > 0:
+            match_col = match.start() - slurp_text.rfind("\n", 0, match.start()) - 1
+        else:
+            match_col = match.start() + search_range.start.col
+        line_num += search_range.start.row
+        return FindMatch(IndexRowCol(line_num, match_col), len(match[0]))
+
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
 

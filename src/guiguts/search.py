@@ -444,6 +444,7 @@ class SearchDialog(ToplevelDialog):
 
         replace_range, range_name = get_search_range()
 
+        regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
         if replace_range:
             replace_match = replace_string
             count = 0
@@ -452,19 +453,27 @@ class SearchDialog(ToplevelDialog):
             maintext().mark_set(MARK_END_RANGE, replace_range.end.index())
             maintext().undo_block_begin()
             while True:
-                try:
-                    match = maintext().find_match(
+                if regexp:
+                    match = maintext().find_match_regex_range(
                         search_string,
                         replace_range,
                         nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
-                        regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
                         wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
-                        backwards=False,
                     )
-                except TclRegexCompileError as exc:
-                    self.display_message(str(exc))
-                    sound_bell()
-                    return
+                else:
+                    try:
+                        match = maintext().find_match(
+                            search_string,
+                            replace_range,
+                            nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
+                            regexp=regexp,
+                            wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
+                            backwards=False,
+                        )
+                    except TclRegexCompileError as exc:
+                        self.display_message(str(exc))
+                        sound_bell()
+                        return
 
                 if not match:
                     break
