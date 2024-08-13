@@ -227,6 +227,97 @@ Requirement: [Python Debugger][vsc_debugpy] extension
 
 Use the "Python: Select Interpreter" command to choose the appropriate Python environment. Your Poetry config should be detected and available to choose. If the Poetry config is not auto-detected, use `poetry env info -e` in the shell to find the Poetry-configured python interpreter. Then in the "Python: Select Interpreter" command, choose "Enter interpreter path..." and paste the full path to the `python` executable. 
 
+## User Installation Notes
+
+Notes from users on installing Guiguts from [PyPI](https://pypi.org/project/guiguts/)
+
+### Chromebook (after enabling Linux)
+
+Check you have python3:
+
+    python3 --version
+
+If not:
+
+    sudo apt install python3
+
+Next, check you have pip:
+
+    python3 -m pip --version
+
+If not:
+
+    sudo apt install python3-pip
+
+Now try this command:
+
+    python3 -m pip install guiguts
+
+You might come across this error:
+
+    error: externally-managed-environment
+
+    × This environment is externally managed
+    ╰─> To install Python packages system-wide, try apt install
+        python3-xyz, where xyz is the package you are trying to
+        install.
+    
+        If you wish to install a non-Debian-packaged Python package,
+        create a virtual environment using python3 -m venv path/to/venv.
+        Then use path/to/venv/bin/python and path/to/venv/bin/pip. Make
+        sure you have python3-full installed.
+    
+        If you wish to install a non-Debian packaged Python application,
+        it may be easiest to use pipx install xyz, which will manage a
+        virtual environment for you. Make sure you have pipx installed.
+    
+        See /usr/share/doc/python3.11/README.venv for more information.
+
+Let's go with the third option, and see if you have pipx: 
+
+    pipx install guiguts
+
+If you get this error:
+
+    -bash: pipx: command not found
+
+You need to install pipx:
+
+    sudo apt install pipx
+
+Then run this command before you install anything using pipx:
+
+    pipx ensurepath
+
+Open a new terminal or re-login and try this command:
+
+    pipx install --include-deps guiguts
+
+If you get an error saying no IdleLib module could be found:
+
+    sudo apt-get install python3-Tk
+    sudo apt-get install idle3
+
+Now try the install command again:
+
+    pipx install --include-deps guiguts
+
+You'll need to use this command to open GG2 each time:
+
+    pipx run guiguts
+
+To update, you can use:
+
+    pipx upgrade guiguts
+
+#### Sources
+
+https://stackoverflow.com/questions/6587507/how-to-install-pip-with-python-3
+https://stackoverflow.com/questions/43987444/install-pip-for-python-3
+https://realpython.com/python-pipx/
+https://askubuntu.com/questions/1183317/modulenotfounderror-no-module-named-idlelib
+
+
 ## Licensing
 
 Copyright Contributors to the [Guiguts-py](https://github.com/DistributedProofreaders/guiguts-py) project
