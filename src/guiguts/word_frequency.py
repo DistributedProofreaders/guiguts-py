@@ -27,6 +27,7 @@ from guiguts.utilities import (
     sound_bell,
     process_accel,
     cmd_ctrl_string,
+    is_mac,
 )
 from guiguts.widgets import (
     ToplevelDialog,
@@ -394,6 +395,13 @@ class WordFrequencyDialog(ToplevelDialog):
         self.text.bind("<Key>", self.goto_word_by_letter)
         self.text.bind("<Home>", lambda _e: self.goto_word(0))
         self.text.bind("<End>", lambda _e: self.goto_word(len(self.entries) - 1))
+        # Bind same keys as main window uses for top/bottom on Mac.
+        # Above bindings work already for Windows
+        if is_mac():
+            self.text.bind("<Command-Up>", lambda _e: self.goto_word(0))
+            self.text.bind(
+                "<Command-Down>", lambda _e: self.goto_word(len(self.entries) - 1)
+            )
         ToolTip(
             self.text,
             "\n".join(
