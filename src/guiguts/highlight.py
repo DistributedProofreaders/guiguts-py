@@ -42,7 +42,6 @@ def highlight_selection(
     tag_name: str,
     nocase: bool = False,
     regexp: bool = False,
-    wholeword: bool = False,
 ) -> None:
     """Highlight matches in the current selection.
     Args:
@@ -51,16 +50,13 @@ def highlight_selection(
     Optional keyword args:
         nocase (default False): set True for case-insensitivity
         regexp (default False): whether to assume 's' is a regexp
-        wholeword (defalut False): whether to match only whole words
     """
 
     if not (ranges := maintext().selected_ranges()):
         return
 
     for _range in ranges:
-        matches = maintext().find_matches(
-            pat, _range, nocase=nocase, regexp=regexp, wholeword=wholeword
-        )
+        matches = maintext().find_matches(pat, _range, nocase=nocase, regexp=regexp)
         for match in matches:
             maintext().tag_add(
                 tag_name, match.rowcol.index(), match.rowcol.index() + "+1c"

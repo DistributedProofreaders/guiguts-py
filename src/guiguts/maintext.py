@@ -14,8 +14,6 @@ from guiguts.utilities import (
     is_mac,
     IndexRowCol,
     IndexRange,
-    force_tcl_wholeword,
-    convert_to_tcl_regex,
     TextWrapper,
 )
 from guiguts.widgets import (
@@ -1156,10 +1154,9 @@ class MainText(tk.Text):
     def find_match(
         self,
         search_string: str,
-        start_range: IndexRowCol | IndexRange,
+        start_range: IndexRange,
         nocase: bool = False,
         regexp: bool = False,
-        wholeword: bool = False,
         backwards: bool = False,
     ) -> Optional[FindMatch]:
         """Find occurrence of string/regex in given range.
@@ -1168,26 +1165,16 @@ class MainText(tk.Text):
             search_string: String/regex to be searched for.
             start_range: Range in which to search, or just start point to search whole file.
             nocase: True to ignore case.
-            regexp: True if string is a regex; False for exact string match.
-            wholeword: True to only search for whole words (i.e. word boundary at start & end).
+            regexp: True if string is a *Tcl* regex; False for exact string match.
             backwards: True to search backwards through text.
 
         Returns:
             FindMatch containing index of start and count of characters in match.
             None if no match.
         """
-        if isinstance(start_range, IndexRowCol):
-            start_index = start_range.index()
-            stop_index = ""
-        else:
-            assert isinstance(start_range, IndexRange)
-            start_index = start_range.start.index()
-            stop_index = start_range.end.index()
+        start_index = start_range.start.index()
+        stop_index = start_range.end.index()
 
-        if regexp:
-            search_string = convert_to_tcl_regex(search_string)
-        if wholeword:
-            search_string, regexp = force_tcl_wholeword(search_string, regexp)
         count_var = tk.IntVar()
         try:
             match_start = self.search(
@@ -1214,7 +1201,6 @@ class MainText(tk.Text):
         text_range: IndexRange,
         nocase: bool,
         regexp: bool,
-        wholeword: bool,
     ) -> list[FindMatch]:
         """Find all occurrences of string/regex in given range.
 
@@ -1222,8 +1208,7 @@ class MainText(tk.Text):
             search_string: String/regex to be searched for.
             text_range: Range in which to search.
             nocase: True to ignore case.
-            regexp: True if string is a regex; False for exact string match.
-            wholeword: True to only search for whole words (i.e. word boundary at start & end).
+            regexp: True if string is a *Tcl* regex; False for exact string match.
 
         Returns:
             List of FindMatch objects, each containing index of start and count of characters in a match.
@@ -1231,10 +1216,6 @@ class MainText(tk.Text):
         """
         start_index = text_range.start.index()
         stop_index = text_range.end.index()
-        if regexp:
-            search_string = convert_to_tcl_regex(search_string)
-        if wholeword:
-            search_string, regexp = force_tcl_wholeword(search_string, regexp)
 
         matches = []
         count_var = tk.IntVar()

@@ -661,7 +661,6 @@ class File:
             search_range,
             nocase=False,
             regexp=True,
-            wholeword=False,
             backwards=False,
         ):
             maintext().delete(
@@ -684,7 +683,6 @@ class File:
             search_range,
             nocase=False,
             regexp=True,
-            wholeword=False,
         )
         if not flag_matches:
             return False
