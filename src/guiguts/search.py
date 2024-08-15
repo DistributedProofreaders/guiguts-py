@@ -8,7 +8,7 @@ from typing import Any, Tuple, Optional
 import regex as re
 
 from guiguts.checkers import CheckerDialog
-from guiguts.maintext import maintext, TclRegexCompileError
+from guiguts.maintext import maintext, TclRegexCompileError, FindMatch
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey
 from guiguts.utilities import (
     sound_bell,
@@ -273,65 +273,60 @@ class SearchDialog(ToplevelDialog):
         )
         return "break"
 
-    def count_clicked(self) -> None:
+    def count_clicked(self) -> Optional[list[FindMatch]]:
         """Count how many times search string occurs in file (or selection).
 
         Display count in Search dialog.
+
+        Returns:
+            List of FindMatch objects (None if error).
         """
         search_string = self.search_box.get()
         if not search_string:
-            return
-        self.search_box.add_to_history(search_string)
-
-        count_range, range_name = get_search_range()
-        if count_range:
-            try:
-                matches = maintext().find_matches(
-                    search_string,
-                    count_range,
-                    nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
-                    regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
-                    wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
-                )
-            except TclRegexCompileError as exc:
-                self.display_message(str(exc))
-                sound_bell()
-                return
-            count = len(matches)
-            match_str = sing_plur(count, "match", "matches")
-            self.display_message(f"Count: {match_str} {range_name}")
-        else:
-            self.display_message('No text selected for "In selection" count')
-            sound_bell()
-
-    def findall_clicked(self) -> None:
-        """Callback when Find All button clicked."""
-        search_string = self.search_box.get()
-        if not search_string:
-            return
+            return None
         self.search_box.add_to_history(search_string)
 
         find_range, range_name = get_search_range()
-        if find_range:
-            try:
-                matches = maintext().find_matches(
-                    search_string,
-                    find_range,
-                    nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
-                    regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
-                    wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
-                )
-            except TclRegexCompileError as exc:
-                self.display_message(str(exc))
-                sound_bell()
-                return
-            count = len(matches)
-            match_str = sing_plur(count, "match", "matches")
-            self.display_message(f"Found: {match_str} {range_name}")
-        else:
-            matches = []
+        if find_range is None:
             self.display_message('No text selected for "In selection" find')
             sound_bell()
+            return None
+
+        regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
+        wholeword = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
+        nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
+
+        slurp_text = maintext().get(find_range.start.index(), find_range.end.index())
+        slice_end = len(slurp_text)
+
+        # Work backwards as it's easier to adjust slice end than start
+        matches: list[FindMatch] = []
+        while True:
+            match, slice_end = maintext().find_match_in_range(
+                search_string,
+                slurp_text[:slice_end],
+                find_range.start,
+                nocase=nocase,
+                regexp=regexp,
+                wholeword=wholeword,
+                backwards=True,
+            )
+            if match is None:
+                break
+            matches.append(match)
+
+        count = len(matches)
+        match_str = sing_plur(count, "match", "matches")
+        self.display_message(f"Found: {match_str} {range_name}")
+        return matches
+
+    def findall_clicked(self) -> None:
+        """Callback when Find All button clicked.
+
+        Find & count occurrences, then display in dialog.
+        """
+        matches = self.count_clicked()
+        if matches is None:
             return
 
         class FindAllCheckerDialog(CheckerDialog):
@@ -356,7 +351,7 @@ class SearchDialog(ToplevelDialog):
         # Construct opening line describing the search
         desc_reg = "regex" if preferences.get(PrefKey.SEARCHDIALOG_REGEX) else "string"
         prefix = f'Search for {desc_reg} "'
-        desc = f'{prefix}{search_string}"'
+        desc = f'{prefix}{self.search_box.get()}"'
         if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE):
             desc += ", matching case"
         if preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD):
@@ -438,6 +433,8 @@ class SearchDialog(ToplevelDialog):
         Replace in whole file or just in selection.
         """
         search_string = self.search_box.get()
+        if not search_string:
+            return
         self.search_box.add_to_history(search_string)
         replace_string = self.replace_box.get()
         self.replace_box.add_to_history(replace_string)
@@ -445,8 +442,10 @@ class SearchDialog(ToplevelDialog):
         replace_range, range_name = get_search_range()
 
         regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
+        wholeword = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
+        nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
 
-        if not replace_range:
+        if replace_range is None:
             self.display_message('No text selected for "In selection" replace')
             sound_bell()
             return
@@ -465,13 +464,12 @@ class SearchDialog(ToplevelDialog):
                 search_string,
                 slurp_text[:slice_end],
                 replace_range.start,
-                nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
+                nocase=nocase,
                 regexp=regexp,
-                wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
+                wholeword=wholeword,
                 backwards=True,
             )
-
-            if not match:
+            if match is None:
                 break
             start_index = match.rowcol.index()
             end_index = maintext().index(start_index + f"+{match.count}c")

@@ -1347,7 +1347,8 @@ class MainText(tk.Text):
         wholeword: bool,
         backwards: bool,
     ) -> tuple[Optional[FindMatch], int]:
-        """Find last occurrence of regex in text range using slurped text.
+        """Find last occurrence of regex in text range using slurped text, and also
+        where it is in the slurp text.
 
         Args:
             search_string: Regex to be searched for.
@@ -1359,8 +1360,9 @@ class MainText(tk.Text):
             backwards: True to search backwards from the end, i.e. find last occurrence.
 
         Returns:
-            FindMatch containing index in file of start and count of characters in match.
-            None if no match.
+            Tuple: a FindMatch containing index in file of start and count of characters in match,
+            and None if no match; also the index into the slurp text of the match start, which is
+            needed for iterated use with the same slurp text, such as Replace All
         """
         if not regexp:
             search_string = re.escape(search_string)
