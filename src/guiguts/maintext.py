@@ -338,9 +338,17 @@ class MainText(tk.Text):
         self._on_change()
 
     def replace(self, index1: Any, index2: Any, chars: str, *args: Any) -> None:
-        """Override method to ensure line numbers are updated."""
+        """Override method to ensure line numbers are updated.
+
+        Also preserve pagemark locations within the replacement."""
         self.replace_preserving_pagemarks(index1, index2, chars, *args)
         self._on_change()
+
+    def mark_set(self, markName: str, index: Any) -> None:
+        """Override method to ensure line numbers are updated when insert cursor is moved."""
+        super().mark_set(markName, index)
+        if markName == tk.INSERT:
+            self._on_change()
 
     def _do_linenumbers_redraw(self) -> None:
         """Only redraw line numbers once when process becomes idle.
