@@ -207,7 +207,7 @@ class MainText(tk.Text):
         self.bind_event("<KeyRelease>", self._on_change, add=True, force_break=False)
         # Add mouse event here after column selection bindings above
         self.bind_event("<ButtonRelease>", self._on_change, add=True, force_break=False)
-        self.numbers_need_updating = True
+        self.numbers_need_updating = False
 
         def hscroll_set(*args: Any) -> None:
             self.hscroll.set(*args)
@@ -349,8 +349,8 @@ class MainText(tk.Text):
         the first will actually do a redraw, because the flag will
         only be true on the first call."""
         if self.numbers_need_updating:
+            self.numbers_need_updating = False
             self.linenumbers.redraw()
-        self.numbers_need_updating = False
 
     def add_config_callback(self, func: Callable[[], None]) -> None:
         """Add callback function to a list of functions to be called when
@@ -372,9 +372,10 @@ class MainText(tk.Text):
         By setting flag now, and queuing calls to _do_linenumbers_redraw,
         we ensure the flag will be true for the first call to
         _do_linenumbers_redraw."""
-        self.numbers_need_updating = True
-        self.root.after_idle(self._do_linenumbers_redraw)
-        self.root.after_idle(self._call_config_callbacks)
+        if not self.numbers_need_updating:
+            self.root.after_idle(self._do_linenumbers_redraw)
+            self.root.after_idle(self._call_config_callbacks)
+            self.numbers_need_updating = True
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
@@ -1277,16 +1278,18 @@ class MainText(tk.Text):
         end_index = maintext().index(start_index + f"+{match.count}c")
         maintext().do_select(IndexRange(start_index, end_index))
 
-    def find_match_regex(
+    def find_match_user(
         self,
         search_string: str,
         start_point: IndexRowCol,
         nocase: bool,
         wholeword: bool,
+        regexp: bool,
         backwards: bool,
         wrap: bool,
     ) -> Optional[FindMatch]:
-        """Find occurrence of regex in file by slurping text into string.
+        """Find occurrence of string/regex in file by slurping text into string.
+        Called for user searches - regexps are Python flavor.
 
         Args:
             search_string: Regex to be searched for.
@@ -1300,21 +1303,67 @@ class MainText(tk.Text):
             FindMatch containing index of start and count of characters in match.
             None if no match.
         """
-        slurp_text = self.get_text()
+        # Search first chunk from start point to beg/end of file
+        if backwards:
+            chunk_range = IndexRange(self.start(), start_point)
+        else:
+            chunk_range = IndexRange(start_point, self.end())
+        slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
+        match, _ = self.find_match_in_range(
+            search_string,
+            slurp_text,
+            chunk_range.start,
+            nocase=nocase,
+            regexp=regexp,
+            wholeword=wholeword,
+            backwards=backwards,
+        )
 
-        def find_nth_newline(haystack: str, n: int) -> int:
-            if n == 0:
-                return -1  # I.e. the zero-th needle immediately precedes the string
-            start = haystack.find("\n")
-            while start >= 0 and n > 1:
-                start = haystack.find("\n", start + 1)
-                n -= 1
-            return start
+        # If not found, and we're wrapping, search the other half of the file
+        if match is None and wrap:
+            if backwards:
+                chunk_range = IndexRange(start_point, self.end())
+            else:
+                chunk_range = IndexRange(self.start(), start_point)
+            slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
+            match, _ = self.find_match_in_range(
+                search_string,
+                slurp_text,
+                chunk_range.start,
+                nocase=nocase,
+                regexp=regexp,
+                wholeword=wholeword,
+                backwards=backwards,
+            )
+        return match
 
-        # Find index of start point in slurped text
-        start_idx = find_nth_newline(slurp_text, start_point.row - 1)
-        start_idx += start_point.col + 1
+    def find_match_in_range(
+        self,
+        search_string: str,
+        slurp_text: str,
+        slurp_start: IndexRowCol,
+        nocase: bool,
+        regexp: bool,
+        wholeword: bool,
+        backwards: bool,
+    ) -> tuple[Optional[FindMatch], int]:
+        """Find last occurrence of regex in text range using slurped text.
 
+        Args:
+            search_string: Regex to be searched for.
+            slurp_text: Text from search range slurped from file.
+            slurp_start: Index to start of `slurp_text` in file.
+            nocase: True to ignore case.
+            regexp: True if `search_string` is a regexp.
+            wholeword: True to only search for whole words (i.e. word boundary at start & end).
+            backwards: True to search backwards from the end, i.e. find last occurrence.
+
+        Returns:
+            FindMatch containing index in file of start and count of characters in match.
+            None if no match.
+        """
+        if not regexp:
+            search_string = re.escape(search_string)
         if wholeword:
             search_string = r"\b" + search_string + r"\b"
         if backwards:
@@ -1323,70 +1372,17 @@ class MainText(tk.Text):
             search_string = "(?i)" + search_string
         search_string = "(?m)" + search_string
 
-        # Search first chunk from start point to beg/end of file
-        if backwards:
-            match = re.search(search_string, slurp_text, endpos=start_idx)
-        else:
-            match = re.search(search_string, slurp_text, pos=start_idx)
-
-        # If not found, and we're wrapping, search the other half of the file
-        if match is None and wrap:
-            if backwards:
-                match = re.search(search_string, slurp_text, pos=start_idx)
-            else:
-                match = re.search(search_string, slurp_text, endpos=start_idx)
-
-        if match is None:
-            return None
-
-        line_num = slurp_text.count("\n", 0, match.start()) + 1
-        nl_pos = slurp_text.rfind("\n", 0, match.start())
-        return FindMatch(
-            IndexRowCol(line_num, match.start() - nl_pos - 1), len(match[0])
-        )
-
-    def find_match_regex_range(
-        self,
-        search_string: str,
-        search_range: IndexRange,
-        nocase: bool,
-        wholeword: bool,
-    ) -> Optional[FindMatch]:
-        """Find occurrence of regex in text range by slurping text into string.
-
-        Args:
-            search_string: Regex to be searched for.
-            start_range: Range to search within.
-            nocase: True to ignore case.
-            wholeword: True to only search for whole words (i.e. word boundary at start & end).
-
-        Returns:
-            FindMatch containing index of start and count of characters in match.
-            None if no match.
-        """
-        start_index = search_range.start.index()
-        stop_index = search_range.end.index()
-
-        slurp_text = self.get(start_index, stop_index)
-
-        if wholeword:
-            search_string = r"\b" + search_string + r"\b"
-        if nocase:
-            search_string = "(?i)" + search_string
-        search_string = "(?m)" + search_string
-
         match = re.search(search_string, slurp_text)
-
         if match is None:
-            return None
+            return None, 0
 
         line_num = slurp_text.count("\n", 0, match.start())
         if line_num > 0:
             match_col = match.start() - slurp_text.rfind("\n", 0, match.start()) - 1
         else:
-            match_col = match.start() + search_range.start.col
-        line_num += search_range.start.row
-        return FindMatch(IndexRowCol(line_num, match_col), len(match[0]))
+            match_col = match.start() + slurp_start.col
+        line_num += slurp_start.row
+        return FindMatch(IndexRowCol(line_num, match_col), len(match[0])), match.start()
 
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.

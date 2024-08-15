@@ -445,58 +445,45 @@ class SearchDialog(ToplevelDialog):
         replace_range, range_name = get_search_range()
 
         regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
-        if replace_range:
-            replace_match = replace_string
-            count = 0
-            # Use a mark for the end of the range, otherwise early replacements with longer
-            # or shorter strings will invalidate the index of the range end.
-            maintext().mark_set(MARK_END_RANGE, replace_range.end.index())
-            maintext().undo_block_begin()
-            while True:
-                if regexp:
-                    match = maintext().find_match_regex_range(
-                        search_string,
-                        replace_range,
-                        nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
-                        wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
-                    )
-                else:
-                    try:
-                        match = maintext().find_match(
-                            search_string,
-                            replace_range,
-                            nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
-                            regexp=regexp,
-                            wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
-                            backwards=False,
-                        )
-                    except TclRegexCompileError as exc:
-                        self.display_message(str(exc))
-                        sound_bell()
-                        return
 
-                if not match:
-                    break
-                start_index = match.rowcol.index()
-                end_index = maintext().index(start_index + f"+{match.count}c")
-                match_text = maintext().get(start_index, end_index)
-                if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
-                    replace_match = get_regex_replacement(
-                        search_string, replace_string, match_text
-                    )
-                maintext().replace(start_index, end_index, replace_match)
-                repl_len = len(replace_match)
-                maintext().mark_unset(MARK_FOUND_START, MARK_FOUND_END)
-                replace_range.start = maintext().rowcol(start_index + f"+{repl_len}c")
-                replace_range.end = maintext().rowcol(
-                    MARK_END_RANGE
-                )  # Refresh end index
-                count += 1
-            match_str = sing_plur(count, "match", "matches")
-            self.display_message(f"Replaced: {match_str} {range_name}")
-        else:
+        if not replace_range:
             self.display_message('No text selected for "In selection" replace')
             sound_bell()
+            return
+
+        slurp_text = maintext().get(
+            replace_range.start.index(), replace_range.end.index()
+        )
+        slice_end = len(slurp_text)
+        replace_match = replace_string
+        count = 0
+        maintext().undo_block_begin()
+
+        # Work backwards so replacements don't affect future match locations
+        while True:
+            match, slice_end = maintext().find_match_in_range(
+                search_string,
+                slurp_text[:slice_end],
+                replace_range.start,
+                nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
+                regexp=regexp,
+                wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
+                backwards=True,
+            )
+
+            if not match:
+                break
+            start_index = match.rowcol.index()
+            end_index = maintext().index(start_index + f"+{match.count}c")
+            match_text = maintext().get(start_index, end_index)
+            if regexp:
+                replace_match = get_regex_replacement(
+                    search_string, replace_string, match_text
+                )
+            maintext().replace(start_index, end_index, replace_match)
+            count += 1
+        match_str = sing_plur(count, "match", "matches")
+        self.display_message(f"Replaced: {match_str} {range_name}")
 
     def display_message(self, message: str = "") -> None:
         """Display message in Search dialog.
@@ -563,32 +550,16 @@ def _do_find_next(
         backwards: True to search backwards.
         start_point: Point to search from.
     """
-    regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
-    if regexp:
-        match = maintext().find_match_regex(
-            search_string,
-            search_limits.start,
-            nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
-            wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
-            backwards=backwards,
-            wrap=preferences.get(PrefKey.SEARCHDIALOG_WRAP),
-        )
-    else:
-        try:
-            match = maintext().find_match(
-                search_string,
-                (
-                    search_limits.start
-                    if preferences.get(PrefKey.SEARCHDIALOG_WRAP)
-                    else search_limits
-                ),
-                nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
-                regexp=regexp,
-                wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
-                backwards=backwards,
-            )
-        except tk.TclError:
-            pass
+    match = maintext().find_match_user(
+        search_string,
+        search_limits.start,
+        nocase=not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE),
+        wholeword=preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD),
+        regexp=preferences.get(PrefKey.SEARCHDIALOG_REGEX),
+        backwards=backwards,
+        wrap=preferences.get(PrefKey.SEARCHDIALOG_WRAP),
+    )
+
     if match:
         rowcol_end = maintext().rowcol(match.rowcol.index() + f"+{match.count}c")
         maintext().set_insert_index(match.rowcol, focus=False)
