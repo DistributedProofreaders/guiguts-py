@@ -11,7 +11,7 @@ from Levenshtein import distance
 import regex as re
 
 from guiguts.checkers import CheckerDialog
-from guiguts.spell import SpellChecker
+from guiguts.spell import SpellChecker, DictionaryNotFoundError
 from guiguts.data import dictionaries
 from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
@@ -31,10 +31,10 @@ SPELL_CHECK_OK_YES = 0
 SPELL_CHECK_OK_NO = 1
 SPELL_CHECK_OK_BAD = 2
 
-LINES_IN_REPORT_LIMIT = 2
+LINES_IN_REPORT_LIMIT = 4
 
 _the_levenshtein_checker = None  # pylint: disable=invalid-name
-
+_the_spell_checker = None  # pylint: disable=invalid-name
 
 #########################################################
 # levenshtein.py
@@ -51,13 +51,6 @@ class LevenshteinEditDistance(StrEnum):
 
     ONE = auto()
     TWO = auto()
-
-
-class DictionaryNotFoundError(Exception):
-    """Raised when no hebe-forms dictionary found."""
-
-    def __init__(self, file: str) -> None:
-        self.file = file
 
 
 class LevenshteinChecker:
@@ -260,11 +253,19 @@ class LevenshteinChecker:
             # the generated header line to the report.
             checker_dialog.add_header(build_header_line(result_tuple))
 
-            # The header line is first followed by all the lines that contain
-            # the 'suspect' word in all of it case forms. The occurrence of the
-            # word on each line is highlighted as usual.
+            # The header line is first followed by lines that contain the 'suspect'
+            # word in all of it case forms. The number of lines output is limited
+            # to LINES_IN_REPORT_LIMIT, currently set to 4. If there were more lines
+            # to output to the dialog then the lines that are displayed are followed
+            # by a line displaying "...more". The occurrence of the word on each
+            # line is highlighted in the usual way.
             tuples = get_sorted_list_of_linecol_tuples(suspect_word)
+            lines_output_count = 0
             for index_tuple in tuples:
+                # Limit the number of 'suspect' word lines reported.
+                if lines_output_count == LINES_IN_REPORT_LIMIT:
+                    lines_output_count = -1
+                    break
                 error_start, error_end = make_into_strings(
                     index_tuple, len(suspect_word)
                 )
@@ -279,13 +280,20 @@ class LevenshteinChecker:
                     start_rowcol.col,
                     end_rowcol.col,
                 )
+                lines_output_count += 1
+
+            if lines_output_count < 0:
+                checker_dialog.add_footer("  ...more")
 
             # No more lines to output for the suspect word so add a separator.
             checker_dialog.add_header("----")
 
-            # The separator line is then followed by all the lines that contain
-            # the 'good' word that the 'suspect' word was tested against. They
-            # are reported just as for the 'suspect' word above.
+            # The separator line is then followed by lines that contain the 'good'
+            # word in all of it case forms. The number of lines output is limited
+            # to LINES_IN_REPORT_LIMIT, currently set to 4. If there were more lines
+            # to output to the dialog then the lines that are displayed are followed
+            # by a line displaying "...more". The occurrence of the word on each
+            # line is highlighted in the usual way.
             tuples = get_sorted_list_of_linecol_tuples(test_word)
             lines_output_count = 0
             for index_tuple in tuples:
@@ -335,36 +343,80 @@ class LevenshteinChecker:
 
             return error_start, error_end
 
+        def reject_this(word: str) -> bool:
+            """Helper function that extracts repeated code. Decides whether
+            a word should be added to a list ('good' or 'suspects') and thus
+            will be distance checked. Criteria for rejection includes being
+            too short, a Roman numeral, all digits, etc.
+
+            Args:
+                word: should we add this word to a list or not?
+
+            Return:
+                A boolean. True if answer is 'No'; i.e. it won't be distance checked
+            """
+
+            # Reject single-letter 'words' as they generate spurious report lines
+            if len(word) == 1:
+                return True
+            # Reject word if all digits
+            if re.match(r"^\p{N}+$", word):
+                return True
+            # Reject if word contains Greek letters; e.g. 5μ, 3π, etc.
+            if re.search(r"\p{Greek}+", word):
+                return True
+            # Reject word if a valid Roman numeral
+            worduc = word.upper()
+            if re.fullmatch(
+                r"(?=[MDCLXVI])M*(C[MD]|D?C{0,3})(X[CL]|L?X{0,3})(I[XV]|V?I{0,3})",
+                worduc,
+            ):
+                return True
+            # Otherwise word looks OK so keep it so it's added to a list
+            return False
+
         def map_words_in_file(project_dict: ProjectDict) -> None:
             """Spell check the currently loaded file and extract a list of suspect
             words and a list of good words. Build a map of the line position index(es)
-            of each word and a map of the frequency of each word.
+            of each word and a map of the frequency of each word. In addition, build
+            a map of the case variants of a word that uses the lowercase form of the
+            word as key.
+
+            The two lists of words from which word pairs are generated for possible
+            distance checking are unique collections of words all in lowercase. This
+            is crucial to minimise execution time needed to generate the reported
+            results.
+
+            However when we generate the edit distance report we want to display all
+            the case variants of a word (e.g. 'ANOTHER', 'Another', 'another') hence
+            the role of the 'all_words_case_map' created in this function.
 
             Outputs into a nonlocal list or dictionary:
                 List of suspect words - each an apparent spelling error.
-                Counts of those words (as a dictionary).
+                Counts of those words (dictionary).
                 List of good words - each found in an English dictionary.
-                Counts of those words (as a dictionary).
-                Map of the line index(es) of each word and hilite start index on line.
+                Counts of those words (dictionary).
+                Map of the line index(es) of each word and hilite start index on line
+                  (dictionary).
+                Map of the case variants of a word (dictionary).
             """
 
-            # These must already exist (see enclosing function) before they are
-            # used here. They are the lists and dictionaries into which the results
-            # of this function are 'returned'.
+            # The following must already exist (see enclosing function) before they are
+            # used here. They are the lists and dictionaries into which the results of
+            # this function are 'returned'.
             nonlocal good_words
             nonlocal suspect_words
-            nonlocal word_to_lines_map
-            nonlocal all_words_case_map, all_words_counts
+            nonlocal word_to_lines_map, all_words_counts
+            nonlocal all_words_case_map
 
-            # Will check spelling using SpellChecker methods from spell.py
-            spelling = SpellChecker()
+            # Do spelling checks below using SpellChecker methods from spell.py
 
             # The main loop from spell.py with some minor adaptions. It splits each
             # file line into 'words' and calls SpellChecker.spell_check_word() on each.
-            # Depending on the result the word is appended either to 'good_words' list
+            # Depending on the result, the word is appended either to 'good_words' list
             # (they are in the spelling dictionary) or 'suspect_words' list (not in the
             # spelling dictionary). Some variable names changed to avoid pylint flagging
-            # 'duplicate code' with spell.py.
+            # 'duplicate code' with the same block of code in spell.py.
             for line_text, line_number in maintext().get_lines():
                 words = re.split(r"[^\p{Alnum}\p{Mark}'’]", line_text)
                 next_column = 0
@@ -372,10 +424,17 @@ class LevenshteinChecker:
                     column = next_column
                     next_column = column + len(word) + 1
                     if word:
-                        spell_check_result = spelling.spell_check_word(
+                        # Consider whether 'word' should be added to the 'good' or the
+                        # 'suspects' list. It might not be added to either if it is
+                        # too short or a Roman numeral, etc., so is unsuitable to be
+                        # distance checked.
+                        spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[attr-defined]
                             word, project_dict
                         )
                         if spell_check_result == SPELL_CHECK_OK_YES:
+                            # Don't add it to the list if unsuitable for distance checking.
+                            if reject_this(word):
+                                continue
                             good_words.append(word)
                             try:
                                 all_words_counts[word] += 1
@@ -394,10 +453,13 @@ class LevenshteinChecker:
                             "'"
                         ):
                             word = word[1:]
-                            spell_check_result = spelling.spell_check_word(
+                            spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[attr-defined]
                                 word, project_dict
                             )
                             if spell_check_result == SPELL_CHECK_OK_YES:
+                                # Don't add it to the list if unsuitable for distance checking.
+                                if reject_this(word):
+                                    continue
                                 good_words.append(word)
                                 try:
                                     all_words_counts[word] += 1
@@ -418,10 +480,13 @@ class LevenshteinChecker:
                             r"['’]$", word
                         ):
                             word = word[:-1]
-                            spell_check_result = spelling.spell_check_word(
+                            spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[attr-defined]
                                 word, project_dict
                             )
                             if spell_check_result == SPELL_CHECK_OK_YES:
+                                # Don't add it to the list if unsuitable for distance checking
+                                if reject_this(word):
+                                    continue
                                 good_words.append(word)
                                 try:
                                     all_words_counts[word] += 1
@@ -440,6 +505,9 @@ class LevenshteinChecker:
                         # consisting only of single quotes, add it to suspect words
                         # list.
                         if not re.fullmatch(r"['’]*", word):
+                            # Don't add it to the list if unsuitable for distance checking
+                            if reject_this(word):
+                                continue
                             suspect_words.append(word)
                             try:
                                 all_words_counts[word] += 1
@@ -466,17 +534,23 @@ class LevenshteinChecker:
             #    lowercase version of a word that's used as a key will not be in the list
             #    unless it also appears in the text.
 
+            # As stated in the comments above, 'word' may be a string in any case.
             for word in good_words:
+                # The lowercase version of the word is the dictionary key.
                 word_lc = word.lower()
                 if word_lc in all_words_case_map:
-                    # There's a dictionary entry. Is 'word' in the entries list?
+                    # There's a dictionary entry keyed by the lowercase form of the word.
+                    # Is 'word' in the entries list? That is, if key is 'another' it is
+                    # asking here whether, say, 'Another' is in the values list for the
+                    # key.
                     if word not in all_words_case_map[word_lc]:
                         # Then add it to the list
                         all_words_case_map[word_lc].append(word)
                 else:
-                    # Create the dictionary entry.
+                    # Create the dictionary entry which is a list.
                     all_words_case_map[word_lc] = [word]
 
+            # Same comments apply here.
             for word in suspect_words:
                 word_lc = word.lower()
                 if word_lc in all_words_case_map:
@@ -485,7 +559,7 @@ class LevenshteinChecker:
                         # Then add it to the list
                         all_words_case_map[word_lc].append(word)
                 else:
-                    # Create the dictionary entry.
+                    # Create the dictionary entry which is a list.
                     all_words_case_map[word_lc] = [word]
 
         def distance_check_words() -> None:
@@ -551,35 +625,11 @@ class LevenshteinChecker:
                     # 'good_words/test_words' list.
                     if suspect_wordlc == test_wordlc:
                         continue
-                    # Differ only by apparent plural
-                    if (
-                        suspect_wordlc == f"{test_wordlc}s"
-                        or test_wordlc == f"{suspect_wordlc}s"
-                    ):
-                        continue
-                    # If both words are a valid Roman numeral
-                    suspect_worduc = suspect_wordlc.upper()
-                    test_worduc = test_wordlc.upper()
-                    if re.fullmatch(
-                        r"(?=[MDCLXVI])M*(C[MD]|D?C{0,3})(X[CL]|L?X{0,3})(I[XV]|V?I{0,3})",
-                        suspect_worduc,
-                    ) and re.fullmatch(
-                        r"(?=[MDCLXVI])M*(C[MD]|D?C{0,3})(X[CL]|L?X{0,3})(I[XV]|V?I{0,3})",
-                        test_worduc,
-                    ):
-                        continue
-                    # If both words are entirely numerals.
-                    if re.match(
-                        r"^\p{N}+$",
-                        suspect_wordlc,
-                    ) and re.match(
-                        r"^\p{N}+$",
-                        test_wordlc,
-                    ):
-                        continue
 
                     # Calculate Levenshtein distance
-                    dist = distance(suspect_wordlc, test_wordlc, score_cutoff=2)
+                    dist = distance(
+                        suspect_wordlc, test_wordlc, score_cutoff=distance_to_check
+                    )
 
                     if dist == distance_to_check:
                         distance_check_results.append((suspect_wordlc, test_wordlc))
@@ -652,7 +702,7 @@ class LevenshteinChecker:
             checker_dialog.add_entry("No Levenshtein edit distance queries reported")
             checker_dialog.add_entry("")
         else:
-            # Yes.
+            # Yes, so display the results using checker_dialog methods.
             for result_tuple in distance_check_results:
                 unpack_and_write_to_dialog(result_tuple)
 
@@ -669,15 +719,22 @@ def levenshtein_check(project_dict: ProjectDict) -> None:
     """Do Levenshtein edit distance checks"""
 
     global _the_levenshtein_checker
+    global _the_spell_checker
 
     if not tool_save():
         return
 
-    if _the_levenshtein_checker is None:
+    # No point in proceeding further if SpellCheck is unable to find the
+    # required dictionaries.
+    if _the_spell_checker is None:
         try:
-            _the_levenshtein_checker = LevenshteinChecker()
+            _the_spell_checker = SpellChecker()
         except DictionaryNotFoundError as exc:
-            logger.error(f"Dictionary not found: {exc.file}")
+            logger.error(f"Dictionary not found for language: {exc.language}")
             return
+
+    # SpellCheck is all setup so we can proceed with the Levenshtein checks.
+    if _the_levenshtein_checker is None:
+        _the_levenshtein_checker = LevenshteinChecker()
 
     _the_levenshtein_checker.run_levenshtein_check_on_file(project_dict)
