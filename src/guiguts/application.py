@@ -571,7 +571,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button("PP~txt...", lambda: pptxt(self.file.project_dict))
         menu_tools.add_button("~Jeebies...", jeebies_check)
         menu_tools.add_button(
-            "Word Distance Check...", lambda: levenshtein_check(self.file.project_dict)
+            "W~ord Distance Check...", lambda: levenshtein_check(self.file.project_dict)
         )
         menu_tools.add_separator()
         menu_tools.add_button("~Page Separator Fixup...", page_separator_fixup)
