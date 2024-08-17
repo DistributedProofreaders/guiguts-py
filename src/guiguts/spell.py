@@ -312,14 +312,15 @@ class SpellChecker:
             raise DictionaryNotFoundError(lang)
 
 
-def spell_check(
-    project_dict: ProjectDict, add_project_word_callback: Callable[[str], None]
-) -> None:
-    """Spell check the currently loaded file."""
-    global _the_spell_checker
+def get_spell_checker() -> SpellChecker | None:
+    """Avoid duplicate spell checker by returning a SpellChecker object to
+    calling tool/application.
 
-    if not tool_save():
-        return
+    Returns:
+        A SpellChecker object if required dictionary present, otherwise None
+    """
+
+    global _the_spell_checker
 
     # If we already have a spell checker with the wrong languages, delete it
     if (
@@ -332,9 +333,22 @@ def spell_check(
             _the_spell_checker = SpellChecker()
         except DictionaryNotFoundError as exc:
             logger.error(f"Dictionary not found for language: {exc.language}")
-            return
+            return None
+    return _the_spell_checker
 
-    bad_spellings = _the_spell_checker.do_spell_check(project_dict)
+
+def spell_check(
+    project_dict: ProjectDict, add_project_word_callback: Callable[[str], None]
+) -> None:
+    """Spell check the currently loaded file."""
+
+    if not tool_save():
+        return
+
+    checker = get_spell_checker()
+    if checker is None:
+        return
+    bad_spellings = checker.do_spell_check(project_dict)
 
     def process_spelling(checker_entry: CheckerEntry) -> None:
         """Process the spelling error by adding the word to the project dictionary."""

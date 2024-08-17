@@ -47,6 +47,7 @@ class PrefKey(StrEnum):
     ROOT_GEOMETRY_STATE = auto()
     DEFAULT_LANGUAGES = auto()
     JEEBIES_PARANOIA_LEVEL = auto()
+    LEVENSHTEIN_EDIT_DISTANCE = auto()
     WRAP_LEFT_MARGIN = auto()
     WRAP_RIGHT_MARGIN = auto()
     WRAP_BLOCKQUOTE_INDENT = auto()
