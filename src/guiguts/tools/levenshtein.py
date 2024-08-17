@@ -399,6 +399,7 @@ class LevenshteinChecker:
                   (dictionary).
                 Map of the case variants of a word (dictionary).
             """
+            assert _the_spell_checker is not None
 
             # The following must already exist (see enclosing function) before they are
             # used here. They are the lists and dictionaries into which the results of
@@ -427,7 +428,7 @@ class LevenshteinChecker:
                         # 'suspects' list. It might not be added to either if it is
                         # too short or a Roman numeral, etc., so is unsuitable to be
                         # distance checked.
-                        spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[union-attr]
+                        spell_check_result = _the_spell_checker.spell_check_word(
                             word, project_dict
                         )
                         if spell_check_result == SPELL_CHECK_OK_YES:
@@ -452,7 +453,7 @@ class LevenshteinChecker:
                             "'"
                         ):
                             word = word[1:]
-                            spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[union-attr]
+                            spell_check_result = _the_spell_checker.spell_check_word(
                                 word, project_dict
                             )
                             if spell_check_result == SPELL_CHECK_OK_YES:
@@ -479,7 +480,7 @@ class LevenshteinChecker:
                             r"['’]$", word
                         ):
                             word = word[:-1]
-                            spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[union-attr]
+                            spell_check_result = _the_spell_checker.spell_check_word(
                                 word, project_dict
                             )
                             if spell_check_result == SPELL_CHECK_OK_YES:
