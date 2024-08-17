@@ -1,6 +1,5 @@
 """Handle Tk root window"""
 
-
 from enum import StrEnum, auto
 import logging
 import traceback
