@@ -11,7 +11,9 @@ from Levenshtein import distance
 import regex as re
 
 from guiguts.checkers import CheckerDialog
-from guiguts.spell import SpellChecker, DictionaryNotFoundError
+
+# from guiguts.spell import SpellChecker, DictionaryNotFoundError
+from guiguts.spell import get_spell_checker
 from guiguts.data import dictionaries
 from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
@@ -34,7 +36,6 @@ SPELL_CHECK_OK_BAD = 2
 LINES_IN_REPORT_LIMIT = 4
 
 _the_levenshtein_checker = None  # pylint: disable=invalid-name
-_the_spell_checker = None  # pylint: disable=invalid-name
 
 #########################################################
 # levenshtein.py
@@ -74,11 +75,11 @@ class LevenshteinChecker:
         # Each word that is correctly spell-checked is appended to this list,
         # hence can contain many duplicates of a word in all its case forms.
         # E.g. ['another', 'Another', 'another', ...]
-        good_words = []
+        good_words: list[str] = []
         # Each word that fails the spell check is appended to this list, hence
         # can contain many duplicates of a word in all its case forms.
         # E.g. ['anither', 'Anither', 'anither', ...]
-        suspect_words = []
+        suspect_words: list[str] = []
         # Key is a word in whatever case it appears in the text. Maps
         # the frequency with which that word form appears in the text.
         all_words_counts: dict[str, int] = {}
@@ -359,9 +360,6 @@ class LevenshteinChecker:
             # Reject single-letter 'words' as they generate spurious report lines
             if len(word) == 1:
                 return True
-            # Reject word if all digits
-            if re.match(r"^\p{N}+$", word):
-                return True
             # Reject if word contains Greek letters; e.g. 5μ, 3π, etc.
             if re.search(r"\p{Greek}+", word):
                 return True
@@ -372,7 +370,8 @@ class LevenshteinChecker:
                 worduc,
             ):
                 return True
-            # Otherwise word looks OK so keep it so it's added to a list
+            # Otherwise the length/type of the word looks OK. Keep it so that it's
+            # added to one of the two lists.
             return False
 
         def map_words_in_file(project_dict: ProjectDict) -> None:
@@ -428,7 +427,7 @@ class LevenshteinChecker:
                         # 'suspects' list. It might not be added to either if it is
                         # too short or a Roman numeral, etc., so is unsuitable to be
                         # distance checked.
-                        spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[attr-defined]
+                        spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[union-attr]
                             word, project_dict
                         )
                         if spell_check_result == SPELL_CHECK_OK_YES:
@@ -453,7 +452,7 @@ class LevenshteinChecker:
                             "'"
                         ):
                             word = word[1:]
-                            spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[attr-defined]
+                            spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[union-attr]
                                 word, project_dict
                             )
                             if spell_check_result == SPELL_CHECK_OK_YES:
@@ -480,7 +479,7 @@ class LevenshteinChecker:
                             r"['’]$", word
                         ):
                             word = word[:-1]
-                            spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[attr-defined]
+                            spell_check_result = _the_spell_checker.spell_check_word(  # type: ignore[union-attr]
                                 word, project_dict
                             )
                             if spell_check_result == SPELL_CHECK_OK_YES:
@@ -609,7 +608,7 @@ class LevenshteinChecker:
             for suspect_wordlc in suspect_words_unique:
                 # Must be five letters or more OR contain an unexpected character.
                 unexpected = re.sub(r"[a-z0-9’'æœ]", "", suspect_wordlc)
-                if len(suspect_wordlc) < 5 and len(unexpected) == 0:
+                if len(suspect_wordlc) < 3 and len(unexpected) == 0:
                     continue
                 for test_wordlc in good_words_unique:
                     # No point in processing a suspect<->test word pair whose difference in
@@ -640,6 +639,12 @@ class LevenshteinChecker:
 
         # Start time of prgram execution
         prog_start = time.time()
+
+        # Set up SpellChecker here before the tool window is opened in
+        # case it cannot find the required dictionaries.
+        _the_spell_checker = get_spell_checker()
+        if _the_spell_checker is None:
+            return
 
         # Create the checker dialog to show results
         checker_dialog = CheckerDialog.show_dialog(
@@ -719,21 +724,10 @@ def levenshtein_check(project_dict: ProjectDict) -> None:
     """Do Levenshtein edit distance checks"""
 
     global _the_levenshtein_checker
-    global _the_spell_checker
 
     if not tool_save():
         return
 
-    # No point in proceeding further if SpellCheck is unable to find the
-    # required dictionaries.
-    if _the_spell_checker is None:
-        try:
-            _the_spell_checker = SpellChecker()
-        except DictionaryNotFoundError as exc:
-            logger.error(f"Dictionary not found for language: {exc.language}")
-            return
-
-    # SpellCheck is all setup so we can proceed with the Levenshtein checks.
     if _the_levenshtein_checker is None:
         _the_levenshtein_checker = LevenshteinChecker()
 
