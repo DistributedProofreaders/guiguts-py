@@ -304,6 +304,9 @@ class OkApplyCancelDialog(ToplevelDialog):
 class Combobox(ttk.Combobox):
     """A ttk Combobox with some convenience functions.
 
+    Can also set font, which base ttk.Combobox can't.
+    Uses code from https://stackoverflow.com/questions/43086378/how-to-modify-ttk-combobox-fonts
+
     Attributes:
         prefs_key: Key to saved history in prefs.
     """
@@ -312,10 +315,39 @@ class Combobox(ttk.Combobox):
         self, parent: tk.Widget, prefs_key: PrefKey, *args: Any, **kwargs: Any
     ) -> None:
         super().__init__(parent, *args, **kwargs)
+        self._handle_popdown_font()
         self.prefs_key = prefs_key
         self["values"] = preferences.get(self.prefs_key)
         # If user selects value from dropdown, add it to top of history list
         self.bind("<<ComboboxSelected>>", lambda *_: self.add_to_history(self.get()))
+
+    def _handle_popdown_font(self) -> None:
+        """Handle popdown font
+        Note: https://github.com/nomad-software/tcltk/blob/master/dist/library/ttk/combobox.tcl#L270
+        """
+        #   grab (create a new one or get existing) popdown
+        popdown = self.tk.eval(f"ttk::combobox::PopdownWindow {self}")
+        #   configure popdown font
+        self.tk.call(f"{popdown}.f.l", "configure", "-font", self["font"])
+
+    def configure(  # type:ignore[override] # pylint: disable=signature-differs
+        self, cnf: dict[str, Any], **kw: dict[str, Any]
+    ) -> None:
+        """Configure resources of a widget. Overridden!
+
+        The values for resources are specified as keyword
+        arguments. To get an overview about
+        the allowed keyword arguments call the method keys.
+        """
+
+        #   default configure behavior
+        self._configure("configure", cnf, kw)  # type:ignore[attr-defined]
+        #   if font was configured - configure font for popdown as well
+        if "font" in kw or "font" in cnf:
+            self._handle_popdown_font()
+
+    #   keep overridden shortcut
+    config = configure  # type:ignore[assignment]
 
     def add_to_history(self, string: str) -> None:
         """Store given string in history list.

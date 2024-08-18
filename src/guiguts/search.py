@@ -84,7 +84,9 @@ class SearchDialog(ToplevelDialog):
         message_frame.grid(row=3, column=0, columnspan=3, sticky="NSEW")
 
         # Search
-        self.search_box = Combobox(search_frame1, PrefKey.SEARCH_HISTORY, width=30)
+        self.search_box = Combobox(
+            search_frame1, PrefKey.SEARCH_HISTORY, width=30, font=maintext().font
+        )
         self.search_box.grid(row=0, column=0, padx=2, pady=(5, 0), sticky="NSEW")
         # Register search box to have its focus tracked for inserting special characters
         register_focus_widget(self.search_box)
@@ -161,7 +163,9 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=0, column=0, sticky="NSE")
 
         # Replace
-        self.replace_box = Combobox(search_frame1, PrefKey.REPLACE_HISTORY, width=30)
+        self.replace_box = Combobox(
+            search_frame1, PrefKey.REPLACE_HISTORY, width=30, font=maintext().font
+        )
         self.replace_box.grid(row=1, column=0, padx=2, pady=(4, 6), sticky="NSEW")
         # Register replace box to have its focus tracked for inserting special characters
         register_focus_widget(self.replace_box)
