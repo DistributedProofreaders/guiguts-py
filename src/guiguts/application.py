@@ -628,7 +628,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view.add_button("~Hide Image", self.hide_image)
         menu_view.add_button("~Message Log", self.mainwindow.messagelog.show)
         menu_view.add_separator()
-        if not is_mac():  # Full Screen behaves oddly on Macs
+        if not is_mac():    # Full Screen behaves oddly on Macs
             menu_view.add_checkbox(
                 "~Full Screen",
                 lambda: root().wm_attributes("-fullscreen", True),
