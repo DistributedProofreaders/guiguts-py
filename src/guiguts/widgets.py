@@ -633,6 +633,16 @@ def insert_in_focus_widget(string: str) -> None:
     if _text_focus_widget is None or not _text_focus_widget.winfo_exists():
         return
     assert isinstance(_text_focus_widget, (tk.Entry, tk.Text))
+
+    if isinstance(_text_focus_widget, tk.Text):
+        sel_ranges = _text_focus_widget.tag_ranges("sel")
+        if sel_ranges:
+            _text_focus_widget.mark_set(tk.INSERT, sel_ranges[0])
+            _text_focus_widget.delete(sel_ranges[0], sel_ranges[1])
+            _text_focus_widget.tag_remove("sel", "1.0", tk.END)
+    elif isinstance(_text_focus_widget, tk.Entry):
+        if _text_focus_widget.selection_present():
+            _text_focus_widget.delete("sel.first", "sel.last")
     _text_focus_widget.insert(tk.INSERT, string)
 
 
