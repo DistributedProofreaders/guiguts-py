@@ -10,7 +10,7 @@ from types import TracebackType
 from typing import Any
 
 from guiguts.preferences import preferences, PrefKey
-from guiguts.utilities import is_x11, is_mac
+from guiguts.utilities import is_x11
 
 logger = logging.getLogger(__package__)
 
@@ -78,9 +78,6 @@ class Root(tk.Tk):
         By setting flag now, and queuing calls to _save_config,
         we ensure the flag will be true for the first call to
         _save_config when process becomes idle."""
-        # Full Screen behaves oddly on Macs, so if user tries, revert immediately
-        if is_mac() and root().wm_attributes("-fullscreen"):
-            root().wm_attributes("-fullscreen", False)
         self.save_config = True
         self.after_idle(self._save_config)
 
