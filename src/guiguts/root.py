@@ -9,7 +9,7 @@ from types import TracebackType
 from typing import Any
 
 from guiguts.preferences import preferences, PrefKey
-from guiguts.utilities import is_x11, is_mac
+from guiguts.utilities import is_x11
 
 logger = logging.getLogger(__package__)
 
@@ -88,9 +88,6 @@ class Root(tk.Tk):
         do a save, because the flag will only be true on the first call.
 
         Will do nothing until enabled via a call to set_zoom_fullscreen."""
-        # Full Screen behaves oddly on Macs, so if user tries, revert
-        if is_mac() and root().wm_attributes("-fullscreen"):
-            root().wm_attributes("-fullscreen", False)
         if self.allow_config_saves and self.save_config:
             zoomed = (
                 root().wm_attributes("-zoomed")
