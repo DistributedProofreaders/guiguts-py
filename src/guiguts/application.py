@@ -110,6 +110,9 @@ class Guiguts:
         # or focus will not return to maintext on Windows
         root().update_idletasks()
 
+        # After menus, etc., have been created, set the zoomed/fullscreen state
+        root().set_zoom_fullscreen()
+
         self.logging_add_gui()
         logger.info("GUI initialized")
 
@@ -222,6 +225,8 @@ class Guiguts:
                 filetitle = "..." + filetitle[len_title - max_width :]
             filetitle = " - " + filetitle
         root().title(f"Guiguts {version('guiguts')}" + modtitle + filetitle)
+        if is_mac():
+            root().wm_attributes("-modified", maintext().is_modified())
 
     def quit_program(self) -> None:
         """Exit the program."""
@@ -622,6 +627,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view.add_button("~Show Image", self.show_image)
         menu_view.add_button("~Hide Image", self.hide_image)
         menu_view.add_button("~Message Log", self.mainwindow.messagelog.show)
+        menu_view.add_separator()
+        if not is_mac():  # Full Screen behaves oddly on Macs
+            menu_view.add_checkbox(
+                "~Full Screen",
+                lambda: root().wm_attributes("-fullscreen", True),
+                lambda: root().wm_attributes("-fullscreen", False),
+                root().full_screen_var,
+            )
 
     def init_help_menu(self) -> None:
         """Create the Help menu."""

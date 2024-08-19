@@ -1,5 +1,6 @@
 """Handle Tk root window"""
 
+from enum import StrEnum, auto
 import logging
 import traceback
 import tkinter as tk
@@ -7,13 +8,20 @@ import tkinter as tk
 from types import TracebackType
 from typing import Any
 
-from guiguts.maintext import maintext
 from guiguts.preferences import preferences, PrefKey
-from guiguts.widgets import grab_focus
+from guiguts.utilities import is_x11
 
 logger = logging.getLogger(__package__)
 
 _the_root = None  # pylint: disable=invalid-name
+
+
+class RootWindowState(StrEnum):
+    """Enum class to store root window states."""
+
+    NORMAL = auto()
+    ZOOMED = auto()
+    FULLSCREEN = auto()
 
 
 class Root(tk.Tk):
@@ -26,11 +34,16 @@ class Root(tk.Tk):
 
         super().__init__(**kwargs)
         self.geometry(preferences.get(PrefKey.ROOT_GEOMETRY))
-        self.state(preferences.get(PrefKey.ROOT_GEOMETRY_STATE))
+
+        self.full_screen_var = tk.BooleanVar(
+            value=preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
+            == RootWindowState.FULLSCREEN
+        )
+        self.allow_config_saves = False
+
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.after_idle(lambda: grab_focus(self, maintext(), True))
         self.set_tcl_word_characters()
         self.save_config = False
         self.bind("<Configure>", self._handle_config)
@@ -72,15 +85,45 @@ class Root(tk.Tk):
 
         Several calls to this may be queued by config changes during
         root dialog creation and resizing. Only the first will actually
-        do a save, because the flag will only be true on the first call."""
-        if self.save_config:
-            # Bug in maximized geometry leads to size being full screen size,
-            # but top-left is non-maximized top left, i.e. mid-screen.
-            # So, if maximized, don't save geometry, just save "normal/zoomed" state.
-            # Then when de-maximize happens, you have the correct size AND top-left.
-            if self.state() != "zoomed":
+        do a save, because the flag will only be true on the first call.
+
+        Will do nothing until enabled via a call to set_zoom_fullscreen."""
+        if self.allow_config_saves and self.save_config:
+            zoomed = (
+                root().wm_attributes("-zoomed")
+                if is_x11()
+                else (self.state() == "zoomed")
+            )
+            state = RootWindowState.ZOOMED if zoomed else RootWindowState.NORMAL
+            fullscreen = root().wm_attributes("-fullscreen")
+            self.full_screen_var.set(fullscreen)
+            if fullscreen:
+                state = RootWindowState.FULLSCREEN
+            # Only save geometry if "normal". Then de-maximize should restore correct size and top-left.
+            if state == RootWindowState.NORMAL:
                 preferences.set(PrefKey.ROOT_GEOMETRY, self.geometry())
-            preferences.set(PrefKey.ROOT_GEOMETRY_STATE, self.state())
+            preferences.set(PrefKey.ROOT_GEOMETRY_STATE, state)
+
+    def set_zoom_fullscreen(self) -> None:
+        """Set zoomed/fullscreen state appropriately for platform.
+
+        Also enable saving of config after this point, to avoid confusion as the window gets created.
+        """
+        state = preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
+        if state == RootWindowState.ZOOMED:
+            if is_x11():
+                root().wm_attributes("-zoomed", True)
+            else:
+                self.state("zoomed")
+        elif state == RootWindowState.FULLSCREEN:
+            # Fullscreen doesn't work quite right on macOS without withdraw
+            # and deiconify. Doesn't seem to hurt other platforms to do this.
+            # This is also needed to avoid the problem of dialogs on Mac
+            # becoming fullscreen tabs (see widgets.py:ToplevelDialog)
+            self.wm_withdraw()
+            self.wm_attributes("-fullscreen", True)
+            self.wm_deiconify()
+        self.allow_config_saves = True
 
 
 def root() -> Root:
