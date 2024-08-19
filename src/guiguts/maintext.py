@@ -343,7 +343,7 @@ class MainText(tk.Text):
         """Override method to ensure line numbers are updated.
 
         Also preserve pagemark locations within the replacement."""
-        self.replace_preserving_pagemarks(index1, index2, chars, *args)
+        self._replace_preserving_pagemarks(index1, index2, chars, *args)
         self._on_change()
 
     def mark_set(self, markName: str, index: Any) -> None:
@@ -1089,7 +1089,49 @@ class MainText(tk.Text):
         """
         return mark.startswith(PAGEMARK_PREFIX)
 
-    def replace_preserving_pagemarks(
+    def _replace_preserving_pagemarks(
+        self, start_index: Any, end_index: Any, replacement: str, *tags: Any
+    ) -> None:
+        """Replace text indicated by indexes with given string (& optional tags).
+
+        If text being replaced is multiline, and replacement has the same number
+        of lines, replace each line separately to keep page breaks on the same line.
+
+        Args:
+            start_index: Start of text to be replaced.
+            end_index: End of text to be replaced.
+            replacement:  Replacement text.
+            tags: Optional tuple of tags to be applied to inserted text.
+        """
+        start_row = IndexRowCol(start_index).row
+        end_row = IndexRowCol(end_index).row
+        num_newlines_match = end_row - start_row
+        num_newlines_replacement = replacement.count("\n")
+
+        # If match is all on one line, or different number of lines in match/replacement,
+        # do it in one block without splitting into lines
+        if num_newlines_match == 0 or num_newlines_match != num_newlines_replacement:
+            self._replace_preserving_pagemarks_block(
+                start_index, end_index, replacement, tags
+            )
+            return
+
+        # At least one line break in match & replacement - split & do one line at a time
+        # We know that there are the same number of line breaks in match & replacement
+        for chunk_num, replace_line in enumerate(replacement.split("\n")):
+            chunk_start = (
+                start_index if chunk_num == 0 else f"{start_row + chunk_num}.0"
+            )
+            chunk_end = (
+                end_index
+                if chunk_num == num_newlines_replacement
+                else f"{start_row + chunk_num}.end"
+            )
+            self._replace_preserving_pagemarks_block(
+                chunk_start, chunk_end, replace_line, tags
+            )
+
+    def _replace_preserving_pagemarks_block(
         self, start_index: Any, end_index: Any, replacement: str, *tags: Any
     ) -> None:
         """Replace text indicated by indexes with given string (& optional tags).
