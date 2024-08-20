@@ -498,7 +498,6 @@ class PageSeparatorDialog(ToplevelDialog):
             IndexRange(maintext().start(), maintext().end()),
             nocase=False,
             regexp=True,
-            wholeword=False,
             backwards=False,
         )
         if match is None:

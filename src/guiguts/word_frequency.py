@@ -608,28 +608,25 @@ class WordFrequencyDialog(ToplevelDialog):
         ) == WFDisplayType.MARKEDUP and not word.startswith("<"):
             regexp = True
             match_word = r"(^|[^>\w])" + re.escape(newline_word) + r"($|[^<\w])"
-            wholeword = False
         elif (
             preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.CHAR_COUNTS
         ):
             regexp = False
             match_word = newline_word
-            wholeword = False
         elif self.whole_word_search(word):
-            regexp = False
-            match_word = newline_word
-            wholeword = True
+            regexp = True
+            match_word = (
+                rf"\y{re.escape(newline_word)}\y"  # Tcl regex: \y is word boundary
+            )
         else:  # Word begins/ends with non-word char - do manual whole-word
             regexp = True
             match_word = r"(^|\W)" + re.escape(newline_word) + r"($|\W)"
-            wholeword = False
 
         match = maintext().find_match(
             match_word,
             IndexRange(start, maintext().end()),
             nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
             regexp=regexp,
-            wholeword=wholeword,
             backwards=False,
         )
         if match is None:
@@ -953,7 +950,6 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
         IndexRange(maintext().start(), maintext().end()),
         nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
         regexp=True,
-        wholeword=False,
     )
     for match in matches:
         marked_phrase = maintext().get_match_text(match)
@@ -987,7 +983,6 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
                 IndexRange(maintext().start(), maintext().end()),
                 nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
                 regexp=True,
-                wholeword=False,
             )
             unmarked_count[unmarked_phrase] = len(matches)
             if unmarked_count[unmarked_phrase] > 0:

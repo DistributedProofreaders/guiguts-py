@@ -14,8 +14,6 @@ from guiguts.utilities import (
     is_mac,
     IndexRowCol,
     IndexRange,
-    force_tcl_wholeword,
-    convert_to_tcl_regex,
     TextWrapper,
 )
 from guiguts.widgets import (
@@ -208,7 +206,7 @@ class MainText(tk.Text):
         self.bind_event("<KeyRelease>", self._on_change, add=True, force_break=False)
         # Add mouse event here after column selection bindings above
         self.bind_event("<ButtonRelease>", self._on_change, add=True, force_break=False)
-        self.numbers_need_updating = True
+        self.numbers_need_updating = False
 
         def hscroll_set(*args: Any) -> None:
             self.hscroll.set(*args)
@@ -361,8 +359,8 @@ class MainText(tk.Text):
         the first will actually do a redraw, because the flag will
         only be true on the first call."""
         if self.numbers_need_updating:
+            self.numbers_need_updating = False
             self.linenumbers.redraw()
-        self.numbers_need_updating = False
 
     def add_config_callback(self, func: Callable[[], None]) -> None:
         """Add callback function to a list of functions to be called when
@@ -384,9 +382,10 @@ class MainText(tk.Text):
         By setting flag now, and queuing calls to _do_linenumbers_redraw,
         we ensure the flag will be true for the first call to
         _do_linenumbers_redraw."""
-        self.numbers_need_updating = True
-        self.root.after_idle(self._do_linenumbers_redraw)
-        self.root.after_idle(self._call_config_callbacks)
+        if not self.numbers_need_updating:
+            self.root.after_idle(self._do_linenumbers_redraw)
+            self.root.after_idle(self._call_config_callbacks)
+            self.numbers_need_updating = True
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
@@ -1167,10 +1166,9 @@ class MainText(tk.Text):
     def find_match(
         self,
         search_string: str,
-        start_range: IndexRowCol | IndexRange,
+        start_range: IndexRange,
         nocase: bool = False,
         regexp: bool = False,
-        wholeword: bool = False,
         backwards: bool = False,
     ) -> Optional[FindMatch]:
         """Find occurrence of string/regex in given range.
@@ -1179,26 +1177,16 @@ class MainText(tk.Text):
             search_string: String/regex to be searched for.
             start_range: Range in which to search, or just start point to search whole file.
             nocase: True to ignore case.
-            regexp: True if string is a regex; False for exact string match.
-            wholeword: True to only search for whole words (i.e. word boundary at start & end).
+            regexp: True if string is a *Tcl* regex; False for exact string match.
             backwards: True to search backwards through text.
 
         Returns:
             FindMatch containing index of start and count of characters in match.
             None if no match.
         """
-        if isinstance(start_range, IndexRowCol):
-            start_index = start_range.index()
-            stop_index = ""
-        else:
-            assert isinstance(start_range, IndexRange)
-            start_index = start_range.start.index()
-            stop_index = start_range.end.index()
+        start_index = start_range.start.index()
+        stop_index = start_range.end.index()
 
-        if regexp:
-            search_string = convert_to_tcl_regex(search_string)
-        if wholeword:
-            search_string, regexp = force_tcl_wholeword(search_string, regexp)
         count_var = tk.IntVar()
         try:
             match_start = self.search(
@@ -1225,7 +1213,6 @@ class MainText(tk.Text):
         text_range: IndexRange,
         nocase: bool,
         regexp: bool,
-        wholeword: bool,
     ) -> list[FindMatch]:
         """Find all occurrences of string/regex in given range.
 
@@ -1233,8 +1220,7 @@ class MainText(tk.Text):
             search_string: String/regex to be searched for.
             text_range: Range in which to search.
             nocase: True to ignore case.
-            regexp: True if string is a regex; False for exact string match.
-            wholeword: True to only search for whole words (i.e. word boundary at start & end).
+            regexp: True if string is a *Tcl* regex; False for exact string match.
 
         Returns:
             List of FindMatch objects, each containing index of start and count of characters in a match.
@@ -1242,10 +1228,6 @@ class MainText(tk.Text):
         """
         start_index = text_range.start.index()
         stop_index = text_range.end.index()
-        if regexp:
-            search_string = convert_to_tcl_regex(search_string)
-        if wholeword:
-            search_string, regexp = force_tcl_wholeword(search_string, regexp)
 
         matches = []
         count_var = tk.IntVar()
@@ -1288,6 +1270,114 @@ class MainText(tk.Text):
         start_index = match.rowcol.index()
         end_index = maintext().index(start_index + f"+{match.count}c")
         maintext().do_select(IndexRange(start_index, end_index))
+
+    def find_match_user(
+        self,
+        search_string: str,
+        start_point: IndexRowCol,
+        nocase: bool,
+        wholeword: bool,
+        regexp: bool,
+        backwards: bool,
+        wrap: bool,
+    ) -> Optional[FindMatch]:
+        """Find occurrence of string/regex in file by slurping text into string.
+        Called for user searches - regexps are Python flavor.
+
+        Args:
+            search_string: Regex to be searched for.
+            start_point: Start point for search.
+            nocase: True to ignore case.
+            wholeword: True to only search for whole words (i.e. word boundary at start & end).
+            backwards: True to search backwards through text.
+            wrap: True to wrap search round end (or start) of file.
+
+        Returns:
+            FindMatch containing index of start and count of characters in match.
+            None if no match.
+        """
+        # Search first chunk from start point to beg/end of file
+        if backwards:
+            chunk_range = IndexRange(self.start(), start_point)
+        else:
+            chunk_range = IndexRange(start_point, self.end())
+        slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
+        match, _ = self.find_match_in_range(
+            search_string,
+            slurp_text,
+            chunk_range.start,
+            nocase=nocase,
+            regexp=regexp,
+            wholeword=wholeword,
+            backwards=backwards,
+        )
+
+        # If not found, and we're wrapping, search the other half of the file
+        if match is None and wrap:
+            if backwards:
+                chunk_range = IndexRange(start_point, self.end())
+            else:
+                chunk_range = IndexRange(self.start(), start_point)
+            slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
+            match, _ = self.find_match_in_range(
+                search_string,
+                slurp_text,
+                chunk_range.start,
+                nocase=nocase,
+                regexp=regexp,
+                wholeword=wholeword,
+                backwards=backwards,
+            )
+        return match
+
+    def find_match_in_range(
+        self,
+        search_string: str,
+        slurp_text: str,
+        slurp_start: IndexRowCol,
+        nocase: bool,
+        regexp: bool,
+        wholeword: bool,
+        backwards: bool,
+    ) -> tuple[Optional[FindMatch], int]:
+        """Find last occurrence of regex in text range using slurped text, and also
+        where it is in the slurp text.
+
+        Args:
+            search_string: Regex to be searched for.
+            slurp_text: Text from search range slurped from file.
+            slurp_start: Index to start of `slurp_text` in file.
+            nocase: True to ignore case.
+            regexp: True if `search_string` is a regexp.
+            wholeword: True to only search for whole words (i.e. word boundary at start & end).
+            backwards: True to search backwards from the end, i.e. find last occurrence.
+
+        Returns:
+            Tuple: a FindMatch containing index in file of start and count of characters in match,
+            and None if no match; also the index into the slurp text of the match start, which is
+            needed for iterated use with the same slurp text, such as Replace All
+        """
+        if not regexp:
+            search_string = re.escape(search_string)
+        if wholeword:
+            search_string = r"\b" + search_string + r"\b"
+        if backwards:
+            search_string = "(?r)" + search_string
+        if nocase:
+            search_string = "(?i)" + search_string
+        search_string = "(?m)" + search_string
+
+        match = re.search(search_string, slurp_text)
+        if match is None:
+            return None, 0
+
+        line_num = slurp_text.count("\n", 0, match.start())
+        if line_num > 0:
+            match_col = match.start() - slurp_text.rfind("\n", 0, match.start()) - 1
+        else:
+            match_col = match.start() + slurp_start.col
+        line_num += slurp_start.row
+        return FindMatch(IndexRowCol(line_num, match_col), len(match[0])), match.start()
 
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
