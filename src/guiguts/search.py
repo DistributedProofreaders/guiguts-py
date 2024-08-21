@@ -435,6 +435,7 @@ class SearchDialog(ToplevelDialog):
         if search_again:
             find_next(backwards=backwards)
         self.display_message()
+        maintext().clear_selection()
         return "break"
 
     def replaceall_clicked(self) -> None:
@@ -459,6 +460,9 @@ class SearchDialog(ToplevelDialog):
             self.display_message('No text selected for "In selection" replace')
             sound_bell()
             return
+
+        if SearchDialog.selection.get():
+            maintext().selection_ranges_store_with_marks()
 
         slurp_text = maintext().get(
             replace_range.start.index(), replace_range.end.index()
@@ -495,6 +499,12 @@ class SearchDialog(ToplevelDialog):
                     return
             maintext().replace(start_index, end_index, replace_match)
             count += 1
+
+        if SearchDialog.selection.get():
+            maintext().selection_ranges_restore_from_marks()
+        else:
+            maintext().clear_selection()
+
         match_str = sing_plur(count, "match", "matches")
         self.display_message(f"Replaced: {match_str} {range_name}")
 
