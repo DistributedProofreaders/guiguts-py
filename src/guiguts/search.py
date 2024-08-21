@@ -414,9 +414,14 @@ class SearchDialog(ToplevelDialog):
 
         match_text = maintext().get(start_index, end_index)
         if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
-            replace_string = get_regex_replacement(
-                search_string, replace_string, match_text
-            )
+            try:
+                replace_string = get_regex_replacement(
+                    search_string, replace_string, match_text
+                )
+            except re.error as e:
+                self.display_message(f"Regex error: {str(e)}")
+                sound_bell()
+                return "break"
         maintext().undo_block_begin()
         maintext().replace(start_index, end_index, replace_string)
         # "Reverse flag XOR Shift-key" searches backwards
@@ -480,9 +485,14 @@ class SearchDialog(ToplevelDialog):
             end_index = maintext().index(start_index + f"+{match.count}c")
             match_text = maintext().get(start_index, end_index)
             if regexp:
-                replace_match = get_regex_replacement(
-                    search_string, replace_string, match_text
-                )
+                try:
+                    replace_match = get_regex_replacement(
+                        search_string, replace_string, match_text
+                    )
+                except re.error as e:
+                    self.display_message(f"Regex error: {str(e)}")
+                    sound_bell()
+                    return
             maintext().replace(start_index, end_index, replace_match)
             count += 1
         match_str = sing_plur(count, "match", "matches")
@@ -605,6 +615,8 @@ def get_regex_replacement(
     """Find actual replacement string, given the search & replace regexes
     and the matching text.
 
+    Raises re.error exception if regexes are bad
+
     Args:
         search_regex:
         replace_regex:
@@ -613,6 +625,9 @@ def get_regex_replacement(
     Returns:
         Replacement string.
     """
+    temp_bs = "\x9f"
+    # Unused character to temporarily replace backslash in `\C`, `\E`
+
     flags = 0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
 
     # Since below we do a sub on the match text, rather than the whole text, we need
@@ -623,7 +638,24 @@ def get_regex_replacement(
     search_regex = re.sub(r"\(\?=.*?\)$", "", search_regex)
     search_regex = search_regex.removeprefix(r"\b").removesuffix(r"\b")
 
-    return re.sub(search_regex, replace_regex, match_text, flags=flags)
+    # Allow execution of python code
+    replace_regex = replace_regex.replace(r"\C", f"{temp_bs}C")
+    replace_regex = replace_regex.replace(r"\E", f"{temp_bs}E")
+    replace_str = re.sub(search_regex, replace_regex, match_text, flags=flags)
+    if f"{temp_bs}C" in replace_str:
+        while True:
+            c_index = replace_str.find(f"{temp_bs}C")
+            if c_index < 0:
+                break
+            e_index = replace_str.find(f"{temp_bs}E", c_index)
+            if e_index < 0:
+                break
+            python_in = replace_str[c_index + 2 : e_index]
+            python_out = str(eval(python_in))  # pylint:disable=eval-used
+            replace_str = (
+                replace_str[:c_index] + python_out + replace_str[e_index + 2 :]
+            )
+    return replace_str
 
 
 def get_search_range() -> Tuple[Optional[IndexRange], str]:
