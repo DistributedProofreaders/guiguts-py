@@ -1,6 +1,38 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.5
+
+- "Join Footnote to Previous" added to Footnote Fixup
+- Status bar "current character" box now shows the selected character if
+  exactly one character is selected, and nothing if more than one is
+- Windows and Chromebook user installation notes added to README
+- Navigation in Word Frequency dialog improved: Home & End keys go to
+  start/end of list (Cmd Up/Down on Macs), Arrows and Page Up/Down
+  scroll list, and typing a character jumps to the first word that 
+  starts with that character, similar to GG1
+- Levenshtein-based "Word Distance Check" added
+- Search/Replace fields use same font & size as main window
+- View-->Full Screen mode added (except on Macs)
+- More powerful regex search/replace 
+- `\C...\E` allows Python code to be run in regex replace
+- Improved positioning of page breaks during multi-line regex replacements
+
+### Bug Fixes
+
+- Cursor wasn't placed consistently if user pressed left/right arrow while
+  some text was selected. Now cursor goes to left/right of selection
+- Footnote not processed correctly if not at start of line, e.g. after
+  proofer's note
+- Jeebies paranoia level radio buttons unexpectedly re-ran the tool
+- Line number of current line wasn't always highlighted if a search
+  changed line but didn't cause a scroll
+- Compose sequence inserts didn't remove currently selected characters first
+- Search dialog could get popped but without focus in the Search field,
+  making it awkward to copy/paste the search string
+- Lookahead and use of word boundary caused search strings not to be replaced
+
+
 ## Version 2.0.0-alpha.4
 
 - Command line argument `--nohome` added which does not load the prefs file.
