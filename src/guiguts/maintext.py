@@ -1382,7 +1382,7 @@ class MainText(tk.Text):
         wholeword: bool,
         backwards: bool,
     ) -> tuple[Optional[FindMatch], int]:
-        """Find last occurrence of regex in text range using slurped text, and also
+        """Find occurrence of regex in text range using slurped text, and also
         where it is in the slurp text.
 
         Args:

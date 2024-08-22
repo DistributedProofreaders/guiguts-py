@@ -302,23 +302,28 @@ class SearchDialog(ToplevelDialog):
         nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
 
         slurp_text = maintext().get(find_range.start.index(), find_range.end.index())
-        slice_end = len(slurp_text)
+        slice_start = 0
+        slurp_start = IndexRowCol(find_range.start.row, find_range.start.col)
 
-        # Work backwards as it's easier to adjust slice end than start
         matches: list[FindMatch] = []
         while True:
-            match, slice_end = maintext().find_match_in_range(
+            match, match_start = maintext().find_match_in_range(
                 search_string,
-                slurp_text[:slice_end],
-                find_range.start,
+                slurp_text[slice_start:],
+                slurp_start,
                 nocase=nocase,
                 regexp=regexp,
                 wholeword=wholeword,
-                backwards=True,
+                backwards=False,
             )
             if match is None:
                 break
             matches.append(match)
+            # Adjust start of slice of slurped text, and where that point is in the file
+            slice_start += match_start + match.count
+            slurp_start = IndexRowCol(
+                maintext().index(f"{match.rowcol.index()}+{match.count}c")
+            )
 
         count = len(matches)
         match_str = sing_plur(count, "match", "matches")
