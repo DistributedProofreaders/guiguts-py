@@ -278,25 +278,12 @@ class SearchDialog(ToplevelDialog):
         )
         return "break"
 
-    def count_clicked(self) -> Optional[list[FindMatch]]:
-        """Count how many times search string occurs in file (or selection).
-
-        Display count in Search dialog.
+    def _find_all(self, find_range: IndexRange, search_string: str) -> list[FindMatch]:
+        """Find all matches in given range.
 
         Returns:
-            List of FindMatch objects (None if error).
+            List of FindMatch objects.
         """
-        search_string = self.search_box.get()
-        if not search_string:
-            return None
-        self.search_box.add_to_history(search_string)
-
-        find_range, range_name = get_search_range()
-        if find_range is None:
-            self.display_message('No text selected for "In selection" find')
-            sound_bell()
-            return None
-
         regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
         wholeword = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
         nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
@@ -324,7 +311,28 @@ class SearchDialog(ToplevelDialog):
             slurp_start = IndexRowCol(
                 maintext().index(f"{match.rowcol.index()}+{match.count}c")
             )
+        return matches
 
+    def count_clicked(self) -> Optional[list[FindMatch]]:
+        """Count how many times search string occurs in file (or selection).
+
+        Display count in Search dialog.
+
+        Returns:
+            List of FindMatch objects (None if error).
+        """
+        search_string = self.search_box.get()
+        if not search_string:
+            return None
+        self.search_box.add_to_history(search_string)
+
+        find_range, range_name = get_search_range()
+        if find_range is None:
+            self.display_message('No text selected for "In selection" find')
+            sound_bell()
+            return None
+
+        matches = self._find_all(find_range, search_string)
         count = len(matches)
         match_str = sing_plur(count, "match", "matches")
         self.display_message(f"Found: {match_str} {range_name}")
@@ -456,11 +464,6 @@ class SearchDialog(ToplevelDialog):
         self.replace_box.add_to_history(replace_string)
 
         replace_range, range_name = get_search_range()
-
-        regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
-        wholeword = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
-        nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
-
         if replace_range is None:
             self.display_message('No text selected for "In selection" replace')
             sound_bell()
@@ -468,28 +471,15 @@ class SearchDialog(ToplevelDialog):
 
         if SearchDialog.selection.get():
             maintext().selection_ranges_store_with_marks()
-
-        slurp_text = maintext().get(
-            replace_range.start.index(), replace_range.end.index()
-        )
-        slice_end = len(slurp_text)
-        replace_match = replace_string
-        count = 0
         maintext().undo_block_begin()
 
+        regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
+        replace_match = replace_string
+
+        matches = self._find_all(replace_range, search_string)
+
         # Work backwards so replacements don't affect future match locations
-        while True:
-            match, slice_end = maintext().find_match_in_range(
-                search_string,
-                slurp_text[:slice_end],
-                replace_range.start,
-                nocase=nocase,
-                regexp=regexp,
-                wholeword=wholeword,
-                backwards=True,
-            )
-            if match is None:
-                break
+        for match in reversed(matches):
             start_index = match.rowcol.index()
             end_index = maintext().index(start_index + f"+{match.count}c")
             match_text = maintext().get(start_index, end_index)
@@ -503,14 +493,13 @@ class SearchDialog(ToplevelDialog):
                     sound_bell()
                     return
             maintext().replace(start_index, end_index, replace_match)
-            count += 1
 
         if SearchDialog.selection.get():
             maintext().selection_ranges_restore_from_marks()
         else:
             maintext().clear_selection()
 
-        match_str = sing_plur(count, "match", "matches")
+        match_str = sing_plur(len(matches), "match", "matches")
         self.display_message(f"Replaced: {match_str} {range_name}")
 
     def display_message(self, message: str = "") -> None:
