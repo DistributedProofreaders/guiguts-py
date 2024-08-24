@@ -57,7 +57,10 @@ class ToplevelDialog(tk.Toplevel):
         self.top_frame.grid(row=0, column=0, sticky="NSEW")
 
         self._do_config()
+        # Used to ensure geometry is only saved once (after process becomes idle)
         self.save_config = False
+        # Used to disable geometry saving during dialog creation
+        self.enable_geometry_saving = True
         self.bind("<Configure>", self._handle_config)
 
         self.wm_withdraw()
@@ -249,7 +252,7 @@ class ToplevelDialog(tk.Toplevel):
         Several calls to this may be queued by config changes during
         dialog creation and resizing. Only the first will actually
         do a save, because the flag will only be true on the first call."""
-        if self.save_config:
+        if self.save_config and self.enable_geometry_saving:
             config_dict = preferences.get(PrefKey.DIALOG_GEOMETRY)
             key = self.__class__.__name__
             config_dict[key] = self.geometry()

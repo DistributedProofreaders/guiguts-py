@@ -57,9 +57,10 @@ class SearchDialog(ToplevelDialog):
         except AttributeError:
             SearchDialog.selection = tk.BooleanVar(value=False)
 
-        # kwargs["resize_y"] = False
+        self.enable_geometry_saving = False
+        kwargs["resize_y"] = False
         super().__init__("Search & Replace", *args, **kwargs)
-        # self.minsize(400, 100)
+        self.minsize(400, 100)
 
         # Frames
         self.top_frame.columnconfigure(0, weight=1)
@@ -217,6 +218,7 @@ class SearchDialog(ToplevelDialog):
 
         # Now dialog geometry is set up, set width to user pref, leaving height as it is
         self.config_width()
+        self.enable_geometry_saving = True
 
     def search_box_set(self, search_string: str) -> None:
         """Set string in search box.
