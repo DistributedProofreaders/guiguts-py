@@ -1350,6 +1350,7 @@ class MainText(tk.Text):
             chunk_range = IndexRange(start_point, self.end())
             backrefs = False
         slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
+
         # Searching backwards with backrefs/lookarounds doesn't behave as required, so
         # call special routine to use forward searching to search backward
         if backrefs:
@@ -1464,7 +1465,11 @@ class MainText(tk.Text):
             and None if no match; also the index into the slurp text of the match start, which is
             needed for iterated use with the same slurp text, such as Replace All
         """
-        if not regexp:
+        if regexp:
+            # Since "^" matches start of string (when not escaped with "\"), and we want it
+            # to match start of line, replace it with lookbehind for newline.
+            search_string = re.sub(r"(?<![\[\\])\^", r"(?<=\\n)", search_string)
+        else:
             search_string = re.escape(search_string)
         if wholeword:
             search_string = r"\b" + search_string + r"\b"
@@ -1472,7 +1477,7 @@ class MainText(tk.Text):
             search_string = "(?r)" + search_string
         if nocase:
             search_string = "(?i)" + search_string
-        search_string = "(?m)" + search_string
+        # search_string = "(?m)" + search_string
 
         match = re.search(search_string, slurp_text)
         if match is None:
