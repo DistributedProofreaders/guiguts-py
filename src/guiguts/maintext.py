@@ -1465,10 +1465,17 @@ class MainText(tk.Text):
             and None if no match; also the index into the slurp text of the match start, which is
             needed for iterated use with the same slurp text, such as Replace All
         """
+        slurp_newline_adjustment = 0
         if regexp:
             # Since "^" matches start of string (when not escaped with "\"), and we want it
             # to match start of line, replace it with lookbehind for newline.
-            search_string = re.sub(r"(?<![\[\\])\^", r"(?<=\\n)", search_string)
+            if re.search(r"(?<![\[\\])\^", search_string):
+                search_string = re.sub(r"(?<![\[\\])\^", r"(?<=\\n)", search_string)
+                # Need to make sure there is a newline before start of string
+                # if string starts at the beginning of a line
+                if slurp_start.col == 0:
+                    slurp_text = "\n" + slurp_text
+                    slurp_newline_adjustment = 1
         else:
             search_string = re.escape(search_string)
         if wholeword:
@@ -1477,7 +1484,6 @@ class MainText(tk.Text):
             search_string = "(?r)" + search_string
         if nocase:
             search_string = "(?i)" + search_string
-        # search_string = "(?m)" + search_string
 
         match = re.search(search_string, slurp_text)
         if match is None:
@@ -1488,8 +1494,11 @@ class MainText(tk.Text):
             match_col = match.start() - slurp_text.rfind("\n", 0, match.start()) - 1
         else:
             match_col = match.start() + slurp_start.col
-        line_num += slurp_start.row
-        return FindMatch(IndexRowCol(line_num, match_col), len(match[0])), match.start()
+        line_num += slurp_start.row - slurp_newline_adjustment
+        return (
+            FindMatch(IndexRowCol(line_num, match_col), len(match[0])),
+            match.start() - slurp_newline_adjustment,
+        )
 
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
