@@ -1103,8 +1103,8 @@ class MainText(tk.Text):
             replacement:  Replacement text.
             tags: Optional tuple of tags to be applied to inserted text.
         """
-        start_row = IndexRowCol(start_index).row
-        end_row = IndexRowCol(end_index).row
+        start_row = IndexRowCol(self.index(start_index)).row
+        end_row = IndexRowCol(self.index(end_index)).row
         num_newlines_match = end_row - start_row
         num_newlines_replacement = replacement.count("\n")
 
