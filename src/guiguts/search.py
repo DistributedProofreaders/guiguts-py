@@ -14,8 +14,6 @@ from guiguts.utilities import (
     sound_bell,
     IndexRowCol,
     IndexRange,
-    process_accel,
-    is_mac,
     sing_plur,
 )
 from guiguts.widgets import (
@@ -198,22 +196,6 @@ class SearchDialog(ToplevelDialog):
         # Message (e.g. count)
         self.message = ttk.Label(message_frame)
         self.message.grid(row=0, column=0, sticky="NSW")
-
-        # Bindings for when focus is in Search dialog
-        if is_mac():
-            _, event = process_accel("Cmd+G")
-            self.bind(event, lambda *args: find_next())
-            _, event = process_accel("Cmd+g")
-            self.bind(event, lambda *args: find_next())
-            _, event = process_accel("Cmd+Shift+G")
-            self.bind(event, lambda *args: find_next(backwards=True))
-            _, event = process_accel("Cmd+Shift+g")
-            self.bind(event, lambda *args: find_next(backwards=True))
-        else:
-            _, event = process_accel("F3")
-            self.bind(event, lambda *args: find_next())
-            _, event = process_accel("Shift+F3")
-            self.bind(event, lambda *args: find_next(backwards=True))
 
         # Now dialog geometry is set up, set width to user pref, leaving height as it is
         self.config_width()
