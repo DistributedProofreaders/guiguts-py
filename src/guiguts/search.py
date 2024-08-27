@@ -57,9 +57,10 @@ class SearchDialog(ToplevelDialog):
         except AttributeError:
             SearchDialog.selection = tk.BooleanVar(value=False)
 
-        # kwargs["resize_y"] = False
+        if not is_mac():
+            kwargs["resize_y"] = False
         super().__init__("Search & Replace", *args, **kwargs)
-        # self.minsize(400, 100)
+        self.minsize(400, 100)
 
         # Frames
         self.top_frame.columnconfigure(0, weight=1)
