@@ -704,10 +704,11 @@ class UnicodeBlockDialog(ToplevelDialog):
                 self.chars_frame,
                 text=char,
                 command=lambda: insert_in_focus_widget(char),
-                width=1,
+                width=2,
                 style="unicodedialog.TButton",
             )
-            btn.grid(column=count % 16, row=int(count / 16), sticky="NW")
+            pady = 5 if is_mac() else 0
+            btn.grid(column=count % 16, row=int(count / 16), sticky="NW", ipady=pady)
             self.button_list.append(btn)
 
         block_name = preferences.get(PrefKey.UNICODE_BLOCK)
@@ -726,7 +727,7 @@ class UnicodeBlockDialog(ToplevelDialog):
             try:
                 ToolTip(btn, f"U+{ord(char):04x}: {unicodedata.name(char)}")
             except ValueError:
-                pass
+                ToolTip(btn, f"U+{ord(char):04x}")
 
 
 # Somewhat arbitrarily, certain Unicode blocks are not displayed, trying to
