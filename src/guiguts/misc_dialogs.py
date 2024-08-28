@@ -681,7 +681,7 @@ class UnicodeBlockDialog(ToplevelDialog):
         self.top_frame.rowconfigure(1, weight=1)
         self.chars_frame = ttk.Frame(self.top_frame, padding=10)
         self.chars_frame.grid(column=0, row=1, sticky="NSEW")
-        self.button_list: list[ttk.Button] = []
+        self.button_list: list[ttk.Label] = []
         style = ttk.Style()
         style.configure("unicodedialog.TButton", font=maintext().font)
         self.block_selected()
@@ -700,14 +700,18 @@ class UnicodeBlockDialog(ToplevelDialog):
                 count: Count of buttons added, used to determine row/column.
                 char: Character to use as label for button.
             """
-            btn = ttk.Button(
+            btn = ttk.Label(
                 self.chars_frame,
                 text=char,
-                command=lambda: insert_in_focus_widget(char),
+                # command=lambda: insert_in_focus_widget(char),
                 width=2,
+                borderwidth=2,
+                relief=tk.RAISED,
+                justify=tk.CENTER,
                 style="unicodedialog.TButton",
             )
-            pady = 5 if is_mac() else 0
+            btn.bind("<ButtonRelease-1>", lambda _e: insert_in_focus_widget(char))
+            pady = 0  # 5 if is_mac() else 0
             btn.grid(column=count % 16, row=int(count / 16), sticky="NW", ipady=pady)
             self.button_list.append(btn)
 
