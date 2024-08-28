@@ -706,13 +706,31 @@ class UnicodeBlockDialog(ToplevelDialog):
                 # command=lambda: insert_in_focus_widget(char),
                 width=2,
                 borderwidth=2,
-                relief=tk.RAISED,
-                justify=tk.CENTER,
+                relief=tk.FLAT,
+                anchor=tk.CENTER,
                 style="unicodedialog.TButton",
             )
-            btn.bind("<ButtonRelease-1>", lambda _e: insert_in_focus_widget(char))
-            pady = 0  # 5 if is_mac() else 0
-            btn.grid(column=count % 16, row=int(count / 16), sticky="NW", ipady=pady)
+
+            def press(event: tk.Event) -> None:
+                event.widget["relief"] = tk.SUNKEN
+
+            def release(event: tk.Event, char: str) -> None:
+                event.widget["relief"] = tk.RAISED
+                insert_in_focus_widget(char)
+
+            def enter(event: tk.Event) -> None:
+                event.widget["relief"] = tk.RAISED
+
+            def leave(event: tk.Event) -> None:
+                relief = str(event.widget["relief"])
+                if relief == tk.RAISED:
+                    event.widget["relief"] = tk.FLAT
+
+            btn.bind("<ButtonPress-1>", press)
+            btn.bind("<ButtonRelease-1>", lambda e: release(e, char))
+            btn.bind("<Enter>", enter)
+            btn.bind("<Leave>", leave)
+            btn.grid(column=count % 16, row=int(count / 16), sticky="NSEW")
             self.button_list.append(btn)
 
         block_name = preferences.get(PrefKey.UNICODE_BLOCK)
@@ -723,9 +741,7 @@ class UnicodeBlockDialog(ToplevelDialog):
             block_range = _unicode_blocks[block_name]
             for count, c_ord in enumerate(range(block_range[0], block_range[1] + 1)):
                 add_button(count, chr(c_ord))
-        # Add tooltips after creating all buttons: that way buttons appear and there's a
-        # pause before the dialog is ready. If tooltips are added in the above loop
-        # the buttons appear with a pause between each one.
+        # Add tooltips
         for btn in self.button_list:
             char = btn["text"]
             try:
