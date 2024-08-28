@@ -683,7 +683,7 @@ class UnicodeBlockDialog(ToplevelDialog):
         self.chars_frame.grid(column=0, row=1, sticky="NSEW")
         self.button_list: list[ttk.Label] = []
         style = ttk.Style()
-        style.configure("unicodedialog.TButton", font=maintext().font)
+        style.configure("unicodedialog.TLabel", font=maintext().font)
         self.block_selected()
 
     def block_selected(self) -> None:
@@ -708,7 +708,7 @@ class UnicodeBlockDialog(ToplevelDialog):
                 borderwidth=2,
                 relief=tk.FLAT,
                 anchor=tk.CENTER,
-                style="unicodedialog.TButton",
+                style="unicodedialog.TLabel",
             )
 
             def press(event: tk.Event) -> None:
