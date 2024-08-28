@@ -2,6 +2,7 @@
 
 import tkinter as tk
 from tkinter import ttk, font
+from typing import Any
 import unicodedata
 
 import regex as re
@@ -14,7 +15,7 @@ from guiguts.preferences import (
     PersistentString,
     preferences,
 )
-from guiguts.utilities import is_mac
+from guiguts.utilities import is_mac, is_windows, is_x11
 from guiguts.widgets import (
     ToplevelDialog,
     ToolTip,
@@ -655,6 +656,66 @@ class ComposeHelpDialog(ToplevelDialog):
         insert_in_focus_widget(char)
 
 
+class ScrollableFrame(ttk.Frame):
+    """A scrollable ttk.Frame."""
+
+    def __init__(self, container: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        """Initialize ScrollableFrame."""
+        super().__init__(container, *args, **kwargs)
+        self.canvas = tk.Canvas(self, highlightthickness=0)
+        v_scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        h_scrollbar = ttk.Scrollbar(
+            self, orient="horizontal", command=self.canvas.xview
+        )
+        self.scrollable_frame = ttk.Frame(self.canvas)
+        bg = str(ttk.Style().lookup(self["style"], "background"))
+        self.canvas["background"] = bg
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
+        )
+        self.scrollable_frame.bind("<Enter>", self.on_enter)
+        self.scrollable_frame.bind("<Leave>", self.on_leave)
+
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=v_scrollbar.set)
+        self.canvas.configure(xscrollcommand=h_scrollbar.set)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.canvas.grid(column=0, row=0, sticky="NSEW")
+        v_scrollbar.grid(column=1, row=0, sticky="NSEW")
+        h_scrollbar.grid(column=0, row=1, sticky="NSEW")
+
+    def on_mouse_wheel(self, event: tk.Event) -> None:
+        """Cross platform scroll wheel event."""
+        if is_windows():
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        elif is_mac():
+            self.canvas.yview_scroll(int(-1 * event.delta), "units")
+        else:
+            if event.num == 4:
+                self.canvas.yview_scroll(-1, "units")
+            elif event.num == 5:
+                self.canvas.yview_scroll(1, "units")
+
+    def on_enter(self, _event: tk.Event) -> None:
+        """Bind wheel events when the cursor enters the control."""
+        if is_x11():
+            self.canvas.bind_all("<Button-4>", self.on_mouse_wheel)
+            self.canvas.bind_all("<Button-5>", self.on_mouse_wheel)
+        else:
+            self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
+
+    def on_leave(self, _event: tk.Event) -> None:
+        """unbind wheel events when the cursorl leaves the control."""
+        if is_x11():
+            self.canvas.unbind_all("<Button-4>")
+            self.canvas.unbind_all("<Button-5>")
+        else:
+            self.canvas.unbind_all("<MouseWheel>")
+
+
 class UnicodeBlockDialog(ToplevelDialog):
     """A dialog that displays a block of Unicode characters, and allows
     the user to click on them to insert them into text window."""
@@ -664,7 +725,7 @@ class UnicodeBlockDialog(ToplevelDialog):
     def __init__(self) -> None:
         """Initialize Unicode Block dialog."""
 
-        super().__init__("Unicode Block", resize_x=False, resize_y=False)
+        super().__init__("Unicode Block")  # , resize_x=False, resize_y=False)
 
         cb = ttk.Combobox(
             self.top_frame,
@@ -679,8 +740,9 @@ class UnicodeBlockDialog(ToplevelDialog):
         cb.bind("<<ComboboxSelected>>", lambda _e: self.block_selected())
         self.top_frame.rowconfigure(0, weight=0)
         self.top_frame.rowconfigure(1, weight=1)
-        self.chars_frame = ttk.Frame(self.top_frame, padding=10)
+        self.chars_frame = ScrollableFrame(self.top_frame, padding=10)
         self.chars_frame.grid(column=0, row=1, sticky="NSEW")
+
         self.button_list: list[ttk.Label] = []
         style = ttk.Style()
         style.configure("unicodedialog.TLabel", font=maintext().font)
@@ -701,7 +763,7 @@ class UnicodeBlockDialog(ToplevelDialog):
                 char: Character to use as label for button.
             """
             btn = ttk.Label(
-                self.chars_frame,
+                self.chars_frame.scrollable_frame,
                 text=char,
                 # command=lambda: insert_in_focus_widget(char),
                 width=2,
