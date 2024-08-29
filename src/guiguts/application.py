@@ -35,6 +35,7 @@ from guiguts.misc_dialogs import (
     PreferencesDialog,
     ComposeSequenceDialog,
     ComposeHelpDialog,
+    UnicodeBlockDialog,
 )
 from guiguts.misc_tools import (
     basic_fixup_check,
@@ -374,6 +375,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         preferences.set_default(PrefKey.SPELL_THRESHOLD, 3)
         preferences.set_default(PrefKey.UNMATCHED_NESTABLE, False)
+        preferences.set_default(
+            PrefKey.UNICODE_BLOCK, UnicodeBlockDialog.commonly_used_characters_name
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -605,6 +609,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             lambda: fraction_convert(FractionConvertType.SUPSUB),
         )
         unicode_menu = Menu(menu_tools, "~Unicode")
+        unicode_menu.add_button("Unicode ~Blocks", UnicodeBlockDialog.show_dialog)
         unicode_menu.add_button(
             "~Normalize Selected Characters",
             unicode_normalize,

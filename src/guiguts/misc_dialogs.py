@@ -2,10 +2,12 @@
 
 import tkinter as tk
 from tkinter import ttk, font
+from typing import Any
 import unicodedata
 
 import regex as re
 
+from guiguts.maintext import maintext
 from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
@@ -13,7 +15,7 @@ from guiguts.preferences import (
     PersistentString,
     preferences,
 )
-from guiguts.utilities import is_mac
+from guiguts.utilities import is_mac, is_windows, is_x11
 from guiguts.widgets import (
     ToplevelDialog,
     ToolTip,
@@ -279,9 +281,6 @@ class ComposeSequenceDialog(OkApplyCancelDialog):
             elif match := re.fullmatch(r"#(\d{2,})", sequence):
                 # Or specify in decimal following '#' character
                 char = chr(int(match[1]))
-        # Unprintable characters shouldn't be inserted
-        if not char or not char.isprintable():
-            return
         insert_in_focus_widget(char)
         self.entry.add_to_history(self.string.get())
         if not force:
@@ -655,3 +654,404 @@ class ComposeHelpDialog(ToplevelDialog):
         except KeyError:
             return
         insert_in_focus_widget(char)
+
+
+class ScrollableFrame(ttk.Frame):
+    """A scrollable ttk.Frame."""
+
+    def __init__(self, container: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        """Initialize ScrollableFrame."""
+        super().__init__(container, *args, **kwargs)
+        self.canvas = tk.Canvas(self, highlightthickness=0)
+        v_scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        h_scrollbar = ttk.Scrollbar(
+            self, orient="horizontal", command=self.canvas.xview
+        )
+        self.scrollable_frame = ttk.Frame(self.canvas)
+        bg = str(ttk.Style().lookup(self["style"], "background"))
+        self.canvas["background"] = bg
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
+        )
+        self.scrollable_frame.bind("<Enter>", self.on_enter)
+        self.scrollable_frame.bind("<Leave>", self.on_leave)
+
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=v_scrollbar.set)
+        self.canvas.configure(xscrollcommand=h_scrollbar.set)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.canvas.grid(column=0, row=0, sticky="NSEW")
+        v_scrollbar.grid(column=1, row=0, sticky="NSEW")
+        h_scrollbar.grid(column=0, row=1, sticky="NSEW")
+
+    def on_mouse_wheel(self, event: tk.Event) -> None:
+        """Cross platform scroll wheel event."""
+        if is_windows():
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        elif is_mac():
+            self.canvas.yview_scroll(int(-1 * event.delta), "units")
+        else:
+            if event.num == 4:
+                self.canvas.yview_scroll(-1, "units")
+            elif event.num == 5:
+                self.canvas.yview_scroll(1, "units")
+
+    def on_enter(self, _event: tk.Event) -> None:
+        """Bind wheel events when the cursor enters the control."""
+        if is_x11():
+            self.canvas.bind_all("<Button-4>", self.on_mouse_wheel)
+            self.canvas.bind_all("<Button-5>", self.on_mouse_wheel)
+        else:
+            self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
+
+    def on_leave(self, _event: tk.Event) -> None:
+        """Unbind wheel events when the cursorl leaves the control."""
+        if is_x11():
+            self.canvas.unbind_all("<Button-4>")
+            self.canvas.unbind_all("<Button-5>")
+        else:
+            self.canvas.unbind_all("<MouseWheel>")
+
+    def reset_scroll(self) -> None:
+        """Scroll canvas to top left position."""
+        self.canvas.xview_moveto(0.0)
+        self.canvas.yview_moveto(0.0)
+
+
+class UnicodeBlockDialog(ToplevelDialog):
+    """A dialog that displays a block of Unicode characters, and allows
+    the user to click on them to insert them into text window."""
+
+    commonly_used_characters_name = "Commonly Used Characters"
+
+    def __init__(self) -> None:
+        """Initialize Unicode Block dialog."""
+
+        super().__init__("Unicode Block")
+
+        cb = ttk.Combobox(
+            self.top_frame,
+            textvariable=PersistentString(PrefKey.UNICODE_BLOCK),
+            width=50,
+        )
+        cb.grid(column=0, row=0, sticky="NSW", padx=5, pady=(5, 0))
+        block_list = []
+        for name, (beg, end) in _unicode_blocks.items():
+            block_list.append(f"{name}   ({beg:04X}–{end:04X})")
+        block_list.insert(0, UnicodeBlockDialog.commonly_used_characters_name)
+        cb["values"] = block_list
+        cb["state"] = "readonly"
+        cb.bind("<<ComboboxSelected>>", lambda _e: self.block_selected())
+        self.top_frame.rowconfigure(0, weight=0)
+        self.top_frame.rowconfigure(1, weight=1)
+        self.chars_frame = ScrollableFrame(self.top_frame)
+        self.chars_frame.grid(column=0, row=1, sticky="NSEW", padx=5, pady=5)
+
+        self.button_list: list[ttk.Label] = []
+        style = ttk.Style()
+        style.configure("unicodedialog.TLabel", font=maintext().font)
+        self.block_selected()
+
+    def block_selected(self) -> None:
+        """Called when a Unicode block is selected."""
+        for btn in self.button_list:
+            if btn.winfo_exists():
+                btn.destroy()
+        self.button_list.clear()
+        self.chars_frame.reset_scroll()
+
+        def add_button(count: int, char: str) -> None:
+            """Add a button to the Unicode block dialog.
+
+            Args:
+                count: Count of buttons added, used to determine row/column.
+                char: Character to use as label for button.
+            """
+            btn = ttk.Label(
+                self.chars_frame.scrollable_frame,
+                text=char,
+                # command=lambda: insert_in_focus_widget(char),
+                width=2,
+                borderwidth=2,
+                relief=tk.SOLID,
+                anchor=tk.CENTER,
+                style="unicodedialog.TLabel",
+            )
+
+            def press(event: tk.Event) -> None:
+                event.widget["relief"] = tk.SUNKEN
+
+            def release(event: tk.Event, char: str) -> None:
+                event.widget["relief"] = tk.RAISED
+                insert_in_focus_widget(char)
+
+            def enter(event: tk.Event) -> None:
+                event.widget["relief"] = tk.RAISED
+
+            def leave(event: tk.Event) -> None:
+                relief = str(event.widget["relief"])
+                if relief == tk.RAISED:
+                    event.widget["relief"] = tk.SOLID
+
+            btn.bind("<ButtonPress-1>", press)
+            btn.bind("<ButtonRelease-1>", lambda e: release(e, char))
+            btn.bind("<Enter>", enter)
+            btn.bind("<Leave>", leave)
+            btn.grid(column=count % 16, row=int(count / 16), sticky="NSEW")
+            self.button_list.append(btn)
+
+        block_name = re.sub(r" *\(.*", "", preferences.get(PrefKey.UNICODE_BLOCK))
+        if block_name == UnicodeBlockDialog.commonly_used_characters_name:
+            for count, char in enumerate(_common_characters):
+                add_button(count, char)
+        else:
+            block_range = _unicode_blocks[block_name]
+            for count, c_ord in enumerate(range(block_range[0], block_range[1] + 1)):
+                add_button(count, chr(c_ord))
+        # Add tooltips
+        for btn in self.button_list:
+            char = str(btn["text"])
+            try:
+                desc = ": " + unicodedata.name(char)
+            except ValueError:
+                desc = ""
+            ToolTip(btn, f"U+{ord(char):04x}{desc}")
+
+
+# Somewhat arbitrarily, certain Unicode blocks are not displayed, trying to
+# balance usefulness with excessive number of blocks to choose from.
+# Currently this list matches the blocks shown in GG1.
+_unicode_blocks: dict[str, tuple[int, int]] = {
+    "Alphabetic Presentation Forms": (0xFB00, 0xFB4F),
+    # Really FDFF but there are illegal characters in fdc0-fdff
+    "Arabic Presentation Forms-A": (0xFB50, 0xFDCF),
+    "Arabic Presentation Forms-B": (0xFE70, 0xFEFF),
+    "Arabic": (0x0600, 0x06FF),
+    "Armenian": (0x0530, 0x058F),
+    "Arrows": (0x2190, 0x21FF),
+    "Bengali": (0x0980, 0x09FF),
+    "Block Elements": (0x2580, 0x259F),
+    # 'Bopomofo Extended' : (0x31A0, 0x31BF),
+    # 'Bopomofo' : (0x3100, 0x312F),
+    "Box Drawing": (0x2500, 0x257F),
+    "Braille Patterns": (0x2800, 0x28FF),
+    "Buhid": (0x1740, 0x175F),
+    "Cherokee": (0x13A0, 0x13FF),
+    # 'CJK Compatibility Forms' : (0xFE30, 0xFE4F),
+    # 'CJK Compatibility Ideographs' : (0xF900, 0xFAFF),
+    # 'CJK Compatibility' : (0x3300, 0x33FF),
+    # 'CJK Radicals Supplement' : (0x2E80, 0x2EFF),
+    # 'CJK Symbols and Punctuation' : (0x3000, 0x303F),
+    # 'CJK Unified Ideographs Extension A' : (0x3400, 0x4DBF),
+    # 'CJK Unified Ideographs' : (0x4E00, 0x9FFF),
+    "Combining Diacritical Marks for Symbols": (0x20D0, 0x20FF),
+    "Combining Diacritical Marks": (0x0300, 0x036F),
+    "Combining Half Marks": (0xFE20, 0xFE2F),
+    "Control Pictures": (0x2400, 0x243F),
+    "Currency Symbols": (0x20A0, 0x20CF),
+    "Cyrillic Supplementary": (0x0500, 0x052F),
+    "Cyrillic": (0x0400, 0x04FF),
+    "Devanagari": (0x0900, 0x097F),
+    "Dingbats": (0x2700, 0x27BF),
+    "Enclosed Alphanumerics": (0x2460, 0x24FF),
+    # 'Enclosed CJK Letters and Months' : (0x3200, 0x32FF),
+    "Ethiopic": (0x1200, 0x137F),
+    "General Punctuation": (0x2000, 0x206F),
+    "Geometric Shapes": (0x25A0, 0x25FF),
+    "Georgian": (0x10A0, 0x10FF),
+    "Greek and Coptic": (0x0370, 0x03FF),
+    "Greek Extended": (0x1F00, 0x1FFF),
+    "Gujarati": (0x0A80, 0x0AFF),
+    "Gurmukhi": (0x0A00, 0x0A7F),
+    "Halfwidth and Fullwidth Forms": (0xFF00, 0xFFEF),
+    # 'Hangul Compatibility Jamo' : (0x3130, 0x318F),
+    # 'Hangul Jamo' : (0x1100, 0x11FF),
+    # 'Hangul Syllables' : (0xAC00, 0xD7AF),
+    # 'Hanunoo' : (0x1720, 0x173F),
+    "Hebrew": (0x0590, 0x05FF),
+    # 'High Private Use Surrogates' : (0xDB80, 0xDBFF),
+    # 'High Surrogates' : (0xD800, 0xDB7F),
+    # 'Hiragana' : (0x3040, 0x309F),
+    # 'Ideographic Description Characters' : (0x2FF0, 0x2FFF),
+    # 'Kanbun' : (0x3190, 0x319F),
+    # 'Kangxi Radicals' : (0x2F00, 0x2FDF),
+    "Kannada": (0x0C80, 0x0CFF),
+    # 'Katakana Phonetic Extensions' : (0x31F0, 0x31FF),
+    # 'Katakana' : (0x30A0, 0x30FF),
+    # 'Khmer Symbols' : (0x19E0, 0x19FF),
+    # 'Khmer' : (0x1780, 0x17FF),
+    "Lao": (0x0E80, 0x0EFF),
+    "Latin Extended Additional": (0x1E00, 0x1EFF),
+    "Latin Extended-A": (0x0100, 0x017F),
+    "Latin Extended-B": (0x0180, 0x024F),
+    "Latin IPA Extensions": (0x0250, 0x02AF),
+    "Latin-1 Supplement": (0x00A0, 0x00FF),
+    "Letterlike Symbols": (0x2100, 0x214F),
+    # 'Limbu' : (0x1900, 0x194F),
+    # 'Low Surrogates' : (0xDC00, 0xDFFF),
+    "Malayalam": (0x0D00, 0x0D7F),
+    "Mathematical Operators": (0x2200, 0x22FF),
+    "Miscellaneous Mathematical Symbols-A": (0x27C0, 0x27EF),
+    "Miscellaneous Mathematical Symbols-B": (0x2980, 0x29FF),
+    "Miscellaneous Symbols and Arrows": (0x2B00, 0x2BFF),
+    "Miscellaneous Symbols": (0x2600, 0x26FF),
+    "Miscellaneous Technical": (0x2300, 0x23FF),
+    "Mongolian": (0x1800, 0x18AF),
+    "Myanmar": (0x1000, 0x109F),
+    "Number Forms": (0x2150, 0x218F),
+    "Ogham": (0x1680, 0x169F),
+    "Optical Character Recognition": (0x2440, 0x245F),
+    "Oriya": (0x0B00, 0x0B7F),
+    "Phonetic Extensions": (0x1D00, 0x1D7F),
+    "Runic": (0x16A0, 0x16FF),
+    "Sinhala": (0x0D80, 0x0DFF),
+    "Small Form Variants": (0xFE50, 0xFE6F),
+    "Spacing Modifier Letters": (0x02B0, 0x02FF),
+    "Superscripts and Subscripts": (0x2070, 0x209F),
+    "Supplemental Arrows-A": (0x27F0, 0x27FF),
+    "Supplemental Arrows-B": (0x2900, 0x297F),
+    "Supplemental Mathematical Operators": (0x2A00, 0x2AFF),
+    "Syriac": (0x0700, 0x074F),
+    "Tagalog": (0x1700, 0x171F),
+    # 'Tagbanwa' : (0x1760, 0x177F),
+    # 'Tai Le' : (0x1950, 0x197F),
+    "Tamil": (0x0B80, 0x0BFF),
+    "Telugu": (0x0C00, 0x0C7F),
+    "Thaana": (0x0780, 0x07BF),
+    "Thai": (0x0E00, 0x0E7F),
+    # 'Tibetan' : (0x0F00, 0x0FFF),
+    "Unified Canadian Aboriginal Syllabics": (0x1400, 0x167F),
+    "Variation Selectors": (0xFE00, 0xFE0F),
+    # 'Yi Radicals' : (0xA490, 0xA4CF),
+    # 'Yi Syllables' : (0xA000, 0xA48F),
+    # 'Yijing Hexagram Symbols' : (0x4DC0, 0x4DFF),
+}
+
+
+_common_characters: list[str] = [
+    "À",
+    "Á",
+    "Â",
+    "Ã",
+    "Ä",
+    "Å",
+    "Æ",
+    "Ç",
+    "È",
+    "É",
+    "Ê",
+    "Ë",
+    "Ì",
+    "Í",
+    "Î",
+    "Ï",
+    "Ò",
+    "Ó",
+    "Ô",
+    "Õ",
+    "Ö",
+    "Ø",
+    "Œ",
+    "Ñ",
+    "Ù",
+    "Ú",
+    "Û",
+    "Ü",
+    "Ð",
+    "þ",
+    "Ÿ",
+    "Ý",
+    "à",
+    "á",
+    "â",
+    "ã",
+    "ä",
+    "å",
+    "æ",
+    "ç",
+    "è",
+    "é",
+    "ê",
+    "ë",
+    "ì",
+    "í",
+    "î",
+    "ï",
+    "ò",
+    "ó",
+    "ô",
+    "õ",
+    "ö",
+    "ø",
+    "œ",
+    "ñ",
+    "ù",
+    "ú",
+    "û",
+    "ü",
+    "ð",
+    "Þ",
+    "ÿ",
+    "ý",
+    "¡",
+    "¿",
+    "«",
+    "»",
+    "‘",
+    "’",
+    "“",
+    "”",
+    "‚",
+    "‛",
+    "„",
+    "‟",
+    "ß",
+    "⁂",
+    "☞",
+    "☜",
+    "±",
+    "·",
+    "×",
+    "÷",
+    "°",
+    "′",
+    "″",
+    "‴",
+    "‰",
+    "¹",
+    "²",
+    "³",
+    "£",
+    "¢",
+    "©",
+    "\xa0",
+    "½",
+    "⅓",
+    "⅔",
+    "¼",
+    "¾",
+    "⅕",
+    "⅖",
+    "⅗",
+    "⅘",
+    "⅙",
+    "⅚",
+    "⅐",
+    "⅛",
+    "⅜",
+    "⅝",
+    "⅞",
+    "—",
+    "–",
+    "†",
+    "‡",
+    "§",
+    "‖",
+    "¶",
+    "¦",
+    "º",
+    "ª",
+]
