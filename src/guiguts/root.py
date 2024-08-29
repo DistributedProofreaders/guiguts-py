@@ -24,6 +24,13 @@ class RootWindowState(StrEnum):
     FULLSCREEN = auto()
 
 
+class ImageWindowState(StrEnum):
+    """Enum class to store image window states."""
+
+    DOCKED = auto()
+    FLOATED = auto()
+
+
 class Root(tk.Tk):
     """Inherits from Tk root window"""
 
@@ -38,6 +45,9 @@ class Root(tk.Tk):
         self.full_screen_var = tk.BooleanVar(
             value=preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
             == RootWindowState.FULLSCREEN
+        )
+        self.image_window_state = tk.BooleanVar(
+            value=preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED
         )
         self.allow_config_saves = False
 
