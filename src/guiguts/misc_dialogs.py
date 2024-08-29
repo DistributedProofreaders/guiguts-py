@@ -279,8 +279,8 @@ class ComposeSequenceDialog(OkApplyCancelDialog):
             elif match := re.fullmatch(r"#(\d{2,})", sequence):
                 # Or specify in decimal following '#' character
                 char = chr(int(match[1]))
-        # Unprintable characters shouldn't be inserted
-        if not char or not char.isprintable():
+        # Don't insert anything if no match
+        if not char:
             return
         insert_in_focus_widget(char)
         self.entry.add_to_history(self.string.get())
