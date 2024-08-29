@@ -708,12 +708,17 @@ class ScrollableFrame(ttk.Frame):
             self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
 
     def on_leave(self, _event: tk.Event) -> None:
-        """unbind wheel events when the cursorl leaves the control."""
+        """Unbind wheel events when the cursorl leaves the control."""
         if is_x11():
             self.canvas.unbind_all("<Button-4>")
             self.canvas.unbind_all("<Button-5>")
         else:
             self.canvas.unbind_all("<MouseWheel>")
+
+    def reset_scroll(self) -> None:
+        """Scroll canvas to top left position."""
+        self.canvas.xview_moveto(0.0)
+        self.canvas.yview_moveto(0.0)
 
 
 class UnicodeBlockDialog(ToplevelDialog):
@@ -725,23 +730,25 @@ class UnicodeBlockDialog(ToplevelDialog):
     def __init__(self) -> None:
         """Initialize Unicode Block dialog."""
 
-        super().__init__("Unicode Block")  # , resize_x=False, resize_y=False)
+        super().__init__("Unicode Block")
 
         cb = ttk.Combobox(
             self.top_frame,
             textvariable=PersistentString(PrefKey.UNICODE_BLOCK),
-            width=30,
+            width=50,
         )
-        cb.grid(column=0, row=0, sticky="NSEW")
-        block_list = list(_unicode_blocks)
+        cb.grid(column=0, row=0, sticky="NSW", padx=5, pady=(5, 0))
+        block_list = []
+        for name, (beg, end) in _unicode_blocks.items():
+            block_list.append(f"{name}   ({beg:04X}–{end:04X})")
         block_list.insert(0, UnicodeBlockDialog.commonly_used_characters_name)
         cb["values"] = block_list
         cb["state"] = "readonly"
         cb.bind("<<ComboboxSelected>>", lambda _e: self.block_selected())
         self.top_frame.rowconfigure(0, weight=0)
         self.top_frame.rowconfigure(1, weight=1)
-        self.chars_frame = ScrollableFrame(self.top_frame, padding=10)
-        self.chars_frame.grid(column=0, row=1, sticky="NSEW")
+        self.chars_frame = ScrollableFrame(self.top_frame)
+        self.chars_frame.grid(column=0, row=1, sticky="NSEW", padx=5, pady=5)
 
         self.button_list: list[ttk.Label] = []
         style = ttk.Style()
@@ -754,6 +761,7 @@ class UnicodeBlockDialog(ToplevelDialog):
             if btn.winfo_exists():
                 btn.destroy()
         self.button_list.clear()
+        self.chars_frame.reset_scroll()
 
         def add_button(count: int, char: str) -> None:
             """Add a button to the Unicode block dialog.
@@ -768,7 +776,7 @@ class UnicodeBlockDialog(ToplevelDialog):
                 # command=lambda: insert_in_focus_widget(char),
                 width=2,
                 borderwidth=2,
-                relief=tk.FLAT,
+                relief=tk.SOLID,
                 anchor=tk.CENTER,
                 style="unicodedialog.TLabel",
             )
@@ -786,7 +794,7 @@ class UnicodeBlockDialog(ToplevelDialog):
             def leave(event: tk.Event) -> None:
                 relief = str(event.widget["relief"])
                 if relief == tk.RAISED:
-                    event.widget["relief"] = tk.FLAT
+                    event.widget["relief"] = tk.SOLID
 
             btn.bind("<ButtonPress-1>", press)
             btn.bind("<ButtonRelease-1>", lambda e: release(e, char))
@@ -795,7 +803,7 @@ class UnicodeBlockDialog(ToplevelDialog):
             btn.grid(column=count % 16, row=int(count / 16), sticky="NSEW")
             self.button_list.append(btn)
 
-        block_name = preferences.get(PrefKey.UNICODE_BLOCK)
+        block_name = re.sub(r" *\(.*", "", preferences.get(PrefKey.UNICODE_BLOCK))
         if block_name == UnicodeBlockDialog.commonly_used_characters_name:
             for count, char in enumerate(_common_characters):
                 add_button(count, char)
@@ -805,11 +813,12 @@ class UnicodeBlockDialog(ToplevelDialog):
                 add_button(count, chr(c_ord))
         # Add tooltips
         for btn in self.button_list:
-            char = btn["text"]
+            char = str(btn["text"])
             try:
-                ToolTip(btn, f"U+{ord(char):04x}: {unicodedata.name(char)}")
+                desc = ": " + unicodedata.name(char)
             except ValueError:
-                ToolTip(btn, f"U+{ord(char):04x}")
+                desc = ""
+            ToolTip(btn, f"U+{ord(char):04x}{desc}")
 
 
 # Somewhat arbitrarily, certain Unicode blocks are not displayed, trying to
