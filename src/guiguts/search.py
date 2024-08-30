@@ -78,8 +78,32 @@ class SearchDialog(ToplevelDialog):
         message_frame.grid(row=3, column=0, columnspan=3, sticky="NSEW")
 
         # Search
+        style = ttk.Style()
+        style.configure("BadRegex.TCombobox", foreground="red")
+
+        def is_valid_regex(new_value: str) -> bool:
+            """Validation routine for Search Combobox - check value is a valid regex.
+
+            Note that it always returns True because we want user to be able to type
+            the character. It just alerts the user by switching to the BadRegex style.
+            """
+            if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
+                try:
+                    re.compile(new_value)
+                    self.search_box["style"] = ""
+                except re.error:
+                    self.search_box["style"] = "BadRegex.TCombobox"
+            else:
+                self.search_box["style"] = ""
+            return True
+
         self.search_box = Combobox(
-            search_frame1, PrefKey.SEARCH_HISTORY, width=30, font=maintext().font
+            search_frame1,
+            PrefKey.SEARCH_HISTORY,
+            width=30,
+            font=maintext().font,
+            validate="all",
+            validatecommand=(self.register(is_valid_regex), "%P"),
         )
         self.search_box.grid(row=0, column=0, padx=2, pady=(5, 0), sticky="NSEW")
         # Register search box to have its focus tracked for inserting special characters
@@ -148,6 +172,7 @@ class SearchDialog(ToplevelDialog):
             text="Regex",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX),
             takefocus=False,
+            command=lambda: is_valid_regex(self.search_box.get()),
         ).grid(row=1, column=2, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             selection_frame,
@@ -231,8 +256,8 @@ class SearchDialog(ToplevelDialog):
             _do_find_next(
                 search_string, backwards, IndexRange(start_rowcol, stop_rowcol)
             )
-        except TclRegexCompileError as exc:
-            message = str(exc)
+        except re.error as e:
+            message = message_from_regex_exception(e)
         self.display_message(message)
         return "break"
 
@@ -310,7 +335,11 @@ class SearchDialog(ToplevelDialog):
             sound_bell()
             return None
 
-        matches = self._find_all(find_range, search_string)
+        try:
+            matches = self._find_all(find_range, search_string)
+        except re.error as e:
+            self.display_message(message_from_regex_exception(e))
+            return None
         count = len(matches)
         match_str = sing_plur(count, "match", "matches")
         self.display_message(f"Found: {match_str} {range_name}")
@@ -454,7 +483,11 @@ class SearchDialog(ToplevelDialog):
         regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
         replace_match = replace_string
 
-        matches = self._find_all(replace_range, search_string)
+        try:
+            matches = self._find_all(replace_range, search_string)
+        except re.error as e:
+            self.display_message(message_from_regex_exception(e))
+            return
 
         # Work backwards so replacements don't affect future match locations
         for match in reversed(matches):
@@ -665,3 +698,14 @@ def get_search_range() -> Tuple[Optional[IndexRange], str]:
             range_name = "from current location to end of file"
             replace_range = IndexRange(maintext().get_insert_index(), maintext().end())
     return replace_range, range_name
+
+
+def message_from_regex_exception(exc: re.error) -> str:
+    """Create error message from regex exception.
+
+    Args:
+        exc - The regex exception to describe.
+    """
+    message = str(exc)
+    message = message[0].upper() + message[1:]
+    return message + " in regex " + exc.pattern  # type:ignore[attr-defined]

@@ -1480,12 +1480,16 @@ class MainText(tk.Text):
             search_string = re.escape(search_string)
         if wholeword:
             search_string = r"\b" + search_string + r"\b"
+        # Preferable to use flags rather than prepending "(?i)", for example,
+        # because if we need to report bad regex to user, it's better if it's
+        # the regex they typed.
+        flags = 0
         if backwards:
-            search_string = "(?r)" + search_string
+            flags |= re.REVERSE
         if nocase:
-            search_string = "(?i)" + search_string
+            flags |= re.IGNORECASE
 
-        match = re.search(search_string, slurp_text)
+        match = re.search(search_string, slurp_text, flags=flags)
         if match is None:
             return None, 0
 
