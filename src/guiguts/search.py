@@ -10,12 +10,7 @@ import regex as re
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError, FindMatch
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey
-from guiguts.utilities import (
-    sound_bell,
-    IndexRowCol,
-    IndexRange,
-    sing_plur,
-)
+from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, sing_plur, is_mac
 from guiguts.widgets import (
     ToplevelDialog,
     Combobox,
