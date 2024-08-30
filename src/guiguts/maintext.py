@@ -1326,6 +1326,9 @@ class MainText(tk.Text):
         """Find occurrence of string/regex in file by slurping text into string.
         Called for user searches - regexps are Python flavor.
 
+        If searching backwards with backref/lookaround, avoid regex bug by actually
+        searching forward in range and getting last match.
+
         Args:
             search_string: Regex to be searched for.
             start_point: Start point for search.
@@ -1341,26 +1344,24 @@ class MainText(tk.Text):
         # Search first chunk from start point to beg/end of file
         if backwards:
             chunk_range = IndexRange(self.start(), start_point)
+            # Doesn't matter if this ends up True, when not strictly necessary, e.g. `\\1`
+            backrefs = bool(re.search(r"(\\\d|\(\?[<=!])", search_string))
         else:
             chunk_range = IndexRange(start_point, self.end())
+            backrefs = False
         slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
-        match, _ = self.find_match_in_range(
-            search_string,
-            slurp_text,
-            chunk_range.start,
-            nocase=nocase,
-            regexp=regexp,
-            wholeword=wholeword,
-            backwards=backwards,
-        )
 
-        # If not found, and we're wrapping, search the other half of the file
-        if match is None and wrap:
-            if backwards:
-                chunk_range = IndexRange(start_point, self.end())
-            else:
-                chunk_range = IndexRange(self.start(), start_point)
-            slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
+        # Searching backwards with backrefs/lookarounds doesn't behave as required, so
+        # call special routine to use forward searching to search backward
+        if backrefs:
+            match = self._find_last_match_in_range(
+                search_string,
+                slurp_text,
+                chunk_range.start,
+                nocase,
+                wholeword,
+            )
+        else:
             match, _ = self.find_match_in_range(
                 search_string,
                 slurp_text,
@@ -1370,7 +1371,72 @@ class MainText(tk.Text):
                 wholeword=wholeword,
                 backwards=backwards,
             )
+
+        # If not found, and we're wrapping, search the other half of the file
+        if match is None and wrap:
+            if backwards:
+                chunk_range = IndexRange(start_point, self.end())
+            else:
+                chunk_range = IndexRange(self.start(), start_point)
+            slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
+            # Special backref search again
+            if backrefs:
+                match = self._find_last_match_in_range(
+                    search_string,
+                    slurp_text,
+                    chunk_range.start,
+                    nocase,
+                    wholeword,
+                )
+            else:
+                match, _ = self.find_match_in_range(
+                    search_string,
+                    slurp_text,
+                    chunk_range.start,
+                    nocase=nocase,
+                    regexp=regexp,
+                    wholeword=wholeword,
+                    backwards=backwards,
+                )
         return match
+
+    def _find_last_match_in_range(
+        self,
+        search_string: str,
+        slurp_text: str,
+        slurp_start: IndexRowCol,
+        nocase: bool,
+        wholeword: bool,
+    ) -> Optional[FindMatch]:
+        """Find last match in given range.
+
+        This is used instead of searching backwards if regex contains backreference,
+        lookbehind or lookahead, since these don't work backwards without adjustment.
+
+        Returns:
+            Last match in range (or None).
+        """
+        slice_start = 0
+        last_match = None
+        while True:
+            match, match_start = self.find_match_in_range(
+                search_string,
+                slurp_text[slice_start:],
+                slurp_start,
+                nocase=nocase,
+                regexp=True,
+                wholeword=wholeword,
+                backwards=False,
+            )
+            if match is None:
+                break
+            last_match = match
+            # Adjust start of slice of slurped text, and where that point is in the file
+            slice_start += match_start + match.count
+            slurp_start = IndexRowCol(
+                self.index(f"{match.rowcol.index()}+{match.count}c")
+            )
+        return last_match
 
     def find_match_in_range(
         self,
@@ -1382,7 +1448,7 @@ class MainText(tk.Text):
         wholeword: bool,
         backwards: bool,
     ) -> tuple[Optional[FindMatch], int]:
-        """Find last occurrence of regex in text range using slurped text, and also
+        """Find occurrence of regex in text range using slurped text, and also
         where it is in the slurp text.
 
         Args:
@@ -1399,7 +1465,18 @@ class MainText(tk.Text):
             and None if no match; also the index into the slurp text of the match start, which is
             needed for iterated use with the same slurp text, such as Replace All
         """
-        if not regexp:
+        slurp_newline_adjustment = 0
+        if regexp:
+            # Since "^" matches start of string (when not escaped with "\"), and we want it
+            # to match start of line, replace it with lookbehind for newline.
+            if re.search(r"(?<![\[\\])\^", search_string):
+                search_string = re.sub(r"(?<![\[\\])\^", r"(?<=\\n)", search_string)
+                # Need to make sure there is a newline before start of string
+                # if string starts at the beginning of a line
+                if slurp_start.col == 0:
+                    slurp_text = "\n" + slurp_text
+                    slurp_newline_adjustment = 1
+        else:
             search_string = re.escape(search_string)
         if wholeword:
             search_string = r"\b" + search_string + r"\b"
@@ -1407,7 +1484,6 @@ class MainText(tk.Text):
             search_string = "(?r)" + search_string
         if nocase:
             search_string = "(?i)" + search_string
-        search_string = "(?m)" + search_string
 
         match = re.search(search_string, slurp_text)
         if match is None:
@@ -1418,8 +1494,11 @@ class MainText(tk.Text):
             match_col = match.start() - slurp_text.rfind("\n", 0, match.start()) - 1
         else:
             match_col = match.start() + slurp_start.col
-        line_num += slurp_start.row
-        return FindMatch(IndexRowCol(line_num, match_col), len(match[0])), match.start()
+        line_num += slurp_start.row - slurp_newline_adjustment
+        return (
+            FindMatch(IndexRowCol(line_num, match_col), len(match[0])),
+            match.start() - slurp_newline_adjustment,
+        )
 
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
