@@ -1480,12 +1480,16 @@ class MainText(tk.Text):
             search_string = re.escape(search_string)
         if wholeword:
             search_string = r"\b" + search_string + r"\b"
+        # Preferable to use flags rather than prepending "(?i)", for example,
+        # because if we need to report bad regex to user, it's better if it's
+        # the regex they typed.
+        flags = 0
         if backwards:
-            search_string = "(?r)" + search_string
+            flags |= re.REVERSE
         if nocase:
-            search_string = "(?i)" + search_string
+            flags |= re.IGNORECASE
 
-        match = re.search(search_string, slurp_text)
+        match = re.search(search_string, slurp_text, flags=flags)
         if match is None:
             return None, 0
 
@@ -2103,6 +2107,13 @@ class MainText(tk.Text):
         if mark == "":
             return ""
         return img_from_page_mark(mark)
+
+    def is_dark_theme(self) -> bool:
+        """Returns True if theme is dark, which is assumed to be the case if
+        the brightness of the text color is greater than half strength (mid-gray)."""
+        text_color = maintext().cget("foreground")
+        rgb_sum = sum(self.winfo_rgb(text_color))  # 0-65535 for each component
+        return rgb_sum > 12767 * 3
 
 
 def img_from_page_mark(mark: str) -> str:
