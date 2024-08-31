@@ -405,14 +405,14 @@ class CheckerDialog(ToplevelDialog):
         Use this for content; use add_header & add_footer for headers & footers.
 
         Args:
-            msg: Entry to be displayed - only first non-empty line will be displayed.
+            msg: Entry to be displayed - newline characters are replaced with "⏎".
             text_range: Optional start & end of point of interest in main text widget.
             hilite_start: Optional column to begin higlighting entry in dialog.
             hilite_end: Optional column to end higlighting entry in dialog.
             entry_type: Defaults to content
             error_prefix: Optional string prefix to indicate error
         """
-        line = re.sub(r"\n*([^\n]*)\n?.*", r"\1", msg)
+        line = re.sub("\n", "⏎", msg)
         entry = CheckerEntry(
             line,
             text_range,
