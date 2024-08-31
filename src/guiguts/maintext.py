@@ -2108,6 +2108,13 @@ class MainText(tk.Text):
             return ""
         return img_from_page_mark(mark)
 
+    def is_dark_theme(self) -> bool:
+        """Returns True if theme is dark, which is assumed to be the case if
+        the brightness of the text color is greater than half strength (mid-gray)."""
+        text_color = maintext().cget("foreground")
+        rgb_sum = sum(self.winfo_rgb(text_color))  # 0-65535 for each component
+        return rgb_sum > 12767 * 3
+
 
 def img_from_page_mark(mark: str) -> str:
     """Get base image name from page mark, e.g. "Pg027" gives "027".
