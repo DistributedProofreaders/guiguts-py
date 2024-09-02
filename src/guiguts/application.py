@@ -224,7 +224,8 @@ class Guiguts:
             max_width = int(maintext().winfo_width() / maintext().font.measure("0"))
             if len_title > max_width:
                 filetitle = "..." + filetitle[len_title - max_width :]
-            filetitle = " - " + filetitle
+            if filetitle:
+                filetitle = " - " + filetitle
         root().title(f"Guiguts {version('guiguts')}" + modtitle + filetitle)
         if is_mac():
             root().wm_attributes("-modified", maintext().is_modified())
