@@ -79,7 +79,7 @@ class SearchDialog(ToplevelDialog):
 
         # Search
         style = ttk.Style()
-        new_col = "#ff4040" if maintext().is_dark_theme() else "#b00000"
+        new_col = "#ff8080" if maintext().is_dark_theme() else "#e60000"
         style.configure("BadRegex.TCombobox", foreground=new_col)
 
         def is_valid_regex(new_value: str) -> bool:
