@@ -1,6 +1,28 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.6
+
+- Unicode & Commonly Used Characters dialog added
+- Find All results improved for multiline matches
+- Bad regexes in S/R dialog turn red as user types them
+
+### Bug Fixes
+
+- `Ctrl-left-click` in Basic Fixup caused an error
+- S/R dialog kept resetting to a narrow width on Macs
+- Searching for the next match in S/R didn't highlight correctly
+- S/R regex count with backreferences didn't count correctly
+- Replace All didn't work for all regexes
+- Searching backwards for regex with backreference didn't work
+- `^` didn't match beginning of all lines correctly
+- Find Next/Previous key bindings (`F3`/`Cmd+g`) were executed twice
+- Trying to use a bad regex caused an error - error now reported correctly
+- Dock/Undock Image Window caused an error
+- Compose sequence failed to insert some characters, e.g. non-breaking space
+- Trailing hyphen appeared in title bar when there was no filename
+
+
 ## Version 2.0.0-alpha.5
 
 - "Join Footnote to Previous" added to Footnote Fixup
