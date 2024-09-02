@@ -51,7 +51,7 @@ from guiguts.misc_tools import (
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
-from guiguts.root import root
+from guiguts.root import root, ImageWindowState
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
@@ -310,7 +310,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(PrefKey.AUTO_IMAGE, self.auto_image_callback)
         preferences.set_default(PrefKey.BELL_AUDIBLE, True)
         preferences.set_default(PrefKey.BELL_VISUAL, True)
-        preferences.set_default(PrefKey.IMAGE_WINDOW, "Docked")
+        preferences.set_default(PrefKey.IMAGE_WINDOW, ImageWindowState.DOCKED)
         preferences.set_default(PrefKey.RECENT_FILES, [])
         preferences.set_default(PrefKey.LINE_NUMBERS, True)
         preferences.set_default(PrefKey.ORDINAL_NAMES, True)
@@ -627,7 +627,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "~Dock Image",
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
-            preferences.get(PrefKey.IMAGE_WINDOW) == "Docked",
+            root().image_window_state,
         )
         menu_view.add_button("~Show Image", self.show_image)
         menu_view.add_button("~Hide Image", self.hide_image)
