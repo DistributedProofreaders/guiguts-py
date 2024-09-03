@@ -1466,6 +1466,10 @@ class MainText(tk.Text):
             needed for iterated use with the same slurp text, such as Replace All
         """
         slurp_newline_adjustment = 0
+        # Special handling for ^/$: we can't just use `(?m)` or `re.MULTILINE` in order to
+        # make these match start/end of line, because that flag also permit matchings
+        # at start/end of *string* for ^/$, not just after/before newlines.
+        # That would give a false match if search is in a range with part lines at start/end.
         if regexp:
             # Since "^" matches start of string (when not escaped with "\"), and we want it
             # to match start of line, replace it with lookbehind for newline.
@@ -1476,6 +1480,23 @@ class MainText(tk.Text):
                 if slurp_start.col == 0:
                     slurp_text = "\n" + slurp_text
                     slurp_newline_adjustment = 1
+            # Since "$" matches end of string (when not escaped with "\"), and we want it
+            # to match end of line, replace it with lookahead for newline.
+            if re.search(r"(?<![\\])\$", search_string):
+                search_string = re.sub(r"(?<![\\])\$", r"(?=\\n)", search_string)
+                # Need to make sure there is a newline after end of string
+                # if string ends at the end of a line
+                end_line_num = (
+                    slurp_start.row + slurp_text.count("\n") - slurp_newline_adjustment
+                )
+                end_line_len = IndexRowCol(self.index(f"{end_line_num}.0 lineend")).col
+                last_linestart_in_slurp = slurp_text.rfind("\n")
+                if last_linestart_in_slurp < 0:  # Slurp text all on one line
+                    last_slurp_line_len = slurp_start.col + len(slurp_text)
+                else:
+                    last_slurp_line_len = len(slurp_text[last_linestart_in_slurp:]) - 1
+                if last_slurp_line_len >= end_line_len:
+                    slurp_text = slurp_text + "\n"
         else:
             search_string = re.escape(search_string)
         if wholeword:
