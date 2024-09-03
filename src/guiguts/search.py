@@ -294,14 +294,13 @@ class SearchDialog(ToplevelDialog):
 
         slurp_text = maintext().get(find_range.start.index(), find_range.end.index())
         slice_start = 0
-        slurp_start = IndexRowCol(find_range.start.row, find_range.start.col)
 
         matches: list[FindMatch] = []
         while True:
             match, match_start = maintext().find_match_in_range(
                 search_string,
                 slurp_text[slice_start:],
-                slurp_start,
+                find_range,
                 nocase=nocase,
                 regexp=regexp,
                 wholeword=wholeword,
@@ -315,6 +314,7 @@ class SearchDialog(ToplevelDialog):
             slurp_start = IndexRowCol(
                 maintext().index(f"{match.rowcol.index()}+{match.count}c")
             )
+            find_range = IndexRange(slurp_start, find_range.end)
         return matches
 
     def count_clicked(self) -> Optional[list[FindMatch]]:

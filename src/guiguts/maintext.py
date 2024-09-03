@@ -1357,7 +1357,7 @@ class MainText(tk.Text):
             match = self._find_last_match_in_range(
                 search_string,
                 slurp_text,
-                chunk_range.start,
+                chunk_range,
                 nocase,
                 wholeword,
             )
@@ -1365,7 +1365,7 @@ class MainText(tk.Text):
             match, _ = self.find_match_in_range(
                 search_string,
                 slurp_text,
-                chunk_range.start,
+                chunk_range,
                 nocase=nocase,
                 regexp=regexp,
                 wholeword=wholeword,
@@ -1384,7 +1384,7 @@ class MainText(tk.Text):
                 match = self._find_last_match_in_range(
                     search_string,
                     slurp_text,
-                    chunk_range.start,
+                    chunk_range,
                     nocase,
                     wholeword,
                 )
@@ -1392,7 +1392,7 @@ class MainText(tk.Text):
                 match, _ = self.find_match_in_range(
                     search_string,
                     slurp_text,
-                    chunk_range.start,
+                    chunk_range,
                     nocase=nocase,
                     regexp=regexp,
                     wholeword=wholeword,
@@ -1404,7 +1404,7 @@ class MainText(tk.Text):
         self,
         search_string: str,
         slurp_text: str,
-        slurp_start: IndexRowCol,
+        slurp_range: IndexRange,
         nocase: bool,
         wholeword: bool,
     ) -> Optional[FindMatch]:
@@ -1422,7 +1422,7 @@ class MainText(tk.Text):
             match, match_start = self.find_match_in_range(
                 search_string,
                 slurp_text[slice_start:],
-                slurp_start,
+                slurp_range,
                 nocase=nocase,
                 regexp=True,
                 wholeword=wholeword,
@@ -1436,13 +1436,14 @@ class MainText(tk.Text):
             slurp_start = IndexRowCol(
                 self.index(f"{match.rowcol.index()}+{match.count}c")
             )
+            slurp_range = IndexRange(slurp_start, slurp_range.end)
         return last_match
 
     def find_match_in_range(
         self,
         search_string: str,
         slurp_text: str,
-        slurp_start: IndexRowCol,
+        slurp_range: IndexRange,
         nocase: bool,
         regexp: bool,
         wholeword: bool,
@@ -1466,6 +1467,8 @@ class MainText(tk.Text):
             needed for iterated use with the same slurp text, such as Replace All
         """
         slurp_newline_adjustment = 0
+        slurp_start = slurp_range.start
+        slurp_end = slurp_range.end
         # Special handling for ^/$: we can't just use `(?m)` or `re.MULTILINE` in order to
         # make these match start/end of line, because that flag also permit matchings
         # at start/end of *string* for ^/$, not just after/before newlines.
@@ -1486,10 +1489,7 @@ class MainText(tk.Text):
                 search_string = re.sub(r"(?<![\\])\$", r"(?=\\n)", search_string)
                 # Need to make sure there is a newline after end of string
                 # if string ends at the end of a line
-                end_line_num = (
-                    slurp_start.row + slurp_text.count("\n") - slurp_newline_adjustment
-                )
-                end_line_len = IndexRowCol(self.index(f"{end_line_num}.0 lineend")).col
+                end_line_len = IndexRowCol(self.index(f"{slurp_end.row}.0 lineend")).col
                 last_linestart_in_slurp = slurp_text.rfind("\n")
                 if last_linestart_in_slurp < 0:  # Slurp text all on one line
                     last_slurp_line_len = slurp_start.col + len(slurp_text)
