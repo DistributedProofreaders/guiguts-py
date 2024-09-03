@@ -310,9 +310,12 @@ class SearchDialog(ToplevelDialog):
                 break
             matches.append(match)
             # Adjust start of slice of slurped text, and where that point is in the file
-            slice_start += match_start + match.count
+            advance = max(match.count, 1)
+            slice_start += match_start + advance
+            if slice_start >= len(slurp_text):  # No text left to match
+                break
             slurp_start = IndexRowCol(
-                maintext().index(f"{match.rowcol.index()}+{match.count}c")
+                maintext().index(f"{match.rowcol.index()}+{advance}c")
             )
             find_range = IndexRange(slurp_start, find_range.end)
         return matches
@@ -607,21 +610,46 @@ def get_search_start(backwards: bool) -> IndexRowCol:
     Start from current insert point unless the following are true:
     We are searching forward;
     Current insert point is at start of previously found match;
-    Start of previous match is still selected
+    Start of previous match is still selected (or it was a zero-length match)
     If all are true, advance 1 character to avoid re-finding match.
+
+    Additionally, searching for zero-length matches when already at start
+    or end of file, needs special handling
 
     Args:
         backwards: True if searching backwards.
     """
     start_rowcol = maintext().get_insert_index()
-    if not backwards:
-        start_index = start_rowcol.index()
-        try:
-            at_previous_match = maintext().compare(MARK_FOUND_START, "==", start_index)
-        except tk.TclError:
-            at_previous_match = False  # MARK not found
-        if at_previous_match:
-            if sel_ranges := maintext().selected_ranges():
+    start_index = start_rowcol.index()
+    try:
+        at_previous_match = maintext().compare(MARK_FOUND_START, "==", start_index)
+    except tk.TclError:
+        at_previous_match = False  # MARK not found
+    # We've previously done a search, and are now doing another, so various special
+    # cases needed to avoid getting stuck at a match
+    if at_previous_match:
+        zero_len = maintext().compare(MARK_FOUND_START, "==", MARK_FOUND_END)
+        if backwards:
+            if zero_len:
+                # If at start of file, and wrapping, then next reverse search is from end,
+                # otherwise, just go back one character
+                if preferences.get(PrefKey.SEARCHDIALOG_WRAP) and maintext().compare(
+                    MARK_FOUND_START, "==", "1.0"
+                ):
+                    start_rowcol = maintext().end()
+                else:
+                    start_rowcol = maintext().rowcol(start_index + "-1c")
+        else:
+            if zero_len:
+                # If at end of file, and wrapping, then next search is from start,
+                # otherwise, just go forward one character
+                if preferences.get(PrefKey.SEARCHDIALOG_WRAP) and maintext().compare(
+                    MARK_FOUND_START, "==", maintext().end().index()
+                ):
+                    start_rowcol = maintext().start()
+                else:
+                    start_rowcol = maintext().rowcol(start_index + "+1c")
+            elif sel_ranges := maintext().selected_ranges():
                 if maintext().compare(sel_ranges[0].start.index(), "==", start_index):
                     start_rowcol = maintext().rowcol(start_index + "+1c")
     return start_rowcol

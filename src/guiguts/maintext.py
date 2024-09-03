@@ -1007,8 +1007,9 @@ class MainText(tk.Text):
         return self.rowcol("1.0")
 
     def end(self) -> IndexRowCol:
-        """Return IndexRowCol for end of text in widget, i.e. "end"."""
-        return self.rowcol(tk.END)
+        """Return IndexRowCol for end of text in widget, i.e. "end - 1c"
+        because text widget "end" is start of line below last char."""
+        return self.rowcol(tk.END + "-1c")
 
     def move_to_selection_start(self) -> str:
         """Set insert position to start of any selection text."""
