@@ -611,7 +611,7 @@ def get_search_start(backwards: bool) -> IndexRowCol:
     We are searching forward;
     Current insert point is at start of previously found match;
     Start of previous match is still selected (or it was a zero-length match)
-    If all are true, advance 1 character to avoid re-finding match.
+    If all are true, advance to end of match.
 
     Additionally, searching for zero-length matches when already at start
     or end of file, needs special handling
@@ -651,7 +651,7 @@ def get_search_start(backwards: bool) -> IndexRowCol:
                     start_rowcol = maintext().rowcol(start_index + "+1c")
             elif sel_ranges := maintext().selected_ranges():
                 if maintext().compare(sel_ranges[0].start.index(), "==", start_index):
-                    start_rowcol = maintext().rowcol(start_index + "+1c")
+                    start_rowcol = maintext().rowcol(MARK_FOUND_END)
     return start_rowcol
 
 
