@@ -1346,7 +1346,12 @@ class MainText(tk.Text):
         if backwards:
             chunk_range = IndexRange(self.start(), start_point)
             # Doesn't matter if this ends up True, when not strictly necessary, e.g. `\\1`
-            backrefs = bool(re.search(r"(\\\d|\(\?[<=!])", search_string))
+            # Should include cases where reverse searching doesn't work: backrefs,
+            # lookahead/behind, `^` & `$` (since they are converted to lookahead/behind)
+            # Matching code in
+            backrefs = regexp and re.search(
+                r"(\\\d|\(\?[<=!]|(?<![\[\\])\^|(?<![\\])\$)", search_string
+            )
         else:
             chunk_range = IndexRange(start_point, self.end())
             backrefs = False
@@ -1419,6 +1424,7 @@ class MainText(tk.Text):
         """
         slice_start = 0
         last_match = None
+        slurp_len = len(slurp_text)
         while True:
             match, match_start = self.find_match_in_range(
                 search_string,
@@ -1433,10 +1439,11 @@ class MainText(tk.Text):
                 break
             last_match = match
             # Adjust start of slice of slurped text, and where that point is in the file
-            slice_start += match_start + match.count
-            slurp_start = IndexRowCol(
-                self.index(f"{match.rowcol.index()}+{match.count}c")
-            )
+            advance = max(match.count, 1)  # Always advance at least 1 character
+            slice_start += match_start + advance
+            if slice_start >= slurp_len:
+                break
+            slurp_start = IndexRowCol(self.index(f"{match.rowcol.index()}+{advance}c"))
             slurp_range = IndexRange(slurp_start, slurp_range.end)
         return last_match
 
