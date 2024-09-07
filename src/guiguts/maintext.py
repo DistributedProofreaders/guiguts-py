@@ -1007,8 +1007,9 @@ class MainText(tk.Text):
         return self.rowcol("1.0")
 
     def end(self) -> IndexRowCol:
-        """Return IndexRowCol for end of text in widget, i.e. "end"."""
-        return self.rowcol(tk.END)
+        """Return IndexRowCol for end of text in widget, i.e. "end - 1c"
+        because text widget "end" is start of line below last char."""
+        return self.rowcol(tk.END + "-1c")
 
     def move_to_selection_start(self) -> str:
         """Set insert position to start of any selection text."""
@@ -1345,7 +1346,12 @@ class MainText(tk.Text):
         if backwards:
             chunk_range = IndexRange(self.start(), start_point)
             # Doesn't matter if this ends up True, when not strictly necessary, e.g. `\\1`
-            backrefs = bool(re.search(r"(\\\d|\(\?[<=!])", search_string))
+            # Should include cases where reverse searching doesn't work: backrefs,
+            # lookahead/behind, `^` & `$` (since they are converted to lookahead/behind)
+            # Matching code in
+            backrefs = regexp and re.search(
+                r"(\\\d|\(\?[<=!]|(?<![\[\\])\^|(?<![\\])\$)", search_string
+            )
         else:
             chunk_range = IndexRange(start_point, self.end())
             backrefs = False
@@ -1357,7 +1363,7 @@ class MainText(tk.Text):
             match = self._find_last_match_in_range(
                 search_string,
                 slurp_text,
-                chunk_range.start,
+                chunk_range,
                 nocase,
                 wholeword,
             )
@@ -1365,7 +1371,7 @@ class MainText(tk.Text):
             match, _ = self.find_match_in_range(
                 search_string,
                 slurp_text,
-                chunk_range.start,
+                chunk_range,
                 nocase=nocase,
                 regexp=regexp,
                 wholeword=wholeword,
@@ -1384,7 +1390,7 @@ class MainText(tk.Text):
                 match = self._find_last_match_in_range(
                     search_string,
                     slurp_text,
-                    chunk_range.start,
+                    chunk_range,
                     nocase,
                     wholeword,
                 )
@@ -1392,7 +1398,7 @@ class MainText(tk.Text):
                 match, _ = self.find_match_in_range(
                     search_string,
                     slurp_text,
-                    chunk_range.start,
+                    chunk_range,
                     nocase=nocase,
                     regexp=regexp,
                     wholeword=wholeword,
@@ -1404,7 +1410,7 @@ class MainText(tk.Text):
         self,
         search_string: str,
         slurp_text: str,
-        slurp_start: IndexRowCol,
+        slurp_range: IndexRange,
         nocase: bool,
         wholeword: bool,
     ) -> Optional[FindMatch]:
@@ -1418,11 +1424,12 @@ class MainText(tk.Text):
         """
         slice_start = 0
         last_match = None
+        slurp_len = len(slurp_text)
         while True:
             match, match_start = self.find_match_in_range(
                 search_string,
                 slurp_text[slice_start:],
-                slurp_start,
+                slurp_range,
                 nocase=nocase,
                 regexp=True,
                 wholeword=wholeword,
@@ -1432,17 +1439,19 @@ class MainText(tk.Text):
                 break
             last_match = match
             # Adjust start of slice of slurped text, and where that point is in the file
-            slice_start += match_start + match.count
-            slurp_start = IndexRowCol(
-                self.index(f"{match.rowcol.index()}+{match.count}c")
-            )
+            advance = max(match.count, 1)  # Always advance at least 1 character
+            slice_start += match_start + advance
+            if slice_start >= slurp_len:
+                break
+            slurp_start = IndexRowCol(self.index(f"{match.rowcol.index()}+{advance}c"))
+            slurp_range = IndexRange(slurp_start, slurp_range.end)
         return last_match
 
     def find_match_in_range(
         self,
         search_string: str,
         slurp_text: str,
-        slurp_start: IndexRowCol,
+        slurp_range: IndexRange,
         nocase: bool,
         regexp: bool,
         wholeword: bool,
@@ -1466,6 +1475,12 @@ class MainText(tk.Text):
             needed for iterated use with the same slurp text, such as Replace All
         """
         slurp_newline_adjustment = 0
+        slurp_start = slurp_range.start
+        slurp_end = slurp_range.end
+        # Special handling for ^/$: we can't just use `(?m)` or `re.MULTILINE` in order to
+        # make these match start/end of line, because that flag also permit matchings
+        # at start/end of *string* for ^/$, not just after/before newlines.
+        # That would give a false match if search is in a range with part lines at start/end.
         if regexp:
             # Since "^" matches start of string (when not escaped with "\"), and we want it
             # to match start of line, replace it with lookbehind for newline.
@@ -1476,6 +1491,20 @@ class MainText(tk.Text):
                 if slurp_start.col == 0:
                     slurp_text = "\n" + slurp_text
                     slurp_newline_adjustment = 1
+            # Since "$" matches end of string (when not escaped with "\"), and we want it
+            # to match end of line, replace it with lookahead for newline.
+            if re.search(r"(?<![\\])\$", search_string):
+                search_string = re.sub(r"(?<![\\])\$", r"(?=\\n)", search_string)
+                # Need to make sure there is a newline after end of string
+                # if string ends at the end of a line
+                end_line_len = IndexRowCol(self.index(f"{slurp_end.row}.0 lineend")).col
+                last_linestart_in_slurp = slurp_text.rfind("\n")
+                if last_linestart_in_slurp < 0:  # Slurp text all on one line
+                    last_slurp_line_len = slurp_start.col + len(slurp_text)
+                else:
+                    last_slurp_line_len = len(slurp_text[last_linestart_in_slurp:]) - 1
+                if last_slurp_line_len >= end_line_len:
+                    slurp_text = slurp_text + "\n"
         else:
             search_string = re.escape(search_string)
         if wholeword:
