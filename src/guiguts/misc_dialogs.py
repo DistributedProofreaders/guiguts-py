@@ -906,6 +906,7 @@ class UnicodeSearchDialog(ToplevelDialog):
                 [
                     f"Click in {UnicodeSearchDialog.CHAR_COL_HEAD},  {UnicodeSearchDialog.CODEPOINT_COL_HEAD} or {UnicodeSearchDialog.NAME_COL_HEAD} column to insert character",
                     f"Click in {UnicodeSearchDialog.BLOCK_COL_HEAD} column to open Unicode Block dialog",
+                    "(⚠ before a character's name means it was added more recently - use with caution)",
                 ]
             ),
             use_pointer_pos=True,
