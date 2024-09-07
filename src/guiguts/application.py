@@ -36,6 +36,7 @@ from guiguts.misc_dialogs import (
     ComposeSequenceDialog,
     ComposeHelpDialog,
     UnicodeBlockDialog,
+    UnicodeSearchDialog,
 )
 from guiguts.misc_tools import (
     basic_fixup_check,
@@ -379,6 +380,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(
             PrefKey.UNICODE_BLOCK, UnicodeBlockDialog.commonly_used_characters_name
         )
+        preferences.set_default(PrefKey.UNICODE_SEARCH_HISTORY, [])
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -611,6 +613,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         unicode_menu = Menu(menu_tools, "~Unicode")
         unicode_menu.add_button("Unicode ~Blocks", UnicodeBlockDialog.show_dialog)
+        unicode_menu.add_button(
+            "Unicode ~Search/Entry", UnicodeSearchDialog.show_dialog
+        )
         unicode_menu.add_button(
             "~Normalize Selected Characters",
             unicode_normalize,
