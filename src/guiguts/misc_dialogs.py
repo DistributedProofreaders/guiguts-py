@@ -864,7 +864,14 @@ class UnicodeSearchDialog(ToplevelDialog):
         self.search.grid(column=0, row=0, sticky="NSEW", padx=5, pady=(5, 0))
         self.search.focus()
         ToolTip(
-            self.search, "Type words from character name, or hex codepoint of character"
+            self.search,
+            "\n".join(
+                [
+                    "Type words from character name to match against,",
+                    "or hex codepoint (optionally preceded by 'U+' or 'X'),",
+                    "or type/paste a single character to search for",
+                ]
+            ),
         )
 
         search_btn = ttk.Button(
@@ -906,7 +913,7 @@ class UnicodeSearchDialog(ToplevelDialog):
                 [
                     f"Click in {UnicodeSearchDialog.CHAR_COL_HEAD},  {UnicodeSearchDialog.CODEPOINT_COL_HEAD} or {UnicodeSearchDialog.NAME_COL_HEAD} column to insert character",
                     f"Click in {UnicodeSearchDialog.BLOCK_COL_HEAD} column to open Unicode Block dialog",
-                    "(⚠ before a character's name means it was added more recently - use with caution)",
+                    "(⚠\ufe0f before a character's name means it was added more recently - use with caution)",
                 ]
             ),
             use_pointer_pos=True,
@@ -944,6 +951,7 @@ class UnicodeSearchDialog(ToplevelDialog):
             self.list.delete(child)
 
         # Split user string into words
+        string = string.strip()
         match_words = [x.upper() for x in string.split(" ") if x]
         if len(match_words) == 0:
             return
@@ -980,7 +988,14 @@ class UnicodeSearchDialog(ToplevelDialog):
                 found = True
                 self.add_row(char, new)
 
+        if not found and len(string) == 1:  # Maybe string was a single character?
+            name, new = char_to_name(string)
+            if name:
+                found = True
+                self.add_row(string, new)
+
         if not found:  # Maybe string was a hex codepoint?
+            string = re.sub(r"^\s*(U\+|0?X)", "", string, flags=re.IGNORECASE)
             try:
                 char = chr(int(string, 16))
             except (OverflowError, ValueError):
@@ -1043,7 +1058,8 @@ class UnicodeSearchDialog(ToplevelDialog):
             if not block:
                 return
             preferences.set(PrefKey.UNICODE_BLOCK, block)
-            UnicodeBlockDialog.show_dialog()
+            dlg = UnicodeBlockDialog.show_dialog()
+            dlg.block_selected()
 
 
 # Somewhat arbitrarily, certain Unicode blocks are not displayed, trying to
