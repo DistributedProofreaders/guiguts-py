@@ -951,11 +951,9 @@ class UnicodeSearchDialog(ToplevelDialog):
             self.list.delete(child)
 
         # Split user string into words
-        string = string.strip()
         match_words = [x.upper() for x in string.split(" ") if x]
-        if len(match_words) == 0:
-            return
-        self.search.add_to_history(string)
+        if len(match_words) > 0:
+            self.search.add_to_history(string)
 
         def char_to_name(char: str) -> tuple[str, bool]:
             """Convert char to Unicode name, and note if it is "new".
@@ -978,34 +976,44 @@ class UnicodeSearchDialog(ToplevelDialog):
                 name = ""
             return name, new
 
-        # Check every Unicode character to see if its name contains
-        # all the words the user has given
+        # Check every Unicode character to see if its name contains all the given words
+        # (including substrings, like BREAK in NO-BREAK or NON-BREAKING)
         found = False
-        for ordinal in range(0, sys.maxunicode + 1):
-            char = chr(ordinal)
-            name, new = char_to_name(char)
-            if name and all(word in name.split(" ") for word in match_words):
-                found = True
-                self.add_row(char, new)
-
-        if not found and len(string) == 1:  # Maybe string was a single character?
-            name, new = char_to_name(string)
-            if name:
-                found = True
-                self.add_row(string, new)
+        if len(match_words) > 0:
+            for ordinal in range(0, sys.maxunicode + 1):
+                char = chr(ordinal)
+                name, new = char_to_name(char)
+                if name and all(word in name for word in match_words):
+                    self.add_row(char, new)
+                    found = True
 
         if not found:  # Maybe string was a hex codepoint?
-            string = re.sub(r"^\s*(U\+|0?X)", "", string, flags=re.IGNORECASE)
+            hex_string = re.sub(r"^(U\+|0?X)", "", string.strip(), flags=re.IGNORECASE)
+            char = ""
             try:
-                char = chr(int(string, 16))
+                char = chr(int(hex_string, 16))
             except (OverflowError, ValueError):
-                sound_bell()
-                return
-            name, new = char_to_name(char)
-            if name:
-                self.add_row(char, new)
-            else:
-                sound_bell()
+                pass
+            if char:
+                name, new = char_to_name(char)
+                if name:
+                    self.add_row(char, new)
+                    found = True
+
+        # Maybe string was a single character?
+        # Carefully strip spaces, so that a single space still works
+        if not found and len(string) >= 1:
+            string = string.strip(" ")
+            if len(string) == 0:
+                string = " "  # String was all spaces
+            if len(string) == 1:
+                name, new = char_to_name(string)
+                if name:
+                    self.add_row(string, new)
+                    found = True
+
+        if not found:
+            sound_bell()
 
     def add_row(self, char: str, new: bool) -> None:
         """Add a row to the Unicode Search dialog.
