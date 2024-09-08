@@ -66,6 +66,7 @@ class PrefKey(StrEnum):
     SPELL_THRESHOLD = auto()
     UNMATCHED_NESTABLE = auto()
     UNICODE_BLOCK = auto()
+    UNICODE_SEARCH_HISTORY = auto()
 
 
 class Preferences:

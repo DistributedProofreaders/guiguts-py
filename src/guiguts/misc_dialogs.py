@@ -3,6 +3,7 @@
 import tkinter as tk
 from tkinter import ttk, font
 from typing import Any
+import sys
 import unicodedata
 
 import regex as re
@@ -15,7 +16,7 @@ from guiguts.preferences import (
     PersistentString,
     preferences,
 )
-from guiguts.utilities import is_mac, is_windows, is_x11
+from guiguts.utilities import is_mac, is_windows, is_x11, sound_bell
 from guiguts.widgets import (
     ToplevelDialog,
     ToolTip,
@@ -660,7 +661,11 @@ class ComposeHelpDialog(ToplevelDialog):
 
 
 class ScrollableFrame(ttk.Frame):
-    """A scrollable ttk.Frame."""
+    """A scrollable ttk.Frame.
+
+    Consider rewriting, so it's like ScrolledReadOnlyText, i.e. self is the frame you add to,
+    and grid method is overridden for correct placement.
+    """
 
     def __init__(self, container: tk.Widget, *args: Any, **kwargs: Any) -> None:
         """Initialize ScrollableFrame."""
@@ -776,7 +781,6 @@ class UnicodeBlockDialog(ToplevelDialog):
             btn = ttk.Label(
                 self.chars_frame.scrollable_frame,
                 text=char,
-                # command=lambda: insert_in_focus_widget(char),
                 width=2,
                 borderwidth=2,
                 relief=tk.SOLID,
@@ -822,6 +826,254 @@ class UnicodeBlockDialog(ToplevelDialog):
             except ValueError:
                 desc = ""
             ToolTip(btn, f"U+{ord(char):04x}{desc}")
+
+
+class UnicodeSearchDialog(ToplevelDialog):
+    """A dialog that allows user to search for Unicode characters,
+    given partial name match or Unicode ordinal, and allows
+    the user to insert it into text window."""
+
+    CHAR_COL_ID = "#1"
+    CHAR_COL_HEAD = "Char"
+    CHAR_COL_WIDTH = 50
+    CODEPOINT_COL_ID = "#2"
+    CODEPOINT_COL_HEAD = "Code Point"
+    CODEPOINT_COL_WIDTH = 80
+    NAME_COL_ID = "#3"
+    NAME_COL_HEAD = "Name"
+    NAME_COL_WIDTH = 250
+    BLOCK_COL_ID = "#4"
+    BLOCK_COL_HEAD = "Block"
+    BLOCK_COL_WIDTH = 180
+
+    def __init__(self) -> None:
+        """Initialize Unicode Search dialog."""
+
+        super().__init__("Unicode Search")
+
+        search_frame = ttk.Frame(self.top_frame)
+        search_frame.grid(column=0, row=0, sticky="NSEW")
+        search_frame.columnconfigure(0, weight=1)
+        search_frame.columnconfigure(1, weight=0)
+        self.search = Combobox(
+            search_frame,
+            PrefKey.UNICODE_SEARCH_HISTORY,
+            width=50,
+            font=maintext().font,
+        )
+        self.search.grid(column=0, row=0, sticky="NSEW", padx=5, pady=(5, 0))
+        self.search.focus()
+        ToolTip(
+            self.search,
+            "\n".join(
+                [
+                    "Type words from character name to match against,",
+                    "or hex codepoint (optionally preceded by 'U+' or 'X'),",
+                    "or type/paste a single character to search for",
+                ]
+            ),
+        )
+
+        search_btn = ttk.Button(
+            search_frame,
+            text="Search",
+            default="active",
+            takefocus=False,
+            command=lambda: self.find_matches(self.search.get()),
+        )
+        search_btn.grid(column=1, row=0, sticky="NSEW")
+        self.bind("<Return>", lambda _: search_btn.invoke())
+        self.search.bind("<<ComboboxSelected>>", lambda _e: search_btn.invoke())
+
+        self.top_frame.rowconfigure(0, weight=0)
+        self.top_frame.rowconfigure(1, weight=1)
+
+        columns = (
+            UnicodeSearchDialog.CHAR_COL_HEAD,
+            UnicodeSearchDialog.CODEPOINT_COL_HEAD,
+            UnicodeSearchDialog.NAME_COL_HEAD,
+            UnicodeSearchDialog.BLOCK_COL_HEAD,
+        )
+        widths = (
+            UnicodeSearchDialog.CHAR_COL_WIDTH,
+            UnicodeSearchDialog.CODEPOINT_COL_WIDTH,
+            UnicodeSearchDialog.NAME_COL_WIDTH,
+            UnicodeSearchDialog.BLOCK_COL_WIDTH,
+        )
+        self.list = ttk.Treeview(
+            self.top_frame,
+            columns=columns,
+            show="headings",
+            height=15,
+            selectmode=tk.BROWSE,
+        )
+        ToolTip(
+            self.list,
+            "\n".join(
+                [
+                    f"Click in {UnicodeSearchDialog.CHAR_COL_HEAD},  {UnicodeSearchDialog.CODEPOINT_COL_HEAD} or {UnicodeSearchDialog.NAME_COL_HEAD} column to insert character",
+                    f"Click in {UnicodeSearchDialog.BLOCK_COL_HEAD} column to open Unicode Block dialog",
+                    "(⚠\ufe0f before a character's name means it was added more recently - use with caution)",
+                ]
+            ),
+            use_pointer_pos=True,
+        )
+        for col, column in enumerate(columns):
+            col_id = f"#{col + 1}"
+            anchor = tk.CENTER if col_id == UnicodeSearchDialog.CHAR_COL_ID else tk.W
+            self.list.column(  # type: ignore[call-overload]
+                col_id,
+                minwidth=20,
+                width=widths[col],
+                stretch=(col_id == UnicodeSearchDialog.NAME_COL_ID),
+                anchor=anchor,
+            )
+            self.list.heading(col_id, text=column, anchor=anchor)  # type: ignore[call-overload]
+        self.list.grid(row=1, column=0, sticky=tk.NSEW, pady=(5, 0))
+
+        self.scrollbar = ttk.Scrollbar(
+            self.top_frame, orient=tk.VERTICAL, command=self.list.yview
+        )
+        self.list.configure(yscroll=self.scrollbar.set)  # type: ignore[call-overload]
+        self.scrollbar.grid(row=1, column=1, sticky=tk.NS)
+        mouse_bind(self.list, "1", self.item_clicked)
+
+    def find_matches(self, string: str) -> None:
+        """Find & display Unicode characters that match all criteria (words) in the given string.
+
+        Args:
+            string: String containing words that must appear in the characters' names. If no match
+                    is found, check if string is a hex number which is the codepoint of a character.
+        """
+        # Clear existing display of chars
+        children = self.list.get_children()
+        for child in children:
+            self.list.delete(child)
+
+        # Split user string into words
+        match_words = [x.lower() for x in string.split(" ") if x]
+        if len(match_words) > 0:
+            self.search.add_to_history(string)
+
+        def char_to_name(char: str) -> tuple[str, bool]:
+            """Convert char to Unicode name, and note if it is "new".
+
+            Args:
+                char: Character to convert.
+
+            Returns:
+                Tuple containing name of character (empty if no name),
+                and bool flagging if character is new (Unicode version > 3.2).
+            """
+            new = False
+            try:
+                name = unicodedata.name(char)
+                try:
+                    name = unicodedata.ucd_3_2_0.name(char)
+                except ValueError:
+                    new = True
+            except ValueError:
+                name = ""
+            return name, new
+
+        # Check every Unicode character to see if its name contains all the given words
+        # (including hyphenated, e.g. BREAK will match NO-BREAK, but not NON-BREAKING)
+        found = False
+        if len(match_words) > 0:
+            for ordinal in range(0, sys.maxunicode + 1):
+                char = chr(ordinal)
+                name, new = char_to_name(char)
+                name_list = name.lower().split(" ")
+                hyphen_parts: list[str] = []
+                for word in name_list:
+                    if "-" in word:
+                        hyphen_parts += word.split("-")
+                name_list += hyphen_parts
+                if name and all(word in name_list for word in match_words):
+                    self.add_row(char, new)
+                    found = True
+
+        if not found:  # Maybe string was a hex codepoint?
+            hex_string = re.sub(r"^(U\+|0?X)", "", string.strip(), flags=re.IGNORECASE)
+            char = ""
+            try:
+                char = chr(int(hex_string, 16))
+            except (OverflowError, ValueError):
+                pass
+            if char:
+                name, new = char_to_name(char)
+                if name:
+                    self.add_row(char, new)
+                    found = True
+
+        # Maybe string was a single character?
+        # Carefully strip spaces, so that a single space still works
+        if not found and len(string) >= 1:
+            string = string.strip(" ")
+            if len(string) == 0:
+                string = " "  # String was all spaces
+            if len(string) == 1:
+                name, new = char_to_name(string)
+                if name:
+                    self.add_row(string, new)
+                    found = True
+
+        if not found:
+            sound_bell()
+
+    def add_row(self, char: str, new: bool) -> None:
+        """Add a row to the Unicode Search dialog.
+
+        Args:
+            count: Row to add.
+            char: Character to display in row.
+            new: True if character was added to unicode since version 3.2 (March 2002)
+        """
+        ordinal = ord(char)
+        block_name = ""
+        warning_flag = "⚠\ufe0f" if new else ""
+        # Find block name
+        for block, (beg, end) in _unicode_blocks.items():
+            if beg <= ordinal <= end:
+                block_name = block
+                break
+        # Add entry to Treeview
+        entry = (
+            char,
+            f"U+{ord(char):04x}",
+            warning_flag + unicodedata.name(char),
+            block_name,
+        )
+        self.list.insert("", tk.END, values=entry)
+
+    def item_clicked(self, event: tk.Event) -> None:
+        """Called when Unicode search item is clicked.
+
+        If click is in char, codepoint or name column, then insert character.
+        If in block column, open the block dialog.
+
+        Args:
+            event: Event containing location of mouse click
+        """
+        row_id = self.list.identify_row(event.y)
+        row = self.list.set(row_id)
+        if not row:  # Heading clicked
+            return
+        col_id = self.list.identify_column(event.x)
+
+        if col_id in (
+            UnicodeSearchDialog.CHAR_COL_ID,
+            UnicodeSearchDialog.CODEPOINT_COL_ID,
+            UnicodeSearchDialog.NAME_COL_ID,
+        ):
+            insert_in_focus_widget(row[UnicodeSearchDialog.CHAR_COL_HEAD])
+        elif col_id == UnicodeSearchDialog.BLOCK_COL_ID:
+            block = row[UnicodeSearchDialog.BLOCK_COL_HEAD]
+            if not block:
+                return
+            preferences.set(PrefKey.UNICODE_BLOCK, block)
+            dlg = UnicodeBlockDialog.show_dialog()
+            dlg.block_selected()
 
 
 # Somewhat arbitrarily, certain Unicode blocks are not displayed, trying to
@@ -1058,3 +1310,5 @@ _common_characters: list[str] = [
     "º",
     "ª",
 ]
+
+_unicode_names: dict[str, list[str]] = {}
