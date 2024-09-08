@@ -951,7 +951,7 @@ class UnicodeSearchDialog(ToplevelDialog):
             self.list.delete(child)
 
         # Split user string into words
-        match_words = [x.upper() for x in string.split(" ") if x]
+        match_words = [x.lower() for x in string.split(" ") if x]
         if len(match_words) > 0:
             self.search.add_to_history(string)
 
@@ -977,13 +977,19 @@ class UnicodeSearchDialog(ToplevelDialog):
             return name, new
 
         # Check every Unicode character to see if its name contains all the given words
-        # (including substrings, like BREAK in NO-BREAK or NON-BREAKING)
+        # (including hyphenated, e.g. BREAK will match NO-BREAK, but not NON-BREAKING)
         found = False
         if len(match_words) > 0:
             for ordinal in range(0, sys.maxunicode + 1):
                 char = chr(ordinal)
                 name, new = char_to_name(char)
-                if name and all(word in name for word in match_words):
+                name_list = name.lower().split(" ")
+                hyphen_parts: list[str] = []
+                for word in name_list:
+                    if "-" in word:
+                        hyphen_parts += word.split("-")
+                name_list += hyphen_parts
+                if name and all(word in name_list for word in match_words):
                     self.add_row(char, new)
                     found = True
 
