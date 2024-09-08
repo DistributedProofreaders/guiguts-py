@@ -612,10 +612,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             lambda: fraction_convert(FractionConvertType.SUPSUB),
         )
         unicode_menu = Menu(menu_tools, "~Unicode")
-        unicode_menu.add_button("Unicode ~Blocks", UnicodeBlockDialog.show_dialog)
         unicode_menu.add_button(
             "Unicode ~Search/Entry", UnicodeSearchDialog.show_dialog
         )
+        unicode_menu.add_button("Unicode ~Blocks", UnicodeBlockDialog.show_dialog)
         unicode_menu.add_button(
             "~Normalize Selected Characters",
             unicode_normalize,
