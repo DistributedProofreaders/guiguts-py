@@ -67,6 +67,7 @@ class PrefKey(StrEnum):
     UNMATCHED_NESTABLE = auto()
     UNICODE_BLOCK = auto()
     UNICODE_SEARCH_HISTORY = auto()
+    SOFT_WRAP = auto()
 
 
 class Preferences:

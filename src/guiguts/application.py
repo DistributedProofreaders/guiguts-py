@@ -7,6 +7,7 @@ import logging
 import importlib.resources
 from importlib.metadata import version
 import os.path
+import tkinter as tk
 from tkinter import messagebox
 from typing import Optional
 import unicodedata
@@ -381,6 +382,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             PrefKey.UNICODE_BLOCK, UnicodeBlockDialog.commonly_used_characters_name
         )
         preferences.set_default(PrefKey.UNICODE_SEARCH_HISTORY, [])
+        preferences.set_default(PrefKey.SOFT_WRAP, tk.NONE)
 
         # Check all preferences have a default
         for pref_key in PrefKey:

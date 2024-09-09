@@ -682,7 +682,7 @@ class MainWindow:
             self.paned_window,
             root(),
             undo=True,
-            wrap="none",
+            wrap=preferences.get(PrefKey.SOFT_WRAP),
             autoseparators=True,
             maxundo=-1,
             highlightthickness=0,

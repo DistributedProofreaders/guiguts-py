@@ -2144,6 +2144,10 @@ class MainText(tk.Text):
         rgb_sum = sum(self.winfo_rgb(text_color))  # 0-65535 for each component
         return rgb_sum > 12767 * 3
 
+    def set_soft_wrap(self) -> None:
+        """Set soft wrap according to current Pref value."""
+        self.configure(wrap=preferences.get(PrefKey.SOFT_WRAP))
+
 
 def img_from_page_mark(mark: str) -> str:
     """Get base image name from page mark, e.g. "Pg027" gives "027".

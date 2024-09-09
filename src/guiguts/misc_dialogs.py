@@ -120,8 +120,37 @@ class PreferencesDialog(ToplevelDialog):
             text="Automatically show current page image",
             variable=PersistentBoolean(PrefKey.AUTO_IMAGE),
         ).grid(column=0, row=5, sticky="NEW", pady=5)
+
+        soft_wrap_frame = ttk.Frame(appearance_frame)
+        soft_wrap_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))
+        ttk.Label(soft_wrap_frame, text="Soft wrap: ").grid(
+            column=0, row=0, sticky="NEW"
+        )
+        wrap_var = PersistentString(PrefKey.SOFT_WRAP)
+        ttk.Radiobutton(
+            soft_wrap_frame,
+            command=maintext().set_soft_wrap,
+            text="None",
+            variable=wrap_var,
+            value=tk.NONE,
+        ).grid(column=1, row=0, sticky="NEW", padx=10)
+        ttk.Radiobutton(
+            soft_wrap_frame,
+            command=maintext().set_soft_wrap,
+            text="Char",
+            variable=wrap_var,
+            value=tk.CHAR,
+        ).grid(column=2, row=0, sticky="NEW", padx=10)
+        ttk.Radiobutton(
+            soft_wrap_frame,
+            command=maintext().set_soft_wrap,
+            text="Word",
+            variable=wrap_var,
+            value=tk.WORD,
+        ).grid(column=3, row=0, sticky="NEW", padx=10)
+
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))
+        bell_frame.grid(column=0, row=7, sticky="NEW", pady=(5, 0))
         ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
         ttk.Checkbutton(
             bell_frame,
@@ -135,7 +164,9 @@ class PreferencesDialog(ToplevelDialog):
         ).grid(column=2, row=0, sticky="NEW")
 
         # Wrapping tab
-        wrapping_frame = ttk.LabelFrame(self.top_frame, text="Wrapping", padding=10)
+        wrapping_frame = ttk.LabelFrame(
+            self.top_frame, text="Text Wrapping", padding=10
+        )
         wrapping_frame.grid(column=0, row=1, sticky="NSEW", pady=(10, 0))
 
         def add_label_spinbox(row: int, label: str, key: PrefKey, tooltip: str) -> None:
