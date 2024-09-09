@@ -64,4 +64,4 @@ disable = [
 enable = ["c-extension-no-member"]
 
 [tool.pylint.SIMILARITIES]
-min-similarity-lines = 6
+min-similarity-lines = 0

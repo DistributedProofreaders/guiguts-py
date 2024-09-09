@@ -16,6 +16,7 @@ from guiguts.checkers import CheckerSortType
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check
+from guiguts.illo_sn_fixup import illosn_check
 from guiguts.highlight import (
     highlight_single_quotes,
     highlight_double_quotes,
@@ -591,6 +592,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_separator()
         menu_tools.add_button("~Page Separator Fixup...", page_separator_fixup)
         menu_tools.add_button("~Footnote Fixup...", footnote_check)
+        menu_tools.add_button("Sidenote Fixup...", lambda: illosn_check("Sidenote"))
+        menu_tools.add_button(
+            "Illustration Fixup...", lambda: illosn_check("Illustration")
+        )
         menu_tools.add_separator()
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)
