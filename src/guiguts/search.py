@@ -3,6 +3,7 @@
 import logging
 import tkinter as tk
 from tkinter import ttk
+import traceback
 from typing import Any, Tuple, Optional
 
 import regex as re
@@ -697,7 +698,17 @@ def get_regex_replacement(
             if e_index < 0:
                 break
             python_in = replace_str[c_index + 2 : e_index]
-            python_out = str(eval(python_in))  # pylint:disable=eval-used
+            try:
+                python_out = str(eval(python_in))  # pylint:disable=eval-used
+            except Exception as exc:
+                tb = re.sub(
+                    r'.+File "<string>", line 1[^\n]*',
+                    r"\\C...\\E - error in Python code",
+                    traceback.format_exc(),
+                    flags=re.DOTALL,
+                )
+                logger.error(tb)
+                raise re.error("\\C...\\E error - see message log for details") from exc
             replace_str = (
                 replace_str[:c_index] + python_out + replace_str[e_index + 2 :]
             )
