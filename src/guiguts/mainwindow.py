@@ -3,6 +3,7 @@
 from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found]
 import logging
 import os.path
+import subprocess
 import time
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -381,6 +382,9 @@ class MainImage(tk.Frame):
 
         if filename and os.path.isfile(filename):
             self.filename = filename
+            if preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL):
+                self.load_image_external(filename)
+                return
             self.image = Image.open(filename)
             self.width, self.height = self.image.size
             if self.container:
@@ -394,6 +398,18 @@ class MainImage(tk.Frame):
             self.show_image()
         else:
             self.clear_image()
+
+    def load_image_external(self, filename: str) -> None:
+        """Load image into external viewer.
+
+        Args:
+            filename: File to load.
+        """
+        if preferences.get(PrefKey.IMAGE_VIEWER_COMMAND):
+            subprocess.Popen(  # pylint: disable=consider-using-with
+                [preferences.get(PrefKey.IMAGE_VIEWER_COMMAND), filename],
+                start_new_session=True,
+            )
 
     def clear_image(self) -> None:
         """Clear the image and reset variables accordingly."""

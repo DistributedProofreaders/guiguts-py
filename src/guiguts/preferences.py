@@ -67,6 +67,8 @@ class PrefKey(StrEnum):
     UNMATCHED_NESTABLE = auto()
     UNICODE_BLOCK = auto()
     UNICODE_SEARCH_HISTORY = auto()
+    IMAGE_VIEWER_COMMAND = auto()
+    IMAGE_VIEWER_EXTERNAL = auto()
 
 
 class Preferences:

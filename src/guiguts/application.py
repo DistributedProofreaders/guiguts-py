@@ -381,6 +381,24 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             PrefKey.UNICODE_BLOCK, UnicodeBlockDialog.commonly_used_characters_name
         )
         preferences.set_default(PrefKey.UNICODE_SEARCH_HISTORY, [])
+        if is_mac():
+            viewer_path = "open -g -a Preview"
+        else:
+            viewer_path = os.path.join(
+                os.path.abspath(os.path.sep),
+                "Program Files (x86)",
+                "XnView",
+                "xnview.exe",
+            )
+            if not os.path.exists(viewer_path):
+                viewer_path = os.path.join(
+                    os.path.abspath(os.path.sep),
+                    "Program Files",
+                    "XnView",
+                    "xnview.exe",
+                )
+        preferences.set_default(PrefKey.IMAGE_VIEWER_COMMAND, viewer_path)
+        preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -630,13 +648,13 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Create the View menu."""
         menu_view = Menu(menubar(), "~View")
         menu_view.add_checkbox(
-            "~Dock Image",
+            "~Dock Image Window",
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
             root().image_window_state,
         )
-        menu_view.add_button("~Show Image", self.show_image)
-        menu_view.add_button("~Hide Image", self.hide_image)
+        menu_view.add_button("~Show Image Window", self.show_image)
+        menu_view.add_button("~Hide Image Window", self.hide_image)
         menu_view.add_button("~Message Log", self.mainwindow.messagelog.show)
         menu_view.add_separator()
         if not is_mac():  # Full Screen behaves oddly on Macs

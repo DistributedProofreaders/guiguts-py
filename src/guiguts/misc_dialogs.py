@@ -1,8 +1,9 @@
 """Miscellaneous dialogs."""
 
 import tkinter as tk
-from tkinter import ttk, font
+from tkinter import ttk, font, filedialog
 from typing import Any
+import os
 import sys
 import unicodedata
 
@@ -81,7 +82,7 @@ class PreferencesDialog(ToplevelDialog):
 
         font_frame = ttk.Frame(appearance_frame)
         font_frame.grid(column=0, row=3, sticky="NEW", pady=(5, 0))
-        ttk.Label(font_frame, text="Font: ").grid(column=0, row=0, sticky="NEW")
+        ttk.Label(font_frame, text="Font: ").grid(column=0, row=0, sticky="NSEW")
         font_list = sorted(font.families(), key=str.lower)
         font_list.insert(0, COMBO_SEPARATOR)
         for preferred_font in "Courier New", "DejaVu Sans Mono", "DP Sans Mono":
@@ -98,7 +99,7 @@ class PreferencesDialog(ToplevelDialog):
             values=font_list,
             state="readonly",
         )
-        cb.grid(column=1, row=0, sticky="NEW")
+        cb.grid(column=1, row=0, sticky="NSEW")
 
         spinbox = ttk.Spinbox(
             font_frame,
@@ -107,36 +108,38 @@ class PreferencesDialog(ToplevelDialog):
             to=99,
             width=5,
         )
-        spinbox.grid(column=2, row=0, sticky="NEW", padx=2)
+        spinbox.grid(column=2, row=0, sticky="NSEW", padx=2)
         ToolTip(spinbox, "Font size")
 
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
             variable=PersistentBoolean(PrefKey.LINE_NUMBERS),
-        ).grid(column=0, row=4, sticky="NEW", pady=5)
+        ).grid(column=0, row=4, sticky="NSEW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
             text="Automatically show current page image",
             variable=PersistentBoolean(PrefKey.AUTO_IMAGE),
-        ).grid(column=0, row=5, sticky="NEW", pady=5)
+        ).grid(column=0, row=5, sticky="NSEW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))
-        ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
+        bell_frame.grid(column=0, row=6, sticky="NSEW", pady=(5, 0))
+        ttk.Label(bell_frame, text="Warning bell: ").grid(
+            column=0, row=0, sticky="NSEW"
+        )
         ttk.Checkbutton(
             bell_frame,
             text="Audible",
             variable=PersistentBoolean(PrefKey.BELL_AUDIBLE),
-        ).grid(column=1, row=0, sticky="NEW", padx=20)
+        ).grid(column=1, row=0, sticky="NSEW", padx=20)
         ttk.Checkbutton(
             bell_frame,
             text="Visual",
             variable=PersistentBoolean(PrefKey.BELL_VISUAL),
-        ).grid(column=2, row=0, sticky="NEW")
+        ).grid(column=2, row=0, sticky="NSEW")
 
-        # Wrapping tab
+        # Wrapping
         wrapping_frame = ttk.LabelFrame(self.top_frame, text="Wrapping", padding=10)
-        wrapping_frame.grid(column=0, row=1, sticky="NSEW", pady=(10, 0))
+        wrapping_frame.grid(column=1, row=0, sticky="NSEW", padx=(10, 0))
 
         def add_label_spinbox(row: int, label: str, key: PrefKey, tooltip: str) -> None:
             """Add a label and spinbox to the wrapping frame.
@@ -146,7 +149,7 @@ class PreferencesDialog(ToplevelDialog):
                 tooltip: Text for tooltip.
             """
             ttk.Label(wrapping_frame, text=label).grid(
-                column=0, row=row, sticky="NE", pady=2
+                column=0, row=row, sticky="NSE", pady=2
             )
             spinbox = ttk.Spinbox(
                 wrapping_frame,
@@ -209,6 +212,42 @@ class PreferencesDialog(ToplevelDialog):
             PrefKey.WRAP_INDEX_RIGHT_MARGIN,
             "Right margin for index entries",
         )
+
+        # Tools
+        tools_frame = ttk.LabelFrame(self.top_frame, text="Tools", padding=10)
+        tools_frame.grid(column=0, row=1, columnspan=2, sticky="NSEW", pady=(10, 0))
+        tools_frame.columnconfigure(1, weight=1)
+        ttk.Checkbutton(
+            tools_frame,
+            text="Use External Image Viewer",
+            variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_EXTERNAL),
+        ).grid(column=0, row=0, columnspan=3, sticky="NSEW", pady=(0, 10))
+        ttk.Label(tools_frame, text="Image Viewer Command: ").grid(
+            column=0, row=1, sticky="NSW"
+        )
+        ttk.Entry(
+            tools_frame, textvariable=PersistentString(PrefKey.IMAGE_VIEWER_COMMAND)
+        ).grid(column=1, row=1, sticky="NSEW")
+        ttk.Button(
+            tools_frame, text="Browse...", command=self.select_external_image_viewer
+        ).grid(column=2, row=1, sticky="NSE", padx=(10, 0))
+
+    def select_external_image_viewer(self) -> None:
+        """Allow user to choose an external image viewer."""
+        initial = preferences.get(PrefKey.IMAGE_VIEWER_COMMAND)
+        if os.path.isfile(initial):
+            initial_dir = os.path.dirname(initial)
+            initial_file = os.path.basename(initial)
+        else:
+            initial_dir = None
+            initial_file = None
+        filename = filedialog.askopenfilename(
+            title="Select External Image Viewer",
+            initialdir=initial_dir,
+            initialfile=initial_file,
+        )
+        if os.path.isfile(filename):
+            preferences.set(PrefKey.IMAGE_VIEWER_COMMAND, filename)
 
 
 _compose_dict: dict[str, str] = {}
