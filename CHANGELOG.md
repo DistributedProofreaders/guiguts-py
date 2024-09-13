@@ -1,6 +1,21 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.7
+
+- Unicode Search dialog added
+- Unicode block list updated to include more recently defined blocks
+- Warn user in Unicode dialogs if character is "recently added" to Unicode
+
+### Bug Fixes
+
+- Using `$` and `^` in regexes did not match end/start of line
+- Some regex matches overlapped with the previous match
+- Searching forward/backward did not always find the same matches - now does
+  so, except in very rare case.
+- `\C...\E` to execute bad Python code caused a traceback - now errors tidily
+
+
 ## Version 2.0.0-alpha.6
 
 - Unicode & Commonly Used Characters dialog added
