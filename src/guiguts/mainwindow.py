@@ -620,6 +620,35 @@ class MessageLog(logging.Handler):
         self.dialog.lift()
 
 
+class TextPeer(tk.Text):
+    """A peer of an existing text widget"""
+
+    count = 0
+
+    def __init__(  # pylint: disable=super-init-not-called
+        self, master: tk.Widget, cnf: Optional[dict] = None, **kw: Any
+    ) -> None:
+        """Initialize peer text widget."""
+        if cnf is None:
+            cnf = {}
+        TextPeer.count += 1
+        parent = master.master.master  # **Because MainText is inside a Frame - FIXIT**
+        peer_name = f"peer-{TextPeer.count}"
+        if str(parent) == ".":
+            peer_path = f".{peer_name}"
+        else:
+            peer_path = f"{parent}.{peer_name}"
+
+        # Create the peer
+        master.tk.call(master, "peer", "create", peer_path, *self._options(cnf, kw))  # type: ignore[attr-defined]
+
+        # Create the tkinter widget based on the peer
+        # We can't call tk.Text.__init__ because it will try to
+        # create a new text widget. Instead, we want to use
+        # the peer widget that has already been created.
+        tk.BaseWidget._setup(self, parent, {"name": peer_name})  # type: ignore[attr-defined]
+
+
 class MainWindow:
     """Handles the construction of the main window with its basic widgets
 
@@ -678,8 +707,15 @@ class MainWindow:
             column=TEXTIMAGE_WINDOW_COL, row=TEXTIMAGE_WINDOW_ROW, sticky="NSEW"
         )
 
+        self.paned_text_window = tk.PanedWindow(
+            self.paned_window, orient=tk.VERTICAL, sashwidth=4, sashrelief=tk.GROOVE
+        )
+        self.paned_text_window.grid(
+            column=TEXTIMAGE_WINDOW_COL, row=TEXTIMAGE_WINDOW_ROW, sticky="NSEW"
+        )
+
         MainText(
-            self.paned_window,
+            self.paned_text_window,
             root(),
             undo=True,
             wrap="none",
@@ -688,7 +724,11 @@ class MainWindow:
             highlightthickness=0,
         )
 
-        self.paned_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
+        peer = TextPeer(maintext())
+
+        self.paned_window.add(self.paned_text_window, minsize=MIN_PANE_WIDTH)
+        self.paned_text_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
+        self.paned_text_window.add(peer, minsize=MIN_PANE_WIDTH)
         add_text_context_menu(maintext())
 
         MainWindow.mainimage = MainImage(self.paned_window)
