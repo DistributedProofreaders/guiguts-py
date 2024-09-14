@@ -34,7 +34,7 @@ class PreferencesDialog(ToplevelDialog):
 
     def __init__(self) -> None:
         """Initialize preferences dialog."""
-        super().__init__("Settings", resize_y=False)
+        super().__init__("Settings", resize_x=False, resize_y=False)
         self.minsize(250, 10)
 
         # Appearance
@@ -43,22 +43,21 @@ class PreferencesDialog(ToplevelDialog):
         theme_frame = ttk.Frame(appearance_frame)
         theme_frame.grid(column=0, row=0, sticky="NSEW")
         theme_frame.columnconfigure(1, weight=1)
-        ttk.Label(theme_frame, text="Theme: ").grid(column=0, row=0, sticky="NE")
+        ttk.Label(theme_frame, text="Theme (change requires restart): ").grid(
+            column=0, row=0, sticky="NE"
+        )
         cb = ttk.Combobox(
             theme_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
         )
         cb.grid(column=1, row=0, sticky="NEW")
         cb["values"] = ["Default", "Dark", "Light"]
         cb["state"] = "readonly"
-        ttk.Label(
-            appearance_frame, text="(May need to restart program for full effect)"
-        ).grid(column=0, row=1, sticky="NSEW")
         tearoff_check = ttk.Checkbutton(
             appearance_frame,
-            text="Use Tear-Off Menus (requires restart)",
+            text="Use Tear-Off Menus (change requires restart)",
             variable=PersistentBoolean(PrefKey.TEAROFF_MENUS),
         )
-        tearoff_check.grid(column=0, row=2, sticky="NEW", pady=5)
+        tearoff_check.grid(column=0, row=1, sticky="NEW", pady=5)
         if is_mac():
             tearoff_check["state"] = tk.DISABLED
             ToolTip(tearoff_check, "Not available on macOS")
