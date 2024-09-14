@@ -135,6 +135,24 @@ class TextLineNumbers(tk.Canvas):
         self.text_color = themed_style().lookup("TButton", "foreground")
 
 
+class TextPeer(tk.Text):
+    """A peer of maintext's text widget.
+
+    Note that tk.Text.peer_create() doesn't work properly, creating a tk widget, but
+    not an tkinter instance of tk.Text. Hence the need for this:
+    https://stackoverflow.com/questions/58286794 - see top answer
+    """
+
+    count = 0
+
+    def __init__(  # pylint: disable=super-init-not-called
+        self, main_text: "MainText"
+    ) -> None:
+        """Create a peer & a tkinter widget based on the peer."""
+        main_text.tk.call(main_text, "peer", "create", f"{main_text.peer_frame}.peer")
+        tk.BaseWidget._setup(self, main_text.peer_frame, {"name": "peer"})  # type: ignore[attr-defined]
+
+
 class MainText(tk.Text):
     """MainText is the main text window, and inherits from ``tk.Text``."""
 
@@ -293,6 +311,41 @@ class MainText(tk.Text):
 
         maintext(self)  # Register this single instance of MainText
 
+        # Create peer widget
+        self.peer_frame = ttk.Frame()
+        self.peer_frame.columnconfigure(1, weight=1)
+        self.peer_frame.rowconfigure(0, weight=1)
+        self.peer = TextPeer(self)
+        self.peer.grid(column=1, row=0, sticky="NSEW")
+
+        # Configure peer widget using main text as a template
+        self.peer.config(font=self.font)
+        self.peer.bind(
+            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self.peer)
+        )
+        self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
+        self.peer_linenumbers.grid(column=0, row=0, sticky="NSEW")
+
+        def peer_hscroll_set(*args: Any) -> None:
+            self.peer_hscroll.set(*args)
+            self._on_change()
+
+        def peer_vscroll_set(*args: Any) -> None:
+            self.peer_vscroll.set(*args)
+            self._on_change()
+
+        # Create scrollbars, place in Frame, and link to Text
+        self.peer_hscroll = ttk.Scrollbar(
+            self.peer_frame, orient=tk.HORIZONTAL, command=self.peer.xview
+        )
+        self.peer_hscroll.grid(column=1, row=1, sticky="EW")
+        self.peer["xscrollcommand"] = peer_hscroll_set
+        self.peer_vscroll = ttk.Scrollbar(
+            self.peer_frame, orient=tk.VERTICAL, command=self.peer.yview
+        )
+        self.peer_vscroll.grid(column=2, row=0, sticky="NS")
+        self.peer["yscrollcommand"] = peer_vscroll_set
+
         # Need to wait until maintext has been registered to set the font preference
         preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
 
@@ -361,6 +414,7 @@ class MainText(tk.Text):
         if self.numbers_need_updating:
             self.numbers_need_updating = False
             self.linenumbers.redraw()
+            self.peer_linenumbers.redraw()
 
     def add_config_callback(self, func: Callable[[], None]) -> None:
         """Add callback function to a list of functions to be called when
