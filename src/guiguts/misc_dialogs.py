@@ -43,7 +43,7 @@ class PreferencesDialog(ToplevelDialog):
         theme_frame = ttk.Frame(appearance_frame)
         theme_frame.grid(column=0, row=0, sticky="NSEW")
         theme_frame.columnconfigure(1, weight=1)
-        ttk.Label(theme_frame, text="Theme (requires program restart): ").grid(
+        ttk.Label(theme_frame, text="Theme (change requires restart): ").grid(
             column=0, row=0, sticky="NE"
         )
         cb = ttk.Combobox(
@@ -54,7 +54,7 @@ class PreferencesDialog(ToplevelDialog):
         cb["state"] = "readonly"
         tearoff_check = ttk.Checkbutton(
             appearance_frame,
-            text="Use Tear-Off Menus (requires program restart)",
+            text="Use Tear-Off Menus (change requires restart)",
             variable=PersistentBoolean(PrefKey.TEAROFF_MENUS),
         )
         tearoff_check.grid(column=0, row=1, sticky="NEW", pady=5)
