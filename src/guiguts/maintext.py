@@ -102,7 +102,10 @@ class TextLineNumbers(tk.Canvas):
         self["width"] = width
         self.delete("all")
         cur_line = IndexRowCol(self.textwidget.index(tk.INSERT)).row
-        cur_bg = self.textwidget["selectbackground"]
+        if maintext().text_peer_focus == self.textwidget:
+            cur_bg = self.textwidget["selectbackground"]
+        else:
+            cur_bg = self.textwidget["inactiveselectbackground"]
         text_pos = self.winfo_width() - self.x_offset
         index = self.textwidget.index("@0,0")
         while True:
@@ -304,8 +307,8 @@ class MainText(tk.Text):
         self.tag_configure(BOOKMARK_TAG, background="lime", foreground="black")
 
         # Ensure text still shows selected when focus is in another dialog
-        if "inactiveselect" not in kwargs:
-            self["inactiveselect"] = self["selectbackground"]
+        if not is_mac() and "inactiveselect" not in kwargs:
+            self["inactiveselect"] = "#808080"
 
         self.current_sel_ranges: list[IndexRange] = []
         self.prev_sel_ranges: list[IndexRange] = []
@@ -324,6 +327,7 @@ class MainText(tk.Text):
             font=self.font,
             highlightthickness=self["highlightthickness"],
             spacing1=self["spacing1"],
+            inactiveselectbackground=self["inactiveselectbackground"],
         )
         self.peer.bind(
             "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self.peer)
