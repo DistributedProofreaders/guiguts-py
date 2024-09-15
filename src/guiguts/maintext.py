@@ -125,7 +125,7 @@ class TextLineNumbers(tk.Canvas):
             if linenum == cur_line:
                 bbox = list(self.bbox(text))
                 rect = self.create_rectangle(
-                    (bbox[0] - 3, bbox[1] + 3, bbox[2] + self.x_offset - 3, bbox[3]),
+                    (bbox[0] - 3, bbox[1], bbox[2] + self.x_offset - 3, bbox[3]),
                     fill=cur_bg,
                     width=0,
                 )
@@ -308,7 +308,7 @@ class MainText(tk.Text):
 
         # Ensure text still shows selected when focus is in another dialog
         if not is_mac() and "inactiveselect" not in kwargs:
-            self["inactiveselect"] = "#808080"
+            self["inactiveselect"] = "#b0b0b0"
 
         self.current_sel_ranges: list[IndexRange] = []
         self.prev_sel_ranges: list[IndexRange] = []
