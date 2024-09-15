@@ -107,6 +107,7 @@ class TextLineNumbers(tk.Canvas):
         else:
             cur_bg = self.textwidget["inactiveselectbackground"]
         text_pos = self.winfo_width() - self.x_offset
+        line_spacing_adj = int(self.textwidget["spacing1"])
         index = self.textwidget.index("@0,0")
         while True:
             dline = self.textwidget.dlineinfo(index)
@@ -125,7 +126,12 @@ class TextLineNumbers(tk.Canvas):
             if linenum == cur_line:
                 bbox = list(self.bbox(text))
                 rect = self.create_rectangle(
-                    (bbox[0] - 3, bbox[1], bbox[2] + self.x_offset - 3, bbox[3]),
+                    (
+                        bbox[0] - 3,
+                        bbox[1] - line_spacing_adj,
+                        bbox[2] + self.x_offset - 3,
+                        bbox[3],
+                    ),
                     fill=cur_bg,
                     width=0,
                 )
