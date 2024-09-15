@@ -156,7 +156,7 @@ class TextPeer(tk.Text):
 class MainText(tk.Text):
     """MainText is the main text window, and inherits from ``tk.Text``."""
 
-    def __init__(self, parent: tk.Widget, root: tk.Tk, **kwargs: Any) -> None:
+    def __init__(self, parent: tk.PanedWindow, root: tk.Tk, **kwargs: Any) -> None:
         """Create a Frame, and put a TextLineNumbers widget, a Text and two
         Scrollbars in the Frame.
 
@@ -170,6 +170,7 @@ class MainText(tk.Text):
         """
 
         self.root = root
+        self.paned_text_window = parent
 
         # Create surrounding Frame
         self.frame = ttk.Frame(parent)
@@ -319,10 +320,17 @@ class MainText(tk.Text):
         self.peer.grid(column=1, row=0, sticky="NSEW")
 
         # Configure peer widget using main text as a template
-        self.peer.config(font=self.font)
+        self.peer.config(
+            font=self.font,
+            highlightthickness=self["highlightthickness"],
+            spacing1=self["spacing1"],
+        )
         self.peer.bind(
             "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self.peer)
         )
+        self.peer.bind("<Configure>", self._on_change, add=True)
+        self.peer.bind("<KeyRelease>", self._on_change, add=True)
+        self.peer.bind("<ButtonRelease>", self._on_change, add=True)
         self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
         self.peer_linenumbers.grid(column=0, row=0, sticky="NSEW")
 
@@ -334,7 +342,7 @@ class MainText(tk.Text):
             self.peer_vscroll.set(*args)
             self._on_change()
 
-        # Create scrollbars, place in Frame, and link to Text
+        # Create peer scrollbars, place in Frame, and link to peer Text
         self.peer_hscroll = ttk.Scrollbar(
             self.peer_frame, orient=tk.HORIZONTAL, command=self.peer.xview
         )
@@ -345,6 +353,18 @@ class MainText(tk.Text):
         )
         self.peer_vscroll.grid(column=2, row=0, sticky="NS")
         self.peer["yscrollcommand"] = peer_vscroll_set
+
+        # Track whether main text or peer last had focus
+        def text_peer_focus_track(widget: tk.Text) -> None:
+            self.text_peer_focus = widget
+
+        self.text_peer_focus = self
+        self.bind("<FocusIn>", lambda _: text_peer_focus_track(self))
+        self.peer.bind("<FocusIn>", lambda _: text_peer_focus_track(self.peer))
+
+        self.paned_text_window.add(maintext().frame, minsize=20)
+        if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+            self.paned_text_window.add(maintext().peer_frame, minsize=20)
 
         # Need to wait until maintext has been registered to set the font preference
         preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
@@ -444,6 +464,16 @@ class MainText(tk.Text):
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
         return self.frame.grid(*args, **kwargs)
+
+    def show_peer(self) -> None:
+        """Show the peer text widget in the text's parent's paned window."""
+        self.paned_text_window.add(maintext().peer_frame, minsize=20)
+        preferences.set(PrefKey.SPLIT_TEXT_WINDOW, True)
+
+    def hide_peer(self) -> None:
+        """Remove the peer text widget from the text's parent's paned window."""
+        self.paned_text_window.remove(maintext().peer_frame)
+        preferences.set(PrefKey.SPLIT_TEXT_WINDOW, False)
 
     def set_font(self) -> None:
         """Set the font for the main text widget, based on the current Prefs values."""

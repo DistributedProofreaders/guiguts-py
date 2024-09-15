@@ -50,6 +50,9 @@ class Root(tk.Tk):
             value=preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED
         )
         self.allow_config_saves = False
+        self.split_text_window = tk.BooleanVar(
+            value=bool(preferences.get(PrefKey.SPLIT_TEXT_WINDOW))
+        )
 
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)

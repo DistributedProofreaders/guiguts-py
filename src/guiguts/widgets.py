@@ -631,17 +631,24 @@ def theme_set_tk_widget_colors(widget: tk.Text) -> None:
     theme_name = preferences.get(PrefKey.THEME_NAME)
     if theme_name == "Dark":
         widget.configure(
-            background="black", foreground="white", insertbackground="white"
+            background="black",
+            foreground="white",
+            insertbackground="white",
+            highlightbackground="black",
         )
     elif theme_name == "Light":
         widget.configure(
-            background="white", foreground="black", insertbackground="black"
+            background="white",
+            foreground="black",
+            insertbackground="black",
+            highlightbackground="white",
         )
     elif theme_name == "Default":
         widget.configure(
             background=_theme_default_text_bg,
             foreground=_theme_default_text_fg,
             insertbackground=_theme_default_text_ibg,
+            highlightbackground=_theme_default_text_bg,
         )
 
 
