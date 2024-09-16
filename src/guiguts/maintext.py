@@ -225,15 +225,9 @@ class MainText(tk.Text):
         self.bind_event(f"<Shift-{modifier}-ButtonRelease-1>", lambda _event: "break")
         self.column_selecting = False
 
-        # Create Line Numbers widget and bind update routine to all
-        # events that might change which line numbers should be displayed
+        # Create Line Numbers widget
         self.linenumbers = TextLineNumbers(self.frame, self)
         self.linenumbers.grid(column=0, row=0, sticky="NSEW")
-        self.bind_event("<Configure>", self._on_change, add=True, force_break=False)
-        # Use KeyRelease not KeyPress since KeyPress might be caught earlier and not propagated to this point.
-        self.bind_event("<KeyRelease>", self._on_change, add=True, force_break=False)
-        # Add mouse event here after column selection bindings above
-        self.bind_event("<ButtonRelease>", self._on_change, add=True, force_break=False)
         self.numbers_need_updating = False
 
         def hscroll_set(*args: Any) -> None:
@@ -274,37 +268,6 @@ class MainText(tk.Text):
             "<Delete>", lambda _event: self.smart_delete(), force_break=False
         )
 
-        # Add common Mac key bindings for beginning/end of file
-        if is_mac():
-            self.bind_event("<Command-Up>", lambda _event: self.move_to_start())
-            self.bind_event("<Command-Down>", lambda _event: self.move_to_end())
-            self.bind_event("<Command-Shift-Up>", lambda _event: self.select_to_start())
-            self.bind_event(
-                "<Command-Shift-Down>", lambda e_event: self.select_to_end()
-            )
-
-        # Override default left/right arrow key behavior if there is a selection
-        self.bind_event(
-            "<Left>",
-            lambda _event: self.move_to_selection_start(),
-            force_break=False,
-        )
-        self.bind_event(
-            "<Right>",
-            lambda _event: self.move_to_selection_end(),
-            force_break=False,
-        )
-        # Above behavior would affect Shift-Left/Right, so bind those to null functions
-        # and allow default class behavior to happen
-        self.bind_event("<Shift-Right>", lambda _event: "", force_break=False)
-        self.bind_event("<Shift-Left>", lambda _event: "", force_break=False)
-
-        # Since Text widgets don't normally listen to theme changes,
-        # need to do it explicitly here.
-        self.bind_event(
-            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
-        )
-
         # Register this widget to have its focus tracked for inserting special characters
         register_focus_widget(self)
 
@@ -334,13 +297,11 @@ class MainText(tk.Text):
             highlightthickness=self["highlightthickness"],
             spacing1=self["spacing1"],
             inactiveselectbackground=self["inactiveselectbackground"],
+            wrap=self["wrap"],
         )
         self.peer.bind(
             "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self.peer)
         )
-        self.peer.bind("<Configure>", self._on_change, add=True)
-        self.peer.bind("<KeyRelease>", self._on_change, add=True)
-        self.peer.bind("<ButtonRelease>", self._on_change, add=True)
         self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
         self.peer_linenumbers.grid(column=0, row=0, sticky="NSEW")
 
@@ -364,17 +325,87 @@ class MainText(tk.Text):
         self.peer_vscroll.grid(column=2, row=0, sticky="NS")
         self.peer["yscrollcommand"] = peer_vscroll_set
 
-        # Track whether main text or peer last had focus
-        def text_peer_focus_track(widget: tk.Text) -> None:
-            self.text_peer_focus = widget
+        self.text_peer_focus: tk.Text = self
 
-        self.text_peer_focus = self
-        self.bind("<FocusIn>", lambda _: text_peer_focus_track(self))
-        self.peer.bind("<FocusIn>", lambda _: text_peer_focus_track(self.peer))
+        # Track whether main text or peer most recently had focus
+        def text_peer_focus_track(_: tk.Event) -> None:
+            widget = parent.focus_get()
+            if widget in (self, self.peer):
+                self.text_peer_focus = widget  # type: ignore[assignment]
+
+        self.bind("<FocusIn>", text_peer_focus_track, add=True)
+        self.bind("<FocusOut>", text_peer_focus_track, add=True)
+
+        # Register peer widget to have its focus tracked for inserting special characters
+        register_focus_widget(self.peer)
 
         self.paned_text_window.add(maintext().frame, minsize=20)
         if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
             self.paned_text_window.add(maintext().peer_frame, minsize=20)
+
+        # Bindings that both peer and maintext need
+        # Override default left/right arrow key behavior if there is a selection
+        self.bind_event(
+            "<Left>",
+            lambda _event: self.move_to_selection_start(),
+            force_break=False,
+            bind_peer=True,
+        )
+        self.bind_event(
+            "<Right>",
+            lambda _event: self.move_to_selection_end(),
+            force_break=False,
+            bind_peer=True,
+        )
+        # Above behavior would affect Shift-Left/Right, so bind those to null functions
+        # and allow default class behavior to happen
+        self.bind_event(
+            "<Shift-Right>", lambda _event: "", force_break=False, bind_peer=True
+        )
+        self.bind_event(
+            "<Shift-Left>", lambda _event: "", force_break=False, bind_peer=True
+        )
+        # Bind line numbers update routine to all events that might
+        # change which line numbers should be displayed in maintext and peer
+        self.bind_event(
+            "<Configure>", self._on_change, add=True, force_break=False, bind_peer=True
+        )
+        # Use KeyRelease not KeyPress since KeyPress might be caught earlier and not propagated to this point.
+        self.bind_event(
+            "<KeyRelease>", self._on_change, add=True, force_break=False, bind_peer=True
+        )
+        # Add mouse event here after column selection bindings above
+        self.bind_event(
+            "<ButtonRelease>",
+            self._on_change,
+            add=True,
+            force_break=False,
+            bind_peer=True,
+        )
+        # Add common Mac key bindings for beginning/end of file
+        if is_mac():
+            self.bind_event(
+                "<Command-Up>", lambda _event: self.move_to_start(), bind_peer=True
+            )
+            self.bind_event(
+                "<Command-Down>", lambda _event: self.move_to_end(), bind_peer=True
+            )
+            self.bind_event(
+                "<Command-Shift-Up>",
+                lambda _event: self.select_to_start(),
+                bind_peer=True,
+            )
+            self.bind_event(
+                "<Command-Shift-Down>",
+                lambda e_event: self.select_to_end(),
+                bind_peer=True,
+            )
+
+        # Since Text widgets don't normally listen to theme changes,
+        # need to do it explicitly here.
+        self.bind_event(
+            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
+        )
 
         # Need to wait until maintext has been registered to set the font preference
         preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
@@ -389,6 +420,7 @@ class MainText(tk.Text):
         add: bool = False,
         force_break: bool = True,
         bind_all: bool = False,
+        bind_peer: bool = False,
     ) -> None:
         """Bind event string to given function. Provides ability to force
         a "break" return in order to stop class binding being executed.
@@ -399,6 +431,7 @@ class MainText(tk.Text):
             add: True to add this binding without removing existing binding.
             force_break: True to always return "break", regardless of return from `func`.
             bind_all: True to bind keystroke to all other widgets as well as maintext
+            bind_peer: True to bind keystroke to peer, even if bind_all is False
         """
 
         def break_func(event: tk.Event) -> Any:
@@ -406,9 +439,11 @@ class MainText(tk.Text):
             func_ret = func(event)
             return "break" if force_break else func_ret
 
-        super().bind(event_string, break_func, add)
+        self.bind(event_string, break_func, add)
         if bind_all:
             self.bind_all(event_string, break_func, add)
+        if bind_peer:
+            self.peer.bind(event_string, break_func, add)
 
     # The following methods are simply calling the Text widget method
     # then updating the linenumbers widget
@@ -532,8 +567,8 @@ class MainText(tk.Text):
         lk = re.sub("(?<=[^A-Za-z])[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
         uk = re.sub("(?<=[^A-Za-z])[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
-        self.bind_event(lk, handler, bind_all=bind_all)
-        self.bind_event(uk, handler, bind_all=bind_all)
+        self.bind_event(lk, handler, bind_all=bind_all, bind_peer=True)
+        self.bind_event(uk, handler, bind_all=bind_all, bind_peer=True)
 
     #
     # Handle "modified" flag
@@ -629,7 +664,7 @@ class MainText(tk.Text):
         Returns:
             IndexRowCol containing position of the insert cursor.
         """
-        return self.rowcol(tk.INSERT)
+        return IndexRowCol(self.text_peer_focus.index(tk.INSERT))
 
     def set_insert_index(self, insert_pos: IndexRowCol, focus: bool = True) -> None:
         """Set the position of the insert cursor.
@@ -638,21 +673,25 @@ class MainText(tk.Text):
             insert_pos: Location to position insert cursor.
             focus: Optional, False means focus will not be forced to maintext
         """
-        self.mark_set(tk.INSERT, insert_pos.index())
+        self.text_peer_focus.mark_set(tk.INSERT, insert_pos.index())
         # The `see` method can leave the desired line at the top or bottom of window.
         # So, we "see" lines above and below desired line incrementally up to
         # half window height each way, ensuring desired line is left in the middle.
         # If performance turns out to be an issue, consider giving `step` to `range`.
         # Step should be smaller than half minimum likely window height.
-        start_index = self.index(f"@0,{int(self.cget('borderwidth'))} linestart")
-        end_index = self.index(f"@0,{self.winfo_height()} linestart")
+        start_index = self.text_peer_focus.index(
+            f"@0,{int(self.text_peer_focus.cget('borderwidth'))} linestart"
+        )
+        end_index = self.text_peer_focus.index(
+            f"@0,{self.text_peer_focus.winfo_height()} linestart"
+        )
         n_lines = IndexRowCol(end_index).row - IndexRowCol(start_index).row
         for inc in range(1, int(n_lines / 2) + 1):
-            self.see(f"{tk.INSERT}-{inc}l")
-            self.see(f"{tk.INSERT}+{inc}l")
-        self.see(tk.INSERT)
+            self.text_peer_focus.see(f"{tk.INSERT}-{inc}l")
+            self.text_peer_focus.see(f"{tk.INSERT}+{inc}l")
+        self.text_peer_focus.see(tk.INSERT)
         if focus:
-            self.focus_set()
+            self.text_peer_focus.focus_set()
 
     def set_mark_position(
         self,
@@ -734,7 +773,7 @@ class MainText(tk.Text):
 
     def clear_selection(self) -> None:
         """Clear any current text selection."""
-        self.tag_remove("sel", "1.0", tk.END)
+        self.text_peer_focus.tag_remove("sel", "1.0", tk.END)
 
     def do_select(self, sel_range: IndexRange) -> None:
         """Select the given range of text.
@@ -742,7 +781,9 @@ class MainText(tk.Text):
         Args:
             sel_range: IndexRange containing start and end of text to be selected."""
         self.clear_selection()
-        self.tag_add("sel", sel_range.start.index(), sel_range.end.index())
+        self.text_peer_focus.tag_add(
+            "sel", sel_range.start.index(), sel_range.end.index()
+        )
 
     def selected_ranges(self) -> list[IndexRange]:
         """Get the ranges of text marked with the `sel` tag.
@@ -753,7 +794,7 @@ class MainText(tk.Text):
             to the rightmost selected columns in the first/last rows.
             If column is greater than line length it equates to end of line.
         """
-        ranges = self.tag_ranges("sel")
+        ranges = self.text_peer_focus.tag_ranges("sel")
         assert len(ranges) % 2 == 0
         sel_ranges = []
         if len(ranges) > 0:
@@ -780,7 +821,7 @@ class MainText(tk.Text):
         Returns:
             String containing the selected text, or empty string if none selected.
         """
-        ranges = self.tag_ranges("sel")
+        ranges = self.text_peer_focus.tag_ranges("sel")
         assert len(ranges) % 2 == 0
         if ranges:
             return self.get(ranges[0], ranges[1])
@@ -862,7 +903,7 @@ class MainText(tk.Text):
                 start_mark = mark
             elif mark.startswith(SELECTION_MARK_END):
                 assert start_mark
-                self.tag_add("sel", start_mark, mark)
+                self.text_peer_focus.tag_add("sel", start_mark, mark)
             next_mark = self.mark_next(mark)
 
     def column_delete(self) -> None:
@@ -1124,8 +1165,8 @@ class MainText(tk.Text):
             return ""
         pos = sel_ranges[-1].end if end else sel_ranges[0].start
         # Use low-level calls to avoid "see" behavior of set_insert_index
-        self.mark_set(tk.INSERT, pos.index())
-        self.see(tk.INSERT)
+        self.text_peer_focus.mark_set(tk.INSERT, pos.index())
+        self.text_peer_focus.see(tk.INSERT)
         self.clear_selection()
         return "break"
 

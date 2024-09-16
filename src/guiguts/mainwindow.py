@@ -707,6 +707,7 @@ class MainWindow:
 
         self.paned_window.add(self.paned_text_window, minsize=MIN_PANE_WIDTH)
         add_text_context_menu(maintext())
+        add_text_context_menu(maintext().peer)
 
         MainWindow.mainimage = MainImage(self.paned_window)
 

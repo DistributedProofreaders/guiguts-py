@@ -689,7 +689,7 @@ def register_focus_widget(widget: tk.Entry | tk.Text) -> None:
         global _text_focus_widget
         _text_focus_widget = event.widget
 
-    widget.bind("<FocusIn>", set_focus_widget)
+    widget.bind("<FocusIn>", set_focus_widget, add=True)
     if _text_focus_widget is None:
         _text_focus_widget = widget
 
