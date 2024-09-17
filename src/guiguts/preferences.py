@@ -68,6 +68,7 @@ class PrefKey(StrEnum):
     UNICODE_BLOCK = auto()
     UNICODE_SEARCH_HISTORY = auto()
     SPLIT_TEXT_WINDOW = auto()
+    SPLIT_TEXT_SASH_COORD = auto()
 
 
 class Preferences:

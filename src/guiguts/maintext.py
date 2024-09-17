@@ -37,6 +37,7 @@ PAGEMARK_PREFIX = "Pg"
 REPLACE_END_MARK = "ReplaceEnd"
 SELECTION_MARK_START = "SelectionMarkStart"
 SELECTION_MARK_END = "SelectionMarkEnd"
+PEER_MIN_SIZE = 50
 
 
 class FindMatch:
@@ -93,7 +94,7 @@ class TextLineNumbers(tk.Canvas):
         tk.Canvas.__init__(self, parent, *args, highlightthickness=0, **kwargs)
         # Canvas needs to listen for theme change
         self.bind("<<ThemeChanged>>", lambda event: self.theme_change())
-        self.text_color = "black"
+        self.text_color = themed_style().lookup("TButton", "foreground")
 
     def redraw(self) -> None:
         """Redraw line numbers."""
@@ -102,7 +103,7 @@ class TextLineNumbers(tk.Canvas):
         self["width"] = width
         self.delete("all")
         cur_line = IndexRowCol(self.textwidget.index(tk.INSERT)).row
-        if maintext().text_peer_focus == self.textwidget:
+        if maintext().focus_widget() == self.textwidget:
             cur_bg = self.textwidget["selectbackground"]
         else:
             cur_bg = self.textwidget["inactiveselectbackground"]
@@ -325,13 +326,13 @@ class MainText(tk.Text):
         self.peer_vscroll.grid(column=2, row=0, sticky="NS")
         self.peer["yscrollcommand"] = peer_vscroll_set
 
-        self.text_peer_focus: tk.Text = self
+        self._text_peer_focus: tk.Text = self
 
         # Track whether main text or peer most recently had focus
         def text_peer_focus_track(_: tk.Event) -> None:
             widget = parent.focus_get()
             if widget in (self, self.peer):
-                self.text_peer_focus = widget  # type: ignore[assignment]
+                self._text_peer_focus = widget  # type: ignore[assignment]
 
         self.bind("<FocusIn>", text_peer_focus_track, add=True)
         self.bind("<FocusOut>", text_peer_focus_track, add=True)
@@ -339,11 +340,17 @@ class MainText(tk.Text):
         # Register peer widget to have its focus tracked for inserting special characters
         register_focus_widget(self.peer)
 
-        self.paned_text_window.add(maintext().frame, minsize=20)
-        if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
-            self.paned_text_window.add(maintext().peer_frame, minsize=20)
+        self.paned_text_window.add(maintext().frame, minsize=PEER_MIN_SIZE)
 
         # Bindings that both peer and maintext need
+        def switch_text_peer(event: tk.Event) -> None:
+            """Switch focus between main text and peer widget"""
+            if event.widget == self and preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+                self.peer.focus()
+            else:
+                self.focus()
+
+        self.bind_event("<Tab>", switch_text_peer, bind_peer=True)
         # Override default left/right arrow key behavior if there is a selection
         self.bind_event(
             "<Left>",
@@ -410,8 +417,28 @@ class MainText(tk.Text):
         # Need to wait until maintext has been registered to set the font preference
         preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
 
+        # Delay showing peer to avoid getting spurious sash positions
+        if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+            self.after_idle(self.show_peer)
+
         # Force focus to maintext widget
         self.after_idle(lambda: grab_focus(self.root, self, True))
+
+    def focus_widget(self) -> tk.Text:
+        """Return whether main text or peer last had focus.
+
+        Checks current focus, and if neither, returns the one that had it last.
+
+        Returns:
+            Main text widget or peer widget.
+        """
+        try:
+            focus = self.paned_text_window.focus_get()
+        except KeyError:
+            focus = self._text_peer_focus
+        if focus in (self, self.peer):
+            return focus  # type: ignore[return-value]
+        return self._text_peer_focus
 
     def bind_event(
         self,
@@ -504,7 +531,15 @@ class MainText(tk.Text):
         if not self.numbers_need_updating:
             self.root.after_idle(self._do_linenumbers_redraw)
             self.root.after_idle(self._call_config_callbacks)
+            self.root.after_idle(self.save_sash_coords)
             self.numbers_need_updating = True
+
+    def save_sash_coords(self) -> None:
+        """Save the splitter sash coords in Prefs."""
+        if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+            preferences.set(
+                PrefKey.SPLIT_TEXT_SASH_COORD, self.paned_text_window.sash_coord(0)[1]
+            )
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
@@ -512,8 +547,12 @@ class MainText(tk.Text):
 
     def show_peer(self) -> None:
         """Show the peer text widget in the text's parent's paned window."""
-        self.paned_text_window.add(maintext().peer_frame, minsize=20)
+        self.paned_text_window.add(maintext().peer_frame, minsize=PEER_MIN_SIZE)
+        sash_coord = preferences.get(PrefKey.SPLIT_TEXT_SASH_COORD)
+        if sash_coord:
+            self.paned_text_window.sash_place(0, 0, sash_coord)
         preferences.set(PrefKey.SPLIT_TEXT_WINDOW, True)
+        self.peer_linenumbers.theme_change()
 
     def hide_peer(self) -> None:
         """Remove the peer text widget from the text's parent's paned window."""
@@ -664,34 +703,40 @@ class MainText(tk.Text):
         Returns:
             IndexRowCol containing position of the insert cursor.
         """
-        return IndexRowCol(self.text_peer_focus.index(tk.INSERT))
+        return IndexRowCol(self.focus_widget().index(tk.INSERT))
 
-    def set_insert_index(self, insert_pos: IndexRowCol, focus: bool = True) -> None:
+    def set_insert_index(
+        self,
+        insert_pos: IndexRowCol,
+        focus: bool = True,
+        focus_widget: Optional[tk.Text] = None,
+    ) -> None:
         """Set the position of the insert cursor.
 
         Args:
             insert_pos: Location to position insert cursor.
             focus: Optional, False means focus will not be forced to maintext
+            focus_widget: Optionally set index in this widget, not the default
         """
-        self.text_peer_focus.mark_set(tk.INSERT, insert_pos.index())
+        if focus_widget is None:
+            focus_widget = self.focus_widget()
+        focus_widget.mark_set(tk.INSERT, insert_pos.index())
         # The `see` method can leave the desired line at the top or bottom of window.
         # So, we "see" lines above and below desired line incrementally up to
         # half window height each way, ensuring desired line is left in the middle.
         # If performance turns out to be an issue, consider giving `step` to `range`.
         # Step should be smaller than half minimum likely window height.
-        start_index = self.text_peer_focus.index(
-            f"@0,{int(self.text_peer_focus.cget('borderwidth'))} linestart"
+        start_index = focus_widget.index(
+            f"@0,{int(focus_widget.cget('borderwidth'))} linestart"
         )
-        end_index = self.text_peer_focus.index(
-            f"@0,{self.text_peer_focus.winfo_height()} linestart"
-        )
+        end_index = focus_widget.index(f"@0,{focus_widget.winfo_height()} linestart")
         n_lines = IndexRowCol(end_index).row - IndexRowCol(start_index).row
         for inc in range(1, int(n_lines / 2) + 1):
-            self.text_peer_focus.see(f"{tk.INSERT}-{inc}l")
-            self.text_peer_focus.see(f"{tk.INSERT}+{inc}l")
-        self.text_peer_focus.see(tk.INSERT)
+            focus_widget.see(f"{tk.INSERT}-{inc}l")
+            focus_widget.see(f"{tk.INSERT}+{inc}l")
+        focus_widget.see(tk.INSERT)
         if focus:
-            self.text_peer_focus.focus_set()
+            focus_widget.focus_set()
 
     def set_mark_position(
         self,
@@ -773,7 +818,7 @@ class MainText(tk.Text):
 
     def clear_selection(self) -> None:
         """Clear any current text selection."""
-        self.text_peer_focus.tag_remove("sel", "1.0", tk.END)
+        self.focus_widget().tag_remove("sel", "1.0", tk.END)
 
     def do_select(self, sel_range: IndexRange) -> None:
         """Select the given range of text.
@@ -781,7 +826,7 @@ class MainText(tk.Text):
         Args:
             sel_range: IndexRange containing start and end of text to be selected."""
         self.clear_selection()
-        self.text_peer_focus.tag_add(
+        self.focus_widget().tag_add(
             "sel", sel_range.start.index(), sel_range.end.index()
         )
 
@@ -794,7 +839,7 @@ class MainText(tk.Text):
             to the rightmost selected columns in the first/last rows.
             If column is greater than line length it equates to end of line.
         """
-        ranges = self.text_peer_focus.tag_ranges("sel")
+        ranges = self.focus_widget().tag_ranges("sel")
         assert len(ranges) % 2 == 0
         sel_ranges = []
         if len(ranges) > 0:
@@ -821,7 +866,7 @@ class MainText(tk.Text):
         Returns:
             String containing the selected text, or empty string if none selected.
         """
-        ranges = self.text_peer_focus.tag_ranges("sel")
+        ranges = self.focus_widget().tag_ranges("sel")
         assert len(ranges) % 2 == 0
         if ranges:
             return self.get(ranges[0], ranges[1])
@@ -903,7 +948,7 @@ class MainText(tk.Text):
                 start_mark = mark
             elif mark.startswith(SELECTION_MARK_END):
                 assert start_mark
-                self.text_peer_focus.tag_add("sel", start_mark, mark)
+                self.focus_widget().tag_add("sel", start_mark, mark)
             next_mark = self.mark_next(mark)
 
     def column_delete(self) -> None:
@@ -1165,8 +1210,8 @@ class MainText(tk.Text):
             return ""
         pos = sel_ranges[-1].end if end else sel_ranges[0].start
         # Use low-level calls to avoid "see" behavior of set_insert_index
-        self.text_peer_focus.mark_set(tk.INSERT, pos.index())
-        self.text_peer_focus.see(tk.INSERT)
+        self.focus_widget().mark_set(tk.INSERT, pos.index())
+        self.focus_widget().see(tk.INSERT)
         self.clear_selection()
         return "break"
 

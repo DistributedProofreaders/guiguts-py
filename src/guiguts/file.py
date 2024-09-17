@@ -48,6 +48,7 @@ BINFILE_SUFFIX = ".json"
 BINFILE_KEY_MD5CHECKSUM: Final = "md5checksum"
 BINFILE_KEY_PAGEDETAILS: Final = "pagedetails"
 BINFILE_KEY_INSERTPOS: Final = "insertpos"
+BINFILE_KEY_INSERTPOSPEER: Final = "insertpospeer"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
 BINFILE_KEY_PROJECTID: Final = "projectid"
 BINFILE_KEY_LANGUAGES: Final = "languages"
@@ -80,6 +81,7 @@ class BinDict(TypedDict):
     md5checksum: str
     pagedetails: PageDetails
     insertpos: str
+    insertpospeer: str
     imagedir: str
     projectid: str
     languages: str
@@ -355,7 +357,10 @@ class File:
         Returns:
             True if main file and text file match, False otherwise.
         """
-        self.set_initial_position(bin_dict.get(BINFILE_KEY_INSERTPOS))
+        self.set_initial_position(bin_dict.get(BINFILE_KEY_INSERTPOS), maintext())
+        self.set_initial_position(
+            bin_dict.get(BINFILE_KEY_INSERTPOSPEER), maintext().peer
+        )
         # Since object loaded from bin file is a dictionary of dictionaries,
         # need to create PageDetails from the loaded raw data.
         if page_details := bin_dict.get(BINFILE_KEY_PAGEDETAILS):
@@ -385,7 +390,8 @@ class File:
         self.update_page_marks(self.page_details)
         bin_dict: BinDict = {
             BINFILE_KEY_MD5CHECKSUM: self.get_md5_checksum(),
-            BINFILE_KEY_INSERTPOS: maintext().get_insert_index().index(),
+            BINFILE_KEY_INSERTPOS: maintext().index(tk.INSERT),
+            BINFILE_KEY_INSERTPOSPEER: maintext().peer.index(tk.INSERT),
             BINFILE_KEY_PAGEDETAILS: self.page_details,
             BINFILE_KEY_IMAGEDIR: self.image_dir,
             BINFILE_KEY_PROJECTID: self.project_id,
@@ -437,15 +443,16 @@ class File:
                 mark = page_mark_from_img(img)
                 maintext().set_mark_position(mark, IndexRowCol(detail["index"]))
 
-    def set_initial_position(self, index: str | None) -> None:
+    def set_initial_position(self, index: str | None, widget: tk.Text) -> None:
         """Set initial cursor position after file is loaded.
 
         Args:
             index: Location for insert cursor. If none, go to start.
+            widget: The widget to set insert cursor for.
         """
         if not index:
             index = "1.0"
-        maintext().set_insert_index(IndexRowCol(index))
+        maintext().set_insert_index(IndexRowCol(index), focus_widget=widget)
 
     def update_page_marks(self, page_details: PageDetails) -> None:
         """Update page mark locations in page details structure.
