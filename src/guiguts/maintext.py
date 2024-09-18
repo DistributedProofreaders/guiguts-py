@@ -333,9 +333,12 @@ class MainText(tk.Text):
             widget = parent.focus_get()
             if widget in (self, self.peer):
                 self._text_peer_focus = widget  # type: ignore[assignment]
+                logger.debug(f"track - {widget}")
+            else:
+                logger.debug(f"track - ignoring (current={self._text_peer_focus})")
 
-        self.bind("<FocusIn>", text_peer_focus_track, add=True)
-        self.bind("<FocusOut>", text_peer_focus_track, add=True)
+        self.bind_event("<FocusIn>", text_peer_focus_track, add=True, bind_peer=True)
+        self.bind_event("<FocusOut>", text_peer_focus_track, add=True, bind_peer=True)
 
         # Register peer widget to have its focus tracked for inserting special characters
         register_focus_widget(self.peer)
@@ -434,10 +437,14 @@ class MainText(tk.Text):
         """
         try:
             focus = self.paned_text_window.focus_get()
+            # logger.debug(f"get - {focus}")
         except KeyError:
             focus = self._text_peer_focus
+            # logger.debug(f"get - failed, so using {focus}")
         if focus in (self, self.peer):
+            # logger.debug(f"get - returning {focus}")
             return focus  # type: ignore[return-value]
+        # logger.debug(f"get - neither, so using {self._text_peer_focus}")
         return self._text_peer_focus
 
     def bind_event(
