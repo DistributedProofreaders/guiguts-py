@@ -471,7 +471,7 @@ class MainText(tk.Text):
         def break_func(event: tk.Event) -> Any:
             """Call bound function. Force "break" return if needed."""
             func_ret = func(event)
-            return "break" if force_break else func_ret
+            return "break" if force_break and not add else func_ret
 
         self.bind(event_string, break_func, add)
         if bind_all:
