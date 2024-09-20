@@ -672,24 +672,42 @@ class MainWindow:
         )
 
         self.paned_window = tk.PanedWindow(
-            root(), orient=tk.HORIZONTAL, sashwidth=4, sashrelief=tk.GROOVE
+            root(),
+            orient=tk.HORIZONTAL,
+            sashwidth=4,
+            sashrelief=tk.RIDGE,
+            showhandle=True,
+            handlesize=10,
         )
         self.paned_window.grid(
             column=TEXTIMAGE_WINDOW_COL, row=TEXTIMAGE_WINDOW_ROW, sticky="NSEW"
         )
 
-        MainText(
+        self.paned_text_window = tk.PanedWindow(
             self.paned_window,
+            orient=tk.VERTICAL,
+            sashwidth=4,
+            sashrelief=tk.RIDGE,
+            showhandle=True,
+            handlesize=10,
+        )
+        self.paned_text_window.grid(
+            column=TEXTIMAGE_WINDOW_COL, row=TEXTIMAGE_WINDOW_ROW, sticky="NSEW"
+        )
+
+        MainText(
+            self.paned_text_window,
             root(),
             undo=True,
             wrap="none",
             autoseparators=True,
             maxundo=-1,
-            highlightthickness=0,
+            highlightthickness=2,
         )
 
-        self.paned_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
+        self.paned_window.add(self.paned_text_window, minsize=MIN_PANE_WIDTH)
         add_text_context_menu(maintext())
+        add_text_context_menu(maintext().peer)
 
         MainWindow.mainimage = MainImage(self.paned_window)
 

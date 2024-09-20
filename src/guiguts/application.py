@@ -381,6 +381,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             PrefKey.UNICODE_BLOCK, UnicodeBlockDialog.commonly_used_characters_name
         )
         preferences.set_default(PrefKey.UNICODE_SEARCH_HISTORY, [])
+        preferences.set_default(PrefKey.SPLIT_TEXT_WINDOW, False)
+        preferences.set_default(PrefKey.SPLIT_TEXT_SASH_COORD, 0)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -629,6 +631,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_view_menu(self) -> None:
         """Create the View menu."""
         menu_view = Menu(menubar(), "~View")
+        menu_view.add_checkbox(
+            "Split ~Text Window",
+            lambda: maintext().show_peer(),
+            lambda: maintext().hide_peer(),
+            root().split_text_window,
+        )
         menu_view.add_checkbox(
             "~Dock Image",
             self.mainwindow.dock_image,
