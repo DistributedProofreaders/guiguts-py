@@ -435,6 +435,9 @@ class MainText(tk.Text):
         Returns:
             Main text widget or peer widget.
         """
+        # Checking current focus, then falling back on _text_peer_focus,
+        # is possibly unnecessary belt & suspenders. In theory, this function
+        # should just `return _text_peer_focus` with no other checks
         try:
             focus = self.paned_text_window.focus_get()
             # logger.debug(f"get - {focus}")
