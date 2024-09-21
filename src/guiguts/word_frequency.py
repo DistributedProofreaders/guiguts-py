@@ -708,6 +708,7 @@ def wf_populate(wf_dialog: WordFrequencyDialog) -> None:
         wf_dialog: The word frequency dialog.
     """
     Busy.busy()
+    wf_dialog.previous_word = ""
     display_type = preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
 
     # Suspects Only is only relevant for some modes
