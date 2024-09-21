@@ -568,6 +568,7 @@ class MainText(tk.Text):
         """Remove the peer text widget from the text's parent's paned window."""
         self.paned_text_window.remove(maintext().peer_frame)
         preferences.set(PrefKey.SPLIT_TEXT_WINDOW, False)
+        self.focus()  # Return focus to the main text.
 
     def set_font(self) -> None:
         """Set the font for the main text widget, based on the current Prefs values."""
