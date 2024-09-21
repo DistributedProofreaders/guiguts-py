@@ -9,6 +9,11 @@
 - Minor wording improvements to Preferences dialog
 - Suspects Only checkbox in Word Frequency is now hidden when not relevant
 
+### Known bugs discovered pre-testing alpha.8 (also in previous versions)
+
+- Some false positives in Word Frequency hyphens check
+- Some false positives in Ital/Bold/SC/etc check
+
 
 ## Version 2.0.0-alpha.7
 
