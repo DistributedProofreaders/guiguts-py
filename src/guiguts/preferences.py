@@ -34,6 +34,7 @@ class PrefKey(StrEnum):
     SEARCHDIALOG_WHOLE_WORD = auto()
     SEARCHDIALOG_WRAP = auto()
     SEARCHDIALOG_REGEX = auto()
+    SEARCHDIALOG_MULTI_REPLACE = auto()
     WFDIALOG_SUSPECTS_ONLY = auto()
     WFDIALOG_IGNORE_CASE = auto()
     WFDIALOG_DISPLAY_TYPE = auto()

@@ -11,7 +11,7 @@ import regex as re
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError, FindMatch
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey
-from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, sing_plur, is_mac
+from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, sing_plur
 from guiguts.widgets import (
     ToplevelDialog,
     Combobox,
@@ -25,6 +25,8 @@ logger = logging.getLogger(__package__)
 MARK_FOUND_START = "FoundStart"
 MARK_FOUND_END = "FoundEnd"
 MARK_END_RANGE = "SearchRangeEnd"
+PADX = 2
+PADY = 2
 
 
 class SearchDialog(ToplevelDialog):
@@ -50,33 +52,28 @@ class SearchDialog(ToplevelDialog):
             SearchDialog.selection
         except AttributeError:
             SearchDialog.selection = tk.BooleanVar(value=False)
-
-        if not is_mac():
-            kwargs["resize_y"] = False
         super().__init__("Search & Replace", *args, **kwargs)
         self.minsize(400, 100)
 
         # Frames
         self.top_frame.columnconfigure(0, weight=1)
+        for row in range(6):
+            self.top_frame.rowconfigure(row, weight=1)
         options_frame = ttk.Frame(
             self.top_frame, padding=3, borderwidth=1, relief=tk.GROOVE
         )
-        options_frame.grid(row=0, column=0, columnspan=2, sticky="NSEW")
+        options_frame.grid(
+            row=0, column=0, columnspan=3, rowspan=2, ipady=5, sticky="NSEW"
+        )
         options_frame.columnconfigure(0, weight=1)
         options_frame.columnconfigure(1, weight=1)
         options_frame.columnconfigure(2, weight=1)
-        search_frame1 = ttk.Frame(self.top_frame)
-        search_frame1.grid(row=1, column=0, sticky="NSEW")
-        search_frame1.columnconfigure(0, weight=1)
-        search_frame2 = ttk.Frame(self.top_frame)
-        search_frame2.grid(row=1, column=1, sticky="SEW")
-        search_frame2.columnconfigure(0, weight=1)
-        selection_frame = ttk.Frame(
-            self.top_frame, padding=1, borderwidth=1, relief=tk.GROOVE
-        )
-        selection_frame.grid(row=0, column=2, rowspan=3, sticky="NSEW")
+        options_frame.rowconfigure(0, weight=1)
+        options_frame.rowconfigure(1, weight=1)
         message_frame = ttk.Frame(self.top_frame, padding=1)
-        message_frame.grid(row=3, column=0, columnspan=3, sticky="NSEW")
+        message_frame.grid(row=6, column=0, columnspan=4, sticky="NSEW")
+        self.separator = ttk.Separator(self.top_frame, orient=tk.VERTICAL)
+        self.separator.grid(row=0, column=3, rowspan=6, padx=2, sticky="NSEW")
 
         # Search
         style = ttk.Style()
@@ -100,26 +97,26 @@ class SearchDialog(ToplevelDialog):
             return True
 
         self.search_box = Combobox(
-            search_frame1,
+            self.top_frame,
             PrefKey.SEARCH_HISTORY,
             width=30,
             font=maintext().font,
             validate="all",
             validatecommand=(self.register(is_valid_regex), "%P"),
         )
-        self.search_box.grid(row=0, column=0, padx=2, pady=(5, 0), sticky="NSEW")
+        self.search_box.grid(row=2, column=0, padx=PADX, pady=PADY, sticky="NSEW")
         # Register search box to have its focus tracked for inserting special characters
         register_focus_widget(self.search_box)
         self.search_box.focus()
 
         search_button = ttk.Button(
-            search_frame1,
+            self.top_frame,
             text="Search",
             default="active",
             takefocus=False,
             command=self.search_clicked,
         )
-        search_button.grid(row=0, column=1, pady=(5, 0), sticky="NSEW")
+        search_button.grid(row=2, column=1, padx=PADX, pady=PADY, sticky="NSEW")
         mouse_bind(
             search_button,
             "Shift+1",
@@ -131,18 +128,19 @@ class SearchDialog(ToplevelDialog):
         )
 
         # Count & Find All
-        ttk.Button(
-            selection_frame,
+        self.count_btn = ttk.Button(
+            self.top_frame,
             text="Count",
             takefocus=False,
             command=self.count_clicked,
-        ).grid(row=1, column=0, padx=2, pady=(3, 2), sticky="NSEW")
+        )
+        self.count_btn.grid(row=1, column=4, padx=PADX, pady=PADY, sticky="NSEW")
         ttk.Button(
-            selection_frame,
+            self.top_frame,
             text="Find All",
             takefocus=False,
             command=self.findall_clicked,
-        ).grid(row=2, column=0, padx=2, pady=2, sticky="NSEW")
+        ).grid(row=2, column=4, padx=PADX, pady=PADY, sticky="NSEW")
 
         # Options
         ttk.Checkbutton(
@@ -159,6 +157,13 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=0, column=1, padx=2, columnspan=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
+            text="Regex",
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX),
+            takefocus=False,
+            command=lambda: is_valid_regex(self.search_box.get()),
+        ).grid(row=0, column=2, padx=2, sticky="NSEW")
+        ttk.Checkbutton(
+            options_frame,
             text="Whole word",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WHOLE_WORD),
             takefocus=False,
@@ -171,57 +176,116 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=1, column=1, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
-            text="Regex",
-            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX),
+            text="Multi-replace",
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MULTI_REPLACE),
             takefocus=False,
-            command=lambda: is_valid_regex(self.search_box.get()),
+            command=lambda: self.show_multi_replace(
+                preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE)
+            ),
         ).grid(row=1, column=2, padx=2, sticky="NSEW")
         ttk.Checkbutton(
-            selection_frame,
+            self.top_frame,
             text="In selection",
             variable=SearchDialog.selection,
             takefocus=False,
-        ).grid(row=0, column=0, sticky="NSE")
+        ).grid(row=0, column=4, sticky="NSE")
 
         # Replace
-        self.replace_box = Combobox(
-            search_frame1, PrefKey.REPLACE_HISTORY, width=30, font=maintext().font
-        )
-        self.replace_box.grid(row=1, column=0, padx=2, pady=(4, 6), sticky="NSEW")
-        # Register replace box to have its focus tracked for inserting special characters
-        register_focus_widget(self.replace_box)
+        self.replace_box: list[Combobox] = []
+        self.replace_btn: list[ttk.Button] = []
+        self.rands_btn: list[ttk.Button] = []
+        self.repl_all_btn: list[ttk.Button] = []
+        for rep_num in range(3):
+            cbox = Combobox(
+                self.top_frame, PrefKey.REPLACE_HISTORY, width=30, font=maintext().font
+            )
+            cbox.grid(row=rep_num + 3, column=0, padx=PADX, pady=PADY, sticky="NSEW")
+            self.replace_box.append(cbox)
+            # Register replace box to have its focus tracked for inserting special characters
+            register_focus_widget(cbox)
 
-        ttk.Button(
-            search_frame1,
-            text="Replace",
-            takefocus=False,
-            command=self.replace_clicked,
-        ).grid(row=1, column=1, pady=(4, 6), sticky="NSEW")
-        rands_button = ttk.Button(
-            search_frame2,
-            text="R & S",
-            takefocus=False,
-            command=lambda *args: self.replace_clicked(search_again=True),
-        )
-        rands_button.grid(row=0, column=0, padx=(0, 2), pady=(2, 6), sticky="NSEW")
-        mouse_bind(
-            rands_button,
-            "Shift+1",
-            lambda *args: self.replace_clicked(opposite_dir=True, search_again=True),
-        )
-        ttk.Button(
-            selection_frame,
-            text="Replace All",
-            takefocus=False,
-            command=self.replaceall_clicked,
-        ).grid(row=3, column=0, padx=2, pady=2, sticky="NSEW")
+            r_btn = ttk.Button(
+                self.top_frame,
+                text="Replace",
+                takefocus=False,
+                command=lambda idx=rep_num: self.replace_clicked(idx),  # type: ignore[misc]
+            )
+            r_btn.grid(row=rep_num + 3, column=1, padx=PADX, pady=PADY, sticky="NSEW")
+            self.replace_btn.append(r_btn)
+
+            rands_button = ttk.Button(
+                self.top_frame,
+                text="R & S",
+                takefocus=False,
+                command=lambda idx=rep_num: self.replace_clicked(  # type: ignore[misc]
+                    idx, search_again=True
+                ),
+            )
+            rands_button.grid(
+                row=rep_num + 3, column=2, padx=PADX, pady=PADY, sticky="NSEW"
+            )
+            mouse_bind(
+                rands_button,
+                "Shift+1",
+                lambda idx=rep_num: self.replace_clicked(  # type: ignore[misc]
+                    idx, opposite_dir=True, search_again=True
+                ),
+            )
+            self.rands_btn.append(rands_button)
+
+            repl_all_btn = ttk.Button(
+                self.top_frame,
+                text="Replace All",
+                takefocus=False,
+                command=lambda idx=rep_num: self.replaceall_clicked(idx),  # type: ignore[misc]
+            )
+            repl_all_btn.grid(
+                row=rep_num + 3, column=4, padx=PADX, pady=PADY, sticky="NSEW"
+            )
+            self.repl_all_btn.append(repl_all_btn)
 
         # Message (e.g. count)
         self.message = ttk.Label(message_frame)
         self.message.grid(row=0, column=0, sticky="NSW")
 
+        self.show_multi_replace(
+            preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE), resize=False
+        )
+
         # Now dialog geometry is set up, set width to user pref, leaving height as it is
         self.config_width()
+
+    def show_multi_replace(self, show: bool, resize: bool = True) -> None:
+        """Show or hide the multi-replace buttons.
+
+        Args:
+            show: True to show the extra replace buttons.
+            resize: True (default) to grow/shrink dialog to take account of show/hide
+                When dialog first created, its size is stored in prefs, so won't need resize
+        """
+        for w_list in (
+            self.replace_box,
+            self.replace_btn,
+            self.rands_btn,
+            self.repl_all_btn,
+        ):
+            for widget in w_list[1:]:
+                if show:
+                    widget.grid()
+                else:
+                    widget.grid_remove()
+        self.separator.grid(rowspan=6 if show else 4)
+
+        if not resize:
+            return
+
+        # Height needs to grow/shrink by the space taken up by 2 buttons
+        offset = self.repl_all_btn[0].winfo_y() - self.count_btn.winfo_y()
+        geometry = self.geometry()
+        height = int(re.sub(r"\d+x(\d+).+", r"\1", geometry))
+        height += offset if show else -offset
+        geometry = re.sub(r"(\d+x)\d+(.+)", rf"\g<1>{height}\g<2>", geometry)
+        self.geometry(geometry)
 
     def search_box_set(self, search_string: str) -> None:
         """Set string in search box.
@@ -415,11 +479,12 @@ class SearchDialog(ToplevelDialog):
         checker_dialog.display_entries()
 
     def replace_clicked(
-        self, opposite_dir: bool = False, search_again: bool = False
+        self, box_num: int, opposite_dir: bool = False, search_again: bool = False
     ) -> str:
         """Replace the found string with the replacement in the replace box.
 
         Args:
+            box_num: Which replace box's Replace button was clicked.
             opposite_dir: True to go in opposite direction to the "Reverse" flag.
             search_again: True to find next match after replacement.
 
@@ -428,8 +493,8 @@ class SearchDialog(ToplevelDialog):
         """
         search_string = self.search_box.get()
         self.search_box.add_to_history(search_string)
-        replace_string = self.replace_box.get()
-        self.replace_box.add_to_history(replace_string)
+        replace_string = self.replace_box[box_num].get()
+        self.replace_box[box_num].add_to_history(replace_string)
 
         try:
             start_index = maintext().index(MARK_FOUND_START)
@@ -465,17 +530,21 @@ class SearchDialog(ToplevelDialog):
         self.display_message()
         return "break"
 
-    def replaceall_clicked(self) -> None:
+    def replaceall_clicked(self, box_num: int) -> None:
         """Callback when Replace All button clicked.
 
         Replace in whole file or just in selection.
+
+        Args:
+            box_num: Which replace box's Replace button was clicked.
+
         """
         search_string = self.search_box.get()
         if not search_string:
             return
         self.search_box.add_to_history(search_string)
-        replace_string = self.replace_box.get()
-        self.replace_box.add_to_history(replace_string)
+        replace_string = self.replace_box[box_num].get()
+        self.replace_box[box_num].add_to_history(replace_string)
 
         replace_range, range_name = get_search_range()
         if replace_range is None:
