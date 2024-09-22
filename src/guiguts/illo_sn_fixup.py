@@ -26,21 +26,24 @@ class IlloSNRecord:
         text: str,
         start: IndexRowCol,
         end: IndexRowCol,
+        mid_para: bool,
         hilite_start: int,
         hilite_end: int,
     ) -> None:
         """Initialize IlloSNRecord.
 
         Args:
-            text - text of the SN or Illo (if caption present).
+            text - text of (first line of) the SN or Illo (if caption present).
             start - start rowcol of SN or Illo in file.
             end - end rowcol of SN or Illon in file.
+            mid_para - True if Illo or SN record mid-paragraph, False otherwise.
             hilite_start - start column of highlighting in text.
             hilite_end - end column of highlighting in text.
         """
         self.text = text
         self.start = start
         self.end = end
+        self.mid_para = mid_para
         self.hilite_start = hilite_start
         self.hilite_end = hilite_end
 
@@ -114,6 +117,87 @@ class IlloSNChecker:
                 return illosn_index
         return -1
 
+    def check_for_anomalous_illo_or_sn(
+        self, start: IndexRowCol, end: IndexRowCol
+    ) -> bool:
+        """Checks for hidden, mid-paragraph Sidenotes, and other anomalies.
+
+        The DP Formatting Guidelines allow a Project Manager to request
+        that sidenotes are put next to the sentence they apply to in which
+        case they are not separated out by blank lines nor prefixed with
+        "*". Check for these 'hidden' mid-paragraph sidenotes.
+
+        As a by-product it will also flag as 'MIDPARAGRAPH' other unusual
+        formatting of Illo and SN tags in the file.
+
+        Args:
+            start - the start RowCol Index of the Illo or SN record.
+
+        Returns:
+            True if a 'hidden' mid-paragraph sidenote or other anomaly, False otherwise.
+        """
+        # An Illo or SN record is normally separated from other file lines by
+        # a blank line above and below or one of those blank lines replaced
+        # by a Page Marker record. Flag as mid-paragraph any other separation
+        # of an Illo or SN record, such as by a blank line on one side and
+        # a non-blank line on the other which isn't a Page Marker record.
+        #
+        # Get file first and last file lines.
+        file_first_line_num = "1.0"
+        file_last_line_num = maintext().end().index()
+        # Get line numbers and text of the records we are interested in.
+        illosn_first_line_num = maintext().index(f"{start.index()} linestart")
+        illosn_last_line_num = maintext().index(f"{end.index()} linestart")
+        above_illosn_line_num = maintext().index(
+            f"{illosn_first_line_num}-1l linestart"
+        )
+        below_illosn_line_num = maintext().index(f"{illosn_last_line_num}+1l linestart")
+        above_illosn_line_txt = maintext().get(
+            above_illosn_line_num, f"{above_illosn_line_num} lineend"
+        )
+        below_illosn_line_txt = maintext().get(
+            below_illosn_line_num, f"{below_illosn_line_num} lineend"
+        )
+        # Look at text of the line above the (first line of the) Illo or
+        # SN record and below the (last line of the) Illo or SN record.
+        #
+        # Treat Illo or SN record on first line of the file specially.
+        if file_first_line_num == illosn_first_line_num:
+            # Just look at the line after the (last line of the) tag.
+            mid_para = False
+            if not (
+                below_illosn_line_txt == ""
+                or below_illosn_line_txt[0:10] == "-----File:"
+            ):
+                # Looks anomalous so flag it.
+                mid_para = True
+            return mid_para
+        # Treat Illo or SN record on last line of the file specially.
+        if file_last_line_num == illosn_last_line_num:
+            # Just look at the line above the (first line of the) tag.
+            mid_para = False
+            if not (
+                above_illosn_line_txt == ""
+                or above_illosn_line_txt[0:10] == "-----File:"
+            ):
+                # Looks anomalous so flag it.
+                mid_para = True
+            return mid_para
+        # For an Illo or SN record anywhere else in the file look first
+        # at the line above then the line below.
+        if not (
+            above_illosn_line_txt == "" or above_illosn_line_txt[0:10] == "-----File:"
+        ):
+            # Looks anomalous so flag it.
+            return True
+        if not (
+            below_illosn_line_txt == "" or below_illosn_line_txt[0:10] == "-----File:"
+        ):
+            # Looks anomalous so flag it.
+            return True
+        # Looks a normally formatted Illo or SN record so don't flag it.
+        return False
+
     def run_check(self, tag_type: str) -> None:
         """Run the initial Illustration or Sidenote records check."""
         self.reset()
@@ -162,17 +246,21 @@ class IlloSNChecker:
             # If closing [ not found, use end of line.
             if end_match is None:
                 end_point = maintext().rowcol(f"{start.row}.end")
-            # Get text of Sidenote
-            illosn_line = maintext().get(start.index(), f"{start.row}.end")
-            # Create Illo or SN record and add it to the list.
+            # Get text of (first line of) the Illo or SN line(s) in the file.
+            illosn_line = maintext().get(f"{start.index()}-1c", f"{start.row}.end")
+            if illosn_line[0:1] == "*":
+                mid_para = True
+            else:
+                # Check for other anomalous Illo or SN records.
+                mid_para = self.check_for_anomalous_illo_or_sn(start, end_point)
             illosn_rec = IlloSNRecord(
-                illosn_line, start, end_point, 1, colon_pos.col - start.col
+                illosn_line, start, end_point, mid_para, 1, colon_pos.col - start.col
             )
             self.illosn_records.append(illosn_rec)
             search_range = IndexRange(end_point, maintext().end())
 
     def update_after_move(self, tag_type: str, selected_illosn_index: int) -> None:
-        """Update Illo or SN records list, update dialog and reselect tag just moved
+        """Update Illo or SN records list, update dialog and reselect tag just moved.
 
         Args:
             tag_type: either "Illustration" or "Sidenote"
@@ -233,10 +321,72 @@ class IlloSNChecker:
             )
             maintext().delete(first_delete_line_num, last_delete_line_num)
             return
-        # We shouldn't get here. If we do just delete the Illo or SN record(s) and ignore any
-        # surrounding lines.
-        maintext().delete(selected.first_line_num, f"{selected.last_line_num} lineend")
+        # We get here if anomalous line spacing around the Illo or SN record.
+        # Just delete the Illo or SN record and ignore any surrounding lines.
+        maintext().delete(
+            selected.first_line_num, f"{selected.last_line_num}+1l linestart"
+        )
         return
+
+    def advance_up_to_first_bl_of_block(self, line_num: str) -> str:
+        """Move insert point to the top of the block of blank lines.
+
+        The insert point will not move if the 'block' is a single blank line.
+
+        Arg:
+            line_num: a line number index of a blank line; e.g. '5.0'
+
+        Returns:
+            A line number index, possibly same as the input one.
+        """
+        # Don't go past start of file.
+        stop_line_num = "1.0"
+        # We are at a blank line, possibly the bottom line of a block of
+        # blank lines. Find the blank line at the top of the block and
+        # return its line number.
+        while True:
+            if line_num == stop_line_num:
+                # First line of file is a blank line (and top of the block).
+                return line_num
+            # Decrement line_num and see if it is another blank line.
+            prev_line_num = line_num
+            line_num = maintext().index(f"{line_num}-1l")
+            if maintext().get(line_num, f"{line_num} lineend") == "":
+                # We are in a block of blank lines. Continue looking for the
+                # top of the block.
+                continue
+            # We get here if at the line above the top of the bl block.
+            return prev_line_num
+
+    def advance_down_to_last_bl_of_block(self, line_num: str) -> str:
+        """Move insert point to the bottom of the block of blank lines.
+
+        The insert point will not move if the 'block' is a single blank line.
+
+        Arg:
+            line_num: a line number index of a blank line; e.g. '5.0'
+
+        Returns:
+            A line number index, possibly same as the input one.
+        """
+        # Don't go past end of file.
+        stop_line_num = maintext().end().index()
+        # We are at a blank line, possibly the top line of a block of
+        # blank lines. Find the blank line at the bottom of the block
+        # and return its line number.
+        while True:
+            if line_num == stop_line_num:
+                # Last line of file is a blank line (and bottom of the block).
+                return line_num
+            # Increment line_num and see if it is another blank line.
+            prev_line_num = line_num
+            line_num = maintext().index(f"{line_num}+1l")
+            if maintext().get(line_num, f"{line_num} lineend") == "":
+                # We are in a block of blank lines. Continue looking for the
+                # bottom of the block.
+                continue
+            # We get here if at the line below the bottom of the bl block.
+            return prev_line_num
 
     def move_selection_up(self, tag_type: str) -> None:
         """Move selected Illo/SN tag up towards the start of the file.
@@ -292,7 +442,11 @@ class IlloSNChecker:
                 and not maintext().index(f"{line_num}+1l linestart")
                 == selected.first_line_num
             ):
-                # We can insert the selected tag above this blank line.
+                # If we are at the bottom of a block of blank lines, move the insertion
+                # point to the top of the block. If the 'block' is just a single blank
+                # line then the returned line_num is the same as the argument line_num.
+                line_num = self.advance_up_to_first_bl_of_block(line_num)
+                # We can insert the selected tag above the blank line at line_num.
                 # Copy the lines of the Illo or SN record to be moved. Don't include the
                 # prefixing "*" if present.
                 the_selected_record_lines = maintext().get(
@@ -373,7 +527,11 @@ class IlloSNChecker:
                 and not maintext().index(f"{line_num}-1l linestart")
                 == selected.last_line_num
             ):
-                # We can insert the selected tag below this blank line.
+                # If we are at the top of a block of blank lines, move the insertion
+                # point to the bottom of the block. If the 'block' is just a single blank
+                # line then the returned line_num is the same as the argument line_num.
+                line_num = self.advance_down_to_last_bl_of_block(line_num)
+                # We can insert the selected tag below the blank line at line_num.
                 # Copy the lines of the Illo or SN record to be moved. Don't include the
                 # prefixing "*" if present.
                 the_selected_record_lines = maintext().get(
@@ -451,8 +609,9 @@ def display_illosn_entries() -> None:
     illosn_records = _the_illosn_checker.get_illosn_records()
     for illosn_record in illosn_records:
         error_prefix = ""
-        illosn_start = illosn_record.start
-        if maintext().get(f"{illosn_start.index()}-1c", illosn_start.index()) == "*":
+        # illosn_start = illosn_record.start
+        # if maintext().get(f"{illosn_start.index()}-1c", illosn_start.index()) == "*":
+        if illosn_record.mid_para:
             error_prefix = "MIDPARAGRAPH: "
         checker_dialog.add_entry(
             illosn_record.text,

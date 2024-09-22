@@ -577,14 +577,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button("PP~txt...", lambda: pptxt(self.file.project_dict))
         menu_tools.add_button("~Jeebies...", jeebies_check)
         menu_tools.add_button(
-            "W~ord Distance Check...", lambda: levenshtein_check(self.file.project_dict)
+            "Word ~Distance Check...", lambda: levenshtein_check(self.file.project_dict)
         )
         menu_tools.add_separator()
         menu_tools.add_button("~Page Separator Fixup...", page_separator_fixup)
         menu_tools.add_button("~Footnote Fixup...", footnote_check)
-        menu_tools.add_button("Sidenote Fixup...", lambda: illosn_check("Sidenote"))
+        menu_tools.add_button("Side~note Fixup...", lambda: illosn_check("Sidenote"))
         menu_tools.add_button(
-            "Illustration Fixup...", lambda: illosn_check("Illustration")
+            "~Illustration Fixup...", lambda: illosn_check("Illustration")
         )
         menu_tools.add_separator()
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
