@@ -40,6 +40,7 @@ from guiguts.widgets import (
 _the_word_lists = None  # pylint: disable=invalid-name
 
 RETURN_ARROW = "⏎"
+MARKUP_TYPES = "i|b|sc|f|g|u|cite|em|strong"
 
 
 class WFDisplayType(StrEnum):
@@ -457,6 +458,21 @@ class WordFrequencyDialog(ToplevelDialog):
             no_dia = DiacriticRemover.remove_diacritics(entry.word)
             return (no_dia.lower(), no_dia, entry.word)
 
+        def sort_key_alpha_no_markup(
+            entry: WordFrequencyEntry,
+        ) -> tuple[str, ...]:
+            unmarked = re.sub(rf"^<({MARKUP_TYPES})>", "", entry.word)
+            unmarked = re.sub(rf"</({MARKUP_TYPES})>$", "", unmarked)
+            unmarked_no_dia = DiacriticRemover.remove_diacritics(unmarked)
+            no_dia = DiacriticRemover.remove_diacritics(entry.word)
+            return (
+                unmarked_no_dia.lower(),
+                unmarked_no_dia,
+                no_dia.lower(),
+                no_dia,
+                entry.word,
+            )
+
         def sort_key_freq(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
             no_dia = DiacriticRemover.remove_diacritics(entry.word)
             return (-entry.frequency,) + (no_dia.lower(), no_dia, entry.word)
@@ -468,7 +484,12 @@ class WordFrequencyDialog(ToplevelDialog):
         key: Callable[[WordFrequencyEntry], tuple]
         match preferences.get(PrefKey.WFDIALOG_SORT_TYPE):
             case WFSortType.ALPHABETIC:
-                key = sort_key_alpha
+                key = (
+                    sort_key_alpha_no_markup
+                    if preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
+                    == WFDisplayType.MARKEDUP
+                    else sort_key_alpha
+                )
             case WFSortType.FREQUENCY:
                 key = sort_key_freq
             case WFSortType.LENGTH:
@@ -967,10 +988,9 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
     wf_dialog.reset()
 
     marked_dict: WFDict = WFDict()
-    markup_types = "i|b|sc|f|g|u|cite|em|strong"
     nocase = preferences.get(PrefKey.WFDIALOG_IGNORE_CASE)
     matches = maintext().find_matches(
-        rf"<({markup_types})>([^<]|\n)+</\1>",
+        rf"<({MARKUP_TYPES})>([^<]|\n)+</\1>",
         IndexRange(maintext().start(), maintext().end()),
         nocase=nocase,
         regexp=True,
@@ -990,8 +1010,8 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
     for marked_phrase, marked_count in marked_dict.items():
         # Suspect if the bare phrase appears an excess number of times,
         # i.e. all occurrences > marked up occurrences
-        unmarked_phrase = re.sub(rf"^<({markup_types})>", "", marked_phrase)
-        unmarked_phrase = re.sub(rf"</({markup_types})>$", "", unmarked_phrase)
+        unmarked_phrase = re.sub(rf"^<({MARKUP_TYPES})>", "", marked_phrase)
+        unmarked_phrase = re.sub(rf"</({MARKUP_TYPES})>$", "", unmarked_phrase)
         unmarked_search = unmarked_phrase.replace(RETURN_ARROW, "\n")
         unmarked_search = r"(^|[^>\w])" + re.escape(unmarked_search) + r"($|[^<\w])"
         num_words = len(unmarked_search.split())
