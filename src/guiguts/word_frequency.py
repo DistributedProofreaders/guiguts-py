@@ -631,8 +631,12 @@ class WordFrequencyDialog(ToplevelDialog):
             if regexp:
                 match_str = maintext().get_match_text(match)
                 match.count = len(newline_word)
-                if match_str[1 : match.count + 1] == newline_word:
-                    match.rowcol.col += 1
+                if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE):
+                    if match_str[1 : match.count + 1].lower() == newline_word.lower():
+                        match.rowcol.col += 1
+                else:
+                    if match_str[1 : match.count + 1] == newline_word:
+                        match.rowcol.col += 1
             maintext().set_insert_index(match.rowcol, focus=False)
             remove_spotlights()
             start_index = match.rowcol.index()
@@ -964,20 +968,25 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
 
     marked_dict: WFDict = WFDict()
     markup_types = "i|b|sc|f|g|u|cite|em|strong"
+    nocase = preferences.get(PrefKey.WFDIALOG_IGNORE_CASE)
     matches = maintext().find_matches(
         rf"<({markup_types})>([^<]|\n)+</\1>",
         IndexRange(maintext().start(), maintext().end()),
-        nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
+        nocase=nocase,
         regexp=True,
     )
     for match in matches:
         marked_phrase = maintext().get_match_text(match)
+        if nocase:
+            marked_phrase = marked_phrase.lower()
         marked_phrase = marked_phrase.replace("\n", RETURN_ARROW)
         tally_word(marked_dict, marked_phrase)
 
+    whole_text = maintext().get_text()
     total_cnt = 0
     suspect_cnt = 0
     unmarked_count = {}
+    search_flags = re.IGNORECASE if nocase else 0
     for marked_phrase, marked_count in marked_dict.items():
         # Suspect if the bare phrase appears an excess number of times,
         # i.e. all occurrences > marked up occurrences
@@ -997,13 +1006,9 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
         # Store unmarked counts so we don't do unmarked check twice,
         # e.g. if <i>dog</i>, <b>dog</b> and dog all exist
         if unmarked_phrase not in unmarked_count:
-            matches = maintext().find_matches(
-                unmarked_search,
-                IndexRange(maintext().start(), maintext().end()),
-                nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
-                regexp=True,
+            unmarked_count[unmarked_phrase] = len(
+                re.findall(unmarked_search, whole_text, flags=search_flags)
             )
-            unmarked_count[unmarked_phrase] = len(matches)
             if unmarked_count[unmarked_phrase] > 0:
                 wf_dialog.add_entry(
                     unmarked_phrase, unmarked_count[unmarked_phrase], suspect=True
@@ -1015,8 +1020,6 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
         ):
             wf_dialog.add_entry(marked_phrase, marked_count)
 
-        elif not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
-            wf_dialog.add_entry(marked_phrase, marked_count)
     wf_dialog.display_entries()
     wf_dialog.message.set(
         f"{sing_plur(total_cnt, 'marked-up phrase')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
