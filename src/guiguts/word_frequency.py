@@ -40,6 +40,7 @@ from guiguts.widgets import (
 _the_word_lists = None  # pylint: disable=invalid-name
 
 RETURN_ARROW = "⏎"
+MARKUP_TYPES = "i|b|sc|f|g|u|cite|em|strong"
 
 
 class WFDisplayType(StrEnum):
@@ -77,8 +78,6 @@ class WFWordLists:
     Attributes:
         all_words: All the words in the file.
         emdash_words: All pairs of words separated by an emdash/double hyphen.
-        word_pairs: All consecutive pairs of words - used to check for
-            hyphenation/non-hyphenation suspects.
     """
 
     def __init__(self) -> None:
@@ -89,7 +88,6 @@ class WFWordLists:
         """Reset the word lists."""
         self.all_words: WFDict = WFDict()
         self.emdash_words: WFDict = WFDict()
-        self.word_pairs: WFDict = WFDict()
 
     def ensure_file_analyzed(self) -> None:
         """Analyze file to create word lists, unless already done.
@@ -120,17 +118,12 @@ class WFWordLists:
             line = re.sub(r"(--|—)", " ", line)  # double-hyphen/emdash
 
             words = re.split(r"\s+", line)
-            previous_word = ""
             for word in words:
                 word = re.sub(r"(?<!\-)\*", "", word)  # * not preceded by hyphen
                 word = re.sub(r"^\*$", "", word)  # just *
                 word = strip_punc(word)
                 # Tally single word
                 tally_word(self.all_words, word)
-                # Tally the pair of previous word plus this one
-                if word and previous_word:
-                    tally_word(self.word_pairs, f"{previous_word} {word}")
-                previous_word = word
 
     def get_all_words(self) -> WFDict:
         """Return the list of all words in the file.
@@ -147,14 +140,6 @@ class WFWordLists:
             Dictionary of emdash words with their frequencies."""
         self.ensure_file_analyzed()
         return self.emdash_words
-
-    def get_word_pairs(self) -> WFDict:
-        """Return the list of word pairs ("word1 word2") in the file.
-
-        Returns:
-            Dictionary of word pairs with their frequencies."""
-        self.ensure_file_analyzed()
-        return self.word_pairs
 
 
 class WordFrequencyEntry:
@@ -473,6 +458,21 @@ class WordFrequencyDialog(ToplevelDialog):
             no_dia = DiacriticRemover.remove_diacritics(entry.word)
             return (no_dia.lower(), no_dia, entry.word)
 
+        def sort_key_alpha_no_markup(
+            entry: WordFrequencyEntry,
+        ) -> tuple[str, ...]:
+            unmarked = re.sub(rf"^<({MARKUP_TYPES})>", "", entry.word)
+            unmarked = re.sub(rf"</({MARKUP_TYPES})>$", "", unmarked)
+            unmarked_no_dia = DiacriticRemover.remove_diacritics(unmarked)
+            no_dia = DiacriticRemover.remove_diacritics(entry.word)
+            return (
+                unmarked_no_dia.lower(),
+                unmarked_no_dia,
+                no_dia.lower(),
+                no_dia,
+                entry.word,
+            )
+
         def sort_key_freq(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
             no_dia = DiacriticRemover.remove_diacritics(entry.word)
             return (-entry.frequency,) + (no_dia.lower(), no_dia, entry.word)
@@ -484,7 +484,12 @@ class WordFrequencyDialog(ToplevelDialog):
         key: Callable[[WordFrequencyEntry], tuple]
         match preferences.get(PrefKey.WFDIALOG_SORT_TYPE):
             case WFSortType.ALPHABETIC:
-                key = sort_key_alpha
+                key = (
+                    sort_key_alpha_no_markup
+                    if preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
+                    == WFDisplayType.MARKEDUP
+                    else sort_key_alpha
+                )
             case WFSortType.FREQUENCY:
                 key = sort_key_freq
             case WFSortType.LENGTH:
@@ -623,6 +628,15 @@ class WordFrequencyDialog(ToplevelDialog):
             regexp = True
             match_word = r"(^|\W)" + re.escape(newline_word) + r"($|\W)"
 
+        # If hyphen matching and there's one (escaped) space in the word, let that match
+        # any amount of whitespace
+        if (
+            preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.HYPHENS
+            and r"\ " in match_word
+        ):
+            regexp = True
+            match_word = match_word.replace(r"\ ", r"[\n ]+")
+
         match = maintext().find_match(
             match_word,
             IndexRange(start, maintext().end()),
@@ -638,8 +652,12 @@ class WordFrequencyDialog(ToplevelDialog):
             if regexp:
                 match_str = maintext().get_match_text(match)
                 match.count = len(newline_word)
-                if match_str[1 : match.count + 1] == newline_word:
-                    match.rowcol.col += 1
+                if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE):
+                    if match_str[1 : match.count + 1].lower() == newline_word.lower():
+                        match.rowcol.col += 1
+                else:
+                    if match_str[1 : match.count + 1] == newline_word:
+                        match.rowcol.col += 1
             maintext().set_insert_index(match.rowcol, focus=False)
             remove_spotlights()
             start_index = match.rowcol.index()
@@ -815,7 +833,17 @@ def wf_populate_hyphens(wf_dialog: WordFrequencyDialog) -> None:
 
     all_words = _the_word_lists.get_all_words()
     emdash_words = _the_word_lists.get_emdash_words()
-    word_pairs = _the_word_lists.get_word_pairs()
+
+    # See if word pair suspects exist, e.g. "flash light" for "flash-light"
+    word_pairs: WFDict = WFDict()
+    whole_text = re.sub(r"(\n| +)", " ", maintext().get_text())
+    for word in all_words:
+        if "-" in word:
+            pair = word.replace("-", " ")
+            count = whole_text.count(f" {pair} ")
+            if count:
+                word_pairs[pair] = count
+
     suspect_cnt = 0
     total_cnt = 0
     word_output = {}
@@ -960,26 +988,30 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
     wf_dialog.reset()
 
     marked_dict: WFDict = WFDict()
-    markup_types = "i|b|sc|f|g|u|cite|em|strong"
+    nocase = preferences.get(PrefKey.WFDIALOG_IGNORE_CASE)
     matches = maintext().find_matches(
-        rf"<({markup_types})>([^<]|\n)+</\1>",
+        rf"<({MARKUP_TYPES})>([^<]|\n)+</\1>",
         IndexRange(maintext().start(), maintext().end()),
-        nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
+        nocase=nocase,
         regexp=True,
     )
     for match in matches:
         marked_phrase = maintext().get_match_text(match)
+        if nocase:
+            marked_phrase = marked_phrase.lower()
         marked_phrase = marked_phrase.replace("\n", RETURN_ARROW)
         tally_word(marked_dict, marked_phrase)
 
+    whole_text = maintext().get_text()
     total_cnt = 0
     suspect_cnt = 0
     unmarked_count = {}
+    search_flags = re.IGNORECASE if nocase else 0
     for marked_phrase, marked_count in marked_dict.items():
         # Suspect if the bare phrase appears an excess number of times,
         # i.e. all occurrences > marked up occurrences
-        unmarked_phrase = re.sub(rf"^<({markup_types})>", "", marked_phrase)
-        unmarked_phrase = re.sub(rf"</({markup_types})>$", "", unmarked_phrase)
+        unmarked_phrase = re.sub(rf"^<({MARKUP_TYPES})>", "", marked_phrase)
+        unmarked_phrase = re.sub(rf"</({MARKUP_TYPES})>$", "", unmarked_phrase)
         unmarked_search = unmarked_phrase.replace(RETURN_ARROW, "\n")
         unmarked_search = r"(^|[^>\w])" + re.escape(unmarked_search) + r"($|[^<\w])"
         num_words = len(unmarked_search.split())
@@ -994,13 +1026,9 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
         # Store unmarked counts so we don't do unmarked check twice,
         # e.g. if <i>dog</i>, <b>dog</b> and dog all exist
         if unmarked_phrase not in unmarked_count:
-            matches = maintext().find_matches(
-                unmarked_search,
-                IndexRange(maintext().start(), maintext().end()),
-                nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
-                regexp=True,
+            unmarked_count[unmarked_phrase] = len(
+                re.findall(unmarked_search, whole_text, flags=search_flags)
             )
-            unmarked_count[unmarked_phrase] = len(matches)
             if unmarked_count[unmarked_phrase] > 0:
                 wf_dialog.add_entry(
                     unmarked_phrase, unmarked_count[unmarked_phrase], suspect=True
@@ -1012,8 +1040,6 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
         ):
             wf_dialog.add_entry(marked_phrase, marked_count)
 
-        elif not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
-            wf_dialog.add_entry(marked_phrase, marked_count)
     wf_dialog.display_entries()
     wf_dialog.message.set(
         f"{sing_plur(total_cnt, 'marked-up phrase')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
