@@ -12,7 +12,7 @@ from PIL import Image, ImageTk
 
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences, PrefKey
-from guiguts.root import Root, root
+from guiguts.root import Root, root, ImageWindowState
 from guiguts.utilities import (
     is_mac,
     is_x11,
@@ -672,24 +672,42 @@ class MainWindow:
         )
 
         self.paned_window = tk.PanedWindow(
-            root(), orient=tk.HORIZONTAL, sashwidth=4, sashrelief=tk.GROOVE
+            root(),
+            orient=tk.HORIZONTAL,
+            sashwidth=4,
+            sashrelief=tk.RIDGE,
+            showhandle=True,
+            handlesize=10,
         )
         self.paned_window.grid(
             column=TEXTIMAGE_WINDOW_COL, row=TEXTIMAGE_WINDOW_ROW, sticky="NSEW"
         )
 
-        MainText(
+        self.paned_text_window = tk.PanedWindow(
             self.paned_window,
+            orient=tk.VERTICAL,
+            sashwidth=4,
+            sashrelief=tk.RIDGE,
+            showhandle=True,
+            handlesize=10,
+        )
+        self.paned_text_window.grid(
+            column=TEXTIMAGE_WINDOW_COL, row=TEXTIMAGE_WINDOW_ROW, sticky="NSEW"
+        )
+
+        MainText(
+            self.paned_text_window,
             root(),
             undo=True,
             wrap="none",
             autoseparators=True,
             maxundo=-1,
-            highlightthickness=0,
+            highlightthickness=2,
         )
 
-        self.paned_window.add(maintext().frame, minsize=MIN_PANE_WIDTH)
+        self.paned_window.add(self.paned_text_window, minsize=MIN_PANE_WIDTH)
         add_text_context_menu(maintext())
+        add_text_context_menu(maintext().peer)
 
         MainWindow.mainimage = MainImage(self.paned_window)
 
@@ -708,7 +726,7 @@ class MainWindow:
             tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.hide_image)  # type: ignore[call-overload]
         else:
             root().wm_forget(mainimage())  # type: ignore[arg-type]
-        preferences.set(PrefKey.IMAGE_WINDOW, "Floated")
+        preferences.set(PrefKey.IMAGE_WINDOW, ImageWindowState.FLOATED)
 
     def dock_image(self, _event: Optional[tk.Event] = None) -> None:
         """Dock the image back into the main window"""
@@ -720,7 +738,7 @@ class MainWindow:
                 self.paned_window.forget(mainimage())
             except tk.TclError:
                 pass  # OK - image wasn't being managed by paned_window
-        preferences.set(PrefKey.IMAGE_WINDOW, "Docked")
+        preferences.set(PrefKey.IMAGE_WINDOW, ImageWindowState.DOCKED)
 
     def load_image(self, filename: str) -> None:
         """Load the image for the given page.
@@ -729,7 +747,7 @@ class MainWindow:
             filename: Path to image file.
         """
         mainimage().load_image(filename)
-        if preferences.get(PrefKey.IMAGE_WINDOW) == "Docked":
+        if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
             self.dock_image()
         else:
             self.float_image()

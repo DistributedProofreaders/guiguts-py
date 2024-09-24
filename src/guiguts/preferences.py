@@ -34,6 +34,7 @@ class PrefKey(StrEnum):
     SEARCHDIALOG_WHOLE_WORD = auto()
     SEARCHDIALOG_WRAP = auto()
     SEARCHDIALOG_REGEX = auto()
+    SEARCHDIALOG_MULTI_REPLACE = auto()
     WFDIALOG_SUSPECTS_ONLY = auto()
     WFDIALOG_IGNORE_CASE = auto()
     WFDIALOG_DISPLAY_TYPE = auto()
@@ -65,6 +66,10 @@ class PrefKey(StrEnum):
     TEXT_FONT_SIZE = auto()
     SPELL_THRESHOLD = auto()
     UNMATCHED_NESTABLE = auto()
+    UNICODE_BLOCK = auto()
+    UNICODE_SEARCH_HISTORY = auto()
+    SPLIT_TEXT_WINDOW = auto()
+    SPLIT_TEXT_SASH_COORD = auto()
 
 
 class Preferences:

@@ -2,10 +2,13 @@
 
 import tkinter as tk
 from tkinter import ttk, font
+from typing import Any
+import sys
 import unicodedata
 
 import regex as re
 
+from guiguts.maintext import maintext
 from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
@@ -13,7 +16,7 @@ from guiguts.preferences import (
     PersistentString,
     preferences,
 )
-from guiguts.utilities import is_mac
+from guiguts.utilities import is_mac, is_windows, is_x11, sound_bell
 from guiguts.widgets import (
     ToplevelDialog,
     ToolTip,
@@ -31,7 +34,7 @@ class PreferencesDialog(ToplevelDialog):
 
     def __init__(self) -> None:
         """Initialize preferences dialog."""
-        super().__init__("Settings", resize_y=False)
+        super().__init__("Settings", resize_x=False, resize_y=False)
         self.minsize(250, 10)
 
         # Appearance
@@ -40,22 +43,21 @@ class PreferencesDialog(ToplevelDialog):
         theme_frame = ttk.Frame(appearance_frame)
         theme_frame.grid(column=0, row=0, sticky="NSEW")
         theme_frame.columnconfigure(1, weight=1)
-        ttk.Label(theme_frame, text="Theme: ").grid(column=0, row=0, sticky="NE")
+        ttk.Label(theme_frame, text="Theme (change requires restart): ").grid(
+            column=0, row=0, sticky="NE"
+        )
         cb = ttk.Combobox(
             theme_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
         )
         cb.grid(column=1, row=0, sticky="NEW")
         cb["values"] = ["Default", "Dark", "Light"]
         cb["state"] = "readonly"
-        ttk.Label(
-            appearance_frame, text="(May need to restart program for full effect)"
-        ).grid(column=0, row=1, sticky="NSEW")
         tearoff_check = ttk.Checkbutton(
             appearance_frame,
-            text="Use Tear-Off Menus (requires restart)",
+            text="Use Tear-Off Menus (change requires restart)",
             variable=PersistentBoolean(PrefKey.TEAROFF_MENUS),
         )
-        tearoff_check.grid(column=0, row=2, sticky="NEW", pady=5)
+        tearoff_check.grid(column=0, row=1, sticky="NEW", pady=5)
         if is_mac():
             tearoff_check["state"] = tk.DISABLED
             ToolTip(tearoff_check, "Not available on macOS")
@@ -279,8 +281,8 @@ class ComposeSequenceDialog(OkApplyCancelDialog):
             elif match := re.fullmatch(r"#(\d{2,})", sequence):
                 # Or specify in decimal following '#' character
                 char = chr(int(match[1]))
-        # Unprintable characters shouldn't be inserted
-        if not char or not char.isprintable():
+        # Don't insert anything if no match
+        if not char:
             return
         insert_in_focus_widget(char)
         self.entry.add_to_history(self.string.get())
@@ -655,3 +657,899 @@ class ComposeHelpDialog(ToplevelDialog):
         except KeyError:
             return
         insert_in_focus_widget(char)
+
+
+class ScrollableFrame(ttk.Frame):
+    """A scrollable ttk.Frame.
+
+    Consider rewriting, so it's like ScrolledReadOnlyText, i.e. self is the frame you add to,
+    and grid method is overridden for correct placement.
+    """
+
+    def __init__(self, container: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        """Initialize ScrollableFrame."""
+        super().__init__(container, *args, **kwargs)
+        self.canvas = tk.Canvas(self, highlightthickness=0)
+        v_scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        h_scrollbar = ttk.Scrollbar(
+            self, orient="horizontal", command=self.canvas.xview
+        )
+        self.scrollable_frame = ttk.Frame(self.canvas)
+        bg = str(ttk.Style().lookup(self["style"], "background"))
+        self.canvas["background"] = bg
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
+        )
+        self.scrollable_frame.bind("<Enter>", self.on_enter)
+        self.scrollable_frame.bind("<Leave>", self.on_leave)
+
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=v_scrollbar.set)
+        self.canvas.configure(xscrollcommand=h_scrollbar.set)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.canvas.grid(column=0, row=0, sticky="NSEW")
+        v_scrollbar.grid(column=1, row=0, sticky="NSEW")
+        h_scrollbar.grid(column=0, row=1, sticky="NSEW")
+
+    def on_mouse_wheel(self, event: tk.Event) -> None:
+        """Cross platform scroll wheel event."""
+        if is_windows():
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        elif is_mac():
+            self.canvas.yview_scroll(int(-1 * event.delta), "units")
+        else:
+            if event.num == 4:
+                self.canvas.yview_scroll(-1, "units")
+            elif event.num == 5:
+                self.canvas.yview_scroll(1, "units")
+
+    def on_enter(self, _event: tk.Event) -> None:
+        """Bind wheel events when the cursor enters the control."""
+        if is_x11():
+            self.canvas.bind_all("<Button-4>", self.on_mouse_wheel)
+            self.canvas.bind_all("<Button-5>", self.on_mouse_wheel)
+        else:
+            self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
+
+    def on_leave(self, _event: tk.Event) -> None:
+        """Unbind wheel events when the cursorl leaves the control."""
+        if is_x11():
+            self.canvas.unbind_all("<Button-4>")
+            self.canvas.unbind_all("<Button-5>")
+        else:
+            self.canvas.unbind_all("<MouseWheel>")
+
+    def reset_scroll(self) -> None:
+        """Scroll canvas to top left position."""
+        self.canvas.xview_moveto(0.0)
+        self.canvas.yview_moveto(0.0)
+
+
+class UnicodeBlockDialog(ToplevelDialog):
+    """A dialog that displays a block of Unicode characters, and allows
+    the user to click on them to insert them into text window."""
+
+    commonly_used_characters_name = "Commonly Used Characters"
+
+    def __init__(self) -> None:
+        """Initialize Unicode Block dialog."""
+
+        super().__init__("Unicode Block")
+
+        cb = ttk.Combobox(
+            self.top_frame,
+            textvariable=PersistentString(PrefKey.UNICODE_BLOCK),
+            width=50,
+        )
+        cb.grid(column=0, row=0, sticky="NSW", padx=5, pady=(5, 0))
+        block_list = []
+        for name, (beg, end, show) in _unicode_blocks.items():
+            if show:
+                block_list.append(f"{name}   ({beg:04X}–{end:04X})")
+        block_list.sort()
+        block_list.insert(0, UnicodeBlockDialog.commonly_used_characters_name)
+        cb["values"] = block_list
+        cb["state"] = "readonly"
+        cb.bind("<<ComboboxSelected>>", lambda _e: self.block_selected())
+        self.top_frame.rowconfigure(0, weight=0)
+        self.top_frame.rowconfigure(1, weight=1)
+        self.chars_frame = ScrollableFrame(self.top_frame)
+        self.chars_frame.grid(column=0, row=1, sticky="NSEW", padx=5, pady=5)
+
+        self.button_list: list[ttk.Label] = []
+        style = ttk.Style()
+        style.configure("unicodedialog.TLabel", font=maintext().font)
+        self.block_selected()
+
+    def block_selected(self) -> None:
+        """Called when a Unicode block is selected."""
+        for btn in self.button_list:
+            if btn.winfo_exists():
+                btn.destroy()
+        self.button_list.clear()
+        self.chars_frame.reset_scroll()
+
+        def add_button(count: int, char: str) -> None:
+            """Add a button to the Unicode block dialog.
+
+            Args:
+                count: Count of buttons added, used to determine row/column.
+                char: Character to use as label for button.
+            """
+            btn = ttk.Label(
+                self.chars_frame.scrollable_frame,
+                text=char,
+                width=2,
+                borderwidth=2,
+                relief=tk.SOLID,
+                anchor=tk.CENTER,
+                style="unicodedialog.TLabel",
+            )
+
+            def press(event: tk.Event) -> None:
+                event.widget["relief"] = tk.SUNKEN
+
+            def release(event: tk.Event, char: str) -> None:
+                event.widget["relief"] = tk.RAISED
+                insert_in_focus_widget(char)
+
+            def enter(event: tk.Event) -> None:
+                event.widget["relief"] = tk.RAISED
+
+            def leave(event: tk.Event) -> None:
+                relief = str(event.widget["relief"])
+                if relief == tk.RAISED:
+                    event.widget["relief"] = tk.SOLID
+
+            btn.bind("<ButtonPress-1>", press)
+            btn.bind("<ButtonRelease-1>", lambda e: release(e, char))
+            btn.bind("<Enter>", enter)
+            btn.bind("<Leave>", leave)
+            btn.grid(column=count % 16, row=int(count / 16), sticky="NSEW")
+            self.button_list.append(btn)
+
+        block_name = re.sub(r" *\(.*", "", preferences.get(PrefKey.UNICODE_BLOCK))
+        if block_name == UnicodeBlockDialog.commonly_used_characters_name:
+            for count, char in enumerate(_common_characters):
+                add_button(count, char)
+        else:
+            block_range = _unicode_blocks[block_name]
+            for count, c_ord in enumerate(range(block_range[0], block_range[1] + 1)):
+                add_button(count, chr(c_ord))
+        # Add tooltips
+        for btn in self.button_list:
+            char = str(btn["text"])
+            name, new = unicode_char_to_name(char)
+            if name:
+                name = ": " + name
+            warning_flag = "⚠\ufe0f" if new else ""
+            ToolTip(btn, f"{warning_flag}U+{ord(char):04x}{name}")
+
+
+class UnicodeSearchDialog(ToplevelDialog):
+    """A dialog that allows user to search for Unicode characters,
+    given partial name match or Unicode ordinal, and allows
+    the user to insert it into text window."""
+
+    CHAR_COL_ID = "#1"
+    CHAR_COL_HEAD = "Char"
+    CHAR_COL_WIDTH = 50
+    CODEPOINT_COL_ID = "#2"
+    CODEPOINT_COL_HEAD = "Code Point"
+    CODEPOINT_COL_WIDTH = 80
+    NAME_COL_ID = "#3"
+    NAME_COL_HEAD = "Name"
+    NAME_COL_WIDTH = 250
+    BLOCK_COL_ID = "#4"
+    BLOCK_COL_HEAD = "Block"
+    BLOCK_COL_WIDTH = 180
+
+    def __init__(self) -> None:
+        """Initialize Unicode Search dialog."""
+
+        super().__init__("Unicode Search")
+
+        search_frame = ttk.Frame(self.top_frame)
+        search_frame.grid(column=0, row=0, sticky="NSEW")
+        search_frame.columnconfigure(0, weight=1)
+        search_frame.columnconfigure(1, weight=0)
+        self.search = Combobox(
+            search_frame,
+            PrefKey.UNICODE_SEARCH_HISTORY,
+            width=50,
+            font=maintext().font,
+        )
+        self.search.grid(column=0, row=0, sticky="NSEW", padx=5, pady=(5, 0))
+        self.search.focus()
+        ToolTip(
+            self.search,
+            "\n".join(
+                [
+                    "Type words from character name to match against,",
+                    "or hex codepoint (optionally preceded by 'U+' or 'X'),",
+                    "or type/paste a single character to search for",
+                ]
+            ),
+        )
+
+        search_btn = ttk.Button(
+            search_frame,
+            text="Search",
+            default="active",
+            takefocus=False,
+            command=lambda: self.find_matches(self.search.get()),
+        )
+        search_btn.grid(column=1, row=0, sticky="NSEW")
+        self.bind("<Return>", lambda _: search_btn.invoke())
+        self.search.bind("<<ComboboxSelected>>", lambda _e: search_btn.invoke())
+
+        self.top_frame.rowconfigure(0, weight=0)
+        self.top_frame.rowconfigure(1, weight=1)
+
+        columns = (
+            UnicodeSearchDialog.CHAR_COL_HEAD,
+            UnicodeSearchDialog.CODEPOINT_COL_HEAD,
+            UnicodeSearchDialog.NAME_COL_HEAD,
+            UnicodeSearchDialog.BLOCK_COL_HEAD,
+        )
+        widths = (
+            UnicodeSearchDialog.CHAR_COL_WIDTH,
+            UnicodeSearchDialog.CODEPOINT_COL_WIDTH,
+            UnicodeSearchDialog.NAME_COL_WIDTH,
+            UnicodeSearchDialog.BLOCK_COL_WIDTH,
+        )
+        self.list = ttk.Treeview(
+            self.top_frame,
+            columns=columns,
+            show="headings",
+            height=15,
+            selectmode=tk.BROWSE,
+        )
+        ToolTip(
+            self.list,
+            "\n".join(
+                [
+                    f"Click in {UnicodeSearchDialog.CHAR_COL_HEAD},  {UnicodeSearchDialog.CODEPOINT_COL_HEAD} or {UnicodeSearchDialog.NAME_COL_HEAD} column to insert character",
+                    f"Click in {UnicodeSearchDialog.BLOCK_COL_HEAD} column to open Unicode Block dialog",
+                    "(⚠\ufe0f before a character's name means it was added more recently - use with caution)",
+                ]
+            ),
+            use_pointer_pos=True,
+        )
+        for col, column in enumerate(columns):
+            col_id = f"#{col + 1}"
+            anchor = tk.CENTER if col_id == UnicodeSearchDialog.CHAR_COL_ID else tk.W
+            self.list.column(  # type: ignore[call-overload]
+                col_id,
+                minwidth=20,
+                width=widths[col],
+                stretch=(col_id == UnicodeSearchDialog.NAME_COL_ID),
+                anchor=anchor,
+            )
+            self.list.heading(col_id, text=column, anchor=anchor)  # type: ignore[call-overload]
+        self.list.grid(row=1, column=0, sticky=tk.NSEW, pady=(5, 0))
+
+        self.scrollbar = ttk.Scrollbar(
+            self.top_frame, orient=tk.VERTICAL, command=self.list.yview
+        )
+        self.list.configure(yscroll=self.scrollbar.set)  # type: ignore[call-overload]
+        self.scrollbar.grid(row=1, column=1, sticky=tk.NS)
+        mouse_bind(self.list, "1", self.item_clicked)
+
+    def find_matches(self, string: str) -> None:
+        """Find & display Unicode characters that match all criteria (words) in the given string.
+
+        Args:
+            string: String containing words that must appear in the characters' names. If no match
+                    is found, check if string is a hex number which is the codepoint of a character.
+        """
+        # Clear existing display of chars
+        children = self.list.get_children()
+        for child in children:
+            self.list.delete(child)
+
+        # Split user string into words
+        match_words = [x.lower() for x in string.split(" ") if x]
+        if len(match_words) > 0:
+            self.search.add_to_history(string)
+
+        # Check every Unicode character to see if its name contains all the given words
+        # (including hyphenated, e.g. BREAK will match NO-BREAK, but not NON-BREAKING)
+        found = False
+        if len(match_words) > 0:
+            for ordinal in range(0, sys.maxunicode + 1):
+                char = chr(ordinal)
+                name, new = unicode_char_to_name(char)
+                name_list = name.lower().split(" ")
+                hyphen_parts: list[str] = []
+                for word in name_list:
+                    if "-" in word:
+                        hyphen_parts += word.split("-")
+                name_list += hyphen_parts
+                if name and all(word in name_list for word in match_words):
+                    self.add_row(char, new)
+                    found = True
+
+        if not found:  # Maybe string was a hex codepoint?
+            hex_string = re.sub(r"^(U\+|0?X)", "", string.strip(), flags=re.IGNORECASE)
+            char = ""
+            try:
+                char = chr(int(hex_string, 16))
+            except (OverflowError, ValueError):
+                pass
+            if char:
+                name, new = unicode_char_to_name(char)
+                if name:
+                    self.add_row(char, new)
+                    found = True
+
+        # Maybe string was a single character?
+        # Carefully strip spaces, so that a single space still works
+        if not found and len(string) >= 1:
+            string = string.strip(" ")
+            if len(string) == 0:
+                string = " "  # String was all spaces
+            if len(string) == 1:
+                name, new = unicode_char_to_name(string)
+                if name:
+                    self.add_row(string, new)
+                    found = True
+
+        if not found:
+            sound_bell()
+
+    def add_row(self, char: str, new: bool) -> None:
+        """Add a row to the Unicode Search dialog.
+
+        Args:
+            count: Row to add.
+            char: Character to display in row.
+            new: True if character was added to unicode since version 3.2 (March 2002)
+        """
+        ordinal = ord(char)
+        block_name = ""
+        warning_flag = "⚠\ufe0f" if new else ""
+        # Find block name
+        for block, (beg, end, _) in _unicode_blocks.items():
+            if beg <= ordinal <= end:
+                block_name = block
+                break
+        # Add entry to Treeview
+        entry = (
+            char,
+            f"U+{ord(char):04x}",
+            warning_flag + unicodedata.name(char),
+            block_name,
+        )
+        self.list.insert("", tk.END, values=entry)
+
+    def item_clicked(self, event: tk.Event) -> None:
+        """Called when Unicode search item is clicked.
+
+        If click is in char, codepoint or name column, then insert character.
+        If in block column, open the block dialog.
+
+        Args:
+            event: Event containing location of mouse click
+        """
+        row_id = self.list.identify_row(event.y)
+        row = self.list.set(row_id)
+        if not row:  # Heading clicked
+            return
+        col_id = self.list.identify_column(event.x)
+
+        if col_id in (
+            UnicodeSearchDialog.CHAR_COL_ID,
+            UnicodeSearchDialog.CODEPOINT_COL_ID,
+            UnicodeSearchDialog.NAME_COL_ID,
+        ):
+            insert_in_focus_widget(row[UnicodeSearchDialog.CHAR_COL_HEAD])
+        elif col_id == UnicodeSearchDialog.BLOCK_COL_ID:
+            block = row[UnicodeSearchDialog.BLOCK_COL_HEAD]
+            if not block:
+                return
+            preferences.set(PrefKey.UNICODE_BLOCK, block)
+            dlg = UnicodeBlockDialog.show_dialog()
+            dlg.block_selected()
+
+
+def unicode_char_to_name(char: str) -> tuple[str, bool]:
+    """Convert char to Unicode name, and note if it is "new".
+
+    Args:
+        char: Character to convert.
+
+    Returns:
+        Tuple containing name of character (empty if no name),
+        and bool flagging if character is new (Unicode version > 3.2).
+    """
+    new = False
+    try:
+        name = unicodedata.name(char)
+        try:
+            unicodedata.ucd_3_2_0.name(char)
+        except ValueError:
+            new = True
+    except ValueError:
+        name = ""
+    return name, new
+
+
+# Somewhat arbitrarily, certain Unicode blocks are not displayed in the
+# dropdown menu, roughly matching the GG1 list, and trying to
+# balance usefulness with excessive number of blocks to choose from.
+# List of blocks taken from https://unicode.org/Public/UNIDATA/Blocks.txt with header
+#     Blocks-16.0.0.txt
+#     Date: 2024-02-02
+# Start point of Basic Latin and Latin-1 Supplement adjusted to avoid unprintables
+_unicode_blocks: dict[str, tuple[int, int, bool]] = {
+    "Basic Latin": (0x0020, 0x007E, True),
+    "Latin-1 Supplement": (0x00A0, 0x00FF, True),
+    "Latin Extended-A": (0x0100, 0x017F, True),
+    "Latin Extended-B": (0x0180, 0x024F, True),
+    "IPA Extensions": (0x0250, 0x02AF, True),
+    "Spacing Modifier Letters": (0x02B0, 0x02FF, True),
+    "Combining Diacritical Marks": (0x0300, 0x036F, True),
+    "Greek and Coptic": (0x0370, 0x03FF, True),
+    "Cyrillic": (0x0400, 0x04FF, True),
+    "Cyrillic Supplement": (0x0500, 0x052F, True),
+    "Armenian": (0x0530, 0x058F, True),
+    "Hebrew": (0x0590, 0x05FF, True),
+    "Arabic": (0x0600, 0x06FF, True),
+    "Syriac": (0x0700, 0x074F, True),
+    "Arabic Supplement": (0x0750, 0x077F, False),
+    "Thaana": (0x0780, 0x07BF, True),
+    "NKo": (0x07C0, 0x07FF, False),
+    "Samaritan": (0x0800, 0x083F, False),
+    "Mandaic": (0x0840, 0x085F, False),
+    "Syriac Supplement": (0x0860, 0x086F, False),
+    "Arabic Extended-B": (0x0870, 0x089F, False),
+    "Arabic Extended-A": (0x08A0, 0x08FF, False),
+    "Devanagari": (0x0900, 0x097F, True),
+    "Bengali": (0x0980, 0x09FF, True),
+    "Gurmukhi": (0x0A00, 0x0A7F, True),
+    "Gujarati": (0x0A80, 0x0AFF, True),
+    "Oriya": (0x0B00, 0x0B7F, True),
+    "Tamil": (0x0B80, 0x0BFF, True),
+    "Telugu": (0x0C00, 0x0C7F, True),
+    "Kannada": (0x0C80, 0x0CFF, True),
+    "Malayalam": (0x0D00, 0x0D7F, True),
+    "Sinhala": (0x0D80, 0x0DFF, True),
+    "Thai": (0x0E00, 0x0E7F, True),
+    "Lao": (0x0E80, 0x0EFF, True),
+    "Tibetan": (0x0F00, 0x0FFF, False),
+    "Myanmar": (0x1000, 0x109F, True),
+    "Georgian": (0x10A0, 0x10FF, True),
+    "Hangul Jamo": (0x1100, 0x11FF, True),
+    "Ethiopic": (0x1200, 0x137F, True),
+    "Ethiopic Supplement": (0x1380, 0x139F, False),
+    "Cherokee": (0x13A0, 0x13FF, True),
+    "Unified Canadian Aboriginal Syllabics": (0x1400, 0x167F, True),
+    "Ogham": (0x1680, 0x169F, True),
+    "Runic": (0x16A0, 0x16FF, True),
+    "Tagalog": (0x1700, 0x171F, True),
+    "Hanunoo": (0x1720, 0x173F, False),
+    "Buhid": (0x1740, 0x175F, True),
+    "Tagbanwa": (0x1760, 0x177F, False),
+    "Khmer": (0x1780, 0x17FF, False),
+    "Mongolian": (0x1800, 0x18AF, True),
+    "Unified Canadian Aboriginal Syllabics Extended": (0x18B0, 0x18FF, False),
+    "Limbu": (0x1900, 0x194F, False),
+    "Tai Le": (0x1950, 0x197F, False),
+    "New Tai Lue": (0x1980, 0x19DF, False),
+    "Khmer Symbols": (0x19E0, 0x19FF, False),
+    "Buginese": (0x1A00, 0x1A1F, False),
+    "Tai Tham": (0x1A20, 0x1AAF, False),
+    "Combining Diacritical Marks Extended": (0x1AB0, 0x1AFF, False),
+    "Balinese": (0x1B00, 0x1B7F, False),
+    "Sundanese": (0x1B80, 0x1BBF, False),
+    "Batak": (0x1BC0, 0x1BFF, False),
+    "Lepcha": (0x1C00, 0x1C4F, False),
+    "Ol Chiki": (0x1C50, 0x1C7F, False),
+    "Cyrillic Extended-C": (0x1C80, 0x1C8F, False),
+    "Georgian Extended": (0x1C90, 0x1CBF, False),
+    "Sundanese Supplement": (0x1CC0, 0x1CCF, False),
+    "Vedic Extensions": (0x1CD0, 0x1CFF, False),
+    "Phonetic Extensions": (0x1D00, 0x1D7F, True),
+    "Phonetic Extensions Supplement": (0x1D80, 0x1DBF, False),
+    "Combining Diacritical Marks Supplement": (0x1DC0, 0x1DFF, False),
+    "Latin Extended Additional": (0x1E00, 0x1EFF, True),
+    "Greek Extended": (0x1F00, 0x1FFF, True),
+    "General Punctuation": (0x2000, 0x206F, True),
+    "Superscripts and Subscripts": (0x2070, 0x209F, True),
+    "Currency Symbols": (0x20A0, 0x20CF, True),
+    "Combining Diacritical Marks for Symbols": (0x20D0, 0x20FF, True),
+    "Letterlike Symbols": (0x2100, 0x214F, True),
+    "Number Forms": (0x2150, 0x218F, True),
+    "Arrows": (0x2190, 0x21FF, True),
+    "Mathematical Operators": (0x2200, 0x22FF, True),
+    "Miscellaneous Technical": (0x2300, 0x23FF, True),
+    "Control Pictures": (0x2400, 0x243F, True),
+    "Optical Character Recognition": (0x2440, 0x245F, True),
+    "Enclosed Alphanumerics": (0x2460, 0x24FF, True),
+    "Box Drawing": (0x2500, 0x257F, True),
+    "Block Elements": (0x2580, 0x259F, True),
+    "Geometric Shapes": (0x25A0, 0x25FF, True),
+    "Miscellaneous Symbols": (0x2600, 0x26FF, True),
+    "Dingbats": (0x2700, 0x27BF, True),
+    "Miscellaneous Mathematical Symbols-A": (0x27C0, 0x27EF, True),
+    "Supplemental Arrows-A": (0x27F0, 0x27FF, True),
+    "Braille Patterns": (0x2800, 0x28FF, True),
+    "Supplemental Arrows-B": (0x2900, 0x297F, True),
+    "Miscellaneous Mathematical Symbols-B": (0x2980, 0x29FF, True),
+    "Supplemental Mathematical Operators": (0x2A00, 0x2AFF, True),
+    "Miscellaneous Symbols and Arrows": (0x2B00, 0x2BFF, True),
+    "Glagolitic": (0x2C00, 0x2C5F, False),
+    "Latin Extended-C": (0x2C60, 0x2C7F, False),
+    "Coptic": (0x2C80, 0x2CFF, False),
+    "Georgian Supplement": (0x2D00, 0x2D2F, False),
+    "Tifinagh": (0x2D30, 0x2D7F, False),
+    "Ethiopic Extended": (0x2D80, 0x2DDF, False),
+    "Cyrillic Extended-A": (0x2DE0, 0x2DFF, False),
+    "Supplemental Punctuation": (0x2E00, 0x2E7F, False),
+    "CJK Radicals Supplement": (0x2E80, 0x2EFF, False),
+    "Kangxi Radicals": (0x2F00, 0x2FDF, False),
+    "Ideographic Description Characters": (0x2FF0, 0x2FFF, False),
+    "CJK Symbols and Punctuation": (0x3000, 0x303F, False),
+    "Hiragana": (0x3040, 0x309F, False),
+    "Katakana": (0x30A0, 0x30FF, False),
+    "Bopomofo": (0x3100, 0x312F, False),
+    "Hangul Compatibility Jamo": (0x3130, 0x318F, False),
+    "Kanbun": (0x3190, 0x319F, False),
+    "Bopomofo Extended": (0x31A0, 0x31BF, False),
+    "CJK Strokes": (0x31C0, 0x31EF, False),
+    "Katakana Phonetic Extensions": (0x31F0, 0x31FF, False),
+    "Enclosed CJK Letters and Months": (0x3200, 0x32FF, False),
+    "CJK Compatibility": (0x3300, 0x33FF, False),
+    "CJK Unified Ideographs Extension A": (0x3400, 0x4DBF, False),
+    "Yijing Hexagram Symbols": (0x4DC0, 0x4DFF, False),
+    "CJK Unified Ideographs": (0x4E00, 0x9FFF, False),
+    "Yi Syllables": (0xA000, 0xA48F, False),
+    "Yi Radicals": (0xA490, 0xA4CF, False),
+    "Lisu": (0xA4D0, 0xA4FF, False),
+    "Vai": (0xA500, 0xA63F, False),
+    "Cyrillic Extended-B": (0xA640, 0xA69F, False),
+    "Bamum": (0xA6A0, 0xA6FF, False),
+    "Modifier Tone Letters": (0xA700, 0xA71F, False),
+    "Latin Extended-D": (0xA720, 0xA7FF, False),
+    "Syloti Nagri": (0xA800, 0xA82F, False),
+    "Common Indic Number Forms": (0xA830, 0xA83F, False),
+    "Phags-pa": (0xA840, 0xA87F, False),
+    "Saurashtra": (0xA880, 0xA8DF, False),
+    "Devanagari Extended": (0xA8E0, 0xA8FF, False),
+    "Kayah Li": (0xA900, 0xA92F, False),
+    "Rejang": (0xA930, 0xA95F, False),
+    "Hangul Jamo Extended-A": (0xA960, 0xA97F, False),
+    "Javanese": (0xA980, 0xA9DF, False),
+    "Myanmar Extended-B": (0xA9E0, 0xA9FF, False),
+    "Cham": (0xAA00, 0xAA5F, False),
+    "Myanmar Extended-A": (0xAA60, 0xAA7F, False),
+    "Tai Viet": (0xAA80, 0xAADF, False),
+    "Meetei Mayek Extensions": (0xAAE0, 0xAAFF, False),
+    "Ethiopic Extended-A": (0xAB00, 0xAB2F, False),
+    "Latin Extended-E": (0xAB30, 0xAB6F, False),
+    "Cherokee Supplement": (0xAB70, 0xABBF, False),
+    "Meetei Mayek": (0xABC0, 0xABFF, False),
+    "Hangul Syllables": (0xAC00, 0xD7AF, False),
+    "Hangul Jamo Extended-B": (0xD7B0, 0xD7FF, False),
+    "High Surrogates": (0xD800, 0xDB7F, False),
+    "High Private Use Surrogates": (0xDB80, 0xDBFF, False),
+    "Low Surrogates": (0xDC00, 0xDFFF, False),
+    "Private Use Area": (0xE000, 0xF8FF, False),
+    "CJK Compatibility Ideographs": (0xF900, 0xFAFF, False),
+    "Alphabetic Presentation Forms": (0xFB00, 0xFB4F, True),
+    "Arabic Presentation Forms-A": (0xFB50, 0xFDFF, True),
+    "Variation Selectors": (0xFE00, 0xFE0F, True),
+    "Vertical Forms": (0xFE10, 0xFE1F, False),
+    "Combining Half Marks": (0xFE20, 0xFE2F, True),
+    "CJK Compatibility Forms": (0xFE30, 0xFE4F, False),
+    "Small Form Variants": (0xFE50, 0xFE6F, True),
+    "Arabic Presentation Forms-B": (0xFE70, 0xFEFF, True),
+    "Halfwidth and Fullwidth Forms": (0xFF00, 0xFFEF, True),
+    "Specials": (0xFFF0, 0xFFFF, False),
+    "Linear B Syllabary": (0x10000, 0x1007F, False),
+    "Linear B Ideograms": (0x10080, 0x100FF, False),
+    "Aegean Numbers": (0x10100, 0x1013F, False),
+    "Ancient Greek Numbers": (0x10140, 0x1018F, False),
+    "Ancient Symbols": (0x10190, 0x101CF, False),
+    "Phaistos Disc": (0x101D0, 0x101FF, False),
+    "Lycian": (0x10280, 0x1029F, False),
+    "Carian": (0x102A0, 0x102DF, False),
+    "Coptic Epact Numbers": (0x102E0, 0x102FF, False),
+    "Old Italic": (0x10300, 0x1032F, False),
+    "Gothic": (0x10330, 0x1034F, False),
+    "Old Permic": (0x10350, 0x1037F, False),
+    "Ugaritic": (0x10380, 0x1039F, False),
+    "Old Persian": (0x103A0, 0x103DF, False),
+    "Deseret": (0x10400, 0x1044F, False),
+    "Shavian": (0x10450, 0x1047F, False),
+    "Osmanya": (0x10480, 0x104AF, False),
+    "Osage": (0x104B0, 0x104FF, False),
+    "Elbasan": (0x10500, 0x1052F, False),
+    "Caucasian Albanian": (0x10530, 0x1056F, False),
+    "Vithkuqi": (0x10570, 0x105BF, False),
+    "Todhri": (0x105C0, 0x105FF, False),
+    "Linear A": (0x10600, 0x1077F, False),
+    "Latin Extended-F": (0x10780, 0x107BF, False),
+    "Cypriot Syllabary": (0x10800, 0x1083F, False),
+    "Imperial Aramaic": (0x10840, 0x1085F, False),
+    "Palmyrene": (0x10860, 0x1087F, False),
+    "Nabataean": (0x10880, 0x108AF, False),
+    "Hatran": (0x108E0, 0x108FF, False),
+    "Phoenician": (0x10900, 0x1091F, False),
+    "Lydian": (0x10920, 0x1093F, False),
+    "Meroitic Hieroglyphs": (0x10980, 0x1099F, False),
+    "Meroitic Cursive": (0x109A0, 0x109FF, False),
+    "Kharoshthi": (0x10A00, 0x10A5F, False),
+    "Old South Arabian": (0x10A60, 0x10A7F, False),
+    "Old North Arabian": (0x10A80, 0x10A9F, False),
+    "Manichaean": (0x10AC0, 0x10AFF, False),
+    "Avestan": (0x10B00, 0x10B3F, False),
+    "Inscriptional Parthian": (0x10B40, 0x10B5F, False),
+    "Inscriptional Pahlavi": (0x10B60, 0x10B7F, False),
+    "Psalter Pahlavi": (0x10B80, 0x10BAF, False),
+    "Old Turkic": (0x10C00, 0x10C4F, False),
+    "Old Hungarian": (0x10C80, 0x10CFF, False),
+    "Hanifi Rohingya": (0x10D00, 0x10D3F, False),
+    "Garay": (0x10D40, 0x10D8F, False),
+    "Rumi Numeral Symbols": (0x10E60, 0x10E7F, False),
+    "Yezidi": (0x10E80, 0x10EBF, False),
+    "Arabic Extended-C": (0x10EC0, 0x10EFF, False),
+    "Old Sogdian": (0x10F00, 0x10F2F, False),
+    "Sogdian": (0x10F30, 0x10F6F, False),
+    "Old Uyghur": (0x10F70, 0x10FAF, False),
+    "Chorasmian": (0x10FB0, 0x10FDF, False),
+    "Elymaic": (0x10FE0, 0x10FFF, False),
+    "Brahmi": (0x11000, 0x1107F, False),
+    "Kaithi": (0x11080, 0x110CF, False),
+    "Sora Sompeng": (0x110D0, 0x110FF, False),
+    "Chakma": (0x11100, 0x1114F, False),
+    "Mahajani": (0x11150, 0x1117F, False),
+    "Sharada": (0x11180, 0x111DF, False),
+    "Sinhala Archaic Numbers": (0x111E0, 0x111FF, False),
+    "Khojki": (0x11200, 0x1124F, False),
+    "Multani": (0x11280, 0x112AF, False),
+    "Khudawadi": (0x112B0, 0x112FF, False),
+    "Grantha": (0x11300, 0x1137F, False),
+    "Tulu-Tigalari": (0x11380, 0x113FF, False),
+    "Newa": (0x11400, 0x1147F, False),
+    "Tirhuta": (0x11480, 0x114DF, False),
+    "Siddham": (0x11580, 0x115FF, False),
+    "Modi": (0x11600, 0x1165F, False),
+    "Mongolian Supplement": (0x11660, 0x1167F, False),
+    "Takri": (0x11680, 0x116CF, False),
+    "Myanmar Extended-C": (0x116D0, 0x116FF, False),
+    "Ahom": (0x11700, 0x1174F, False),
+    "Dogra": (0x11800, 0x1184F, False),
+    "Warang Citi": (0x118A0, 0x118FF, False),
+    "Dives Akuru": (0x11900, 0x1195F, False),
+    "Nandinagari": (0x119A0, 0x119FF, False),
+    "Zanabazar Square": (0x11A00, 0x11A4F, False),
+    "Soyombo": (0x11A50, 0x11AAF, False),
+    "Unified Canadian Aboriginal Syllabics Extended-A": (0x11AB0, 0x11ABF, False),
+    "Pau Cin Hau": (0x11AC0, 0x11AFF, False),
+    "Devanagari Extended-A": (0x11B00, 0x11B5F, False),
+    "Sunuwar": (0x11BC0, 0x11BFF, False),
+    "Bhaiksuki": (0x11C00, 0x11C6F, False),
+    "Marchen": (0x11C70, 0x11CBF, False),
+    "Masaram Gondi": (0x11D00, 0x11D5F, False),
+    "Gunjala Gondi": (0x11D60, 0x11DAF, False),
+    "Makasar": (0x11EE0, 0x11EFF, False),
+    "Kawi": (0x11F00, 0x11F5F, False),
+    "Lisu Supplement": (0x11FB0, 0x11FBF, False),
+    "Tamil Supplement": (0x11FC0, 0x11FFF, False),
+    "Cuneiform": (0x12000, 0x123FF, False),
+    "Cuneiform Numbers and Punctuation": (0x12400, 0x1247F, False),
+    "Early Dynastic Cuneiform": (0x12480, 0x1254F, False),
+    "Cypro-Minoan": (0x12F90, 0x12FFF, False),
+    "Egyptian Hieroglyphs": (0x13000, 0x1342F, False),
+    "Egyptian Hieroglyph Format Controls": (0x13430, 0x1345F, False),
+    "Egyptian Hieroglyphs Extended-A": (0x13460, 0x143FF, False),
+    "Anatolian Hieroglyphs": (0x14400, 0x1467F, False),
+    "Gurung Khema": (0x16100, 0x1613F, False),
+    "Bamum Supplement": (0x16800, 0x16A3F, False),
+    "Mro": (0x16A40, 0x16A6F, False),
+    "Tangsa": (0x16A70, 0x16ACF, False),
+    "Bassa Vah": (0x16AD0, 0x16AFF, False),
+    "Pahawh Hmong": (0x16B00, 0x16B8F, False),
+    "Kirat Rai": (0x16D40, 0x16D7F, False),
+    "Medefaidrin": (0x16E40, 0x16E9F, False),
+    "Miao": (0x16F00, 0x16F9F, False),
+    "Ideographic Symbols and Punctuation": (0x16FE0, 0x16FFF, False),
+    "Tangut": (0x17000, 0x187FF, False),
+    "Tangut Components": (0x18800, 0x18AFF, False),
+    "Khitan Small Script": (0x18B00, 0x18CFF, False),
+    "Tangut Supplement": (0x18D00, 0x18D7F, False),
+    "Kana Extended-B": (0x1AFF0, 0x1AFFF, False),
+    "Kana Supplement": (0x1B000, 0x1B0FF, False),
+    "Kana Extended-A": (0x1B100, 0x1B12F, False),
+    "Small Kana Extension": (0x1B130, 0x1B16F, False),
+    "Nushu": (0x1B170, 0x1B2FF, False),
+    "Duployan": (0x1BC00, 0x1BC9F, False),
+    "Shorthand Format Controls": (0x1BCA0, 0x1BCAF, False),
+    "Symbols for Legacy Computing Supplement": (0x1CC00, 0x1CEBF, False),
+    "Znamenny Musical Notation": (0x1CF00, 0x1CFCF, False),
+    "Byzantine Musical Symbols": (0x1D000, 0x1D0FF, False),
+    "Musical Symbols": (0x1D100, 0x1D1FF, False),
+    "Ancient Greek Musical Notation": (0x1D200, 0x1D24F, False),
+    "Kaktovik Numerals": (0x1D2C0, 0x1D2DF, False),
+    "Mayan Numerals": (0x1D2E0, 0x1D2FF, False),
+    "Tai Xuan Jing Symbols": (0x1D300, 0x1D35F, False),
+    "Counting Rod Numerals": (0x1D360, 0x1D37F, False),
+    "Mathematical Alphanumeric Symbols": (0x1D400, 0x1D7FF, False),
+    "Sutton SignWriting": (0x1D800, 0x1DAAF, False),
+    "Latin Extended-G": (0x1DF00, 0x1DFFF, False),
+    "Glagolitic Supplement": (0x1E000, 0x1E02F, False),
+    "Cyrillic Extended-D": (0x1E030, 0x1E08F, False),
+    "Nyiakeng Puachue Hmong": (0x1E100, 0x1E14F, False),
+    "Toto": (0x1E290, 0x1E2BF, False),
+    "Wancho": (0x1E2C0, 0x1E2FF, False),
+    "Nag Mundari": (0x1E4D0, 0x1E4FF, False),
+    "Ol Onal": (0x1E5D0, 0x1E5FF, False),
+    "Ethiopic Extended-B": (0x1E7E0, 0x1E7FF, False),
+    "Mende Kikakui": (0x1E800, 0x1E8DF, False),
+    "Adlam": (0x1E900, 0x1E95F, False),
+    "Indic Siyaq Numbers": (0x1EC70, 0x1ECBF, False),
+    "Ottoman Siyaq Numbers": (0x1ED00, 0x1ED4F, False),
+    "Arabic Mathematical Alphabetic Symbols": (0x1EE00, 0x1EEFF, False),
+    "Mahjong Tiles": (0x1F000, 0x1F02F, False),
+    "Domino Tiles": (0x1F030, 0x1F09F, False),
+    "Playing Cards": (0x1F0A0, 0x1F0FF, False),
+    "Enclosed Alphanumeric Supplement": (0x1F100, 0x1F1FF, False),
+    "Enclosed Ideographic Supplement": (0x1F200, 0x1F2FF, False),
+    "Miscellaneous Symbols and Pictographs": (0x1F300, 0x1F5FF, False),
+    "Emoticons": (0x1F600, 0x1F64F, False),
+    "Ornamental Dingbats": (0x1F650, 0x1F67F, False),
+    "Transport and Map Symbols": (0x1F680, 0x1F6FF, False),
+    "Alchemical Symbols": (0x1F700, 0x1F77F, False),
+    "Geometric Shapes Extended": (0x1F780, 0x1F7FF, False),
+    "Supplemental Arrows-C": (0x1F800, 0x1F8FF, False),
+    "Supplemental Symbols and Pictographs": (0x1F900, 0x1F9FF, False),
+    "Chess Symbols": (0x1FA00, 0x1FA6F, False),
+    "Symbols and Pictographs Extended-A": (0x1FA70, 0x1FAFF, False),
+    "Symbols for Legacy Computing": (0x1FB00, 0x1FBFF, False),
+    "CJK Unified Ideographs Extension B": (0x20000, 0x2A6DF, False),
+    "CJK Unified Ideographs Extension C": (0x2A700, 0x2B73F, False),
+    "CJK Unified Ideographs Extension D": (0x2B740, 0x2B81F, False),
+    "CJK Unified Ideographs Extension E": (0x2B820, 0x2CEAF, False),
+    "CJK Unified Ideographs Extension F": (0x2CEB0, 0x2EBEF, False),
+    "CJK Unified Ideographs Extension I": (0x2EBF0, 0x2EE5F, False),
+    "CJK Compatibility Ideographs Supplement": (0x2F800, 0x2FA1F, False),
+    "CJK Unified Ideographs Extension G": (0x30000, 0x3134F, False),
+    "CJK Unified Ideographs Extension H": (0x31350, 0x323AF, False),
+    "Tags": (0xE0000, 0xE007F, False),
+    "Variation Selectors Supplement": (0xE0100, 0xE01EF, False),
+    "Supplementary Private Use Area-A": (0xF0000, 0xFFFFF, False),
+    "Supplementary Private Use Area-B": (0x100000, 0x10FFFF, False),
+}
+
+
+_common_characters: list[str] = [
+    "À",
+    "Á",
+    "Â",
+    "Ã",
+    "Ä",
+    "Å",
+    "Æ",
+    "Ç",
+    "È",
+    "É",
+    "Ê",
+    "Ë",
+    "Ì",
+    "Í",
+    "Î",
+    "Ï",
+    "Ò",
+    "Ó",
+    "Ô",
+    "Õ",
+    "Ö",
+    "Ø",
+    "Œ",
+    "Ñ",
+    "Ù",
+    "Ú",
+    "Û",
+    "Ü",
+    "Ð",
+    "þ",
+    "Ÿ",
+    "Ý",
+    "à",
+    "á",
+    "â",
+    "ã",
+    "ä",
+    "å",
+    "æ",
+    "ç",
+    "è",
+    "é",
+    "ê",
+    "ë",
+    "ì",
+    "í",
+    "î",
+    "ï",
+    "ò",
+    "ó",
+    "ô",
+    "õ",
+    "ö",
+    "ø",
+    "œ",
+    "ñ",
+    "ù",
+    "ú",
+    "û",
+    "ü",
+    "ð",
+    "Þ",
+    "ÿ",
+    "ý",
+    "¡",
+    "¿",
+    "«",
+    "»",
+    "‘",
+    "’",
+    "“",
+    "”",
+    "‚",
+    "‛",
+    "„",
+    "‟",
+    "ß",
+    "⁂",
+    "☞",
+    "☜",
+    "±",
+    "·",
+    "×",
+    "÷",
+    "°",
+    "′",
+    "″",
+    "‴",
+    "‰",
+    "¹",
+    "²",
+    "³",
+    "£",
+    "¢",
+    "©",
+    "\xa0",
+    "½",
+    "⅓",
+    "⅔",
+    "¼",
+    "¾",
+    "⅕",
+    "⅖",
+    "⅗",
+    "⅘",
+    "⅙",
+    "⅚",
+    "⅐",
+    "⅛",
+    "⅜",
+    "⅝",
+    "⅞",
+    "—",
+    "–",
+    "†",
+    "‡",
+    "§",
+    "‖",
+    "¶",
+    "¦",
+    "º",
+    "ª",
+]
+
+_unicode_names: dict[str, list[str]] = {}

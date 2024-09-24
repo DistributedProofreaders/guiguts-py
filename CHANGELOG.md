@@ -1,6 +1,57 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.8
+
+- Split Text Window now available via the View menu
+- Multi-replace now available in the Search/Replace dialog to show three
+  independent replace fields with associated buttons
+- Minor wording improvements to Preferences dialog
+- Suspects Only checkbox in Word Frequency is now hidden when not relevant
+
+### Known bugs discovered pre-testing alpha.8 (also in previous versions)
+
+- Some false positives in Word Frequency hyphens check
+- Some false positives in Ital/Bold/SC/etc check
+
+
+## Version 2.0.0-alpha.7
+
+- Unicode Search dialog added
+- Unicode block list updated to include more recently defined blocks
+- Warn user in Unicode dialogs if character is "recently added" to Unicode
+
+### Bug Fixes
+
+- Using `$` and `^` in regexes did not match end/start of line
+- Some regex matches overlapped with the previous match
+- Searching forward/backward did not always find the same matches - now does
+  so, except in very rare case.
+- `\C...\E` to execute bad Python code caused a traceback - now errors tidily
+
+
+## Version 2.0.0-alpha.6
+
+- Unicode & Commonly Used Characters dialog added
+- Find All results improved for multiline matches
+- Bad regexes in S/R dialog turn red as user types them
+
+### Bug Fixes
+
+- `Ctrl-left-click` in Basic Fixup caused an error
+- S/R dialog kept resetting to a narrow width on Macs
+- Searching for the next match in S/R didn't highlight correctly
+- S/R regex count with backreferences didn't count correctly
+- Replace All didn't work for all regexes
+- Searching backwards for regex with backreference didn't work
+- `^` didn't match beginning of all lines correctly
+- Find Next/Previous key bindings (`F3`/`Cmd+g`) were executed twice
+- Trying to use a bad regex caused an error - error now reported correctly
+- Dock/Undock Image Window caused an error
+- Compose sequence failed to insert some characters, e.g. non-breaking space
+- Trailing hyphen appeared in title bar when there was no filename
+
+
 ## Version 2.0.0-alpha.5
 
 - "Join Footnote to Previous" added to Footnote Fixup

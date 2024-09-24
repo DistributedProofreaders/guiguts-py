@@ -238,13 +238,14 @@ class WordFrequencyDialog(ToplevelDialog):
         )
         options_frame.grid(row=1, column=0, sticky="NSEW")
         options_frame.columnconfigure(0, weight=1)
-        ttk.Checkbutton(
+        self.suspects_btn = ttk.Checkbutton(
             options_frame,
             text="Suspects Only",
             variable=PersistentBoolean(PrefKey.WFDIALOG_SUSPECTS_ONLY),
             command=lambda: wf_populate(self),
             takefocus=False,
-        ).grid(row=0, column=0, sticky="NSW", padx=5)
+        )
+        self.suspects_btn.grid(row=0, column=0, sticky="NSW", padx=5)
         ttk.Label(
             options_frame,
             text="Sort:",
@@ -707,7 +708,22 @@ def wf_populate(wf_dialog: WordFrequencyDialog) -> None:
         wf_dialog: The word frequency dialog.
     """
     Busy.busy()
-    match preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE):
+    wf_dialog.previous_word = ""
+    display_type = preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
+
+    # Suspects Only is only relevant for some modes
+    if display_type in (
+        WFDisplayType.EMDASHES,
+        WFDisplayType.HYPHENS,
+        WFDisplayType.MARKEDUP,
+        WFDisplayType.ACCENTS,
+        WFDisplayType.LIGATURES,
+    ):
+        wf_dialog.suspects_btn.grid()
+    else:
+        wf_dialog.suspects_btn.grid_remove()
+
+    match display_type:
         case WFDisplayType.ALL_WORDS:
             wf_populate_all(wf_dialog)
         case WFDisplayType.EMDASHES:

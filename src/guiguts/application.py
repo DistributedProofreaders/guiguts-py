@@ -36,6 +36,8 @@ from guiguts.misc_dialogs import (
     PreferencesDialog,
     ComposeSequenceDialog,
     ComposeHelpDialog,
+    UnicodeBlockDialog,
+    UnicodeSearchDialog,
 )
 from guiguts.misc_tools import (
     basic_fixup_check,
@@ -51,7 +53,7 @@ from guiguts.misc_tools import (
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
-from guiguts.root import root
+from guiguts.root import root, ImageWindowState
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
@@ -224,7 +226,8 @@ class Guiguts:
             max_width = int(maintext().winfo_width() / maintext().font.measure("0"))
             if len_title > max_width:
                 filetitle = "..." + filetitle[len_title - max_width :]
-            filetitle = " - " + filetitle
+            if filetitle:
+                filetitle = " - " + filetitle
         root().title(f"Guiguts {version('guiguts')}" + modtitle + filetitle)
         if is_mac():
             root().wm_attributes("-modified", maintext().is_modified())
@@ -310,7 +313,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(PrefKey.AUTO_IMAGE, self.auto_image_callback)
         preferences.set_default(PrefKey.BELL_AUDIBLE, True)
         preferences.set_default(PrefKey.BELL_VISUAL, True)
-        preferences.set_default(PrefKey.IMAGE_WINDOW, "Docked")
+        preferences.set_default(PrefKey.IMAGE_WINDOW, ImageWindowState.DOCKED)
         preferences.set_default(PrefKey.RECENT_FILES, [])
         preferences.set_default(PrefKey.LINE_NUMBERS, True)
         preferences.set_default(PrefKey.ORDINAL_NAMES, True)
@@ -324,6 +327,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.SEARCHDIALOG_WHOLE_WORD, False)
         preferences.set_default(PrefKey.SEARCHDIALOG_WRAP, True)
         preferences.set_default(PrefKey.SEARCHDIALOG_REGEX, False)
+        preferences.set_default(PrefKey.SEARCHDIALOG_MULTI_REPLACE, False)
         preferences.set_default(PrefKey.DIALOG_GEOMETRY, {})
         preferences.set_default(PrefKey.ROOT_GEOMETRY, "800x400")
         preferences.set_default(PrefKey.ROOT_GEOMETRY_STATE, "normal")
@@ -375,6 +379,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         preferences.set_default(PrefKey.SPELL_THRESHOLD, 3)
         preferences.set_default(PrefKey.UNMATCHED_NESTABLE, False)
+        preferences.set_default(
+            PrefKey.UNICODE_BLOCK, UnicodeBlockDialog.commonly_used_characters_name
+        )
+        preferences.set_default(PrefKey.UNICODE_SEARCH_HISTORY, [])
+        preferences.set_default(PrefKey.SPLIT_TEXT_WINDOW, False)
+        preferences.set_default(PrefKey.SPLIT_TEXT_SASH_COORD, 0)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -611,6 +621,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         unicode_menu = Menu(menu_tools, "~Unicode")
         unicode_menu.add_button(
+            "Unicode ~Search/Entry", UnicodeSearchDialog.show_dialog
+        )
+        unicode_menu.add_button("Unicode ~Blocks", UnicodeBlockDialog.show_dialog)
+        unicode_menu.add_button(
             "~Normalize Selected Characters",
             unicode_normalize,
         )
@@ -624,10 +638,16 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Create the View menu."""
         menu_view = Menu(menubar(), "~View")
         menu_view.add_checkbox(
+            "Split ~Text Window",
+            lambda: maintext().show_peer(),
+            lambda: maintext().hide_peer(),
+            root().split_text_window,
+        )
+        menu_view.add_checkbox(
             "~Dock Image",
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
-            preferences.get(PrefKey.IMAGE_WINDOW) == "Docked",
+            root().image_window_state,
         )
         menu_view.add_button("~Show Image", self.show_image)
         menu_view.add_button("~Hide Image", self.hide_image)

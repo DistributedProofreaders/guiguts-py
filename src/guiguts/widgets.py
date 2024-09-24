@@ -391,8 +391,10 @@ class Combobox(ttk.Combobox):
             self.set("")
 
 
-class ToolTip(tk.Toplevel):
-    """Create a tooltip for a widget."""
+class ToolTip:
+    """Create a tooltip for a widget.
+
+    Actual tooltip Toplevel window isn't created until it's needed."""
 
     def __init__(
         self,
@@ -413,42 +415,55 @@ class ToolTip(tk.Toplevel):
             self.widget_tl.register_tooltip(self)  # type: ignore[union-attr]
         self.use_pointer_pos = use_pointer_pos
 
-        tk.Toplevel.__init__(self)
-        self.overrideredirect(True)
-        # Make tooltip transparent initially, in case it appears briefly on startup
-        self.wm_attributes("-alpha", 0.0)
-        # Move it off screen too - belt & suspenders - "alpha" not necessarily supported
-        self.geometry("+-1000+-1000")
-
         self.delay = 0.5
         self.inside = False
-        frame = ttk.Frame(self, borderwidth=1, relief=tk.SOLID)
-        frame.grid(padx=1, pady=1)
-        ttk.Label(frame, text=msg).grid()
+        self.msg = msg
+        self.width = self.height = 0
+        self.tooltip_window: Optional[tk.Toplevel] = None
         self.enter_bind = self.widget.bind("<Enter>", self.on_enter, add="+")
         self.leave_bind = self.widget.bind("<Leave>", self.on_leave, add="+")
         self.press_bind = self.widget.bind("<ButtonRelease>", self.on_leave, add="+")
-        self.update_idletasks()
-        self.width = self.winfo_width()
-        self.height = self.winfo_height()
+
+    def _create_tooltip(self) -> None:
+        """Actually create the toolip if it doesn't exist"""
+        if self.tooltip_window is not None:
+            return
+        self.tooltip_window = tk.Toplevel()
+        self.tooltip_window.overrideredirect(True)
+        # Make tooltip transparent initially, in case it appears briefly on startup
+        self.tooltip_window.wm_attributes("-alpha", 0.0)
+        # Move it off screen too - belt & suspenders - "alpha" not necessarily supported
+        self.tooltip_window.geometry("+-1000+-1000")
+        frame = ttk.Frame(self.tooltip_window, borderwidth=1, relief=tk.SOLID)
+        frame.grid(padx=1, pady=1)
+        ttk.Label(frame, text=self.msg).grid()
+        self.tooltip_window.update_idletasks()
+        self.width = self.tooltip_window.winfo_width()
+        self.height = self.tooltip_window.winfo_height()
         # Hide tooltip then make non-transparent for later use
-        self.withdraw()
-        self.wm_attributes("-alpha", 1.0)
+        self.tooltip_window.withdraw()
+        self.tooltip_window.wm_attributes("-alpha", 1.0)
 
     def on_enter(self, _event: tk.Event) -> None:
         """When mouse enters widget, prepare to show tooltip"""
+        self._create_tooltip()
+        assert self.tooltip_window is not None
         self.inside = True
-        self.after(int(self.delay * 1000), self._show)
+        self.tooltip_window.after(int(self.delay * 1000), self._show)
 
     def on_leave(self, _event: tk.Event | None = None) -> None:
         """Hides tooltip when mouse leaves, or button pressed."""
+        self._create_tooltip()
+        assert self.tooltip_window is not None
         self.inside = False
-        self.withdraw()
+        self.tooltip_window.withdraw()
 
     def _show(self) -> None:
         """Displays the ToolTip if mouse still inside."""
         if not (self.inside and self.widget.winfo_exists()):
             return
+        self._create_tooltip()
+        assert self.tooltip_window is not None
         if self.use_pointer_pos:
             x_pos = self.widget.winfo_pointerx() + 20
             y_pos = self.widget.winfo_pointery() + 10
@@ -476,8 +491,8 @@ class ToolTip(tk.Toplevel):
                 > self.widget_tl.winfo_rooty() + self.widget_tl.winfo_height()
             ):
                 y_pos = self.widget.winfo_rooty() - self.height
-        self.geometry(f"+{x_pos}+{y_pos}")
-        self.deiconify()
+        self.tooltip_window.geometry(f"+{x_pos}+{y_pos}")
+        self.tooltip_window.deiconify()
 
     def destroy(self) -> None:
         """Destroy the ToolTip and unbind all the bindings."""
@@ -485,7 +500,8 @@ class ToolTip(tk.Toplevel):
             unbind_from(self.widget, "<Enter>", self.enter_bind)
             unbind_from(self.widget, "<Leave>", self.leave_bind)
             unbind_from(self.widget, "<ButtonPress>", self.press_bind)
-        super().destroy()
+        if self.tooltip_window is not None:
+            self.tooltip_window.destroy()
 
 
 def unbind_from(widget: tk.Widget, sequence: str, func_id: str) -> None:
@@ -615,17 +631,24 @@ def theme_set_tk_widget_colors(widget: tk.Text) -> None:
     theme_name = preferences.get(PrefKey.THEME_NAME)
     if theme_name == "Dark":
         widget.configure(
-            background="black", foreground="white", insertbackground="white"
+            background="black",
+            foreground="white",
+            insertbackground="white",
+            highlightbackground="black",
         )
     elif theme_name == "Light":
         widget.configure(
-            background="white", foreground="black", insertbackground="black"
+            background="white",
+            foreground="black",
+            insertbackground="black",
+            highlightbackground="white",
         )
     elif theme_name == "Default":
         widget.configure(
             background=_theme_default_text_bg,
             foreground=_theme_default_text_fg,
             insertbackground=_theme_default_text_ibg,
+            highlightbackground=_theme_default_text_bg,
         )
 
 
@@ -666,7 +689,7 @@ def register_focus_widget(widget: tk.Entry | tk.Text) -> None:
         global _text_focus_widget
         _text_focus_widget = event.widget
 
-    widget.bind("<FocusIn>", set_focus_widget)
+    widget.bind("<FocusIn>", set_focus_widget, add=True)
     if _text_focus_widget is None:
         _text_focus_widget = widget
 

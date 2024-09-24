@@ -24,6 +24,13 @@ class RootWindowState(StrEnum):
     FULLSCREEN = auto()
 
 
+class ImageWindowState(StrEnum):
+    """Enum class to store image window states."""
+
+    DOCKED = auto()
+    FLOATED = auto()
+
+
 class Root(tk.Tk):
     """Inherits from Tk root window"""
 
@@ -39,7 +46,13 @@ class Root(tk.Tk):
             value=preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
             == RootWindowState.FULLSCREEN
         )
+        self.image_window_state = tk.BooleanVar(
+            value=preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED
+        )
         self.allow_config_saves = False
+        self.split_text_window = tk.BooleanVar(
+            value=bool(preferences.get(PrefKey.SPLIT_TEXT_WINDOW))
+        )
 
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)

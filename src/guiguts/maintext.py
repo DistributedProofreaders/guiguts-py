@@ -37,6 +37,7 @@ PAGEMARK_PREFIX = "Pg"
 REPLACE_END_MARK = "ReplaceEnd"
 SELECTION_MARK_START = "SelectionMarkStart"
 SELECTION_MARK_END = "SelectionMarkEnd"
+PEER_MIN_SIZE = 50
 
 
 class FindMatch:
@@ -93,7 +94,7 @@ class TextLineNumbers(tk.Canvas):
         tk.Canvas.__init__(self, parent, *args, highlightthickness=0, **kwargs)
         # Canvas needs to listen for theme change
         self.bind("<<ThemeChanged>>", lambda event: self.theme_change())
-        self.text_color = "black"
+        self.text_color = themed_style().lookup("TButton", "foreground")
 
     def redraw(self) -> None:
         """Redraw line numbers."""
@@ -102,8 +103,12 @@ class TextLineNumbers(tk.Canvas):
         self["width"] = width
         self.delete("all")
         cur_line = IndexRowCol(self.textwidget.index(tk.INSERT)).row
-        cur_bg = self.textwidget["selectbackground"]
+        if maintext().focus_widget() == self.textwidget:
+            cur_bg = self.textwidget["selectbackground"]
+        else:
+            cur_bg = self.textwidget["inactiveselectbackground"]
         text_pos = self.winfo_width() - self.x_offset
+        line_spacing_adj = int(self.textwidget["spacing1"])
         index = self.textwidget.index("@0,0")
         while True:
             dline = self.textwidget.dlineinfo(index)
@@ -122,7 +127,12 @@ class TextLineNumbers(tk.Canvas):
             if linenum == cur_line:
                 bbox = list(self.bbox(text))
                 rect = self.create_rectangle(
-                    (bbox[0] - 3, bbox[1] + 3, bbox[2] + self.x_offset - 3, bbox[3]),
+                    (
+                        bbox[0] - 3,
+                        bbox[1] - line_spacing_adj,
+                        bbox[2] + self.x_offset - 3,
+                        bbox[3],
+                    ),
                     fill=cur_bg,
                     width=0,
                 )
@@ -135,10 +145,28 @@ class TextLineNumbers(tk.Canvas):
         self.text_color = themed_style().lookup("TButton", "foreground")
 
 
+class TextPeer(tk.Text):
+    """A peer of maintext's text widget.
+
+    Note that tk.Text.peer_create() doesn't work properly, creating a tk widget, but
+    not an tkinter instance of tk.Text. Hence the need for this:
+    https://stackoverflow.com/questions/58286794 - see top answer
+    """
+
+    count = 0
+
+    def __init__(  # pylint: disable=super-init-not-called
+        self, main_text: "MainText"
+    ) -> None:
+        """Create a peer & a tkinter widget based on the peer."""
+        main_text.tk.call(main_text, "peer", "create", f"{main_text.peer_frame}.peer")
+        tk.BaseWidget._setup(self, main_text.peer_frame, {"name": "peer"})  # type: ignore[attr-defined]
+
+
 class MainText(tk.Text):
     """MainText is the main text window, and inherits from ``tk.Text``."""
 
-    def __init__(self, parent: tk.Widget, root: tk.Tk, **kwargs: Any) -> None:
+    def __init__(self, parent: tk.PanedWindow, root: tk.Tk, **kwargs: Any) -> None:
         """Create a Frame, and put a TextLineNumbers widget, a Text and two
         Scrollbars in the Frame.
 
@@ -152,6 +180,7 @@ class MainText(tk.Text):
         """
 
         self.root = root
+        self.paned_text_window = parent
 
         # Create surrounding Frame
         self.frame = ttk.Frame(parent)
@@ -197,15 +226,9 @@ class MainText(tk.Text):
         self.bind_event(f"<Shift-{modifier}-ButtonRelease-1>", lambda _event: "break")
         self.column_selecting = False
 
-        # Create Line Numbers widget and bind update routine to all
-        # events that might change which line numbers should be displayed
+        # Create Line Numbers widget
         self.linenumbers = TextLineNumbers(self.frame, self)
         self.linenumbers.grid(column=0, row=0, sticky="NSEW")
-        self.bind_event("<Configure>", self._on_change, add=True, force_break=False)
-        # Use KeyRelease not KeyPress since KeyPress might be caught earlier and not propagated to this point.
-        self.bind_event("<KeyRelease>", self._on_change, add=True, force_break=False)
-        # Add mouse event here after column selection bindings above
-        self.bind_event("<ButtonRelease>", self._on_change, add=True, force_break=False)
         self.numbers_need_updating = False
 
         def hscroll_set(*args: Any) -> None:
@@ -246,37 +269,6 @@ class MainText(tk.Text):
             "<Delete>", lambda _event: self.smart_delete(), force_break=False
         )
 
-        # Add common Mac key bindings for beginning/end of file
-        if is_mac():
-            self.bind_event("<Command-Up>", lambda _event: self.move_to_start())
-            self.bind_event("<Command-Down>", lambda _event: self.move_to_end())
-            self.bind_event("<Command-Shift-Up>", lambda _event: self.select_to_start())
-            self.bind_event(
-                "<Command-Shift-Down>", lambda e_event: self.select_to_end()
-            )
-
-        # Override default left/right arrow key behavior if there is a selection
-        self.bind_event(
-            "<Left>",
-            lambda _event: self.move_to_selection_start(),
-            force_break=False,
-        )
-        self.bind_event(
-            "<Right>",
-            lambda _event: self.move_to_selection_end(),
-            force_break=False,
-        )
-        # Above behavior would affect Shift-Left/Right, so bind those to null functions
-        # and allow default class behavior to happen
-        self.bind_event("<Shift-Right>", lambda _event: "", force_break=False)
-        self.bind_event("<Shift-Left>", lambda _event: "", force_break=False)
-
-        # Since Text widgets don't normally listen to theme changes,
-        # need to do it explicitly here.
-        self.bind_event(
-            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
-        )
-
         # Register this widget to have its focus tracked for inserting special characters
         register_focus_widget(self)
 
@@ -285,19 +277,178 @@ class MainText(tk.Text):
         self.tag_configure(BOOKMARK_TAG, background="lime", foreground="black")
 
         # Ensure text still shows selected when focus is in another dialog
-        if "inactiveselect" not in kwargs:
-            self["inactiveselect"] = self["selectbackground"]
+        if not is_mac() and "inactiveselect" not in kwargs:
+            self["inactiveselect"] = "#b0b0b0"
 
         self.current_sel_ranges: list[IndexRange] = []
         self.prev_sel_ranges: list[IndexRange] = []
 
         maintext(self)  # Register this single instance of MainText
 
+        # Create peer widget
+        self.peer_frame = ttk.Frame()
+        self.peer_frame.columnconfigure(1, weight=1)
+        self.peer_frame.rowconfigure(0, weight=1)
+        self.peer = TextPeer(self)
+        self.peer.grid(column=1, row=0, sticky="NSEW")
+
+        # Configure peer widget using main text as a template
+        self.peer.config(
+            font=self.font,
+            highlightthickness=self["highlightthickness"],
+            spacing1=self["spacing1"],
+            inactiveselectbackground=self["inactiveselectbackground"],
+            wrap=self["wrap"],
+        )
+        self.peer.bind(
+            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self.peer)
+        )
+        self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
+        self.peer_linenumbers.grid(column=0, row=0, sticky="NSEW")
+
+        def peer_hscroll_set(*args: Any) -> None:
+            self.peer_hscroll.set(*args)
+            self._on_change()
+
+        def peer_vscroll_set(*args: Any) -> None:
+            self.peer_vscroll.set(*args)
+            self._on_change()
+
+        # Create peer scrollbars, place in Frame, and link to peer Text
+        self.peer_hscroll = ttk.Scrollbar(
+            self.peer_frame, orient=tk.HORIZONTAL, command=self.peer.xview
+        )
+        self.peer_hscroll.grid(column=1, row=1, sticky="EW")
+        self.peer["xscrollcommand"] = peer_hscroll_set
+        self.peer_vscroll = ttk.Scrollbar(
+            self.peer_frame, orient=tk.VERTICAL, command=self.peer.yview
+        )
+        self.peer_vscroll.grid(column=2, row=0, sticky="NS")
+        self.peer["yscrollcommand"] = peer_vscroll_set
+
+        self._text_peer_focus: tk.Text = self
+
+        # Track whether main text or peer most recently had focus
+        def text_peer_focus_track(_: tk.Event) -> None:
+            widget = parent.focus_get()
+            if widget in (self, self.peer):
+                self._text_peer_focus = widget  # type: ignore[assignment]
+                logger.debug(f"track - {widget}")
+            else:
+                logger.debug(f"track - ignoring (current={self._text_peer_focus})")
+
+        self.bind_event("<FocusIn>", text_peer_focus_track, add=True, bind_peer=True)
+        self.bind_event("<FocusOut>", text_peer_focus_track, add=True, bind_peer=True)
+
+        # Register peer widget to have its focus tracked for inserting special characters
+        register_focus_widget(self.peer)
+
+        self.paned_text_window.add(maintext().frame, minsize=PEER_MIN_SIZE)
+
+        # Bindings that both peer and maintext need
+        def switch_text_peer(event: tk.Event) -> None:
+            """Switch focus between main text and peer widget"""
+            if event.widget == self and preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+                self.peer.focus()
+            else:
+                self.focus()
+
+        self.bind_event("<Tab>", switch_text_peer, bind_peer=True)
+        # Override default left/right arrow key behavior if there is a selection
+        self.bind_event(
+            "<Left>",
+            lambda _event: self.move_to_selection_start(),
+            force_break=False,
+            bind_peer=True,
+        )
+        self.bind_event(
+            "<Right>",
+            lambda _event: self.move_to_selection_end(),
+            force_break=False,
+            bind_peer=True,
+        )
+        # Above behavior would affect Shift-Left/Right, so bind those to null functions
+        # and allow default class behavior to happen
+        self.bind_event(
+            "<Shift-Right>", lambda _event: "", force_break=False, bind_peer=True
+        )
+        self.bind_event(
+            "<Shift-Left>", lambda _event: "", force_break=False, bind_peer=True
+        )
+        # Bind line numbers update routine to all events that might
+        # change which line numbers should be displayed in maintext and peer
+        self.bind_event(
+            "<Configure>", self._on_change, add=True, force_break=False, bind_peer=True
+        )
+        # Use KeyRelease not KeyPress since KeyPress might be caught earlier and not propagated to this point.
+        self.bind_event(
+            "<KeyRelease>", self._on_change, add=True, force_break=False, bind_peer=True
+        )
+        # Add mouse event here after column selection bindings above
+        self.bind_event(
+            "<ButtonRelease>",
+            self._on_change,
+            add=True,
+            force_break=False,
+            bind_peer=True,
+        )
+        # Add common Mac key bindings for beginning/end of file
+        if is_mac():
+            self.bind_event(
+                "<Command-Up>", lambda _event: self.move_to_start(), bind_peer=True
+            )
+            self.bind_event(
+                "<Command-Down>", lambda _event: self.move_to_end(), bind_peer=True
+            )
+            self.bind_event(
+                "<Command-Shift-Up>",
+                lambda _event: self.select_to_start(),
+                bind_peer=True,
+            )
+            self.bind_event(
+                "<Command-Shift-Down>",
+                lambda e_event: self.select_to_end(),
+                bind_peer=True,
+            )
+
+        # Since Text widgets don't normally listen to theme changes,
+        # need to do it explicitly here.
+        self.bind_event(
+            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
+        )
+
         # Need to wait until maintext has been registered to set the font preference
         preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
 
+        # Delay showing peer to avoid getting spurious sash positions
+        if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+            self.after_idle(self.show_peer)
+
         # Force focus to maintext widget
         self.after_idle(lambda: grab_focus(self.root, self, True))
+
+    def focus_widget(self) -> tk.Text:
+        """Return whether main text or peer last had focus.
+
+        Checks current focus, and if neither, returns the one that had it last.
+
+        Returns:
+            Main text widget or peer widget.
+        """
+        # Checking current focus, then falling back on _text_peer_focus,
+        # is possibly unnecessary belt & suspenders. In theory, this function
+        # should just `return _text_peer_focus` with no other checks
+        try:
+            focus = self.paned_text_window.focus_get()
+            # logger.debug(f"get - {focus}")
+        except KeyError:
+            focus = self._text_peer_focus
+            # logger.debug(f"get - failed, so using {focus}")
+        if focus in (self, self.peer):
+            # logger.debug(f"get - returning {focus}")
+            return focus  # type: ignore[return-value]
+        # logger.debug(f"get - neither, so using {self._text_peer_focus}")
+        return self._text_peer_focus
 
     def bind_event(
         self,
@@ -306,6 +457,7 @@ class MainText(tk.Text):
         add: bool = False,
         force_break: bool = True,
         bind_all: bool = False,
+        bind_peer: bool = False,
     ) -> None:
         """Bind event string to given function. Provides ability to force
         a "break" return in order to stop class binding being executed.
@@ -316,16 +468,19 @@ class MainText(tk.Text):
             add: True to add this binding without removing existing binding.
             force_break: True to always return "break", regardless of return from `func`.
             bind_all: True to bind keystroke to all other widgets as well as maintext
+            bind_peer: True to bind keystroke to peer, even if bind_all is False
         """
 
         def break_func(event: tk.Event) -> Any:
             """Call bound function. Force "break" return if needed."""
             func_ret = func(event)
-            return "break" if force_break else func_ret
+            return "break" if force_break and not add else func_ret
 
-        super().bind(event_string, break_func, add)
+        self.bind(event_string, break_func, add)
         if bind_all:
             self.bind_all(event_string, break_func, add)
+        if bind_peer:
+            self.peer.bind(event_string, break_func, add)
 
     # The following methods are simply calling the Text widget method
     # then updating the linenumbers widget
@@ -361,6 +516,7 @@ class MainText(tk.Text):
         if self.numbers_need_updating:
             self.numbers_need_updating = False
             self.linenumbers.redraw()
+            self.peer_linenumbers.redraw()
 
     def add_config_callback(self, func: Callable[[], None]) -> None:
         """Add callback function to a list of functions to be called when
@@ -385,11 +541,34 @@ class MainText(tk.Text):
         if not self.numbers_need_updating:
             self.root.after_idle(self._do_linenumbers_redraw)
             self.root.after_idle(self._call_config_callbacks)
+            self.root.after_idle(self.save_sash_coords)
             self.numbers_need_updating = True
+
+    def save_sash_coords(self) -> None:
+        """Save the splitter sash coords in Prefs."""
+        if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+            preferences.set(
+                PrefKey.SPLIT_TEXT_SASH_COORD, self.paned_text_window.sash_coord(0)[1]
+            )
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
         return self.frame.grid(*args, **kwargs)
+
+    def show_peer(self) -> None:
+        """Show the peer text widget in the text's parent's paned window."""
+        self.paned_text_window.add(maintext().peer_frame, minsize=PEER_MIN_SIZE)
+        sash_coord = preferences.get(PrefKey.SPLIT_TEXT_SASH_COORD)
+        if sash_coord:
+            self.paned_text_window.sash_place(0, 0, sash_coord)
+        preferences.set(PrefKey.SPLIT_TEXT_WINDOW, True)
+        self.peer_linenumbers.theme_change()
+
+    def hide_peer(self) -> None:
+        """Remove the peer text widget from the text's parent's paned window."""
+        self.paned_text_window.remove(maintext().peer_frame)
+        preferences.set(PrefKey.SPLIT_TEXT_WINDOW, False)
+        self.focus()  # Return focus to the main text.
 
     def set_font(self) -> None:
         """Set the font for the main text widget, based on the current Prefs values."""
@@ -438,8 +617,8 @@ class MainText(tk.Text):
         lk = re.sub("(?<=[^A-Za-z])[A-Z]>$", lambda m: m.group(0).lower(), keyevent)
         uk = re.sub("(?<=[^A-Za-z])[a-z]>$", lambda m: m.group(0).upper(), keyevent)
 
-        self.bind_event(lk, handler, bind_all=bind_all)
-        self.bind_event(uk, handler, bind_all=bind_all)
+        self.bind_event(lk, handler, bind_all=bind_all, bind_peer=True)
+        self.bind_event(uk, handler, bind_all=bind_all, bind_peer=True)
 
     #
     # Handle "modified" flag
@@ -535,30 +714,40 @@ class MainText(tk.Text):
         Returns:
             IndexRowCol containing position of the insert cursor.
         """
-        return self.rowcol(tk.INSERT)
+        return IndexRowCol(self.focus_widget().index(tk.INSERT))
 
-    def set_insert_index(self, insert_pos: IndexRowCol, focus: bool = True) -> None:
+    def set_insert_index(
+        self,
+        insert_pos: IndexRowCol,
+        focus: bool = True,
+        focus_widget: Optional[tk.Text] = None,
+    ) -> None:
         """Set the position of the insert cursor.
 
         Args:
             insert_pos: Location to position insert cursor.
             focus: Optional, False means focus will not be forced to maintext
+            focus_widget: Optionally set index in this widget, not the default
         """
-        self.mark_set(tk.INSERT, insert_pos.index())
+        if focus_widget is None:
+            focus_widget = self.focus_widget()
+        focus_widget.mark_set(tk.INSERT, insert_pos.index())
         # The `see` method can leave the desired line at the top or bottom of window.
         # So, we "see" lines above and below desired line incrementally up to
         # half window height each way, ensuring desired line is left in the middle.
         # If performance turns out to be an issue, consider giving `step` to `range`.
         # Step should be smaller than half minimum likely window height.
-        start_index = self.index(f"@0,{int(self.cget('borderwidth'))} linestart")
-        end_index = self.index(f"@0,{self.winfo_height()} linestart")
+        start_index = focus_widget.index(
+            f"@0,{int(focus_widget.cget('borderwidth'))} linestart"
+        )
+        end_index = focus_widget.index(f"@0,{focus_widget.winfo_height()} linestart")
         n_lines = IndexRowCol(end_index).row - IndexRowCol(start_index).row
         for inc in range(1, int(n_lines / 2) + 1):
-            self.see(f"{tk.INSERT}-{inc}l")
-            self.see(f"{tk.INSERT}+{inc}l")
-        self.see(tk.INSERT)
+            focus_widget.see(f"{tk.INSERT}-{inc}l")
+            focus_widget.see(f"{tk.INSERT}+{inc}l")
+        focus_widget.see(tk.INSERT)
         if focus:
-            self.focus_set()
+            focus_widget.focus_set()
 
     def set_mark_position(
         self,
@@ -640,7 +829,7 @@ class MainText(tk.Text):
 
     def clear_selection(self) -> None:
         """Clear any current text selection."""
-        self.tag_remove("sel", "1.0", tk.END)
+        self.focus_widget().tag_remove("sel", "1.0", tk.END)
 
     def do_select(self, sel_range: IndexRange) -> None:
         """Select the given range of text.
@@ -648,7 +837,9 @@ class MainText(tk.Text):
         Args:
             sel_range: IndexRange containing start and end of text to be selected."""
         self.clear_selection()
-        self.tag_add("sel", sel_range.start.index(), sel_range.end.index())
+        self.focus_widget().tag_add(
+            "sel", sel_range.start.index(), sel_range.end.index()
+        )
 
     def selected_ranges(self) -> list[IndexRange]:
         """Get the ranges of text marked with the `sel` tag.
@@ -659,7 +850,7 @@ class MainText(tk.Text):
             to the rightmost selected columns in the first/last rows.
             If column is greater than line length it equates to end of line.
         """
-        ranges = self.tag_ranges("sel")
+        ranges = self.focus_widget().tag_ranges("sel")
         assert len(ranges) % 2 == 0
         sel_ranges = []
         if len(ranges) > 0:
@@ -686,7 +877,7 @@ class MainText(tk.Text):
         Returns:
             String containing the selected text, or empty string if none selected.
         """
-        ranges = self.tag_ranges("sel")
+        ranges = self.focus_widget().tag_ranges("sel")
         assert len(ranges) % 2 == 0
         if ranges:
             return self.get(ranges[0], ranges[1])
@@ -768,7 +959,7 @@ class MainText(tk.Text):
                 start_mark = mark
             elif mark.startswith(SELECTION_MARK_END):
                 assert start_mark
-                self.tag_add("sel", start_mark, mark)
+                self.focus_widget().tag_add("sel", start_mark, mark)
             next_mark = self.mark_next(mark)
 
     def column_delete(self) -> None:
@@ -1007,8 +1198,9 @@ class MainText(tk.Text):
         return self.rowcol("1.0")
 
     def end(self) -> IndexRowCol:
-        """Return IndexRowCol for end of text in widget, i.e. "end"."""
-        return self.rowcol(tk.END)
+        """Return IndexRowCol for end of text in widget, i.e. "end - 1c"
+        because text widget "end" is start of line below last char."""
+        return self.rowcol(tk.END + "-1c")
 
     def move_to_selection_start(self) -> str:
         """Set insert position to start of any selection text."""
@@ -1029,8 +1221,8 @@ class MainText(tk.Text):
             return ""
         pos = sel_ranges[-1].end if end else sel_ranges[0].start
         # Use low-level calls to avoid "see" behavior of set_insert_index
-        self.mark_set(tk.INSERT, pos.index())
-        self.see(tk.INSERT)
+        self.focus_widget().mark_set(tk.INSERT, pos.index())
+        self.focus_widget().see(tk.INSERT)
         self.clear_selection()
         return "break"
 
@@ -1103,8 +1295,8 @@ class MainText(tk.Text):
             replacement:  Replacement text.
             tags: Optional tuple of tags to be applied to inserted text.
         """
-        start_row = IndexRowCol(start_index).row
-        end_row = IndexRowCol(end_index).row
+        start_row = IndexRowCol(self.index(start_index)).row
+        end_row = IndexRowCol(self.index(end_index)).row
         num_newlines_match = end_row - start_row
         num_newlines_replacement = replacement.count("\n")
 
@@ -1326,6 +1518,9 @@ class MainText(tk.Text):
         """Find occurrence of string/regex in file by slurping text into string.
         Called for user searches - regexps are Python flavor.
 
+        If searching backwards with backref/lookaround, avoid regex bug by actually
+        searching forward in range and getting last match.
+
         Args:
             search_string: Regex to be searched for.
             start_point: Start point for search.
@@ -1341,18 +1536,38 @@ class MainText(tk.Text):
         # Search first chunk from start point to beg/end of file
         if backwards:
             chunk_range = IndexRange(self.start(), start_point)
+            # Doesn't matter if this ends up True, when not strictly necessary, e.g. `\\1`
+            # Should include cases where reverse searching doesn't work: backrefs,
+            # lookahead/behind, `^` & `$` (since they are converted to lookahead/behind)
+            # Matching code in
+            backrefs = regexp and re.search(
+                r"(\\\d|\(\?[<=!]|(?<![\[\\])\^|(?<![\\])\$)", search_string
+            )
         else:
             chunk_range = IndexRange(start_point, self.end())
+            backrefs = False
         slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
-        match, _ = self.find_match_in_range(
-            search_string,
-            slurp_text,
-            chunk_range.start,
-            nocase=nocase,
-            regexp=regexp,
-            wholeword=wholeword,
-            backwards=backwards,
-        )
+
+        # Searching backwards with backrefs/lookarounds doesn't behave as required, so
+        # call special routine to use forward searching to search backward
+        if backrefs:
+            match = self._find_last_match_in_range(
+                search_string,
+                slurp_text,
+                chunk_range,
+                nocase,
+                wholeword,
+            )
+        else:
+            match, _ = self.find_match_in_range(
+                search_string,
+                slurp_text,
+                chunk_range,
+                nocase=nocase,
+                regexp=regexp,
+                wholeword=wholeword,
+                backwards=backwards,
+            )
 
         # If not found, and we're wrapping, search the other half of the file
         if match is None and wrap:
@@ -1361,28 +1576,79 @@ class MainText(tk.Text):
             else:
                 chunk_range = IndexRange(self.start(), start_point)
             slurp_text = self.get(chunk_range.start.index(), chunk_range.end.index())
-            match, _ = self.find_match_in_range(
-                search_string,
-                slurp_text,
-                chunk_range.start,
-                nocase=nocase,
-                regexp=regexp,
-                wholeword=wholeword,
-                backwards=backwards,
-            )
+            # Special backref search again
+            if backrefs:
+                match = self._find_last_match_in_range(
+                    search_string,
+                    slurp_text,
+                    chunk_range,
+                    nocase,
+                    wholeword,
+                )
+            else:
+                match, _ = self.find_match_in_range(
+                    search_string,
+                    slurp_text,
+                    chunk_range,
+                    nocase=nocase,
+                    regexp=regexp,
+                    wholeword=wholeword,
+                    backwards=backwards,
+                )
         return match
+
+    def _find_last_match_in_range(
+        self,
+        search_string: str,
+        slurp_text: str,
+        slurp_range: IndexRange,
+        nocase: bool,
+        wholeword: bool,
+    ) -> Optional[FindMatch]:
+        """Find last match in given range.
+
+        This is used instead of searching backwards if regex contains backreference,
+        lookbehind or lookahead, since these don't work backwards without adjustment.
+
+        Returns:
+            Last match in range (or None).
+        """
+        slice_start = 0
+        last_match = None
+        slurp_len = len(slurp_text)
+        while True:
+            match, match_start = self.find_match_in_range(
+                search_string,
+                slurp_text[slice_start:],
+                slurp_range,
+                nocase=nocase,
+                regexp=True,
+                wholeword=wholeword,
+                backwards=False,
+            )
+            if match is None:
+                break
+            last_match = match
+            # Adjust start of slice of slurped text, and where that point is in the file
+            advance = max(match.count, 1)  # Always advance at least 1 character
+            slice_start += match_start + advance
+            if slice_start >= slurp_len:
+                break
+            slurp_start = IndexRowCol(self.index(f"{match.rowcol.index()}+{advance}c"))
+            slurp_range = IndexRange(slurp_start, slurp_range.end)
+        return last_match
 
     def find_match_in_range(
         self,
         search_string: str,
         slurp_text: str,
-        slurp_start: IndexRowCol,
+        slurp_range: IndexRange,
         nocase: bool,
         regexp: bool,
         wholeword: bool,
         backwards: bool,
     ) -> tuple[Optional[FindMatch], int]:
-        """Find last occurrence of regex in text range using slurped text, and also
+        """Find occurrence of regex in text range using slurped text, and also
         where it is in the slurp text.
 
         Args:
@@ -1399,17 +1665,51 @@ class MainText(tk.Text):
             and None if no match; also the index into the slurp text of the match start, which is
             needed for iterated use with the same slurp text, such as Replace All
         """
-        if not regexp:
+        slurp_newline_adjustment = 0
+        slurp_start = slurp_range.start
+        slurp_end = slurp_range.end
+        # Special handling for ^/$: we can't just use `(?m)` or `re.MULTILINE` in order to
+        # make these match start/end of line, because that flag also permit matchings
+        # at start/end of *string* for ^/$, not just after/before newlines.
+        # That would give a false match if search is in a range with part lines at start/end.
+        if regexp:
+            # Since "^" matches start of string (when not escaped with "\"), and we want it
+            # to match start of line, replace it with lookbehind for newline.
+            if re.search(r"(?<![\[\\])\^", search_string):
+                search_string = re.sub(r"(?<![\[\\])\^", r"(?<=\\n)", search_string)
+                # Need to make sure there is a newline before start of string
+                # if string starts at the beginning of a line
+                if slurp_start.col == 0:
+                    slurp_text = "\n" + slurp_text
+                    slurp_newline_adjustment = 1
+            # Since "$" matches end of string (when not escaped with "\"), and we want it
+            # to match end of line, replace it with lookahead for newline.
+            if re.search(r"(?<![\\])\$", search_string):
+                search_string = re.sub(r"(?<![\\])\$", r"(?=\\n)", search_string)
+                # Need to make sure there is a newline after end of string
+                # if string ends at the end of a line
+                end_line_len = IndexRowCol(self.index(f"{slurp_end.row}.0 lineend")).col
+                last_linestart_in_slurp = slurp_text.rfind("\n")
+                if last_linestart_in_slurp < 0:  # Slurp text all on one line
+                    last_slurp_line_len = slurp_start.col + len(slurp_text)
+                else:
+                    last_slurp_line_len = len(slurp_text[last_linestart_in_slurp:]) - 1
+                if last_slurp_line_len >= end_line_len:
+                    slurp_text = slurp_text + "\n"
+        else:
             search_string = re.escape(search_string)
         if wholeword:
             search_string = r"\b" + search_string + r"\b"
+        # Preferable to use flags rather than prepending "(?i)", for example,
+        # because if we need to report bad regex to user, it's better if it's
+        # the regex they typed.
+        flags = 0
         if backwards:
-            search_string = "(?r)" + search_string
+            flags |= re.REVERSE
         if nocase:
-            search_string = "(?i)" + search_string
-        search_string = "(?m)" + search_string
+            flags |= re.IGNORECASE
 
-        match = re.search(search_string, slurp_text)
+        match = re.search(search_string, slurp_text, flags=flags)
         if match is None:
             return None, 0
 
@@ -1418,8 +1718,11 @@ class MainText(tk.Text):
             match_col = match.start() - slurp_text.rfind("\n", 0, match.start()) - 1
         else:
             match_col = match.start() + slurp_start.col
-        line_num += slurp_start.row
-        return FindMatch(IndexRowCol(line_num, match_col), len(match[0])), match.start()
+        line_num += slurp_start.row - slurp_newline_adjustment
+        return (
+            FindMatch(IndexRowCol(line_num, match_col), len(match[0])),
+            match.start() - slurp_newline_adjustment,
+        )
 
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
@@ -2024,6 +2327,13 @@ class MainText(tk.Text):
         if mark == "":
             return ""
         return img_from_page_mark(mark)
+
+    def is_dark_theme(self) -> bool:
+        """Returns True if theme is dark, which is assumed to be the case if
+        the brightness of the text color is greater than half strength (mid-gray)."""
+        text_color = maintext().cget("foreground")
+        rgb_sum = sum(self.winfo_rgb(text_color))  # 0-65535 for each component
+        return rgb_sum > 12767 * 3
 
 
 def img_from_page_mark(mark: str) -> str:
