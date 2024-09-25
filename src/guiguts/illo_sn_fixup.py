@@ -405,8 +405,13 @@ class IlloSNChecker:
         assert _the_illosn_checker is not None
         selected_illosn_index = self.get_selected_illosn_index()
         if selected_illosn_index < 0:
-            return  # No selection
+            return  # No selection.
+        # Get the record for the selected tag from the records array we
+        # built in run_check().
         selected = self.get_selected_illosn_record(selected_illosn_index)
+        # Group together all inserts/deletes that happen while moving the
+        # selected tag.
+        maintext().undo_block_begin()
         # Look for a suitable blank line. Start at line immediately above the (first line of
         # the) selected Illo or SN record. NB We may not be able to move the record at all if
         # it means skipping over another tag of the same type.
@@ -490,7 +495,12 @@ class IlloSNChecker:
         selected_illosn_index = self.get_selected_illosn_index()
         if selected_illosn_index < 0:
             return  # No selection
+        # Get the record for the selected tag from the records array we
+        # built in run_check().
         selected = self.get_selected_illosn_record(selected_illosn_index)
+        # Group together all inserts/deletes that happen while moving the
+        # selected tag.
+        maintext().undo_block_begin()
         # Look for a suitable blank line. Start at line immediately below the (last line of
         # the) selected Illo or SN record. NB We may not be able to move the record at all if
         # it means skipping over another tag of the same type.

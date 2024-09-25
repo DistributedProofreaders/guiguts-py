@@ -437,7 +437,12 @@ class CheckerDialog(ToplevelDialog):
 
     def display_entries(self, auto_select_line: bool = True) -> None:
         """Display all the stored entries in the dialog according to
-        the sort setting."""
+        the sort setting.
+
+        Args:
+            auto_select_line: Default True. Set to False if calling routine takes
+            responsibility for selecting a line in the dialog.
+        """
 
         Busy.busy()
         sort_key: Callable[[CheckerEntry], tuple]
