@@ -120,7 +120,7 @@ class IlloSNChecker:
     def check_for_anomalous_illo_or_sn(
         self, start: IndexRowCol, end: IndexRowCol
     ) -> bool:
-        """Checks for hidden, mid-paragraph Sidenotes, and other anomalies.
+        """Checks for hidden mid-paragraph Sidenotes, and other anomalies.
 
         The DP Formatting Guidelines allow a Project Manager to request
         that sidenotes are put next to the sentence they apply to in which
@@ -246,15 +246,21 @@ class IlloSNChecker:
             # If closing [ not found, use end of line.
             if end_match is None:
                 end_point = maintext().rowcol(f"{start.row}.end")
-            # Get text of (first line of) the Illo or SN line(s) in the file.
+            # Get text of (first line of) the Illo or SN line(s) in the file. Note
+            # that this does not include any prefixing '*' (that was added by the
+            # formatting rounds to show that it is a mid-paragraph tag).
+            illosn_txt = maintext().get(f"{start.index()}", f"{start.row}.end")
+            # Look for a prefixing '*' to the tag.
             illosn_line = maintext().get(f"{start.index()}-1c", f"{start.row}.end")
             if illosn_line[0:1] == "*":
                 mid_para = True
+                illosn_txt = illosn_line
             else:
-                # Check for other anomalous Illo or SN records.
+                # The tag will also be flagged as 'MIDPARAGRAPH' in the dialog if there
+                # is any doubt that it is *not* a mid-paragraph tag.
                 mid_para = self.check_for_anomalous_illo_or_sn(start, end_point)
             illosn_rec = IlloSNRecord(
-                illosn_line, start, end_point, mid_para, 1, colon_pos.col - start.col
+                illosn_txt, start, end_point, mid_para, 1, colon_pos.col - start.col
             )
             self.illosn_records.append(illosn_rec)
             search_range = IndexRange(end_point, maintext().end())
@@ -589,12 +595,12 @@ def illosn_check(tag_type: str) -> None:
     frame.grid(column=0, row=1, sticky="NSEW")
     ttk.Button(
         frame,
-        text="Move selection UP",
+        text="Move Selection Up",
         command=lambda: _the_illosn_checker.move_selection_up(tag_type),
     ).grid(column=0, row=0, sticky="NSW")
     ttk.Button(
         frame,
-        text="Move selection DOWN",
+        text="Move Selection Down",
         command=lambda: _the_illosn_checker.move_selection_down(tag_type),
     ).grid(column=1, row=0, sticky="NSW")
     _the_illosn_checker.run_check(tag_type)
@@ -609,8 +615,6 @@ def display_illosn_entries() -> None:
     illosn_records = _the_illosn_checker.get_illosn_records()
     for illosn_record in illosn_records:
         error_prefix = ""
-        # illosn_start = illosn_record.start
-        # if maintext().get(f"{illosn_start.index()}-1c", illosn_start.index()) == "*":
         if illosn_record.mid_para:
             error_prefix = "MIDPARAGRAPH: "
         checker_dialog.add_entry(
@@ -620,4 +624,4 @@ def display_illosn_entries() -> None:
             illosn_record.hilite_end,
             error_prefix=error_prefix,
         )
-    checker_dialog.display_entries()
+    checker_dialog.display_entries(auto_select_line=False)
