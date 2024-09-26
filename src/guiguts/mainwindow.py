@@ -8,10 +8,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Any, Callable, Optional
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageChops
 
 from guiguts.maintext import MainText, maintext
-from guiguts.preferences import preferences, PrefKey
+from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.root import Root, root, ImageWindowState
 from guiguts.utilities import (
     is_mac,
@@ -208,11 +208,54 @@ class MainImage(tk.Frame):
         """Initialize the MainImage to contain an empty Canvas with scrollbars"""
         tk.Frame.__init__(self, parent)
 
+        control_frame = ttk.Frame(self, padding=5)
+        control_frame.grid(row=0, column=0, columnspan=2, sticky="NEW")
+        invert_btn = ttk.Checkbutton(
+            control_frame,
+            text="Invert image",
+            takefocus=False,
+            command=self.show_image,
+            variable=PersistentBoolean(PrefKey.IMAGE_INVERT),
+        )
+        invert_btn.grid(row=0, column=0, sticky="NSW", columnspan=5)
+        ttk.Label(control_frame, text="Zoom:").grid(row=1, column=0, sticky="NSEW")
+        zoom_in_btn = ttk.Button(
+            control_frame,
+            text="+",
+            takefocus=False,
+            command=lambda: self.image_zoom((0, 0), zoom_in=True),
+        )
+        zoom_in_btn.grid(row=1, column=1, sticky="NSEW")
+        zoom_out_btn = ttk.Button(
+            control_frame,
+            text="-",
+            takefocus=False,
+            command=lambda: self.image_zoom((0, 0), zoom_in=False),
+        )
+        zoom_out_btn.grid(row=1, column=2, sticky="NSEW")
+        # Separate bindings needed for docked (root) and floated (self) states
+        for widget in (root(), self):
+            _, cp = process_accel("Cmd/Ctrl+plus")
+            _, cm = process_accel("Cmd/Ctrl+minus")
+            widget.bind(cp, lambda _: zoom_in_btn.invoke())
+            widget.bind(cm, lambda _: zoom_out_btn.invoke())
+        ttk.Button(
+            control_frame,
+            text="Fit to width",
+            takefocus=False,
+            command=self.image_zoom_to_width,
+        ).grid(row=1, column=3, sticky="NSEW")
+        ttk.Button(
+            control_frame,
+            text="Fit to height",
+            takefocus=False,
+            command=self.image_zoom_to_height,
+        ).grid(row=1, column=4, sticky="NSEW")
         self.hbar = ttk.Scrollbar(self, orient=tk.HORIZONTAL)
-        self.hbar.grid(row=1, column=0, sticky="EW")
+        self.hbar.grid(row=2, column=0, sticky="EW")
         self.hbar.configure(command=self.scroll_x)
         self.vbar = ttk.Scrollbar(self, orient=tk.VERTICAL)
-        self.vbar.grid(row=0, column=1, sticky="NS")
+        self.vbar.grid(row=1, column=1, sticky="NS")
         self.vbar.configure(command=self.scroll_y)
 
         self.canvas = tk.Canvas(
@@ -221,9 +264,15 @@ class MainImage(tk.Frame):
             xscrollcommand=self.hbar.set,
             yscrollcommand=self.vbar.set,
         )
-        self.canvas.grid(row=0, column=0, sticky="NSEW")
-        self.rowconfigure(0, weight=1)
+        self.canvas.grid(row=1, column=0, sticky="NSEW")
+        self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
+        cmdctrl = "Cmd" if is_mac() else "Ctrl"
+        ToolTip(
+            self.canvas,
+            f"Drag image\nScroll with mousewheel\nZoom with {cmdctrl}+mousewheel",
+            use_pointer_pos=True,
+        )
 
         self.canvas.bind("<Configure>", self.show_image)
         self.canvas.bind("<ButtonPress-1>", self.move_from)
@@ -234,7 +283,8 @@ class MainImage(tk.Frame):
             self.canvas.bind("<Button-5>", self.wheel_scroll)
             self.canvas.bind("<Button-4>", self.wheel_scroll)
         else:
-            self.canvas.bind("<Control-MouseWheel>", self.wheel_zoom)
+            _, cm = process_accel("Cmd/Ctrl+MouseWheel")
+            self.canvas.bind(cm, self.wheel_zoom)
             self.canvas.bind("<MouseWheel>", self.wheel_scroll)
 
         self.image_scale = 1.0
@@ -266,29 +316,79 @@ class MainImage(tk.Frame):
         self.show_image()
 
     def wheel_zoom(self, event: tk.Event) -> None:
-        """Zoom with mouse wheel."""
-        x = self.canvas.canvasx(event.x)
-        y = self.canvas.canvasy(event.y)
-        bbox_scroll = self.canvas.bbox(self.container)  # get image area
-        if not (
-            bbox_scroll[0] < x < bbox_scroll[2] and bbox_scroll[1] < y < bbox_scroll[3]
-        ):
-            return  # zoom only inside image area
-        scale = 1.0
+        """Zoom with mouse wheel.
+
+        Args:
+            event: Event containing mouse position.
+        """
+        # x = self.canvas.canvasx(event.x)
+        # y = self.canvas.canvasy(event.y)
+        x = y = 0
         # Respond to Linux (event.num) or Windows/MacOS (event.delta) wheel event
         if event.num == 5 or event.delta < 0:
-            min_dimension = min(self.width, self.height)
-            if int(min_dimension * self.image_scale) < 30:
-                return  # image too small
-            self.image_scale /= self.scale_delta
-            scale /= self.scale_delta
+            self.image_zoom((x, y), zoom_in=False)
         if event.num == 4 or event.delta > 0:
+            self.image_zoom((x, y), zoom_in=True)
+
+    def image_zoom(self, center: tuple[int, int], zoom_in: bool) -> None:
+        """Zoom the image in or out.
+
+        Args:
+            center: Center of zoom x & y coordinates.
+            zoom_in: True to zoom in, False to zoom out.
+        """
+        scale = 1.0
+        if zoom_in:
             min_dimension = min(self.canvas.winfo_width(), self.canvas.winfo_height())
             if min_dimension < self.image_scale:
                 return  # image too large
             self.image_scale *= self.scale_delta
             scale *= self.scale_delta
-        self.canvas.scale("all", x, y, scale, scale)  # rescale all canvas objects
+        else:
+            min_dimension = min(self.width, self.height)
+            if int(min_dimension * self.image_scale) < 30:
+                return  # image too small
+            self.image_scale /= self.scale_delta
+            scale /= self.scale_delta
+        self.canvas.scale(
+            "all", center[0], center[1], scale, scale
+        )  # rescale all canvas objects
+        self.show_image()
+
+    def image_zoom_to_width(self) -> None:
+        """Zoom image to fit to width of image window."""
+        if self.imageid:
+            self.canvas.delete(self.imageid)
+        self.canvas.move(self.container, 0, 0)
+        bbox_image = self.canvas.bbox(self.container)
+        scale_factor = (
+            self.canvas.canvasx(self.canvas.winfo_width()) - self.canvas.canvasx(0)
+        ) / (bbox_image[2] - bbox_image[0])
+        self.image_zoom_by_factor(scale_factor)
+
+    def image_zoom_to_height(self) -> None:
+        """Zoom image to fit to height of image window."""
+        if self.imageid:
+            self.canvas.delete(self.imageid)
+        self.canvas.move(self.container, 0, 0)
+        bbox_image = self.canvas.bbox(self.container)
+        scale_factor = (
+            self.canvas.canvasx(self.canvas.winfo_height()) - self.canvas.canvasx(0)
+        ) / (bbox_image[3] - bbox_image[1])
+        self.image_zoom_by_factor(scale_factor)
+
+    def image_zoom_by_factor(self, scale_factor: float) -> None:
+        """Zoom image by the given scale factor.
+
+        Args:
+            scale_factor: Factor to zoom by.
+        """
+        self.image_scale *= scale_factor
+        self.canvas.scale(
+            "all", 0, 0, scale_factor, scale_factor
+        )  # rescale all canvas objects
+        self.canvas.xview_moveto(0.0)
+        self.canvas.yview_moveto(0.0)
         self.show_image()
 
     def show_image(self, _event=None):  # type: ignore[no-untyped-def]
@@ -296,6 +396,7 @@ class MainImage(tk.Frame):
         # get image area & remove 1 pixel shift
         if self.image is None:
             return
+        self.canvas["background"] = themed_style().lookup("TButton", "background")
         bbox_image = self.canvas.bbox(self.container)
         bbox_image = (
             bbox_image[0] + 1,
@@ -339,6 +440,8 @@ class MainImage(tk.Frame):
         ym2 = min(int(y2 / self.image_scale), self.height)
         if int(xm2 - xm1) > 0 and int(ym2 - ym1) > 0:
             image = self.image.crop((xm1, ym1, xm2, ym2))
+            if preferences.get(PrefKey.IMAGE_INVERT):
+                image = ImageChops.invert(image.convert("RGB"))
             self.canvas.imagetk = ImageTk.PhotoImage(
                 image.resize(
                     (
