@@ -435,9 +435,14 @@ class CheckerDialog(ToplevelDialog):
                 self.mark_from_rowcol(text_range.end), text_range.end, gravity=tk.RIGHT
             )
 
-    def display_entries(self) -> None:
+    def display_entries(self, auto_select_line: bool = True) -> None:
         """Display all the stored entries in the dialog according to
-        the sort setting."""
+        the sort setting.
+
+        Args:
+            auto_select_line: Default True. Set to False if calling routine takes
+            responsibility for selecting a line in the dialog.
+        """
 
         Busy.busy()
         sort_key: Callable[[CheckerEntry], tuple]
@@ -492,25 +497,33 @@ class CheckerDialog(ToplevelDialog):
                     ERROR_PREFIX_TAG_NAME, start_rowcol.index(), end_rowcol.index()
                 )
 
-        # Highlight previously selected line, or if none, the first suitable line
-        selection_made = False
-        if self.selected_text:
-            for index, entry in enumerate(self.entries):
-                if (
-                    entry.text == self.selected_text
-                    and entry.text_range == self.selected_text_range
-                    and not self.skip_suspect_entry(entry)
-                ):
-                    self.select_entry_by_index(index)
-                    selection_made = True
-                    break
-        if not selection_made:
-            for index, entry in enumerate(self.entries):
-                if self.skip_suspect_entry(entry):
-                    continue
-                if entry.text_range:
-                    self.select_entry_by_index(index)
-                    break
+        # The default automatic highlighting of previously selected line, or if none
+        # the first suitable line, is undesirable when an application immediately
+        # selects a different line after displaying the entries. Highlighting will
+        # 'jump' before it settles on the newly selected line.
+        #
+        # To avoid this, an application can disable the default automatic highlighting
+        # and handle the selection and highlighting itself; e.g. illo_sn_fixup.py.
+        if auto_select_line:
+            # Highlight previously selected line, or if none, the first suitable line
+            selection_made = False
+            if self.selected_text:
+                for index, entry in enumerate(self.entries):
+                    if (
+                        entry.text == self.selected_text
+                        and entry.text_range == self.selected_text_range
+                        and not self.skip_suspect_entry(entry)
+                    ):
+                        self.select_entry_by_index(index)
+                        selection_made = True
+                        break
+            if not selection_made:
+                for index, entry in enumerate(self.entries):
+                    if self.skip_suspect_entry(entry):
+                        continue
+                    if entry.text_range:
+                        self.select_entry_by_index(index)
+                        break
         self.update_count_label()
         Busy.unbusy()
 
