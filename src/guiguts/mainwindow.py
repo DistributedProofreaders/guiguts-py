@@ -219,26 +219,26 @@ class MainImage(tk.Frame):
         )
         invert_btn.grid(row=0, column=0, sticky="NSW", columnspan=5)
         ttk.Label(control_frame, text="Zoom:").grid(row=1, column=0, sticky="NSEW")
-        zoom_in_btn = ttk.Button(
+        self.zoom_in_btn = ttk.Button(
             control_frame,
             text="+",
             takefocus=False,
-            command=lambda: self.image_zoom((0, 0), zoom_in=True),
+            command=lambda: self.image_zoom(zoom_in=True),
         )
-        zoom_in_btn.grid(row=1, column=1, sticky="NSEW")
-        zoom_out_btn = ttk.Button(
+        self.zoom_in_btn.grid(row=1, column=1, sticky="NSEW")
+        self.zoom_out_btn = ttk.Button(
             control_frame,
             text="-",
             takefocus=False,
-            command=lambda: self.image_zoom((0, 0), zoom_in=False),
+            command=lambda: self.image_zoom(zoom_in=False),
         )
-        zoom_out_btn.grid(row=1, column=2, sticky="NSEW")
+        self.zoom_out_btn.grid(row=1, column=2, sticky="NSEW")
         # Separate bindings needed for docked (root) and floated (self) states
         for widget in (root(), self):
             _, cp = process_accel("Cmd/Ctrl+plus")
             _, cm = process_accel("Cmd/Ctrl+minus")
-            widget.bind(cp, lambda _: zoom_in_btn.invoke())
-            widget.bind(cm, lambda _: zoom_out_btn.invoke())
+            widget.bind(cp, lambda _: self.zoom_in_btn.invoke())
+            widget.bind(cm, lambda _: self.zoom_out_btn.invoke())
         ttk.Button(
             control_frame,
             text="Fit to width",
@@ -291,7 +291,7 @@ class MainImage(tk.Frame):
         self.scale_delta = 1.3
         self.image: Optional[Image.Image] = None
         self.imageid = None
-        self.container: int = 0
+        self.imagetk = None
         self.filename = ""
         self.width = 0
         self.height = 0
@@ -319,48 +319,32 @@ class MainImage(tk.Frame):
         """Zoom with mouse wheel.
 
         Args:
-            event: Event containing mouse position.
+            event: Event containing mouse wheel info.
         """
-        # x = self.canvas.canvasx(event.x)
-        # y = self.canvas.canvasy(event.y)
-        x = y = 0
         # Respond to Linux (event.num) or Windows/MacOS (event.delta) wheel event
         if event.num == 5 or event.delta < 0:
-            self.image_zoom((x, y), zoom_in=False)
+            self.zoom_out_btn.invoke()
         if event.num == 4 or event.delta > 0:
-            self.image_zoom((x, y), zoom_in=True)
+            self.zoom_in_btn.invoke()
 
-    def image_zoom(self, center: tuple[int, int], zoom_in: bool) -> None:
+    def image_zoom(self, zoom_in: bool) -> None:
         """Zoom the image in or out.
 
         Args:
-            center: Center of zoom x & y coordinates.
             zoom_in: True to zoom in, False to zoom out.
         """
-        scale = 1.0
         if zoom_in:
-            min_dimension = min(self.canvas.winfo_width(), self.canvas.winfo_height())
-            if min_dimension < self.image_scale:
-                return  # image too large
-            self.image_scale *= self.scale_delta
-            scale *= self.scale_delta
+            if self.image_scale < 3:
+                self.image_scale *= self.scale_delta
         else:
-            min_dimension = min(self.width, self.height)
-            if int(min_dimension * self.image_scale) < 30:
-                return  # image too small
-            self.image_scale /= self.scale_delta
-            scale /= self.scale_delta
-        self.canvas.scale(
-            "all", center[0], center[1], scale, scale
-        )  # rescale all canvas objects
+            if self.image_scale > 0.1:
+                self.image_scale /= self.scale_delta
         self.show_image()
 
     def image_zoom_to_width(self) -> None:
         """Zoom image to fit to width of image window."""
-        if self.imageid:
-            self.canvas.delete(self.imageid)
-        self.canvas.move(self.container, 0, 0)
-        bbox_image = self.canvas.bbox(self.container)
+        assert self.imageid is not None
+        bbox_image = self.canvas.bbox(self.imageid)
         scale_factor = (
             self.canvas.canvasx(self.canvas.winfo_width()) - self.canvas.canvasx(0)
         ) / (bbox_image[2] - bbox_image[0])
@@ -368,12 +352,10 @@ class MainImage(tk.Frame):
 
     def image_zoom_to_height(self) -> None:
         """Zoom image to fit to height of image window."""
-        if self.imageid:
-            self.canvas.delete(self.imageid)
-        self.canvas.move(self.container, 0, 0)
-        bbox_image = self.canvas.bbox(self.container)
+        assert self.imageid is not None
+        bbox_image = self.canvas.bbox(self.imageid)
         scale_factor = (
-            self.canvas.canvasx(self.canvas.winfo_height()) - self.canvas.canvasx(0)
+            self.canvas.canvasx(self.canvas.winfo_height()) - self.canvas.canvasy(0)
         ) / (bbox_image[3] - bbox_image[1])
         self.image_zoom_by_factor(scale_factor)
 
@@ -384,9 +366,6 @@ class MainImage(tk.Frame):
             scale_factor: Factor to zoom by.
         """
         self.image_scale *= scale_factor
-        self.canvas.scale(
-            "all", 0, 0, scale_factor, scale_factor
-        )  # rescale all canvas objects
         self.canvas.xview_moveto(0.0)
         self.canvas.yview_moveto(0.0)
         self.show_image()
@@ -397,67 +376,27 @@ class MainImage(tk.Frame):
         if self.image is None:
             return
         self.canvas["background"] = themed_style().lookup("TButton", "background")
-        bbox_image = self.canvas.bbox(self.container)
-        bbox_image = (
-            bbox_image[0] + 1,
-            bbox_image[1] + 1,
-            bbox_image[2] - 1,
-            bbox_image[3] - 1,
-        )
-        # get visible area of the canvas
-        bbox_visible = (
-            self.canvas.canvasx(0),
-            self.canvas.canvasy(0),
-            self.canvas.canvasx(self.canvas.winfo_width()),
-            self.canvas.canvasy(self.canvas.winfo_height()),
-        )
-        # get scroll region box
-        bbox_scroll = [
-            min(bbox_image[0], bbox_visible[0]),
-            min(bbox_image[1], bbox_visible[1]),
-            max(bbox_image[2], bbox_visible[2]),
-            max(bbox_image[3], bbox_visible[3]),
-        ]
-        # whole image width in the visible area
-        if bbox_scroll[0] == bbox_visible[0] and bbox_scroll[2] == bbox_visible[2]:
-            bbox_scroll[0] = bbox_image[0]
-            bbox_scroll[2] = bbox_image[2]
-        # whole image height in the visible area
-        if bbox_scroll[1] == bbox_visible[1] and bbox_scroll[3] == bbox_visible[3]:
-            bbox_scroll[1] = bbox_image[1]
-            bbox_scroll[3] = bbox_image[3]
-        self.canvas.configure(scrollregion=bbox_scroll)
-
-        # get coordinates (x1,y1,x2,y2) of the image tile
-        x1 = max(bbox_visible[0] - bbox_image[0], 0)
-        y1 = max(bbox_visible[1] - bbox_image[1], 0)
-        x2 = min(bbox_visible[2], bbox_image[2]) - bbox_image[0]
-        y2 = min(bbox_visible[3], bbox_image[3]) - bbox_image[1]
-        # show image if it is in the visible area
-        xm1 = min(int(x1 / self.image_scale), self.width)
-        ym1 = min(int(y1 / self.image_scale), self.height)
-        xm2 = min(int(x2 / self.image_scale), self.width)
-        ym2 = min(int(y2 / self.image_scale), self.height)
-        if int(xm2 - xm1) > 0 and int(ym2 - ym1) > 0:
-            image = self.image.crop((xm1, ym1, xm2, ym2))
-            if preferences.get(PrefKey.IMAGE_INVERT):
-                image = ImageChops.invert(image.convert("RGB"))
-            self.canvas.imagetk = ImageTk.PhotoImage(
-                image.resize(
-                    (
-                        int(self.image_scale * image.width),
-                        int(self.image_scale * image.height),
-                    )
-                )
+        image = self.image
+        scaled_width = int(self.image_scale * image.width)
+        scaled_height = int(self.image_scale * image.height)
+        if preferences.get(PrefKey.IMAGE_INVERT):
+            image = ImageChops.invert(self.image)
+        if self.imagetk:
+            del self.imagetk
+        self.imagetk = ImageTk.PhotoImage(
+            image.resize(
+                size=(scaled_width, scaled_height), resample=Image.Resampling.LANCZOS
             )
-            if self.imageid:
-                self.canvas.delete(self.imageid)
-            self.imageid = self.canvas.create_image(
-                max(bbox_visible[0], bbox_image[0]),
-                max(bbox_visible[1], bbox_image[1]),
-                anchor="nw",
-                image=self.canvas.imagetk,
-            )
+        )
+        if self.imageid:
+            self.canvas.delete(self.imageid)
+        self.imageid = self.canvas.create_image(
+            0,
+            0,
+            anchor="nw",
+            image=self.imagetk,
+        )
+        self.canvas.configure(scrollregion=self.canvas.bbox(self.imageid))
 
     def wheel_scroll(self, evt: tk.Event) -> None:
         """Scroll image up/down using mouse wheel"""
@@ -484,14 +423,8 @@ class MainImage(tk.Frame):
 
         if filename and os.path.isfile(filename):
             self.filename = filename
-            self.image = Image.open(filename)
+            self.image = Image.open(filename).convert("RGB")
             self.width, self.height = self.image.size
-            if self.container:
-                self.canvas.delete(self.container)
-            self.container = self.canvas.create_rectangle(
-                0, 0, self.width, self.height, width=0
-            )
-            self.canvas.config(scrollregion=self.canvas.bbox(self.container))
             self.canvas.yview_moveto(0)
             self.canvas.xview_moveto(0)
             self.show_image()
