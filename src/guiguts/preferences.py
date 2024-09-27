@@ -70,6 +70,7 @@ class PrefKey(StrEnum):
     UNICODE_SEARCH_HISTORY = auto()
     SPLIT_TEXT_WINDOW = auto()
     SPLIT_TEXT_SASH_COORD = auto()
+    IMAGE_INVERT = auto()
 
 
 class Preferences:

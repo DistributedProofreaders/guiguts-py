@@ -385,6 +385,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.UNICODE_SEARCH_HISTORY, [])
         preferences.set_default(PrefKey.SPLIT_TEXT_WINDOW, False)
         preferences.set_default(PrefKey.SPLIT_TEXT_SASH_COORD, 0)
+        preferences.set_default(PrefKey.IMAGE_INVERT, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
