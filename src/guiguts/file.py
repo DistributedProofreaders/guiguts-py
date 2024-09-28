@@ -11,6 +11,7 @@ from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 import regex as re
 
+from guiguts.mainwindow import mainimage
 from guiguts.maintext import (
     maintext,
     PAGE_FLAG_TAG,
@@ -304,6 +305,9 @@ class File:
         Returns:
             True if OK to continue with intended operation.
         """
+        # Good(?) place to ensure image position gets saved
+        mainimage().handle_configure(tk.Event())
+
         if not maintext().is_modified():
             return True
 

@@ -303,6 +303,8 @@ class MainImage(tk.Frame):
         self.columnconfigure(0, weight=1)
 
         self.canvas.bind("<Configure>", self.handle_configure)
+        self.bind("<Enter>", self.handle_configure)
+        self.bind("<Leave>", self.handle_configure)
         self.canvas.bind("<ButtonPress-1>", self.move_from)
         self.canvas.bind("<B1-Motion>", self.move_to)
         if is_x11():
