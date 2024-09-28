@@ -301,12 +301,6 @@ class MainImage(tk.Frame):
         self.canvas.grid(row=2, column=0, sticky="NSEW")
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
-        cmdctrl = "Cmd" if is_mac() else "Ctrl"
-        ToolTip(
-            self.canvas,
-            f"Drag image\nScroll with mousewheel\nZoom with {cmdctrl}+mousewheel",
-            use_pointer_pos=True,
-        )
 
         self.canvas.bind("<Configure>", self.handle_configure)
         self.canvas.bind("<ButtonPress-1>", self.move_from)
@@ -493,9 +487,17 @@ class MainImage(tk.Frame):
     def handle_configure(self, _e: tk.Event) -> None:
         """Handle configure event."""
         if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
-            preferences.set(PrefKey.IMAGE_DOCK_SASH_COORD, self.parent.sash_coord(0)[0])
+            try:  # In case unlucky timing means it tries to configure during undocking & finds sash doesn't exist
+                preferences.set(
+                    PrefKey.IMAGE_DOCK_SASH_COORD, self.parent.sash_coord(0)[0]
+                )
+            except tk.TclError:
+                pass
         else:
-            preferences.set(PrefKey.IMAGE_FLOAT_GEOMETRY, tk.Wm.geometry(self))  # type: ignore[call-overload]
+            try:  # In case unlucky timing means it tries to configure during docking & widget isn't a toplevel
+                preferences.set(PrefKey.IMAGE_FLOAT_GEOMETRY, tk.Wm.geometry(self))  # type: ignore[call-overload]
+            except tk.TclError:
+                pass
 
 
 class StatusBar(ttk.Frame):
