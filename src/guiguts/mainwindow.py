@@ -192,9 +192,6 @@ class MainImage(tk.Frame):
     MainImage can be docked or floating. Floating is not supported with ttk.Frame,
     hence inherits from tk.Frame.
 
-    Adapted from https://stackoverflow.com/questions/41656176/tkinter-canvas-zoom-move-pan
-    and https://stackoverflow.com/questions/56043767/show-large-image-using-scrollbar-in-python
-
     Attributes:
         hbar: Horizontal scrollbar.
         vbar: Vertical scrollbar.
@@ -204,11 +201,27 @@ class MainImage(tk.Frame):
         scale_delta: Ratio to multiply/divide scale when Control-scrolling mouse wheel.
     """
 
-    def __init__(self, parent: tk.Widget) -> None:
-        """Initialize the MainImage to contain an empty Canvas with scrollbars"""
-        tk.Frame.__init__(self, parent)
+    def __init__(
+        self,
+        parent: tk.PanedWindow,
+        hide_func: Callable[[], None],
+        float_func: Callable[[Optional[tk.Event]], None],
+        dock_func: Callable[[Optional[tk.Event]], None],
+    ) -> None:
+        """Initialize the MainImage to contain an empty Canvas with scrollbars.
 
-        control_frame = ttk.Frame(self, padding=5)
+        Args:
+            hide_func: Function to hide the image viewer.
+            float_func: Function to float the image viewer.
+            dock_func: Function to dock the image viewer.
+        """
+        tk.Frame.__init__(self, parent, name=" Image Viewer")
+        self.parent = parent
+        self.hide_func = hide_func
+        self.float_func = float_func
+        self.dock_func = dock_func
+
+        control_frame = ttk.Frame(self)
         control_frame.grid(row=0, column=0, columnspan=2, sticky="NEW")
         invert_btn = ttk.Checkbutton(
             control_frame,
@@ -217,22 +230,42 @@ class MainImage(tk.Frame):
             command=self.show_image,
             variable=PersistentBoolean(PrefKey.IMAGE_INVERT),
         )
-        invert_btn.grid(row=0, column=0, sticky="NSW", columnspan=5)
-        ttk.Label(control_frame, text="Zoom:").grid(row=1, column=0, sticky="NSEW")
-        self.zoom_in_btn = ttk.Button(
+        invert_btn.grid(row=0, column=0, sticky="NSEW", padx=(5, 3), pady=(5, 0))
+        dock_btn = ttk.Checkbutton(
             control_frame,
+            text="Dock image",
+            takefocus=False,
+            command=self.toggle_image_docking,
+            variable=root().image_window_state,
+        )
+        dock_btn.grid(row=0, column=1, sticky="NSE", padx=3, pady=(5, 0))
+        ttk.Button(
+            control_frame,
+            text="Close",
+            takefocus=False,
+            command=self.hide_func,
+        ).grid(row=0, column=2, sticky="NSEW", padx=(3, 5), pady=(5, 0))
+        control_frame.columnconfigure(1, weight=1)
+
+        zoom_frame = ttk.Frame(self)
+        zoom_frame.grid(row=1, column=0, columnspan=2, sticky="NEW")
+        ttk.Label(zoom_frame, text="Zoom:").grid(
+            row=1, column=0, sticky="NSEW", padx=(5, 3), pady=5
+        )
+        self.zoom_in_btn = ttk.Button(
+            zoom_frame,
             text="+",
             takefocus=False,
             command=lambda: self.image_zoom(zoom_in=True),
         )
-        self.zoom_in_btn.grid(row=1, column=1, sticky="NSEW")
+        self.zoom_in_btn.grid(row=1, column=1, sticky="NSEW", padx=3, pady=5)
         self.zoom_out_btn = ttk.Button(
-            control_frame,
+            zoom_frame,
             text="-",
             takefocus=False,
             command=lambda: self.image_zoom(zoom_in=False),
         )
-        self.zoom_out_btn.grid(row=1, column=2, sticky="NSEW")
+        self.zoom_out_btn.grid(row=1, column=2, sticky="NSEW", padx=3, pady=5)
         # Separate bindings needed for docked (root) and floated (self) states
         for widget in (root(), self):
             _, cp = process_accel("Cmd/Ctrl+plus")
@@ -240,22 +273,23 @@ class MainImage(tk.Frame):
             widget.bind(cp, lambda _: self.zoom_in_btn.invoke())
             widget.bind(cm, lambda _: self.zoom_out_btn.invoke())
         ttk.Button(
-            control_frame,
+            zoom_frame,
             text="Fit to width",
             takefocus=False,
             command=self.image_zoom_to_width,
-        ).grid(row=1, column=3, sticky="NSEW")
+        ).grid(row=1, column=3, sticky="NSEW", padx=3, pady=5)
         ttk.Button(
-            control_frame,
+            zoom_frame,
             text="Fit to height",
             takefocus=False,
             command=self.image_zoom_to_height,
-        ).grid(row=1, column=4, sticky="NSEW")
+        ).grid(row=1, column=4, sticky="NSEW", padx=3, pady=5)
+        zoom_frame.columnconfigure(5, weight=1)
         self.hbar = ttk.Scrollbar(self, orient=tk.HORIZONTAL)
-        self.hbar.grid(row=2, column=0, sticky="EW")
+        self.hbar.grid(row=3, column=0, sticky="EW")
         self.hbar.configure(command=self.scroll_x)
         self.vbar = ttk.Scrollbar(self, orient=tk.VERTICAL)
-        self.vbar.grid(row=1, column=1, sticky="NS")
+        self.vbar.grid(row=2, column=1, sticky="NS")
         self.vbar.configure(command=self.scroll_y)
 
         self.canvas = tk.Canvas(
@@ -264,8 +298,8 @@ class MainImage(tk.Frame):
             xscrollcommand=self.hbar.set,
             yscrollcommand=self.vbar.set,
         )
-        self.canvas.grid(row=1, column=0, sticky="NSEW")
-        self.rowconfigure(1, weight=1)
+        self.canvas.grid(row=2, column=0, sticky="NSEW")
+        self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
         cmdctrl = "Cmd" if is_mac() else "Ctrl"
         ToolTip(
@@ -274,7 +308,7 @@ class MainImage(tk.Frame):
             use_pointer_pos=True,
         )
 
-        self.canvas.bind("<Configure>", self.show_image)
+        self.canvas.bind("<Configure>", self.handle_configure)
         self.canvas.bind("<ButtonPress-1>", self.move_from)
         self.canvas.bind("<B1-Motion>", self.move_to)
         if is_x11():
@@ -287,7 +321,7 @@ class MainImage(tk.Frame):
             self.canvas.bind(cm, self.wheel_zoom)
             self.canvas.bind("<MouseWheel>", self.wheel_scroll)
 
-        self.image_scale = 1.0
+        self.image_scale = float(preferences.get(PrefKey.IMAGE_SCALE_FACTOR))
         self.scale_delta = 1.3
         self.image: Optional[Image.Image] = None
         self.imageid = None
@@ -339,6 +373,7 @@ class MainImage(tk.Frame):
         else:
             if self.image_scale > 0.1:
                 self.image_scale /= self.scale_delta
+        preferences.set(PrefKey.IMAGE_SCALE_FACTOR, self.image_scale)
         self.show_image()
 
     def image_zoom_to_width(self) -> None:
@@ -366,6 +401,7 @@ class MainImage(tk.Frame):
             scale_factor: Factor to zoom by.
         """
         self.image_scale *= scale_factor
+        preferences.set(PrefKey.IMAGE_SCALE_FACTOR, self.image_scale)
         self.canvas.xview_moveto(0.0)
         self.canvas.yview_moveto(0.0)
         self.show_image()
@@ -383,11 +419,11 @@ class MainImage(tk.Frame):
             image = ImageChops.invert(self.image)
         if self.imagetk:
             del self.imagetk
-        self.imagetk = ImageTk.PhotoImage(
-            image.resize(
-                size=(scaled_width, scaled_height), resample=Image.Resampling.LANCZOS
-            )
+        image = image.resize(
+            size=(scaled_width, scaled_height), resample=Image.Resampling.LANCZOS
         )
+        image.putalpha(190)  # Reduce contrast by making slightly transparent
+        self.imagetk = ImageTk.PhotoImage(image)
         if self.imageid:
             self.canvas.delete(self.imageid)
         self.imageid = self.canvas.create_image(
@@ -412,14 +448,17 @@ class MainImage(tk.Frame):
                 self.canvas.xview_scroll(int(-1 * (evt.delta / 120)), "units")
         self.show_image()
 
-    def load_image(self, filename: Optional[str] = None) -> None:
+    def load_image(self, filename: Optional[str] = None) -> bool:
         """Load or clear the given image file.
 
         Args:
             filename: Optional name of image file. If none given, clear image.
+
+        Returns:
+            True if new file was loaded, False otherwise
         """
         if filename == self.filename:
-            return
+            return False
 
         if filename and os.path.isfile(filename):
             self.filename = filename
@@ -430,6 +469,7 @@ class MainImage(tk.Frame):
             self.show_image()
         else:
             self.clear_image()
+        return True
 
     def clear_image(self) -> None:
         """Clear the image and reset variables accordingly."""
@@ -439,9 +479,23 @@ class MainImage(tk.Frame):
             self.canvas.delete(self.imageid)
         self.imageid = None
 
+    def toggle_image_docking(self) -> None:
+        """Toggle whether image is docked or not."""
+        if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
+            self.float_func(None)
+        else:
+            self.dock_func(None)
+
     def is_image_loaded(self) -> bool:
-        """Return if an image is currently loaded"""
+        """Return if an image is currently loaded."""
         return self.image is not None
+
+    def handle_configure(self, _e: tk.Event) -> None:
+        """Handle configure event."""
+        if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
+            preferences.set(PrefKey.IMAGE_DOCK_SASH_COORD, self.parent.sash_coord(0)[0])
+        else:
+            preferences.set(PrefKey.IMAGE_FLOAT_GEOMETRY, tk.Wm.geometry(self))  # type: ignore[call-overload]
 
 
 class StatusBar(ttk.Frame):
@@ -745,10 +799,16 @@ class MainWindow:
         add_text_context_menu(maintext())
         add_text_context_menu(maintext().peer)
 
-        MainWindow.mainimage = MainImage(self.paned_window)
+        MainWindow.mainimage = MainImage(
+            self.paned_window,
+            hide_func=self.hide_image,
+            float_func=self.float_image,
+            dock_func=self.dock_image,
+        )
 
     def hide_image(self) -> None:
         """Stop showing the current image."""
+        preferences.set(PrefKey.AUTO_IMAGE, False)
         self.clear_image()
         root().wm_forget(mainimage())  # type: ignore[arg-type]
         self.paned_window.forget(mainimage())
@@ -759,6 +819,11 @@ class MainWindow:
         if mainimage().is_image_loaded():
             root().wm_manage(mainimage())
             mainimage().lift()
+            # Obscure tk.Wm calls needed because although mainimage has been converted
+            # to a toplevel by Tk, it doesn't appear as though tkinter knows about it,
+            # so can't call mainimage().wm_geometry() or set the size via normal config
+            # methods.
+            tk.Wm.geometry(mainimage(), preferences.get(PrefKey.IMAGE_FLOAT_GEOMETRY))  # type: ignore[call-overload]
             tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.hide_image)  # type: ignore[call-overload]
         else:
             root().wm_forget(mainimage())  # type: ignore[arg-type]
@@ -769,6 +834,9 @@ class MainWindow:
         root().wm_forget(mainimage())  # type: ignore[arg-type]
         if mainimage().is_image_loaded():
             self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
+            self.paned_window.sash_place(
+                0, preferences.get(PrefKey.IMAGE_DOCK_SASH_COORD), 0
+            )
         else:
             try:
                 self.paned_window.forget(mainimage())
@@ -781,12 +849,14 @@ class MainWindow:
 
         Args:
             filename: Path to image file.
+            force_show: True to force dock or float image
         """
-        mainimage().load_image(filename)
-        if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
-            self.dock_image()
-        else:
-            self.float_image()
+        image_already_loaded = mainimage().is_image_loaded()
+        if mainimage().load_image(filename) and not image_already_loaded:
+            if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
+                self.dock_image()
+            else:
+                self.float_image()
 
     def clear_image(self) -> None:
         """Clear the image currently being shown."""

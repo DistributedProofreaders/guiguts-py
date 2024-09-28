@@ -71,6 +71,9 @@ class PrefKey(StrEnum):
     SPLIT_TEXT_WINDOW = auto()
     SPLIT_TEXT_SASH_COORD = auto()
     IMAGE_INVERT = auto()
+    IMAGE_FLOAT_GEOMETRY = auto()
+    IMAGE_DOCK_SASH_COORD = auto()
+    IMAGE_SCALE_FACTOR = auto()
 
 
 class Preferences:
