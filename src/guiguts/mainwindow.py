@@ -269,8 +269,10 @@ class MainImage(tk.Frame):
         # Separate bindings needed for docked (root) and floated (self) states
         for widget in (root(), self):
             _, cp = process_accel("Cmd/Ctrl+plus")
+            _, ce = process_accel("Cmd/Ctrl+equal")
             _, cm = process_accel("Cmd/Ctrl+minus")
             widget.bind(cp, lambda _: self.zoom_in_btn.invoke())
+            widget.bind(ce, lambda _: self.zoom_in_btn.invoke())
             widget.bind(cm, lambda _: self.zoom_out_btn.invoke())
         ttk.Button(
             zoom_frame,
