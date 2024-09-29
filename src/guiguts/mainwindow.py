@@ -564,6 +564,10 @@ class ScrolledReadOnlyText(tk.Text):
         # Also on creation, so it's correct for the current theme
         theme_set_tk_widget_colors(self)
 
+        # Redirect undo & redo events to main text window
+        super().bind("<<Undo>>", lambda _event: maintext().event_generate("<<Undo>>"))
+        super().bind("<<Redo>>", lambda _event: maintext().event_generate("<<Redo>>"))
+
         if context_menu:
             add_text_context_menu(self, read_only=True)
 
