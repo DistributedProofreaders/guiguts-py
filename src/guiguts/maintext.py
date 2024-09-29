@@ -676,6 +676,11 @@ class MainText(tk.Text):
         except UnicodeDecodeError:
             with open(fname, "r", encoding="iso-8859-1") as fh:
                 self.insert(tk.END, fh.read())
+        # Remove BOM from first line if present
+        if bom_match := self.find_match(
+            "\ufeff", IndexRange("1.0", self.index("1.0 lineend"))
+        ):
+            self.delete(bom_match.rowcol.index())
         self.set_modified(False)
         self.edit_reset()
 
