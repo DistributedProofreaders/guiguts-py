@@ -386,6 +386,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.SPLIT_TEXT_WINDOW, False)
         preferences.set_default(PrefKey.SPLIT_TEXT_SASH_COORD, 0)
         preferences.set_default(PrefKey.IMAGE_INVERT, False)
+        preferences.set_default(PrefKey.IMAGE_FLOAT_GEOMETRY, "400x600+100+100")
+        preferences.set_default(PrefKey.IMAGE_DOCK_SASH_COORD, 300)
+        preferences.set_default(PrefKey.IMAGE_SCALE_FACTOR, 0.5)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
