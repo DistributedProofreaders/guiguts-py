@@ -50,6 +50,7 @@ from guiguts.misc_tools import (
     FractionConvertType,
     fraction_convert,
     unicode_normalize,
+    proofer_comment_check,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
@@ -519,19 +520,21 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
         menu_search.add_button(
-            "Highlight Single Quotes in Selection",
+            "Find Proofer ~Comments",
+            proofer_comment_check,
+        )
+        menu_search.add_separator()
+        menu_search.add_button(
+            "Highlight Single ~Quotes in Selection",
             highlight_single_quotes,
-            "",
         )
         menu_search.add_button(
-            "Highlight Double Quotes in Selection",
+            "Highlight ~Double Quotes in Selection",
             highlight_double_quotes,
-            "",
         )
         menu_search.add_button(
-            "Remove Highlights",
+            "~Remove Highlights",
             remove_highlights,
-            "",
         )
         self.init_bookmark_menu(menu_search)
 

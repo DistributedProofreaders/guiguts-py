@@ -1137,3 +1137,45 @@ def unicode_normalize() -> None:
             if not unicodedata.is_normalized("NFC", text):
                 normalized_text = unicodedata.normalize("NFC", text)
                 maintext().replace(start_idx, end_idx, normalized_text)
+
+
+def proofer_comment_check() -> None:
+    """Find all proofer comments."""
+
+    matches = maintext().find_matches(
+        "[**",
+        IndexRange(maintext().start(), maintext().end()),
+        nocase=False,
+        regexp=False,
+    )
+
+    class ProoferCommentCheckerDialog(CheckerDialog):
+        """Minimal class inheriting from CheckerDialog so that it can exist
+        simultaneously with other checker dialogs."""
+
+    checker_dialog = ProoferCommentCheckerDialog.show_dialog(
+        "Proofer Comments", rerun_command=proofer_comment_check
+    )
+    ToolTip(
+        checker_dialog.text,
+        "\n".join(
+            [
+                "Left click: Select & find comment",
+                "Right click: Remove comment from this list",
+            ]
+        ),
+        use_pointer_pos=True,
+    )
+    checker_dialog.reset()
+    for match in matches:
+        line = maintext().get(
+            f"{match.rowcol.index()} linestart",
+            f"{match.rowcol.index()}+{match.count}c lineend",
+        )
+        end_rowcol = IndexRowCol(
+            maintext().index(match.rowcol.index() + f"+{match.count}c")
+        )
+        checker_dialog.add_entry(
+            line, IndexRange(match.rowcol, end_rowcol), match.rowcol.col, end_rowcol.col
+        )
+    checker_dialog.display_entries()
