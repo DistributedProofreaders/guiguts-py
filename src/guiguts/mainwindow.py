@@ -220,6 +220,7 @@ class MainImage(tk.Frame):
         self.hide_func = hide_func
         self.float_func = float_func
         self.dock_func = dock_func
+        self.allow_geometry_storage = False
 
         control_frame = ttk.Frame(self)
         control_frame.grid(row=0, column=0, columnspan=2, sticky="NEW")
@@ -488,6 +489,18 @@ class MainImage(tk.Frame):
         """Return if an image is currently loaded."""
         return self.image is not None
 
+    def enable_geometry_storage(self) -> None:
+        """Permit storage of image viewer geometry.
+
+        Don't want to allow it right at start in case window manager places
+        dialog, causing a config event and overwriting the stored geometry.
+        """
+        try:
+            tk.Wm.geometry(self, preferences.get(PrefKey.IMAGE_FLOAT_GEOMETRY))  # type: ignore[call-overload]
+        except tk.TclError:
+            pass
+        self.allow_geometry_storage = True
+
     def handle_configure(self, _e: tk.Event) -> None:
         """Handle configure event."""
         if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
@@ -497,7 +510,7 @@ class MainImage(tk.Frame):
                 )
             except tk.TclError:
                 pass
-        else:
+        elif self.allow_geometry_storage:
             try:  # In case unlucky timing means it tries to configure during docking & widget isn't a toplevel
                 preferences.set(PrefKey.IMAGE_FLOAT_GEOMETRY, tk.Wm.geometry(self))  # type: ignore[call-overload]
             except tk.TclError:
@@ -834,6 +847,9 @@ class MainWindow:
         else:
             root().wm_forget(mainimage())  # type: ignore[arg-type]
         preferences.set(PrefKey.IMAGE_WINDOW, ImageWindowState.FLOATED)
+
+        # It is OK to save image viewer geometry from now on
+        mainimage().enable_geometry_storage()
 
     def dock_image(self, _event: Optional[tk.Event] = None) -> None:
         """Dock the image back into the main window"""
