@@ -308,6 +308,7 @@ class File:
             title="Save a Copy As",
         ):
             self.store_recent_file(fn)
+            self.store_recent_file(self.filename)
             maintext().do_save(fn, clear_modified_flag=False)
             self.save_bin(fn)
         grab_focus(root(), maintext())
