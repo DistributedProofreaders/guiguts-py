@@ -291,12 +291,28 @@ class File:
             initialfile=os.path.basename(self.filename),
             initialdir=os.path.dirname(self.filename),
             filetypes=[("All files", "*")],
+            title="Save As",
         ):
             self.store_recent_file(fn)
             self.filename = fn
             self.save_file()
         grab_focus(root(), maintext())
         return fn
+
+    def save_copy_as_file(self) -> None:
+        """Save copy of current text as new file, without affecting
+        current filename or "modified" flag."""
+        if fn := filedialog.asksaveasfilename(
+            initialfile=os.path.basename(self.filename),
+            initialdir=os.path.dirname(self.filename),
+            filetypes=[("All files", "*")],
+            title="Save a Copy As",
+        ):
+            self.store_recent_file(fn)
+            self.store_recent_file(self.filename)
+            maintext().do_save(fn, clear_modified_flag=False)
+            self.save_bin(fn)
+        grab_focus(root(), maintext())
 
     def check_save(self) -> bool:
         """If file has been edited, check if user wants to save,
@@ -423,6 +439,7 @@ class File:
         recents.insert(0, filename)
         del recents[NUM_RECENT_FILES:]
         preferences.set(PrefKey.RECENT_FILES, recents)
+        self._filename_callback()
 
     def remove_recent_file(self, filename: str) -> None:
         """Remove given filename from list of recent files.
@@ -434,6 +451,7 @@ class File:
         if filename in recents:
             recents.remove(filename)
             preferences.set(PrefKey.RECENT_FILES, recents)
+        self._filename_callback()
 
     def set_page_marks(self, page_details: PageDetails) -> None:
         """Set page marks from keys/values in dictionary.

@@ -653,7 +653,7 @@ class MainText(tk.Text):
         """Return whether widget's text has been modified."""
         return self.edit_modified()
 
-    def do_save(self, fname: str) -> None:
+    def do_save(self, fname: str, clear_modified_flag: bool = True) -> None:
         """Save widget's text to file.
 
         Args:
@@ -661,6 +661,7 @@ class MainText(tk.Text):
         """
         with open(fname, "w", encoding="utf-8") as fh:
             fh.write(self.get_text())
+        if clear_modified_flag:
             self.set_modified(False)
 
     def do_open(self, fname: str) -> None:

@@ -430,6 +430,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.menu_file.add_button(
             "Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S"
         )
+        self.menu_file.add_button("Sa~ve a Copy As...", self.file.save_copy_as_file)
         self.menu_file.add_button(
             "~Close", self.close_command, "Cmd+W" if is_mac() else ""
         )
