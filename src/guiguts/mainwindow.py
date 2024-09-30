@@ -267,27 +267,32 @@ class MainImage(tk.Frame):
             command=lambda: self.image_zoom(zoom_in=False),
         )
         self.zoom_out_btn.grid(row=1, column=2, sticky="NSEW", padx=3, pady=5)
-        # Separate bindings needed for docked (root) and floated (self) states
-        for widget in (root(), self):
-            _, cp = process_accel("Cmd/Ctrl+plus")
-            _, ce = process_accel("Cmd/Ctrl+equal")
-            _, cm = process_accel("Cmd/Ctrl+minus")
-            widget.bind(cp, lambda _: self.zoom_in_btn.invoke())
-            widget.bind(ce, lambda _: self.zoom_in_btn.invoke())
-            widget.bind(cm, lambda _: self.zoom_out_btn.invoke())
         ttk.Button(
             zoom_frame,
             text="Fit to width",
             takefocus=False,
             command=self.image_zoom_to_width,
         ).grid(row=1, column=3, sticky="NSEW", padx=3, pady=5)
-        ttk.Button(
+        fth_btn = ttk.Button(
             zoom_frame,
             text="Fit to height",
             takefocus=False,
             command=self.image_zoom_to_height,
-        ).grid(row=1, column=4, sticky="NSEW", padx=3, pady=5)
+        )
+        fth_btn.grid(row=1, column=4, sticky="NSEW", padx=3, pady=5)
         zoom_frame.columnconfigure(5, weight=1)
+
+        # Separate bindings needed for docked (root) and floated (self) states
+        for widget in (root(), self):
+            _, cp = process_accel("Cmd/Ctrl+plus")
+            _, ce = process_accel("Cmd/Ctrl+equal")
+            _, cm = process_accel("Cmd/Ctrl+minus")
+            _, c0 = process_accel("Cmd/Ctrl+0")
+            widget.bind(cp, lambda _: self.zoom_in_btn.invoke())
+            widget.bind(ce, lambda _: self.zoom_in_btn.invoke())
+            widget.bind(cm, lambda _: self.zoom_out_btn.invoke())
+            widget.bind(c0, lambda _: fth_btn.invoke())
+
         self.hbar = ttk.Scrollbar(self, orient=tk.HORIZONTAL)
         self.hbar.grid(row=3, column=0, sticky="EW")
         self.hbar.configure(command=self.scroll_x)
