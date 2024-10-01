@@ -642,6 +642,17 @@ class ScrolledReadOnlyText(tk.Text):
         # Also on creation, so it's correct for the current theme
         theme_set_tk_widget_colors(self)
 
+        # Redirect attempts to undo & redo to main text window
+        # Keystrokes match those in Undo/Redo menu buttons, with case handled manually here
+        _, key_event = process_accel("Cmd/Ctrl+Z")
+        super().bind(key_event, lambda _event: maintext().event_generate("<<Undo>>"))
+        _, key_event = process_accel("Cmd/Ctrl+z")
+        super().bind(key_event, lambda _event: maintext().event_generate("<<Undo>>"))
+        _, key_event = process_accel("Cmd+Shift+Z" if is_mac() else "Ctrl+Y")
+        super().bind(key_event, lambda _event: maintext().event_generate("<<Redo>>"))
+        _, key_event = process_accel("Cmd+Shift+z" if is_mac() else "Ctrl+y")
+        super().bind(key_event, lambda _event: maintext().event_generate("<<Redo>>"))
+
         if context_menu:
             add_text_context_menu(self, read_only=True)
 
