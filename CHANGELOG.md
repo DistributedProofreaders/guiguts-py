@@ -1,6 +1,30 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.9
+
+- Word Frequency Italic/Bold check is much faster, and when sorted
+  alphabetically puts the marked up and non-marked up duplicates together
+- Illustration Fixup tool added to facilitate moving illustrations to required
+  location in file
+- Sidenote Fixup tool added - similar to Illustration fixup
+- Improvements to Image viewer including zoom, fit-to-width/height, dock and
+  close buttons (shortcuts Cmd/Ctrl-plus, Cmd/Ctrl-minus and Cmd/Ctrl-zero);
+  better zoomed image quality; ability to invert scan colors for dark themes;
+  viewer size and position are remembered
+- "Save a Copy As" button added to File menu
+- Find Proofer Comments feature added
+- Remove (unnecessary) Byte Order Mark from top of files
+
+### Bug Fixes
+
+- Word Frequency Hyphen check did not find suspects correctly
+- Traceback occurred on Linux when Menu bar was selected - related to Split
+  Text window code
+- Keyboard shortcuts for Undo and Redo text edits did not work if the focus
+  was in a checker tool dialog
+
+
 ## Version 2.0.0-alpha.8
 
 - Split Text Window now available via the View menu
