@@ -233,9 +233,12 @@ Use the "Python: Select Interpreter" command to choose the appropriate Python en
 
 This section contains notes from users who have installed Guiguts 2 on various platforms to use for PPing. **If you are a developer, you probably want the [Development Installation Notes](#common-development-setup).**
 
+Note that although the developers' installation notes specify Python 3.11,
+Guiguts 2 also works with version 3.12 if that is more convenient
+
 ### Windows
 
-1. Install Python 3.11 from [Python.org](https://www.python.org/downloads/windows/)
+1. Install Python 3.11 (or 3.12) from [Python.org](https://www.python.org/downloads/windows/)
 if you haven't already done that.
 2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
 previous version of GG2).
