@@ -558,7 +558,7 @@ class WordFrequencyDialog(ToplevelDialog):
         low_char = event.char.lower()
         for idx, entry in enumerate(self.entries):
             if entry.word.lower().startswith(low_char):
-                self.goto_word(idx, force_first=True)
+                self.text.select_line(idx + 1)
                 return "break"
         return ""
 
