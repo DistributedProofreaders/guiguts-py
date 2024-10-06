@@ -993,12 +993,13 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
 
     whole_text = maintext().get_text()
 
-    matches = re.findall(rf"(?<!\w)(<({MARKUP_TYPES})>([^<]|\n)+</\2>)(?!\w)",
+    matches = re.findall(
+        rf"(?<!\w)(<({MARKUP_TYPES})>([^<]|\n)+</\2>)(?!\w)",
         whole_text,
         flags=search_flags,
     )
     for match in matches:
-        marked_phrase:str = match[0]
+        marked_phrase: str = match[0]
         if nocase:
             marked_phrase = marked_phrase.lower()
         marked_phrase = marked_phrase.replace("\n", RETURN_ARROW)
