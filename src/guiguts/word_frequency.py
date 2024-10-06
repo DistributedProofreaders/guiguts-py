@@ -561,7 +561,7 @@ class WordFrequencyDialog(ToplevelDialog):
         low_char = event.char.lower()
         for idx, entry in enumerate(self.entries):
             if entry.word.lower().startswith(low_char):
-                self.goto_word(idx, force_first=True)
+                self.text.select_line(idx + 1)
                 return "break"
         return ""
 
@@ -992,24 +992,25 @@ def wf_populate_markedup(wf_dialog: WordFrequencyDialog) -> None:
 
     marked_dict: WFDict = WFDict()
     nocase = preferences.get(PrefKey.WFDIALOG_IGNORE_CASE)
-    matches = maintext().find_matches(
-        rf"<({MARKUP_TYPES})>([^<]|\n)+</\1>",
-        IndexRange(maintext().start(), maintext().end()),
-        nocase=nocase,
-        regexp=True,
+    search_flags = re.IGNORECASE if nocase else 0
+
+    whole_text = maintext().get_text()
+
+    matches = re.findall(
+        rf"(?<!\w)(<({MARKUP_TYPES})>([^<]|\n)+</\2>)(?!\w)",
+        whole_text,
+        flags=search_flags,
     )
     for match in matches:
-        marked_phrase = maintext().get_match_text(match)
+        marked_phrase: str = match[0]
         if nocase:
             marked_phrase = marked_phrase.lower()
         marked_phrase = marked_phrase.replace("\n", RETURN_ARROW)
         tally_word(marked_dict, marked_phrase)
 
-    whole_text = maintext().get_text()
     total_cnt = 0
     suspect_cnt = 0
     unmarked_count = {}
-    search_flags = re.IGNORECASE if nocase else 0
     for marked_phrase, marked_count in marked_dict.items():
         # Suspect if the bare phrase appears an excess number of times,
         # i.e. all occurrences > marked up occurrences
