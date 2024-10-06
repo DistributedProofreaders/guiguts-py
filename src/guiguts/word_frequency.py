@@ -372,7 +372,10 @@ class WordFrequencyDialog(ToplevelDialog):
         # Main display list
         self.top_frame.rowconfigure(1, weight=1)
         self.text = ScrolledReadOnlyText(
-            self.top_frame, context_menu=False, wrap=tk.NONE
+            self.top_frame,
+            context_menu=False,
+            wrap=tk.NONE,
+            font=maintext().font,
         )
         self.text.grid(row=1, column=0, sticky="NSEW")
         mouse_bind(self.text, "1", self.goto_word_by_click)

@@ -191,7 +191,10 @@ class CheckerDialog(ToplevelDialog):
 
         self.top_frame.rowconfigure(1, weight=1)
         self.text = ScrolledReadOnlyText(
-            self.top_frame, context_menu=False, wrap=tk.NONE
+            self.top_frame,
+            context_menu=False,
+            wrap=tk.NONE,
+            font=maintext().font,
         )
         self.text.grid(column=0, row=1, sticky="NSEW")
 
