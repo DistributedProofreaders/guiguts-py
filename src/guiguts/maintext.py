@@ -765,7 +765,7 @@ class MainText(tk.Text):
 
     def get_lines(self) -> Generator[tuple[str, int], None, None]:
         """Yield each line & line number in main text window."""
-        for line_num in range(1, self.end().row):
+        for line_num in range(1, self.end().row + 1):
             line = maintext().get(f"{line_num}.0", f"{line_num}.0 lineend")
             yield line, line_num
 

@@ -111,6 +111,7 @@ class SpellChecker:
                     # open single quote; trim it and check again
                     if spell_check_result == SPELL_CHECK_OK_NO and word.startswith("'"):
                         word = word[1:]
+                        col += 1
                         spell_check_result = self.spell_check_word(word, project_dict)
 
                     # If trailing straight/curly apostrophe, it might be
