@@ -461,6 +461,18 @@ class CheckerDialog(ToplevelDialog):
         self.count_linked_entries = 0
         self.count_suspects = 0
 
+        # Find longest line & col strings to aid formatting
+        maxrow = 0
+        maxcol = 0
+        for entry in self.entries:
+            if self.skip_suspect_entry(entry):
+                continue
+            if entry.text_range is not None:
+                maxrow = max(maxrow, entry.text_range.start.row)
+                maxcol = max(maxcol, entry.text_range.start.col)
+        maxrowlen = len(str(maxrow))
+        maxcollen = len(str(maxcol)) + 2  # Always colon & at least 1 space after col
+
         for entry in self.entries:
             if self.skip_suspect_entry(entry):
                 continue
@@ -470,11 +482,10 @@ class CheckerDialog(ToplevelDialog):
             if entry.severity >= CheckerEntrySeverity.ERROR:
                 self.count_suspects += 1
             if entry.text_range is not None:
+                colstr = f"{entry.text_range.start.col}:"
                 rowcol_str = (
-                    f"{entry.text_range.start.row}.{entry.text_range.start.col}: "
+                    f"{entry.text_range.start.row:>{maxrowlen}}.{colstr:<{maxcollen}}"
                 )
-                if entry.text_range.start.col < 10:
-                    rowcol_str += " "
             self.text.insert(
                 tk.END, rowcol_str + entry.error_prefix + entry.text + "\n"
             )
