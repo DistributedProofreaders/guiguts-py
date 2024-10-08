@@ -503,6 +503,12 @@ class WordFrequencyDialog(ToplevelDialog):
         # Sort stored list, rather than just displayed list, since later
         # we'll want to index into list based on index in display.
         self.entries.sort(key=key)
+        # Get longest frequency to aid formatting
+        max_freq = 0
+        for entry in self.entries:
+            max_freq = max(max_freq, entry.frequency)
+        max_freq_len = len(str(max_freq))
+        # Display entries
         for entry in self.entries:
             suspect = f" {WordFrequencyEntry.SUSPECT}" if entry.suspect else ""
             # Single whitespace characters are replaced with a visible label
@@ -510,7 +516,7 @@ class WordFrequencyDialog(ToplevelDialog):
                 word = WordFrequencyDialog.CHAR_DISPLAY[entry.word]
             except KeyError:
                 word = entry.word
-            message = f"{entry.frequency:<7} {word}{suspect}\n"
+            message = f"{entry.frequency:>{max_freq_len}}  {word}{suspect}\n"
             self.text.insert(tk.END, message)
 
     def whole_word_search(self, word: str) -> bool:
