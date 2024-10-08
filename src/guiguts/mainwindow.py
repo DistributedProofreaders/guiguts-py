@@ -394,7 +394,7 @@ class MainImage(tk.Frame):
         assert self.imageid is not None
         bbox_image = self.canvas.bbox(self.imageid)
         scale_factor = (
-            self.canvas.canvasx(self.canvas.winfo_height()) - self.canvas.canvasy(0)
+            self.canvas.canvasy(self.canvas.winfo_height()) - self.canvas.canvasy(0)
         ) / (bbox_image[3] - bbox_image[1])
         self.image_zoom_by_factor(scale_factor)
 
