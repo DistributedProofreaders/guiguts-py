@@ -604,9 +604,11 @@ class File:
     def goto_image(self) -> None:
         """Go to the image the user enters"""
         image_num = simpledialog.askstring(
-            "Go To Page", "Image number", parent=maintext()
+            "Go To Page (png)", "Image number", parent=maintext()
         )
-        self.do_goto_image(image_num)
+        if image_num is not None:
+            image_num = re.sub(r"\.png$", "", image_num)
+            self.do_goto_image(image_num)
 
     def do_goto_image(self, image_num: Optional[str]) -> None:
         """Go to page corresponding to the given image number.
@@ -630,9 +632,11 @@ class File:
     def goto_page(self) -> None:
         """Go to the page the user enters."""
         page_num = simpledialog.askstring(
-            "Go To Page", "Page number", parent=maintext()
+            "Go To Page Label", "Page label", parent=maintext()
         )
         if page_num is not None:
+            # If user put "Pg" before label remove it, so correctly formatted prefix can be added
+            page_num = re.sub(r"^ *(Pg)? *", "", page_num)
             image_num = self.page_details.png_from_label(PAGE_LABEL_PREFIX + page_num)
             self.do_goto_image(image_num)
 

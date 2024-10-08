@@ -23,7 +23,7 @@ class PrefKey(StrEnum):
     AUTO_IMAGE = auto()
     BELL_AUDIBLE = auto()
     BELL_VISUAL = auto()
-    IMAGE_WINDOW = auto()
+    IMAGE_WINDOW_DOCKED = auto()
     RECENT_FILES = auto()
     LINE_NUMBERS = auto()
     ORDINAL_NAMES = auto()
