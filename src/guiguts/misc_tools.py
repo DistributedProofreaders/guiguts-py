@@ -1179,3 +1179,48 @@ def proofer_comment_check() -> None:
             line, IndexRange(match.rowcol, end_rowcol), match.rowcol.col, end_rowcol.col
         )
     checker_dialog.display_entries()
+
+
+def asterisk_check() -> None:
+    """Find all asterisks without slashes."""
+
+    # Match single or multiple asterisks including when separated by spaces, e.g. thought break
+    matches = maintext().find_matches(
+        r"\*( *\*)*",
+        IndexRange(maintext().start(), maintext().end()),
+        nocase=False,
+        regexp=True,
+    )
+
+    checker_dialog = CheckerDialog.show_dialog(
+        "Asterisk Check", rerun_command=asterisk_check
+    )
+    ToolTip(
+        checker_dialog.text,
+        "\n".join(
+            [
+                "Left click: Select & find occurrence of asterisk",
+                "Right click: Remove occurrence from this list",
+            ]
+        ),
+        use_pointer_pos=True,
+    )
+    checker_dialog.reset()
+    for match in matches:
+        line = maintext().get(
+            f"{match.rowcol.index()} linestart",
+            f"{match.rowcol.index()} lineend",
+        )
+        # Skip block markup
+        if match.count == 1 and (
+            (match.rowcol.col > 0 and line[match.rowcol.col - 1] == "/")
+            or (match.rowcol.col < len(line) - 1 and line[match.rowcol.col + 1] == "/")
+        ):
+            continue
+        end_rowcol = IndexRowCol(
+            maintext().index(match.rowcol.index() + f"+{match.count}c")
+        )
+        checker_dialog.add_entry(
+            line, IndexRange(match.rowcol, end_rowcol), match.rowcol.col, end_rowcol.col
+        )
+    checker_dialog.display_entries()
