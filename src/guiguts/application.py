@@ -540,26 +540,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
         menu_search.add_separator()
-        menu_search.add_button(
-            "Goto ~Line Number...",
-            self.file.goto_line,
-        )
-        menu_search.add_button(
-            "Goto Pa~ge (png)...",
-            self.file.goto_image,
-        )
-        menu_search.add_button(
-            "Goto Page La~bel...",
-            self.file.goto_page,
-        )
-        menu_search.add_button(
-            "Goto ~Previous Page",
-            self.file.prev_page,
-        )
-        menu_search.add_button(
-            "Goto ~Next Page",
-            self.file.next_page,
-        )
+        self.init_search_goto_menu(menu_search)
         menu_search.add_separator()
         menu_search.add_button(
             "Find Proofer ~Comments",
@@ -579,6 +560,30 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             remove_highlights,
         )
         self.init_bookmark_menu(menu_search)
+
+    def init_search_goto_menu(self, parent: Menu) -> None:
+        """Create the Search->Goto menu."""
+        goto_menu = Menu(parent, "~Goto")
+        goto_menu.add_button(
+            "~Line Number...",
+            self.file.goto_line,
+        )
+        goto_menu.add_button(
+            "Pa~ge (png)...",
+            self.file.goto_image,
+        )
+        goto_menu.add_button(
+            "Page La~bel...",
+            self.file.goto_page,
+        )
+        goto_menu.add_button(
+            "~Previous Page",
+            self.file.prev_page,
+        )
+        goto_menu.add_button(
+            "~Next Page",
+            self.file.next_page,
+        )
 
     def init_bookmark_menu(self, parent: Menu) -> None:
         """Create the Bookmarks menu."""
