@@ -12,7 +12,7 @@ from PIL import Image, ImageTk, ImageChops
 
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
-from guiguts.root import Root, root, ImageWindowState
+from guiguts.root import Root, root
 from guiguts.utilities import (
     is_mac,
     is_x11,
@@ -118,9 +118,9 @@ class Menu(tk.Menu):
     def add_checkbox(
         self,
         label: str,
-        handler_on: Callable[[], None],
-        handler_off: Callable[[], None],
         bool_var: tk.BooleanVar,
+        handler_on: Optional[Callable[[], None]] = None,
+        handler_off: Optional[Callable[[], None]] = None,
         accel: str = "",
     ) -> None:
         """Add a button to the menu.
@@ -158,9 +158,11 @@ class Menu(tk.Menu):
 
             Call appropriate handler depending on setting."""
             if bool_var.get():
-                handler_on()
+                if handler_on is not None:
+                    handler_on()
             else:
-                handler_off()
+                if handler_off is not None:
+                    handler_off()
 
         command_args = {
             "label": label_txt,
@@ -236,8 +238,8 @@ class MainImage(tk.Frame):
             control_frame,
             text="Dock image",
             takefocus=False,
-            command=self.toggle_image_docking,
-            variable=root().image_window_state,
+            command=self.set_image_docking,
+            variable=root().image_window_docked_state,
         )
         dock_btn.grid(row=0, column=1, sticky="NSE", padx=3, pady=(5, 0))
         ttk.Button(
@@ -483,12 +485,12 @@ class MainImage(tk.Frame):
             self.canvas.delete(self.imageid)
         self.imageid = None
 
-    def toggle_image_docking(self) -> None:
-        """Toggle whether image is docked or not."""
-        if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
-            self.float_func(None)
-        else:
+    def set_image_docking(self) -> None:
+        """Float/dock image depending on flag."""
+        if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
             self.dock_func(None)
+        else:
+            self.float_func(None)
 
     def is_image_loaded(self) -> bool:
         """Return if an image is currently loaded."""
@@ -508,7 +510,7 @@ class MainImage(tk.Frame):
 
     def handle_configure(self, _e: tk.Event) -> None:
         """Handle configure event."""
-        if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
+        if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
             try:  # In case unlucky timing means it tries to configure during undocking & finds sash doesn't exist
                 preferences.set(
                     PrefKey.IMAGE_DOCK_SASH_COORD, self.parent.sash_coord(0)[0]
@@ -862,7 +864,7 @@ class MainWindow:
             tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.hide_image)  # type: ignore[call-overload]
         else:
             root().wm_forget(mainimage())  # type: ignore[arg-type]
-        preferences.set(PrefKey.IMAGE_WINDOW, ImageWindowState.FLOATED)
+        preferences.set(PrefKey.IMAGE_WINDOW_DOCKED, False)
 
         # It is OK to save image viewer geometry from now on
         mainimage().enable_geometry_storage()
@@ -880,7 +882,7 @@ class MainWindow:
                 self.paned_window.forget(mainimage())
             except tk.TclError:
                 pass  # OK - image wasn't being managed by paned_window
-        preferences.set(PrefKey.IMAGE_WINDOW, ImageWindowState.DOCKED)
+        preferences.set(PrefKey.IMAGE_WINDOW_DOCKED, True)
 
     def load_image(self, filename: str) -> None:
         """Load the image for the given page.
@@ -891,7 +893,7 @@ class MainWindow:
         """
         image_already_loaded = mainimage().is_image_loaded()
         if mainimage().load_image(filename) and not image_already_loaded:
-            if preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED:
+            if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
                 self.dock_image()
             else:
                 self.float_image()

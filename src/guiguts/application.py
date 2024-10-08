@@ -54,7 +54,7 @@ from guiguts.misc_tools import (
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
-from guiguts.root import root, ImageWindowState
+from guiguts.root import root
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
@@ -314,7 +314,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(PrefKey.AUTO_IMAGE, self.auto_image_callback)
         preferences.set_default(PrefKey.BELL_AUDIBLE, True)
         preferences.set_default(PrefKey.BELL_VISUAL, True)
-        preferences.set_default(PrefKey.IMAGE_WINDOW, ImageWindowState.DOCKED)
+        preferences.set_default(PrefKey.IMAGE_WINDOW_DOCKED, True)
         preferences.set_default(PrefKey.RECENT_FILES, [])
         preferences.set_default(PrefKey.LINE_NUMBERS, True)
         preferences.set_default(PrefKey.ORDINAL_NAMES, True)
@@ -434,17 +434,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.menu_file.add_button(
             "~Close", self.close_command, "Cmd+W" if is_mac() else ""
         )
-        proj_menu = Menu(self.menu_file, "~Project")
-        proj_menu.add_button(
-            "Add ~Good/Bad Words to Project Dictionary",
-            self.file.add_good_and_bad_words,
-        )
-        proj_menu.add_button(
-            f"Set ~Scan Image {folder_dir_str()}...",
-            self.file.choose_image_dir,
-        )
-        proj_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)
-        proj_menu.add_button("~Remove Page Marker Flags", self.file.remove_page_flags)
+        self.init_file_project_menu(self.menu_file)
         if not is_mac():
             self.menu_file.add_separator()
             self.menu_file.add_button("E~xit", self.quit_program, "")
@@ -458,6 +448,24 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
                 lambda fn=file: self.open_file(fn),  # type:ignore[misc]
             )
 
+    def init_file_project_menu(self, parent: Menu) -> None:
+        """Create the File->Project menu."""
+        proj_menu = Menu(parent, "~Project")
+        proj_menu.add_button(
+            "Add ~Good/Bad Words to Project Dictionary",
+            self.file.add_good_and_bad_words,
+        )
+        proj_menu.add_button(
+            f"Set ~Scan Image {folder_dir_str()}...",
+            self.file.choose_image_dir,
+        )
+        proj_menu.add_button("Set ~Language(s)...", self.file.set_languages)
+        proj_menu.add_separator()
+        proj_menu.add_button("~Configure Page Labels...", self.show_page_details_dialog)
+        proj_menu.add_separator()
+        proj_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)
+        proj_menu.add_button("~Remove Page Marker Flags", self.file.remove_page_flags)
+
     def init_edit_menu(self) -> None:
         """Create the Edit menu."""
         menu_edit = Menu(menubar(), "~Edit")
@@ -467,6 +475,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         menu_edit.add_separator()
         menu_edit.add_cut_copy_paste()
+        menu_edit.add_button(
+            "R~estore Selection",
+            maintext().restore_selection_ranges,
+        )
         menu_edit.add_separator()
         menu_edit.add_button(
             "Co~lumn Cut", maintext().columnize_cut, "Cmd/Ctrl+Shift+X"
@@ -476,6 +488,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         menu_edit.add_button(
             "Colu~mn Paste", maintext().columnize_paste, "Cmd/Ctrl+Shift+V"
+        )
+        menu_edit.add_button(
+            "To~ggle Column/Regular Selection",
+            maintext().toggle_selection_type,
         )
         menu_edit.add_separator()
         case_menu = Menu(menu_edit, "C~hange Case")
@@ -514,15 +530,37 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Cmd/Ctrl+F",
         )
         menu_search.add_button(
-            "Find ~Next",
+            "Find Ne~xt",
             find_next,
             "Cmd+G" if is_mac() else "F3",
         )
         menu_search.add_button(
-            "Find ~Previous",
+            "Find Pre~vious",
             lambda: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
+        menu_search.add_separator()
+        menu_search.add_button(
+            "Goto ~Line Number...",
+            self.file.goto_line,
+        )
+        menu_search.add_button(
+            "Goto Pa~ge (png)...",
+            self.file.goto_image,
+        )
+        menu_search.add_button(
+            "Goto Page La~bel...",
+            self.file.goto_page,
+        )
+        menu_search.add_button(
+            "Goto ~Previous Page",
+            self.file.prev_page,
+        )
+        menu_search.add_button(
+            "Goto ~Next Page",
+            self.file.next_page,
+        )
+        menu_search.add_separator()
         menu_search.add_button(
             "Find Proofer ~Comments",
             proofer_comment_check,
@@ -647,26 +685,31 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_view = Menu(menubar(), "~View")
         menu_view.add_checkbox(
             "Split ~Text Window",
+            root().split_text_window,
             lambda: maintext().show_peer(),
             lambda: maintext().hide_peer(),
-            root().split_text_window,
         )
         menu_view.add_checkbox(
             "~Dock Image",
+            root().image_window_docked_state,
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
-            root().image_window_state,
         )
-        menu_view.add_button("~Show Image", self.show_image)
+        menu_view.add_checkbox(
+            "~Auto Image",
+            root().auto_image_state,
+        )
+        menu_view.add_button("~See Image", self.show_image)
         menu_view.add_button("~Hide Image", self.hide_image)
+        menu_view.add_separator()
         menu_view.add_button("~Message Log", self.mainwindow.messagelog.show)
         menu_view.add_separator()
         if not is_mac():  # Full Screen behaves oddly on Macs
             menu_view.add_checkbox(
                 "~Full Screen",
+                root().full_screen_var,
                 lambda: root().wm_attributes("-fullscreen", True),
                 lambda: root().wm_attributes("-fullscreen", False),
-                root().full_screen_var,
             )
 
     def init_help_menu(self) -> None:

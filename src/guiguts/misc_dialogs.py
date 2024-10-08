@@ -16,6 +16,7 @@ from guiguts.preferences import (
     PersistentString,
     preferences,
 )
+from guiguts.root import root
 from guiguts.utilities import is_mac, is_windows, is_x11, sound_bell
 from guiguts.widgets import (
     ToplevelDialog,
@@ -116,8 +117,8 @@ class PreferencesDialog(ToplevelDialog):
         ).grid(column=0, row=4, sticky="NEW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
-            text="Automatically show current page image",
-            variable=PersistentBoolean(PrefKey.AUTO_IMAGE),
+            text="Show Character Names in Status Bar",
+            variable=root().ordinal_names_state,
         ).grid(column=0, row=5, sticky="NEW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
         bell_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))

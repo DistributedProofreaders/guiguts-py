@@ -8,7 +8,7 @@ import tkinter as tk
 from types import TracebackType
 from typing import Any
 
-from guiguts.preferences import preferences, PrefKey
+from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.utilities import is_x11
 
 logger = logging.getLogger(__package__)
@@ -22,13 +22,6 @@ class RootWindowState(StrEnum):
     NORMAL = auto()
     ZOOMED = auto()
     FULLSCREEN = auto()
-
-
-class ImageWindowState(StrEnum):
-    """Enum class to store image window states."""
-
-    DOCKED = auto()
-    FLOATED = auto()
 
 
 class Root(tk.Tk):
@@ -46,13 +39,11 @@ class Root(tk.Tk):
             value=preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
             == RootWindowState.FULLSCREEN
         )
-        self.image_window_state = tk.BooleanVar(
-            value=preferences.get(PrefKey.IMAGE_WINDOW) == ImageWindowState.DOCKED
-        )
+        self.image_window_docked_state = PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED)
+        self.auto_image_state = PersistentBoolean(PrefKey.AUTO_IMAGE)
+        self.ordinal_names_state = PersistentBoolean(PrefKey.ORDINAL_NAMES)
         self.allow_config_saves = False
-        self.split_text_window = tk.BooleanVar(
-            value=bool(preferences.get(PrefKey.SPLIT_TEXT_WINDOW))
-        )
+        self.split_text_window = PersistentBoolean(PrefKey.SPLIT_TEXT_WINDOW)
 
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)
