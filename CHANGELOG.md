@@ -1,6 +1,26 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.10
+
+- Checker dialogs now use the same font as the text window
+- Do not jump to position in main window when user uses the first-letter
+  shortcut in Word Frequency
+- Line.column displays in checker dialogs and Word Frequency are now padded
+  and aligned 
+- All features are now accessible via the menus (and hence by keyboard)
+- Find Asterisks w/o Slashes feature added
+- Words reported by spell checker can be added to global user dictionary
+- Installation notes mention that either Python 3.11 or 3.12 can be used
+
+### Bug Fixes
+
+- Pasting didn't overwrite existing selection on Linux
+- WF count and search did not handle word boundaries consistently
+- Highlighting of spelling errors preceded by a single quote was wrong
+- Fit-to-height sometimes failed in image viewer
+
+
 ## Version 2.0.0-alpha.9
 
 - Word Frequency Italic/Bold check is much faster, and when sorted
