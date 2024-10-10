@@ -1072,7 +1072,13 @@ class MainText(tk.Text):
         """Do column paste if multiple ranges selected, else default paste."""
         # Afterwards, make sure insert cursor is visible
         self.after_idle(lambda: self.see(tk.INSERT))
-        if len(self.selected_ranges()) <= 1:
+        self.undo_block_begin()  # Undo it all in one block
+        sel_range = self.selected_ranges()
+        # Linux default behavior doesn't clear any current selection when pasting,
+        # so do it manually (on all platforms - harmless on Windows/Mac)
+        if len(sel_range) == 1:
+            self.delete(sel_range[0].start.index(), sel_range[0].end.index())
+        if len(sel_range) <= 1:
             return ""  # Permit default behavior to happen
         self.column_paste()
         return "break"  # Skip default behavior
