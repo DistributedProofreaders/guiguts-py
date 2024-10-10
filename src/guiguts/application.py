@@ -637,7 +637,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button(
             "~Spelling...",
             lambda: spell_check(
-                self.file.project_dict, self.file.add_good_word_to_project_dictionary
+                self.file.project_dict,
+                self.file.add_good_word_to_project_dictionary,
+                self.file.add_good_word_to_global_dictionary,
             ),
         )
         menu_tools.add_button("PP~txt...", lambda: pptxt(self.file.project_dict))

@@ -767,6 +767,17 @@ class File:
         if self.project_dict.add_good_word(word):
             self.project_dict.save(self.filename)
 
+    def add_good_word_to_global_dictionary(self, word: str) -> None:
+        """Add a good word to the user global dictionary for the current language.
+
+        Args:
+            word: The word to be added.
+        """
+        main_lang = maintext().get_language_list()[0]
+        path = Path(preferences.prefsdir, f"dict_{main_lang}_user.txt")
+        with path.open("a", encoding="utf-8") as fp:
+            fp.write(f"{word}\n")
+
     def rewrap_selection(self) -> None:
         """Wrap selected text."""
         ranges = maintext().selected_ranges()

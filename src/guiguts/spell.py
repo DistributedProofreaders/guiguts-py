@@ -295,7 +295,7 @@ class SpellChecker:
         """Add dictionary words for given language.
 
         Attempts to load default and user dictionaries.
-        Outputs warning if default dictionary doesn't exits.
+        Outputs warning if default dictionary doesn't exist.
         Raises DictionaryNotFoundError exception if neither dictionary exists.
 
         Args:
@@ -339,7 +339,9 @@ def get_spell_checker() -> SpellChecker | None:
 
 
 def spell_check(
-    project_dict: ProjectDict, add_project_word_callback: Callable[[str], None]
+    project_dict: ProjectDict,
+    add_project_word_callback: Callable[[str], None],
+    add_global_word_callback: Callable[[str], None],
 ) -> None:
     """Spell check the currently loaded file."""
 
@@ -358,7 +360,9 @@ def spell_check(
 
     checker_dialog = CheckerDialog.show_dialog(
         "Spelling Check Results",
-        rerun_command=lambda: spell_check(project_dict, add_project_word_callback),
+        rerun_command=lambda: spell_check(
+            project_dict, add_project_word_callback, add_global_word_callback
+        ),
         process_command=process_spelling,
     )
     ToolTip(
@@ -392,24 +396,43 @@ def spell_check(
         "Do not show errors that appear more than this number of times",
     )
 
+    def add_to_global_dict() -> None:
+        """Add current word to global dictionary."""
+        current_index = checker_dialog.current_entry_index()
+        if current_index is None:
+            return
+        checker_entry = checker_dialog.entries[current_index]
+        if checker_entry.text_range:
+            word = checker_entry.text.split(maxsplit=1)[0]
+            add_global_word_callback(word)
+            checker.dictionary[word] = True
+        checker_dialog.remove_entry_current(all_matching=True)
+
+    lang = maintext().get_language_list()[0]
+    global_dict_button = ttk.Button(
+        frame,
+        text=f"Add to Global Dict ({lang})",
+        command=add_to_global_dict,
+    )
+    global_dict_button.grid(column=2, row=0, sticky="NSW")
     project_dict_button = ttk.Button(
         frame,
         text="Add to Project Dict",
         command=lambda: checker_dialog.process_remove_entry_current(all_matching=True),
     )
-    project_dict_button.grid(column=2, row=0, sticky="NSW")
+    project_dict_button.grid(column=3, row=0, sticky="NSW")
     skip_button = ttk.Button(
         frame,
         text="Skip",
         command=lambda: checker_dialog.remove_entry_current(all_matching=False),
     )
-    skip_button.grid(column=3, row=0, sticky="NSW")
+    skip_button.grid(column=4, row=0, sticky="NSW")
     skip_all_button = ttk.Button(
         frame,
         text="Skip All",
         command=lambda: checker_dialog.remove_entry_current(all_matching=True),
     )
-    skip_all_button.grid(column=4, row=0, sticky="NSW")
+    skip_all_button.grid(column=5, row=0, sticky="NSW")
 
     checker_dialog.reset()
     # Construct opening line describing the search
