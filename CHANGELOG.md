@@ -19,6 +19,7 @@
 - WF count and search did not handle word boundaries consistently
 - Highlighting of spelling errors preceded by a single quote was wrong
 - Fit-to-height sometimes failed in image viewer
+- Double clicking Re-run button in checker dialogs caused an error
 
 
 ## Version 2.0.0-alpha.9
