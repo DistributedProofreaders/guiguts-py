@@ -457,7 +457,14 @@ class CheckerDialog(ToplevelDialog):
         else:
             sort_key = self.rowcol_key
         self.entries.sort(key=sort_key)
-        self.text.delete("1.0", tk.END)
+        # By double-clicking button, user can end up with two versions of tool running
+        # and then erroring on this line - trap it here and just return, allowing other
+        # version of tool to run.
+        try:
+            self.text.delete("1.0", tk.END)
+        except tk.TclError:
+            Busy.unbusy()
+            return
         self.count_linked_entries = 0
         self.count_suspects = 0
 
