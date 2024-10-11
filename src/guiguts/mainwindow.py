@@ -428,7 +428,8 @@ class MainImage(tk.Frame):
         image = image.resize(
             size=(scaled_width, scaled_height), resample=Image.Resampling.LANCZOS
         )
-        image.putalpha(190)  # Reduce contrast by making slightly transparent
+        alpha_value = 180 if maintext().is_dark_theme() else 200
+        image.putalpha(alpha_value)  # Reduce contrast by making slightly transparent
         self.imagetk = ImageTk.PhotoImage(image)
         if self.imageid:
             self.canvas.delete(self.imageid)
