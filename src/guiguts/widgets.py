@@ -793,4 +793,7 @@ class Busy:
                 widget.update()
             else:
                 # Remove old widgets from register
-                del Busy._busy_widget_cursors[widget]
+                try:
+                    del Busy._busy_widget_cursors[widget]
+                except KeyError:
+                    pass  # OK if widget has already been removed
