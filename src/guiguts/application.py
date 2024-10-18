@@ -15,7 +15,7 @@ import webbrowser
 from guiguts.checkers import CheckerSortType
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
-from guiguts.footnotes import footnote_check
+from guiguts.footnotes import footnote_check, FootnoteIndexStyle
 from guiguts.illo_sn_fixup import illosn_check
 from guiguts.highlight import (
     highlight_single_quotes,
@@ -348,6 +348,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(
             PrefKey.LEVENSHTEIN_EDIT_DISTANCE, LevenshteinEditDistance.ONE
         )
+        preferences.set_default(PrefKey.FOOTNOTE_INDEX_STYLE, FootnoteIndexStyle.NUMBER)
         preferences.set_default(PrefKey.WRAP_LEFT_MARGIN, 0)
         preferences.set_default(PrefKey.WRAP_RIGHT_MARGIN, 72)
         preferences.set_default(PrefKey.WRAP_BLOCKQUOTE_INDENT, 2)
