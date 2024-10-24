@@ -2,6 +2,7 @@
 
 import logging
 from enum import StrEnum, auto
+import tkinter as tk
 from tkinter import ttk
 from typing import Optional
 import regex as re
@@ -25,6 +26,8 @@ logger = logging.getLogger(__package__)
 _the_footnote_checker: Optional["FootnoteChecker"] = (
     None  # pylint: disable=invalid-name
 )
+
+INSERTION_MARK_PREFIX = "ShadowFootnoteMark"
 
 
 class FootnoteIndexStyle(StrEnum):
@@ -149,6 +152,11 @@ class FootnoteChecker:
     def autoset_chapter_lz(self) -> None:
         """Insert a 'FOOTNOTES:' LZ header line before each chapter break."""
 
+        # If the last line of the file is not a blank line then add one.
+        end_of_file = maintext().end().index()
+        if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
+            self.add_blank_line_at_eof()
+
         search_range = IndexRange(maintext().start(), maintext().end())
         match_regex = r"\n\n\n\n\n"
         # Loop, finding all chapter breaks; i.e. block of 4 blank lines.
@@ -160,147 +168,177 @@ class FootnoteChecker:
             maintext().insert(
                 f"{chpt_break_start} +1l linestart", "\n\n" + "FOOTNOTES:" + "\n"
             )
-            # BASED ON end_point = maintext().rowcol(f"{end_match.rowcol.index()}+1c")
             restart_point = maintext().rowcol(f"{chpt_break_start} +4l")
             search_range = IndexRange(restart_point, maintext().end())
         # The file has changed so rebuild an/fn records and refresh dialog.
-        footnote_check()
+        self.run_check()
+        self.define_buttons()
+        display_footnote_entries()
 
     def autoset_end_lz(self) -> None:
         """Insert a 'FOOTNOTES:' LZ header line at end of file."""
-        last_line_end = maintext().end().index()
+
+        # If the last line of the file is not a blank line then add one.
+        end_of_file = maintext().end().index()
+        if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
+            self.add_blank_line_at_eof()
+
+        end_of_file = maintext().end().index()
         # Insert the 'FOOTNOTES:' LZ header line after last line of file.
-        maintext().insert(
-            f"{last_line_end} +1l linestart", "\n\n" + "FOOTNOTES:" + "\n"
-        )
+        maintext().insert(f"{end_of_file} +1l linestart", "\n\n" + "FOOTNOTES:" + "\n")
+
+    def clear_insertion_marks(self) -> None:
+        """Clear insertion marks created at paragraph ends."""
+        for mark in maintext().mark_names():
+            if mark.startswith(INSERTION_MARK_PREFIX):
+                maintext().mark_unset(mark)
+
+    def add_blank_line_at_eof(self) -> None:
+        """Add a blank line at end of the file.
+
+        An issue arises if the last line of the file is a footnote.
+        Inserting a blank line will place it before its end "Checker"
+        mark if tk.RIGHT gravity was specified when the mark was set.
+        We want the blank line placed after the mark. This avoids
+        problems if that footnote is respositioned.
+
+        There will be at most one such "Checker" mark in this case.
+        """
+
+        # Note the index of current end of file.
+        end_of_file = maintext().end().index()
+        blank_line_inserted = False
+        mark_name = end_of_file  # Initialise start position of mark search.
+        while mark_name := maintext().mark_next(mark_name):  # type: ignore[assignment]
+            if mark_name.startswith("Checker"):
+                maintext().mark_unset(mark_name)
+                maintext().insert(end_of_file, "\n")
+                # Set mark again at its original position; i.e. the old end of file.
+                maintext().set_mark_position(
+                    mark_name,
+                    maintext().rowcol(end_of_file),
+                    gravity=tk.RIGHT,
+                )
+                blank_line_inserted = True
+                break
+        if not blank_line_inserted:
+            maintext().insert(end_of_file, "\n")
 
     def move_footnotes_to_paragraphs(self) -> None:
         """Implements a button command"""
         assert _the_footnote_checker is not None
 
-        # Each footnote anchored in a paragraph is moved and inserted immediately after
-        # the blank line that ends the paragraph containing its anchor. No landing zone
-        # headers ('FOOTNOTES:') are added. The moving of footnotes is started from the
-        # last anchor in the file and works upward to the first anchor. After each move
-        # the anchor and footnote records must be updated.
+        # Move footnotes beneath the paragraphs in which they are anchored.
+
+        an_records = self.get_an_records()
+        fn_records = self.get_fn_records()
 
         # If the last line of the file is not a blank line then add one.
         end_of_file = maintext().end().index()
         if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
-            maintext().insert(end_of_file, "\n")
-
-        an_records = self.get_an_records()
-        fn_records = self.get_fn_records()
-        an_records_reversed = an_records.copy()
-        an_records_reversed.reverse()
+            self.add_blank_line_at_eof()
 
         # First pass.
 
-        # Find footnotes and insert a shadow copy of each FN at the required place
-        # below the paragraph in which they are anchored. Leave the original FNs
-        # in place for the moment. Anchor and footnote record arrays are rebuilt
-        # each time a shadow footnote is inserted. Their records, of course, will
-        # still refer to the original footnotes; the shadow footnotes are masked
-        # during this pass.
+        # Set a mark before last blank line that separates a paragraph from the start
+        # of the next paragraph. The mark is the insertion point to which one or more
+        # footnotes will be inserted. The gravity setting for the marks is tk.RIGHT
+        # so that when more than one footnote is inserted at the same mark, each
+        # footnote will appear to the left of the mark so ensuring that the ascending
+        # order of footnote labels is maintained.
 
-        for index in range(0, len(an_records)):
-            #an_record = an_records_reversed[index]
-            an_record = an_records[index]
+        file_end = maintext().end().index()
+        match_regex = r"^$"
+        an_record_index = 0
+        for an_record in an_records:
             # Get the record of the footnote it anchors.
             fn_record = fn_records[an_record.fn_index]
-            fn_start = fn_record.start.index()
-            fn_end = fn_record.end.index()
-            fn_lines = maintext().get(fn_start, fn_end)
-            # Find the end of paragraph in which the footnote anchor is
-            # located. Start at the line containing the anchor.
-            search_range = IndexRange(an_record.start, maintext().end())
-            match_regex = r"^$"
-            mid_para_fn = False
+            fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
+            fn_cur_end = self.checker_dialog.mark_from_rowcol(fn_record.end)
+
+            fn_lines = maintext().get(fn_cur_start, fn_cur_end)
+            # Find the end of paragraph in which the footnote anchor is located.
+            # Start searching from the line containing the anchor.
+            search_range = IndexRange(
+                an_record.start, maintext().rowcol(f"{file_end} + 1l linestart")
+            )
             while blank_line_match := maintext().find_match(
                 match_regex, search_range, regexp=True
             ):
-                # This blank line might be one separating a mid-paragraph footnote
-                # from the text above so would not be the end of paragraph.
+                # This blank line might be one separating a footnote from the paragraph
+                # text above or from a preceding footnote. Footnotes are all assumed to
+                # be 'mid-paragraph' footnotes so the search continues until the final
+                # blank line is reached that separates all above from the first line of
+                # a new paragraph or is the end of file.
                 blank_line_start = blank_line_match.rowcol.index()
                 next_line_text = maintext().get(
                     f"{blank_line_start} +1l linestart",
                     f"{blank_line_start} +1l lineend",
                 )
-                # If the line below this blank line is not (the first line of)
-                # a footnote then we have found the 'end of paragraph'.
-                if next_line_text[0:10] != ("[Footnote " or "[Xootnote "):
-                    # Was the actual end of paragraph blank line.
+                # If the line below this blank line is not (the first line of) a
+                # footnote then we have found the 'end of paragraph' separator.
+                if next_line_text[0:10] != "[Footnote ":
                     break
-                # Otherwise we have landed on a blank line above one or more mid-paragraph
-                # footnotes.
-                restart_search_point = maintext().rowcol(f"{blank_line_start} +1l linestart")
+                # Otherwise we have landed on a blank line above one or more footnotes.
+                restart_search_point = maintext().rowcol(
+                    f"{blank_line_start} +1l linestart"
+                )
                 # Keep looking for a suitable blank line at which to insert footnote.
-                search_range = IndexRange(restart_search_point, maintext().end())
+                # search_range = IndexRange(restart_search_point, maintext().end())
+                search_range = IndexRange(
+                    restart_search_point,
+                    maintext().rowcol(f"{file_end} + 1l linestart"),
+                )
+            # End while loop
+
             # If the insert point is a blank line immediately after a Page Marker, place
-            # the insert point immediately before the Page Marker as GG1 does.
+            # the insert point at the start of the Page Marker as GG1 does - recall that
+            # the gravity setting used for marks is tk.RIGHT.
             line_before = maintext().get(
-                    f"{blank_line_start} -1l linestart", f"{blank_line_start} -1l lineend"
+                f"{blank_line_start} -1l linestart", f"{blank_line_start} -1l lineend"
             )
-            # Insert a shadow copy of the footnote and leave the original in place for the moment.
-            # A shadow copy is the footnote lines with the beginning '[F' changed to '[X'.
-            fn_lines = "[X" + fn_lines[2:]
-            # Insert the shadow copy of the footnote line(s) after the blank
-            # line..
             if line_before[0:11] == "-----File: ":
-                maintext().insert(f"{blank_line_start} -1l linestart", fn_lines + "\n")
+                mark_point = maintext().rowcol(f"{blank_line_start} -1l")
+                maintext().set_mark_position(
+                    f"{INSERTION_MARK_PREFIX}{an_record_index}",
+                    mark_point,
+                    gravity=tk.RIGHT,
+                )
             else:
-                maintext().insert(f"{blank_line_start} lineend", fn_lines + "\n")
-            # The file has changed so update anchor and footnote records.
-            self.run_check()
-            an_records = self.get_an_records()
-            an_records_reversed = an_records.copy()
-            an_records_reversed.reverse()
-            fn_records = self.get_fn_records()
+                # Place the insert point at the start of the blank line we've landed on.
+                # Recall that the gravity setting used for marks is tk.RIGHT.
+                mark_point = maintext().rowcol(f"{blank_line_start}")
+                maintext().set_mark_position(
+                    f"{INSERTION_MARK_PREFIX}{an_record_index}",
+                    mark_point,
+                    gravity=tk.RIGHT,
+                )
+            an_record_index += 1
 
-        # Second pass.
+        # Second pass
 
-        # Remove the orginal footnotes starting from the bottom of the file.
-        # fn_records = self.get_fn_records()
-        fn_records_reversed = fn_records.copy()
-        fn_records_reversed.reverse()
-        for fn_record in fn_records_reversed:
-            # Get the record of the footnote it anchors.
-            fn_start = fn_record.start.index()
-            fn_end = fn_record.end.index()
-            # Delete the footnote and the blank line above it.
-            maintext().delete(f"{fn_start} -1l linestart", f"{fn_end} +1l linestart")
+        fn_record_index = 0
+        for fn_record in fn_records:
+            fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
+            fn_cur_end = self.checker_dialog.mark_from_rowcol(fn_record.end)
+            fn_lines = maintext().get(fn_cur_start, fn_cur_end)
 
-        # Third pass.
-
-        # Change each shadow footnote into a proper one then rebuild the anchor
-        # and footnote record arrays, etc.
-
-        self.reset()
-        search_range = IndexRange(maintext().start(), maintext().end())
-        match_regex = r"\[Xootnote"
-        # Loop, finding all shadow footnotes (i.e. beginning with "[Xootnote").
-        while beg_match := maintext().find_match(
-            match_regex, search_range, regexp=True, nocase=True
-        ):
-            fn_start = beg_match.rowcol.index()
-            fn_line = maintext().get(f"{fn_start} linestart", f"{fn_start} lineend")
-            # Replace the '[X' of shadow footnote with '[F'.
-            replacement_line = "[F" + fn_line[2:]
-            # Change shadow footnote into a proper one.
-            maintext().delete(fn_start, f"{fn_start} lineend")
-            maintext().insert(fn_start, "\n" + replacement_line)
-            # Restart search for next shadow FN from end of current matched line
-            fn_endpoint = maintext().rowcol(f"{fn_start} lineend")
-            search_range = IndexRange(fn_endpoint, maintext().end())
+            maintext().delete(
+                f"{fn_cur_start} -1l linestart", f"{fn_cur_end} +1l linestart"
+            )
+            maintext().insert(
+                f"{INSERTION_MARK_PREFIX}{fn_record_index}", "\n" + fn_lines + "\n"
+            )
+            fn_record_index += 1
 
         # End of final pass over footnotes.
 
         # Set flag to disable the two 'move FN' buttons when dialog refreshed
         # so user cannot execute a second FN move that might corrupt the file.
         self.fns_have_been_moved = True
-        # The original footnotes have been deleted and their shadow replacements
-        # are now proper footnotes in the correct positions below paragraphs.
-        # Rebuild anchor and footnote record arrays and update the dialog, etc.
+        # Footnotes have been moved. Rebuild anchor and footnote record arrays
+        # to reflect the changes.
+        self.clear_insertion_marks()
         self.run_check()
         self.define_buttons()
         display_footnote_entries()
@@ -325,9 +363,9 @@ class FootnoteChecker:
         fn_records_reversed = fn_records.copy()
         fn_records_reversed.reverse()
         for fn_record in fn_records_reversed:
-            fn_start = fn_record.start.index()
-            fn_end = fn_record.end.index()
-            fn_lines = maintext().get(fn_start, fn_end)
+            fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
+            fn_cur_end = self.checker_dialog.mark_from_rowcol(fn_record.end)
+            fn_lines = maintext().get(fn_cur_start, fn_cur_end)
             # Is there an LZ below this footnote in the file?
             # If not, create one and move footnote below it.
             # Otherwise move footnote below the LZ that was
@@ -345,7 +383,7 @@ class FootnoteChecker:
                 # Delete the original footnote line(s) along with the
                 # blank line above it.
                 maintext().delete(
-                    f"{fn_start} -1l linestart", f"{fn_end} +1l linestart"
+                    f"{fn_cur_start} -1l linestart", f"{fn_cur_end} +1l linestart"
                 )
             else:
                 # This branch should be entered 0 or 1 times only.
@@ -367,7 +405,7 @@ class FootnoteChecker:
                 # branch above because there is now a LZ below
                 # those footnotes.
 
-                # Add the LZ at end of file.
+                # Add a LZ at end of file.
                 self.autoset_end_lz()
                 below_lz = maintext().end().index()
                 # Insert the copy of the footnote line(s) below the new LZ.
@@ -375,13 +413,18 @@ class FootnoteChecker:
                 # Delete the original footnote line(s) along with the blank
                 # line above it.
                 maintext().delete(
-                    f"{fn_start} -1l linestart", f"{fn_end} +1l linestart"
+                    f"{fn_cur_start} -1l linestart", f"{fn_cur_end} +1l linestart"
                 )
+                # The last line of the file will be (the last line of) a
+                # footnote. Add a blank line after it.
+                self.add_blank_line_at_eof()
         # Set flag to disable the two 'move FN' buttons when dialog refreshed
         # so user cannot execute a second FN move that might corrupt the file.
         self.fns_have_been_moved = True
         # The file has changed so rebuild an/fn records and refresh dialog.
-        footnote_check()
+        self.run_check()
+        self.define_buttons()
+        display_footnote_entries()
 
     def tidy_footnotes(self) -> None:
         """Tidy footnotes after a move.
@@ -391,12 +434,17 @@ class FootnoteChecker:
         assert _the_footnote_checker is not None
         fn_records = _the_footnote_checker.get_fn_records()
         for fn_record in fn_records:
-            fn_start = fn_record.start.index()
-            fn_end = fn_record.end.index()
-            fn_label_and_text_part = maintext().get(f"{fn_start} +10c", f"{fn_end} -1c")
+            fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
+            fn_cur_end = self.checker_dialog.mark_from_rowcol(fn_record.end)
+            fn_label_and_text_part = maintext().get(
+                f"{fn_cur_start} +10c", f"{fn_cur_end} -1c"
+            )
             fn_label_and_text_part = re.sub(r"(^.+?):", r"[\1]", fn_label_and_text_part)
-            maintext().delete(fn_start, fn_end)
-            maintext().insert(fn_start, fn_label_and_text_part)
+            maintext().delete(fn_cur_start, fn_cur_end)
+            maintext().insert(fn_cur_start, fn_label_and_text_part)
+        self.run_check()
+        self.define_buttons()
+        display_footnote_entries()
 
     def get_anchor_hilite_columns(
         self, an_record: AnchorRecord, an_line_text: str
@@ -432,46 +480,21 @@ class FootnoteChecker:
         an_end = an_start + len(f"[{fn_label}]")
         return an_start, an_end
 
-    def generate_letter_combinations(self) -> dict:
-        """Return a dictionary of letter labels.
-
-        1->A,...,26->Z, 27->AA, 28->AB,...
-
-        Generates 1,999 combinations (A->BXW). This is an arbitrary number
-        which can be decreased (or increased in the unlikely event of a
-        PPer processing a text with more than 1,999 footnotes and they are
-        to be reindexed using letters).
-
-        NB A dictionary is generated because an integer value cannot be converted
-        using the usual aritmetic to convert from one base (10) to another base (26)
-        since the letter sequence we want, notionally base 26, does not include a
-        'zero' value.
+    def alpha(self, label: int) -> str:
+        """Converts given footnote number to alphabetic form:
+        A,B,...Z,AA,AB,...AZ,BA,BB,...ZZ,AAA,AAB,...ZZZ
+        Wraps back to AAA,AAB,etc., if >= 18728 (26^3+26^2+26) footnotes
         """
-        letters = " ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        letter_seq_dict = {}
-        count = 1
-        # A to Z
-        for i in range(1, 27):
-            letter_seq_dict[count] = letters[i]
-            count += 1
-        # AA to ZZ
-        for i in range(1, 27):
-            for j in range(1, 27):
-                letter_seq_dict[count] = letters[i] + letters[j]
-                count += 1
-        # AAA to ZZZ (but stops well before that last combo)
-        for i in range(1, 27):
-            if count == 2000:
-                break
-            for j in range(1, 27):
-                if count == 2000:
-                    break
-                for k in range(1, 27):
-                    letter_seq_dict[count] = letters[i] + letters[j] + letters[k]
-                    count += 1
-                    if count == 2000:
-                        break
-        return letter_seq_dict
+
+        label -= 1
+        _single = label % 26
+        _double = int((label - 26) / 26) % 26
+        _triple = int((label - 26 - 676) / 676) % 26
+        #
+        single_ch = chr(65 + _single)
+        double_ch = (chr(65 + _double)) if label >= 26 else ""
+        triple_ch = (chr(65 + _triple)) if label >= (676 + 26) else ""
+        return triple_ch + double_ch + single_ch
 
     def set_anchor(self) -> None:
         """Insert anchor using label of selected footnote."""
@@ -487,9 +510,11 @@ class FootnoteChecker:
         maintext().insert(f"{insert_index}", f"[{fn_label}]")
 
     def set_lz_at_cursor(self) -> None:
-        """Insert FOOTNOTE: header at cursor."""
+        """Insert FOOTNOTES: header at cursor."""
         insert_index = maintext().get_insert_index().index()
-        maintext().insert(f"{insert_index}", "\n\n" + "FOOTNOTES:" + "\n")
+        # Place FOOTNOTES: header at cursor; normally the header is
+        # spaced two lines down from chapter end or end of book.
+        maintext().insert(f"{insert_index}", "FOOTNOTES:" + "\n")
 
     def reindex(self) -> None:
         """Reindex all footnotes using fn_index_style
@@ -506,8 +531,6 @@ class FootnoteChecker:
         index_style = self.fn_index_style.get()
         an_records = self.get_an_records()
         fn_records = self.get_fn_records()
-        if index_style == "letter":
-            letters_dict = self.generate_letter_combinations()
         for index in range(1, len(an_records) + 1):
             if index_style == "number":
                 label = index
@@ -515,9 +538,7 @@ class FootnoteChecker:
                 label = roman.toRoman(index)
                 label = label + "."  # type: ignore[operator]
             elif index_style == "letter":
-                label = letters_dict[
-                    index
-                ]  # pylint: disable=possibly-used-before-assignment
+                label = self.alpha(index)  # type: ignore[assignment]
             else:
                 # Default
                 label = index
