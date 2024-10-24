@@ -79,6 +79,8 @@ class PrefKey(StrEnum):
     IMAGE_FLOAT_GEOMETRY = auto()
     IMAGE_DOCK_SASH_COORD = auto()
     IMAGE_SCALE_FACTOR = auto()
+    SCANNOS_FILENAME = auto()
+    SCANNOS_HISTORY = auto()
 
 
 class Preferences:

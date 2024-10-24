@@ -1,0 +1,285 @@
+{
+"wholeword": true,
+"scannos": [
+{
+"match": "1",
+"replacement": "I"
+},
+{
+"match": "111",
+"replacement": "Ill"
+},
+{
+"match": "ail",
+"replacement": "all"
+},
+{
+"match": "arc",
+"replacement": "are"
+},
+{
+"match": "arid",
+"replacement": "and"
+},
+{
+"match": "bad",
+"replacement": "had"
+},
+{
+"match": "ball",
+"replacement": "hall"
+},
+{
+"match": "band",
+"replacement": "hand"
+},
+{
+"match": "bar",
+"replacement": "her"
+},
+{
+"match": "bat",
+"replacement": "but"
+},
+{
+"match": "be",
+"replacement": "he"
+},
+{
+"match": "bead",
+"replacement": "head"
+},
+{
+"match": "beads",
+"replacement": "heads"
+},
+{
+"match": "bear",
+"replacement": "hear"
+},
+{
+"match": "bit",
+"replacement": "hit"
+},
+{
+"match": "bo",
+"replacement": "be"
+},
+{
+"match": "boon",
+"replacement": "been"
+},
+{
+"match": "borne",
+"replacement": "home"
+},
+{
+"match": "bow",
+"replacement": "how"
+},
+{
+"match": "bumbled",
+"replacement": "humbled"
+},
+{
+"match": "car",
+"replacement": "ear"
+},
+{
+"match": "carnage",
+"replacement": "carriage"
+},
+{
+"match": "carne",
+"replacement": "came"
+},
+{
+"match": "cast",
+"replacement": "east"
+},
+{
+"match": "cat",
+"replacement": "eat"
+},
+{
+"match": "CHATTER",
+"replacement": "CHAPTER"
+},
+{
+"match": "CHARTER",
+"replacement": "CHAPTER"
+},
+{
+"match": "cheek",
+"replacement": "check"
+},
+{
+"match": "clay",
+"replacement": "day"
+},
+{
+"match": "coining",
+"replacement": "coming"
+},
+{
+"match": "comer",
+"replacement": "corner"
+},
+{
+"match": "die",
+"replacement": "she"
+},
+{
+"match": "docs",
+"replacement": "does"
+},
+{
+"match": "ease",
+"replacement": "case"
+},
+{
+"match": "fail",
+"replacement": "fall"
+},
+{
+"match": "fax",
+"replacement": "far"
+},
+{
+"match": "fee",
+"replacement": "he"
+},
+{
+"match": "ha",
+"replacement": "he"
+},
+{
+"match": "hare",
+"replacement": "have"
+},
+{
+"match": "haying",
+"replacement": "having"
+},
+{
+"match": "hie",
+"replacement": "his"
+},
+{
+"match": "ho",
+"replacement": "he"
+},
+{
+"match": "hut",
+"replacement": "but"
+},
+{
+"match": "is",
+"replacement": "as"
+},
+{
+"match": "lie",
+"replacement": "he"
+},
+{
+"match": "lime",
+"replacement": "time"
+},
+{
+"match": "loth",
+"replacement": "10th"
+},
+{
+"match": "m",
+"replacement": "in"
+},
+{
+"match": "mall",
+"replacement": "mail"
+},
+{
+"match": "modem",
+"replacement": "modern"
+},
+{
+"match": "meat",
+"replacement": "ment"
+},
+{
+"match": "Ms",
+"replacement": "his"
+},
+{
+"match": "OP",
+"replacement": "OF"
+},
+{
+"match": "ray",
+"replacement": "away"
+},
+{
+"match": "ray",
+"replacement": "my"
+},
+{
+"match": "ringer",
+"replacement": "finger"
+},
+{
+"match": "ringers",
+"replacement": "fingers"
+},
+{
+"match": "rioted",
+"replacement": "noted"
+},
+{
+"match": "tho",
+"replacement": "the"
+},
+{
+"match": "tie",
+"replacement": "the"
+},
+{
+"match": "tier",
+"replacement": "her"
+},
+{
+"match": "tight",
+"replacement": "right"
+},
+{
+"match": "tile",
+"replacement": "the"
+},
+{
+"match": "tiling",
+"replacement": "thing"
+},
+{
+"match": "tip",
+"replacement": "up"
+},
+{
+"match": "tor",
+"replacement": "for"
+},
+{
+"match": "tram",
+"replacement": "train"
+},
+{
+"match": "tune",
+"replacement": "time"
+},
+{
+"match": "wen",
+"replacement": "well"
+},
+{
+"match": "yon",
+"replacement": "you"
+}
+]
+}

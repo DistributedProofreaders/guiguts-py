@@ -526,9 +526,12 @@ class SearchDialog(ToplevelDialog):
 
         match_text = maintext().get(start_index, end_index)
         if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
+            flags = (
+                0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
+            )
             try:
                 replace_string = get_regex_replacement(
-                    search_string, replace_string, match_text
+                    search_string, replace_string, match_text, flags=flags
                 )
             except re.error as e:
                 self.display_message(f"Regex error: {str(e)}")
@@ -585,6 +588,8 @@ class SearchDialog(ToplevelDialog):
             self.display_message(message_from_regex_exception(e))
             return
 
+        flags = 0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
+
         # Work backwards so replacements don't affect future match locations
         for match in reversed(matches):
             start_index = match.rowcol.index()
@@ -593,7 +598,7 @@ class SearchDialog(ToplevelDialog):
             if regexp:
                 try:
                     replace_match = get_regex_replacement(
-                        search_string, replace_string, match_text
+                        search_string, replace_string, match_text, flags=flags
                     )
                 except re.error as e:
                     self.display_message(f"Regex error: {str(e)}")
@@ -746,7 +751,10 @@ def get_search_start(backwards: bool) -> IndexRowCol:
 
 
 def get_regex_replacement(
-    search_regex: str, replace_regex: str, match_text: str
+    search_regex: str,
+    replace_regex: str,
+    match_text: str,
+    flags: int,
 ) -> str:
     """Find actual replacement string, given the search & replace regexes
     and the matching text.
@@ -754,17 +762,16 @@ def get_regex_replacement(
     Raises re.error exception if regexes are bad
 
     Args:
-        search_regex:
-        replace_regex:
-        match_text:
+        search_regex: Regex that was used for search
+        replace_regex: Regex used for replacement
+        match_text: The text that was actually matched
+        flags: "re.sub" flags to pass when performing the regex substitution
 
     Returns:
         Replacement string.
     """
     temp_bs = "\x9f"
     # Unused character to temporarily replace backslash in `\C`, `\E`
-
-    flags = 0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
 
     # Since below we do a sub on the match text, rather than the whole text, we need
     # to handle start/end word boundaries and look-behind/ahead by removing them.

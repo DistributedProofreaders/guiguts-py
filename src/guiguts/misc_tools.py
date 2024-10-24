@@ -1,15 +1,17 @@
 """Miscellaneous tools."""
 
 from enum import Enum, StrEnum, auto
+import importlib.resources
 import logging
 import tkinter as tk
-from tkinter import ttk, messagebox
-from typing import Callable, Optional
+from tkinter import ttk, messagebox, filedialog
+from typing import Callable, Optional, Any
 import unicodedata
 
 import regex as re
 
 from guiguts.checkers import CheckerDialog, CheckerEntry
+from guiguts.data import scannos
 from guiguts.file import the_file
 from guiguts.maintext import maintext
 from guiguts.preferences import (
@@ -18,14 +20,16 @@ from guiguts.preferences import (
     preferences,
     PersistentBoolean,
 )
+from guiguts.search import get_regex_replacement
 from guiguts.utilities import (
     IndexRowCol,
     IndexRange,
     cmd_ctrl_string,
     is_mac,
     sound_bell,
+    load_dict_from_json,
 )
-from guiguts.widgets import ToolTip, ToplevelDialog
+from guiguts.widgets import ToolTip, ToplevelDialog, Combobox
 
 logger = logging.getLogger(__package__)
 
@@ -34,6 +38,9 @@ POEM_TYPES = "[Pp]"
 ALL_BLOCKS_REG = f"[{re.escape('#$*FILPXCR')}]"
 QUOTE_APOS_REG = "[[:alpha:]]’[[:alpha:]]"
 NEVER_MATCH_REG = r"(?!)"
+DEFAULT_SCANNOS_DIR = importlib.resources.files(scannos)
+DEFAULT_REGEX_SCANNOS = "regex.json"
+DEFAULT_STEALTH_SCANNOS = "en-common.json"
 
 
 def tool_save() -> bool:
@@ -1338,3 +1345,350 @@ class TextMarkupConvertorDialog(ToplevelDialog):
             found = True
         if not found:
             sound_bell()
+
+
+class Scanno(dict):
+    """Dictionary to hold info about one scanno type.
+
+    Implemented as a dictionary to aid load from JSON file."""
+
+    MATCH = "match"
+    REPLACEMENT = "replacement"
+    HINT = "hint"
+
+    def __init__(self, match: str, replacement: str, hint: str) -> None:
+        self[Scanno.MATCH] = match
+        self[Scanno.REPLACEMENT] = replacement
+        self[Scanno.HINT] = hint
+
+
+class ScannoCheckerDialog(CheckerDialog):
+    """Dialog to handle stealth scanno checks."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize scanno checker dialog."""
+        super().__init__(*args, **kwargs)
+
+        ToolTip(
+            self.text,
+            "\n".join(
+                [
+                    "Left click: Select & find occurrence of scanno",
+                    "Right click: Remove occurrence of scanno from list",
+                    f"With {cmd_ctrl_string()} key: Also fix this occurrence",
+                    "With Shift key: Also remove/fix matching occurrences",
+                ]
+            ),
+            use_pointer_pos=True,
+        )
+
+        frame = ttk.Frame(self.header_frame)
+        frame.grid(column=0, row=1, sticky="NSEW", columnspan=2, padx=(0, 15))
+        frame.columnconfigure(1, weight=1)
+
+        self.file_combo = Combobox(
+            frame,
+            PrefKey.SCANNOS_HISTORY,
+            textvariable=PersistentString(PrefKey.SCANNOS_FILENAME),
+        )
+        self.file_combo.grid(column=1, row=0, sticky="NSEW", pady=5)
+        self.file_combo["state"] = "readonly"
+        self.file_combo.bind(
+            "<<ComboboxSelected>>", lambda _e: self.rerun_button.invoke()
+        )
+        ttk.Button(
+            frame, text="Load File", command=self.choose_file, takefocus=False
+        ).grid(column=2, row=0, sticky="NSEW", padx=5, pady=5)
+
+        self.prev_btn = ttk.Button(
+            frame,
+            text="Prev",
+            command=lambda: self.prev_next_scanno(prev=True),
+            takefocus=False,
+        )
+        self.prev_btn.grid(column=0, row=1, sticky="NSEW", padx=5, pady=5)
+        self.scanno_textvariable = tk.StringVar(self, "")
+        search = ttk.Entry(
+            frame,
+            textvariable=self.scanno_textvariable,
+            state="readonly",
+            width=30,
+            font=maintext().font,
+        )
+        search.grid(column=1, row=1, sticky="NSEW", pady=5)
+        self.next_btn = ttk.Button(
+            frame,
+            text="Next",
+            command=lambda: self.prev_next_scanno(prev=False),
+            takefocus=False,
+        )
+        self.next_btn.grid(column=2, row=1, sticky="NSEW", padx=5, pady=5)
+
+        self.replacement_textvariable = tk.StringVar(self, "")
+        replace = ttk.Entry(
+            frame,
+            textvariable=self.replacement_textvariable,
+            state="readonly",
+            width=30,
+            font=maintext().font,
+        )
+        replace.grid(column=1, row=2, sticky="NSEW")
+        ttk.Button(
+            frame, text="Replace", command=self.replace_scanno, takefocus=False
+        ).grid(column=2, row=2, sticky="NSEW", padx=5)
+
+        ttk.Label(
+            frame,
+            text="Hint: ",
+        ).grid(column=0, row=3, sticky="NSE", pady=5)
+        self.hint_textvariable = tk.StringVar(self, "")
+        self.hint = ttk.Entry(
+            frame,
+            textvariable=self.hint_textvariable,
+            state="readonly",
+        )
+        self.hint.grid(
+            column=1, row=3, columnspan=2, sticky="NSEW", padx=(0, 5), pady=5
+        )
+
+        self.scanno_list: list[Scanno] = []
+        self.whole_word = False
+        self.scanno_number = 0
+        self.load_scannos()
+
+    def choose_file(self) -> None:
+        """Choose & load a scannos file."""
+        filename = filedialog.askopenfilename(
+            filetypes=(
+                ("Scannos files", "*.json"),
+                ("All files", "*.*"),
+            )
+        )
+        if filename:
+            self.focus()
+            preferences.set(PrefKey.SCANNOS_FILENAME, filename)
+            self.load_scannos()
+
+    def load_scannos(self) -> None:
+        """Load a scannos file."""
+        path = preferences.get(PrefKey.SCANNOS_FILENAME)
+        self.file_combo.add_to_history(path)
+        scanno_dict = load_dict_from_json(path)
+        if scanno_dict is None:
+            logger.error(f"Unable to load scannos file {path}")
+            return
+        # Some scannos files require whole-word searching
+        try:
+            self.whole_word = scanno_dict["wholeword"]
+        except KeyError:
+            self.whole_word = False
+        try:
+            self.scanno_list = scanno_dict["scannos"]
+        except KeyError:
+            logger.error("Error in scannos file - no 'scannos' array")
+            return
+        # Validate scannos - must have a match, but replacement and/or hint can
+        # be omitted, and default to empty strings
+        for scanno in self.scanno_list:
+            try:
+                scanno[Scanno.MATCH]
+            except KeyError:
+                logger.error("Error in scannos file - entry with no 'match' string")
+                self.scanno_list = []
+                return
+            try:
+                scanno[Scanno.REPLACEMENT]
+            except KeyError:
+                scanno[Scanno.REPLACEMENT] = ""
+            try:
+                scanno[Scanno.HINT]
+            except KeyError:
+                scanno[Scanno.HINT] = ""
+
+        if self.scanno_list:
+            self.scanno_number = 0
+            self.list_scannos()
+
+    def prev_next_scanno(self, prev: bool) -> None:
+        """Display previous/next scanno & list of results.
+
+        Auto-advances until it finds a scanno that has some results.
+
+        Args:
+            prev: True for Previous, False for Next.
+        """
+        slurp_text = maintext().get_text()
+        find_range = IndexRange(maintext().start().index(), maintext().end().index())
+        while (prev and self.scanno_number > 0) or (
+            not prev and self.scanno_number < len(self.scanno_list) - 1
+        ):
+            self.scanno_number += -1 if prev else 1
+            if self.any_matches(slurp_text, find_range):
+                self.list_scannos()
+                return
+        # No matches found, so display first/last scanno
+        self.scanno_number = 0 if prev else len(self.scanno_list) - 1
+        self.list_scannos()
+
+    def previous_scanno(self) -> None:
+        """Display previous scanno & list of results.
+
+        Auto-advances until it finds a scanno that has some results.
+        """
+        slurp_text = maintext().get_text()
+        find_range = IndexRange(maintext().start().index(), maintext().end().index())
+        while self.scanno_number > 0:
+            self.scanno_number -= 1
+            if self.any_matches(slurp_text, find_range):
+                self.list_scannos()
+                return
+        # No matches found, so display first scanno
+        self.scanno_number = 0
+        self.list_scannos()
+
+    def next_scanno(self) -> None:
+        """Display next scanno & list of results.
+
+        Auto-advances until it finds a scanno that has some results.
+        """
+        slurp_text = maintext().get_text()
+        find_range = IndexRange(maintext().start().index(), maintext().end().index())
+        while self.scanno_number < len(self.scanno_list) - 1:
+            self.scanno_number += 1
+            if self.any_matches(slurp_text, find_range):
+                self.list_scannos()
+                return
+        # No matches found, so display last scanno
+        self.scanno_number = len(self.scanno_list) - 1
+        self.list_scannos()
+
+    def any_matches(self, slurp_text: str, find_range: IndexRange) -> bool:
+        """Return quickly whether there are any matches for current scanno.
+
+        Args:
+            slurp_text: Whole text of file (to avoid multiple slurping)
+            find_range: Whole range of file
+
+        Returns:
+            True if there is at least 1 match for the current scanno."""
+
+        match, _ = maintext().find_match_in_range(
+            self.scanno_list[self.scanno_number][Scanno.MATCH],
+            slurp_text,
+            find_range,
+            nocase=False,
+            regexp=True,
+            wholeword=self.whole_word,
+            backwards=False,
+        )
+        return bool(match)
+
+    def list_scannos(self) -> None:
+        """Display current scanno and list of results."""
+        self.reset()
+        scanno = self.scanno_list[self.scanno_number]
+        self.scanno_textvariable.set(scanno[Scanno.MATCH])
+        self.replacement_textvariable.set(scanno[Scanno.REPLACEMENT])
+        self.hint_textvariable.set(scanno[Scanno.HINT])
+
+        find_range = IndexRange(maintext().start().index(), maintext().end().index())
+        slurp_text = maintext().get_text()
+        slice_start = 0
+
+        while True:
+            match, match_start = maintext().find_match_in_range(
+                scanno[Scanno.MATCH],
+                slurp_text[slice_start:],
+                find_range,
+                nocase=False,
+                regexp=True,
+                wholeword=self.whole_word,
+                backwards=False,
+            )
+            if match is None:
+                break
+            line = maintext().get(
+                f"{match.rowcol.index()} linestart",
+                f"{match.rowcol.index()}+{match.count}c lineend",
+            )
+            end_rowcol = IndexRowCol(
+                maintext().index(match.rowcol.index() + f"+{match.count}c")
+            )
+            hilite_start = match.rowcol.col
+
+            # If multiline, lines will be concatenated, so adjust end hilite point
+            if end_rowcol.row > match.rowcol.row:
+                not_matched = maintext().get(
+                    f"{match.rowcol.index()}+{match.count}c",
+                    f"{match.rowcol.index()}+{match.count}c lineend",
+                )
+                hilite_end = len(line) - len(not_matched)
+            else:
+                hilite_end = end_rowcol.col
+            self.add_entry(
+                line, IndexRange(match.rowcol, end_rowcol), hilite_start, hilite_end
+            )
+
+            # Adjust start of slice of slurped text, and where that point is in the file
+            advance = max(match.count, 1)
+            slice_start += match_start + advance
+            if slice_start >= len(slurp_text):  # No text left to match
+                break
+            slurp_start = IndexRowCol(
+                maintext().index(f"{match.rowcol.index()}+{advance}c")
+            )
+            find_range = IndexRange(slurp_start, find_range.end)
+
+        # Disable prev/next scanno buttons if at start/end of list
+        self.prev_btn["state"] = tk.DISABLED if self.scanno_number <= 0 else tk.NORMAL
+        self.next_btn["state"] = (
+            tk.DISABLED
+            if self.scanno_number >= len(self.scanno_list) - 1
+            else tk.NORMAL
+        )
+
+        self.display_entries()
+
+    def replace_scanno(self) -> None:
+        """Replace current match using replacement"""
+        current_index = self.current_entry_index()
+        if current_index is None:
+            return
+        do_replace_scanno(self.entries[current_index])
+
+
+_the_stealth_scannos_dialog: Optional[ScannoCheckerDialog] = None
+
+
+def do_replace_scanno(checker_entry: CheckerEntry) -> None:
+    """Process the scanno by replacing with the replacement regex/string."""
+    assert _the_stealth_scannos_dialog is not None
+    if checker_entry.text_range:
+        search_string = _the_stealth_scannos_dialog.scanno_textvariable.get()
+        replace_string = _the_stealth_scannos_dialog.replacement_textvariable.get()
+        start = _the_stealth_scannos_dialog.mark_from_rowcol(
+            checker_entry.text_range.start
+        )
+        end = _the_stealth_scannos_dialog.mark_from_rowcol(checker_entry.text_range.end)
+        match_text = maintext().get(start, end)
+        replacement = get_regex_replacement(
+            search_string, replace_string, match_text, flags=0
+        )
+        maintext().undo_block_begin()
+        maintext().replace(start, end, replacement)
+
+
+def stealth_scannos() -> None:
+    """Report potential stealth scannos in file."""
+    global _the_stealth_scannos_dialog
+
+    if not tool_save():
+        return
+
+    _the_stealth_scannos_dialog = ScannoCheckerDialog.show_dialog(
+        "Stealth Scanno Results",
+        rerun_command=stealth_scannos,
+        process_command=do_replace_scanno,
+    )
+
+    _the_stealth_scannos_dialog.display_entries()
