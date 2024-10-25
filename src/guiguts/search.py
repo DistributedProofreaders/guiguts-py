@@ -57,8 +57,9 @@ class SearchDialog(ToplevelDialog):
 
         # Frames
         self.top_frame.columnconfigure(0, weight=1)
-        for row in range(6):
-            self.top_frame.rowconfigure(row, weight=1)
+        for row in range(5):
+            self.top_frame.rowconfigure(row, weight=0)
+        self.top_frame.rowconfigure(5, weight=1)
         options_frame = ttk.Frame(
             self.top_frame, padding=3, borderwidth=1, relief=tk.GROOVE
         )
