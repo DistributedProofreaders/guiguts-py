@@ -817,6 +817,24 @@ class File:
         )
         maintext().selection_ranges_restore_from_marks()
 
+    def rewrap_cleanup(self) -> None:
+        """Clean up all rewrap markers."""
+        match_regex = r"^/[#$*FILPXCR]|^[#$*FILPXCR]/"
+        search_range = IndexRange(maintext().start(), maintext().end())
+        maintext().undo_block_begin()
+        while beg_match := maintext().find_match(
+            match_regex, search_range, regexp=True, nocase=True
+        ):
+            # If a start rewrap is followed immediately by a blank line
+            # then another start rewrap, delete the blank line as well.
+            beg_idx = beg_match.rowcol.index()
+            is_start = maintext().get(beg_idx) == "/"
+            test_txt = maintext().get(f"{beg_idx} +1l", f"{beg_idx} +2l lineend")
+            nlines = 2 if is_start and re.match(r"\n/[#$*FILPXCR]", test_txt) else 1
+
+            maintext().delete(beg_idx, f"{beg_idx} +{nlines}l")
+            search_range = IndexRange(beg_match.rowcol, maintext().end())
+
     def pin_page_marks(self) -> list[str]:
         """Pin the page marks to locations in the text, by inserting a special
         character at each page mark.

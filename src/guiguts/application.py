@@ -657,6 +657,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_separator()
         menu_tools.add_button("~Rewrap All", self.file.rewrap_all)
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)
+        menu_tools.add_button("C~lean Up Rewrap Markers", self.file.rewrap_cleanup)
         menu_tools.add_separator()
         unmatched_menu = Menu(menu_tools, "Un~matched")
         unmatched_menu.add_button("Bloc~k Markup...", unmatched_block_markup)
@@ -664,7 +665,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         unmatched_menu.add_button("~Brackets...", unmatched_brackets)
         unmatched_menu.add_button("Curly ~Quotes...", unmatched_curly_quotes)
 
-        fraction_menu = Menu(menu_tools, "Convert ~Fractions")
+        fraction_menu = Menu(menu_tools, "~Convert Fractions")
         fraction_menu.add_button(
             "~Unicode Fractions Only",
             lambda: fraction_convert(FractionConvertType.UNICODE),
