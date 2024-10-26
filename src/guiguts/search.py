@@ -247,7 +247,9 @@ class SearchDialog(ToplevelDialog):
 
         # Message (e.g. count)
         message_frame.columnconfigure(0, weight=1)
-        self.message = ttk.Label(message_frame, borderwidth=1, relief="sunken")
+        self.message = ttk.Label(
+            message_frame, borderwidth=1, relief="sunken", padding=5
+        )
         self.message.grid(row=0, column=0, sticky="NSEW")
 
         self.show_multi_replace(
@@ -256,6 +258,7 @@ class SearchDialog(ToplevelDialog):
 
         # Now dialog geometry is set up, set width to user pref, leaving height as it is
         self.config_width()
+        self.set_min_height()
 
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
@@ -288,6 +291,22 @@ class SearchDialog(ToplevelDialog):
         height += offset if show else -offset
         geometry = re.sub(r"(\d+x)\d+(.+)", rf"\g<1>{height}\g<2>", geometry)
         self.geometry(geometry)
+        # Recalculate minimum height
+        self.set_min_height()
+
+    def set_min_height(self) -> None:
+        """Set minimum height of dialog to be large enough that the
+        message bar is not hidden.
+        """
+        self.update()  # Ensure geometry is fixed before setting min height
+        height = (
+            self.message.winfo_rooty()
+            - self.winfo_rooty()
+            + self.message.winfo_height()
+            + 5
+        )
+        width, _ = self.minsize()
+        self.minsize(width, height)
 
     def search_box_set(self, search_string: str) -> None:
         """Set string in search box.
