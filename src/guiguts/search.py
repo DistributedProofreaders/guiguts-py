@@ -72,7 +72,7 @@ class SearchDialog(ToplevelDialog):
         options_frame.rowconfigure(0, weight=1)
         options_frame.rowconfigure(1, weight=1)
         message_frame = ttk.Frame(self.top_frame, padding=1)
-        message_frame.grid(row=6, column=0, columnspan=4, sticky="NSEW")
+        message_frame.grid(row=6, column=0, columnspan=5, sticky="NSEW", pady=(5, 0))
         self.separator = ttk.Separator(self.top_frame, orient=tk.VERTICAL)
         self.separator.grid(row=0, column=3, rowspan=6, padx=2, sticky="NSEW")
 
@@ -246,8 +246,9 @@ class SearchDialog(ToplevelDialog):
             self.repl_all_btn.append(repl_all_btn)
 
         # Message (e.g. count)
-        self.message = ttk.Label(message_frame)
-        self.message.grid(row=0, column=0, sticky="NSW")
+        message_frame.columnconfigure(0, weight=1)
+        self.message = ttk.Label(message_frame, borderwidth=1, relief="sunken")
+        self.message.grid(row=0, column=0, sticky="NSEW")
 
         self.show_multi_replace(
             preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE), resize=False
