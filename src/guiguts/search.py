@@ -3,6 +3,7 @@
 import logging
 import tkinter as tk
 from tkinter import ttk
+from tkinter import font as tk_font
 import traceback
 from typing import Any, Tuple, Optional
 
@@ -52,6 +53,7 @@ class SearchDialog(ToplevelDialog):
             SearchDialog.selection
         except AttributeError:
             SearchDialog.selection = tk.BooleanVar(value=False)
+        kwargs["resize_y"] = False
         super().__init__("Search & Replace", *args, **kwargs)
         self.minsize(400, 100)
 
@@ -97,11 +99,15 @@ class SearchDialog(ToplevelDialog):
                 self.search_box["style"] = ""
             return True
 
+        self.font = tk_font.Font(
+            family=maintext().font.cget("family"),
+            size=maintext().font.cget("size"),
+        )
         self.search_box = Combobox(
             self.top_frame,
             PrefKey.SEARCH_HISTORY,
             width=30,
-            font=maintext().font,
+            font=self.font,
             validate="all",
             validatecommand=(self.register(is_valid_regex), "%P"),
         )
@@ -198,7 +204,7 @@ class SearchDialog(ToplevelDialog):
         self.repl_all_btn: list[ttk.Button] = []
         for rep_num in range(3):
             cbox = Combobox(
-                self.top_frame, PrefKey.REPLACE_HISTORY, width=30, font=maintext().font
+                self.top_frame, PrefKey.REPLACE_HISTORY, width=30, font=self.font
             )
             cbox.grid(row=rep_num + 3, column=0, padx=PADX, pady=PADY, sticky="NSEW")
             self.replace_box.append(cbox)
@@ -258,7 +264,6 @@ class SearchDialog(ToplevelDialog):
 
         # Now dialog geometry is set up, set width to user pref, leaving height as it is
         self.config_width()
-        self.set_min_height()
 
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
@@ -284,29 +289,13 @@ class SearchDialog(ToplevelDialog):
         if not resize:
             return
 
-        # Height needs to grow/shrink by the space taken up by 2 buttons
-        offset = self.repl_all_btn[0].winfo_y() - self.count_btn.winfo_y()
+        # Height needs to grow/shrink by the space taken up by 2 entry fields
+        offset = 2 * (self.replace_box[0].winfo_y() - self.search_box.winfo_y())
         geometry = self.geometry()
         height = int(re.sub(r"\d+x(\d+).+", r"\1", geometry))
         height += offset if show else -offset
         geometry = re.sub(r"(\d+x)\d+(.+)", rf"\g<1>{height}\g<2>", geometry)
         self.geometry(geometry)
-        # Recalculate minimum height
-        self.set_min_height()
-
-    def set_min_height(self) -> None:
-        """Set minimum height of dialog to be large enough that the
-        message bar is not hidden.
-        """
-        self.update()  # Ensure geometry is fixed before setting min height
-        height = (
-            self.message.winfo_rooty()
-            - self.winfo_rooty()
-            + self.message.winfo_height()
-            + 5
-        )
-        width, _ = self.minsize()
-        self.minsize(width, height)
 
     def search_box_set(self, search_string: str) -> None:
         """Set string in search box.
