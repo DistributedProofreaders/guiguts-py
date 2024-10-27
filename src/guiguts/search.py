@@ -54,6 +54,7 @@ class SearchDialog(ToplevelDialog):
         except AttributeError:
             SearchDialog.selection = tk.BooleanVar(value=False)
         kwargs["resize_y"] = False
+        kwargs["disable_geometry_save"] = True
         super().__init__("Search & Replace", *args, **kwargs)
         self.minsize(400, 100)
 
@@ -264,6 +265,7 @@ class SearchDialog(ToplevelDialog):
 
         # Now dialog geometry is set up, set width to user pref, leaving height as it is
         self.config_width()
+        self.allow_geometry_save()
 
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
