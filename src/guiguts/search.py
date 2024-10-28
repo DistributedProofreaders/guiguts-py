@@ -3,6 +3,7 @@
 import logging
 import tkinter as tk
 from tkinter import ttk
+from tkinter import font as tk_font
 import traceback
 from typing import Any, Tuple, Optional
 
@@ -52,13 +53,16 @@ class SearchDialog(ToplevelDialog):
             SearchDialog.selection
         except AttributeError:
             SearchDialog.selection = tk.BooleanVar(value=False)
+        kwargs["resize_y"] = False
+        kwargs["disable_geometry_save"] = True
         super().__init__("Search & Replace", *args, **kwargs)
         self.minsize(400, 100)
 
         # Frames
         self.top_frame.columnconfigure(0, weight=1)
-        for row in range(6):
-            self.top_frame.rowconfigure(row, weight=1)
+        for row in range(5):
+            self.top_frame.rowconfigure(row, weight=0)
+        self.top_frame.rowconfigure(6, weight=1)
         options_frame = ttk.Frame(
             self.top_frame, padding=3, borderwidth=1, relief=tk.GROOVE
         )
@@ -71,7 +75,7 @@ class SearchDialog(ToplevelDialog):
         options_frame.rowconfigure(0, weight=1)
         options_frame.rowconfigure(1, weight=1)
         message_frame = ttk.Frame(self.top_frame, padding=1)
-        message_frame.grid(row=6, column=0, columnspan=4, sticky="NSEW")
+        message_frame.grid(row=6, column=0, columnspan=5, sticky="NSEW", pady=(5, 0))
         self.separator = ttk.Separator(self.top_frame, orient=tk.VERTICAL)
         self.separator.grid(row=0, column=3, rowspan=6, padx=2, sticky="NSEW")
 
@@ -96,11 +100,15 @@ class SearchDialog(ToplevelDialog):
                 self.search_box["style"] = ""
             return True
 
+        self.font = tk_font.Font(
+            family=maintext().font.cget("family"),
+            size=maintext().font.cget("size"),
+        )
         self.search_box = Combobox(
             self.top_frame,
             PrefKey.SEARCH_HISTORY,
             width=30,
-            font=maintext().font,
+            font=self.font,
             validate="all",
             validatecommand=(self.register(is_valid_regex), "%P"),
         )
@@ -197,7 +205,7 @@ class SearchDialog(ToplevelDialog):
         self.repl_all_btn: list[ttk.Button] = []
         for rep_num in range(3):
             cbox = Combobox(
-                self.top_frame, PrefKey.REPLACE_HISTORY, width=30, font=maintext().font
+                self.top_frame, PrefKey.REPLACE_HISTORY, width=30, font=self.font
             )
             cbox.grid(row=rep_num + 3, column=0, padx=PADX, pady=PADY, sticky="NSEW")
             self.replace_box.append(cbox)
@@ -245,8 +253,11 @@ class SearchDialog(ToplevelDialog):
             self.repl_all_btn.append(repl_all_btn)
 
         # Message (e.g. count)
-        self.message = ttk.Label(message_frame)
-        self.message.grid(row=0, column=0, sticky="NSW")
+        message_frame.columnconfigure(0, weight=1)
+        self.message = ttk.Label(
+            message_frame, borderwidth=1, relief="sunken", padding=5
+        )
+        self.message.grid(row=0, column=0, sticky="NSEW")
 
         self.show_multi_replace(
             preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE), resize=False
@@ -254,6 +265,7 @@ class SearchDialog(ToplevelDialog):
 
         # Now dialog geometry is set up, set width to user pref, leaving height as it is
         self.config_width()
+        self.allow_geometry_save()
 
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
@@ -279,8 +291,8 @@ class SearchDialog(ToplevelDialog):
         if not resize:
             return
 
-        # Height needs to grow/shrink by the space taken up by 2 buttons
-        offset = self.repl_all_btn[0].winfo_y() - self.count_btn.winfo_y()
+        # Height needs to grow/shrink by the space taken up by 2 entry fields
+        offset = 2 * (self.replace_box[0].winfo_y() - self.search_box.winfo_y())
         geometry = self.geometry()
         height = int(re.sub(r"\d+x(\d+).+", r"\1", geometry))
         height += offset if show else -offset

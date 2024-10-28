@@ -35,6 +35,7 @@ class ToplevelDialog(tk.Toplevel):
         title: str,
         resize_x: bool = True,
         resize_y: bool = True,
+        disable_geometry_save: bool = False,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -43,7 +44,13 @@ class ToplevelDialog(tk.Toplevel):
             title: Dialog title.
             resize_x: True(default) to allow resizing and remembering of the dialog width.
             resize_y: True(default) to allow resizing and remembering of the dialog height.
+            disable_geometry_save: True to disable handling of configure events, i.e. so
+                geometry will not be saved. For complex geometry handling, e.g. Search dialog,
+                which can change size and has restrictions on resizability, set this to True,
+                then create widgets in dialog, and only then call allow_geometry_save()
         """
+        self.disable_geometry_save = disable_geometry_save
+
         super().__init__(**kwargs)
         self.bind("<Escape>", lambda event: self.destroy())
         self.title(title)
@@ -206,7 +213,8 @@ class ToplevelDialog(tk.Toplevel):
         if geometry := self._get_pref_geometry():
             width = re.sub(r"x.+", "", geometry)
             self.update()  # Needed before querying geometry
-            new_geometry = re.sub(r"^\d+", width, self.geometry())
+            cur_geometry = self.geometry()
+            new_geometry = re.sub(r"^\d+", width, cur_geometry)
             self.geometry(new_geometry)
 
     def config_height(self) -> None:
@@ -234,12 +242,22 @@ class ToplevelDialog(tk.Toplevel):
         except KeyError:
             return ""
 
+    def allow_geometry_save(self) -> None:
+        """Enable the saving of geometry changes via Configure events.
+
+        See __init__ docstring for details of use.
+        """
+        self.update()
+        self.disable_geometry_save = False
+
     def _handle_config(self, _event: tk.Event) -> None:
         """Callback from dialog <Configure> event.
 
         By setting flag now, and queuing calls to _save_config,
         we ensure the flag will be true for the first call to
         _save_config when process becomes idle."""
+        if self.disable_geometry_save:
+            return
         self.save_config = True
         self.after_idle(self._save_config)
 
