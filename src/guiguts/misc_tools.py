@@ -18,7 +18,13 @@ from guiguts.preferences import (
     preferences,
     PersistentBoolean,
 )
-from guiguts.utilities import IndexRowCol, IndexRange, cmd_ctrl_string, is_mac
+from guiguts.utilities import (
+    IndexRowCol,
+    IndexRange,
+    cmd_ctrl_string,
+    is_mac,
+    sound_bell,
+)
 from guiguts.widgets import ToolTip, ToplevelDialog
 
 logger = logging.getLogger(__package__)
@@ -217,7 +223,7 @@ class PageSeparatorDialog(ToplevelDialog):
     BTN_WIDTH = 16
 
     def __init__(self) -> None:
-        """Initialize messagelog dialog."""
+        """Initialize page separator dialog."""
         super().__init__("Page Separator Fixup", resize_x=False, resize_y=False)
         for col in range(0, 3):
             self.top_frame.columnconfigure(col, pad=2, weight=1)
@@ -1224,3 +1230,111 @@ def asterisk_check() -> None:
             line, IndexRange(match.rowcol, end_rowcol), match.rowcol.col, end_rowcol.col
         )
     checker_dialog.display_entries()
+
+
+class TextMarkupConvertorDialog(ToplevelDialog):
+    """Dialog for converting DP markup to text markup."""
+
+    def __init__(self) -> None:
+        """Initialize text markup convertor dialog."""
+        super().__init__("Text Markup Convertor", resize_x=False, resize_y=False)
+
+        def add_row(row: int, markup: str, prefkey: PrefKey) -> None:
+            ttk.Label(
+                self.top_frame, text=f"<{markup}>...</{markup}>", anchor=tk.CENTER
+            ).grid(column=0, row=row, sticky="NSEW")
+            ttk.Button(
+                self.top_frame,
+                text="Convert ⟹",
+                command=lambda: self.convert(
+                    rf"</?{markup}>", preferences.get(prefkey)
+                ),
+            ).grid(
+                column=1,
+                row=row,
+                pady=2,
+                sticky="NSEW",
+            )
+            ttk.Entry(
+                self.top_frame,
+                width=2,
+                textvariable=PersistentString(prefkey),
+            ).grid(column=2, row=row, padx=5, pady=2, sticky="NSEW")
+
+        add_row(0, "i", PrefKey.TEXT_MARKUP_ITALIC)
+        add_row(1, "b", PrefKey.TEXT_MARKUP_BOLD)
+        ttk.Label(self.top_frame, text="<sc>...</sc>", anchor=tk.CENTER).grid(
+            column=0, row=2, sticky="NSEW"
+        )
+        ttk.Button(
+            self.top_frame, text="Convert ⟹", command=self.convert_smallcaps_to_allcaps
+        ).grid(column=1, row=2, pady=2, sticky="NSEW")
+        ttk.Label(self.top_frame, text="ALLCAPS").grid(
+            column=2, row=2, padx=5, sticky="NSEW"
+        )
+        add_row(3, "sc", PrefKey.TEXT_MARKUP_SMALLCAPS)
+        add_row(4, "g", PrefKey.TEXT_MARKUP_GESPERRT)
+        add_row(5, "f", PrefKey.TEXT_MARKUP_FONT)
+        ttk.Label(self.top_frame, text="<tb>", anchor=tk.CENTER).grid(
+            column=0, row=6, sticky="NSEW"
+        )
+        ttk.Button(
+            self.top_frame,
+            text="Convert ⟹",
+            command=lambda: self.convert(r"<tb>", "       *" * 5),
+        ).grid(column=1, row=6, pady=2, sticky="NSEW")
+        ttk.Label(self.top_frame, text="Asterisks").grid(
+            column=2, row=6, padx=5, sticky="NSEW"
+        )
+
+    def convert(self, regex: str, replacement: str) -> None:
+        """Convert one type of DP markup to text markup.
+
+        Args:
+            regex: Regex that matches open/close markup.
+            replacement: String to replace markup with.
+        """
+        found = False
+        maintext().undo_block_begin()
+        search_range = IndexRange(maintext().start(), maintext().end())
+        # Find each piece of markup that matches the regex
+        while match := maintext().find_match(
+            regex, search_range, regexp=True, nocase=True
+        ):
+            match_index = match.rowcol.index()
+            maintext().replace(
+                match_index, f"{match_index}+{match.count}c", replacement
+            )
+            search_range = IndexRange(
+                maintext().index(f"{match_index}+1c"), maintext().end()
+            )
+            found = True
+        if not found:
+            sound_bell()
+
+    def convert_smallcaps_to_allcaps(self) -> None:
+        """Convert text marked up with <sc> to ALLCAPS."""
+        found = False
+        maintext().undo_block_begin()
+        search_range = IndexRange(maintext().start(), maintext().end())
+        # Find start of each smallcap markup
+        while match := maintext().find_match(
+            "<sc>", search_range, regexp=False, nocase=True
+        ):
+            match_index = match.rowcol.index()
+            search_range = IndexRange(
+                maintext().index(f"{match_index}+4c"), maintext().end()
+            )
+            end_match = maintext().find_match(
+                "</sc>", search_range, regexp=False, nocase=True
+            )
+            if end_match is None:
+                logger.error(f"Unclosed <sc> markup on line {match.rowcol.row}")
+                maintext().set_insert_index(match.rowcol, focus_widget=maintext())
+                return
+            end_match_index = end_match.rowcol.index()
+            replacement = maintext().get(f"{match_index}+4c", end_match_index).upper()
+            maintext().replace(match_index, f"{end_match_index}+5c", replacement)
+            found = True
+        if not found:
+            sound_bell()

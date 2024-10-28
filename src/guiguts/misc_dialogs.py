@@ -146,7 +146,7 @@ class PreferencesDialog(ToplevelDialog):
                 tooltip: Text for tooltip.
             """
             ttk.Label(wrapping_frame, text=label).grid(
-                column=0, row=row, sticky="NE", pady=2
+                column=0, row=row, sticky="NSE", pady=2
             )
             spinbox = ttk.Spinbox(
                 wrapping_frame,

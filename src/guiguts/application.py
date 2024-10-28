@@ -52,6 +52,7 @@ from guiguts.misc_tools import (
     unicode_normalize,
     proofer_comment_check,
     asterisk_check,
+    TextMarkupConvertorDialog,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
@@ -357,6 +358,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.WRAP_INDEX_MAIN_MARGIN, 2)
         preferences.set_default(PrefKey.WRAP_INDEX_WRAP_MARGIN, 8)
         preferences.set_default(PrefKey.WRAP_INDEX_RIGHT_MARGIN, 72)
+        preferences.set_default(PrefKey.TEXT_MARKUP_ITALIC, "_")
+        preferences.set_default(PrefKey.TEXT_MARKUP_BOLD, "=")
+        preferences.set_default(PrefKey.TEXT_MARKUP_SMALLCAPS, "+")
+        preferences.set_default(PrefKey.TEXT_MARKUP_GESPERRT, "~")
+        preferences.set_default(PrefKey.TEXT_MARKUP_FONT, "=")
         preferences.set_default(PrefKey.PAGESEP_AUTO_TYPE, PageSepAutoType.AUTO_FIX)
         preferences.set_default(PrefKey.THEME_NAME, "Default")
         preferences.set_callback(
@@ -407,6 +413,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.init_edit_menu()
         self.init_search_menu()
         self.init_tools_menu()
+        self.init_text_menu()
         self.init_view_menu()
         self.init_help_menu()
         self.init_os_menu()
@@ -690,6 +697,13 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "~Compose Sequence...",
             ComposeSequenceDialog.show_dialog,
             "Cmd/Ctrl+I",
+        )
+
+    def init_text_menu(self) -> None:
+        """Create the Text menu."""
+        menu_tools = Menu(menubar(), "Te~xt")
+        menu_tools.add_button(
+            "Convert ~Markup...", TextMarkupConvertorDialog.show_dialog
         )
 
     def init_view_menu(self) -> None:
