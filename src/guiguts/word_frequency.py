@@ -382,14 +382,28 @@ class WordFrequencyDialog(ToplevelDialog):
         _, event = process_accel("Cmd/Ctrl+1")
         self.text.bind(event, self.search_word)
         self.text.bind("<Key>", self.goto_word_by_letter)
+        _, event = process_accel("Cmd/Ctrl+a")
+        self.text.bind(event, lambda _e: self.text.event_generate("<<SelectAll>>"))
+        _, event = process_accel("Cmd/Ctrl+A")
+        self.text.bind(event, lambda _e: self.text.event_generate("<<SelectAll>>"))
+        _, event = process_accel("Cmd/Ctrl+c")
+        self.text.bind(event, lambda _e: self.text.event_generate("<<Copy>>"))
+        _, event = process_accel("Cmd/Ctrl+C")
+        self.text.bind(event, lambda _e: self.text.event_generate("<<Copy>>"))
         self.text.bind("<Home>", lambda _e: self.goto_word(0))
+        self.text.bind("<Shift-Home>", lambda _e: self.goto_word(0))
         self.text.bind("<End>", lambda _e: self.goto_word(len(self.entries) - 1))
+        self.text.bind("<Shift-End>", lambda _e: self.goto_word(len(self.entries) - 1))
         # Bind same keys as main window uses for top/bottom on Mac.
         # Above bindings work already for Windows
         if is_mac():
             self.text.bind("<Command-Up>", lambda _e: self.goto_word(0))
+            self.text.bind("<Shift-Command-Up>", lambda _e: self.goto_word(0))
             self.text.bind(
                 "<Command-Down>", lambda _e: self.goto_word(len(self.entries) - 1)
+            )
+            self.text.bind(
+                "<Shift-Command-Down>", lambda _e: self.goto_word(len(self.entries) - 1)
             )
         ToolTip(
             self.text,
@@ -602,6 +616,7 @@ class WordFrequencyDialog(ToplevelDialog):
         """
         if entry_index >= len(self.entries):
             return
+        self.text.tag_remove("sel", "1.0", tk.END)
         self.text.select_line(entry_index + 1)
         self.text.mark_set(tk.INSERT, f"{entry_index + 1}.0")
         self.text.focus()
