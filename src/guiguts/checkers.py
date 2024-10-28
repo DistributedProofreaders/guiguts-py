@@ -226,15 +226,26 @@ class CheckerDialog(ToplevelDialog):
         self.bind("<Down>", lambda _e: self.select_entry_by_arrow(1))
 
         self.text.bind("<Home>", lambda _e: self.select_entry_by_index(0))
+        self.text.bind("<Shift-Home>", lambda _e: self.select_entry_by_index(0))
         self.text.bind(
             "<End>", lambda _e: self.select_entry_by_index(len(self.entries) - 1)
+        )
+        self.text.bind(
+            "<Shift-End>", lambda _e: self.select_entry_by_index(len(self.entries) - 1)
         )
         # Bind same keys as main window uses for top/bottom on Mac.
         # Above bindings work already for Windows
         if is_mac():
             self.text.bind("<Command-Up>", lambda _e: self.select_entry_by_index(0))
             self.text.bind(
+                "<Shift-Command-Up>", lambda _e: self.select_entry_by_index(0)
+            )
+            self.text.bind(
                 "<Command-Down>",
+                lambda _e: self.select_entry_by_index(len(self.entries) - 1),
+            )
+            self.text.bind(
+                "<Shift-Command-Down>",
                 lambda _e: self.select_entry_by_index(len(self.entries) - 1),
             )
 
@@ -866,6 +877,7 @@ class CheckerDialog(ToplevelDialog):
         self.text.select_line(linenum)
         self.text.mark_set(tk.INSERT, f"{linenum}.0")
         self.text.focus_set()
+        self.text.tag_remove("sel", "1.0", tk.END)
         entry = self.entries[entry_index]
         self.selected_text = entry.text
         self.selected_text_range = entry.text_range
