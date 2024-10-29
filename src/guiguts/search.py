@@ -19,6 +19,7 @@ from guiguts.widgets import (
     mouse_bind,
     ToolTip,
     register_focus_widget,
+    process_accel,
 )
 
 logger = logging.getLogger(__package__)
@@ -235,7 +236,7 @@ class SearchDialog(ToplevelDialog):
             mouse_bind(
                 rands_button,
                 "Shift+1",
-                lambda idx=rep_num: self.replace_clicked(  # type: ignore[misc]
+                lambda _e, idx=rep_num: self.replace_clicked(  # type: ignore[misc]
                     idx, opposite_dir=True, search_again=True
                 ),
             )
@@ -251,6 +252,13 @@ class SearchDialog(ToplevelDialog):
                 row=rep_num + 3, column=4, padx=PADX, pady=PADY, sticky="NSEW"
             )
             self.repl_all_btn.append(repl_all_btn)
+        _, key_event = process_accel("Cmd/Ctrl+Return")
+        self.bind(key_event, lambda *args: self.replace_clicked(0, search_again=True))
+        _, key_event = process_accel("Cmd/Ctrl+Shift+Return")
+        self.bind(
+            key_event,
+            lambda *args: self.replace_clicked(0, opposite_dir=True, search_again=True),
+        )
 
         # Message (e.g. count)
         message_frame.columnconfigure(0, weight=1)
