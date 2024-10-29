@@ -171,19 +171,19 @@ class PreferencesDialog(ToplevelDialog):
             2,
             "Blockquote Indent:",
             PrefKey.WRAP_BLOCKQUOTE_INDENT,
-            "Extra indent for each level of blockquotes",
+            "Extra indent for each level of /# blockquotes",
         )
         add_label_spinbox(
             3,
             "Blockquote Right Margin:",
             PrefKey.WRAP_BLOCKQUOTE_RIGHT_MARGIN,
-            "Right margin for blockquotes",
+            "Right margin for /# blockquotes",
         )
         add_label_spinbox(
             4,
-            "Block Indent:",
+            "Nowrap Block Indent:",
             PrefKey.WRAP_BLOCK_INDENT,
-            "Indent for /*, /P, /L blocks",
+            "Indent for /* and /L blocks",
         )
         add_label_spinbox(
             5,
