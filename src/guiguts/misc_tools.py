@@ -1692,3 +1692,180 @@ def stealth_scannos() -> None:
     )
 
     _the_stealth_scannos_dialog.display_entries()
+
+
+DQUOTES = "“”"
+APOS = "’"
+INIT_APOS_WORDS = (
+    (
+        "'em",
+        "’em",
+    ),
+    (
+        "'Tis",
+        "’Tis",
+    ),
+    (
+        "'Tisn't",
+        "’Tisn’t",
+    ),
+    (
+        "'Tweren't",
+        "’Tweren’t",
+    ),
+    (
+        "'Twere",
+        "’Twere",
+    ),
+    (
+        "'Twould",
+        "’Twould",
+    ),
+    (
+        "'Twouldn't",
+        "’Twouldn’t",
+    ),
+    (
+        "'Twas",
+        "’Twas",
+    ),
+    (
+        "'Im",
+        "’Im",
+    ),
+    (
+        "'Twixt",
+        "’Twixt",
+    ),
+    (
+        "'Til",
+        "’Til",
+    ),
+    (
+        "'Scuse",
+        "’Scuse",
+    ),
+    (
+        "'Gainst",
+        "’Gainst",
+    ),
+    (
+        "'twon't",
+        "’twon’t",
+    ),
+    (
+        "'tis",
+        "’tis",
+    ),
+    (
+        "'tisn't",
+        "’tisn’t",
+    ),
+    (
+        "'tweren't",
+        "’tweren’t",
+    ),
+    (
+        "'twere",
+        "’twere",
+    ),
+    (
+        "'twould",
+        "’twould",
+    ),
+    (
+        "'twouldn't",
+        "’twouldn’t",
+    ),
+    (
+        "'twas",
+        "’twas",
+    ),
+    (
+        "'im",
+        "’im",
+    ),
+    (
+        "'twixt",
+        "’twixt",
+    ),
+    (
+        "'til",
+        "’til",
+    ),
+    (
+        "'scuse",
+        "’scuse",
+    ),
+    (
+        "'gainst",
+        "’gainst",
+    ),
+    (
+        "'twon't",
+        "’twon’t",
+    ),
+)
+SAFE_APOS_RQUOTE_REGEXES = (
+    r"(?<=\w)'(?=\w)",  # surrounded by letters
+    r"(?<=[\.,\w])'",  # preceded by period, comma or letter
+    r"(?<=\w)'(?=\.)",  # between letter & period
+    r"'$",  # end of line
+    rf"'(?=[ {DQUOTES[1]}])",  # followed by space or close double quote
+)
+
+
+def convert_to_curly_quotes() -> None:
+    """Convert straight quotes to curly in whole file, and display list of queries.
+
+    Adapted from https://github.com/DistributedProofreaders/ppwb/blob/master/bin/ppsmq.py
+    """
+    maintext().undo_block_begin()
+    end_line = maintext().end().row
+    dqtype = 0
+    for line_num in range(1, end_line + 1):
+        edited = False
+        lstart = f"{line_num}.0"
+        lend = f"{line_num}.end"
+        line = maintext().get(lstart, lend)
+        if line == "":
+            dqtype = 0  # Reset double quotes at paragraph break
+            continue
+
+        # Apart from special cases, alternate open/close double quotes through each paragraph
+        # Ditto marks first (surrounded by double-space)
+        line, count = re.subn('(?<=  )"(?=  )', DQUOTES[1], line)
+        if count:
+            edited = True
+        # Start of line must be open quotes
+        line, count = re.subn('^"', DQUOTES[0], line)
+        if count:
+            edited = True
+            dqtype = 1
+        # Mid-line, alternate open/close quotes
+        while True:
+            line, count = re.subn('"(?!$)', DQUOTES[dqtype], line, count=1)
+            if count:
+                edited = True
+                dqtype = 0 if dqtype == 1 else 1
+            else:
+                break
+        # End of line must be close quotes
+        line, count = re.subn('"$', DQUOTES[1], line)
+        if count:
+            edited = True
+            dqtype = 0
+
+        # Convert apostrophes in specific words
+        for apos_word in INIT_APOS_WORDS:
+            line, count = re.subn(apos_word[0], apos_word[1], line)
+            if count:
+                edited = True
+        # Now convert specific safe cases to close single quote/apostrophe
+        for regex in SAFE_APOS_RQUOTE_REGEXES:
+            line, count = re.subn(regex, APOS, line)
+            if count:
+                edited = True
+
+        if edited:
+            maintext().replace(lstart, lend, line)

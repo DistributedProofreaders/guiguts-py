@@ -57,6 +57,7 @@ from guiguts.misc_tools import (
     DEFAULT_SCANNOS_DIR,
     DEFAULT_REGEX_SCANNOS,
     DEFAULT_STEALTH_SCANNOS,
+    convert_to_curly_quotes,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
@@ -682,6 +683,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button("R~ewrap Selection", self.file.rewrap_selection)
         menu_tools.add_button("C~lean Up Rewrap Markers", self.file.rewrap_cleanup)
         menu_tools.add_separator()
+        menu_tools.add_button("Convert to Curly ~Quotes", convert_to_curly_quotes)
         unmatched_menu = Menu(menu_tools, "Un~matched")
         unmatched_menu.add_button("Bloc~k Markup...", unmatched_block_markup)
         unmatched_menu.add_button("~DP Markup...", unmatched_dp_markup)
