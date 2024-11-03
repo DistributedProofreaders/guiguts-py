@@ -53,6 +53,10 @@ from guiguts.misc_tools import (
     proofer_comment_check,
     asterisk_check,
     TextMarkupConvertorDialog,
+    stealth_scannos,
+    DEFAULT_SCANNOS_DIR,
+    DEFAULT_REGEX_SCANNOS,
+    DEFAULT_STEALTH_SCANNOS,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
@@ -397,6 +401,17 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.IMAGE_FLOAT_GEOMETRY, "400x600+100+100")
         preferences.set_default(PrefKey.IMAGE_DOCK_SASH_COORD, 300)
         preferences.set_default(PrefKey.IMAGE_SCALE_FACTOR, 0.5)
+        preferences.set_default(
+            PrefKey.SCANNOS_FILENAME,
+            str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)),
+        )
+        preferences.set_default(
+            PrefKey.SCANNOS_HISTORY,
+            [
+                str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)),
+                str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_STEALTH_SCANNOS)),
+            ],
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -651,6 +666,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         menu_tools.add_button("PP~txt...", lambda: pptxt(self.file.project_dict))
         menu_tools.add_button("~Jeebies...", jeebies_check)
+        menu_tools.add_button("Stealth S~cannos...", stealth_scannos)
         menu_tools.add_button(
             "Word ~Distance Check...", lambda: levenshtein_check(self.file.project_dict)
         )

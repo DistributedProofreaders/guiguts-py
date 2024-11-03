@@ -1,0 +1,229 @@
+{
+"scannos": [
+{
+"match": "&c(,| |$)",
+"replacement": "&c.\\1",
+"hint": "Find the abbreviation &c. that doesn't have a period after it and insert one"
+},
+{
+"match": "(<\\w>) +",
+"replacement": "\\1",
+"hint": "Find HTML opening marker followed by whitespace and remove the whitespace"
+},
+{
+"match": "(?!client)\\b([csw])li([aeiou])",
+"replacement": "\\1h\\2",
+"hint": "Find a word with a possible li for h scanno and correct it"
+},
+{
+"match": "(?<=\\[)([^FSIG\\d])",
+"replacement": "\\1",
+"hint": "Find an opening square bracket followed by anything but F, S, I or G. (Footnote, Sidenote, Illustration or Greek)"
+},
+{
+"match": "([0-9]),([0-9]{4})",
+"replacement": "\\1, \\2",
+"hint": "Find dates that are missing a space between the month and year, and add a space"
+},
+{
+"match": "([\\p{Alpha}\\'])j\\b",
+"replacement": "\\1;",
+"hint": "Find character strings that end with j and change the j to a semicolon"
+},
+{
+"match": "([^gG])uess",
+"replacement": "\\1ness",
+"hint": "Find the string 'uess' not preceded by a g and change it to 'ness'"
+},
+{
+"match": "([abimou])hl([ie])",
+"replacement": "\\1bl\\2",
+"hint": "Find a string that contains hl preceded by one of (a,b,i,m,o or u) and followed by i or e and change it to bl"
+},
+{
+"match": "(\\S)  (\\S)",
+"replacement": "\\1 \\2",
+"hint": "Find two space characters, surrounded by non white-space characters, and remove one of them"
+},
+{
+"match": "(\\b[A-Z])\\. ([A-Z])\\.",
+"replacement": "\\1.\\2.",
+"hint": "Find initials with a space between them and remove the space"
+},
+{
+"match": ",(\"?\\n *\"?\\p{Upper})",
+"replacement": ".\\1",
+"hint": "Find a comma at the end of a line with the next line starting with an upper case character"
+},
+{
+"match": ",(\"?\\n{2,} *\"?\\p{Upper})",
+"replacement": ".\\1",
+"hint": "Find a paragraph that ends in a comma and change the comma to a period"
+},
+{
+"match": ",(?=\\n\\n)",
+"replacement": ".",
+"hint": "Find a comma at the end of a paragraph and replace it with a period"
+},
+{
+"match": ",(?= \\p{IsUpper}\\S)|,(?= [A-HJ-Z] )",
+"replacement": ".",
+"hint": "Find a comma followed by a space and an upper-case character (except I) and replace with a period."
+},
+{
+"match": "<(\\/?)(\\p{IsUpper}+)>",
+"replacement": "<\\1\\L\\2\\E>",
+"hint": "Find upper-case HTML markup and change it to lower-case"
+},
+{
+"match": "[b-df-hj-np-tv-xz]{5,}",
+"replacement": "",
+"hint": "Find a string containing at least 5 consonants in a row"
+},
+{
+"match": "\\.(\"?\\n *\"?\\p{Lower})",
+"replacement": ",\\1",
+"hint": "Find a period with the following word starting with a lower case character and change the period to a comma"
+},
+{
+"match": "\\.( \\p{IsLower})",
+"replacement": ",\\1",
+"hint": "Find a period followed by a space and a lower-case letter and replace it with a comma"
+},
+{
+"match": "\\Bii",
+"replacement": "ll",
+"hint": "Find the string ii not at the beginning of a word and change it to ll"
+},
+{
+"match": "\\b([csw])li([aeiou])",
+"replacement": "\\1h\\2",
+"hint": "Find a string that starts with one of c, s or w, li, then a vowel and change the li to h"
+},
+{
+"match": "\\b(\\S+) \\1\\b",
+"replacement": "\\1",
+"hint": "Find repeated words or word sequences and remove one"
+},
+{
+"match": "\\bhl",
+"replacement": "bl",
+"hint": "Find a string that starts with hl and change it to bl"
+},
+{
+"match": "\\bhr",
+"replacement": "br",
+"hint": "Find a string that starts with hr and change it to br"
+},
+{
+"match": "\\brn",
+"replacement": "m",
+"hint": "Find a string that starts with rn and change it to m"
+},
+{
+"match": "\\btb",
+"replacement": "th",
+"hint": "Find a string that starts with tb and change it to th"
+},
+{
+"match": "\\btli",
+"replacement": "th",
+"hint": "Find a string that starts with tli and change it to th"
+},
+{
+"match": " +(<\\/\\w>)",
+"replacement": "\\1",
+"hint": "Find HTML closing marker preceded by whitespace and remove the whitespace"
+},
+{
+"match": " \\'$",
+"replacement": "\\'",
+"hint": "Find a spaced single quote dangling on the end of a line"
+},
+{
+"match": "\\t",
+"replacement": " ",
+"hint": "Find a tab character and change it to space"
+},
+{
+"match": "\\xAD",
+"replacement": "-",
+"hint": "Find a soft Hyphen and change it to a (hard) Hyphen"
+},
+{
+"match": "^-[^-]",
+"replacement": "",
+"hint": "Find a line starting with a single hyphen and remove the hyphen"
+},
+{
+"match": "^.{75,}",
+"replacement": "",
+"hint": "Find long lines in the text"
+},
+{
+"match": "^[!;:,.?]",
+"replacement": "",
+"hint": "Find a line that starts with punctuation and remove the punctuation"
+},
+{
+"match": "cb",
+"replacement": "ch",
+"hint": "Find a word that contains cb and change it to ch"
+},
+{
+"match": "cl\\b",
+"replacement": "d",
+"hint": "Find a word that ends in cl and change it to d"
+},
+{
+"match": "gbt",
+"replacement": "ght",
+"hint": "Find a word that contains gbt and change it to ght"
+},
+{
+"match": "mcnt",
+"replacement": "ment",
+"hint": "Find a word containing mcnt and change it to ment"
+},
+{
+"match": "pbt",
+"replacement": "pht",
+"hint": "Find a word containing pbt and change it to pht"
+},
+{
+"match": "rn([bmp])",
+"replacement": "m\\1",
+"hint": "Find a word that contains rnb, rnm or rnp and change it to mb, mm or mp, respectively"
+},
+{
+"match": "tb",
+"replacement": "th",
+"hint": "Find a word that contains tb and change it to th"
+},
+{
+"match": "tii",
+"replacement": "th",
+"hint": "Find a word that contains tii and change it to th"
+},
+{
+"match": "tli",
+"replacement": "th",
+"hint": "Find a word that contains tli and change it to th"
+},
+{
+"match": "uess\\b",
+"replacement": "ness",
+"hint": "Find a word that ends with uess and change it to ness"
+},
+{
+"match": "v(?<!\\p{Alpha})",
+"replacement": "y",
+"hint": "Find a word that ends with a v and change it to a y"
+},
+{
+"match": "«[^»]+»\\n?",
+"replacement": "",
+"hint": "Find pairs of guillemets"
+}
+]
+}
