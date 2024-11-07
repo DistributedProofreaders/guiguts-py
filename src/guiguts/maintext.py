@@ -1318,7 +1318,7 @@ class MainText(tk.Text):
             )
 
     def _replace_preserving_pagemarks_block(
-        self, start_index: Any, end_index: Any, replacement: str, *tags: Any
+        self, start_point: Any, end_point: Any, replacement: str, *tags: Any
     ) -> None:
         """Replace text indicated by indexes with given string (& optional tags).
 
@@ -1337,6 +1337,9 @@ class MainText(tk.Text):
             replacement:  Replacement text.
             tags: Optional tuple of tags to be applied to inserted text.
         """
+        # Convert input args to index because if marks, can get odd behavior depending on gravity.
+        start_index = self.index(start_point)
+        end_index = self.index(end_point)
         # Get lengths from start of replacement to each page marker
         len_to_marks: list[int] = []
         mark = end_index
