@@ -1,16 +1,21 @@
 """Highlight functionality."""
 
-from enum import auto
+from enum import auto, StrEnum
 
 from guiguts.maintext import maintext
 from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import IndexRange
 
 
-class Highlight:
-    """Global highlight settings."""
+class HighlightTag(StrEnum):
+    """Global highlight tag settings."""
 
-    TAG_QUOTEMARK = str(auto())
+    QUOTEMARK = auto()
+    SPOTLIGHT = auto()
+
+
+class HighlightColors:
+    """Global highlight color settings."""
 
     # Possible future enhancement:
     #
@@ -22,15 +27,13 @@ class Highlight:
     # Unclear what we should/will do in GG2 with themes & dark mode support.
 
     # Must be a definition for each available theme
-    COLORS_QUOTEMARK = {
+    QUOTEMARK = {
         "Light": {"bg": "#a08dfc", "fg": "black"},
         "Dark": {"bg": "#a08dfc", "fg": "white"},
         "Default": {"bg": "#a08dfc", "fg": "black"},
     }
 
-    TAG_SPOTLIGHT = str(auto())
-
-    COLORS_SPOTLIGHT = {
+    SPOTLIGHT = {
         "Light": {"bg": "orange", "fg": "black"},
         "Dark": {"bg": "orange", "fg": "white"},
         "Default": {"bg": "orange", "fg": "black"},
@@ -65,14 +68,14 @@ def highlight_selection(
 
 def remove_highlights() -> None:
     """Remove active highlights."""
-    maintext().tag_delete(Highlight.TAG_QUOTEMARK)
+    maintext().tag_delete(HighlightTag.QUOTEMARK)
 
 
 def highlight_quotemarks(pat: str) -> None:
     """Highlight quote marks in current selection which match a pattern."""
     remove_highlights()
-    _highlight_configure_tag(Highlight.TAG_QUOTEMARK, Highlight.COLORS_QUOTEMARK)
-    highlight_selection(pat, Highlight.TAG_QUOTEMARK, regexp=True)
+    _highlight_configure_tag(HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK)
+    highlight_selection(pat, HighlightTag.QUOTEMARK, regexp=True)
 
 
 def highlight_single_quotes() -> None:
@@ -104,15 +107,15 @@ def spotlight_range(spot_range: IndexRange) -> None:
         spot_range: The range to be spotlighted.
     """
     remove_spotlights()
-    _highlight_configure_tag(Highlight.TAG_SPOTLIGHT, Highlight.COLORS_SPOTLIGHT)
+    _highlight_configure_tag(HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT)
     maintext().tag_add(
-        Highlight.TAG_SPOTLIGHT, spot_range.start.index(), spot_range.end.index()
+        HighlightTag.SPOTLIGHT, spot_range.start.index(), spot_range.end.index()
     )
 
 
 def remove_spotlights() -> None:
     """Remove active spotlights"""
-    maintext().tag_delete(Highlight.TAG_SPOTLIGHT)
+    maintext().tag_delete(HighlightTag.SPOTLIGHT)
 
 
 def _highlight_configure_tag(
