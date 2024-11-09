@@ -81,6 +81,7 @@ class PrefKey(StrEnum):
     IMAGE_SCALE_FACTOR = auto()
     SCANNOS_FILENAME = auto()
     SCANNOS_HISTORY = auto()
+    HIGHLIGHT_QUOTBRAC = auto()
 
 
 class Preferences:

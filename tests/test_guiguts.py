@@ -56,7 +56,7 @@ def test_mainwindow() -> None:
     (accel, event) = process_accel("Cmd/Ctrl+y")
     if is_mac():
         assert accel == "Cmd+y"
-        assert event == "<Meta-y>"
+        assert event == "<Command-y>"
         (accel, event) = process_accel("Cmd+?")
         assert accel == "Cmd+?"
         assert event == "<Command-?>"
