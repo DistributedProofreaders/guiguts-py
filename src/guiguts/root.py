@@ -45,6 +45,8 @@ class Root(tk.Tk):
         self.allow_config_saves = False
         self.split_text_window = PersistentBoolean(PrefKey.SPLIT_TEXT_WINDOW)
         self.highlight_quotbrac = PersistentBoolean(PrefKey.HIGHLIGHT_QUOTBRAC)
+        self.highlight_aligncol = tk.BooleanVar()
+        self.aligncol = -1
 
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)

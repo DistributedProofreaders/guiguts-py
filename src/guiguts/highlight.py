@@ -1,9 +1,11 @@
 """Highlight functionality."""
 
 from enum import auto, StrEnum
+from tkinter import Text
 
 from guiguts.maintext import maintext
 from guiguts.preferences import preferences, PrefKey
+from guiguts.root import root
 from guiguts.utilities import IndexRange
 
 
@@ -19,6 +21,7 @@ class HighlightTag(StrEnum):
     CURLY_DOUBLE_QUOTE = auto()
     STRAIGHT_SINGLE_QUOTE = auto()
     CURLY_SINGLE_QUOTE = auto()
+    ALIGNCOL = auto()
 
 
 class HighlightColors:
@@ -86,6 +89,12 @@ class HighlightColors:
         "Light": {"bg": "dodgerblue", "fg": "white"},
         "Dark": {"bg": "dodgerblue", "fg": "white"},
         "Default": {"bg": "dodgerblue", "fg": "white"},
+    }
+
+    ALIGNCOL = {
+        "Light": {"bg": "greenyellow", "fg": "black"},
+        "Dark": {"bg": "#577a32", "fg": "white"},
+        "Default": {"bg": "greenyellow", "fg": "black"},
     }
 
 
@@ -196,7 +205,9 @@ def highlight_single_pair_bracketing_cursor(
     _highlight_configure_tag(tag_name, tag_colors)
     cursor = maintext().get_insert_index().index()
 
-    (top_index, bot_index) = get_screen_window_coordinates()
+    (top_index, bot_index) = get_screen_window_coordinates(
+        maintext().focus_widget(), 80
+    )
 
     # search backward for the startchar
     startindex = search_for_base_character_in_pair(
@@ -223,16 +234,19 @@ def highlight_single_pair_bracketing_cursor(
     maintext().tag_add(tag_name, endindex, maintext().index(f"{endindex}+1c"))
 
 
-def get_screen_window_coordinates() -> tuple[str, str]:
+def get_screen_window_coordinates(
+    viewport: Text, offscreen_lines: int = 5
+) -> tuple[str, str]:
     """
-    Find start and end coordinates for viewport (with a margin of
-    offscreen text added for padding).
-    """
-    # A magic number cribbed from Tk.pm's TextEdit.pm.
-    # This is how many rows to explore beyond the visible viewport.
-    offscreen_rows = 80
+    Find start and end coordinates for a viewport (with a margin of offscreen
+    text added for padding).
 
-    (top_frac, bot_frac) = maintext().focus_widget().yview()
+    Args:
+        viewport: the viewport to inspect
+        offscreen_lines: optional count of offscreen lines to inspect (default: 5)
+    """
+    (top_frac, bot_frac) = viewport.yview()
+    # use maintext() here, not view - there is no TextPeer.rowcol()
     end_index = maintext().rowcol("end")
 
     # Don't try to go beyond the boundaries of the document.
@@ -241,8 +255,8 @@ def get_screen_window_coordinates() -> tuple[str, str]:
     # the document; do some math to calculate what the top or bottom row in the
     # viewport should be, then use min/max to make sure that value isn't less
     # than 0 or more than the total row count.
-    top_line = max(int((top_frac * end_index.row) - offscreen_rows), 0)
-    bot_line = min(int((bot_frac * end_index.row) + offscreen_rows), end_index.row)
+    top_line = max(int((top_frac * end_index.row) - offscreen_lines), 0)
+    bot_line = min(int((bot_frac * end_index.row) + offscreen_lines), end_index.row)
 
     return (f"{top_line}.0", f"{bot_line}.0")
 
@@ -433,3 +447,44 @@ def remove_highlights_quotbrac() -> None:
         HighlightTag.CURLY_SINGLE_QUOTE,
     ):
         maintext().tag_delete(tag)
+
+
+def highlight_aligncol_callback(value: bool) -> None:
+    """Callback when highlight_aligncol active state is changed."""
+    if value:
+        root().aligncol = maintext().get_insert_index().col
+        highlight_aligncol()
+    else:
+        remove_highlights_aligncol()
+
+
+def highlight_aligncol() -> None:
+    """Add a highlight to all characters in the alignment column."""
+    if root().highlight_aligncol.get():
+        maintext().tag_delete(HighlightTag.ALIGNCOL)
+        _highlight_configure_tag(HighlightTag.ALIGNCOL, HighlightColors.ALIGNCOL)
+
+        highlight_aligncol_in_viewport(maintext())
+        if PrefKey.SPLIT_TEXT_WINDOW:
+            highlight_aligncol_in_viewport(maintext().peer)
+
+
+def highlight_aligncol_in_viewport(viewport: Text):
+    """Do highlighting of the alignment column in a single viewport."""
+    (top_index, bot_index) = get_screen_window_coordinates(viewport)
+
+    col = root().aligncol
+    row = int(top_index.split(".")[0])
+    end_row = int(bot_index.split(".")[0])
+
+    while row <= end_row:
+        # find length of row; don't highlight if row is too short to contain col
+        rowlen = int(maintext().index(f"{row}.0 lineend").split(".")[1])
+        if 0 < col < rowlen:
+            maintext().tag_add(HighlightTag.ALIGNCOL, f"{row}.{col}")
+        row += 1
+
+
+def remove_highlights_aligncol() -> None:
+    """Remove highlights for alignment column"""
+    maintext().tag_delete(HighlightTag.ALIGNCOL)

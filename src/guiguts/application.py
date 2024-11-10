@@ -22,6 +22,7 @@ from guiguts.highlight import (
     highlight_double_quotes,
     remove_highlights,
     highlight_quotbrac_callback,
+    highlight_aligncol_callback,
 )
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
@@ -595,6 +596,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_search.add_checkbox(
             "Highlight S~urrounding Quotes & Brackets",
             root().highlight_quotbrac,
+        )
+        menu_search.add_checkbox(
+            "Highlight Al~ignment Column",
+            root().highlight_aligncol,
+            lambda: highlight_aligncol_callback(True),
+            lambda: highlight_aligncol_callback(False),
         )
         menu_search.add_separator()
         self.init_bookmark_menu(menu_search)
