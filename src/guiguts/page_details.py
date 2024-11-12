@@ -6,6 +6,7 @@ from tkinter import simpledialog, ttk
 import roman  # type: ignore[import-untyped]
 
 from guiguts.maintext import maintext, page_mark_from_img
+from guiguts.utilities import is_mac
 from guiguts.widgets import OkApplyCancelDialog, mouse_bind, ToolTip
 
 STYLE_COLUMN = "#2"
@@ -149,6 +150,24 @@ class PageDetailsDialog(OkApplyCancelDialog):
         mouse_bind(
             self.list, "Shift+1", lambda event: self.item_clicked(event, reverse=True)
         )
+
+        def select_by_index(idx: int) -> None:
+            """Select the item with the given index (-1 for last one)."""
+            try:
+                child = self.list.get_children()[idx]
+            except IndexError:
+                return
+            self.list.selection_set(child)
+            self.list.see(child)
+
+        self.bind("<Home>", lambda _e: select_by_index(0))
+        self.bind("<End>", lambda _e: select_by_index(-1))
+        if is_mac():
+            self.bind("<Command-Up>", lambda _e: select_by_index(0))
+            self.bind(
+                "<Command-Down>",
+                lambda _e: select_by_index(-1),
+            )
 
         def display_page(_event: tk.Event) -> None:
             """Display the page for the selected row."""
