@@ -571,8 +571,9 @@ class FootnoteChecker:
         the AN record hilite start/end column positions of a second or subsequent anchor
         on the same line cannot be relied on because the label of a previous anchor on
         that line might have expanded. Example:
-            'B' -> 'AA' if the FN and its AN represented by label 'B' is the 53rd AN/FN
-            and the anchor of the 54th FN is on the same line.
+
+        'B' -> 'AA' if the FN and its AN represented by label 'B' is the 53rd AN/FN
+        and the anchor of the 54th FN is on the same line.
 
         On termination of the reindex() function these marks are unset.
 
