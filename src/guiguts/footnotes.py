@@ -28,6 +28,7 @@ _the_footnote_checker: Optional["FootnoteChecker"] = (
 )
 
 INSERTION_MARK_PREFIX = "ShadowFootnoteMark"
+ANCHOR_PREFIX = "Anchor"
 
 
 class FootnoteIndexStyle(StrEnum):
@@ -125,6 +126,7 @@ class FootnoteChecker:
 
     def join_to_previous(self) -> None:
         """Join the selected footnote to the previous one."""
+        maintext().undo_block_begin()
         fn_index = self.get_selected_fn_index()
         if fn_index < 0:
             return  # No selection
@@ -164,6 +166,7 @@ class FootnoteChecker:
         file if it is longer than 200 lines. This avoids inserting LZ headers
         at pseudo paragraph breaks in front matter pages.
         """
+        maintext().undo_block_begin()
         # If the last line of the file is not a blank line then add one.
         end_of_file = maintext().end().index()
         if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
@@ -200,6 +203,7 @@ class FootnoteChecker:
 
     def autoset_end_lz(self) -> None:
         """Insert a 'FOOTNOTES:' LZ header line at end of file."""
+        maintext().undo_block_begin()
         # If the last line of the file is not a blank line then add one.
         end_of_file = maintext().end().index()
         if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
@@ -208,10 +212,18 @@ class FootnoteChecker:
         # Insert the 'FOOTNOTES:' LZ header line after last line of file.
         maintext().insert(f"{end_of_file} +1l linestart", "\n\n" + "FOOTNOTES:" + "\n")
 
-    def clear_insertion_marks(self) -> None:
-        """Clear insertion marks created at paragraph ends."""
+    def clear_marks(self, mark_prefix: str) -> None:
+        """Clear marks of type 'mark_prefix'.
+
+        Used to unset marks with names such as "ShadowFootnoteMark3.15", "AnchorStart7"
+        or "AnchorEnd7".
+
+        Arg:
+            mark_prefix; The string "ShadowFootnoteMark" (INSERTION_MARK_PREFIX) or
+                         "Anchor" (ANCHOR_PREFIX).
+        """
         for mark in maintext().mark_names():
-            if mark.startswith(INSERTION_MARK_PREFIX):
+            if mark.startswith(mark_prefix):
                 maintext().mark_unset(mark)
 
     def add_blank_line_at_eof(self) -> None:
@@ -253,9 +265,25 @@ class FootnoteChecker:
     def move_footnotes_to_paragraphs(self) -> None:
         """Implements the 'Move FNs to Paragraphs' button.
 
-        Moves footnotes to below the paragraphs to which they are anchored.
-        There are no 'FOOTNOTES:' headers.
+        Moves footnotes to below the paragraph in which they are anchored.
+        There are no 'FOOTNOTES:' headers. It is a two-pass process. In the
+        first pass a named mark for each anchor record is set. The location
+        of each mark is the insertion point to which the corresponding footnote
+        will be moved. There may be many insertion marks at the same location
+        index. If an insertion point is immediately after a Page Marker (or
+        its page mark if Page Markers have been removed) then the insertion mark
+        is set to immediately before the Page Marker/page mark as in GG1.
+
+        The second pass simply iterates through the footnote record array copying
+        the text of each footnote before deleting the original and then inserting
+        the unchanged footnote text at its named insertion mark from the first pass.
+
+        The gravity setting for the named insertion marks is tk.RIGHT so that when
+        more than one footnote is inserted at the same location index, each footnote
+        is placed to the left of the insertion point so ensuring that the ascending
+        order of footnote labels is maintained.
         """
+        maintext().undo_block_begin()
         # Check for any duplicate footnote labels and warn user that they should
         # reindex footnotes before attempting to move them to paragraphs or LZ(s).
         if not self.ok_to_move_fns():
@@ -264,7 +292,6 @@ class FootnoteChecker:
             )
             return
         an_records = self.get_an_records()
-        fn_records = self.get_fn_records()
         # If the last line of the file is not a blank line then add one.
         end_of_file = maintext().end().index()
         if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
@@ -272,23 +299,16 @@ class FootnoteChecker:
 
         # First pass.
 
-        # Set a mark before last blank line that separates a paragraph from the start
-        # of the next paragraph. The mark is the insertion point to which one or more
-        # footnotes will be inserted. The gravity setting for the marks is tk.RIGHT
-        # so that when more than one footnote is inserted at the same mark, each
-        # footnote will appear to the left of the mark so ensuring that the ascending
-        # order of footnote labels is maintained.
+        # Set marks at the start of the blank line that separates a paragraph from the start
+        # of the next paragraph. The marks designate the location index at which one or more
+        # footnotes will be inserted. The gravity setting for the marks is tk.RIGHT so that
+        # when more than one footnote is inserted at the same mark, each footnote will appear
+        # immediately to its left so ensuring that the ascending order of footnote labels is
+        # maintained.
 
         file_end = maintext().end().index()
         match_regex = r"^$"
-        an_record_index = 0
-        for an_record in an_records:
-            # Get the record of the footnote it anchors.
-            fn_record = fn_records[an_record.fn_index]
-            fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
-            fn_cur_end = self.checker_dialog.mark_from_rowcol(fn_record.end)
-
-            fn_lines = maintext().get(fn_cur_start, fn_cur_end)
+        for an_record_index, an_record in enumerate(an_records):
             # Find the end of paragraph in which the footnote anchor is located.
             # Start searching from the line containing the anchor.
             search_range = IndexRange(
@@ -316,20 +336,37 @@ class FootnoteChecker:
                     f"{blank_line_start} +1l linestart"
                 )
                 # Keep looking for a suitable blank line at which to insert footnote.
-                # search_range = IndexRange(restart_search_point, maintext().end())
                 search_range = IndexRange(
                     restart_search_point,
                     maintext().rowcol(f"{file_end} + 1l linestart"),
                 )
-            # End while loop
+            # End the blank line search while loop.
 
             # If the insert point is a blank line immediately after a Page Marker, place
-            # the insert point at the start of the Page Marker as GG1 does - recall that
-            # the gravity setting used for marks is tk.RIGHT.
+            # the insert point at the start of the Page Marker as GG1 does. If Page Markers
+            # have been removed, look for a page mark at the insertion point and place the
+            # insertion point before that page mark. Recall that the gravity setting used for
+            # marks is tk.RIGHT.
+
+            # Line immediately before the insertion point. We'll test below if it is a Page
+            # Marker record.
             line_before = maintext().get(
                 f"{blank_line_start} -1l linestart", f"{blank_line_start} -1l lineend"
             )
-            if line_before[0:11] == "-----File: ":
+            # If we are instead relying on page marks because Page Separator Fixup has been run.
+            next_page_mark = maintext().page_mark_next(blank_line_start)
+            # Give next_page_mark a numeric value if it's not a page mark.
+            if not maintext().is_page_mark(next_page_mark):
+                next_page_mark = "1.0"
+            # The 'if' statement below will handle either case:
+            #   LHS of 'or' assumes Page Markers are still in file. It tests for presence of
+            #   a Page Marker string immediately preceding the insert point we have found.
+            #   RHS of 'or' assumes Page Markers have been removed by 'Page Separator Fixup'.
+            #   It tests for a page mark exactly at the insert point we have found.
+            if line_before[0:11] == "-----File: " or maintext().compare(
+                next_page_mark, "==", blank_line_start
+            ):
+                # Place the insert point before the Page Marker/page mark.
                 mark_point = maintext().rowcol(f"{blank_line_start} -1l")
                 maintext().set_mark_position(
                     f"{INSERTION_MARK_PREFIX}{an_record_index}",
@@ -338,19 +375,21 @@ class FootnoteChecker:
                 )
             else:
                 # Place the insert point at the start of the blank line we've landed on.
-                # Recall that the gravity setting used for marks is tk.RIGHT.
                 mark_point = maintext().rowcol(f"{blank_line_start}")
                 maintext().set_mark_position(
                     f"{INSERTION_MARK_PREFIX}{an_record_index}",
                     mark_point,
                     gravity=tk.RIGHT,
                 )
-            an_record_index += 1
 
         # Second pass
 
-        fn_record_index = 0
-        for fn_record in fn_records:
+        # Iterate through the footnote record array copying the text of each footnote
+        # before deleting the original and then inserting the unchanged footnote text
+        # at its named insertion mark from the first pass.
+
+        fn_records = self.get_fn_records()
+        for fn_record_index, fn_record in enumerate(fn_records):
             fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
             fn_cur_end = self.checker_dialog.mark_from_rowcol(fn_record.end)
             fn_lines = maintext().get(fn_cur_start, fn_cur_end)
@@ -361,11 +400,10 @@ class FootnoteChecker:
             maintext().insert(
                 f"{INSERTION_MARK_PREFIX}{fn_record_index}", "\n" + fn_lines + "\n"
             )
-            fn_record_index += 1
 
         # End of final pass over footnotes.
 
-        self.clear_insertion_marks()
+        self.clear_marks(INSERTION_MARK_PREFIX)
         # Footnotes have been moved. Rebuild anchor and footnote record arrays
         # to reflect the changes.
         self.run_check()
@@ -383,6 +421,7 @@ class FootnoteChecker:
         file or multiple LZ 'FOOTNOTES:' headers, each one inserted before every
         4-line chapter break.
         """
+        maintext().undo_block_begin()
         # Check for any duplicate footnote labels and warn user that they should
         # reindex footnotes before attempting to move them to paragraphs or LZ(s).
         if not self.ok_to_move_fns():
@@ -405,20 +444,32 @@ class FootnoteChecker:
         fn_records = self.get_fn_records()
         fn_records_reversed = fn_records.copy()
         fn_records_reversed.reverse()
+        an_records = self.get_an_records()
         for fn_record in fn_records_reversed:
             fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
             fn_cur_end = self.checker_dialog.mark_from_rowcol(fn_record.end)
             fn_lines = maintext().get(fn_cur_start, fn_cur_end)
-            # Is there an LZ below this footnote in the file?
-            # If not, create one and move footnote below it.
-            # Otherwise move footnote below the LZ that was
-            # found
-            search_range = IndexRange(fn_record.end, maintext().end())
+            # Get anchor record for this footnote.
+            an_cur = an_records[fn_record.an_index]  # type: ignore[index]
+            an_cur_end = maintext().index(
+                self.checker_dialog.mark_from_rowcol(an_cur.end)
+            )
+            # Is there an LZ below the *anchor* of this footnote?
+            #
+            # NB This corrects a bug found by @sjfoo when chapter breaks occur mid-page
+            #    rather than starting a new page. A footnote at the bottom of the page
+            #    whose anchor is in the previous chapter is incorrectly moved to the LZ
+            #    for the following chapter. Doing the search for the LZ from immediately
+            #    after the anchor of each footnote avoids this pitfall.
+            #
+            # If no LZ, create one and move footnote below it. Otherwise move footnote
+            # below the LZ that was found
+            search_range = IndexRange(an_cur_end, maintext().end())
             match_regex = r"FOOTNOTES:"
             if lz_match := maintext().find_match(
                 match_regex, search_range, regexp=True
             ):
-                # There is a LZ below the footnote.
+                # There is a LZ below the anchor of the footnote.
                 lz_start = lz_match.rowcol.index()
                 below_lz = f"{lz_start} lineend"
                 # Insert the copy of the footnote line(s) below the LZ.
@@ -429,8 +480,8 @@ class FootnoteChecker:
                     f"{fn_cur_start} -1l linestart", f"{fn_cur_end} +1l linestart"
                 )
             else:
-                # This branch should be entered 0 or 1 times only.
-                # Here with a footnote with no landing zone below.
+                # This branch should be entered 0 or 1 times only. Here
+                # with a footnote anchor with no landing zone below.
                 # There are two situations where this can happen:
                 #  1. The last footnote is in the last chapter of
                 #     the book and chapter LZ has been selected.
@@ -493,6 +544,7 @@ class FootnoteChecker:
         Copies and deletes the original footnote then reinserts edited
         version at the same place.
         """
+        maintext().undo_block_begin()
         fn_records = self.get_fn_records()
         for fn_record in fn_records:
             fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
@@ -511,38 +563,27 @@ class FootnoteChecker:
         display_footnote_entries()
         self.display_buttons()
 
-    def get_anchor_hilite_columns(
-        self, an_record: AnchorRecord, an_line_text: str
-    ) -> tuple:
-        """Get new hilite start/end of an anchor after it's reindexed.
+    def get_anchor_hilite_columns_from_marks(self, an_record: AnchorRecord) -> tuple:
+        """Get hilite start/end columns of an anchor from its start/end mark positions.
 
-        The line with an anchor to be reindexed has to be fetched from the file
-        each time the reindex() function wants to replace an anchor label. The
-        original hilite start/end in the anchor record cannot be relied on as
-        the length of the label may change as a result of indexing. That problem
-        is compounded if there is more than one anchor on the same line.
+        The first thing the reindex() function does is set marks at the hilite start/end
+        column positions of each anchor. When there is more than one anchor on a line
+        the AN record hilite start/end column positions of a second or subsequent anchor
+        on the same line cannot be relied on because the label of a previous anchor on
+        that line might have expanded. Example:
+            'B' -> 'AA' if the FN and its AN represented by label 'B' is the 53rd AN/FN
+            and the anchor of the 54th FN is on the same line.
 
-        To find the (new position of the) anchor in the line text, first find the
-        label of the footnote that it anchors and extract its label. Then search
-        for the string '[label]' on the line noting its start/end positions when
-        located.
+        On termination of the reindex() function these marks are unset.
 
         Returns:
-            a tuple containing the new hilite start/end positions of the anchor.
+            a tuple containing integer column hilite start/end positions of anchor.
         """
-        fn_records = self.get_fn_records()
-        # Get FN record that is 'anchored' by this anchor record.
-        fn_record = fn_records[an_record.fn_index]
-        # Extract the label text from '[Footnote label: ...]'.
-        fn_line_text = fn_record.text
-        fn_label_start = 10
-        fn_label_end = fn_line_text.find(":")
-        fn_label = fn_line_text[fn_label_start:fn_label_end]
-        # Now find '[label]' on the anchor line and note its start/end positions.
-        # Note that there maybe more than one footnote anchor on a line.
-        an_start = an_line_text.find(f"[{fn_label}]")
-        an_end = an_start + len(f"[{fn_label}]")
-        return an_start, an_end
+        an_cur_start = self.checker_dialog.mark_from_rowcol(an_record.start)
+        an_cur_end = self.checker_dialog.mark_from_rowcol(an_record.end)
+        hilite_start = re.sub(r"^.+?\.(.+$)", r"\1", an_cur_start)
+        hilite_end = re.sub(r"^.+?\.(.+$)", r"\1", an_cur_end)
+        return int(hilite_start), int(hilite_end)
 
     def alpha(self, label: int) -> str:
         """Converts given footnote number to alphabetic form:
@@ -570,6 +611,7 @@ class FootnoteChecker:
 
     def set_anchor(self) -> None:
         """Insert anchor using label of selected footnote."""
+        maintext().undo_block_begin()
         insert_index = maintext().get_insert_index().index()
         # Get label to use  for anchor from the selected FN.
         fn_index = self.get_selected_fn_index()
@@ -603,6 +645,7 @@ class FootnoteChecker:
 
     def set_lz_at_cursor(self) -> None:
         """Insert FOOTNOTES: header at cursor."""
+        maintext().undo_block_begin()
         insert_index = maintext().get_insert_index().index()
         # Place FOOTNOTES: header at cursor; normally the header is
         # spaced two lines down from chapter end or end of book.
@@ -617,6 +660,23 @@ class FootnoteChecker:
 
         fn_index_style values are 'number', 'letter' or 'roman'.
         """
+        maintext().undo_block_begin()
+        # Set a mark at the start of each anchor. The length of an anchor label may change
+        # as a result of reindexing.
+        an_records = self.get_an_records()
+        for an_record_index, an_record in enumerate(an_records):
+            start_mark = an_record.start
+            end_mark = an_record.end
+            maintext().set_mark_position(
+                f"{ANCHOR_PREFIX}Start{an_record_index}",
+                start_mark,
+                gravity=tk.RIGHT,
+            )
+            maintext().set_mark_position(
+                f"{ANCHOR_PREFIX}End{an_record_index}",
+                end_mark,
+                gravity=tk.RIGHT,
+            )
         # Check index style used last time Footnotes Fixup was run or default if first run.
         index_style = self.fn_index_style.get()
         an_records = self.get_an_records()
@@ -637,13 +697,13 @@ class FootnoteChecker:
                 f"{an_record.start.index()} linestart",
                 f"{an_record.start.index()} lineend",
             )
-            hl_start, hl_end = self.get_anchor_hilite_columns(an_record, an_line_text)
+            hl_start, hl_end = self.get_anchor_hilite_columns_from_marks(an_record)
             replacement_text = (
                 f"{an_line_text[0:hl_start]}[{label}]{an_line_text[hl_end:]}"
             )
             an_start = f"{an_record.start.index()} linestart"
-            maintext().delete(an_start, f"{an_start} lineend")
-            maintext().insert(an_start, replacement_text)
+            maintext().delete(f"{an_start}", f"{an_start} lineend")
+            maintext().insert(f"{an_start}", replacement_text)
             #
             fn_record = fn_records[index - 1]
             fn_line_text = fn_record.text
@@ -658,6 +718,8 @@ class FootnoteChecker:
             maintext().insert(f"{fn_start}", fn_line_text)
         # AN/FN file entries have changed. Update AN/FN records.
         self.run_check()
+        # Clear temporary anchor start/end marks
+        self.clear_marks(ANCHOR_PREFIX)
         # Maintain the order of function calls below.
         display_footnote_entries()
         self.display_buttons()
@@ -748,21 +810,26 @@ class FootnoteChecker:
 
     def display_buttons(self) -> None:
         """Helper function to create dialog window for run_check."""
-        frame = ttk.Frame(self.checker_dialog.header_frame)
-        frame.grid(column=0, row=1, sticky="NSEW")
 
-        # Fixing flagged FN records in dialog.
-
-        fixit_frame = ttk.Frame(frame, padding=10)
-        frame.grid_columnconfigure(0, weight=1)
-        fixit_frame.grid(column=0, row=0, sticky="NSEW")
+        # Make the fixit_frame that contains all the buttons a direct child
+        # of header_frame that contains the 'Re-run' button. The buttons can
+        # then extend below the 'Re-run' button if columnspan=2 is added to
+        # fixit_frame's grid command. Some padding is required for correct
+        # RH alignment of the 'fixit' buttons with the 'Re-run' button.
+        fixit_frame = ttk.Frame(self.checker_dialog.header_frame, padding=20)
+        fixit_frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
+        # Weight only needs setting once for each column, not every row of
+        # every column.
+        fixit_frame.grid_columnconfigure(0, weight=1)
+        fixit_frame.grid_columnconfigure(1, weight=1)
+        fixit_frame.grid_columnconfigure(2, weight=1)
+        fixit_frame.grid_columnconfigure(3, weight=1)
         # --
         join_button = ttk.Button(
             fixit_frame,
             text="Join Selected FN to Previous",
             command=self.join_to_previous,
         )
-        fixit_frame.grid_columnconfigure(0, weight=1)
         join_button.grid(column=0, row=0, pady=2, sticky="NSEW")
         # --
         prev_fn_button = ttk.Button(
@@ -770,7 +837,6 @@ class FootnoteChecker:
             text="<-- Prev. FN",
             command=lambda: self.next_footnote("back"),
         )
-        fixit_frame.grid_columnconfigure(1, weight=1)
         prev_fn_button.grid(column=1, row=0, pady=2, sticky="NSEW")
         # --
         next_fn_button = ttk.Button(
@@ -778,7 +844,6 @@ class FootnoteChecker:
             text="Next FN -->",
             command=lambda: self.next_footnote("forward"),
         )
-        fixit_frame.grid_columnconfigure(2, weight=1)
         next_fn_button.grid(column=2, row=0, pady=2, sticky="NSEW")
         # --
         anchor_button = ttk.Button(
@@ -786,7 +851,6 @@ class FootnoteChecker:
             text="Set Anchor for Selected FN",
             command=self.set_anchor,
         )
-        fixit_frame.grid_columnconfigure(3, weight=1)
         anchor_button.grid(column=3, row=0, pady=2, sticky="NSEW")
 
         # Reindexing Footnotes
@@ -798,7 +862,6 @@ class FootnoteChecker:
             value=FootnoteIndexStyle.NUMBER,
             takefocus=False,
         )
-        fixit_frame.grid_columnconfigure(0, weight=1)
         all_to_num.grid(column=0, row=1, pady=2, sticky="NSEW")
         # --
         all_to_let = ttk.Radiobutton(
@@ -808,7 +871,6 @@ class FootnoteChecker:
             value=FootnoteIndexStyle.LETTER,
             takefocus=False,
         )
-        fixit_frame.grid_columnconfigure(1, weight=1)
         all_to_let.grid(column=1, row=1, pady=2, sticky="NSEW")
         # --
         all_to_rom = ttk.Radiobutton(
@@ -818,7 +880,6 @@ class FootnoteChecker:
             value=FootnoteIndexStyle.ROMAN,
             takefocus=False,
         )
-        fixit_frame.grid_columnconfigure(2, weight=1)
         all_to_rom.grid(column=2, row=1, pady=2, sticky="NSEW")
         # --
         reindex_button = ttk.Button(
@@ -826,7 +887,6 @@ class FootnoteChecker:
             text="Reindex",
             command=self.reindex,
         )
-        fixit_frame.grid_columnconfigure(3, weight=1)
         reindex_button.grid(column=3, row=1, pady=2, sticky="NSEW")
 
         # Setting LZs, moving FNs, tidying FNs.
@@ -836,7 +896,6 @@ class FootnoteChecker:
             text="Set LZ @ Cursor",
             command=self.set_lz_at_cursor,
         )
-        fixit_frame.grid_columnconfigure(0, weight=1)
         lz_set_at_cursor_button.grid(column=0, row=2, pady=2, sticky="NSEW")
         # --
         lz_set_at_end_button = ttk.Button(
@@ -844,7 +903,6 @@ class FootnoteChecker:
             text="Autoset End LZ",
             command=self.autoset_end_lz,
         )
-        fixit_frame.grid_columnconfigure(1, weight=1)
         lz_set_at_end_button.grid(column=1, row=2, pady=2, sticky="NSEW")
         # --
         lz_set_at_chapter_button = ttk.Button(
@@ -852,7 +910,6 @@ class FootnoteChecker:
             text="Autoset Chap. LZ",
             command=self.autoset_chapter_lz,
         )
-        fixit_frame.grid_columnconfigure(2, weight=1)
         lz_set_at_chapter_button.grid(column=2, row=2, pady=2, sticky="NSEW")
         # --
         move_to_lz_button = ttk.Button(
@@ -860,7 +917,6 @@ class FootnoteChecker:
             text="Move FNs to Landing Zone(s)",
             command=self.move_footnotes_to_lz,
         )
-        fixit_frame.grid_columnconfigure(3, weight=1)
         move_to_lz_button.grid(column=3, row=2, pady=2, sticky="NSEW")
         # --
         move_to_para_button = ttk.Button(
@@ -868,7 +924,6 @@ class FootnoteChecker:
             text="Move FNs to Paragraphs",
             command=self.move_footnotes_to_paragraphs,
         )
-        fixit_frame.grid_columnconfigure(0, weight=0)
         move_to_para_button.grid(column=0, row=3, pady=2, sticky="NSEW")
         # --
         fn_tidy_button = ttk.Button(
@@ -876,7 +931,6 @@ class FootnoteChecker:
             text="Tidy Footnotes",
             command=self.tidy_footnotes,
         )
-        fixit_frame.grid_columnconfigure(3, weight=1)
         fn_tidy_button.grid(column=3, row=3, pady=2, sticky="NSEW")
 
         # Some buttons are disabled if their operation could corrupt the file.
