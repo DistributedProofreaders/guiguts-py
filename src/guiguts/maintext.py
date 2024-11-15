@@ -520,10 +520,16 @@ class MainText(tk.Text):
         By setting flag now, and queuing calls to _do_linenumbers_redraw,
         we ensure the flag will be true for the first call to
         _do_linenumbers_redraw."""
+        # import here to avoid circular import problem.
+        from guiguts.highlight import (  # pylint: disable=import-outside-toplevel
+            highlight_quotbrac,
+        )
+
         if not self.numbers_need_updating:
             self.root.after_idle(self._do_linenumbers_redraw)
             self.root.after_idle(self._call_config_callbacks)
             self.root.after_idle(self.save_sash_coords)
+            self.root.after_idle(highlight_quotbrac)
             self.numbers_need_updating = True
 
     def save_sash_coords(self) -> None:

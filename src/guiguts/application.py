@@ -21,6 +21,7 @@ from guiguts.highlight import (
     highlight_single_quotes,
     highlight_double_quotes,
     remove_highlights,
+    highlight_quotbrac_callback,
 )
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
@@ -412,6 +413,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
                 str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_STEALTH_SCANNOS)),
             ],
         )
+        preferences.set_default(PrefKey.HIGHLIGHT_QUOTBRAC, False)
+        preferences.set_callback(
+            PrefKey.HIGHLIGHT_QUOTBRAC, highlight_quotbrac_callback
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -581,6 +586,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_search.add_button(
             "Highlight ~Double Quotes in Selection",
             highlight_double_quotes,
+        )
+        menu_search.add_checkbox(
+            "Highlight S~urrounding Quotes & Brackets",
+            root().highlight_quotbrac,
         )
         menu_search.add_button(
             "~Remove Highlights",

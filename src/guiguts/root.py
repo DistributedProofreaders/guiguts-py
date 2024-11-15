@@ -44,6 +44,7 @@ class Root(tk.Tk):
         self.ordinal_names_state = PersistentBoolean(PrefKey.ORDINAL_NAMES)
         self.allow_config_saves = False
         self.split_text_window = PersistentBoolean(PrefKey.SPLIT_TEXT_WINDOW)
+        self.highlight_quotbrac = PersistentBoolean(PrefKey.HIGHLIGHT_QUOTBRAC)
 
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)
