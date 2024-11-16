@@ -541,6 +541,7 @@ class MainText(tk.Text):
         from guiguts.highlight import (  # pylint: disable=import-outside-toplevel
             highlight_quotbrac,
             highlight_aligncol,
+            highlight_cursor_line,
         )
 
         if not self.numbers_need_updating:
@@ -549,6 +550,7 @@ class MainText(tk.Text):
             self.root.after_idle(self.save_sash_coords)
             self.root.after_idle(highlight_quotbrac)
             self.root.after_idle(highlight_aligncol)
+            self.root.after_idle(highlight_cursor_line)
             self.numbers_need_updating = True
 
     def save_sash_coords(self) -> None:

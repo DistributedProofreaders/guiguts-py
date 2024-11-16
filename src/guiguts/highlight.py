@@ -22,6 +22,7 @@ class HighlightTag(StrEnum):
     STRAIGHT_SINGLE_QUOTE = auto()
     CURLY_SINGLE_QUOTE = auto()
     ALIGNCOL = auto()
+    CURSOR_LINE = auto()
 
 
 class HighlightColors:
@@ -85,6 +86,11 @@ class HighlightColors:
     ALIGNCOL = {
         "Light": {"bg": "greenyellow", "fg": "black"},
         "Dark": {"bg": "green", "fg": "white"},
+    }
+
+    CURSOR_LINE = {
+        "Light": {"bg": "#efefef", "fg": "black"},
+        "Dark": {"bg": "#303030", "fg": "white"},
     }
 
 
@@ -482,3 +488,16 @@ def highlight_aligncol_in_viewport(viewport: Text):
 def remove_highlights_aligncol() -> None:
     """Remove highlights for alignment column"""
     maintext().tag_delete(HighlightTag.ALIGNCOL)
+
+
+def highlight_cursor_line() -> None:
+    """Add a highlight to entire line cursor is focused on."""
+    maintext().tag_delete(HighlightTag.CURSOR_LINE)
+
+    # Don't re-highlight if there's currently a selection
+    if not maintext().selected_ranges():
+        _highlight_configure_tag(HighlightTag.CURSOR_LINE, HighlightColors.CURSOR_LINE)
+
+        row = maintext().get_insert_index().row
+        maintext().tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row+1}.0")
+        maintext().tag_lower(HighlightTag.CURSOR_LINE)
