@@ -587,14 +587,16 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Highlight ~Double Quotes in Selection",
             highlight_double_quotes,
         )
-        menu_search.add_checkbox(
-            "Highlight S~urrounding Quotes & Brackets",
-            root().highlight_quotbrac,
-        )
         menu_search.add_button(
             "~Remove Highlights",
             remove_highlights,
         )
+        menu_search.add_separator()
+        menu_search.add_checkbox(
+            "Highlight S~urrounding Quotes & Brackets",
+            root().highlight_quotbrac,
+        )
+        menu_search.add_separator()
         self.init_bookmark_menu(menu_search)
 
     def init_search_goto_menu(self, parent: Menu) -> None:
