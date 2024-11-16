@@ -573,10 +573,6 @@ class MainText(tk.Text):
         self.restore_selection_ranges(ranges)
         self.after_idle(lambda: self.restore_selection_ranges(ranges))
 
-    def toggle_line_numbers(self) -> None:
-        """Toggle whether line numbers are shown."""
-        preferences.set(PrefKey.LINE_NUMBERS, not preferences.get(PrefKey.LINE_NUMBERS))
-
     def show_line_numbers(self, show: bool) -> None:
         """Show or hide line numbers.
 
@@ -585,8 +581,10 @@ class MainText(tk.Text):
         """
         if show:
             self.linenumbers.grid()
+            self.peer_linenumbers.grid()
         else:
             self.linenumbers.grid_remove()
+            self.peer_linenumbers.grid_remove()
 
     def key_bind(
         self, keyevent: str, handler: Callable[[Any], None], bind_all: bool
