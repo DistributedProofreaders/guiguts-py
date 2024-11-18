@@ -406,6 +406,19 @@ class MainText(tk.Text):
                 bind_peer=True,
             )
 
+        # Defang some potentially destructive editing keys
+        for _key in ("D", "H", "K", "T"):
+            self.key_bind(
+                f"<Control-{_key}>", lambda _event: self.do_nothing(), bind_all=False
+            )
+        if is_mac():
+            for _key in ("I", "O"):
+                self.key_bind(
+                    f"<Control-{_key}>",
+                    lambda _event: self.do_nothing(),
+                    bind_all=False,
+                )
+
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
         self.bind_event(
@@ -421,6 +434,10 @@ class MainText(tk.Text):
 
         # Force focus to maintext widget
         self.after_idle(lambda: grab_focus(self.root, self, True))
+
+    def do_nothing(self) -> None:
+        """The only winning move is not to play."""
+        return
 
     def focus_widget(self) -> tk.Text:
         """Return whether main text or peer last had focus.
