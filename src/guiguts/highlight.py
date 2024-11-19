@@ -40,61 +40,51 @@ class HighlightColors:
     QUOTEMARK = {
         "Light": {"bg": "#a08dfc", "fg": "black"},
         "Dark": {"bg": "#a08dfc", "fg": "white"},
-        "Default": {"bg": "#a08dfc", "fg": "black"},
     }
 
     SPOTLIGHT = {
         "Light": {"bg": "orange", "fg": "black"},
         "Dark": {"bg": "orange", "fg": "white"},
-        "Default": {"bg": "orange", "fg": "black"},
     }
 
     PAREN = {
         "Light": {"bg": "violet", "fg": "white"},
         "Dark": {"bg": "violet", "fg": "white"},
-        "Default": {"bg": "violet", "fg": "white"},
     }
 
     CURLY_BRACKET = {
         "Light": {"bg": "blue", "fg": "white"},
         "Dark": {"bg": "blue", "fg": "white"},
-        "Default": {"bg": "blue", "fg": "white"},
     }
 
     SQUARE_BRACKET = {
         "Light": {"bg": "purple", "fg": "white"},
         "Dark": {"bg": "purple", "fg": "white"},
-        "Default": {"bg": "purple", "fg": "white"},
     }
 
     STRAIGHT_DOUBLE_QUOTE = {
         "Light": {"bg": "green", "fg": "white"},
         "Dark": {"bg": "green", "fg": "white"},
-        "Default": {"bg": "green", "fg": "white"},
     }
 
     CURLY_DOUBLE_QUOTE = {
         "Light": {"bg": "limegreen", "fg": "white"},
         "Dark": {"bg": "limegreen", "fg": "white"},
-        "Default": {"bg": "limegreen", "fg": "white"},
     }
 
     STRAIGHT_SINGLE_QUOTE = {
         "Light": {"bg": "grey", "fg": "white"},
         "Dark": {"bg": "grey", "fg": "white"},
-        "Default": {"bg": "grey", "fg": "white"},
     }
 
     CURLY_SINGLE_QUOTE = {
         "Light": {"bg": "dodgerblue", "fg": "white"},
         "Dark": {"bg": "dodgerblue", "fg": "white"},
-        "Default": {"bg": "dodgerblue", "fg": "white"},
     }
 
     ALIGNCOL = {
         "Light": {"bg": "greenyellow", "fg": "black"},
-        "Dark": {"bg": "#577a32", "fg": "white"},
-        "Default": {"bg": "greenyellow", "fg": "black"},
+        "Dark": {"bg": "green", "fg": "white"},
     }
 
 
@@ -173,7 +163,11 @@ def _highlight_configure_tag(
         tag_name: Tag to be configured.
         tag_colors: Dictionary of fg/bg colors for each theme.
     """
-    theme = preferences.get(PrefKey.THEME_NAME)
+    if maintext().is_dark_theme():
+        theme = "Dark"
+    else:
+        theme = "Light"
+
     maintext().tag_configure(
         tag_name,
         background=tag_colors[theme]["bg"],
