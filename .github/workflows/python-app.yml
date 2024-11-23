@@ -43,8 +43,8 @@ jobs:
         poetry run python -m sphinx -M coverage docs docs/build -W
     - name: Static type check with mypy
       run: |
-        poetry run mypy -p guiguts
-        poetry run mypy tests
+        poetry run mypy --disallow-untyped-defs -p guiguts
+        poetry run mypy --disallow-untyped-defs tests
     - name: Test with pytest
       run: |
         poetry run pytest
