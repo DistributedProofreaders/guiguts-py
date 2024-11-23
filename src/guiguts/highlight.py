@@ -469,7 +469,7 @@ def highlight_aligncol() -> None:
             highlight_aligncol_in_viewport(maintext().peer)
 
 
-def highlight_aligncol_in_viewport(viewport: Text):
+def highlight_aligncol_in_viewport(viewport: Text) -> None:
     """Do highlighting of the alignment column in a single viewport."""
     (top_index, bot_index) = get_screen_window_coordinates(viewport)
 
