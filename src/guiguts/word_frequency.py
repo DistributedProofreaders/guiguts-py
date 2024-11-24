@@ -860,11 +860,15 @@ def wf_populate_hyphens(wf_dialog: WordFrequencyDialog) -> None:
 
     # See if word pair suspects exist, e.g. "flash light" for "flash-light"
     word_pairs: WFDict = WFDict()
+    # Replace single newline or multiple spaces with single space
+    # (Multiple newlines is probably deliberate rather than error)
     whole_text = re.sub(r"(\n| +)", " ", maintext().get_text())
     for word in all_words:
         if "-" in word:
             pair = word.replace("-", " ")
-            count = whole_text.count(f" {pair} ")
+            # Find word pair not preceded/followed by a letter - this is so
+            # that space or punctuation surrounding the pair doesn't break things.
+            count = len(re.findall(rf"(?<!\w){pair}(?!\w)", whole_text))
             if count:
                 word_pairs[pair] = count
 
