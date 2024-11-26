@@ -17,13 +17,6 @@ from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check
 from guiguts.illo_sn_fixup import illosn_check
-from guiguts.highlight import (
-    highlight_single_quotes,
-    highlight_double_quotes,
-    remove_highlights,
-    highlight_quotbrac_callback,
-    highlight_aligncol_callback,
-)
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
     MainWindow,
@@ -316,6 +309,13 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual")
 
+    def highlight_quotbrac_callback(self, value: bool) -> None:
+        """Callback when highlight_quotbrac preference is changed."""
+        if value:
+            maintext().highlight_quotbrac()
+        else:
+            maintext().remove_highlights_quotbrac()
+
     def initialize_preferences(self) -> None:
         """Set default preferences and load settings from the GGPrefs file."""
         preferences.set_default(PrefKey.AUTO_IMAGE, False)
@@ -416,7 +416,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         preferences.set_default(PrefKey.HIGHLIGHT_QUOTBRAC, False)
         preferences.set_callback(
-            PrefKey.HIGHLIGHT_QUOTBRAC, highlight_quotbrac_callback
+            PrefKey.HIGHLIGHT_QUOTBRAC, self.highlight_quotbrac_callback
         )
 
         # Check all preferences have a default
@@ -582,15 +582,15 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_search.add_separator()
         menu_search.add_button(
             "Highlight Single ~Quotes in Selection",
-            highlight_single_quotes,
+            maintext().highlight_single_quotes,
         )
         menu_search.add_button(
             "Highlight ~Double Quotes in Selection",
-            highlight_double_quotes,
+            maintext().highlight_double_quotes,
         )
         menu_search.add_button(
             "~Remove Highlights",
-            remove_highlights,
+            maintext().remove_highlights,
         )
         menu_search.add_separator()
         menu_search.add_checkbox(
@@ -599,9 +599,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         menu_search.add_checkbox(
             "Highlight Al~ignment Column",
-            root().highlight_aligncol,
-            lambda: highlight_aligncol_callback(True),
-            lambda: highlight_aligncol_callback(False),
+            maintext().aligncol_active,
+            lambda: maintext().highlight_aligncol_callback(True),
+            lambda: maintext().highlight_aligncol_callback(False),
         )
         menu_search.add_separator()
         self.init_bookmark_menu(menu_search)
