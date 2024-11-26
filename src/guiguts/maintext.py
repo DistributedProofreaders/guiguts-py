@@ -525,6 +525,9 @@ class MainText(tk.Text):
         # Force focus to maintext widget
         self.after_idle(lambda: grab_focus(self.root, self, True))
 
+        # Initialize highlighting tags
+        self.after_idle(self.highlight_initialize_tags)
+
     def do_nothing(self) -> None:
         """The only winning move is not to play."""
         return
@@ -2489,12 +2492,11 @@ class MainText(tk.Text):
 
     def remove_highlights(self) -> None:
         """Remove active highlights."""
-        self.tag_delete(HighlightTag.QUOTEMARK)
+        self.tag_remove(HighlightTag.QUOTEMARK, "1.0", tk.END)
 
     def highlight_quotemarks(self, pat: str) -> None:
         """Highlight quote marks in current selection which match a pattern."""
         self.remove_highlights()
-        self._highlight_configure_tag(HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK)
         self.highlight_selection(pat, HighlightTag.QUOTEMARK, regexp=True)
 
     def highlight_single_quotes(self) -> None:
@@ -2512,14 +2514,13 @@ class MainText(tk.Text):
             spot_range: The range to be spotlighted.
         """
         self.remove_spotlights()
-        self._highlight_configure_tag(HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT)
         self.tag_add(
             HighlightTag.SPOTLIGHT, spot_range.start.index(), spot_range.end.index()
         )
 
     def remove_spotlights(self) -> None:
         """Remove active spotlights"""
-        self.tag_delete(HighlightTag.SPOTLIGHT)
+        self.tag_remove(HighlightTag.SPOTLIGHT, "1.0", tk.END)
 
     def get_screen_window_coordinates(
         self, viewport: Text, offscreen_lines: int = 5
@@ -2645,7 +2646,6 @@ class MainText(tk.Text):
         startchar: str,
         endchar: str,
         tag_name: str,
-        tag_colors: dict[str, dict[str, str]],
         *,
         charpair: str = "",
     ) -> None:
@@ -2658,11 +2658,9 @@ class MainText(tk.Text):
             startchar: opening char of pair (e.g. '(')
             endchar: closing chair of pair (e.g. ')')
             tag_name: name of tag for highlighting (class HighlightTag)
-            tag_colors: dict of color information (class HighlightColors)
             charpair: optional regex override for matching the pair (e.g. '[][]')
         """
-        self.tag_delete(tag_name)
-        self._highlight_configure_tag(tag_name, tag_colors)
+        self.tag_remove(tag_name, "1.0", tk.END)
         cursor = self.get_insert_index().index()
 
         (top_index, bot_index) = self.get_screen_window_coordinates(
@@ -2699,7 +2697,6 @@ class MainText(tk.Text):
             "(",
             ")",
             HighlightTag.PAREN,
-            HighlightColors.PAREN,
         )
 
     def highlight_curly_brackets_around_cursor(self) -> None:
@@ -2708,7 +2705,6 @@ class MainText(tk.Text):
             "{",
             "}",
             HighlightTag.CURLY_BRACKET,
-            HighlightColors.CURLY_BRACKET,
         )
 
     def highlight_square_brackets_around_cursor(self) -> None:
@@ -2717,7 +2713,6 @@ class MainText(tk.Text):
             "[",
             "]",
             HighlightTag.SQUARE_BRACKET,
-            HighlightColors.SQUARE_BRACKET,
             charpair="[][]",
         )
 
@@ -2727,13 +2722,11 @@ class MainText(tk.Text):
             '"',
             '"',
             HighlightTag.STRAIGHT_DOUBLE_QUOTE,
-            HighlightColors.STRAIGHT_DOUBLE_QUOTE,
         )
         self.highlight_single_pair_bracketing_cursor(
             "“",
             "”",
             HighlightTag.CURLY_DOUBLE_QUOTE,
-            HighlightColors.CURLY_DOUBLE_QUOTE,
         )
 
     def highlight_single_quotes_around_cursor(self) -> None:
@@ -2742,13 +2735,11 @@ class MainText(tk.Text):
             "'",
             "'",
             HighlightTag.STRAIGHT_SINGLE_QUOTE,
-            HighlightColors.STRAIGHT_SINGLE_QUOTE,
         )
         self.highlight_single_pair_bracketing_cursor(
             "‘",
             "’",
             HighlightTag.CURLY_SINGLE_QUOTE,
-            HighlightColors.CURLY_SINGLE_QUOTE,
         )
 
     def highlight_quotbrac(self) -> None:
@@ -2771,7 +2762,7 @@ class MainText(tk.Text):
             HighlightTag.STRAIGHT_SINGLE_QUOTE,
             HighlightTag.CURLY_SINGLE_QUOTE,
         ):
-            self.tag_delete(tag)
+            self.tag_remove(tag, "1.0", tk.END)
 
     def highlight_aligncol_in_viewport(self, viewport: Text) -> None:
         """Do highlighting of the alignment column in a single viewport."""
@@ -2791,10 +2782,7 @@ class MainText(tk.Text):
     def highlight_aligncol(self) -> None:
         """Add a highlight to all characters in the alignment column."""
         if self.aligncol_active.get():
-            self.tag_delete(HighlightTag.ALIGNCOL)
-            self._highlight_configure_tag(
-                HighlightTag.ALIGNCOL, HighlightColors.ALIGNCOL
-            )
+            self.tag_remove(HighlightTag.ALIGNCOL, "1.0", tk.END)
 
             self.highlight_aligncol_in_viewport(self)
             if PrefKey.SPLIT_TEXT_WINDOW:
@@ -2802,7 +2790,7 @@ class MainText(tk.Text):
 
     def remove_highlights_aligncol(self) -> None:
         """Remove highlights for alignment column"""
-        self.tag_delete(HighlightTag.ALIGNCOL)
+        self.tag_remove(HighlightTag.ALIGNCOL, "1.0", tk.END)
 
     def highlight_aligncol_callback(self, value: bool) -> None:
         """Callback when highlight_aligncol active state is changed."""
@@ -2814,17 +2802,42 @@ class MainText(tk.Text):
 
     def highlight_cursor_line(self) -> None:
         """Add a highlight to entire line cursor is focused on."""
-        self.tag_delete(HighlightTag.CURSOR_LINE)
+        self.tag_remove(HighlightTag.CURSOR_LINE, "1.0", tk.END)
 
         # Don't re-highlight if there's currently a selection
         if not self.selected_ranges():
-            self._highlight_configure_tag(
-                HighlightTag.CURSOR_LINE, HighlightColors.CURSOR_LINE
-            )
-
             row = self.get_insert_index().row
             self.tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row+1}.0")
-            self.tag_lower(HighlightTag.CURSOR_LINE)
+
+    def highlight_initialize_tags(self) -> None:
+        """Initialize highlighting tags and determine their prioritization.
+        Intended to run once at startup.
+        """
+        # Loop through a list of tags, in order of priority. Earlier in the list will
+        # take precedence over later in the list; that is, the first entry in this
+        # list will win over the second; the second wins over the third; and so on
+        # down the line.
+        #
+        # ** THE ORDER MATTERS HERE **
+        #
+        for tag, colors in (
+            (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
+            (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
+            # "sel" is for active selections - don't override the default color
+            ("sel", None),
+            (HighlightTag.PAREN, HighlightColors.PAREN),
+            (HighlightTag.CURLY_BRACKET, HighlightColors.CURLY_BRACKET),
+            (HighlightTag.SQUARE_BRACKET, HighlightColors.SQUARE_BRACKET),
+            (HighlightTag.STRAIGHT_DOUBLE_QUOTE, HighlightColors.STRAIGHT_DOUBLE_QUOTE),
+            (HighlightTag.CURLY_DOUBLE_QUOTE, HighlightColors.CURLY_DOUBLE_QUOTE),
+            (HighlightTag.STRAIGHT_SINGLE_QUOTE, HighlightColors.STRAIGHT_SINGLE_QUOTE),
+            (HighlightTag.CURLY_SINGLE_QUOTE, HighlightColors.CURLY_SINGLE_QUOTE),
+            (HighlightTag.ALIGNCOL, HighlightColors.ALIGNCOL),
+            (HighlightTag.CURSOR_LINE, HighlightColors.CURSOR_LINE),
+        ):
+            if colors:
+                self._highlight_configure_tag(tag, colors)
+            self.tag_lower(tag)
 
 
 def img_from_page_mark(mark: str) -> str:

@@ -938,7 +938,7 @@ class File:
 
     def remove_bookmark_tags(self) -> None:
         """Remove all bookmark highlightling."""
-        maintext().tag_remove(BOOKMARK_TAG, "1.0", "end")
+        maintext().tag_remove(BOOKMARK_TAG, "1.0", tk.END)
 
 
 def bin_name(basename: str) -> str:
