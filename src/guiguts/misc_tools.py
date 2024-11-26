@@ -1697,114 +1697,21 @@ def stealth_scannos() -> None:
 DQUOTES = "“”"
 SQUOTES = "‘’"
 INIT_APOS_WORDS = (
-    (
-        "'em",
-        "’em",
-    ),
-    (
-        "'Tis",
-        "’Tis",
-    ),
-    (
-        "'Tisn't",
-        "’Tisn’t",
-    ),
-    (
-        "'Tweren't",
-        "’Tweren’t",
-    ),
-    (
-        "'Twere",
-        "’Twere",
-    ),
-    (
-        "'Twould",
-        "’Twould",
-    ),
-    (
-        "'Twouldn't",
-        "’Twouldn’t",
-    ),
-    (
-        "'Twas",
-        "’Twas",
-    ),
-    (
-        "'Im",
-        "’Im",
-    ),
-    (
-        "'Twixt",
-        "’Twixt",
-    ),
-    (
-        "'Til",
-        "’Til",
-    ),
-    (
-        "'Scuse",
-        "’Scuse",
-    ),
-    (
-        "'Gainst",
-        "’Gainst",
-    ),
-    (
-        "'twon't",
-        "’twon’t",
-    ),
-    (
-        "'tis",
-        "’tis",
-    ),
-    (
-        "'tisn't",
-        "’tisn’t",
-    ),
-    (
-        "'tweren't",
-        "’tweren’t",
-    ),
-    (
-        "'twere",
-        "’twere",
-    ),
-    (
-        "'twould",
-        "’twould",
-    ),
-    (
-        "'twouldn't",
-        "’twouldn’t",
-    ),
-    (
-        "'twas",
-        "’twas",
-    ),
-    (
-        "'im",
-        "’im",
-    ),
-    (
-        "'twixt",
-        "’twixt",
-    ),
-    (
-        "'til",
-        "’til",
-    ),
-    (
-        "'scuse",
-        "’scuse",
-    ),
-    (
-        "'gainst",
-        "’gainst",
-    ),
-    (
-        "'twon't",
-        "’twon’t",
-    ),
+    "'em",
+    "'Tis",
+    "'Tisn't",
+    "'Tweren't",
+    "'Twere",
+    "'Twould",
+    "'Twouldn't",
+    "'Twas",
+    "'Im",
+    "'Twixt",
+    "'Til",
+    "'Scuse",
+    "'Gainst",
+    "'Twon't",
+    "'Tain't",
 )
 SAFE_APOS_RQUOTE_REGEXES = (
     r"(?<=\w)'(?=\w)",  # surrounded by letters
@@ -1857,8 +1764,14 @@ def convert_to_curly_quotes() -> None:
             dqtype = 0
 
         # Convert apostrophes in specific words
-        for apos_word in INIT_APOS_WORDS:
-            line, count = re.subn(apos_word[0], apos_word[1], line)
+        for straight_word in INIT_APOS_WORDS:
+            curly_word = straight_word.replace("'", "’")
+            line, count = re.subn(rf"(?!<\w){straight_word}(?!\w)", curly_word, line)
+            if count:
+                edited = True
+            line, count = re.subn(
+                rf"(?!<\w){straight_word.lower()}(?!\w)", curly_word.lower(), line
+            )
             if count:
                 edited = True
         # Now convert specific safe cases to close single quote/apostrophe
@@ -1907,7 +1820,7 @@ class CurlyQuotesDialog(CheckerDialog):
         ).grid(column=1, row=0, sticky="NSW")
         ttk.Button(
             frame,
-            text="Quote⇔Space",
+            text="Swap Quote/Space",
             command=self.swap_quote_space,
         ).grid(column=2, row=0, sticky="NSW")
         ttk.Button(
