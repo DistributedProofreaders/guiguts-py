@@ -29,7 +29,7 @@ from guiguts.utilities import (
     sound_bell,
     load_dict_from_json,
 )
-from guiguts.widgets import ToolTip, ToplevelDialog, Combobox
+from guiguts.widgets import ToolTip, ToplevelDialog, Combobox, insert_in_focus_widget
 
 logger = logging.getLogger(__package__)
 
@@ -1692,3 +1692,408 @@ def stealth_scannos() -> None:
     )
 
     _the_stealth_scannos_dialog.display_entries()
+
+
+DQUOTES = "“”"
+SQUOTES = "‘’"
+INIT_APOS_WORDS = (
+    "'em",
+    "'Tis",
+    "'Tisn't",
+    "'Tweren't",
+    "'Twere",
+    "'Twould",
+    "'Twouldn't",
+    "'Twas",
+    "'Im",
+    "'Twixt",
+    "'Til",
+    "'Scuse",
+    "'Gainst",
+    "'Twon't",
+    "'Tain't",
+)
+SAFE_APOS_RQUOTE_REGEXES = (
+    r"(?<=\w)'(?=\w)",  # surrounded by letters
+    r"(?<=[\.,\w])'",  # preceded by period, comma or letter
+    r"(?<=\w)'(?=\.)",  # between letter & period
+    r"'$",  # end of line
+    rf"'(?=[ {DQUOTES[1]}])",  # followed by space or close double quote
+)
+
+
+def convert_to_curly_quotes() -> None:
+    """Convert straight quotes to curly in whole file, and display list of queries.
+
+    Adapted from https://github.com/DistributedProofreaders/ppwb/blob/master/bin/ppsmq.py
+    """
+    maintext().undo_block_begin()
+    end_line = maintext().end().row
+    dqtype = 0
+    for line_num in range(1, end_line + 1):
+        edited = False
+        lstart = f"{line_num}.0"
+        lend = f"{line_num}.end"
+        line = maintext().get(lstart, lend)
+        if line == "":
+            dqtype = 0  # Reset double quotes at paragraph break
+            continue
+
+        # Apart from special cases, alternate open/close double quotes through each paragraph
+        # Ditto marks first (surrounded by double-space)
+        line, count = re.subn('(?<=  )"(?=  )', DQUOTES[1], line)
+        if count:
+            edited = True
+        # Start of line must be open quotes
+        line, count = re.subn('^"', DQUOTES[0], line)
+        if count:
+            edited = True
+            dqtype = 1
+        # Mid-line, alternate open/close quotes
+        while True:
+            line, count = re.subn('"(?!$)', DQUOTES[dqtype], line, count=1)
+            if count:
+                edited = True
+                dqtype = 0 if dqtype == 1 else 1
+            else:
+                break
+        # End of line must be close quotes
+        line, count = re.subn('"$', DQUOTES[1], line)
+        if count:
+            edited = True
+            dqtype = 0
+
+        # Convert apostrophes in specific words
+        for straight_word in INIT_APOS_WORDS:
+            curly_word = straight_word.replace("'", "’")
+            line, count = re.subn(rf"(?!<\w){straight_word}(?!\w)", curly_word, line)
+            if count:
+                edited = True
+            line, count = re.subn(
+                rf"(?!<\w){straight_word.lower()}(?!\w)", curly_word.lower(), line
+            )
+            if count:
+                edited = True
+        # Now convert specific safe cases to close single quote/apostrophe
+        for regex in SAFE_APOS_RQUOTE_REGEXES:
+            line, count = re.subn(regex, SQUOTES[1], line)
+            if count:
+                edited = True
+
+        if edited:
+            maintext().replace(lstart, lend, line)
+
+    check_curly_quotes()
+
+
+class CurlyQuotesDialog(CheckerDialog):
+    """Dialog to handle curly quotes checks."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize curly quotes checker dialog."""
+        super().__init__(*args, **kwargs)
+
+        ToolTip(
+            self.text,
+            "\n".join(
+                [
+                    "Left click: Select & find curly quote warning",
+                    "Right click: Remove warning from list",
+                    f"With {cmd_ctrl_string()} key: Convert straight to curly, or swap open⇔close",
+                ]
+            ),
+            use_pointer_pos=True,
+        )
+
+        frame = ttk.Frame(self.header_frame)
+        frame.grid(column=0, row=1, columnspan=2, sticky="NSEW", padx=(0, 20), pady=5)
+        frame.columnconfigure(3, weight=1)
+        ttk.Button(
+            frame,
+            text="Open⇔Close",
+            command=self.swap_open_close,
+        ).grid(column=0, row=0, sticky="NSW")
+        ttk.Button(
+            frame,
+            text="Straight⇔Curly",
+            command=self.swap_straight_curly,
+        ).grid(column=1, row=0, sticky="NSW")
+        ttk.Button(
+            frame,
+            text="Swap Quote/Space",
+            command=self.swap_quote_space,
+        ).grid(column=2, row=0, sticky="NSW")
+        ttk.Button(
+            frame,
+            text="Delete Space",
+            command=lambda: self.swap_quote_space(delete=True),
+        ).grid(column=3, row=0, sticky="NSW")
+        ttk.Label(
+            frame,
+            text="Insert:",
+        ).grid(column=4, row=0, sticky="NSE")
+        ttk.Button(
+            frame,
+            text=DQUOTES[0],
+            command=lambda: insert_in_focus_widget(DQUOTES[0]),
+        ).grid(column=5, row=0, sticky="NSE")
+        ttk.Button(
+            frame,
+            text=DQUOTES[1],
+            command=lambda: insert_in_focus_widget(DQUOTES[1]),
+        ).grid(column=6, row=0, sticky="NSE")
+        ttk.Button(
+            frame,
+            text=SQUOTES[0],
+            command=lambda: insert_in_focus_widget(SQUOTES[0]),
+        ).grid(column=7, row=0, sticky="NSE")
+        ttk.Button(
+            frame,
+            text=SQUOTES[1],
+            command=lambda: insert_in_focus_widget(SQUOTES[1]),
+        ).grid(column=8, row=0, sticky="NSE")
+        self.populate()
+
+    def populate(self) -> None:
+        """Populate list with suspect curly quotes."""
+        self.reset()
+        dqtype = 0
+        search_start = maintext().start()
+        search_end = maintext().index(tk.END)
+        last_open_double_idx = ""
+        while match := maintext().find_match(
+            rf"^$|[{DQUOTES}{SQUOTES}\"']",
+            IndexRange(search_start, search_end),
+            regexp=True,
+        ):
+            search_start = maintext().rowcol(f"{match.rowcol.index()}+1c")
+            line_num = match.rowcol.row
+            match_text = maintext().get_match_text(match)
+            linebeg = f"{line_num}.0"
+            lineend = maintext().index(f"{line_num}.end")
+
+            def add_quote_entry(prefix: str) -> None:
+                """Add entry highlighting matched quote.
+
+                Args:
+                    prefix: Message prefix.
+                """
+                self.add_entry(
+                    maintext().get(linebeg, lineend),
+                    IndexRange(
+                        match.rowcol,
+                        IndexRowCol(match.rowcol.row, match.rowcol.col + 1),
+                    ),
+                    hilite_start=match.rowcol.col,
+                    hilite_end=match.rowcol.col + 1,
+                    error_prefix=prefix,
+                )
+
+            if match_text == DQUOTES[0]:  # Open double
+                context = maintext().get(
+                    f"{match.rowcol.index()}-1c", f"{match.rowcol.index()}+2c"
+                )
+                if dqtype == 1:
+                    add_quote_entry("DOUBLE OPEN QUOTE UNEXPECTED: ")
+                elif context[2] == "\n":
+                    add_quote_entry("DOUBLE OPEN QUOTE AT END OF LINE: ")
+                elif context[2] == " ":
+                    add_quote_entry("DOUBLE OPEN QUOTE FOLLOWED BY SPACE: ")
+                elif context[0].isalnum():
+                    add_quote_entry("DOUBLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ")
+                dqtype = 1
+                last_open_double_idx = match.rowcol.index()
+            elif match_text == DQUOTES[1]:  # Close double
+                # If surrounded by double-spaces or end of line, it's ditto mark, so OK
+                context = maintext().get(
+                    f"{match.rowcol.index()}-2c", f"{match.rowcol.index()}+3c"
+                )
+                if (
+                    context == f"  {DQUOTES[1]}  "
+                    or context == f"  {DQUOTES[1]} \n"
+                    or context[:4] == f"  {DQUOTES[1]}\n"
+                ):
+                    continue
+                if dqtype == 0:
+                    add_quote_entry("DOUBLE CLOSE QUOTE UNEXPECTED: ")
+                elif context[1] == "\n":
+                    add_quote_entry("DOUBLE CLOSE QUOTE AT START OF LINE: ")
+                elif context[1] == " ":
+                    add_quote_entry("DOUBLE CLOSE QUOTE PRECEDED BY SPACE: ")
+                elif context[3].isalnum():
+                    add_quote_entry("DOUBLE CLOSE QUOTE FOLLOWED BY LETTER: ")
+                dqtype = 0
+            elif match_text == SQUOTES[0]:  # Open single
+                context = maintext().get(
+                    f"{match.rowcol.index()}-1c", f"{match.rowcol.index()}+2c"
+                )
+                if context[2] == "\n":
+                    add_quote_entry("SINGLE OPEN QUOTE AT END OF LINE: ")
+                elif context[2] == " ":
+                    add_quote_entry("SINGLE OPEN QUOTE FOLLOWED BY SPACE: ")
+                elif context[0].isalnum():
+                    add_quote_entry("SINGLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ")
+            elif match_text == SQUOTES[1]:  # Close single
+                pass  # Close singles/apostrophes can go almost anywhere
+            elif match_text == '"':  # Straight double
+                add_quote_entry("DOUBLE QUOTE NOT CONVERTED: ")
+            elif match_text == "'":  # Straight single
+                add_quote_entry("SINGLE QUOTE NOT CONVERTED: ")
+            elif match_text == "":  # Blank line
+                # Expect dqtype == 0 unless next line starts with open double quote
+                if dqtype == 1 and maintext().get(f"{linebeg} +1l") != DQUOTES[0]:
+                    hilite_start = IndexRowCol(last_open_double_idx).col
+                    self.add_entry(
+                        maintext().get(
+                            f"{last_open_double_idx} linestart",
+                            f"{last_open_double_idx} lineend",
+                        ),
+                        IndexRange(
+                            last_open_double_idx,
+                            maintext().rowcol(f"{last_open_double_idx}+1c"),
+                        ),
+                        hilite_start=hilite_start,
+                        hilite_end=hilite_start + 1,
+                        error_prefix="DOUBLE QUOTE NOT CLOSED: ",
+                    )
+                dqtype = 0  # Reset double quotes at paragraph break
+
+    def swap_open_close(self) -> None:
+        """Swap current quote open<-->close."""
+        entry_index = self.current_entry_index()
+        if entry_index is None:
+            return
+        do_swap_open_close(self.entries[entry_index])
+
+    def swap_quote_space(self, delete: bool = False) -> None:
+        """Swap current quote with adjacent space, or just delete it.
+
+        Args:
+            delete: True to just delete space instead of swapping.
+        """
+        entry_index = self.current_entry_index()
+        if entry_index is None:
+            return
+        checker_entry = self.entries[entry_index]
+        if checker_entry.text_range:
+            start_mark = self.mark_from_rowcol(checker_entry.text_range.start)
+            end_mark = self.mark_from_rowcol(checker_entry.text_range.end)
+            start = maintext().index(f"{start_mark}-1c")
+            end = maintext().index(f"{start_mark}+2c")
+            match_text = maintext().get(start, end)
+            if match_text[1] not in "“”‘’":
+                return
+            maintext().undo_block_begin()
+            # Temporarily change mark gravities so moved space ends up outside marks
+            maintext().mark_gravity(start_mark, tk.RIGHT)
+            maintext().mark_gravity(end_mark, tk.LEFT)
+            if match_text[0] == " " and match_text[2] != " ":
+                maintext().delete(start)
+                if not delete:
+                    maintext().insert(f"{start}+1c", " ")
+            elif match_text[0] != " " and match_text[2] == " ":
+                maintext().delete(f"{start}+2c")
+                if not delete:
+                    maintext().insert(f"{start}+1c", " ")
+            maintext().mark_gravity(start_mark, tk.LEFT)
+            maintext().mark_gravity(end_mark, tk.RIGHT)
+
+    def swap_straight_curly(self) -> None:
+        """Swap current quote with straight/curly(open) equivalent."""
+        entry_index = self.current_entry_index()
+        if entry_index is None:
+            return
+        do_swap_straight_curly(self.entries[entry_index])
+
+
+_the_curly_quotes_dialog: Optional[CurlyQuotesDialog] = None
+
+
+def do_fix_quote(checker_entry: CheckerEntry) -> None:
+    """Fix the quote problem."""
+    assert _the_curly_quotes_dialog is not None
+    assert checker_entry.text_range is not None
+    if (
+        checker_entry.error_prefix
+        in (
+            "DOUBLE QUOTE NOT CONVERTED: ",
+            "SINGLE QUOTE NOT CONVERTED: ",
+        )
+        and maintext().get(
+            _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.start),
+            _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.end),
+        )
+        in "'\""
+    ):
+        do_swap_straight_curly(checker_entry)
+    else:
+        do_swap_open_close(checker_entry)
+
+
+def do_swap_straight_curly(checker_entry: CheckerEntry) -> None:
+    """Process given entry by swapping straight/curly quotes."""
+    do_process_with_dict(
+        checker_entry, {'"': "“", "'": "‘", "“": '"', "”": '"', "‘": "'", "’": "'"}
+    )
+
+
+def do_swap_open_close(checker_entry: CheckerEntry) -> None:
+    """Process given entry by swapping the quote open<-->close."""
+    do_process_with_dict(checker_entry, {"“": "”", "”": "“", "‘": "’", "’": "‘"})
+
+
+def do_process_with_dict(
+    checker_entry: CheckerEntry, swap_dict: dict[str, str]
+) -> None:
+    """Process given entry by swapping the selected character for the one in the dict.
+
+    Args:
+        swap_dict: Dictionary of which character to swap for which.
+    """
+    assert _the_curly_quotes_dialog is not None
+    if not checker_entry.text_range:
+        return
+    start = _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.start)
+    end = _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.end)
+    match_text = maintext().get(start, end)
+    maintext().undo_block_begin()
+    try:
+        maintext().replace(start, end, swap_dict[match_text])
+    except KeyError:
+        pass  # User has edited since tool was run
+    # Reselect to refresh highlighting
+    if cur_idx := _the_curly_quotes_dialog.current_entry_index():
+        _the_curly_quotes_dialog.select_entry_by_index(cur_idx)
+
+
+def sort_key_error(
+    entry: CheckerEntry,
+) -> tuple[int, str, int, int]:
+    """Sort key function to sort Curly Quote entries by text, putting identical upper
+        and lower case versions together.
+
+    Differs from default alpha sort in using the error prefix text (the type of error)
+    as the primary text sort key.
+    No need to deal with different entry types and all entries have a text_range.
+    """
+    assert entry.text_range is not None
+    return (
+        entry.section,
+        entry.error_prefix,
+        entry.text_range.start.row,
+        entry.text_range.start.col,
+    )
+
+
+def check_curly_quotes() -> None:
+    """Check for suspect curly quotes."""
+    global _the_curly_quotes_dialog
+
+    _the_curly_quotes_dialog = CurlyQuotesDialog.show_dialog(
+        "Curly Quotes Check",
+        rerun_command=check_curly_quotes,
+        process_command=do_fix_quote,
+        sort_key_alpha=sort_key_error,
+    )
+
+    _the_curly_quotes_dialog.display_entries()
