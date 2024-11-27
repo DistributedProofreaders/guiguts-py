@@ -894,7 +894,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
 
         the_statusbar.add(
-            "languages label", tooltip="Click: Set language(s)", text="Lang: "
+            "languages label",
+            tooltip="Click: Set language(s), e.g. 'en' or 'de fr'",
+            text="Lang: ",
         )
         the_statusbar.add_binding(
             "languages label", "ButtonRelease-1", self.file.set_languages

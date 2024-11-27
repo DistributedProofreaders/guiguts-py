@@ -1920,11 +1920,10 @@ class MainText(tk.Text):
     def set_languages(self, languages: str) -> None:
         """Set languages used in text.
 
-        Multiple languages are separated by "+"
+        Args:
+            languages: Language, or list of languages separated by "+". Assumed valid.
         """
-        if languages:
-            assert re.match(r"[a-z_]+(\+[a-z_]+)*", languages)
-            self.languages = languages
+        self.languages = languages
 
     def get_language_list(self) -> list[str]:
         """Get list of languages used in text.
