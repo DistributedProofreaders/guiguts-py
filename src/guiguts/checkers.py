@@ -7,7 +7,6 @@ from typing import Any, Optional, Callable
 
 import regex as re
 
-from guiguts.highlight import spotlight_range, remove_spotlights
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.preferences import (
@@ -376,7 +375,7 @@ class CheckerDialog(ToplevelDialog):
             for mark in maintext().mark_names():
                 if mark.startswith(self.get_mark_prefix()):
                     maintext().mark_unset(mark)
-            remove_spotlights()
+            maintext().remove_spotlights()
 
     def new_section(self) -> None:
         """Start a new section in the dialog.
@@ -881,13 +880,13 @@ class CheckerDialog(ToplevelDialog):
         entry = self.entries[entry_index]
         self.selected_text = entry.text
         self.selected_text_range = entry.text_range
-        remove_spotlights()
+        maintext().remove_spotlights()
         if entry.text_range is not None:
             if root().state() == "iconic":
                 root().deiconify()
             start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
-            spotlight_range(IndexRange(start, end))
+            maintext().spotlight_range(IndexRange(start, end))
             maintext().set_insert_index(
                 IndexRowCol(start), focus=(focus and not is_mac())
             )
