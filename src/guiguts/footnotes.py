@@ -171,6 +171,14 @@ class FootnoteChecker:
         end_of_file = maintext().end().index()
         if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
             self.add_blank_line_at_eof()
+        # If chapters are separated correctly from the next chapter by 4 blank lines
+        # then there will always be a LZ header inserted at the end of each chapter,
+        # except at the end of the last chapter. Append a LZ header at end of file
+        # to catch any footnotes in the last chapter. All footnotes will then have
+        # a LZ header below them. Note that any unused LZ headers are removed after
+        # footnotes have been moved to LZs; see remove_unused_lz_headers() in the
+        # function move_footnotes_to_lz().
+        self.autoset_end_lz()
         # Set search range. Large files are treated differently to small files.
         if maintext().compare(maintext().end().index(), ">", "200.0"):
             # A 'large' file. Skip the first 200 lines (as GG1 does) before
@@ -181,18 +189,41 @@ class FootnoteChecker:
         else:
             # A small file. Start chapter search from line 1.0.
             search_range = IndexRange(maintext().start(), maintext().end())
-        match_regex = r"\n\n\n\n\n"
-        # Loop, finding all chapter breaks; i.e. block of 4 blank lines.
-        while beg_match := maintext().find_match(
-            match_regex, search_range, regexp=True, nocase=True
-        ):
-            chpt_break_start = beg_match.rowcol.index()
-            # Insert a 'FOOTNOTES:' LZ header line before the chapter break.
-            maintext().insert(
-                f"{chpt_break_start} +1l linestart", "\n\n" + "FOOTNOTES:" + "\n"
-            )
-            restart_point = maintext().rowcol(f"{chpt_break_start} +4l")
+
+        # Loop, finding all chapter breaks; i.e. block of 4 blank lines. Method used
+        # is to find next blank line then look ahead for 3 more blank lines. If present
+        # then set a LZ and advance 6 lines and repeat. If look ahead does not find 3
+        # more blank lines then advance 1 line and repeat. Based on GG1 method.
+        match_regex = r"^$"
+        while True:
+            beg_match = maintext().find_match(match_regex, search_range, regexp=True)
+            if not beg_match:
+                break
+            start_index = beg_match.rowcol.index()
+            # If next three lines also empty, insert LZ header before the 4 blank lines.
+            if (
+                maintext().get(
+                    f"{start_index} +1l linestart", f"{start_index} +1l lineend"
+                )
+                == ""
+                and maintext().get(
+                    f"{start_index} +2l linestart", f"{start_index} +2l lineend"
+                )
+                == ""
+                and maintext().get(
+                    f"{start_index} +3l linestart", f"{start_index} +3l lineend"
+                )
+                == ""
+            ):
+                # Set LZ by inserting a "FOOTNOTES:" header at start of 4-line block.
+                self.set_lz(start_index)
+                # Advance past inserted LZ header.
+                restart_point = maintext().rowcol(f"{start_index} +6l")
+            else:
+                # Advance to avoid finding same blank line again.
+                restart_point = maintext().rowcol(f"{start_index} +1l")
             search_range = IndexRange(restart_point, maintext().end())
+
         # The file has changed so rebuild AN/FN records and refresh dialog.
         self.run_check()
         # Order below is important. A flag is set in display_footnote_entries()
@@ -200,6 +231,44 @@ class FootnoteChecker:
         # displayed.
         display_footnote_entries()
         self.display_buttons()
+
+    def set_lz(self, lz_index: str) -> None:
+        """Add a 'FOOTNOTES:' LZ header at the given index.
+
+        Arg:
+            lz_index: index of position at which to add LZ header.
+        """
+        # If the insert point is (a blank line) immediately after a Page Marker, place
+        # the insert point at the start of the Page Marker as GG1 does. If Page Markers
+        # have been removed, look for a page mark at the insertion point and place the
+        # insertion point before that page mark. Recall that the gravity setting used for
+        # marks is tk.RIGHT.
+        #
+        # Get line immediately before the insertion point. We'll test below if it is a
+        # Page Marker record.
+        line_before = maintext().get(
+            f"{lz_index} -1l linestart", f"{lz_index} -1l lineend"
+        )
+        # Get page mark if we are relying on page marks because Page Separator Fixup
+        # has been run.
+        next_page_mark = maintext().page_mark_next(lz_index)
+        # Give next_page_mark variable a numeric value if it's not a page mark.
+        if not maintext().is_page_mark(next_page_mark):
+            next_page_mark = "1.0"
+        # The 'if' statement below will handle either case:
+        #   LHS of 'or' assumes Page Markers are still in file. It tests for presence of
+        #   a Page Marker string immediately preceding the insert point we have found.
+        #   RHS of 'or' assumes Page Markers have been removed by 'Page Separator Fixup'.
+        #   It tests for a page mark exactly at the insert point we have found.
+        if line_before[0:11] == "-----File: " or maintext().compare(
+            next_page_mark, "==", lz_index
+        ):
+            # Place the LZ header before the Page Marker/page mark.
+            insert_index = maintext().rowcol(f"{lz_index} -1l").index()
+            maintext().insert(f"{insert_index} linestart", "\n\n" + "FOOTNOTES:" + "\n")
+        else:
+            # Place the insert point at lz_index.
+            maintext().insert(f"{lz_index} linestart", "\n\n" + "FOOTNOTES:" + "\n")
 
     def autoset_end_lz(self) -> None:
         """Insert a 'FOOTNOTES:' LZ header line at end of file."""
@@ -209,8 +278,7 @@ class FootnoteChecker:
         if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
             self.add_blank_line_at_eof()
         end_of_file = maintext().end().index()
-        # Insert the 'FOOTNOTES:' LZ header line after last line of file.
-        maintext().insert(f"{end_of_file} +1l linestart", "\n\n" + "FOOTNOTES:" + "\n")
+        self.set_lz(end_of_file)
 
     def clear_marks(self, mark_prefix: str) -> None:
         """Clear marks of type 'mark_prefix'.
@@ -230,18 +298,20 @@ class FootnoteChecker:
         """Add a blank line at end of the file.
 
         An issue arises if the last line of the file is a footnote.
-        Inserting a blank line will place it before its end "Checker"
-        mark if tk.RIGHT gravity was specified when the mark was set.
-        We want the blank line placed after the mark. This avoids
-        problems if that footnote is respositioned.
+        Inserting a blank line ("\n") programatically will place it
+        *before* the footnote's end "Checker" mark if tk.RIGHT gravity
+        was specified when the mark was set. We want the blank line
+        placed after the mark otherwise the "\n" will be carried with
+        the footnote if it is moved.
 
-        There will be at most one such "Checker" mark in this case.
+        There will be at most one such "Checker" mark at the end of
+        file in this case.
 
         Search for it. If present, remember its position at the current
         end of file then delete the mark. Insert a blank line after the
         current end of file then set the mark again at its old position.
         The mark will now be positioned before the blank line we just
-        added.
+        added because of the tk.RIGHT gravity.
         """
         # Note the index of current end of file.
         end_of_file = maintext().end().index()
@@ -260,6 +330,7 @@ class FootnoteChecker:
                 blank_line_inserted = True
                 break
         if not blank_line_inserted:
+            # No 'Checker' mark at end of file.
             maintext().insert(end_of_file, "\n")
 
     def move_footnotes_to_paragraphs(self) -> None:
@@ -293,8 +364,8 @@ class FootnoteChecker:
             return
         an_records = self.get_an_records()
         # If the last line of the file is not a blank line then add one.
-        end_of_file = maintext().end().index()
-        if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
+        file_end = maintext().end().index()
+        if maintext().get(f"{file_end} linestart", f"{file_end} lineend") != "":
             self.add_blank_line_at_eof()
 
         # First pass.
@@ -375,6 +446,10 @@ class FootnoteChecker:
                 )
             else:
                 # Place the insert point at the start of the blank line we've landed on.
+                # NB an_record_index is the index into the anchor records list. The footnote
+                #    that it anchors has the same index into the footnotes records list. Here
+                #    an_record_index is used as a proxy numeric suffix to label its footnote's
+                #    insertion mark.
                 mark_point = maintext().rowcol(f"{blank_line_start}")
                 maintext().set_mark_position(
                     f"{INSERTION_MARK_PREFIX}{an_record_index}",
@@ -407,8 +482,8 @@ class FootnoteChecker:
         # Footnotes have been moved. Rebuild anchor and footnote record arrays
         # to reflect the changes.
         self.run_check()
-        # Set flag to disable buttons buttons when dialog refreshed so that
-        # user cannot execute a second FN move that might corrupt the file.
+        # Set flag to disable buttons after dialog refreshed so that user
+        # cannot execute a second FN move that might corrupt the file.
         self.fns_have_been_moved = True
         # Maintain the order of function calls below.
         display_footnote_entries()
@@ -419,7 +494,8 @@ class FootnoteChecker:
 
         There will either be a single LZ 'FOOTNOTES:' header at the end of the
         file or multiple LZ 'FOOTNOTES:' headers, each one inserted before every
-        4-line chapter break.
+        4-line chapter break and an added one at end of file. This means that all
+        footnotes have a LZ below them.
         """
         maintext().undo_block_begin()
         # Check for any duplicate footnote labels and warn user that they should
@@ -429,14 +505,14 @@ class FootnoteChecker:
                 "Duplicate labels - reindex footnotes before moving them to LZ(s)"
             )
             return
+
         # Footnotes are always moved downward to a landing zone on a higher-numbered
         # line. Even if a footnote sits immediately below a landing zone, it will be
-        # moved to the next one down in the file. If a footnote is located after the
-        # last autoset landing zone then a new landing zone ('FOOTNOTES:') is created
-        # after the last line in the file and the footnote moved below it. Note that
-        # that landing zone is in the same location as the one created when you click
-        # the 'Autoset End LZ' button.
-
+        # moved to the next one down in the file. There is always a 'next one down'
+        # landing zone if 'end LZ' or 'chapter LZ' specified but may not be if 'set
+        # LZ at cursor' used. We will add a LZ at file end if necessary as a 'catch
+        # all' to cope with missing LZs.
+        #
         # Start the moves from the last footnote in the file and work upward to the
         # first footnote. Each footnote moved is inserted immediately below the LZ
         # header so pushing down higher-numbered footnotes already moved.
@@ -483,12 +559,8 @@ class FootnoteChecker:
                 # This branch should be entered 0 or 1 times only. Here
                 # with a footnote anchor with no landing zone below.
                 # There are two situations where this can happen:
-                #  1. The last footnote is in the last chapter of
-                #     the book and chapter LZ has been selected.
-                #     This means that the last 4-line chapter break
-                #     found will be the one separating the penultimate
-                #     chapter from the final chapter. There is no LZ
-                #     after the last paragraph of the last chapter.
+                #  1. One or more LZs were added manually with 'set LZ
+                #     at cursor' but were perhaps wrongly placed.
                 #  2. No LZ was specified before clicking the move
                 #     to landing zones button.
                 #
@@ -498,8 +570,6 @@ class FootnoteChecker:
                 # above it but that will be done in the 'then'
                 # branch above because there is now a LZ below
                 # those footnotes.
-
-                # Add a LZ at end of file.
                 self.autoset_end_lz()
                 below_lz = maintext().end().index()
                 # Insert the copy of the footnote line(s) below the new LZ.
@@ -512,6 +582,11 @@ class FootnoteChecker:
                 # The last line of the file will be (the last line of) a
                 # footnote. Add a blank line after it.
                 self.add_blank_line_at_eof()
+        # Remove unused LZ headers ('FOOTNOTES:'). Only needed when moving to
+        # chapter end LZs but will be invoked for end LZ too. It does no harm
+        # in this latter case and saves setting/testing flags to make it apply
+        # only when moving FNs to chapter end LZs.
+        self.remove_unused_lz_headers()
         # Footnotes have been moved. Rebuild anchor and footnote record arrays
         # to reflect the changes.
         self.run_check()
@@ -521,6 +596,45 @@ class FootnoteChecker:
         # Maintain order of function calls below.
         display_footnote_entries()
         self.display_buttons()
+
+    def remove_unused_lz_headers(self) -> None:
+        """Remove unused LZs and up to two preceding blank lines."""
+        search_range = IndexRange(maintext().start(), maintext().end())
+        match_regex = r"FOOTNOTES:"
+        # Loop, finding all LZ headers; i.e. the string "FOOTNOTES:".
+        while True:
+            beg_match = maintext().find_match(match_regex, search_range, regexp=True)
+            if not beg_match:
+                break
+            indx = beg_match.rowcol.index()
+            # A LZ header is unused if it's not followed by a blank line then a line beginning
+            # with '[' which is assumed to be the start of a '[Footnote 1: ...]' line.
+            if (
+                not maintext().get(f"{indx} +2l linestart", f"{indx} +2l lineend")[0:1]
+                == "["
+            ):
+                # A LZ header is always preceeded by one or two blank lines. Remove them and
+                # the LZ header.
+                bl_cnt = 0
+                bl_cnt = (
+                    1
+                    if maintext().get(f"{indx} -1l linestart", f"{indx} -1l lineend")
+                    == ""
+                    else bl_cnt
+                )
+                bl_cnt = (
+                    2
+                    if maintext().get(f"{indx} -2l linestart", f"{indx} -2l lineend")
+                    == ""
+                    else bl_cnt
+                )
+                maintext().delete(
+                    f"{indx} -{bl_cnt}l linestart", f"{indx} +1l linestart"
+                )
+            # Restart LZ search from next line.
+            search_range = IndexRange(
+                maintext().rowcol(f"{indx} +1l linestart"), maintext().end()
+            )
 
     def ok_to_move_fns(self) -> bool:
         """Checks that file has been reindexed or has no duplicate FN labels."""
@@ -648,9 +762,21 @@ class FootnoteChecker:
         """Insert FOOTNOTES: header at cursor."""
         maintext().undo_block_begin()
         insert_index = maintext().get_insert_index().index()
-        # Place FOOTNOTES: header at cursor; normally the header is
-        # spaced two lines down from chapter end or end of book.
-        maintext().insert(f"{insert_index}", "FOOTNOTES:" + "\n")
+        insert_rowcol = maintext().get_insert_index()
+        # Place LZ 'FOOTNOTES:' header at cursor; normally the header
+        # is spaced two lines down from chapter end or end of book but
+        # if user is manually inserting LZs it is assumed they will
+        # add spacing as appropriate.
+        maintext().insert(f"{insert_index}", "FOOTNOTES:")
+        # The file has changed so rebuild AN/FN records and refresh dialog.
+        self.run_check()
+        # Order below is important. A flag is set in display_footnote_entries()
+        # that will determine which, if any, buttons are disabled when they are
+        # displayed.
+        display_footnote_entries()
+        self.display_buttons()
+        # Reposition main text window to display the inserted header in the midle of the window.
+        maintext().set_insert_index(insert_rowcol)
 
     def reindex(self) -> None:
         """Reindex all footnotes to fn_index_style.
