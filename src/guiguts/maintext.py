@@ -1156,8 +1156,11 @@ class MainText(tk.Text):
             raise NotImplementedError("This function only works on macOS")
 
         # Use pbcopy macOS command to "touch" the clipboard contents
-        with subprocess.Popen(["/usr/bin/pbcopy"], stdin=subprocess.PIPE) as proc:
-            proc.communicate(input=self.clipboard_get().encode())
+        try:
+            with subprocess.Popen(["/usr/bin/pbcopy"], stdin=subprocess.PIPE) as proc:
+                proc.communicate(input=self.clipboard_get().encode())
+        except tk.TclError:
+            pass
 
     def smart_copy(self) -> str:
         """Do column copy if multiple ranges selected, else default copy."""
