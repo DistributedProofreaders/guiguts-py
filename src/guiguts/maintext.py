@@ -2777,13 +2777,16 @@ class MainText(tk.Text):
         while row <= end_row:
             # find length of row; don't highlight if row is too short to contain col
             rowlen = int(self.index(f"{row}.0 lineend").split(".")[1])
-            if 0 < col < rowlen:
+            if 0 <= col < rowlen:
                 self.tag_add(HighlightTag.ALIGNCOL, f"{row}.{col}")
             row += 1
 
     def highlight_aligncol(self) -> None:
         """Add a highlight to all characters in the alignment column."""
-        if self.aligncol_active.get():
+        # Check that alignment column is 0 or higher; there are no negative
+        # columns in a textview. Since the column is decremented when align
+        # highlight is turned on, it's possible that this value is set to -1.
+        if self.aligncol_active.get() and self.aligncol >= 0:
             self.tag_remove(HighlightTag.ALIGNCOL, "1.0", tk.END)
 
             self.highlight_aligncol_in_viewport(self)
@@ -2797,9 +2800,12 @@ class MainText(tk.Text):
     def highlight_aligncol_callback(self, value: bool) -> None:
         """Callback when highlight_aligncol active state is changed."""
         if value:
-            self.aligncol = self.get_insert_index().col
+            # Highlight column immediately preceding cursor for consistency with ruler.
+            # (There is no ruler as of today, but we'll implement one in GG2 at some point...)
+            self.aligncol = self.get_insert_index().col - 1
             self.highlight_aligncol()
         else:
+            self.aligncol = -1
             self.remove_highlights_aligncol()
 
     def highlight_cursor_line(self) -> None:
