@@ -114,6 +114,7 @@ class File:
         self._filename_callback = filename_callback
         self._image_dir = ""
         self._project_id = ""
+        self._languages = "en"
         self._languages_callback = languages_callback
         self.page_details = PageDetails()
         self.project_dict = ProjectDict()
@@ -178,13 +179,17 @@ class File:
 
     @languages.setter
     def languages(self, value: str) -> None:
+        value = value.strip()
         if not value:
-            value = "en"
+            value = self._languages if self._languages else "en"
+        if re.fullmatch(r"[a-z_]+(\+[a-z_]+)*", value) is None:
+            logger.error("Invalid language code(s): valid examples are 'en' or 'de fr'")
+            return
         self._languages = value
         self._languages_callback()
-        preferences.set(PrefKey.DEFAULT_LANGUAGES, value)
+        preferences.set(PrefKey.DEFAULT_LANGUAGES, self._languages)
         # Inform maintext, so text manipulation algorithms there can check languages
-        maintext().set_languages(value)
+        maintext().set_languages(self._languages)
 
     def reset(self) -> None:
         """Reset file internals to defaults, e.g. filename, page markers, etc.
