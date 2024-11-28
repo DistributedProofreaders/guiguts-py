@@ -2544,8 +2544,8 @@ class MainText(tk.Text):
         # {top,bot}_frac contain a fractional number representing a percentage into
         # the document; do some math to calculate what the top or bottom row in the
         # viewport should be, then use min/max to make sure that value isn't less
-        # than 0 or more than the total row count.
-        top_line = max(int((top_frac * end_index.row) - offscreen_lines), 0)
+        # than 1 or more than the total row count.
+        top_line = max(int((top_frac * end_index.row) - offscreen_lines), 1)
         bot_line = min(int((bot_frac * end_index.row) + offscreen_lines), end_index.row)
 
         return (f"{top_line}.0", f"{bot_line}.0")
