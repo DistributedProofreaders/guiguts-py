@@ -298,11 +298,11 @@ class FootnoteChecker:
         """Add a blank line at end of the file.
 
         An issue arises if the last line of the file is a footnote.
-        Inserting a blank line ("\n") programatically will place it
+        Inserting a newline character programatically will place it
         before the footnote's end "Checker" mark if tk.RIGHT gravity
         was specified when the mark was set. We want the blank line
-        placed after the mark otherwise the "\n" will be carried with
-        the footnote if it is moved.
+        placed after the mark otherwise the newline character will
+        be carried with the footnote if it is moved.
 
         There will be at most one such "Checker" mark at the end of
         file in this case.
