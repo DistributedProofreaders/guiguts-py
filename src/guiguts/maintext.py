@@ -2656,6 +2656,10 @@ class MainText(tk.Text):
         them with the given tagname. If charpair is not specified, a default regex
         of f"[{startchar}{endchar}]" will be used.
 
+        If a selection is active, the entire selected region is considered to be
+        the cursor, and pairs surrounding that region are marked; characters
+        inside the selected region will not be considered.
+
         Args:
             startchar: opening char of pair (e.g. '(')
             endchar: closing chair of pair (e.g. ')')
@@ -2669,6 +2673,11 @@ class MainText(tk.Text):
             self.focus_widget(), 80
         )
 
+        if sel_ranges := maintext().selected_ranges():
+            cursor = sel_ranges[0].start.index()
+        else:
+            cursor = maintext().get_insert_index().index()
+
         # search backward for the startchar
         startindex = self.search_for_base_character_in_pair(
             top_index,
@@ -2681,6 +2690,9 @@ class MainText(tk.Text):
         )
         if not startindex:
             return
+
+        if sel_ranges:
+            cursor = sel_ranges[-1].end.index()
 
         # search forward for the endchar
         endindex = self.search_for_base_character_in_pair(
