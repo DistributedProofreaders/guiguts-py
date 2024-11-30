@@ -58,7 +58,7 @@ from guiguts.misc_tools import (
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey
 from guiguts.root import root
-from guiguts.search import show_search_dialog, find_next
+from guiguts.search import show_search_dialog, find_next, show_highlight_dialog
 from guiguts.spell import spell_check
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
@@ -420,6 +420,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(
             PrefKey.HIGHLIGHT_QUOTBRAC, self.highlight_quotbrac_callback
         )
+        preferences.set_default(PrefKey.HIGHLIGHT_DIALOG_SEARCH_HISTORY, [])
+        preferences.set_default(PrefKey.HIGHLIGHT_DIALOG_USE_REGEX, False)
+        preferences.set_default(PrefKey.HIGHLIGHT_DIALOG_MATCH_CASE, True)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -589,6 +592,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_search.add_button(
             "Highlight ~Double Quotes in Selection",
             maintext().highlight_double_quotes,
+        )
+        menu_search.add_button(
+            "~Highlight Character, String, or Regex...",
+            show_highlight_dialog,
         )
         menu_search.add_button(
             "~Remove Highlights",

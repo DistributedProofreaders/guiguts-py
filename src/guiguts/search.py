@@ -10,7 +10,7 @@ from typing import Any, Tuple, Optional
 import regex as re
 
 from guiguts.checkers import CheckerDialog
-from guiguts.maintext import maintext, TclRegexCompileError, FindMatch
+from guiguts.maintext import maintext, TclRegexCompileError, FindMatch, HighlightTag
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey
 from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, sing_plur
 from guiguts.widgets import (
@@ -623,6 +623,156 @@ class SearchDialog(ToplevelDialog):
         self.message["text"] = message
 
 
+class HighlightDialog(ToplevelDialog):
+    """A Toplevel dialog that allows the user to apply highlights based
+    on a search string or regex."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize Highlight dialog."""
+        kwargs["resize_y"] = False
+        kwargs["disable_geometry_save"] = True
+        super().__init__("Highlight Character(s) or Regex", *args, **kwargs)
+
+        # auto-resize on X axis
+        self.top_frame.columnconfigure(0, weight=1)
+        self.top_frame.columnconfigure(1, weight=1)
+
+        for row in range(5):
+            self.top_frame.rowconfigure(row)
+
+        # Search
+        style = ttk.Style()
+        new_col = "#ff8080" if maintext().is_dark_theme() else "#e60000"
+        style.configure("BadRegex.TCombobox", foreground=new_col)
+
+        def is_valid_regex(new_value: str) -> bool:
+            """Validation routine for Search Combobox - check value is a valid regex.
+
+            Note that it always returns True because we want user to be able to type
+            the character. It just alerts the user by switching to the BadRegex style.
+            """
+            if preferences.get(PrefKey.HIGHLIGHT_DIALOG_USE_REGEX):
+                try:
+                    re.compile(new_value)
+                    self.search_box["style"] = ""
+                except re.error:
+                    self.search_box["style"] = "BadRegex.TCombobox"
+            else:
+                self.search_box["style"] = ""
+            return True
+
+        self.font = tk_font.Font(
+            family=maintext().font.cget("family"),
+            size=maintext().font.cget("size"),
+        )
+        # create the search box
+        self.search_box = Combobox(
+            self.top_frame,
+            PrefKey.HIGHLIGHT_DIALOG_SEARCH_HISTORY,
+            font=self.font,
+            validate="all",
+            validatecommand=(self.register(is_valid_regex), "%P"),
+        )
+        self.search_box.grid(row=0, column=0, columnspan=2, sticky="NSEW")
+        # Register search box to have its focus tracked for inserting special characters
+        register_focus_widget(self.search_box)
+        self.search_box.focus()
+
+        ttk.Checkbutton(
+            self.top_frame,
+            text="Regex",
+            variable=PersistentBoolean(PrefKey.HIGHLIGHT_DIALOG_USE_REGEX),
+            command=lambda: is_valid_regex(self.search_box.get()),
+            takefocus=False,
+        ).grid(row=1, column=0, padx=2)
+
+        ttk.Checkbutton(
+            self.top_frame,
+            text="Match case",
+            variable=PersistentBoolean(PrefKey.HIGHLIGHT_DIALOG_MATCH_CASE),
+            takefocus=False,
+        ).grid(row=1, column=1, padx=2)
+
+        self.previous_selection_button = ttk.Button(
+            self.top_frame,
+            text="Restore Selection",
+            takefocus=False,
+            command=maintext().restore_selection_ranges,
+        )
+        self.previous_selection_button.grid(row=2, column=0, sticky="NSEW", padx=2)
+
+        self.select_whole_file_button = ttk.Button(
+            self.top_frame,
+            text="Select All",
+            takefocus=False,
+            command=lambda: maintext().do_select(
+                IndexRange(maintext().start(), maintext().end())
+            ),
+        )
+        self.select_whole_file_button.grid(row=2, column=1, sticky="NSEW", padx=2)
+
+        self.apply_highlights_button = ttk.Button(
+            self.top_frame,
+            text="Highlight",
+            takefocus=False,
+            default="active",
+            command=self.apply_highlights_clicked,
+        )
+        self.apply_highlights_button.grid(row=3, column=0, sticky="NSEW", padx=2)
+        self.bind("<Return>", lambda *args: self.apply_highlights_clicked())
+
+        self.remove_highlights_button = ttk.Button(
+            self.top_frame,
+            text="Clear Highlights",
+            takefocus=False,
+            command=maintext().remove_highlights,
+        )
+        self.remove_highlights_button.grid(row=3, column=1, sticky="NSEW", padx=2)
+
+        self.message = ttk.Label(
+            self.top_frame, borderwidth=1, relief="sunken", padding=5
+        )
+        self.message.grid(row=4, column=0, columnspan=2, sticky="NSEW")
+
+        # Now dialog geometry is set up, set width to user pref, leaving height as it is
+        self.config_width()
+        self.allow_geometry_save()
+
+    def display_message(self, message: str = "") -> None:
+        """Display message in Highlight dialog.
+
+        Args:
+            message: Message to be displayed - clears message if arg omitted
+        """
+        self.message["text"] = message
+
+    def apply_highlights_clicked(self) -> str:
+        """Apply search pattern to selection as highlights.
+
+        Returns:
+            "break" to avoid calling other callsbacks
+        """
+        search_string = self.search_box.get()
+        if not search_string:
+            return "break"
+        self.search_box.add_to_history(search_string)
+
+        regexp = preferences.get(PrefKey.HIGHLIGHT_DIALOG_USE_REGEX)
+        nocase = not preferences.get(PrefKey.HIGHLIGHT_DIALOG_MATCH_CASE)
+
+        maintext().remove_highlights()
+
+        message = ""
+        try:
+            maintext().highlight_selection(
+                search_string, HighlightTag.MANUAL, regexp=regexp, nocase=nocase
+            )
+        except TclRegexCompileError as e:
+            message = str(e)
+        self.display_message(message)
+        return "break"
+
+
 def show_search_dialog() -> None:
     """Show the Search dialog and set the string in search box
     to the selected text if any (up to first newline)."""
@@ -847,3 +997,8 @@ def message_from_regex_exception(exc: re.error) -> str:
     message = str(exc)
     message = message[0].upper() + message[1:]
     return message + " in regex " + exc.pattern  # type:ignore[attr-defined]
+
+
+def show_highlight_dialog() -> None:
+    """Show the Highlight dialog"""
+    HighlightDialog.show_dialog()

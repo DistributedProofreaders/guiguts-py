@@ -149,7 +149,7 @@ class TextLineNumbers(tk.Canvas):
 class HighlightTag(StrEnum):
     """Global highlight tag settings."""
 
-    QUOTEMARK = auto()
+    MANUAL = auto()
     SPOTLIGHT = auto()
     PAREN = auto()
     CURLY_BRACKET = auto()
@@ -175,7 +175,7 @@ class HighlightColors:
     # Unclear what we should/will do in GG2 with themes & dark mode support.
 
     # Must be a definition for each available theme
-    QUOTEMARK = {
+    MANUAL = {
         "Light": {"bg": "#a08dfc", "fg": "black"},
         "Dark": {"bg": "#a08dfc", "fg": "white"},
     }
@@ -2494,17 +2494,19 @@ class MainText(tk.Text):
             matches = self.find_matches(pat, _range, nocase=nocase, regexp=regexp)
             for match in matches:
                 self.tag_add(
-                    tag_name, match.rowcol.index(), match.rowcol.index() + "+1c"
+                    tag_name,
+                    match.rowcol.index(),
+                    f"{match.rowcol.index()}+{match.count}c",
                 )
 
     def remove_highlights(self) -> None:
-        """Remove active highlights."""
-        self.tag_remove(HighlightTag.QUOTEMARK, "1.0", tk.END)
+        """Remove manually-triggered highlights."""
+        self.tag_remove(HighlightTag.MANUAL, "1.0", tk.END)
 
     def highlight_quotemarks(self, pat: str) -> None:
         """Highlight quote marks in current selection which match a pattern."""
         self.remove_highlights()
-        self.highlight_selection(pat, HighlightTag.QUOTEMARK, regexp=True)
+        self.highlight_selection(pat, HighlightTag.MANUAL, regexp=True)
 
     def highlight_single_quotes(self) -> None:
         """Highlight single quotes (straight or curly) in current selection."""
@@ -2873,7 +2875,7 @@ class MainText(tk.Text):
         #
         for tag, colors in (
             (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
-            (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
+            (HighlightTag.MANUAL, HighlightColors.MANUAL),
             # "sel" is for active selections - don't override the default color
             ("sel", None),
             (HighlightTag.PAREN, HighlightColors.PAREN),
