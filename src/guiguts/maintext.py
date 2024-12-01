@@ -525,8 +525,11 @@ class MainText(tk.Text):
         # Force focus to maintext widget
         self.after_idle(lambda: grab_focus(self.root, self, True))
 
+        # Whether we were on dark theme the last time we looked (bool)
+        self.dark_theme = self.is_dark_theme()
+
         # Initialize highlighting tags
-        self.after_idle(self.highlight_initialize_tags)
+        self.after_idle(lambda: self.highlight_configure_tags(first_run=True))
 
     def do_nothing(self) -> None:
         """The only winning move is not to play."""
@@ -635,6 +638,8 @@ class MainText(tk.Text):
             self.root.after_idle(self._do_linenumbers_redraw)
             self.root.after_idle(self._call_config_callbacks)
             self.root.after_idle(self.save_sash_coords)
+            # run `highlight_configure_tags` _before_ other highlighters
+            self.root.after_idle(self.highlight_configure_tags)
             self.root.after_idle(self.highlight_quotbrac)
             self.root.after_idle(self.highlight_aligncol)
             self.root.after_idle(self.highlight_cursor_line)
@@ -2455,7 +2460,7 @@ class MainText(tk.Text):
             tag_name: Tag to be configured.
             tag_colors: Dictionary of fg/bg colors for each theme.
         """
-        if self.is_dark_theme():
+        if self.dark_theme:
             theme = "Dark"
         else:
             theme = "Light"
@@ -2837,10 +2842,28 @@ class MainText(tk.Text):
             row = self.get_insert_index().row
             self.tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row+1}.0")
 
-    def highlight_initialize_tags(self) -> None:
-        """Initialize highlighting tags and determine their prioritization.
-        Intended to run once at startup.
+    def highlight_configure_tags(self, first_run: bool = False) -> None:
+        """Configure highlight tags with colors based on the current theme.
+        On first run, will also initialize the tag stack order.
+
+        Args:
+            first_run: if True, will set the tag ordering/priority
         """
+        colors_need_update = False
+        order_needs_update = False
+        dark_theme = self.is_dark_theme()
+
+        if first_run:
+            colors_need_update = True
+            order_needs_update = True
+            self.dark_theme = dark_theme
+        elif self.dark_theme != dark_theme:
+            colors_need_update = True
+            self.dark_theme = dark_theme
+
+        if not colors_need_update:
+            return
+
         # Loop through a list of tags, in order of priority. Earlier in the list will
         # take precedence over later in the list; that is, the first entry in this
         # list will win over the second; the second wins over the third; and so on
@@ -2865,7 +2888,8 @@ class MainText(tk.Text):
         ):
             if colors:
                 self._highlight_configure_tag(tag, colors)
-            self.tag_lower(tag)
+            if order_needs_update:
+                self.tag_lower(tag)
 
 
 def img_from_page_mark(mark: str) -> str:
