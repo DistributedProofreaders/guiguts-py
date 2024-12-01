@@ -315,11 +315,20 @@ class File:
             filetypes=[("All files", "*")],
             title="Save a Copy As",
         ):
-            self.store_recent_file(fn)
-            self.store_recent_file(self.filename)
-            maintext().do_save(fn, clear_modified_flag=False)
-            self.save_bin(fn)
+            self.save_copy(fn)
         grab_focus(root(), maintext())
+
+    def save_copy(self, filename: str) -> None:
+        """Save copy of current text as new file, without affecting
+        current filename or "modified" flag.
+
+        Args:
+            filename: Name to save file as.
+        """
+        self.store_recent_file(filename)
+        self.store_recent_file(self.filename)
+        maintext().do_save(filename, clear_modified_flag=False)
+        self.save_bin(filename)
 
     def check_save(self) -> bool:
         """If file has been edited, check if user wants to save,

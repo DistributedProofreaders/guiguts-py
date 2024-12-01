@@ -865,6 +865,22 @@ class MainText(tk.Text):
         self._replace_preserving_pagemarks(index1, index2, chars, *args)
         self._on_change()
 
+    def replace_all(
+        self, search_str: str, replace_str: str, regexp: bool = False
+    ) -> None:
+        """Replace all occurrences of search string/regex with replacement.
+
+        Args:
+            search_str: Search string.
+            replace_str: Replacement string.
+        """
+        whole_file = IndexRange(self.start(), self.end())
+        matches = self.find_matches(search_str, whole_file, nocase=False, regexp=regexp)
+        for match in reversed(matches):
+            start = match.rowcol.index()
+            end = f"{start}+{match.count}c"
+            self.replace(start, end, replace_str)
+
     def mark_set(self, markName: str, index: Any) -> None:
         """Override method to ensure line numbers are updated when insert cursor is moved."""
         super().mark_set(markName, index)
@@ -1709,8 +1725,12 @@ class MainText(tk.Text):
             replacement:  Replacement text.
             tags: Optional tuple of tags to be applied to inserted text.
         """
-        start_row = IndexRowCol(self.index(start_index)).row
-        end_row = IndexRowCol(self.index(end_index)).row
+        # Convert to simple row.col index, otherwise indexes like "53.end-5c"
+        # that can "move" when text is inserted/deleted will cause problems later.
+        start_index = self.index(start_index)
+        end_index = self.index(end_index)
+        start_row = IndexRowCol(start_index).row
+        end_row = IndexRowCol(end_index).row
         num_newlines_match = end_row - start_row
         num_newlines_replacement = replacement.count("\n")
 

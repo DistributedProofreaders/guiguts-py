@@ -16,6 +16,7 @@ from guiguts.checkers import CheckerSortType
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle
+from guiguts.html_convert import HTMLGeneratorDialog
 from guiguts.illo_sn_fixup import illosn_check
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
@@ -448,6 +449,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.init_search_menu()
         self.init_tools_menu()
         self.init_text_menu()
+        self.init_html_menu()
         self.init_view_menu()
         self.init_help_menu()
         self.init_os_menu()
@@ -755,6 +757,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button(
             "Convert ~Markup...", TextMarkupConvertorDialog.show_dialog
         )
+
+    def init_html_menu(self) -> None:
+        """Create the HTML menu."""
+        menu_tools = Menu(menubar(), "HT~ML")
+        menu_tools.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
