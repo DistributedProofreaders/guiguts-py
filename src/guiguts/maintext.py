@@ -2812,9 +2812,17 @@ class MainText(tk.Text):
     def highlight_aligncol_callback(self, value: bool) -> None:
         """Callback when highlight_aligncol active state is changed."""
         if value:
+            col = self.get_insert_index().col
+            if col == 0:
+                logger.error(
+                    "Can't create an alignment column at column 0. Choose another column."
+                )
+                self.aligncol_active.set(False)
+                return
+
             # Highlight column immediately preceding cursor for consistency with ruler.
             # (There is no ruler as of today, but we'll implement one in GG2 at some point...)
-            self.aligncol = self.get_insert_index().col - 1
+            self.aligncol = col - 1
             self.highlight_aligncol()
         else:
             self.aligncol = -1
