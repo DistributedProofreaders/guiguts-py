@@ -1,19 +1,25 @@
 """Functions to convert from text to HTML."""
 
+import importlib.resources
 import logging
+from pathlib import Path
 import tkinter as tk
 from tkinter import ttk
 
 import regex as re
 
+from guiguts.data import html
 from guiguts.file import the_file
 from guiguts.maintext import maintext
+from guiguts.preferences import preferences
 from guiguts.utilities import IndexRange
 from guiguts.widgets import ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
 css_indents: dict[int, bool] = {}
+DEFAULT_HTML_DIR = importlib.resources.files(html)
+HTML_HEADER_NAME = "html_header.txt"
 
 
 class HTMLGeneratorDialog(ToplevelDialog):
@@ -456,6 +462,8 @@ def html_convert_body() -> None:
     if blockquote_level > 0:
         raise SyntaxError("Blockquote (/#) not closed by end of file")
 
+    insert_header_footer()
+
 
 def do_per_line_markup(
     selection: str,
@@ -551,3 +559,34 @@ def html_convert_tb(selection: str, line_start: str, line_end: str) -> int:
         if nsubs:
             maintext().replace(line_start, line_end, selection)
     return nsubs
+
+
+def insert_header_footer() -> None:
+    """Insert the default and/or user HTML header, and the footer.
+
+    User's header can either be a complete header, or just some CSS
+    to be inserted at the end of the default CSS.
+    """
+    # Get user's header file if there is one
+    user_path = Path(preferences.prefsdir, HTML_HEADER_NAME)
+    if user_path.is_file():
+        user_header = user_path.read_text(encoding="utf-8")
+    else:
+        user_header = ""
+    # If user has provided complete header, insert at start instead of default
+    if user_header.startswith("<!DOCTYPE"):
+        maintext().insert("1.0", f"{user_header}\n")
+    else:
+        # Insert default header at start
+        default_path = DEFAULT_HTML_DIR.joinpath(HTML_HEADER_NAME)
+        default_header = default_path.read_text(encoding="utf-8")
+        maintext().insert("1.0", f"{default_header}\n")
+        # Insert user header if there is one, just before closing "</style>"
+        if user_header:
+            style_line = maintext().search("</style>", "1.0", regexp=True)
+            if not style_line:
+                logger.error("No '</style>' line found in default HTML header")
+                return
+            maintext().insert(f"{style_line} linestart", f"{user_header}\n")
+    # Insert footer
+    maintext().insert(tk.END, "\n</body>\n</html>")
