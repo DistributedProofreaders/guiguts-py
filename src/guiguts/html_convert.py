@@ -42,7 +42,7 @@ def html_autogenerate() -> None:
 
     maintext().undo_block_begin()
     remove_trailing_spaces()
-    html_convert_amp_lt_gt()
+    html_convert_entities()
     # html_convert_footnotes() - waiting for footnote code
     try:
         html_convert_body()
@@ -55,10 +55,12 @@ def remove_trailing_spaces() -> None:
     maintext().replace_all(" +$", "", regexp=True)
 
 
-def html_convert_amp_lt_gt() -> None:
-    """Replace occurrences of ampersand, less & greater than characters
-    with HTML entities, except for things like `<i>`."""
+def html_convert_entities() -> None:
+    """Replace occurrences of ampersand, less & greater than, non-breaking space
+    with HTML entities (except for things like `<i>`)."""
     maintext().replace_all("&", "&amp;")
+    maintext().replace_all("\xa0", "&nbsp;")
+    maintext().replace_all("--", "—")
 
     # Find all < and > characters
     search_range = IndexRange(maintext().start(), maintext().end())
@@ -427,7 +429,9 @@ def html_convert_body() -> None:
                     maintext().insert(f"{right_block_line_num}.end", "<br>")
             else:  # lines within "/r" markup
                 # Store original line length for later right-margin calculations
-                right_line_lengths.append(len(selection))
+                # Convert entities back to single character to get length correct
+                len_str = re.sub("&[a-z]+?;", "X", selection)
+                right_line_lengths.append(len(len_str))
                 do_per_line_markup(selection, line_start, line_end, ibs_dict)
             continue
 
