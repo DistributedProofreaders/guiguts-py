@@ -870,6 +870,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             Returns:
                 "Start-End" for a regualar selection, and "R:rows C:cols" for column selection.
             """
+            maintext().selection_cursor()
             ranges = maintext().selected_ranges()
             maintext().save_selection_ranges()
             if not ranges:
