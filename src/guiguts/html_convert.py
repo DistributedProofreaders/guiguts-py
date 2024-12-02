@@ -17,7 +17,7 @@ from guiguts.widgets import ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
-css_indents: dict[int, bool] = {}
+css_indents: set[int] = set()
 DEFAULT_HTML_DIR = importlib.resources.files(html)
 HTML_HEADER_NAME = "html_header.txt"
 
@@ -36,11 +36,9 @@ class HTMLGeneratorDialog(ToplevelDialog):
 
 def html_autogenerate() -> None:
     """Autogenerate HTML from text file."""
-    global css_indents
-    css_indents = {}
-
     fn = re.sub(r"\.[^\.]*$", "-htmlbak.txt", the_file().filename)
     the_file().save_copy(fn)
+    css_indents.clear()
 
     maintext().undo_block_begin()
     remove_trailing_spaces()
@@ -463,6 +461,7 @@ def html_convert_body() -> None:
         raise SyntaxError("Blockquote (/#) not closed by end of file")
 
     insert_header_footer()
+    flush_css_indents()
 
 
 def do_per_line_markup(
@@ -502,9 +501,41 @@ def do_per_line_markup(
             maintext().insert(line_end, f"</{ch}>")
 
 
+def end_of_css() -> str:
+    """Find </style>, marking end of css.
+
+    Returns:
+        Index of beginning of line containing </style>
+    """
+    style_end = maintext().search("</style>", "1.0", regexp=False)
+    if not style_end:
+        raise SyntaxError("No '</style>' line found in default HTML header")
+    return maintext().index(f"{style_end} linestart")
+
+
 def add_indent_to_css(indent: int) -> None:
     """Add CSS for indent to CSS."""
-    css_indents[indent] = True
+    css_indents.add(indent)
+
+
+def flush_css_indents() -> None:
+    """Output saved indents to CSS section of file."""
+    if not css_indents:
+        return
+
+    css_strings: list[str] = ["\n/* Poetry indents */\n"]
+    for indent in sorted(css_indents):
+        # Default verse with no extra spaces has 3em padding, and -3em text-indent to
+        # give hanging indent in case of a continuation line.
+        # Every two spaces causes +1em indent, but continuation lines need to align at 3em,
+        # so, add the half the space indent to -3em to set the em text-indent for each line
+        # For example, if 4 space indent, use 4 * 0.5 - 3 = -1em text-indent, i.e.
+        #    .poetry .indent4 {text-indent: -1em;}
+        css_strings.append(
+            f".poetry .indent{indent} {{text-indent: {indent * 0.5 - 3}em;}}\n"
+        )
+    css_strings.append("\n")
+    maintext().insert(end_of_css(), "".join(css_strings))
 
 
 def poetry_indentation(poem: str) -> int:
@@ -583,10 +614,6 @@ def insert_header_footer() -> None:
         maintext().insert("1.0", f"{default_header}\n")
         # Insert user header if there is one, just before closing "</style>"
         if user_header:
-            style_line = maintext().search("</style>", "1.0", regexp=True)
-            if not style_line:
-                logger.error("No '</style>' line found in default HTML header")
-                return
-            maintext().insert(f"{style_line} linestart", f"{user_header}\n")
+            maintext().insert(end_of_css(), f"{user_header}\n")
     # Insert footer
-    maintext().insert(tk.END, "\n</body>\n</html>")
+    maintext().insert(tk.END, "\n</body>\n</html>\n")
