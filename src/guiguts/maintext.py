@@ -462,15 +462,16 @@ class MainText(tk.Text):
             self.bind_event(
                 f"<Shift-{arrow}>", lambda _event: "", force_break=False, bind_peer=True
             )
-        if is_mac():  # Mac also has Emacs-style equivalent to arrow keys
-            for key in ("b", "B", "p", "P"):
+        # Mac also has Emacs-style equivalent to arrow keys - don't override uppercase versions
+        if is_mac():
+            for key in ("b", "p"):
                 self.bind_event(
                     f"<Control-{key}>",
                     lambda _event: self.move_to_selection_start(),
                     force_break=False,
                     bind_peer=True,
                 )
-            for key in ("f", "F", "n", "N"):
+            for key in ("f", "n"):
                 self.bind_event(
                     f"<Control-{key}>",
                     lambda _event: self.move_to_selection_end(),
@@ -479,20 +480,18 @@ class MainText(tk.Text):
                 )
             # Control-A/E move to start/end of line on Macs
             # so go to start/end of line that contains selection start/end
-            for key in ("a", "A"):
-                self.bind_event(
-                    f"<Control-{key}>",
-                    lambda _event: self.move_to_selection_start(force_line=True),
-                    force_break=False,
-                    bind_peer=True,
-                )
-            for key in ("e", "E"):
-                self.bind_event(
-                    f"<Control-{key}>",
-                    lambda _event: self.move_to_selection_end(force_line=True),
-                    force_break=False,
-                    bind_peer=True,
-                )
+            self.bind_event(
+                "<Control-a>",
+                lambda _event: self.move_to_selection_start(force_line=True),
+                force_break=False,
+                bind_peer=True,
+            )
+            self.bind_event(
+                "<Control-e>",
+                lambda _event: self.move_to_selection_end(force_line=True),
+                force_break=False,
+                bind_peer=True,
+            )
 
         # Double (word) and triple (line) clicking to select, leaves the anchor point
         # wherever the user clicked, so force it instead to be at the start of the word/line.
