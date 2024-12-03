@@ -439,27 +439,75 @@ class MainText(tk.Text):
                 self.focus()
 
         self.bind_event("<Tab>", switch_text_peer, bind_peer=True)
-        # Override default left/right arrow key behavior if there is a selection
+        # Override default left/right/up/down arrow key behavior if there is a selection
+        # Above behavior would affect Shift-Left/Right/Up/Down, so also bind those to
+        # null functions and allow default class behavior to happen
+        for arrow in ("Left", "Up"):
+            self.bind_event(
+                f"<{arrow}>",
+                lambda _event: self.move_to_selection_start(),
+                force_break=False,
+                bind_peer=True,
+            )
+            self.bind_event(
+                f"<Shift-{arrow}>", lambda _event: "", force_break=False, bind_peer=True
+            )
+        for arrow in ("Right", "Down"):
+            self.bind_event(
+                f"<{arrow}>",
+                lambda _event: self.move_to_selection_end(),
+                force_break=False,
+                bind_peer=True,
+            )
+            self.bind_event(
+                f"<Shift-{arrow}>", lambda _event: "", force_break=False, bind_peer=True
+            )
+
+        # Double (word) and triple (line) clicking to select, leaves the anchor point
+        # wherever the user clicked, so force it instead to be at the start of the word/line.
+        # This has to be done after the default behavior, so via `after_idle`.
+        # Also add a dummy event to ensure that shift double/triple clicks continue to
+        # exhibit default "extend selection" behavior.
+        def dbl_click(_event: tk.Event) -> None:
+            self.after_idle(
+                lambda: self.mark_set(
+                    TK_ANCHOR_MARK, f"{self.index(tk.CURRENT)} wordstart"
+                )
+            )
+
         self.bind_event(
-            "<Left>",
-            lambda _event: self.move_to_selection_start(),
+            "<Double-Button-1>",
+            dbl_click,
             force_break=False,
             bind_peer=True,
         )
         self.bind_event(
-            "<Right>",
-            lambda _event: self.move_to_selection_end(),
+            "<Shift-Double-Button-1>",
+            lambda _event: "",
             force_break=False,
             bind_peer=True,
         )
-        # Above behavior would affect Shift-Left/Right, so bind those to null functions
-        # and allow default class behavior to happen
+
+        def triple_click(_event: tk.Event) -> None:
+            self.after_idle(
+                lambda: self.mark_set(
+                    TK_ANCHOR_MARK, f"{self.index(tk.CURRENT)} linestart"
+                )
+            )
+
         self.bind_event(
-            "<Shift-Right>", lambda _event: "", force_break=False, bind_peer=True
+            "<Triple-Button-1>",
+            triple_click,
+            force_break=False,
+            bind_peer=True,
         )
         self.bind_event(
-            "<Shift-Left>", lambda _event: "", force_break=False, bind_peer=True
+            "<Shift-Triple-Button-1>",
+            lambda _event: "",
+            force_break=False,
+            bind_peer=True,
         )
+
         # Bind line numbers update routine to all events that might
         # change which line numbers should be displayed in maintext and peer
         self.bind_event(
