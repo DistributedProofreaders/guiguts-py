@@ -1395,7 +1395,7 @@ class MainText(tk.Text):
         because text widget "end" is start of line below last char."""
         return self.rowcol(tk.END + "-1c")
 
-    def move_to_selection_start(self, force_line=False) -> str:
+    def move_to_selection_start(self, force_line: bool = False) -> str:
         """Set insert position to start of any selection text.
 
         Args:
@@ -1403,7 +1403,7 @@ class MainText(tk.Text):
         """
         return self._move_to_selection_edge(end=False, force_line=force_line)
 
-    def move_to_selection_end(self, force_line=False) -> str:
+    def move_to_selection_end(self, force_line: bool = False) -> str:
         """Set insert position to end of any selection text.
 
         Args:
@@ -1411,7 +1411,7 @@ class MainText(tk.Text):
         """
         return self._move_to_selection_edge(end=True, force_line=force_line)
 
-    def _move_to_selection_edge(self, end: bool, force_line=False) -> str:
+    def _move_to_selection_edge(self, end: bool, force_line: bool = False) -> str:
         """Set insert position to start or end of selection text.
 
         Args:
