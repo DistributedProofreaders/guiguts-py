@@ -462,6 +462,37 @@ class MainText(tk.Text):
             self.bind_event(
                 f"<Shift-{arrow}>", lambda _event: "", force_break=False, bind_peer=True
             )
+        if is_mac():  # Mac also has Emacs-style equivalent to arrow keys
+            for key in ("b", "B", "p", "P"):
+                self.bind_event(
+                    f"<Control-{key}>",
+                    lambda _event: self.move_to_selection_start(),
+                    force_break=False,
+                    bind_peer=True,
+                )
+            for key in ("f", "F", "n", "N"):
+                self.bind_event(
+                    f"<Control-{key}>",
+                    lambda _event: self.move_to_selection_end(),
+                    force_break=False,
+                    bind_peer=True,
+                )
+            # Control-A/E move to start/end of line on Macs
+            # so go to start/end of line that contains selection start/end
+            for key in ("a", "A"):
+                self.bind_event(
+                    f"<Control-{key}>",
+                    lambda _event: self.move_to_selection_start(force_line=True),
+                    force_break=False,
+                    bind_peer=True,
+                )
+            for key in ("e", "E"):
+                self.bind_event(
+                    f"<Control-{key}>",
+                    lambda _event: self.move_to_selection_end(force_line=True),
+                    force_break=False,
+                    bind_peer=True,
+                )
 
         # Double (word) and triple (line) clicking to select, leaves the anchor point
         # wherever the user clicked, so force it instead to be at the start of the word/line.
@@ -1364,26 +1395,38 @@ class MainText(tk.Text):
         because text widget "end" is start of line below last char."""
         return self.rowcol(tk.END + "-1c")
 
-    def move_to_selection_start(self) -> str:
-        """Set insert position to start of any selection text."""
-        return self._move_to_selection_edge(end=False)
+    def move_to_selection_start(self, force_line=False) -> str:
+        """Set insert position to start of any selection text.
 
-    def move_to_selection_end(self) -> str:
-        """Set insert position to end of any selection text."""
-        return self._move_to_selection_edge(end=True)
+        Args:
+            force_line: True to force movement to start/end of relevant line
+        """
+        return self._move_to_selection_edge(end=False, force_line=force_line)
 
-    def _move_to_selection_edge(self, end: bool) -> str:
+    def move_to_selection_end(self, force_line=False) -> str:
+        """Set insert position to end of any selection text.
+
+        Args:
+            force_line: True to force movement to start/end of relevant line
+        """
+        return self._move_to_selection_edge(end=True, force_line=force_line)
+
+    def _move_to_selection_edge(self, end: bool, force_line=False) -> str:
         """Set insert position to start or end of selection text.
 
         Args:
             end: True for end, False for start.
+            force_line: True to force movement to start/end of relevant line
         """
         sel_ranges = self.selected_ranges()
         if not sel_ranges:
             return ""
         pos = sel_ranges[-1].end if end else sel_ranges[0].start
+        idx = pos.index()
+        if force_line:
+            idx += " lineend" if end else "linestart"
         # Use low-level calls to avoid "see" behavior of set_insert_index
-        self.focus_widget().mark_set(tk.INSERT, pos.index())
+        self.focus_widget().mark_set(tk.INSERT, idx)
         self.focus_widget().see(tk.INSERT)
         self.clear_selection()
         return "break"
