@@ -478,20 +478,22 @@ class MainText(tk.Text):
                     force_break=False,
                     bind_peer=True,
                 )
-            # Control-A/E move to start/end of line on Macs
+            # Control-A/E & Cmd+left/right move to start/end of line on Macs
             # so go to start/end of line that contains selection start/end
-            self.bind_event(
-                "<Control-a>",
-                lambda _event: self.move_to_selection_start(force_line=True),
-                force_break=False,
-                bind_peer=True,
-            )
-            self.bind_event(
-                "<Control-e>",
-                lambda _event: self.move_to_selection_end(force_line=True),
-                force_break=False,
-                bind_peer=True,
-            )
+            for key in ("<Control-a>", "<Command-Left>"):
+                self.bind_event(
+                    key,
+                    lambda _event: self.move_to_selection_start(force_line=True),
+                    force_break=False,
+                    bind_peer=True,
+                )
+            for key in ("<Control-e>", "<Command-Right>"):
+                self.bind_event(
+                    key,
+                    lambda _event: self.move_to_selection_end(force_line=True),
+                    force_break=False,
+                    bind_peer=True,
+                )
 
         # Double (word) and triple (line) clicking to select, leaves the anchor point
         # wherever the user clicked, so force it instead to be at the start of the word/line.
