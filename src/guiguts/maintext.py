@@ -129,7 +129,7 @@ class TextLineNumbers(tk.Canvas):
                 bbox = list(self.bbox(text))
                 rect = self.create_rectangle(
                     (
-                        bbox[0] - 3,
+                        3,
                         bbox[1] - line_spacing_adj,
                         bbox[2] + self.x_offset - 3,
                         bbox[3],
