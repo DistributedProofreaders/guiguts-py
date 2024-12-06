@@ -439,27 +439,107 @@ class MainText(tk.Text):
                 self.focus()
 
         self.bind_event("<Tab>", switch_text_peer, bind_peer=True)
-        # Override default left/right arrow key behavior if there is a selection
+        # Override default left/right/up/down arrow key behavior if there is a selection
+        # Above behavior would affect Shift-Left/Right/Up/Down, so also bind those to
+        # null functions and allow default class behavior to happen
+        for arrow in ("Left", "Up"):
+            self.bind_event(
+                f"<{arrow}>",
+                lambda _event: self.move_to_selection_start(),
+                force_break=False,
+                bind_peer=True,
+            )
+            self.bind_event(
+                f"<Shift-{arrow}>", lambda _event: "", force_break=False, bind_peer=True
+            )
+        for arrow in ("Right", "Down"):
+            self.bind_event(
+                f"<{arrow}>",
+                lambda _event: self.move_to_selection_end(),
+                force_break=False,
+                bind_peer=True,
+            )
+            self.bind_event(
+                f"<Shift-{arrow}>", lambda _event: "", force_break=False, bind_peer=True
+            )
+        # Mac also has Emacs-style equivalent to arrow keys - don't override uppercase versions
+        if is_mac():
+            for key in ("b", "p"):
+                self.bind_event(
+                    f"<Control-{key}>",
+                    lambda _event: self.move_to_selection_start(),
+                    force_break=False,
+                    bind_peer=True,
+                )
+            for key in ("f", "n"):
+                self.bind_event(
+                    f"<Control-{key}>",
+                    lambda _event: self.move_to_selection_end(),
+                    force_break=False,
+                    bind_peer=True,
+                )
+            # Control-A/E & Cmd+left/right move to start/end of line on Macs
+            # so go to start/end of line that contains selection start/end
+            for key in ("<Control-a>", "<Command-Left>"):
+                self.bind_event(
+                    key,
+                    lambda _event: self.move_to_selection_start(force_line=True),
+                    force_break=False,
+                    bind_peer=True,
+                )
+            for key in ("<Control-e>", "<Command-Right>"):
+                self.bind_event(
+                    key,
+                    lambda _event: self.move_to_selection_end(force_line=True),
+                    force_break=False,
+                    bind_peer=True,
+                )
+
+        # Double (word) and triple (line) clicking to select, leaves the anchor point
+        # wherever the user clicked, so force it instead to be at the start of the word/line.
+        # This has to be done after the default behavior, so via `after_idle`.
+        # Also add a dummy event to ensure that shift double/triple clicks continue to
+        # exhibit default "extend selection" behavior.
+        def dbl_click(_event: tk.Event) -> None:
+            self.after_idle(
+                lambda: self.mark_set(
+                    TK_ANCHOR_MARK, f"{self.index(tk.CURRENT)} wordstart"
+                )
+            )
+
         self.bind_event(
-            "<Left>",
-            lambda _event: self.move_to_selection_start(),
+            "<Double-Button-1>",
+            dbl_click,
             force_break=False,
             bind_peer=True,
         )
         self.bind_event(
-            "<Right>",
-            lambda _event: self.move_to_selection_end(),
+            "<Shift-Double-Button-1>",
+            lambda _event: "",
             force_break=False,
             bind_peer=True,
         )
-        # Above behavior would affect Shift-Left/Right, so bind those to null functions
-        # and allow default class behavior to happen
+
+        def triple_click(_event: tk.Event) -> None:
+            self.after_idle(
+                lambda: self.mark_set(
+                    TK_ANCHOR_MARK, f"{self.index(tk.CURRENT)} linestart"
+                )
+            )
+
         self.bind_event(
-            "<Shift-Right>", lambda _event: "", force_break=False, bind_peer=True
+            "<Triple-Button-1>",
+            triple_click,
+            force_break=False,
+            bind_peer=True,
         )
         self.bind_event(
-            "<Shift-Left>", lambda _event: "", force_break=False, bind_peer=True
+            "<Shift-Triple-Button-1>",
+            lambda _event: "",
+            force_break=False,
+            bind_peer=True,
         )
+
         # Bind line numbers update routine to all events that might
         # change which line numbers should be displayed in maintext and peer
         self.bind_event(
@@ -1316,26 +1396,38 @@ class MainText(tk.Text):
         because text widget "end" is start of line below last char."""
         return self.rowcol(tk.END + "-1c")
 
-    def move_to_selection_start(self) -> str:
-        """Set insert position to start of any selection text."""
-        return self._move_to_selection_edge(end=False)
+    def move_to_selection_start(self, force_line: bool = False) -> str:
+        """Set insert position to start of any selection text.
 
-    def move_to_selection_end(self) -> str:
-        """Set insert position to end of any selection text."""
-        return self._move_to_selection_edge(end=True)
+        Args:
+            force_line: True to force movement to start/end of relevant line
+        """
+        return self._move_to_selection_edge(end=False, force_line=force_line)
 
-    def _move_to_selection_edge(self, end: bool) -> str:
+    def move_to_selection_end(self, force_line: bool = False) -> str:
+        """Set insert position to end of any selection text.
+
+        Args:
+            force_line: True to force movement to start/end of relevant line
+        """
+        return self._move_to_selection_edge(end=True, force_line=force_line)
+
+    def _move_to_selection_edge(self, end: bool, force_line: bool = False) -> str:
         """Set insert position to start or end of selection text.
 
         Args:
             end: True for end, False for start.
+            force_line: True to force movement to start/end of relevant line
         """
         sel_ranges = self.selected_ranges()
         if not sel_ranges:
             return ""
         pos = sel_ranges[-1].end if end else sel_ranges[0].start
+        idx = pos.index()
+        if force_line:
+            idx += " lineend" if end else "linestart"
         # Use low-level calls to avoid "see" behavior of set_insert_index
-        self.focus_widget().mark_set(tk.INSERT, pos.index())
+        self.focus_widget().mark_set(tk.INSERT, idx)
         self.focus_widget().see(tk.INSERT)
         self.clear_selection()
         return "break"
@@ -2443,6 +2535,13 @@ class MainText(tk.Text):
         if mark == "":
             return ""
         return img_from_page_mark(mark)
+
+    def selection_cursor(self) -> None:
+        """Make the insert cursor (in)visible depending on selection."""
+        current = maintext().cget("insertontime")
+        ontime = 0 if maintext().selected_ranges() else 600
+        if ontime != current:
+            maintext().configure(insertontime=ontime)
 
     def is_dark_theme(self) -> bool:
         """Returns True if theme is dark, which is assumed to be the case if
