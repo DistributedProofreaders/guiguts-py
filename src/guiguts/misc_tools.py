@@ -1105,8 +1105,10 @@ def fraction_convert(conversion_type: FractionConvertType) -> None:
                 new_frac = f"{gmatch[2].translate(superscripts)}{frac_slash}{gmatch[3].translate(subscripts)}"
             # Only convert if we found one that should be converted. Don't convert strings like
             # "B1/2" or "C-1/3" - probably a plate/serial number, but not a fraction
-            prefix = maintext().get(f"{match.rowcol.index()}-2c", match.rowcol.index())
-            if new_frac and not re.search(r"(\p{L}-|\p{L}$)", prefix):
+            prefix = maintext().get(
+                f"{match.rowcol.index()} linestart", match.rowcol.index()
+            )
+            if new_frac and not re.search(r"\p{L}-?$", prefix):
                 len_frac = len(new_frac)
                 maintext().insert(match_index, new_frac)
                 maintext().delete(
