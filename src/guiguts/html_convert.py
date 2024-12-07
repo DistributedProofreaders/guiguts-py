@@ -48,6 +48,8 @@ def html_autogenerate() -> None:
         html_convert_body()
     except SyntaxError as exc:
         logger.error(exc)
+    html_convert_underline()
+    html_convert_smallcaps()
 
 
 def remove_trailing_spaces() -> None:
@@ -68,7 +70,7 @@ def html_convert_entities() -> None:
         match_index = match.rowcol.index()
         match_text = maintext().get(match_index, f"{match_index} lineend")
         # Check if it's a DP tag, like `<i>` or `</sc>`
-        check_match = re.match("</?(i|b|f|g|sc|tb)>", match_text)
+        check_match = re.match("</?(i|b|f|g|u|sc|tb)>", match_text)
         if check_match is None:
             maintext().replace(
                 match_index,
@@ -80,6 +82,33 @@ def html_convert_entities() -> None:
             advance = len(check_match[0])  # Skip whole of DP tag
         search_range = IndexRange(
             maintext().rowcol(f"{match_index}+{advance}c"), maintext().end()
+        )
+
+
+def html_convert_underline() -> None:
+    """Replace occurrences of <u>...</u> with HTML span."""
+    maintext().replace_all("<u>", '<span class="u">')
+    maintext().replace_all("</u>", "</span>")
+
+
+def html_convert_smallcaps() -> None:
+    """Replace occurrences of <sc>...</sc> with HTML span.
+
+    Classname is `smcap` unless string contains no lowercase when it is `allsmcap`
+    """
+    # Easier to work backward so replacements don't affect search for next occurrence
+    search_index = "end"
+    while smcap_end := maintext().search("</sc>", search_index, backwards=True):
+        smcap_start = maintext().search("<sc>", smcap_end, backwards=True)
+        if not smcap_start:
+            return
+        test_text = maintext().get(f"{smcap_start}+4c", smcap_end)
+        classname = (
+            "smcap" if re.search(r"\p{Lowercase_Letter}", test_text) else "allsmcap"
+        )
+        maintext().replace(smcap_end, f"{smcap_end}+5c", "</span>")
+        maintext().replace(
+            smcap_start, f"{smcap_start}+4c", f'<span class="{classname}">'
         )
 
 
