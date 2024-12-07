@@ -1,5 +1,6 @@
 """Functions to convert from text to HTML."""
 
+from enum import StrEnum, auto
 import importlib.resources
 import logging
 from pathlib import Path
@@ -11,7 +12,7 @@ import regex as re
 from guiguts.data import html
 from guiguts.file import the_file
 from guiguts.maintext import maintext
-from guiguts.preferences import preferences
+from guiguts.preferences import preferences, PrefKey, PersistentString
 from guiguts.utilities import IndexRange, DiacriticRemover
 from guiguts.widgets import ToplevelDialog
 
@@ -21,6 +22,23 @@ css_indents: set[int] = set()
 DEFAULT_HTML_DIR = importlib.resources.files(html)
 HTML_HEADER_NAME = "html_header.txt"
 
+inline_conversion_dict = {
+    PrefKey.HTML_ITALIC_MARKUP: ("i", "italic"),
+    PrefKey.HTML_BOLD_MARKUP: ("b", "bold"),
+    PrefKey.HTML_GESPERRT_MARKUP: ("g", "gesperrt"),
+    PrefKey.HTML_FONT_MARKUP: ("f", "antiqua"),
+    PrefKey.HTML_UNDERLINE_MARKUP: ("u", "u"),
+}
+
+
+class HTMLMarkupTypes(StrEnum):
+    """Enum class to store values for markup conversion."""
+
+    KEEP = auto()
+    EM = auto()
+    EM_CLASS = auto()
+    SPAN_CLASS = auto()
+
 
 class HTMLGeneratorDialog(ToplevelDialog):
     """Dialog for converting text file to HTML."""
@@ -29,9 +47,43 @@ class HTMLGeneratorDialog(ToplevelDialog):
         """Initialize HTML Generator dialog."""
         super().__init__("HTML Auto-generator", resize_x=False, resize_y=False)
 
+        markup_frame = ttk.LabelFrame(self.top_frame, text="Inline Markup", padding=2)
+        markup_frame.grid(column=0, row=0, sticky="NSEW")
+
+        # Markup conversion
+        for col, text in enumerate(
+            ("Keep", "<em>", "<em class>", "<span class>"), start=1
+        ):
+            ttk.Label(markup_frame, text=text, anchor=tk.CENTER).grid(
+                row=0, column=col, padx=5
+            )
+        for row, (key, (letter, _)) in enumerate(
+            inline_conversion_dict.items(), start=1
+        ):
+            ttk.Label(markup_frame, text=f"<{letter}>:").grid(
+                row=row, column=0, sticky="NSE", padx=(0, 5)
+            )
+            type_var = PersistentString(key)
+            for col, value in enumerate(
+                (
+                    HTMLMarkupTypes.KEEP,
+                    HTMLMarkupTypes.EM,
+                    HTMLMarkupTypes.EM_CLASS,
+                    HTMLMarkupTypes.SPAN_CLASS,
+                ),
+                start=1,
+            ):
+                ttk.Radiobutton(
+                    markup_frame,
+                    text="",
+                    variable=type_var,
+                    value=value,
+                    takefocus=False,
+                ).grid(row=row, column=col, padx=(7, 0))
+
         ttk.Button(
             self.top_frame, text="Auto-generate HTML", command=html_autogenerate
-        ).grid(column=0, row=0, pady=2, sticky="NSEW")
+        ).grid(column=0, row=1, pady=2)
 
 
 def html_autogenerate() -> None:
@@ -48,7 +100,7 @@ def html_autogenerate() -> None:
         html_convert_body()
     except SyntaxError as exc:
         logger.error(exc)
-    html_convert_underline()
+    html_convert_inline()
     html_convert_smallcaps()
 
 
@@ -85,10 +137,20 @@ def html_convert_entities() -> None:
         )
 
 
-def html_convert_underline() -> None:
-    """Replace occurrences of <u>...</u> with HTML span."""
-    maintext().replace_all("<u>", '<span class="u">')
-    maintext().replace_all("</u>", "</span>")
+def html_convert_inline() -> None:
+    """Replace occurrences of <i>...</i> and other inline markup
+    with em/span depending on settings."""
+    for key, (letter, classname) in inline_conversion_dict.items():
+        match preferences.get(key):
+            case HTMLMarkupTypes.EM:
+                maintext().replace_all(f"<{letter}>", "<em>")
+                maintext().replace_all(f"</{letter}>", "</em>")
+            case HTMLMarkupTypes.EM_CLASS:
+                maintext().replace_all(f"<{letter}>", f'<em class="{classname}">')
+                maintext().replace_all(f"</{letter}>", "</em>")
+            case HTMLMarkupTypes.SPAN_CLASS:
+                maintext().replace_all(f"<{letter}>", f'<span class="{classname}">')
+                maintext().replace_all(f"</{letter}>", "</span>")
 
 
 def html_convert_smallcaps() -> None:
