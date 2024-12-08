@@ -545,6 +545,18 @@ class MainText(tk.Text):
         self.bind_event(
             "<Configure>", self._on_change, add=True, force_break=False, bind_peer=True
         )
+
+        # Intercept key presses that insert a character,
+        # because if there is a column selection, we need to clear it.
+        def keypress(event: tk.Event) -> None:
+            """Clear any column selection on keypress."""
+            if len(event.char) > 0 and len(self.selected_ranges()) >= 2:
+                self.clear_selection()
+
+        self.bind_event(
+            "<KeyPress>", keypress, add=True, force_break=False, bind_peer=True
+        )
+
         # Use KeyRelease not KeyPress since KeyPress might be caught earlier and not propagated to this point.
         self.bind_event(
             "<KeyRelease>", self._on_change, add=True, force_break=False, bind_peer=True
