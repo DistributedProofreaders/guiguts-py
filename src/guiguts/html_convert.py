@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk
+from typing import Optional
 
 import regex as re
 
@@ -19,6 +20,7 @@ from guiguts.widgets import ToplevelDialog
 logger = logging.getLogger(__package__)
 
 css_indents: set[int] = set()
+book_title: Optional[str] = None
 DEFAULT_HTML_DIR = importlib.resources.files(html)
 HTML_HEADER_NAME = "html_header.txt"
 
@@ -43,14 +45,27 @@ class HTMLMarkupTypes(StrEnum):
 class HTMLGeneratorDialog(ToplevelDialog):
     """Dialog for converting text file to HTML."""
 
+    book_title = None
+
     def __init__(self) -> None:
         """Initialize HTML Generator dialog."""
         super().__init__("HTML Auto-generator", resize_x=False, resize_y=False)
 
-        markup_frame = ttk.LabelFrame(self.top_frame, text="Inline Markup", padding=2)
-        markup_frame.grid(column=0, row=0, sticky="NSEW")
+        # Title
+        title_frame = ttk.Frame(self.top_frame, padding=2)
+        title_frame.grid(row=0, column=0, sticky="NSEW")
+        title_frame.columnconfigure(1, weight=1)
+        ttk.Label(title_frame, text="Title:").grid(row=0, column=0, padx=(0, 5))
+        HTMLGeneratorDialog.book_title = tk.StringVar(self, get_title())
+        self.title_entry = ttk.Entry(
+            title_frame,
+            textvariable=HTMLGeneratorDialog.book_title,
+        )
+        self.title_entry.grid(row=0, column=1, sticky="NSEW")
 
         # Markup conversion
+        markup_frame = ttk.LabelFrame(self.top_frame, text="Inline Markup", padding=2)
+        markup_frame.grid(row=1, column=0, sticky="NSEW")
         for col, text in enumerate(
             ("Keep", "<em>", "<em class>", "<span class>"), start=1
         ):
@@ -83,7 +98,7 @@ class HTMLGeneratorDialog(ToplevelDialog):
 
         ttk.Button(
             self.top_frame, text="Auto-generate HTML", command=html_autogenerate
-        ).grid(column=0, row=1, pady=2)
+        ).grid(row=2, column=0, pady=2)
 
 
 def html_autogenerate() -> None:
@@ -736,7 +751,7 @@ def insert_header_footer() -> None:
     # Get user's header file if there is one
     user_path = Path(preferences.prefsdir, HTML_HEADER_NAME)
     if user_path.is_file():
-        user_header = user_path.read_text(encoding="utf-8")
+        user_header = replace_header_keywords(user_path.read_text(encoding="utf-8"))
     else:
         user_header = ""
     # If user has provided complete header, insert at start instead of default
@@ -745,13 +760,31 @@ def insert_header_footer() -> None:
     else:
         # Insert default header at start
         default_path = DEFAULT_HTML_DIR.joinpath(HTML_HEADER_NAME)
-        default_header = default_path.read_text(encoding="utf-8")
+        default_header = replace_header_keywords(
+            default_path.read_text(encoding="utf-8")
+        )
         maintext().insert("1.0", f"{default_header}\n")
         # Insert user header if there is one, just before closing "</style>"
         if user_header:
             maintext().insert(end_of_css(), f"{user_header}\n")
     # Insert footer
     maintext().insert(tk.END, "\n</body>\n</html>\n")
+
+
+def replace_header_keywords(header: str) -> str:
+    """Replace TITLE and BOOKLANG in the given header to
+    their values.
+
+    Args:
+        header: Header potentially containing keywords.
+
+    Returns:
+        Header with keywords replaced.
+    """
+    assert HTMLGeneratorDialog.book_title is not None
+    header = header.replace("TITLE", HTMLGeneratorDialog.book_title.get())
+    header = header.replace("BOOKLANG", maintext().get_language_list()[0])
+    return header
 
 
 def make_anchor(string: str) -> str:
@@ -779,3 +812,40 @@ def make_anchor(string: str) -> str:
     # Replace multiple underscores with single
     string = re.sub(r"__+", "_", string)
     return string
+
+
+def get_title() -> str:
+    """Determine the book title from the text, if possible.
+
+    Returns:
+        Best guess at book title.
+    """
+    complete_title = ""
+    in_title = False
+    # Only search first 500 lines of book
+    for step in range(1, 500):
+        if maintext().compare(f"{step}.0", ">=", tk.END):
+            break
+        selection = maintext().get(f"{step}.0", f"{step}.end")
+        # Check if title complete (blank line or end of frontmatter markup)
+        if in_title and (
+            not selection or re.match("f/", selection, flags=re.IGNORECASE)
+        ):
+            break
+        # Skip blank lines, illos or block markup
+        if not selection or re.match(
+            r"(\[Illustr|/[*$fxcr]|[*$fxcr]/)", selection, flags=re.IGNORECASE
+        ):
+            continue
+        # Strip inline markup & compress multiple spaces
+        selection = re.sub(r"<.+?>", "", selection)
+        selection = re.sub(r"  +", " ", selection)
+        complete_title = f"{complete_title}{selection} "
+        in_title = True
+
+    # If no lowercase letters, title is ALL CAPS, so make all but first char lowercase
+    # (may not be correct, but best we can do).
+    if not re.search(r"\p{Lowercase_Letter}", complete_title):
+        complete_title = complete_title.capitalize()
+    # Don't want trailing space, comma or period
+    return complete_title.rstrip(" ,.")
