@@ -2,6 +2,7 @@
 
 import tkinter as tk
 from tkinter import simpledialog, ttk
+from typing import Optional
 
 import roman  # type: ignore[import-untyped]
 
@@ -151,14 +152,24 @@ class PageDetailsDialog(OkApplyCancelDialog):
             self.list, "Shift+1", lambda event: self.item_clicked(event, reverse=True)
         )
 
+        def display_page(_event: Optional[tk.Event] = None) -> None:
+            """Display the page for the selected row."""
+            try:
+                png = self.list.set(self.list.focus())[COL_HEAD_IMG]
+            except KeyError:
+                return
+            index = maintext().rowcol(page_mark_from_img(png))
+            maintext().set_insert_index(index, focus=False)
+
         def select_by_index(idx: int) -> None:
             """Select the item with the given index (-1 for last one)."""
             try:
                 child = self.list.get_children()[idx]
             except IndexError:
                 return
-            self.list.selection_set(child)
+            self.select_and_focus(child)  # S
             self.list.see(child)
+            display_page()
 
         self.bind("<Home>", lambda _e: select_by_index(0))
         self.bind("<End>", lambda _e: select_by_index(-1))
@@ -168,15 +179,6 @@ class PageDetailsDialog(OkApplyCancelDialog):
                 "<Command-Down>",
                 lambda _e: select_by_index(-1),
             )
-
-        def display_page(_event: tk.Event) -> None:
-            """Display the page for the selected row."""
-            try:
-                png = self.list.set(self.list.focus())[COL_HEAD_IMG]
-            except KeyError:
-                return
-            index = maintext().rowcol(page_mark_from_img(png))
-            maintext().set_insert_index(index, focus=False)
 
         self.list.bind("<<TreeviewSelect>>", display_page)
         self.list.grid(row=0, column=0, sticky=tk.NSEW)
@@ -195,10 +197,29 @@ class PageDetailsDialog(OkApplyCancelDialog):
             for idx, child in enumerate(children):
                 png = self.list.set(child)[COL_HEAD_IMG]
                 if png == cur_img:
-                    self.list.selection_set(child)
+                    self.select_and_focus(child)
                     # "see" puts item at top, so see the position a few earlier
                     self.list.see(children[max(0, idx - 3)])
                     break
+
+        self.list.focus_set()
+
+    def select_and_focus(self, item: str) -> None:
+        """Select and set focus to the given item.
+
+        Although for the "browse" select mode used in this TreeView, there is
+        only one selected item, there can be several items selected in other
+        TreeViews, and one item can have focus. Since user can use mouse & arrow
+        keys to change selection, and we also change it programmatically to
+        support use of Home/End keys, it's necessary to ensure the selection and
+        the focus always point to the same item. Otherwise using Home to go to
+        top of list then arrow key to move to second item will not work.
+
+        Args:
+            item: The item to be selected/focused.
+        """
+        self.list.selection_set(item)
+        self.list.focus(item)
 
     def populate_list(self, details: PageDetails, see_index: int = 0) -> None:
         """Populate the page details list from the given details.
@@ -217,8 +238,8 @@ class PageDetailsDialog(OkApplyCancelDialog):
 
         children = self.list.get_children()
         if children:
+            self.select_and_focus(children[see_index])
             self.list.see(children[see_index])
-            self.list.selection_set(children[see_index])
 
     def item_clicked(self, event: tk.Event, reverse: bool) -> None:
         """Called when page detail item is clicked.
