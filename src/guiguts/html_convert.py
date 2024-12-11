@@ -13,6 +13,7 @@ import regex as re
 from guiguts.data import html
 from guiguts.file import the_file
 from guiguts.maintext import maintext
+from guiguts.page_details import PAGE_LABEL_PREFIX, PageDetail
 from guiguts.preferences import preferences, PrefKey, PersistentString
 from guiguts.utilities import IndexRange, DiacriticRemover
 from guiguts.widgets import ToplevelDialog
@@ -23,6 +24,7 @@ css_indents: set[int] = set()
 book_title: Optional[str] = None
 DEFAULT_HTML_DIR = importlib.resources.files(html)
 HTML_HEADER_NAME = "html_header.txt"
+PAGE_ID_PREFIX = "Page_"
 
 inline_conversion_dict = {
     PrefKey.HTML_ITALIC_MARKUP: ("i", "italic"),
@@ -117,6 +119,8 @@ def html_autogenerate() -> None:
         logger.error(exc)
     html_convert_inline()
     html_convert_smallcaps()
+    html_convert_page_anchors()
+    html_tidy_up()
 
 
 def remove_trailing_spaces() -> None:
@@ -370,7 +374,7 @@ def html_convert_body() -> None:
                 maintext().insert(line_end, "</li>")
             continue
 
-        # "/#" --> enter new level of blockquote until we get "p/"
+        # "/#" --> enter new level of blockquote until we get "#/"
         if selection.startswith("/#"):  # open
             blockquote_level += 1
             maintext().replace(
@@ -387,6 +391,9 @@ def html_convert_body() -> None:
                     line_end,
                     "</div>",
                 )
+                if in_para:
+                    maintext().insert(f"{line_start}-1l lineend", "</p>")
+                    in_para = False
             else:
                 raise SyntaxError(f"Line {step}: Unmatched close blockquote (#/)")
             continue
@@ -549,12 +556,20 @@ def html_convert_body() -> None:
                 do_per_line_markup(selection, line_start, line_end, ibs_dict)
             continue
 
-        # In chapter heading - store lines in heading until we get blank line
+        # In chapter heading - store lines in heading until we get 2 blank lines
         if in_chap_heading:
             if selection:
                 chap_heading += (" " if chap_heading else "") + selection.strip()
-            else:  # End of heading
-                maintext().insert(f"{line_start}", "</h2></div>")
+                chap_head_blanks = 0
+            elif chap_head_blanks == 0:  # First blank line
+                # May be two part heading, e.g. "Chapter 1|<blank line>|The Start"
+                maintext().insert(line_start, "<br>")
+                chap_head_blanks += 1
+            else:  # Second blank line = end of heading
+                # First blank line will have had "<br>" inserted in elif above - replace that with </h2>
+                maintext().replace(
+                    f"{line_start}-1l", f"{line_start}-1l lineend", "</h2>"
+                )
                 auto_toc += f'<a href="{chap_id}">{chap_heading}</a><br>\n'
                 in_chap_heading = False
             continue
@@ -568,17 +583,24 @@ def html_convert_body() -> None:
             in_para = False
         else:
             # blank line - not in paragraph, so might be chapter heading
-            chap_check = maintext().get(f"{line_start}-3l", f"{line_start}+1l+1c")
-            if re.fullmatch(r"\n\n\n\n[^\n]", chap_check):
+            chap_check = maintext().get(f"{line_start}-3l", f"{line_start}+1l lineend")
+            if re.match(r"\n\n\n\n[^\n]", chap_check):
+                # Look ahead to see what's coming next
+                # Don't want to treat centered, poetry, etc as an h2 heading
+                # even if it has 4 blank lines before it.
+                chap_check = chap_check.lstrip("\n")
+                if re.match("/[$*#cfilprx]", chap_check, flags=re.IGNORECASE):
+                    continue
                 chap_id = make_anchor(
                     maintext().get(f"{line_start}+1l", f"{line_start}+1l lineend")
                 )
-                maintext().insert(f"{line_start}-1l", '<div class="chapter">')
                 maintext().insert(
                     f"{line_start}", f'<h2 class="nobreak" id="{chap_id}">'
                 )
                 in_chap_heading = True
+                chap_head_blanks = 0
                 chap_heading = ""
+    # End of line-at-a-time loop
 
     # May hit end of file without a final blank line
     if in_para:
@@ -849,3 +871,47 @@ def get_title() -> str:
         complete_title = complete_title.capitalize()
     # Don't want trailing space, comma or period
     return complete_title.rstrip(" ,.")
+
+
+def html_convert_page_anchors() -> None:
+    """Add page anchors, comments, etc., at page marks depending on dialog settings."""
+    page_details = the_file().page_details
+    the_file().update_page_marks(page_details)
+
+    # We want page labels sorted by png even if their order in the file is wrong
+    # Work in reverse so inserted text doesn't affect later indexes
+    page_detail_buffer: list[PageDetail] = []
+    last_mark_index = maintext().index("end")
+
+    def lbl_to_pgnum(label: str) -> str:
+        """Convert page label to page number by removing prefix."""
+        return label.removeprefix(PAGE_LABEL_PREFIX)
+
+    for _, page_detail in sorted(page_details.items(), reverse=True):
+        label = lbl_to_pgnum(page_detail["label"])
+        if not label:
+            continue
+        # Check if this page mark is effectively at different place to last,
+        # i.e. if there are non-space characters between them.
+        # If it's a new location for page marks - flush the buffer, writing
+        # one pagenum span, with an anchor for each page break if multiple coincident breaks.
+        text_between = maintext().get(page_detail["index"], last_mark_index)
+        last_mark_index = page_detail["index"]
+        if page_detail_buffer and re.search(r"\S", text_between):
+            pgnum = lbl_to_pgnum(page_detail_buffer[0]["label"])
+            if len(page_detail_buffer) == 1:
+                pagenum_span = f'<span class="pagenum" id="{PAGE_ID_PREFIX}{pgnum}">[{PAGE_LABEL_PREFIX}{pgnum}]</span>'
+            else:
+                anchors = f'"></a><a id="{PAGE_ID_PREFIX}'.join(
+                    [lbl_to_pgnum(pd["label"]) for pd in reversed(page_detail_buffer)]
+                )
+                anchors = f'<a id="{PAGE_ID_PREFIX}{anchors}></a>'
+                pagenum_span = f'<span class="pagenum">{anchors}[{PAGE_LABEL_PREFIX}{pgnum}]</span>'
+            maintext().insert(page_detail_buffer[0]["index"], pagenum_span)
+            page_detail_buffer = []
+        page_detail_buffer.append(page_detail)
+
+
+def html_tidy_up() -> None:
+    """Do all the tidy up jobs at the end."""
+    # Check for pagenum spans that aren't in a paragraph and surround them with <p> - or is that necessary with HTML5?
