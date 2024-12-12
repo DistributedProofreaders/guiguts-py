@@ -69,12 +69,14 @@ class HTMLGeneratorDialog(ToplevelDialog):
             textvariable=HTMLGeneratorDialog.book_title,
         )
         self.title_entry.grid(row=0, column=1, sticky="NSEW")
+        self.title_entry.focus_set()
 
         # Whether to display page numbers
         self.display_page_numbers = ttk.Checkbutton(
             self.top_frame,
             text="Show Page Numbers in HTML",
             variable=PersistentBoolean(PrefKey.HTML_SHOW_PAGE_NUMBERS),
+            takefocus=False,
         )
         self.display_page_numbers.grid(row=1, column=0, sticky="NSEW", pady=5)
 
@@ -112,7 +114,10 @@ class HTMLGeneratorDialog(ToplevelDialog):
                 ).grid(row=row, column=col, padx=(7, 0))
 
         ttk.Button(
-            self.top_frame, text="Auto-generate HTML", command=html_autogenerate
+            self.top_frame,
+            text="Auto-generate HTML",
+            command=html_autogenerate,
+            takefocus=False,
         ).grid(row=3, column=0, pady=2)
 
 
@@ -133,6 +138,8 @@ def html_autogenerate() -> None:
     html_convert_inline()
     html_convert_smallcaps()
     html_convert_page_anchors()
+    # html_convert_footnote_blocks() - waiting for footnote code
+    html_convert_sidenotes()
     html_tidy_up()
 
 
@@ -947,6 +954,30 @@ def html_convert_page_anchors() -> None:
             maintext().insert(safe_index(page_detail_buffer[0]["index"]), pagenum_span)
             page_detail_buffer = []
         page_detail_buffer.append(page_detail)
+
+
+def html_convert_sidenotes() -> None:
+    """Convert sidenote markup to HTML divs.
+
+    If multi-paragraph, retain the `<p>` markup, otherwise discard.
+    """
+    sidenote_end = "1.0"
+    while sidenote_start := maintext().search("<p>[Sidenote: ", sidenote_end, tk.END):
+        sidenote_end = maintext().search("]</p>", sidenote_start, tk.END)
+        if not sidenote_end:
+            logger.error(
+                f"Unclosed sidenote: {maintext().get(f'{sidenote_start}+3c', f'{sidenote_start} lineend')}"
+            )
+            return
+        sidenote_text = maintext().get(sidenote_start, sidenote_end)
+        p_open = p_close = ""
+        if "\n\n" in sidenote_text:
+            p_open = "<p>"
+            p_close = "</p>"
+        maintext().replace(
+            sidenote_start, f"{sidenote_start}+14c", f'<div class="sidenote">{p_open}'
+        )
+        maintext().replace(sidenote_end, f"{sidenote_end}+5c", f"{p_close}</div>")
 
 
 def html_tidy_up() -> None:
