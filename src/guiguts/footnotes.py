@@ -160,47 +160,46 @@ class FootnoteChecker:
         self.checker_dialog.select_entry_by_index(dialog_entry_index)
 
     def autoset_chapter_lz(self) -> None:
-        """Insert a 'FOOTNOTES:' LZ header line before each chapter break.
+        """Insert a 'FOOTNOTES:' landing zone (LZ) header line before each
+        chapter break.
 
-        Before inserting the first LZ header, skip the first 200 lines of the
-        file if it is longer than 200 lines. This avoids inserting LZ headers
-        at pseudo paragraph breaks in front matter pages.
+        If chapters are separated correctly from the next chapter by 4 blank
+        lines then there will always be a LZ header inserted at the end of
+        each chapter, except at the end of the last chapter. Append a header
+        to end of file to catch any footnotes in the last chapter. This means
+        that all footnotes will then have a LZ header below them.
+
+        No LZ headers are inserted before the first anchor to avoid adding
+        them at pseudo chapter breaks in front matter, etc. Unused LZ headers
+        are deleted after footnotes have been moved to LZs - see call to
+        remove_unused_lz_headers() in the function move_footnotes_to_lz().
         """
         maintext().undo_block_begin()
         # If the last line of the file is not a blank line then add one.
         end_of_file = maintext().end().index()
         if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
             self.add_blank_line_at_eof()
-        # If chapters are separated correctly from the next chapter by 4 blank lines
-        # then there will always be a LZ header inserted at the end of each chapter,
-        # except at the end of the last chapter. Append a LZ header at end of file
-        # to catch any footnotes in the last chapter. All footnotes will then have
-        # a LZ header below them. Note that any unused LZ headers are removed after
-        # footnotes have been moved to LZs; see remove_unused_lz_headers() in the
-        # function move_footnotes_to_lz().
+        # Append LZ header to end of file to catch footnotes in the last chapter
         self.autoset_end_lz()
-        # Set search range. Large files are treated differently to small files.
-        if maintext().compare(maintext().end().index(), ">", "200.0"):
-            # A 'large' file. Skip the first 200 lines (as GG1 does) before
-            # looking for chapter breaks.
-            search_range = IndexRange(
-                maintext().rowcol("200.0 linestart"), maintext().end()
-            )
-        else:
-            # A small file. Start chapter search from line 1.0.
-            search_range = IndexRange(maintext().start(), maintext().end())
-
-        # Loop, finding all chapter breaks; i.e. block of 4 blank lines. Method used
-        # is to find next blank line then look ahead for 3 more blank lines. If present
-        # then set a LZ and advance 6 lines and repeat. If look ahead does not find 3
-        # more blank lines then advance 1 line and repeat. Based on GG1 method.
+        # Set search range for finding 'chapter breaks'. Look for them from the
+        # start of the first anchor rather than after the first 200 lines as
+        # in GG1.
+        an_records = self.get_an_records()
+        first_an = an_records[0]
+        search_range = IndexRange(first_an.start, maintext().end())
+        # Loop, finding all chapter breaks; i.e. block of 4 blank lines. Method
+        # used is to find next blank line then look ahead for 3 more blank lines.
+        # If present then set a LZ and advance 6 lines and repeat. If look ahead
+        # does not find 3 more blank lines then advance 1 line and repeat. This
+        # is based on GG1 method.
         match_regex = r"^$"
         while True:
             beg_match = maintext().find_match(match_regex, search_range, regexp=True)
             if not beg_match:
                 break
             start_index = beg_match.rowcol.index()
-            # If next three lines also empty, insert LZ header before the 4 blank lines.
+            # If next three lines are also empty, insert a LZ "FOOTNOTES:" header
+            # before the 4-line block.
             if (
                 maintext().get(
                     f"{start_index} +1l linestart", f"{start_index} +1l lineend"
@@ -215,9 +214,9 @@ class FootnoteChecker:
                 )
                 == ""
             ):
-                # Set LZ by inserting a "FOOTNOTES:" header at start of 4-line block.
+                # Insert the LZ header.
                 self.set_lz(start_index)
-                # Advance past inserted LZ header.
+                # Advance past inserted LZ.
                 restart_point = maintext().rowcol(f"{start_index} +6l")
             else:
                 # Advance to avoid finding same blank line again.
@@ -238,37 +237,26 @@ class FootnoteChecker:
         Arg:
             lz_index: index of position at which to add LZ header.
         """
-        # If the insert point is (a blank line) immediately after a Page Marker, place
-        # the insert point at the start of the Page Marker as GG1 does. If Page Markers
-        # have been removed, look for a page mark at the insertion point and place the
-        # insertion point before that page mark. Recall that the gravity setting used for
-        # marks is tk.RIGHT.
+        # If the insert point is a blank line immediately after a Page Marker,
+        # place the insert point at the start of the Page Marker as GG1 does. If
+        # Page Markers have been removed then look for a page mark at the insertion
+        # point and place the insertion point before that page mark. Recall that
+        # the gravity setting used for marks is tk.RIGHT.
         #
-        # Get line immediately before the insertion point. We'll test below if it is a
-        # Page Marker record.
+        # Get line immediately before the insertion point. We'll test below if it
+        # is a Page Marker record.
         line_before = maintext().get(
             f"{lz_index} -1l linestart", f"{lz_index} -1l lineend"
         )
         # Get page mark if we are relying on page marks because Page Separator Fixup
         # has been run.
-        next_page_mark = maintext().page_mark_next(lz_index)
-        # Give next_page_mark variable a numeric value if it's not a page mark.
-        if not maintext().is_page_mark(next_page_mark):
-            next_page_mark = "1.0"
-        # The 'if' statement below will handle either case:
-        #   LHS of 'or' assumes Page Markers are still in file. It tests for presence of
-        #   a Page Marker string immediately preceding the insert point we have found.
-        #   RHS of 'or' assumes Page Markers have been removed by 'Page Separator Fixup'.
-        #   It tests for a page mark exactly at the insert point we have found.
-        if line_before[0:11] == "-----File: " or maintext().compare(
-            next_page_mark, "==", lz_index
-        ):
-            # Place the LZ header before the Page Marker/page mark.
-            insert_index = maintext().rowcol(f"{lz_index} -1l").index()
-            maintext().insert(f"{insert_index} linestart", "\n\n" + "FOOTNOTES:" + "\n")
-        else:
-            # Place the insert point at lz_index.
-            maintext().insert(f"{lz_index} linestart", "\n\n" + "FOOTNOTES:" + "\n")
+        prev_page_mark = maintext().page_mark_previous(lz_index)
+        # Set 'prev_page_mark' to be lz_index if it's not a page mark.
+        if not maintext().is_page_mark(prev_page_mark):
+            prev_page_mark = lz_index
+        if line_before[0:11] == "-----File: ":
+            lz_index = maintext().rowcol(f"{lz_index} -1l linestart").index()
+        maintext().insert(f"{lz_index} -1c", "\n\n\n" + "FOOTNOTES:")
 
     def autoset_end_lz(self) -> None:
         """Insert a 'FOOTNOTES:' LZ header line at end of file."""
@@ -300,9 +288,9 @@ class FootnoteChecker:
         An issue arises if the last line of the file is a footnote.
         Inserting a newline character programatically will place it
         before the footnote's end "Checker" mark if tk.RIGHT gravity
-        was specified when the mark was set. We want the blank line
-        placed after the mark otherwise the newline character will
-        be carried with the footnote if it is moved.
+        was specified when the mark was set. We want the newline
+        placed after the mark otherwise the blank line will be
+        carried with the footnote if it is moved.
 
         There will be at most one such "Checker" mark at the end of
         file in this case.
@@ -311,48 +299,87 @@ class FootnoteChecker:
         end of file then delete the mark. Insert a blank line after the
         current end of file then set the mark again at its old position.
         The mark will now be positioned before the blank line we just
-        added because of the tk.RIGHT gravity.
+        added.
         """
         # Note the index of current end of file.
-        end_of_file = maintext().end().index()
+        old_end_of_file = maintext().end().index()
         blank_line_inserted = False
-        mark_name = end_of_file  # Initialise start position of mark search.
+        # Initialise start position of mark search.
+        mark_name = old_end_of_file
         while mark_name := maintext().mark_next(mark_name):  # type: ignore[assignment]
             if mark_name.startswith("Checker"):
                 maintext().mark_unset(mark_name)
-                maintext().insert(end_of_file, "\n")
+                maintext().insert(old_end_of_file, "\n")
                 # Set mark again at its original position; i.e. the old end of file.
                 maintext().set_mark_position(
                     mark_name,
-                    maintext().rowcol(end_of_file),
+                    maintext().rowcol(old_end_of_file),
                     gravity=tk.RIGHT,
                 )
                 blank_line_inserted = True
                 break
         if not blank_line_inserted:
             # No 'Checker' mark at end of file.
-            maintext().insert(end_of_file, "\n")
+            maintext().insert(old_end_of_file, "\n")
+
+    def change_gravity_right_to_left(self) -> None:
+        """Change gravity of a FN-end Checker mark to tk.LEFT."""
+        fn_records = self.get_fn_records()
+        for fn_record in fn_records:
+            fn_cur_end = fn_record.end.index()
+            mark_name = fn_cur_end
+            while mark_name := maintext().mark_next(mark_name):  # type: ignore[assignment]
+                if mark_name.startswith("Checker"):
+                    save_name = mark_name
+                    if maintext().compare(fn_cur_end, "==", save_name):
+                        maintext().mark_unset(save_name)
+                        maintext().set_mark_position(
+                            save_name,
+                            fn_record.end,
+                            gravity=tk.LEFT,
+                        )
+                        break
+
+    def change_gravity_left_to_right(self) -> None:
+        """Change gravity of a FN-end Checker mark to tk.RIGHT."""
+        fn_records = self.get_fn_records()
+        for fn_record in fn_records:
+            fn_cur_end = fn_record.end.index()
+            mark_name = fn_cur_end
+            while mark_name := maintext().mark_next(mark_name):  # type: ignore[assignment]
+                if mark_name.startswith("Checker"):
+                    save_name = mark_name
+                    if maintext().compare(fn_cur_end, "==", save_name):
+                        maintext().mark_unset(save_name)
+                        maintext().set_mark_position(
+                            save_name,
+                            fn_record.end,
+                            gravity=tk.RIGHT,
+                        )
+                        break
 
     def move_footnotes_to_paragraphs(self) -> None:
         """Implements the 'Move FNs to Paragraphs' button.
 
-        Moves footnotes to below the paragraph in which they are anchored.
-        There are no 'FOOTNOTES:' headers. It is a two-pass process. In the
-        first pass a named mark for each anchor record is set. The location
-        of each mark is the insertion point to which the corresponding footnote
-        will be moved. There may be many insertion marks at the same location
-        index. If an insertion point is immediately after a Page Marker (or
-        its page mark if Page Markers have been removed) then the insertion mark
-        is set to immediately before the Page Marker/page mark as in GG1.
+        Moves footnotes to below the paragraph in which they are anchored. There
+        are no 'FOOTNOTES:' headers.
+
+        It is a three-pass process. In the first pass a named mark for each anchor
+        record is set. The location of each mark is the insertion point to which
+        the corresponding footnote will be moved. There may be many marks at the
+        same location.
+
+        The insertion point for marks is immediately before the line that separates
+        the end of a paragraph from all that follows. That line is either a blank
+        line or a Page Marker. Care is taken to ensure that all marks are located
+        on the same page as the paragraph that they follow.
 
         The second pass simply iterates through the footnote record array copying
         the text of each footnote before deleting the original and then inserting
         the unchanged footnote text at its named insertion mark from the first pass.
 
-        The gravity setting for the named insertion marks is tk.RIGHT so that when
-        more than one footnote is inserted at the same location index, each footnote
-        is placed to the left of the insertion point so ensuring that the ascending
-        order of footnote labels is maintained.
+        The third pass iterates through footnote records in reverse order removing
+        any blank lines left behind when footnotes are deleted.
         """
         maintext().undo_block_begin()
         # Check for any duplicate footnote labels and warn user that they should
@@ -362,25 +389,31 @@ class FootnoteChecker:
                 "Duplicate labels - reindex footnotes before moving them to paragraphs"
             )
             return
+        # Flip the gravity of all Checker marks at the end of each FN to tk.LEFT.
+        # Can now reliably place insertion marks after the Checker mark so that
+        # they maintain the required ordering. We'll flip the gravity back again
+        # at the end of this function.
+        self.change_gravity_right_to_left()
         an_records = self.get_an_records()
-        # If the last line of the file is not a blank line then add one.
+        # If the last line of the file is not a blank line then add one. If the
+        # last line of the file is a footnote then because its end Checker mark
+        # is currently tk.LEFT the newline will be correctly placed after the
+        # Checker mark. Dont' have to call self.add_blank_line_at_eof() to do this
         file_end = maintext().end().index()
         if maintext().get(f"{file_end} linestart", f"{file_end} lineend") != "":
-            self.add_blank_line_at_eof()
+            maintext().insert(file_end, "\n")
+        file_end = maintext().end().index()
 
         # First pass.
 
         # Set marks at the start of the blank line that separates a paragraph from the start
-        # of the next paragraph. The marks designate the location index at which one or more
-        # footnotes will be inserted. The gravity setting for the marks is tk.RIGHT so that
-        # when more than one footnote is inserted at the same mark, each footnote will appear
-        # immediately to its left so ensuring that the ascending order of footnote labels is
-        # maintained.
+        # of the next paragraph. If that blank line is preceded by a Page Marker, set marks
+        # at the start of the Page Marker. Those two locations are the same.
 
         file_end = maintext().end().index()
         match_regex = r"^$"
         for an_record_index, an_record in enumerate(an_records):
-            # Find the end of paragraph in which the footnote anchor is located.
+            # Find the end of the paragraph in which the footnote anchor is located.
             # Start searching from the line containing the anchor.
             search_range = IndexRange(
                 an_record.start, maintext().rowcol(f"{file_end} + 1l linestart")
@@ -388,76 +421,44 @@ class FootnoteChecker:
             while blank_line_match := maintext().find_match(
                 match_regex, search_range, regexp=True
             ):
-                # This blank line might be one separating a footnote from the paragraph
-                # text above or from a preceding footnote. Footnotes are all assumed to
-                # be 'mid-paragraph' footnotes so the search continues until the final
-                # blank line is reached that separates all above from the first line of
-                # a new paragraph or is the end of file.
+                # Found the first blank line after the paragraph.
                 blank_line_start = blank_line_match.rowcol.index()
-                next_line_text = maintext().get(
+                # It might separate paragraph text from a footnote at the bottom of the page
+                # with the paragraph continuing at the top of the next page.
+                line_after_text = maintext().get(
                     f"{blank_line_start} +1l linestart",
                     f"{blank_line_start} +1l lineend",
                 )
-                # If the line below this blank line is not (the first line of) a
-                # footnote then we have found the 'end of paragraph' separator.
-                if next_line_text[0:10] != "[Footnote ":
-                    break
-                # Otherwise we have landed on a blank line above one or more footnotes.
-                restart_search_point = maintext().rowcol(
-                    f"{blank_line_start} +1l linestart"
+                if line_after_text[0:10] == "[Footnote ":
+                    # Ignore this blank line and continue searching.
+                    search_range = IndexRange(
+                        maintext().rowcol(f"{blank_line_start} +1l linestart"),
+                        maintext().rowcol(f"{file_end} + 1l linestart"),
+                    )
+                    continue
+                # If preceded by a Page Marker, position at the start of the Page Marker line.
+                line_before_text = maintext().get(
+                    f"{blank_line_start} -1l linestart",
+                    f"{blank_line_start} -1l lineend",
                 )
-                # Keep looking for a suitable blank line at which to insert footnote.
-                search_range = IndexRange(
-                    restart_search_point,
-                    maintext().rowcol(f"{file_end} + 1l linestart"),
-                )
-            # End the blank line search while loop.
-
-            # If the insert point is a blank line immediately after a Page Marker, place
-            # the insert point at the start of the Page Marker as GG1 does. If Page Markers
-            # have been removed, look for a page mark at the insertion point and place the
-            # insertion point before that page mark. Recall that the gravity setting used for
-            # marks is tk.RIGHT.
-
-            # Line immediately before the insertion point. We'll test below if it is a Page
-            # Marker record.
-            line_before = maintext().get(
-                f"{blank_line_start} -1l linestart", f"{blank_line_start} -1l lineend"
-            )
-            # If we are instead relying on page marks because Page Separator Fixup has been run.
-            next_page_mark = maintext().page_mark_next(blank_line_start)
-            # Give next_page_mark a numeric value if it's not a page mark.
-            if not maintext().is_page_mark(next_page_mark):
-                next_page_mark = "1.0"
-            # The 'if' statement below will handle either case:
-            #   LHS of 'or' assumes Page Markers are still in file. It tests for presence of
-            #   a Page Marker string immediately preceding the insert point we have found.
-            #   RHS of 'or' assumes Page Markers have been removed by 'Page Separator Fixup'.
-            #   It tests for a page mark exactly at the insert point we have found.
-            if line_before[0:11] == "-----File: " or maintext().compare(
-                next_page_mark, "==", blank_line_start
-            ):
-                # Place the insert point before the Page Marker/page mark.
-                mark_point = maintext().rowcol(f"{blank_line_start} -1l")
+                if line_before_text[0:11] == "-----File: ":
+                    blank_line_start = (
+                        maintext().rowcol(f"{blank_line_start} -1l linestart").index()
+                    )
+                # 'blank_line_start' is now same location whether paragraph is followed by a blank
+                # line or followed by a Page Marker then a blank line. Make sure mark point is on
+                # the same page as the paragraph it follows. Note that we may end up with more than
+                # one named mark at this location; that is, when there is more than one anchor
+                # in the paragraph there will be more than one footnote following the paragraph.
+                mark_point = maintext().rowcol(f"{blank_line_start} -1c")
                 maintext().set_mark_position(
                     f"{INSERTION_MARK_PREFIX}{an_record_index}",
                     mark_point,
                     gravity=tk.RIGHT,
                 )
-            else:
-                # Place the insert point at the start of the blank line we've landed on.
-                # NB an_record_index is the index into the anchor records list. The footnote
-                #    that it anchors has the same index into the footnotes records list. Here
-                #    an_record_index is used as a proxy numeric suffix to label its footnote's
-                #    insertion mark.
-                mark_point = maintext().rowcol(f"{blank_line_start}")
-                maintext().set_mark_position(
-                    f"{INSERTION_MARK_PREFIX}{an_record_index}",
-                    mark_point,
-                    gravity=tk.RIGHT,
-                )
+                break  # and repeat 'while' loop for the next anchor record
 
-        # Second pass
+        # Second pass.
 
         # Iterate through the footnote record array copying the text of each footnote
         # before deleting the original and then inserting the unchanged footnote text
@@ -468,13 +469,73 @@ class FootnoteChecker:
             fn_cur_start = self.checker_dialog.mark_from_rowcol(fn_record.start)
             fn_cur_end = self.checker_dialog.mark_from_rowcol(fn_record.end)
             fn_lines = maintext().get(fn_cur_start, fn_cur_end)
+            mark_name = fn_cur_end
+            fn_is_deleted = False
+            # If the FN is followed on same line by an insertion mark, DON'T delete the
+            # terminating newline. Insertion marks are placed before the newline so if
+            # the latter is deleted then any footnotes moved to those insertion marks
+            # will be located on the wrong page; i.e. they will end up at the start of
+            # the following page.
+            while mark_name := maintext().mark_next(mark_name):  # type: ignore[assignment]
+                if mark_name.startswith(f"{INSERTION_MARK_PREFIX}"):
+                    # On same line?
+                    if maintext().compare(fn_cur_end, "==", mark_name):
+                        maintext().delete(
+                            f"{fn_cur_start} -1l linestart", f"{fn_cur_end}"
+                        )
+                        maintext().insert(
+                            f"{INSERTION_MARK_PREFIX}{fn_record_index}",
+                            "\n\n" + fn_lines,
+                        )
+                        fn_is_deleted = True
+                    break
+            if not fn_is_deleted:
+                # FN is not followed by an insertion mark. Delete it and its preceding
+                # blank line so the space is closed up; e.g. in the case of a mid-paragrph
+                # FN where the paragraph continues on the next page. There is a bug in GG1
+                # which leaves a blank line mid-paragraph when a FN is deleted from that
+                # location.
+                maintext().delete(
+                    f"{fn_cur_start} -1l linestart", f"{fn_cur_end} +1l linestart"
+                )
+                maintext().insert(
+                    f"{INSERTION_MARK_PREFIX}{fn_record_index}", "\n\n" + fn_lines
+                )
+        # Third pass
 
-            maintext().delete(
-                f"{fn_cur_start} -1l linestart", f"{fn_cur_end} +1l linestart"
-            )
-            maintext().insert(
-                f"{INSERTION_MARK_PREFIX}{fn_record_index}", "\n" + fn_lines + "\n"
-            )
+        # Iterate through the footnote records in reverse order removing blank lines
+        # left behind when FNs are deleted between the end of a paragraph and the
+        # insertion mark after the last FN in a list of FNs that followed it.
+
+        # Restore RIGHT gravity to the 'Checker' mark at the end of each footnote.
+        self.change_gravity_left_to_right()
+        # Rebuild FN and AN record arrays.
+        self.run_check()
+        # Get FN records in reverse order. It is necessary that the 'for' loop below
+        # works backwards from the last footnote to the first footnote so that the
+        # location of each footnote that is processed is not affected by the deletion
+        # of blank lines below it in the file.
+        fn_records = self.get_fn_records()
+        fn_records_reversed = fn_records.copy()
+        fn_records_reversed.reverse()
+        for fn_record in fn_records_reversed:
+            fn_cur_start = fn_record.start.index()
+            fn_cur_end = fn_record.end.index()
+            fn_lines = maintext().get(fn_cur_start, fn_cur_end)
+            # Replace each block of TWO blank lines above a relocated footnote by ONE
+            # blank line until a single blank line remains.
+            while True:
+                text_to_match = maintext().get(
+                    f"{fn_cur_start} -2l linestart", f"{fn_cur_start} linestart"
+                )
+                if re.match(r"^\s+?$", text_to_match):
+                    maintext().delete(
+                        f"{fn_cur_start} -1l linestart", f"{fn_cur_start} linestart"
+                    )
+                    fn_cur_start = f"{fn_cur_start} -1l linestart"
+                else:
+                    # No longer two or more blank lines above the footnote.
+                    break
 
         # End of final pass over footnotes.
 
@@ -608,10 +669,10 @@ class FootnoteChecker:
                 break
             indx = beg_match.rowcol.index()
             # A LZ header is unused if it's not followed by a blank line then a line beginning
-            # with '[' which is assumed to be the start of a '[Footnote 1: ...]' line.
+            # with '[Footnote '.
             if (
-                not maintext().get(f"{indx} +2l linestart", f"{indx} +2l lineend")[0:1]
-                == "["
+                not maintext().get(f"{indx} +2l linestart", f"{indx} +2l lineend")[0:10]
+                == "[Footnote "
             ):
                 # A LZ header is always preceeded by one or two blank lines. Remove them and
                 # the LZ header.
