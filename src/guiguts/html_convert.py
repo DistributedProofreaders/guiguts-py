@@ -14,7 +14,12 @@ from guiguts.data import html
 from guiguts.file import the_file
 from guiguts.maintext import maintext
 from guiguts.page_details import PAGE_LABEL_PREFIX, PageDetail
-from guiguts.preferences import preferences, PrefKey, PersistentString
+from guiguts.preferences import (
+    preferences,
+    PrefKey,
+    PersistentString,
+    PersistentBoolean,
+)
 from guiguts.utilities import IndexRange, DiacriticRemover, IndexRowCol
 from guiguts.widgets import ToplevelDialog
 
@@ -65,9 +70,17 @@ class HTMLGeneratorDialog(ToplevelDialog):
         )
         self.title_entry.grid(row=0, column=1, sticky="NSEW")
 
+        # Whether to display page numbers
+        self.display_page_numbers = ttk.Checkbutton(
+            self.top_frame,
+            text="Show Page Numbers in HTML",
+            variable=PersistentBoolean(PrefKey.HTML_SHOW_PAGE_NUMBERS),
+        )
+        self.display_page_numbers.grid(row=1, column=0, sticky="NSEW", pady=5)
+
         # Markup conversion
         markup_frame = ttk.LabelFrame(self.top_frame, text="Inline Markup", padding=2)
-        markup_frame.grid(row=1, column=0, sticky="NSEW")
+        markup_frame.grid(row=2, column=0, sticky="NSEW")
         for col, text in enumerate(
             ("Keep", "<em>", "<em class>", "<span class>"), start=1
         ):
@@ -100,7 +113,7 @@ class HTMLGeneratorDialog(ToplevelDialog):
 
         ttk.Button(
             self.top_frame, text="Auto-generate HTML", command=html_autogenerate
-        ).grid(row=2, column=0, pady=2)
+        ).grid(row=3, column=0, pady=2)
 
 
 def html_autogenerate() -> None:
@@ -909,6 +922,7 @@ def html_convert_page_anchors() -> None:
                     pnum_index = maintext().index(f"{pnum_index}+{move}c")
         return pnum_index
 
+    show_page_numbers = preferences.get(PrefKey.HTML_SHOW_PAGE_NUMBERS)
     for _, page_detail in sorted(page_details.items(), reverse=True):
         label = lbl_to_pgnum(page_detail["label"])
         if not label:
@@ -921,14 +935,15 @@ def html_convert_page_anchors() -> None:
         last_mark_index = page_detail["index"]
         if page_detail_buffer and re.search(r"\S", text_between):
             pgnum = lbl_to_pgnum(page_detail_buffer[0]["label"])
+            pstring = f"[{PAGE_LABEL_PREFIX}{pgnum}]" if show_page_numbers else ""
             if len(page_detail_buffer) == 1:
-                pagenum_span = f'<span class="pagenum" id="{PAGE_ID_PREFIX}{pgnum}">[{PAGE_LABEL_PREFIX}{pgnum}]</span>'
+                pagenum_span = f'<span class="pagenum" id="{PAGE_ID_PREFIX}{pgnum}">{pstring}</span>'
             else:
                 anchors = f'"></a><a id="{PAGE_ID_PREFIX}'.join(
                     [lbl_to_pgnum(pd["label"]) for pd in reversed(page_detail_buffer)]
                 )
                 anchors = f'<a id="{PAGE_ID_PREFIX}{anchors}></a>'
-                pagenum_span = f'<span class="pagenum">{anchors}[{PAGE_LABEL_PREFIX}{pgnum}]</span>'
+                pagenum_span = f'<span class="pagenum">{anchors}{pstring}</span>'
             maintext().insert(safe_index(page_detail_buffer[0]["index"]), pagenum_span)
             page_detail_buffer = []
         page_detail_buffer.append(page_detail)

@@ -89,6 +89,7 @@ class PrefKey(StrEnum):
     HTML_GESPERRT_MARKUP = auto()
     HTML_FONT_MARKUP = auto()
     HTML_UNDERLINE_MARKUP = auto()
+    HTML_SHOW_PAGE_NUMBERS = auto()
 
 
 class Preferences:

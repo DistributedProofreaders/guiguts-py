@@ -438,6 +438,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(
             PrefKey.HTML_UNDERLINE_MARKUP, HTMLMarkupTypes.SPAN_CLASS
         )
+        preferences.set_default(PrefKey.HTML_SHOW_PAGE_NUMBERS, True)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
