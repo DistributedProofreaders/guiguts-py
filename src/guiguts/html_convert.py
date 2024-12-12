@@ -15,7 +15,7 @@ from guiguts.file import the_file
 from guiguts.maintext import maintext
 from guiguts.page_details import PAGE_LABEL_PREFIX, PageDetail
 from guiguts.preferences import preferences, PrefKey, PersistentString
-from guiguts.utilities import IndexRange, DiacriticRemover
+from guiguts.utilities import IndexRange, DiacriticRemover, IndexRowCol
 from guiguts.widgets import ToplevelDialog
 
 logger = logging.getLogger(__package__)
@@ -887,6 +887,28 @@ def html_convert_page_anchors() -> None:
         """Convert page label to page number by removing prefix."""
         return label.removeprefix(PAGE_LABEL_PREFIX)
 
+    def safe_index(pnum_index: str) -> str:
+        """Given an index where a pagenum span is to be inserted,
+        move it if necessary, so it won't occur mid-word.
+
+        Args:
+            pnum_index: Index where pagenum may be inserted.
+
+        Returns:
+            Safe index, which is after pnum_index by as far is necessary
+            to avoid mid-word page spans.
+        """
+        pnum_rowcol = IndexRowCol(pnum_index)
+        if pnum_rowcol.col > 0:  # Not at beginning of line
+            # Check from previous char to end of line - may be a space before the index point
+            check_str = maintext().get(f"{pnum_index} -1c", f"{pnum_index} lineend")
+            if len(check_str) > 1:  # Not at end of line
+                # Truncate from first space or HTML markup opening
+                move = len(re.sub(r"[\s<].*", "", check_str)) - 1
+                if move > 0:
+                    pnum_index = maintext().index(f"{pnum_index}+{move}c")
+        return pnum_index
+
     for _, page_detail in sorted(page_details.items(), reverse=True):
         label = lbl_to_pgnum(page_detail["label"])
         if not label:
@@ -907,7 +929,7 @@ def html_convert_page_anchors() -> None:
                 )
                 anchors = f'<a id="{PAGE_ID_PREFIX}{anchors}></a>'
                 pagenum_span = f'<span class="pagenum">{anchors}[{PAGE_LABEL_PREFIX}{pgnum}]</span>'
-            maintext().insert(page_detail_buffer[0]["index"], pagenum_span)
+            maintext().insert(safe_index(page_detail_buffer[0]["index"]), pagenum_span)
             page_detail_buffer = []
         page_detail_buffer.append(page_detail)
 
