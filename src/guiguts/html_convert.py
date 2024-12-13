@@ -130,17 +130,19 @@ def html_autogenerate() -> None:
     maintext().undo_block_begin()
     remove_trailing_spaces()
     html_convert_entities()
-    # html_convert_footnotes() - waiting for footnote code
     try:
         html_convert_body()
     except SyntaxError as exc:
         logger.error(exc)
     html_convert_inline()
     html_convert_smallcaps()
+    html_convert_footnotes()
     html_convert_page_anchors()
-    # html_convert_footnote_blocks() - waiting for footnote code
+    html_convert_footnote_landing_zones()
     html_convert_sidenotes()
-    html_tidy_up()
+    # html_add_chapter_divs()
+    # html_wrap_long_lines()
+    maintext().set_insert_index(maintext().start())
 
 
 def remove_trailing_spaces() -> None:
@@ -990,6 +992,77 @@ def html_convert_sidenotes() -> None:
         maintext().replace(sidenote_end, f"{sidenote_end}+5c", f"{p_close}</div>")
 
 
-def html_tidy_up() -> None:
-    """Do all the tidy up jobs at the end."""
-    # Check for pagenum spans that aren't in a paragraph and surround them with <p> - or is that necessary with HTML5?
+def html_convert_footnotes() -> None:
+    """Convert `[Footnote` markup to HTML.
+
+    For each footnote, search backward to find another identically numbered one.
+    Then between those two, search for suitable anchors. Link from all anchors
+    to the footnote, and from the footnote to the first anchor.
+    """
+    fn_end = "1.0"
+    fn_number = 0
+    # Find start of each footnote
+    while fn_start := maintext().search(
+        r"<p>\[Footnote .+?:", fn_end, tk.END, regexp=True
+    ):
+        # Find end of footnote
+        fn_end = maintext().search(r"]</p>$", fn_start, tk.END, regexp=True)
+        # Extract label for footnote
+        fn_label_end = maintext().search(":", fn_start, tk.END)
+        fn_label = maintext().get(f"{fn_start}+13c", fn_label_end)
+        fn_number += 1
+        fn_id = f"Footnote_{fn_label}_{fn_number}"
+        an_id = f"FNanchor_{fn_label}_{fn_number}"
+        # Add markup for footnote
+        maintext().replace(fn_end, f"{fn_end} lineend", "</p></div>")
+        maintext().replace(
+            fn_start,
+            f"{fn_label_end}+1c",
+            f'<div class="footnote"><p><a id="{fn_id}" href="#{an_id}" class="label">[{fn_label}]</a>',
+        )
+
+        # Search backwards for another footnote with the same label (or start of file)
+        an_search_start = maintext().search(
+            f'class="label">[{fn_label}]</a>', fn_start, "1.0", backwards=True
+        )
+        if an_search_start:
+            an_search_start += (
+                "+1l"  # Don't want to mistake label of this footnote for an anchor
+            )
+        else:
+            an_search_start = "1.0"
+        # For all matching anchors in that range, add HTML markup to anchor, with id on the first only
+        id_markup = f'id="{an_id}" '
+        while an_start := maintext().search(f"[{fn_label}]", an_search_start, fn_start):
+            an_end = f"{an_start}+{len(fn_label)+2}c"
+            maintext().insert(an_end, "</a>")
+            open_markup = f'<a {id_markup}href="#{fn_id}" class="fnanchor">'
+            maintext().insert(an_start, open_markup)
+            id_markup = ""
+            an_search_start = maintext().index(f"{an_start}+{len(open_markup)+4}c")
+
+
+def html_convert_footnote_landing_zones() -> None:
+    """Add HTML markup around Landing Zones beginning with "FOOTNOTES"."""
+    lz_end = "1.0"
+    while lz_start := maintext().search("<p>FOOTNOTES:</p>", lz_end, tk.END):
+        # Find next LZ (or end of file) to help find the end of this LZ
+        lz_next = maintext().search("<p>FOOTNOTES:</p>", f"{lz_start}+17c", tk.END)
+        if not lz_next:
+            lz_next = tk.END
+        # Find last footnote in this LZ by searching backwards from next LZ
+        lz_end = maintext().search(
+            '<div class="footnote">', lz_next, lz_start, backwards=True
+        )
+        if lz_end:
+            lz_end = maintext().search(
+                "</div>", lz_end, lz_next
+            )  # End of last footnote
+        else:
+            # No FN in LZ
+            lz_end = f"{lz_start}"
+        lz_end += " lineend"
+        maintext().insert(lz_end, "</div>")
+        # <p>FOOTNOTES:</p> ==> <div class="footnotes"><h3>FOOTNOTES:</h3>
+        maintext().replace(f"{lz_start}+15c", f"{lz_start}+16c", "h3")
+        maintext().replace(lz_start, f"{lz_start}+3c", '<div class="footnotes"><h3>')
