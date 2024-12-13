@@ -929,6 +929,13 @@ def html_convert_page_anchors() -> None:
                     pnum_index = maintext().index(f"{pnum_index}+{move}c")
         return pnum_index
 
+    def outside_paragraph(index: str) -> bool:
+        """Return True if given index is not within `<p>` markup."""
+        prev_markup = maintext().find_match(
+            r"(<p[> ]|</p>)", IndexRange(index, "1.0"), regexp=True, backwards=True
+        )
+        return prev_markup is None or maintext().get_match_text(prev_markup) == "</p>"
+
     show_page_numbers = preferences.get(PrefKey.HTML_SHOW_PAGE_NUMBERS)
     for _, page_detail in sorted(page_details.items(), reverse=True):
         label = lbl_to_pgnum(page_detail["label"])
@@ -951,7 +958,10 @@ def html_convert_page_anchors() -> None:
                 )
                 anchors = f'<a id="{PAGE_ID_PREFIX}{anchors}></a>'
                 pagenum_span = f'<span class="pagenum">{anchors}{pstring}</span>'
-            maintext().insert(safe_index(page_detail_buffer[0]["index"]), pagenum_span)
+            insert_index = safe_index(page_detail_buffer[0]["index"])
+            if outside_paragraph(insert_index):
+                pagenum_span = f"<p>{pagenum_span}</p>"
+            maintext().insert(insert_index, pagenum_span)
             page_detail_buffer = []
         page_detail_buffer.append(page_detail)
 
