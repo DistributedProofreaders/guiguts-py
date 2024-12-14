@@ -129,6 +129,7 @@ def html_autogenerate() -> None:
 
     maintext().undo_block_begin()
     remove_trailing_spaces()
+    adjust_pagemark_postions()
     html_convert_entities()
     try:
         html_convert_body()
@@ -140,7 +141,7 @@ def html_autogenerate() -> None:
     html_convert_page_anchors()
     html_convert_footnote_landing_zones()
     html_convert_sidenotes()
-    # html_add_chapter_divs()
+    html_add_chapter_divs()
     # html_wrap_long_lines()
     maintext().set_insert_index(maintext().start())
 
@@ -506,6 +507,9 @@ def html_convert_body() -> None:
                 f'<li class="{classname}">',
             )
             maintext().insert(line_end, "</li>")
+
+            # **hyperline page numbers**
+
             index_blank_lines = 0
             continue
 
@@ -581,16 +585,18 @@ def html_convert_body() -> None:
         # In chapter heading - store lines in heading until we get 2 blank lines
         if in_chap_heading:
             if selection:
-                chap_heading += (" " if chap_heading else "") + selection.strip()
+                chap_line = re.sub(" *<h2.+?>", "", selection)
+                chap_heading += (" " if chap_heading else "") + chap_line
                 chap_head_blanks = 0
             elif chap_head_blanks == 0:  # First blank line
                 # May be two part heading, e.g. "Chapter 1|<blank line>|The Start"
                 maintext().insert(line_start, "<br>")
                 chap_head_blanks += 1
             else:  # Second blank line = end of heading
-                # First blank line will have had "<br>" inserted in elif above - replace that with </h2>
+                # First blank line will have had "<br>" inserted in elif above.
+                # Remove that and add </h2> at end of chapter heading.
                 maintext().replace(
-                    f"{line_start}-1l", f"{line_start}-1l lineend", "</h2>"
+                    f"{line_start}-2l lineend", f"{line_start}-1l lineend", "</h2>\n"
                 )
                 auto_toc += f'<a href="{chap_id}">{chap_heading}</a><br>\n'
                 in_chap_heading = False
@@ -611,13 +617,17 @@ def html_convert_body() -> None:
                 # Don't want to treat centered, poetry, etc as an h2 heading
                 # even if it has 4 blank lines before it.
                 chap_check = chap_check.lstrip("\n")
-                if re.match("/[$*#cfilprx]", chap_check, flags=re.IGNORECASE):
+                if re.match(
+                    r"\[Illustration|\[Sidenote|\[Footnote|/[$*#cfilprx]",
+                    chap_check,
+                    flags=re.IGNORECASE,
+                ):
                     continue
                 chap_id = make_anchor(
                     maintext().get(f"{line_start}+1l", f"{line_start}+1l lineend")
                 )
                 maintext().insert(
-                    f"{line_start}", f'<h2 class="nobreak" id="{chap_id}">'
+                    f"{line_start}+1l linestart", f'<h2 class="nobreak" id="{chap_id}">'
                 )
                 in_chap_heading = True
                 chap_head_blanks = 0
@@ -895,6 +905,43 @@ def get_title() -> str:
     return complete_title.rstrip(" ,.")
 
 
+def adjust_pagemark_postions() -> None:
+    """Move page marks to start of next line if at end of non-empty line.
+
+    In particular, we don't want want page mark at the end of a paragraph,
+    and hence getting trapped before closing `</p>` markup.
+    """
+
+    def mark_list_at_index(mark: str, index: str) -> list[str]:
+        """Return a list of the page marks after given mark that are at the given index."""
+        mark_list: list[str] = []
+        while mark := maintext().page_mark_next(mark):
+            if maintext().compare(mark, ">", index):
+                break
+            mark_list.append(mark)
+        return mark_list
+
+    mark = "1.0"
+    while mark := maintext().page_mark_next(mark):
+        eol = maintext().compare(mark, "==", f"{mark} lineend")
+        nonempty = maintext().get(f"{mark} linestart", f"{mark} lineend")
+        if eol and nonempty:
+            move_mark_list = mark_list_at_index(mark, mark)
+            move_mark_list.insert(0, mark)
+            next_linestart = maintext().index(f"{mark}+1l linestart")
+            # Need to change gravity of this mark and all marks at
+            # start of next line, to preserve mark order
+            next_mark_list = mark_list_at_index(mark, next_linestart)
+            for next_line_mark in next_mark_list:
+                maintext().mark_gravity(next_line_mark, tk.RIGHT)
+            for move_mark in reversed(move_mark_list):
+                maintext().mark_set(move_mark, next_linestart)
+            # Restore gravities
+            for next_line_mark in next_mark_list:
+                maintext().mark_gravity(next_line_mark, tk.LEFT)
+            mark = move_mark_list[-1]
+
+
 def html_convert_page_anchors() -> None:
     """Add page anchors, comments, etc., at page marks depending on dialog settings."""
     page_details = the_file().page_details
@@ -938,6 +985,25 @@ def html_convert_page_anchors() -> None:
         )
         return prev_markup is None or maintext().get_match_text(prev_markup) == "</p>"
 
+    def flush_page_detail_buffer() -> None:
+        """Output contents of buffer in pgnum span."""
+        pgnum = lbl_to_pgnum(page_detail_buffer[0]["label"])
+        pstring = f"[{PAGE_LABEL_PREFIX}{pgnum}]" if show_page_numbers else ""
+        if len(page_detail_buffer) == 1:
+            pagenum_span = (
+                f'<span class="pagenum" id="{PAGE_ID_PREFIX}{pgnum}">{pstring}</span>'
+            )
+        else:
+            anchors = f'"></a><a id="{PAGE_ID_PREFIX}'.join(
+                [lbl_to_pgnum(pd["label"]) for pd in reversed(page_detail_buffer)]
+            )
+            anchors = f'<a id="{PAGE_ID_PREFIX}{anchors}"></a>'
+            pagenum_span = f'<span class="pagenum">{anchors}{pstring}</span>'
+        insert_index = safe_index(page_detail_buffer[0]["index"])
+        if outside_paragraph(insert_index):
+            pagenum_span = f"<p>{pagenum_span}</p>"
+        maintext().insert(insert_index, pagenum_span)
+
     show_page_numbers = preferences.get(PrefKey.HTML_SHOW_PAGE_NUMBERS)
     for _, page_detail in sorted(page_details.items(), reverse=True):
         label = lbl_to_pgnum(page_detail["label"])
@@ -950,22 +1016,11 @@ def html_convert_page_anchors() -> None:
         text_between = maintext().get(page_detail["index"], last_mark_index)
         last_mark_index = page_detail["index"]
         if page_detail_buffer and re.search(r"\S", text_between):
-            pgnum = lbl_to_pgnum(page_detail_buffer[0]["label"])
-            pstring = f"[{PAGE_LABEL_PREFIX}{pgnum}]" if show_page_numbers else ""
-            if len(page_detail_buffer) == 1:
-                pagenum_span = f'<span class="pagenum" id="{PAGE_ID_PREFIX}{pgnum}">{pstring}</span>'
-            else:
-                anchors = f'"></a><a id="{PAGE_ID_PREFIX}'.join(
-                    [lbl_to_pgnum(pd["label"]) for pd in reversed(page_detail_buffer)]
-                )
-                anchors = f'<a id="{PAGE_ID_PREFIX}{anchors}></a>'
-                pagenum_span = f'<span class="pagenum">{anchors}{pstring}</span>'
-            insert_index = safe_index(page_detail_buffer[0]["index"])
-            if outside_paragraph(insert_index):
-                pagenum_span = f"<p>{pagenum_span}</p>"
-            maintext().insert(insert_index, pagenum_span)
+            flush_page_detail_buffer()
             page_detail_buffer = []
         page_detail_buffer.append(page_detail)
+    if page_detail_buffer:
+        flush_page_detail_buffer()
 
 
 def html_convert_sidenotes() -> None:
@@ -1066,3 +1121,26 @@ def html_convert_footnote_landing_zones() -> None:
         # <p>FOOTNOTES:</p> ==> <div class="footnotes"><h3>FOOTNOTES:</h3>
         maintext().replace(f"{lz_start}+15c", f"{lz_start}+16c", "h3")
         maintext().replace(lz_start, f"{lz_start}+3c", '<div class="footnotes"><h3>')
+
+
+def html_add_chapter_divs() -> None:
+    """Add chapter divs where there are h2 headings, attempting to
+    enclose pagenum spans where appropriate."""
+    h2_end = "1.0"
+    while h2_start := maintext().search("<h2", h2_end, tk.END):
+        h2_end = f'{maintext().search("</h2>", h2_start, tk.END)} lineend'
+        prev_page_break = maintext().search(
+            '<span class="pagenum"', h2_start, "1.0", backwards=True
+        )
+        if prev_page_break:
+            check_text = maintext().get(f"{prev_page_break} linestart", h2_start)
+            check_text = re.sub(r'<span class="pagenum".+?</span>', "", check_text)
+            check_text = re.sub(r"</?p>", "", check_text)
+            check_text = re.sub(r"\[Illustration.*?\]", "", check_text)
+            check_text = check_text.replace("\n", "")
+            if not check_text:
+                h2_start = f"{prev_page_break} linestart"
+        maintext().insert(
+            h2_start, '<hr class="chap x-ebookmaker-drop"><div class="chapter">'
+        )
+        maintext().insert(h2_end, "</div>")
