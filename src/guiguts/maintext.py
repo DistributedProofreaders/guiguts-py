@@ -70,6 +70,112 @@ class WrapParams:
         self.right = right
 
 
+class TextColumnNumbers(tk.Text):
+    """Ruler to display the column numbers.
+
+    Attributes:
+        textwidget: Text widget to provide line numbers for.
+        font: Font used by text widget, also used for line numbers.
+    """
+
+    def __init__(self, parent: ttk.Frame, text_widget: tk.Text, **kwargs: Any) -> None:
+        self.textwidget = text_widget
+        self.font = tk_font.nametofont(self.textwidget.cget("font"))
+        self._ruler = self._construct_ruler()
+        super().__init__(
+            parent,
+            font=self.font,
+            height=1,
+            padx=3,
+            borderwidth=0,
+            highlightthickness=0,
+            takefocus=False,
+            relief=tk.FLAT,
+            wrap=tk.NONE,
+            **kwargs,
+        )
+        self.bind("<<ThemeChanged>>", lambda event: self.theme_change())
+        self.theme_change()
+
+        # Ignore clicks, mousewheel scrolls, and click-drags on column ruler
+        for event in (
+            "Button-1",
+            "Button-2",
+            "Button-3",
+            "Button-4",
+            "Button-5",
+            "ButtonRelease-1",
+            "ButtonRelease-2",
+            "ButtonRelease-3",
+            "ButtonRelease-4",
+            "ButtonRelease-5",
+            "B1-Motion",
+            "B2-Motion",
+            "B3-Motion",
+            "B4-Motion",
+            "B5-Motion",
+            "MouseWheel",
+        ):
+            self.bind(f"<{event}>", lambda x: "break")
+
+    def _construct_ruler(self) -> str:
+        """Build a ruler string for re-use later."""
+        ruler_stub = ""
+        for n in range(9):
+            ruler_stub += f"····▾····{n+1}"
+        ruler = ""
+        for n in range(5):
+            ruler += f"{ruler_stub}····▾···{(n+1)}0"
+        return ruler
+
+    def redraw(self) -> None:
+        """Redraw the column ruler."""
+        # respond to font size changing
+        self.configure(height=1)
+        self.tag_remove(HighlightTag.COLUMN_RULER, "1.0", tk.END)
+        self.delete("1.0", tk.END)
+
+        if maintext().focus_widget() == self.textwidget:
+            cur_bg = self.textwidget["selectbackground"]
+        else:
+            cur_bg = self.textwidget["inactiveselectbackground"]
+        self.tag_configure(HighlightTag.COLUMN_RULER, background=cur_bg)
+
+        # Draw the ruler to be the length of the longest line in the viewport.
+        # If the longest line is narrower than the viewport, then pad it to be
+        # wide enough to fill the viewport width.
+        longest_line = self.longest_line()
+        width = int(self.textwidget.winfo_width() / self.font.measure("8"))
+        rulerlen = max(width, longest_line)
+        self.insert("1.0", self._ruler[:rulerlen])
+
+        # Highlight the current column (unless we're at column 0)
+        cur_col = IndexRowCol(self.textwidget.index(tk.INSERT)).col
+        if cur_col:
+            self.tag_add(HighlightTag.COLUMN_RULER, f"1.{cur_col-1}")
+
+    def longest_line(self) -> int:
+        """Look at lines in the current text widget's viewport and
+        return length (in characters) of the longest one."""
+        longest = 0
+        index = self.textwidget.index("@0,0")
+        while True:
+            dline = self.textwidget.dlineinfo(index)
+            if dline is None:
+                break
+            linelen = len(self.textwidget.get(f"{index} linestart", f"{index} lineend"))
+            longest = max(longest, linelen)
+            index = self.textwidget.index(index + "+1l")
+        return longest
+
+    def theme_change(self) -> None:
+        """Handle change of color theme"""
+        self.configure(
+            background=themed_style().lookup("TButton", "background"),
+            foreground=themed_style().lookup("TButton", "foreground"),
+        )
+
+
 class TextLineNumbers(tk.Canvas):
     """TextLineNumbers widget adapted from answer at
     https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
@@ -160,6 +266,7 @@ class HighlightTag(StrEnum):
     CURLY_SINGLE_QUOTE = auto()
     ALIGNCOL = auto()
     CURSOR_LINE = auto()
+    COLUMN_RULER = auto()
 
 
 class HighlightColors:
@@ -230,6 +337,11 @@ class HighlightColors:
         "Dark": {"bg": "#303030", "fg": "white"},
     }
 
+    COLUMN_RULER = {
+        "Light": {"bg": "#A6CDFF", "fg": "black"},
+        "Dark": {"bg": "#324F78", "fg": "white"},
+    }
+
 
 class TextPeer(tk.Text):
     """A peer of maintext's text widget.
@@ -271,7 +383,7 @@ class MainText(tk.Text):
         # Create surrounding Frame
         self.frame = ttk.Frame(parent)
         self.frame.columnconfigure(1, weight=1)
-        self.frame.rowconfigure(0, weight=1)
+        self.frame.rowconfigure(1, weight=1)
 
         # Set up font
         family = preferences.get(PrefKey.TEXT_FONT_FAMILY)
@@ -295,7 +407,7 @@ class MainText(tk.Text):
         line_spacing = 4 if is_mac() else 0
         # Create Text itself & place in Frame
         super().__init__(self.frame, font=self.font, spacing1=line_spacing, **kwargs)
-        tk.Text.grid(self, column=1, row=0, sticky="NSEW")
+        tk.Text.grid(self, column=1, row=1, sticky="NSEW")
 
         self.languages = ""
 
@@ -318,26 +430,34 @@ class MainText(tk.Text):
 
         # Create Line Numbers widget
         self.linenumbers = TextLineNumbers(self.frame, self)
-        self.linenumbers.grid(column=0, row=0, sticky="NSEW")
+        self.linenumbers.grid(column=0, row=1, sticky="NSEW")
+        self.colnumbers = TextColumnNumbers(self.frame, self)
+        self.colnumbers.grid(column=1, row=0, sticky="NSEW")
         self.numbers_need_updating = False
 
         def hscroll_set(*args: Any) -> None:
             self.hscroll.set(*args)
+            self.colnumbers.xview("moveto", args[0])
             self._on_change()
 
         def vscroll_set(*args: Any) -> None:
             self.vscroll.set(*args)
             self._on_change()
 
+        def hscroll_main_and_ruler(*args: Any) -> None:
+            self.xview(*args)
+            self.colnumbers.xview(*args)
+            self._on_change()
+
         # Create scrollbars, place in Frame, and link to Text
         self.hscroll = ttk.Scrollbar(
-            self.frame, orient=tk.HORIZONTAL, command=self.xview
+            self.frame, orient=tk.HORIZONTAL, command=hscroll_main_and_ruler
         )
-        self.hscroll.grid(column=1, row=1, sticky="EW")
-        self["xscrollcommand"] = hscroll_set
+        self.hscroll.grid(column=1, row=2, sticky="EW")
+        self.config(xscrollcommand=hscroll_set)
         self.vscroll = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
-        self.vscroll.grid(column=2, row=0, sticky="NS")
-        self["yscrollcommand"] = vscroll_set
+        self.vscroll.grid(column=2, row=1, sticky="NS")
+        self.config(yscrollcommand=vscroll_set)
 
         self.config_callbacks: list[Callable[[], None]] = []
 
@@ -378,9 +498,9 @@ class MainText(tk.Text):
         # Create peer widget
         self.peer_frame = ttk.Frame()
         self.peer_frame.columnconfigure(1, weight=1)
-        self.peer_frame.rowconfigure(0, weight=1)
+        self.peer_frame.rowconfigure(1, weight=1)
         self.peer = TextPeer(self)
-        self.peer.grid(column=1, row=0, sticky="NSEW")
+        self.peer.grid(column=1, row=1, sticky="NSEW")
 
         # Configure peer widget using main text as a template
         self.peer.config(
@@ -394,26 +514,34 @@ class MainText(tk.Text):
             "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self.peer)
         )
         self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
-        self.peer_linenumbers.grid(column=0, row=0, sticky="NSEW")
+        self.peer_linenumbers.grid(column=0, row=1, sticky="NSEW")
+        self.peer_colnumbers = TextColumnNumbers(self.peer_frame, self.peer)
+        self.peer_colnumbers.grid(column=1, row=0, sticky="NSEW")
 
         def peer_hscroll_set(*args: Any) -> None:
             self.peer_hscroll.set(*args)
+            self.peer_colnumbers.xview("moveto", args[0])
             self._on_change()
 
         def peer_vscroll_set(*args: Any) -> None:
             self.peer_vscroll.set(*args)
             self._on_change()
 
+        def hscroll_peer_and_ruler(*args: Any) -> None:
+            self.peer.xview(*args)
+            self.peer_colnumbers.xview(*args)
+            self._on_change()
+
         # Create peer scrollbars, place in Frame, and link to peer Text
         self.peer_hscroll = ttk.Scrollbar(
-            self.peer_frame, orient=tk.HORIZONTAL, command=self.peer.xview
+            self.peer_frame, orient=tk.HORIZONTAL, command=hscroll_peer_and_ruler
         )
-        self.peer_hscroll.grid(column=1, row=1, sticky="EW")
+        self.peer_hscroll.grid(column=1, row=2, sticky="EW")
         self.peer["xscrollcommand"] = peer_hscroll_set
         self.peer_vscroll = ttk.Scrollbar(
             self.peer_frame, orient=tk.VERTICAL, command=self.peer.yview
         )
-        self.peer_vscroll.grid(column=2, row=0, sticky="NS")
+        self.peer_vscroll.grid(column=2, row=1, sticky="NS")
         self.peer["yscrollcommand"] = peer_vscroll_set
 
         self._text_peer_focus: tk.Text = self
@@ -704,6 +832,8 @@ class MainText(tk.Text):
             self.numbers_need_updating = False
             self.linenumbers.redraw()
             self.peer_linenumbers.redraw()
+            self.colnumbers.redraw()
+            self.peer_colnumbers.redraw()
 
     def add_config_callback(self, func: Callable[[], None]) -> None:
         """Add callback function to a list of functions to be called when
@@ -790,6 +920,19 @@ class MainText(tk.Text):
         else:
             self.linenumbers.grid_remove()
             self.peer_linenumbers.grid_remove()
+
+    def show_column_numbers(self, show: bool) -> None:
+        """Show or hide column numbers.
+
+        Args:
+            show: True to show, False to hide.
+        """
+        if show:
+            self.colnumbers.grid()
+            self.peer_colnumbers.grid()
+        else:
+            self.colnumbers.grid_remove()
+            self.peer_colnumbers.grid_remove()
 
     def key_bind(
         self, keyevent: str, handler: Callable[[Any], None], bind_all: bool

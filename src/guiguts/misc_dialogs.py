@@ -117,11 +117,16 @@ class PreferencesDialog(ToplevelDialog):
         ).grid(column=0, row=4, sticky="NEW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
+            text="Display Column Numbers",
+            variable=PersistentBoolean(PrefKey.COLUMN_NUMBERS),
+        ).grid(column=0, row=5, sticky="NEW", pady=5)
+        ttk.Checkbutton(
+            appearance_frame,
             text="Show Character Names in Status Bar",
             variable=root().ordinal_names_state,
-        ).grid(column=0, row=5, sticky="NEW", pady=5)
+        ).grid(column=0, row=6, sticky="NEW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))
+        bell_frame.grid(column=0, row=7, sticky="NEW", pady=(5, 0))
         ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
         ttk.Checkbutton(
             bell_frame,

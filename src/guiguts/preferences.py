@@ -82,6 +82,7 @@ class PrefKey(StrEnum):
     SCANNOS_FILENAME = auto()
     SCANNOS_HISTORY = auto()
     HIGHLIGHT_QUOTBRAC = auto()
+    COLUMN_NUMBERS = auto()
 
 
 class Preferences:
