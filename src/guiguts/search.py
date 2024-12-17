@@ -10,7 +10,7 @@ from typing import Any, Tuple, Optional
 import regex as re
 
 from guiguts.checkers import CheckerDialog
-from guiguts.maintext import maintext, TclRegexCompileError, FindMatch
+from guiguts.maintext import maintext, TclRegexCompileError, FindMatch, HighlightTag
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey
 from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, sing_plur
 from guiguts.widgets import (
@@ -338,7 +338,14 @@ class SearchDialog(ToplevelDialog):
         start_rowcol = get_search_start(backwards)
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
+        # TODO: set range, not entire file? ...
+        # maintext().tag_remove(HighlightTag.SEARCH_ACTIVE, "1.0", tk.END)
+        maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
         try:
+            matchez = self.count_clicked()
+            for matchz in matchez:
+                maintext().tag_add(HighlightTag.SEARCH_INACTIVE, matchz.rowcol.index(),
+                                   f"{matchz.rowcol.index()}+{matchz.count}c")
             _do_find_next(
                 search_string, backwards, IndexRange(start_rowcol, stop_rowcol)
             )
@@ -679,6 +686,7 @@ def _do_find_next(
         backwards: True to search backwards.
         start_point: Point to search from.
     """
+    maintext().tag_remove(HighlightTag.SEARCH_ACTIVE, "1.0", tk.END)
     match = maintext().find_match_user(
         search_string,
         search_limits.start,
@@ -695,6 +703,7 @@ def _do_find_next(
         maintext().do_select(IndexRange(match.rowcol, rowcol_end))
         maintext().set_mark_position(MARK_FOUND_START, match.rowcol, gravity=tk.LEFT)
         maintext().set_mark_position(MARK_FOUND_END, rowcol_end, gravity=tk.RIGHT)
+        maintext().tag_add(HighlightTag.SEARCH_ACTIVE, match.rowcol.index(), rowcol_end.index())
     else:
         sound_bell()
 
