@@ -142,7 +142,7 @@ def html_autogenerate() -> None:
     html_convert_footnote_landing_zones()
     html_convert_sidenotes()
     html_add_chapter_divs()
-    # html_wrap_long_lines()
+    html_wrap_long_lines()
     maintext().set_insert_index(maintext().start())
 
 
@@ -1149,3 +1149,26 @@ def html_add_chapter_divs() -> None:
             h2_start, '<hr class="chap x-ebookmaker-drop"><div class="chapter">'
         )
         maintext().insert(h2_end, "</div>")
+
+
+def html_wrap_long_lines() -> None:
+    """Wrap lines that are longer than 200 characters, typically where an index line
+    has many linked page numbers."""
+    wrap_limit = 200
+    index = "1.0"
+    # Find lines longer than 200 characters
+    while index := maintext().search(
+        rf"^[^\n]{{{wrap_limit},}}", f"{index} lineend", tk.END, regexp=True
+    ):
+        # Find previous close tag with a space after (space is possibly preceded by other text, but not an open tag)
+        count = tk.IntVar()
+        if insert_point := maintext().search(
+            "</[a-zA-Z0-9]+?>[^ <]* ",
+            f"{index}+{wrap_limit}c",
+            index,
+            regexp=True,
+            backwards=True,
+            count=count,
+        ):
+            # Insert a newline and three extra spaces before the space that was found
+            maintext().insert(f"{insert_point}+{count.get()-1}c", "\n   ")
