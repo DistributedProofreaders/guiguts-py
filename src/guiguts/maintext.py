@@ -513,6 +513,8 @@ class MainText(tk.Text):
         self.peer.bind(
             "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self.peer)
         )
+        theme_set_tk_widget_colors(self.peer)
+
         self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
         self.peer_linenumbers.grid(column=0, row=1, sticky="NSEW")
         self.peer_colnumbers = TextColumnNumbers(self.peer_frame, self.peer)
