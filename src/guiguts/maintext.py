@@ -267,6 +267,8 @@ class HighlightTag(StrEnum):
     ALIGNCOL = auto()
     CURSOR_LINE = auto()
     COLUMN_RULER = auto()
+    SEARCH_ACTIVE = auto()
+    SEARCH_INACTIVE = auto()
 
 
 class HighlightColors:
@@ -340,6 +342,15 @@ class HighlightColors:
     COLUMN_RULER = {
         "Light": {"bg": "#A6CDFF", "fg": "black"},
         "Dark": {"bg": "#324F78", "fg": "white"},
+    }
+    SEARCH_ACTIVE = {
+        "Light": {"bg": "yellow", "fg": "black", "relief": "solid", "borderwidth": 1},
+        "Dark": {"bg": "red", "fg": "white"},
+    }
+    # valid reliefs: flat, groove, raised, ridge, solid, sunken
+    SEARCH_INACTIVE = {
+        "Light": {"bg": "#ececec", "fg": "black", "relief": "solid", "borderwidth": 1},
+        "Dark": {"bg": "yellow", "fg": "black"},
     }
 
 
@@ -2726,6 +2737,9 @@ class MainText(tk.Text):
             background=tag_colors[theme]["bg"],
             foreground=tag_colors[theme]["fg"],
         )
+        if "relief" in tag_colors[theme] and "borderwidth" in tag_colors[theme]:
+            self.tag_configure(tag_name, relief=tag_colors[theme]["relief"],
+                               borderwidth=tag_colors[theme]["borderwidth"])
 
     def highlight_selection(
         self,
@@ -3128,10 +3142,12 @@ class MainText(tk.Text):
         # ** THE ORDER MATTERS HERE **
         #
         for tag, colors in (
-            (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
+            # "sel" is for active selections - don't override the default color?
             (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
-            # "sel" is for active selections - don't override the default color
+            (HighlightTag.SEARCH_ACTIVE, HighlightColors.SEARCH_ACTIVE),
             ("sel", None),
+            (HighlightTag.SEARCH_INACTIVE, HighlightColors.SEARCH_INACTIVE),
+            (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
             (HighlightTag.PAREN, HighlightColors.PAREN),
             (HighlightTag.CURLY_BRACKET, HighlightColors.CURLY_BRACKET),
             (HighlightTag.SQUARE_BRACKET, HighlightColors.SQUARE_BRACKET),
