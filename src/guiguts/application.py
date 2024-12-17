@@ -420,6 +420,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(
             PrefKey.HIGHLIGHT_QUOTBRAC, self.highlight_quotbrac_callback
         )
+        preferences.set_default(PrefKey.COLUMN_NUMBERS, False)
+        preferences.set_callback(
+            PrefKey.COLUMN_NUMBERS, lambda value: maintext().show_column_numbers(value)
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -809,7 +813,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
 
         the_statusbar.add(
             "rowcol",
-            tooltip="Click: Go to line\nShift click: Toggle line numbers",
+            tooltip="Click: Go to line\nShift click: Toggle line numbers\nShift right-click: Toggle column numbers",
             update=rowcol_str,
         )
         the_statusbar.add_binding("rowcol", "ButtonRelease-1", self.file.goto_line)
@@ -817,6 +821,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "rowcol",
             "Shift-ButtonRelease-1",
             lambda: preferences.toggle(PrefKey.LINE_NUMBERS),
+        )
+        the_statusbar.add_binding(
+            "rowcol",
+            "Shift-ButtonRelease-3",
+            lambda: preferences.toggle(PrefKey.COLUMN_NUMBERS),
         )
 
         the_statusbar.add(
