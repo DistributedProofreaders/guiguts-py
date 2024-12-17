@@ -473,7 +473,7 @@ def html_convert_body() -> None:
             continue
 
         # "/i" --> index until we get "i/"
-        if selection_lower == "/i":  # open
+        if selection_lower.startswith("/i"):  # open
             check_illegal_nesting()
             index_flag = True
             maintext().replace(
@@ -502,14 +502,19 @@ def html_convert_body() -> None:
                 classname = "indx"
             else:
                 classname = f"isub{int((n_spaces+1)/2)}"
-            maintext().insert(
-                line_start,
-                f'<li class="{classname}">',
+            # Convert numbers to page links where the formatting guidelines have been followed:
+            # 1. Number must be preceded by a comma (optionally close quote) then one or more spaces
+            # 2. Number must be no more than 3 digits (to avoid converting dates, like 1910)
+            # 3. Page range may be specified by hyphen/ndash and second number following the first
+            # 4. Number or range may be marked up italic or bold, e.g. <b>123</b> or <i>123-124</i>
+            linked_selection = re.sub(
+                r'(,["\'”’]?) +((<[ib]>)?\b(\d{1,3})([-–]\d{1,3})?\b(</[ib]>)?)',
+                rf'\1 <a href="#{PAGE_ID_PREFIX}\4">\2</a>',
+                selection,
             )
-            maintext().insert(line_end, "</li>")
-
-            # **hyperline page numbers**
-
+            maintext().replace(
+                line_start, line_end, f'<li class="{classname}">{linked_selection}</li>'
+            )
             index_blank_lines = 0
             continue
 
