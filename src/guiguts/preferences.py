@@ -49,6 +49,7 @@ class PrefKey(StrEnum):
     DEFAULT_LANGUAGES = auto()
     JEEBIES_PARANOIA_LEVEL = auto()
     LEVENSHTEIN_EDIT_DISTANCE = auto()
+    FOOTNOTE_INDEX_STYLE = auto()
     WRAP_LEFT_MARGIN = auto()
     WRAP_RIGHT_MARGIN = auto()
     WRAP_BLOCKQUOTE_INDENT = auto()
