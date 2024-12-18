@@ -30,6 +30,7 @@ book_title: Optional[str] = None
 DEFAULT_HTML_DIR = importlib.resources.files(html)
 HTML_HEADER_NAME = "html_header.txt"
 PAGE_ID_PREFIX = "Page_"
+H1_SKIP_REGEX = r"(\[Illustr|/[*$fxcr]|[*$fxcr]/)"
 
 inline_conversion_dict = {
     PrefKey.HTML_ITALIC_MARKUP: ("i", "italic"),
@@ -131,6 +132,7 @@ def html_autogenerate() -> None:
     remove_trailing_spaces()
     adjust_pagemark_postions()
     html_convert_entities()
+    html_convert_title()
     try:
         html_convert_body()
     except SyntaxError as exc:
@@ -179,6 +181,28 @@ def html_convert_entities() -> None:
         )
 
 
+def html_convert_title() -> None:
+    """Find first bit of text that may be the book title, and mark it up with h1."""
+    in_title = False
+    for step in range(1, 500):
+        if maintext().compare(f"{step}.0", ">=", tk.END):
+            break
+        selection = maintext().get(f"{step}.0", f"{step}.end")
+        if in_title:
+            # Check if title complete (blank line or end of frontmatter/center/right/etc markup)
+            if not selection or re.match("[*$fxcr]/", selection, flags=re.IGNORECASE):
+                maintext().insert(f"{step-1}.end", "</h1>")
+                return
+            # Not complete, keep going
+            continue
+        # Not in title yet, so skip blank lines, illos or block markup
+        if not selection or re.match(H1_SKIP_REGEX, selection, flags=re.IGNORECASE):
+            continue
+        # Found start of title
+        in_title = True
+        maintext().insert(f"{step}.0", "<h1>")
+
+
 def html_convert_inline() -> None:
     """Replace occurrences of <i>...</i> and other inline markup
     with em/span depending on settings."""
@@ -221,6 +245,7 @@ def html_convert_body() -> None:
     next_step = 1
     contents_start = "1.0"
     in_chap_heading = False
+    in_h1_heading = False
     chap_id = ""
     chap_heading = ""
     auto_toc = ""
@@ -289,13 +314,21 @@ def html_convert_body() -> None:
         if html_convert_tb(selection, line_start, line_end):
             continue
 
+        # Skip h1 heading - dealt with earlier
+        if "<h1>" in selection_lower:
+            in_h1_heading = True
+        if in_h1_heading:
+            if "</h1>" in selection_lower:
+                in_h1_heading = False
+            continue
+
         # "/x" is replaced with "<pre>", then leave lines unchanged until "/x"-->"</pre>"
-        if selection.lower() == "/x":  # open
+        if selection_lower == "/x":  # open
             maintext().replace(line_start, line_end, "<pre>")
             pre_flag = True
             continue
         if pre_flag:
-            if selection.lower() == "x/":  # close
+            if selection_lower == "x/":  # close
                 maintext().replace(line_start, line_end, "</pre>")
                 pre_flag = False
             continue
@@ -305,13 +338,13 @@ def html_convert_body() -> None:
         maintext().delete(line_start, f"{line_start}+{n_spaces}c")
 
         # "/f" --> center all paragraphs until we get "f/"
-        if selection.lower() == "/f":  # open
+        if selection_lower == "/f":  # open
             maintext().delete(line_start, line_end)
             front_flag = True
             in_front_para = False
             continue
         if front_flag:
-            if selection.lower() == "f/":  # close
+            if selection_lower == "f/":  # close
                 if in_front_para:
                     maintext().insert(f"{line_start} -1l lineend", "</p>")
                 maintext().delete(line_start, line_end)
@@ -326,7 +359,7 @@ def html_convert_body() -> None:
             continue
 
         # "/p" --> poetry until we get "p/"
-        if selection.lower() == "/p":  # open
+        if selection_lower == "/p":  # open
             maintext().replace(
                 line_start,
                 line_end,
@@ -345,7 +378,7 @@ def html_convert_body() -> None:
             reset_ibs_dict()
             continue
         if poetry_flag:
-            if selection.lower() == "p/":  # close
+            if selection_lower == "p/":  # close
                 if in_stanza:
                     maintext().insert(f"{line_start} -1l lineend", "</div>")
                 maintext().replace(line_start, line_end, "</div></div>")
@@ -603,7 +636,7 @@ def html_convert_body() -> None:
                 maintext().replace(
                     f"{line_start}-2l lineend", f"{line_start}-1l lineend", "</h2>\n"
                 )
-                auto_toc += f'<a href="{chap_id}">{chap_heading}</a><br>\n'
+                auto_toc += f'<a href="#{chap_id}">{chap_heading}</a><br>\n'
                 in_chap_heading = False
             continue
 
@@ -619,11 +652,11 @@ def html_convert_body() -> None:
             chap_check = maintext().get(f"{line_start}-3l", f"{line_start}+1l lineend")
             if re.match(r"\n\n\n\n[^\n]", chap_check):
                 # Look ahead to see what's coming next
-                # Don't want to treat centered, poetry, etc as an h2 heading
+                # Don't want to treat h1, centered, poetry, etc as an h2 heading
                 # even if it has 4 blank lines before it.
                 chap_check = chap_check.lstrip("\n")
                 if re.match(
-                    r"\[Illustration|\[Sidenote|\[Footnote|/[$*#cfilprx]",
+                    r"<h1>|\[Illustration|\[Sidenote|\[Footnote|/[$*#cfilprx]",
                     chap_check,
                     flags=re.IGNORECASE,
                 ):
@@ -892,9 +925,7 @@ def get_title() -> str:
         ):
             break
         # Skip blank lines, illos or block markup
-        if not selection or re.match(
-            r"(\[Illustr|/[*$fxcr]|[*$fxcr]/)", selection, flags=re.IGNORECASE
-        ):
+        if not selection or re.match(H1_SKIP_REGEX, selection, flags=re.IGNORECASE):
             continue
         # Strip inline markup & compress multiple spaces
         selection = re.sub(r"<.+?>", "", selection)
