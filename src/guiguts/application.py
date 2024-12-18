@@ -431,6 +431,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.COLUMN_NUMBERS, False)
         preferences.set_callback(
             PrefKey.COLUMN_NUMBERS, lambda value: maintext().show_column_numbers(value)
+        )
         preferences.set_default(PrefKey.HTML_ITALIC_MARKUP, HTMLMarkupTypes.KEEP)
         preferences.set_default(PrefKey.HTML_BOLD_MARKUP, HTMLMarkupTypes.KEEP)
         preferences.set_default(PrefKey.HTML_GESPERRT_MARKUP, HTMLMarkupTypes.EM_CLASS)
