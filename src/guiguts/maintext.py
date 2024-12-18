@@ -267,7 +267,7 @@ class HighlightTag(StrEnum):
     ALIGNCOL = auto()
     CURSOR_LINE = auto()
     COLUMN_RULER = auto()
-    SEARCH_ACTIVE = auto()
+    # SEARCH_ACTIVE = auto()
     SEARCH_INACTIVE = auto()
 
 
@@ -343,14 +343,14 @@ class HighlightColors:
         "Light": {"bg": "#A6CDFF", "fg": "black"},
         "Dark": {"bg": "#324F78", "fg": "white"},
     }
-    SEARCH_ACTIVE = {
-        "Light": {"bg": "yellow", "fg": "black", "relief": "solid", "borderwidth": 1},
-        "Dark": {"bg": "red", "fg": "white"},
-    }
+    # SEARCH_ACTIVE = {
+    #     "Light": {"bg": "yellow", "fg": "black", "relief": "solid", "borderwidth": 1},
+    #     "Dark": {"bg": "red", "fg": "white"},
+    # }
     # valid reliefs: flat, groove, raised, ridge, solid, sunken
     SEARCH_INACTIVE = {
-        "Light": {"bg": "#ececec", "fg": "black", "relief": "solid", "borderwidth": 1},
-        "Dark": {"bg": "yellow", "fg": "black"},
+        "Light": {"bg": "#f0f0f0", "fg": "#904040", "relief": "solid", "borderwidth": 1},
+        "Dark": {"bg": "#303030", "fg": "#d0a0a0", "relief": "solid", "borderwidth": 1}
     }
 
 
@@ -3144,7 +3144,7 @@ class MainText(tk.Text):
         for tag, colors in (
             # "sel" is for active selections - don't override the default color?
             (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
-            (HighlightTag.SEARCH_ACTIVE, HighlightColors.SEARCH_ACTIVE),
+            # (HighlightTag.SEARCH_ACTIVE, HighlightColors.SEARCH_ACTIVE),
             ("sel", None),
             (HighlightTag.SEARCH_INACTIVE, HighlightColors.SEARCH_INACTIVE),
             (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
