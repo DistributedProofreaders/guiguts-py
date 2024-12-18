@@ -183,10 +183,8 @@ class CheckerDialog(ToplevelDialog):
             takefocus=False,
         ).grid(row=0, column=4, sticky="NSE", padx=2)
 
-        self.rerun_button = ttk.Button(
-            self.header_frame, text="Re-run", command=rerun_command
-        )
-        self.rerun_button.grid(column=1, row=0, sticky="NSE", padx=20)
+        self.rerun_button = ttk.Button(left_frame, text="Re-run", command=rerun_command)
+        self.rerun_button.grid(row=0, column=5, sticky="NSE", padx=(20, 0))
 
         self.top_frame.rowconfigure(1, weight=1)
         self.text = ScrolledReadOnlyText(

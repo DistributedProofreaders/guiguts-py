@@ -999,13 +999,8 @@ class FootnoteChecker:
     def display_buttons(self) -> None:
         """Helper function to create dialog window for run_check."""
 
-        # Make the fixit_frame that contains all the buttons a direct child
-        # of header_frame that contains the 'Re-run' button. The buttons can
-        # then extend below the 'Re-run' button if columnspan=2 is added to
-        # fixit_frame's grid command. Some padding is required for correct
-        # RH alignment of the 'fixit' buttons with the 'Re-run' button.
-        fixit_frame = ttk.Frame(self.checker_dialog.header_frame, padding=20)
-        fixit_frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
+        fixit_frame = ttk.Frame(self.checker_dialog.header_frame)
+        fixit_frame.grid(column=0, row=1, sticky="NSEW")
         # Weight only needs setting once for each column, not every row of
         # every column.
         fixit_frame.grid_columnconfigure(0, weight=1)

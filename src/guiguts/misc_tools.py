@@ -1385,7 +1385,7 @@ class ScannoCheckerDialog(CheckerDialog):
         )
 
         frame = ttk.Frame(self.header_frame)
-        frame.grid(column=0, row=1, sticky="NSEW", columnspan=2, padx=(0, 15))
+        frame.grid(column=0, row=1, sticky="NSEW")
         frame.columnconfigure(1, weight=1)
 
         self.file_combo = Combobox(
@@ -1400,7 +1400,7 @@ class ScannoCheckerDialog(CheckerDialog):
         )
         ttk.Button(
             frame, text="Load File", command=self.choose_file, takefocus=False
-        ).grid(column=2, row=0, sticky="NSEW", padx=5, pady=5)
+        ).grid(column=2, row=0, sticky="NSEW", padx=(5, 0), pady=5)
 
         self.prev_btn = ttk.Button(
             frame,
@@ -1408,7 +1408,7 @@ class ScannoCheckerDialog(CheckerDialog):
             command=lambda: self.prev_next_scanno(prev=True),
             takefocus=False,
         )
-        self.prev_btn.grid(column=0, row=1, sticky="NSEW", padx=5, pady=5)
+        self.prev_btn.grid(column=0, row=1, sticky="NSEW", padx=(0, 5), pady=5)
         self.scanno_textvariable = tk.StringVar(self, "")
         search = ttk.Entry(
             frame,
@@ -1424,7 +1424,7 @@ class ScannoCheckerDialog(CheckerDialog):
             command=lambda: self.prev_next_scanno(prev=False),
             takefocus=False,
         )
-        self.next_btn.grid(column=2, row=1, sticky="NSEW", padx=5, pady=5)
+        self.next_btn.grid(column=2, row=1, sticky="NSEW", padx=(5, 0), pady=5)
 
         self.replacement_textvariable = tk.StringVar(self, "")
         replace = ttk.Entry(
@@ -1437,7 +1437,7 @@ class ScannoCheckerDialog(CheckerDialog):
         replace.grid(column=1, row=2, sticky="NSEW")
         ttk.Button(
             frame, text="Replace", command=self.replace_scanno, takefocus=False
-        ).grid(column=2, row=2, sticky="NSEW", padx=5)
+        ).grid(column=2, row=2, sticky="NSEW", padx=(5, 0))
 
         ttk.Label(
             frame,
@@ -1449,9 +1449,7 @@ class ScannoCheckerDialog(CheckerDialog):
             textvariable=self.hint_textvariable,
             state="readonly",
         )
-        self.hint.grid(
-            column=1, row=3, columnspan=2, sticky="NSEW", padx=(0, 5), pady=5
-        )
+        self.hint.grid(column=1, row=3, sticky="NSEW", pady=5)
 
         self.scanno_list: list[Scanno] = []
         self.whole_word = False
@@ -1808,7 +1806,7 @@ class CurlyQuotesDialog(CheckerDialog):
         )
 
         frame = ttk.Frame(self.header_frame)
-        frame.grid(column=0, row=1, columnspan=2, sticky="NSEW", padx=(0, 20), pady=5)
+        frame.grid(column=0, row=1, sticky="NSEW", pady=5)
         frame.columnconfigure(3, weight=1)
         ttk.Button(
             frame,
