@@ -1,6 +1,42 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.11
+
+- Footnote Fixup dialog can now be used to fixup the majority of footnote
+  situations, including setting up and moving footnotes to landing zones,
+  or moving footnotes to the end of the paragraph. Mixed style footnotes
+  are not yet supported.
+- Text Markup dialog allows user to convert italic and other markup
+- Clean Up Rewrap Markers removes rewrap markup from text file
+- Stealth Scannos feature added
+- Column numbers (horizontal ruler) can now be displayed
+- Highlight Quotes & Brackets feature added
+- Highlight Alignment column feature added
+- Current line is now given a subtle background highlight
+- Convert to Curly Quotes and Check Curly Quotes features added
+- Image viewer background now adapts better to dark/light themes
+- Insert cursor is now hidden when there is a selection
+- Home/End keys (Cmd+Up/Down on Macs) go to start/end of checker dialogs,
+  and Page Label Config dialog
+- New shortcuts for Search/Replace: Cmd/Ctrl+Enter does Replace & Search;
+  Shift+Cmd/Ctrl+Enter does Replace & Search in reverse direction
+- Tooltips & labels improved in Preferences dialog
+
+### Bug Fixes
+
+- Double-clicking Re-run in checker dialogs caused an error
+- Search/replace text fields were sometimes not tall enough to show character
+- Show/hide line numbers now works properly in Split Window mode
+- Some keystrokes, e.g. Ctrl+D, caused unwanted edits
+- Word pairs followed by punctuation were not flagged in WF hyphen check
+- Using cut/copy when macOS clipboard contained an image caused an error
+- Illegal language codes were not handled well
+- Fractions containing decimal points were wrongly converted
+- Typing over a column selection gave unexpected results
+- The page labels dialog could become desynchronized from the display
+
+
 ## Version 2.0.0-alpha.10
 
 - Checker dialogs now use the same font as the text window
