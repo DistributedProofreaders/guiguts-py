@@ -653,7 +653,7 @@ class LevenshteinChecker:
             rerun_command=lambda: levenshtein_check(project_dict),
         )
         frame = ttk.Frame(checker_dialog.header_frame)
-        frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
+        frame.grid(column=0, row=1, sticky="NSEW")
         ttk.Label(
             frame,
             text="Edit Distance:",
