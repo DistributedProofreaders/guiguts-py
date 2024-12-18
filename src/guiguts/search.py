@@ -338,7 +338,28 @@ class SearchDialog(ToplevelDialog):
         start_rowcol = get_search_start(backwards)
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
-        # TODO: set range, not entire file? ...
+        # XXX: Lot of stuff needs doing ...
+        # TODO: search & tag the range, not the entire file
+        # NOTE: is this already being done because .count_clicked() is aware??
+        # TODO: enumerate when to un-tag and implement that. Right now the tags
+        #       persist unless a new search is executed.
+        #         1. [ ] when a new search is executed
+        #         2. [ ] when the find dialog is closed?
+        #         3. [ ] ...
+        # NOTE: look at what other implementations do, particularly text editors.
+        #       Do they keep the selections / highlights active after you click
+        #       into the text? Select something? Press Esc? Type to insert?
+        #       Delete anything? Copy? Paste?
+        # XXX: if "in selection" is in use, it will highlight as inactive_search
+        #      the match just prior to the current, and that behavior will roll along,
+        #      and it seems to have nothing to do with the selection?
+        #      it probably has to do with the range being from <here> to <next>?
+        #      anyway, it's terrible and probably instead we should tag all? Hm.
+        # NOTE: Or maybe this is yet another of those "only look at the active
+        #       viewport" situations? We needn't tag things that aren't showing?
+        # TODO: might need to refactor search_clicked() to not use count_clicked();
+        #       instead have them both call some other routine that returns the
+        #       results?
         # maintext().tag_remove(HighlightTag.SEARCH_ACTIVE, "1.0", tk.END)
         maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
         try:
