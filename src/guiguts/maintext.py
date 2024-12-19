@@ -735,6 +735,20 @@ class MainText(tk.Text):
             "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
         )
 
+        # On macOS, if you drag to select, and hit the edge of the text widget,
+        # it will stop there and not automatically scroll to select more (as is
+        # typical).  This seems to be Mac-specific, not affecting Windows or
+        # Linux.
+        if is_mac():
+            # Bind to three events (initial mouseclick, drag, and click
+            # release). While in this dragging state, watch events to detect
+            # mouse location and either scroll or stop depending on position. On
+            # button release, the mode is exited and callbacks stop firing.
+            self.bind("<Button-1>", self.on_button1_press)
+            self.bind("<B1-Motion>", self.on_button1_drag)
+            self.bind("<ButtonRelease-1>", self.on_button1_release)
+            self._select_drag_scrolling = False
+
         # Need to wait until maintext has been registered to set the font preference
         preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
 
@@ -3144,6 +3158,62 @@ class MainText(tk.Text):
                 self._highlight_configure_tag(tag, colors)
             if order_needs_update:
                 self.tag_lower(tag)
+
+    # Only used on macOS
+    def on_button1_press(self, event: tk.Event) -> None:
+        """When Button-1 is pressed, start auto-scroll event loop"""
+        self._select_drag_scrolling = True
+        self._start_auto_scroll(event)
+
+    # Only used on macOS
+    def on_button1_drag(self, event: tk.Event) -> None:
+        """While dragging a selection, fire the auto-scroll event loop"""
+        self._start_auto_scroll(event)
+
+    # Only used on macOS
+    def on_button1_release(
+        self, event: tk.Event  # pylint: disable=unused-argument
+    ) -> None:
+        """At the end of dragging a selection, cease auto-scroll event loop"""
+        self._select_drag_scrolling = False
+
+    # Only used on macOS
+    def _start_auto_scroll(self, event: tk.Event) -> None:
+        """Handle the auto-scroll event loop while a select-to-drag action is
+        currently in progress.
+        """
+        if not self._select_drag_scrolling:
+            return
+
+        # Convert screen coordinates to widget coordinates
+        widget_x, widget_y = self.winfo_pointerxy()
+        widget_x -= self.winfo_rootx()
+        widget_y -= self.winfo_rooty()
+
+        width, height = self.winfo_width(), self.winfo_height()
+
+        # Stop scrolling if the mouse pointer is within the text widget bounds
+        if 0 <= widget_x <= width and 0 <= widget_y <= height:
+            return
+
+        delay = 50
+
+        # Scroll in the appropriate direction (x or y).  If scrolling
+        # vertically, set the delay before the next loop a little longer.
+        if widget_y < 0:
+            self.yview_scroll(-1, "units")
+            delay = 150
+        elif widget_y > height:
+            self.yview_scroll(1, "units")
+            delay = 150
+        elif widget_x < 0:
+            self.xview_scroll(-1, "units")
+            delay = 100
+        elif widget_x > width:
+            self.xview_scroll(1, "units")
+            delay = 100
+
+        self.after(delay, lambda: self._start_auto_scroll(event))
 
 
 def img_from_page_mark(mark: str) -> str:
