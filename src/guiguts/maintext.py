@@ -737,6 +737,36 @@ class MainText(tk.Text):
             "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
         )
 
+        # Fix macOS text selection bug
+        #
+        # While dragging to select text, when the mouse cursor reaches the edge
+        # of the text view, it stops. Desired behavior is to continue selecting,
+        # auto-scrolling the view to reach more text. That's common behavior in
+        # most apps, and is the default behavior on Windows and Linux.
+
+        if is_mac():
+            # Watch mouse click and drag events to detect when user is selecting
+            # text via mouse cursor dragging. During drag-to-select, watch the
+            # cursor position to detect whether it has left the text widget, and
+            # if so, in which direction.
+            #
+            # - When Button-1 is pressed, activate the drag monitoring mode
+            # - When cursor is dragged, run callback to watch cursor position
+            # - If cursor leaves the text widget, start scrolling in the
+            #   direction it has moved beyond the edge
+            # - If cursor returns to within the text widget, stop scrolling
+            # - On release of Button-1, deactivate drag monitoring (which
+            #   stops running the monitoring callback)
+            self.bind("<Button-1>", self._autoscroll_start)
+            self.bind("<ButtonRelease-1>", self._autoscroll_stop)
+            self.bind("<B1-Motion>", self._autoscroll_main)
+            self._autoscroll_active = False
+
+            self.peer.bind("<Button-1>", self._autoscroll_start_peer)
+            self.peer.bind("<ButtonRelease-1>", self._autoscroll_stop_peer)
+            self.peer.bind("<B1-Motion>", self._autoscroll_peer)
+            self._autoscroll_peer_active = False
+
         # Need to wait until maintext has been registered to set the font preference
         preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
 
@@ -3146,6 +3176,94 @@ class MainText(tk.Text):
                 self._highlight_configure_tag(tag, colors)
             if order_needs_update:
                 self.tag_lower(tag)
+
+    def _autoscroll_start(
+        self, event: tk.Event  # pylint: disable=unused-argument
+    ) -> None:
+        """When Button-1 is pressed, turn mouse-drag monitoring on"""
+        self._autoscroll_active = True
+
+    def _autoscroll_stop(
+        self, event: tk.Event  # pylint: disable=unused-argument
+    ) -> None:
+        """When Button-1 is released, turn mouse-drag monitoring off"""
+        self._autoscroll_active = False
+
+    def _autoscroll_start_peer(
+        self, event: tk.Event  # pylint: disable=unused-argument
+    ) -> None:
+        """When Button-1 is pressed, turn mouse-drag monitoring on"""
+        self._autoscroll_peer_active = True
+
+    def _autoscroll_stop_peer(
+        self, event: tk.Event  # pylint: disable=unused-argument
+    ) -> None:
+        """When Button-1 is released, turn mouse-drag monitoring off"""
+        self._autoscroll_peer_active = False
+
+    def _autoscroll_main(self, event: tk.Event) -> None:
+        """Auto-scroll the main text view when dragging beyond widget border"""
+        self._autoscroll_callback(self, event)
+
+    def _autoscroll_peer(self, event: tk.Event) -> None:
+        """Auto-scroll the peer text view when dragging beyond widget border"""
+        self._autoscroll_callback(self.peer, event)
+
+    def _autoscroll_callback(self, textwidget: tk.Text, event: tk.Event) -> None:
+        """As long as mouse position monitoring is active, continue running
+        a callback every (n) ms to watch mouse cursor position, scrolling
+        the view as appropriate based on its current position.
+
+        Args:
+            textwidget: a Text widget to watch / scroll
+            event: a Tk event
+        """
+        callback = None
+
+        if textwidget == maintext():
+            if not self._autoscroll_active:
+                return
+            callback = self._autoscroll_main
+        if textwidget == maintext().peer:
+            if not self._autoscroll_peer_active:
+                return
+            callback = self._autoscroll_peer
+
+        # This should never happen (famous last words)
+        if not callback:
+            raise RuntimeError("textwidget is an impossible type!")
+
+        # Convert screen coordinates to widget coordinates. Just using the
+        # winfo_width, winfo_height data results in endless scrolling.
+        widget_x, widget_y = textwidget.winfo_pointerxy()
+        widget_x -= textwidget.winfo_rootx()
+        widget_y -= textwidget.winfo_rooty()
+
+        width, height = textwidget.winfo_width(), textwidget.winfo_height()
+
+        # Stop scrolling if the mouse pointer is within the text widget bounds
+        if 0 <= widget_x <= width and 0 <= widget_y <= height:
+            return
+
+        delay = 50
+
+        # Scroll in the appropriate direction (x or y).  If scrolling
+        # vertically, set the delay before the next loop a little longer.
+        # (Because that "feels right".)
+        if widget_y < 0:
+            textwidget.yview_scroll(-1, "units")
+            delay = 150
+        elif widget_y > height:
+            textwidget.yview_scroll(1, "units")
+            delay = 150
+        elif widget_x < 0:
+            textwidget.xview_scroll(-1, "units")
+            delay = 100
+        elif widget_x > width:
+            textwidget.xview_scroll(1, "units")
+            delay = 100
+
+        self.after(delay, lambda: callback(event))
 
 
 def img_from_page_mark(mark: str) -> str:
