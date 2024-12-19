@@ -71,7 +71,7 @@ class JeebiesChecker:
             process_command=self.process_jeebies,
         )
         frame = ttk.Frame(checker_dialog.header_frame)
-        frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
+        frame.grid(column=0, row=1, sticky="NSEW")
         ttk.Label(
             frame,
             text="Check Level:",

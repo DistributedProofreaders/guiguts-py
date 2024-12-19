@@ -378,7 +378,7 @@ def spell_check(
         use_pointer_pos=True,
     )
     frame = ttk.Frame(checker_dialog.header_frame)
-    frame.grid(column=0, row=1, columnspan=2, sticky="NSEW")
+    frame.grid(column=0, row=1, sticky="NSEW", pady=5)
     ttk.Label(
         frame,
         text="Threshold ≤ ",

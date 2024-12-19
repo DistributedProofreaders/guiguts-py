@@ -163,7 +163,7 @@ class SearchDialog(ToplevelDialog):
             text="Match case",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MATCH_CASE),
             takefocus=False,
-        ).grid(row=0, column=1, padx=2, columnspan=2, sticky="NSEW")
+        ).grid(row=0, column=1, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
             text="Regex",
