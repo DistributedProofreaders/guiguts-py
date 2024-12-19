@@ -10,7 +10,7 @@ from typing import Any, Tuple, Optional
 import regex as re
 
 from guiguts.checkers import CheckerDialog
-from guiguts.maintext import maintext, TclRegexCompileError, FindMatch
+from guiguts.maintext import maintext, TclRegexCompileError, FindMatch, HighlightTag
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey
 from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, sing_plur
 from guiguts.widgets import (
@@ -338,7 +338,35 @@ class SearchDialog(ToplevelDialog):
         start_rowcol = get_search_start(backwards)
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
+        # XXX: Lot of stuff needs doing ...
+        # TODO: search & tag the range, not the entire file
+        # NOTE: is this already being done because .count_clicked() is aware??
+        # TODO: enumerate when to un-tag and implement that. Right now the tags
+        #       persist unless a new search is executed.
+        #         1. [ ] when a new search is executed
+        #         2. [ ] when the find dialog is closed?
+        #         3. [ ] ...
+        # NOTE: look at what other implementations do, particularly text editors.
+        #       Do they keep the selections / highlights active after you click
+        #       into the text? Select something? Press Esc? Type to insert?
+        #       Delete anything? Copy? Paste?
+        # XXX: if "in selection" is in use, it will highlight as inactive_search
+        #      the match just prior to the current, and that behavior will roll along,
+        #      and it seems to have nothing to do with the selection?
+        #      it probably has to do with the range being from <here> to <next>?
+        #      anyway, it's terrible and probably instead we should tag all? Hm.
+        # NOTE: Or maybe this is yet another of those "only look at the active
+        #       viewport" situations? We needn't tag things that aren't showing?
+        # TODO: might need to refactor search_clicked() to not use count_clicked();
+        #       instead have them both call some other routine that returns the
+        #       results?
+        # maintext().tag_remove(HighlightTag.SEARCH_ACTIVE, "1.0", tk.END)
+        maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
         try:
+            matchez = self.count_clicked()
+            for matchz in matchez:
+                maintext().tag_add(HighlightTag.SEARCH_INACTIVE, matchz.rowcol.index(),
+                                   f"{matchz.rowcol.index()}+{matchz.count}c")
             _do_find_next(
                 search_string, backwards, IndexRange(start_rowcol, stop_rowcol)
             )
@@ -679,6 +707,7 @@ def _do_find_next(
         backwards: True to search backwards.
         start_point: Point to search from.
     """
+    # maintext().tag_remove(HighlightTag.SEARCH_ACTIVE, "1.0", tk.END)
     match = maintext().find_match_user(
         search_string,
         search_limits.start,
@@ -695,6 +724,7 @@ def _do_find_next(
         maintext().do_select(IndexRange(match.rowcol, rowcol_end))
         maintext().set_mark_position(MARK_FOUND_START, match.rowcol, gravity=tk.LEFT)
         maintext().set_mark_position(MARK_FOUND_END, rowcol_end, gravity=tk.RIGHT)
+        # maintext().tag_add(HighlightTag.SEARCH_ACTIVE, match.rowcol.index(), rowcol_end.index())
     else:
         sound_bell()
 

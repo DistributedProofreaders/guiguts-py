@@ -267,6 +267,8 @@ class HighlightTag(StrEnum):
     ALIGNCOL = auto()
     CURSOR_LINE = auto()
     COLUMN_RULER = auto()
+    # SEARCH_ACTIVE = auto()
+    SEARCH_INACTIVE = auto()
 
 
 class HighlightColors:
@@ -340,6 +342,36 @@ class HighlightColors:
     COLUMN_RULER = {
         "Light": {"bg": "#A6CDFF", "fg": "black"},
         "Dark": {"bg": "#324F78", "fg": "white"},
+    }
+    # SEARCH_ACTIVE = {
+    #     "Light": {"bg": "yellow", "fg": "black", "relief": "solid", "borderwidth": 1},
+    #     "Dark": {"bg": "red", "fg": "white"},
+    # }
+    # valid reliefs: flat, groove, raised, ridge, solid, sunken
+    #    if you use solid the border seems to be *always* black.
+    #    (so kind of useless with the dark theme.)
+    #    using other reliefs it can find better colors. but you need
+    #    borderwidth to be at least 2 or it's shown on 2 sides only,
+    #    for at least some reliefs.
+    #      - [ ] flat      -- no apparent border shown
+    #      - [ ] groove    -- light: border intersects left edge of char. dark: insersects even 1 pixel in!
+    #      - [ ] raised    -- less intersection issue but doesn't look great.
+    #      - [ ] ridge     -- similar intersection issue to groove
+    #      - [ ] solid     -- border always black. borderwidth=1 works.
+    #      - [ ] sunken    -- okay-ish; inverse 2 sided issue of others
+    # stipples: 'gray75', 'gray50', 'gray25', 'gray12'
+    #    https://tkdocs.com/shipman/bitmaps.html
+    SEARCH_INACTIVE = {
+        "Light": {
+            # "bg": "#ff0000", "fg": "#ffffff",
+            "bg": "#f0f0f0", "fg": "#904040",
+                  "relief": "ridge", "borderwidth": 2,
+                #   "bgstipple": "gray12",
+                  },
+        "Dark": {"bg": "#303030", "fg": "#d0a0a0",
+                 "relief": "ridge", "borderwidth": 2,
+                #  "bgstipple": "gray12",
+                 }
     }
 
 
@@ -2726,6 +2758,12 @@ class MainText(tk.Text):
             background=tag_colors[theme]["bg"],
             foreground=tag_colors[theme]["fg"],
         )
+        if "relief" in tag_colors[theme] and "borderwidth" in tag_colors[theme]:
+            self.tag_configure(tag_name, relief=tag_colors[theme]["relief"],
+                               borderwidth=tag_colors[theme]["borderwidth"])
+        # should this be elif? mutually exclusive?
+        # if "bgstipple" in tag_colors[theme]:
+        #     self.tag_configure(tag_name, bgstipple=tag_colors[theme]["bgstipple"])
 
     def highlight_selection(
         self,
@@ -3128,10 +3166,12 @@ class MainText(tk.Text):
         # ** THE ORDER MATTERS HERE **
         #
         for tag, colors in (
-            (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
             (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
-            # "sel" is for active selections - don't override the default color
+            # (HighlightTag.SEARCH_ACTIVE, HighlightColors.SEARCH_ACTIVE),
+            # "sel" is for active selections - don't override the default color?
             ("sel", None),
+            (HighlightTag.SEARCH_INACTIVE, HighlightColors.SEARCH_INACTIVE),
+            (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
             (HighlightTag.PAREN, HighlightColors.PAREN),
             (HighlightTag.CURLY_BRACKET, HighlightColors.CURLY_BRACKET),
             (HighlightTag.SQUARE_BRACKET, HighlightColors.SQUARE_BRACKET),
