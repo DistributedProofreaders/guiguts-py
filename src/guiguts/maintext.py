@@ -365,11 +365,11 @@ class HighlightColors:
         "Light": {
             # "bg": "#ff0000", "fg": "#ffffff",
             "bg": "#f0f0f0", "fg": "#904040",
-                #   "relief": "sunken", "borderwidth": 2,
+                  "relief": "ridge", "borderwidth": 2,
                 #   "bgstipple": "gray12",
                   },
         "Dark": {"bg": "#303030", "fg": "#d0a0a0",
-                #  "relief": "sunken", "borderwidth": 2,
+                 "relief": "ridge", "borderwidth": 2,
                 #  "bgstipple": "gray12",
                  }
     }
@@ -2762,8 +2762,8 @@ class MainText(tk.Text):
             self.tag_configure(tag_name, relief=tag_colors[theme]["relief"],
                                borderwidth=tag_colors[theme]["borderwidth"])
         # should this be elif? mutually exclusive?
-        if "bgstipple" in tag_colors[theme]:
-            self.tag_configure(tag_name, bgstipple=tag_colors[theme]["bgstipple"])
+        # if "bgstipple" in tag_colors[theme]:
+        #     self.tag_configure(tag_name, bgstipple=tag_colors[theme]["bgstipple"])
 
     def highlight_selection(
         self,
