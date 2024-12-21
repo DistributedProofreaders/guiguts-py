@@ -1745,11 +1745,18 @@ def convert_to_curly_quotes() -> None:
             continue
 
         # Apart from special cases, alternate open/close double quotes through each paragraph
-        # Ditto marks first (surrounded by double-space)
+        # Ditto marks first - surrounded by double-space. Also permit 0/1 space
+        # before ditto if at start of line, or 0/1 space after ditto if at end of line.
         line, count = re.subn('(?<=  )"(?=  )', DQUOTES[1], line)
         if count:
             edited = True
-        # Start of line must be open quotes
+        line, count = re.subn('(?<=^ ?)"(?=  )', DQUOTES[1], line)
+        if count:
+            edited = True
+        line, count = re.subn('(?<=  )"(?= ?$)', DQUOTES[1], line)
+        if count:
+            edited = True
+        # Start of line, must be open quotes
         line, count = re.subn('^"', DQUOTES[0], line)
         if count:
             edited = True
@@ -1900,22 +1907,25 @@ class CurlyQuotesDialog(CheckerDialog):
                 )
                 if dqtype == 1:
                     add_quote_entry("DOUBLE OPEN QUOTE UNEXPECTED: ")
-                elif context[2] == "\n":
+                elif len(context) > 2 and context[2] == "\n":
                     add_quote_entry("DOUBLE OPEN QUOTE AT END OF LINE: ")
-                elif context[2] == " ":
+                elif len(context) > 2 and context[2] == " ":
                     add_quote_entry("DOUBLE OPEN QUOTE FOLLOWED BY SPACE: ")
                 elif context[0].isalnum():
                     add_quote_entry("DOUBLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ")
                 dqtype = 1
                 last_open_double_idx = match.rowcol.index()
             elif match_text == DQUOTES[1]:  # Close double
-                # If surrounded by double-spaces or end of line, it's ditto mark, so OK
+                # If surrounded by double-spaces or beg/end of line (with optional single space), it's ditto mark, so OK
                 context = maintext().get(
                     f"{match.rowcol.index()}-2c", f"{match.rowcol.index()}+3c"
                 )
                 if (
-                    context == f"  {DQUOTES[1]}  "
-                    or context == f"  {DQUOTES[1]} \n"
+                    len(context) < 5
+                    or re.fullmatch(
+                        rf"([\n ] {DQUOTES[1]}  |  {DQUOTES[1]} \n)", context
+                    )
+                    or context[1:] == f"\n{DQUOTES[1]}  "
                     or context[:4] == f"  {DQUOTES[1]}\n"
                 ):
                     continue
@@ -1932,9 +1942,9 @@ class CurlyQuotesDialog(CheckerDialog):
                 context = maintext().get(
                     f"{match.rowcol.index()}-1c", f"{match.rowcol.index()}+2c"
                 )
-                if context[2] == "\n":
+                if len(context) > 2 and context[2] == "\n":
                     add_quote_entry("SINGLE OPEN QUOTE AT END OF LINE: ")
-                elif context[2] == " ":
+                elif len(context) > 2 and context[2] == " ":
                     add_quote_entry("SINGLE OPEN QUOTE FOLLOWED BY SPACE: ")
                 elif context[0].isalnum():
                     add_quote_entry("SINGLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ")
