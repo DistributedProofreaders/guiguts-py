@@ -2323,7 +2323,7 @@ class MainText(tk.Text):
 
                     # Find matching close markup within section being wrapped
                     if close_index := self.search(
-                        rf"^{re.escape(block_type)}/\s*$",
+                        rf"^{PAGEMARK_PIN}*{re.escape(block_type)}/\s*$",
                         line_start,
                         stopindex=WRAP_END_MARK,
                         nocase=True,
@@ -2560,6 +2560,10 @@ class MainText(tk.Text):
         while self.compare(line_start, "<", INDEX_END_MARK):
             line_end = self.index(f"{line_start} lineend")
             line = self.get(line_start, line_end).rstrip()
+            # No need to wrap blank lines - just move on to the next l
+            if line == "":
+                line_start = self.index(f"{line_start}+1l")
+                continue
             # Don't include pagemark pins in calculations, since removed after wrapping
             line_no_pin = line.replace(PAGEMARK_PIN, "")
             match = re.match(r"( +)", line_no_pin)

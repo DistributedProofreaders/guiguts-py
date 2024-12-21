@@ -624,6 +624,10 @@ class TextWrapper:
         # Executable section of enclosing function 'fill'.
         ####
 
+        # Empty paragraphs don't need wrapping
+        if paragraph == "":
+            return ""
+
         # Split the passed in paragraph into lines and add them
         # to the global list 'from_lines'.
         paragraph_to_lines(paragraph)
