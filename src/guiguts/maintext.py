@@ -415,19 +415,6 @@ class MainText(tk.Text):
         self.aligncol = -1
         self.aligncol_active = tk.BooleanVar()
 
-        # Column selection uses Alt key on Windows/Linux, Option key on macOS
-        # Key Release is reported as Alt_L on all platforms
-        modifier = "Option" if is_mac() else "Alt"
-        self.bind_event(f"<{modifier}-ButtonPress-1>", self.column_select_click)
-        self.bind_event(f"<{modifier}-B1-Motion>", self.column_select_motion)
-        self.bind_event(f"<{modifier}-ButtonRelease-1>", self.column_select_release)
-        self.bind_event("<KeyRelease-Alt_L>", lambda _event: self.column_select_stop())
-        # Make use of built-in Shift click functionality to extend selections,
-        # but adapt for column select with Option/Alt key
-        self.bind_event(f"<Shift-{modifier}-ButtonPress-1>", self.column_select_release)
-        self.bind_event(f"<Shift-{modifier}-ButtonRelease-1>", lambda _event: "break")
-        self.column_selecting = False
-
         # Create Line Numbers widget
         self.linenumbers = TextLineNumbers(self.frame, self)
         self.linenumbers.grid(column=0, row=1, sticky="NSEW")
@@ -569,6 +556,38 @@ class MainText(tk.Text):
                 self.focus()
 
         self.bind_event("<Tab>", switch_text_peer, bind_peer=True)
+
+        # Column selection uses Alt key on Windows/Linux, Option key on macOS
+        # Key Release is reported as Alt_L on all platforms
+        modifier = "Option" if is_mac() else "Alt"
+        self.bind_event(
+            f"<{modifier}-ButtonPress-1>", self.column_select_click, bind_peer=True
+        )
+        self.bind_event(
+            f"<{modifier}-B1-Motion>", self.column_select_motion, bind_peer=True
+        )
+        self.bind_event(
+            f"<{modifier}-ButtonRelease-1>", self.column_select_release, bind_peer=True
+        )
+        self.bind_event(
+            "<KeyRelease-Alt_L>",
+            lambda _event: self.column_select_stop(),
+            bind_peer=True,
+        )
+        # Make use of built-in Shift click functionality to extend selections,
+        # but adapt for column select with Option/Alt key
+        self.bind_event(
+            f"<Shift-{modifier}-ButtonPress-1>",
+            self.column_select_release,
+            bind_peer=True,
+        )
+        self.bind_event(
+            f"<Shift-{modifier}-ButtonRelease-1>",
+            lambda _event: "break",
+            bind_peer=True,
+        )
+        self.column_selecting = False
+
         # Override default left/right/up/down arrow key behavior if there is a selection
         # Above behavior would affect Shift-Left/Right/Up/Down, so also bind those to
         # null functions and allow default class behavior to happen
@@ -1197,7 +1216,7 @@ class MainText(tk.Text):
         for line in range(min_row, max_row + 1):
             beg = IndexRowCol(line, min_col).index()
             end = IndexRowCol(line, max_col).index()
-            self.tag_add("sel", beg, end)
+            self.focus_widget().tag_add("sel", beg, end)
 
     def clear_selection(self) -> None:
         """Clear any current text selection."""
@@ -1483,6 +1502,11 @@ class MainText(tk.Text):
         Args
             event: Event containing mouse coordinates.
         """
+        # Starting a column selection needs to manually set focus on the main/peer
+        # Force an update so the focus is actually set before it's queried during motion
+        event.widget.focus()
+        event.widget.update()
+        self.focus_widget().config(cursor="tcross")
         self.column_select_start(self.rowcol(f"@{event.x},{event.y}"))
 
     def column_select_motion(self, event: tk.Event) -> None:
@@ -1507,7 +1531,7 @@ class MainText(tk.Text):
         maxlen = -1
         y_maxlen = -1
         for row in range(minrow, maxrow + 1):
-            geometry = self.bbox(f"{row}.0")
+            geometry = self.focus_widget().bbox(f"{row}.{cur_rowcol.col}")
             if geometry is None:
                 continue
             line_len = len(self.get(f"{row}.0", f"{row}.0 lineend"))
@@ -1545,7 +1569,7 @@ class MainText(tk.Text):
         """
         self.column_select_motion(event)
         self.column_select_stop()
-        self.mark_set(tk.INSERT, f"@{event.x},{event.y}")
+        self.focus_widget().mark_set(tk.INSERT, f"@{event.x},{event.y}")
 
     def column_select_start(self, anchor: IndexRowCol) -> None:
         """Begin column selection.
@@ -1556,15 +1580,14 @@ class MainText(tk.Text):
         """
         self.mark_set(TK_ANCHOR_MARK, anchor.index())
         self.column_selecting = True
-        self.config(cursor="tcross")
 
     def column_select_stop(self) -> None:
         """Stop column selection."""
         self.column_selecting = False
-        self.config(cursor="")
+        self.focus_widget().config(cursor="")
 
     def rowcol(self, index: str) -> IndexRowCol:
-        """Return IndexRowCol corresponding to given index in maintext.
+        """Return IndexRowCol corresponding to given index in maintext/peer.
 
         Args:
             index: Index to position in maintext.
@@ -1572,7 +1595,7 @@ class MainText(tk.Text):
         Returns:
             IndexRowCol representing the position.
         """
-        return IndexRowCol(self.index(index))
+        return IndexRowCol(self.focus_widget().index(index))
 
     def start(self) -> IndexRowCol:
         """Return IndexRowCol for start of text in widget, i.e. "1.0"."""
