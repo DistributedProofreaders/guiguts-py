@@ -1531,7 +1531,7 @@ class MainText(tk.Text):
         maxlen = -1
         y_maxlen = -1
         for row in range(minrow, maxrow + 1):
-            geometry = self.bbox(f"{row}.{cur_rowcol.col}")
+            geometry = self.focus_widget().bbox(f"{row}.{cur_rowcol.col}")
             if geometry is None:
                 continue
             line_len = len(self.get(f"{row}.0", f"{row}.0 lineend"))
