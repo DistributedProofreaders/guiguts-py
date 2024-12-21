@@ -230,10 +230,21 @@ class WordFrequencyDialog(ToplevelDialog):
             takefocus=False,
         )
         self.suspects_btn.grid(row=0, column=0, sticky="NSW", padx=5)
+
+        def copy_errors() -> None:
+            """Copy text messages to clipboard."""
+            self.clipboard_clear()
+            self.clipboard_append(self.text.get("1.0", tk.END))
+
+        copy_button = ttk.Button(
+            options_frame, text="Copy Results", command=copy_errors
+        )
+        copy_button.grid(row=0, column=1, sticky="NSE", padx=(0, 20))
+
         ttk.Label(
             options_frame,
             text="Sort:",
-        ).grid(row=0, column=1, sticky="NSE", padx=5)
+        ).grid(row=0, column=2, sticky="NSE", padx=5)
         sort_type = PersistentString(PrefKey.WFDIALOG_SORT_TYPE)
         ttk.Radiobutton(
             options_frame,
@@ -242,7 +253,7 @@ class WordFrequencyDialog(ToplevelDialog):
             variable=sort_type,
             value=WFSortType.ALPHABETIC,
             takefocus=False,
-        ).grid(row=0, column=2, sticky="NSE", padx=2)
+        ).grid(row=0, column=3, sticky="NSE", padx=2)
         ttk.Radiobutton(
             options_frame,
             text="Freq",
@@ -250,7 +261,7 @@ class WordFrequencyDialog(ToplevelDialog):
             variable=sort_type,
             value=WFSortType.FREQUENCY,
             takefocus=False,
-        ).grid(row=0, column=3, sticky="NSE", padx=2)
+        ).grid(row=0, column=4, sticky="NSE", padx=2)
         ttk.Radiobutton(
             options_frame,
             text="Len",
@@ -258,7 +269,7 @@ class WordFrequencyDialog(ToplevelDialog):
             variable=sort_type,
             value=WFSortType.LENGTH,
             takefocus=False,
-        ).grid(row=0, column=4, sticky="NSE", padx=(2, 5))
+        ).grid(row=0, column=5, sticky="NSE", padx=(2, 5))
 
         # Display type radio buttons
         display_frame = ttk.Frame(
