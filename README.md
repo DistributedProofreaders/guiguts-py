@@ -238,11 +238,30 @@ Guiguts 2 also works with version 3.12 if that is more convenient
 
 ### Windows
 
-1. Install Python 3.11 (or 3.12) from [Python.org](https://www.python.org/downloads/windows/)
+1. Install Python 3.11 or 3.12 from [Python.org](https://www.python.org/downloads/windows/)
 if you haven't already done that.
 2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
 previous version of GG2).
-3. Type `guiguts` to run GG2
+3. Type `guiguts` to run GG2.
+
+### macOS
+
+1. Install python 3.11 or 3.12 and python-tk using Homebrew if you don't already have it.
+For example:
+```bash
+brew install python@3.11 python-tk@3.11
+```
+2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
+previous version of GG2).
+3. Type `guiguts` to run GG2.
+
+### Linux
+
+1. Ensure you have Python 3.11 or 3.12 installed. See Linux development instructions above
+if necessary.
+2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
+previous version of GG2).
+3. Type `guiguts` to run GG2.
 
 ### Chromebook (after enabling Linux)
 
