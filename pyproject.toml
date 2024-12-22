@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "guiguts"
-version = "2.0.0-alpha.11"
+version = "2.0.0-alpha.12"
 description = "Guiguts version 2, Python/tkinter version"
 authors = ["Nigel <windymilla@users.noreply.github.com>"]
 readme = "README.md"
@@ -12,7 +12,7 @@ Pillow = "^10.1"
 pywin32 = {version = "^306", platform = "win32"}
 roman = "^4.1"
 regex = "^2024.5"
-levenshtein = "^0.25.1"
+levenshtein = "^0.26.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4"
@@ -54,6 +54,7 @@ disable = [
   "too-many-instance-attributes",
   "too-many-locals",
   "too-many-arguments",
+  "too-many-positional-arguments",
   "too-many-return-statements",
   "too-many-lines",
   "too-many-branches",
