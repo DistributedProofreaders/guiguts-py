@@ -2,7 +2,7 @@
 
 import tkinter as tk
 from tkinter import simpledialog, ttk
-from typing import Optional
+from typing import Optional, Any
 
 import roman  # type: ignore[import-untyped]
 
@@ -285,7 +285,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
                 number_index = (
                     0 if number_index == len(NUMBERS) - 1 else number_index + 1
                 )
-            new_value = NUMBERS[number_index]
+            new_value: int | Any = NUMBERS[number_index]
             if new_value == NUMBER_PAGENUM:
                 pagenum = simpledialog.askinteger(
                     "Set Number", "Enter page number", parent=self

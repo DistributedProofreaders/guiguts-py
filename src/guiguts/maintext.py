@@ -351,8 +351,6 @@ class TextPeer(tk.Text):
     https://stackoverflow.com/questions/58286794 - see top answer
     """
 
-    count = 0
-
     def __init__(  # pylint: disable=super-init-not-called
         self, main_text: "MainText"
     ) -> None:
@@ -3101,8 +3099,8 @@ class MainText(tk.Text):
         (top_index, bot_index) = self.get_screen_window_coordinates(viewport)
 
         col = self.aligncol
-        row = int(top_index.split(".")[0])
-        end_row = int(bot_index.split(".")[0])
+        row = IndexRowCol(top_index).row
+        end_row = IndexRowCol(bot_index).row
 
         while row <= end_row:
             # find length of row; don't highlight if row is too short to contain col
