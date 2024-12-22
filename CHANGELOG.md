@@ -1,6 +1,22 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.12
+
+- There are no additional features - the primary reason for this release is
+  to support macOS installation via `pip`
+
+### Bug Fixes
+
+- MacOS installation via `pip` failed due to out-of-date Levenshtein module
+- Column selection failed in the lower of the split view windows
+- Blank lines in indexes caused an error when rewrapped
+- Dragging the cursor outside the window when scrolling failed on Macs
+- The lower split view window colors didn't always match the theme
+- Fractions with decimal points were converted wrongly
+
+
+
 ## Version 2.0.0-alpha.11
 
 - Footnote Fixup dialog can now be used to fixup the majority of footnote
