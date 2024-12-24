@@ -758,7 +758,7 @@ class File:
         Returns:
             True if `.bn` commands were present.
         """
-        regex = r"^ *\.bn *(.+?)\.png"
+        regex = r"^\.bn +(.+?)\.png"
         flag_matches = maintext().find_matches(
             regex,
             IndexRange(maintext().start(), maintext().end()),
