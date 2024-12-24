@@ -136,6 +136,20 @@ class SearchDialog(ToplevelDialog):
             "<Shift-Return>", lambda *args: self.search_clicked(opposite_dir=True)
         )
 
+        # First/Last button - find first/last occurrence in file
+        first_button = ttk.Button(
+            self.top_frame,
+            text="First/Last",
+            takefocus=False,
+            command=lambda *args: self.search_clicked(first_last=True),
+        )
+        first_button.grid(row=2, column=2, padx=PADX, pady=PADY, sticky="NSEW")
+        mouse_bind(
+            first_button,
+            "Shift+1",
+            lambda *args: self.search_clicked(first_last=True, opposite_dir=True),
+        )
+
         # Count & Find All
         self.count_btn = ttk.Button(
             self.top_frame,
@@ -320,11 +334,14 @@ class SearchDialog(ToplevelDialog):
         self.search_box.icursor(tk.END)
         self.search_box.focus()
 
-    def search_clicked(self, opposite_dir: bool = False) -> str:
+    def search_clicked(
+        self, opposite_dir: bool = False, first_last: bool = False
+    ) -> str:
         """Search for the string in the search box.
 
         Args:
             opposite_dir: True to search in opposite direction to reverse flag setting
+            first_last: True to begin search at start/end of file
         Returns:
             "break" to avoid calling other callbacks
         """
@@ -335,7 +352,7 @@ class SearchDialog(ToplevelDialog):
 
         # "Reverse flag XOR Shift-key" searches backwards
         backwards = preferences.get(PrefKey.SEARCHDIALOG_REVERSE) ^ opposite_dir
-        start_rowcol = get_search_start(backwards)
+        start_rowcol = get_search_start(backwards, first_last=first_last)
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
         try:
@@ -699,10 +716,10 @@ def _do_find_next(
         sound_bell()
 
 
-def get_search_start(backwards: bool) -> IndexRowCol:
+def get_search_start(backwards: bool, first_last: bool = False) -> IndexRowCol:
     """Find point to start searching from.
 
-    Start from current insert point unless the following are true:
+    Unless "first/last" is forced, start from current insert point unless following are true:
     We are searching forward;
     Current insert point is at start of previously found match;
     Start of previous match is still selected (or it was a zero-length match)
@@ -713,7 +730,11 @@ def get_search_start(backwards: bool) -> IndexRowCol:
 
     Args:
         backwards: True if searching backwards.
+        first_last: True to force searching from beginning/end.
     """
+    if first_last:
+        return maintext().end() if backwards else maintext().start()
+
     start_rowcol = maintext().get_insert_index()
     start_index = start_rowcol.index()
     try:
