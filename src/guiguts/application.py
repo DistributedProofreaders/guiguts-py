@@ -311,6 +311,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Display the manual."""
         webbrowser.open("https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual")
 
+    def show_help_regex(self) -> None:
+        """Display the regex cheat sheet."""
+        webbrowser.open(
+            "https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#Regular_Expression_Quick_Reference"
+        )
+
     def highlight_quotbrac_callback(self, value: bool) -> None:
         """Callback when highlight_quotbrac preference is changed."""
         if value:
@@ -787,6 +793,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_help = Menu(menubar(), "~Help")
         menu_help.add_button("Guiguts ~Manual", self.show_help_manual)
         menu_help.add_button("About ~Guiguts", self.help_about)
+        menu_help.add_button("~Regex Quick Reference", self.show_help_regex)
         menu_help.add_button(
             "List of ~Compose Sequences", ComposeHelpDialog.show_dialog
         )
