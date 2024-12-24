@@ -247,7 +247,9 @@ class File:
         self.languages = preferences.get(PrefKey.DEFAULT_LANGUAGES)
         bin_matches_file = self.load_bin(filename)
         self.mark_page_boundaries()
-        flags_found = self.update_page_marks_from_flags()
+        flags_found = (
+            self.update_page_marks_from_flags() or self.update_page_marks_from_ppgen()
+        )
         if not bin_matches_file:
             # Inform user that bin doesn't match
             # If flags are present, user has used page marker flags to store the
@@ -744,6 +746,46 @@ class File:
                 match.rowcol.index(),
                 match.rowcol.index() + f"+{match.count}c",
             )
+        maintext().set_modified(True)
+        return True
+
+    def update_page_marks_from_ppgen(self) -> bool:
+        """If `.bn` ppgen commands in file, replace all existing page marks.
+
+        Command is of the form: `.bn a001.png // optional comment`
+        We only want `a001`
+
+        Returns:
+            True if `.bn` commands were present.
+        """
+        regex = r"^\.bn +(.+?)\.png"
+        flag_matches = maintext().find_matches(
+            regex,
+            IndexRange(maintext().start(), maintext().end()),
+            nocase=False,
+            regexp=True,
+        )
+        if not flag_matches:
+            return False
+
+        # Remove existing page marks, if any
+        self.remove_page_marks()
+        self.page_details = PageDetails()
+        # First page is Arabic, page 1
+        style = STYLE_ARABIC
+        number = "1"
+        for match in flag_matches:
+            bn_text = maintext().get_match_text(match)
+            extract = re.fullmatch(regex, bn_text)
+            # Will always match because same regex as above
+            assert extract is not None
+            img = extract[1]
+            # Set mark and store page info
+            maintext().set_mark_position(page_mark_from_img(img), match.rowcol)
+            self.page_details[img] = PageDetail(match.rowcol.index(), style, number)
+            # Subsequent pages are same style as first, page numbers increment
+            style = STYLE_DITTO
+            number = NUMBER_INCREMENT
         maintext().set_modified(True)
         return True
 
