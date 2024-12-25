@@ -140,15 +140,15 @@ class CheckerDialog(ToplevelDialog):
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
         self.header_frame = ttk.Frame(self.top_frame, padding=2)
-        self.header_frame.grid(column=0, row=0, sticky="NSEW")
+        self.header_frame.grid(row=0, column=0, sticky="NSEW")
 
         self.header_frame.columnconfigure(0, weight=1)
         left_frame = ttk.Frame(self.header_frame)
-        left_frame.grid(column=0, row=0, sticky="NSEW")
+        left_frame.grid(row=0, column=0, sticky="NSEW")
         left_frame.columnconfigure(0, weight=0)
         left_frame.columnconfigure(1, weight=1)
         self.count_label = ttk.Label(left_frame, text="No results")
-        self.count_label.grid(column=0, row=0, sticky="NSW")
+        self.count_label.grid(row=0, column=0, sticky="NSW")
         self.suspects_only_btn: Optional[ttk.Checkbutton]
         if show_suspects_only:
             self.suspects_only_btn = ttk.Checkbutton(
@@ -158,13 +158,22 @@ class CheckerDialog(ToplevelDialog):
                 command=self.display_entries,
                 takefocus=False,
             )
-            self.suspects_only_btn.grid(column=1, row=0, sticky="NSW", padx=(10, 0))
+            self.suspects_only_btn.grid(row=0, column=1, sticky="NSW", padx=(10, 0))
         else:
             self.suspects_only_btn = None
+
+        def copy_errors() -> None:
+            """Copy text messages to clipboard."""
+            self.clipboard_clear()
+            self.clipboard_append(self.text.get("1.0", tk.END))
+
+        copy_button = ttk.Button(left_frame, text="Copy Results", command=copy_errors)
+        copy_button.grid(row=0, column=2, sticky="NSE", padx=(0, 20))
+
         ttk.Label(
             left_frame,
             text="Sort:",
-        ).grid(row=0, column=2, sticky="NSE", padx=5)
+        ).grid(row=0, column=3, sticky="NSE", padx=5)
         sort_type = PersistentString(PrefKey.CHECKERDIALOG_SORT_TYPE)
         ttk.Radiobutton(
             left_frame,
@@ -173,7 +182,7 @@ class CheckerDialog(ToplevelDialog):
             variable=sort_type,
             value=CheckerSortType.ROWCOL,
             takefocus=False,
-        ).grid(row=0, column=3, sticky="NSE", padx=2)
+        ).grid(row=0, column=4, sticky="NSE", padx=2)
         ttk.Radiobutton(
             left_frame,
             text="Alpha/Type",
@@ -181,10 +190,10 @@ class CheckerDialog(ToplevelDialog):
             variable=sort_type,
             value=CheckerSortType.ALPHABETIC,
             takefocus=False,
-        ).grid(row=0, column=4, sticky="NSE", padx=2)
+        ).grid(row=0, column=5, sticky="NSE", padx=2)
 
         self.rerun_button = ttk.Button(left_frame, text="Re-run", command=rerun_command)
-        self.rerun_button.grid(row=0, column=5, sticky="NSE", padx=(20, 0))
+        self.rerun_button.grid(row=0, column=6, sticky="NSE", padx=(20, 0))
 
         self.top_frame.rowconfigure(1, weight=1)
         self.text = ScrolledReadOnlyText(
@@ -193,7 +202,7 @@ class CheckerDialog(ToplevelDialog):
             wrap=tk.NONE,
             font=maintext().font,
         )
-        self.text.grid(column=0, row=1, sticky="NSEW")
+        self.text.grid(row=1, column=0, sticky="NSEW")
 
         # 3 binary choices:
         #     remove/not_remove (just select) - controlled by button 3 or button 1
@@ -904,6 +913,5 @@ class CheckerDialog(ToplevelDialog):
 
     @classmethod
     def get_mark_prefix(cls) -> str:
-        """pass"""
-        # Reduce length of common part of mark names
+        """Use reduced dialog name for common part of mark names"""
         return cls.__name__.removesuffix("Dialog")
