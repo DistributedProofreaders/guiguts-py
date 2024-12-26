@@ -2293,7 +2293,7 @@ class MainText(tk.Text):
 
             bq_depth_change = 0
             # Split for non-blank/blank lines
-            if re.search(r"\S", line):
+            if re.search(rf"[^\s{PAGEMARK_PIN}]", line):
                 paragraph_complete = False
                 # Check for various block markup types
                 trimmed = line.lower().rstrip(" \n").replace(PAGEMARK_PIN, "")
