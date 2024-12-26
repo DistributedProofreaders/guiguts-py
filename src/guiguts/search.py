@@ -136,6 +136,15 @@ class SearchDialog(ToplevelDialog):
             "<Shift-Return>", lambda *args: self.search_clicked(opposite_dir=True)
         )
 
+        # First/Last button - find first/last occurrence in file
+        first_button = ttk.Button(
+            self.top_frame,
+            text="Last" if preferences.get(PrefKey.SEARCHDIALOG_REVERSE) else "First",
+            takefocus=False,
+            command=lambda *args: self.search_clicked(first_last=True),
+        )
+        first_button.grid(row=2, column=2, padx=PADX, pady=PADY, sticky="NSEW")
+
         # Count & Find All
         self.count_btn = ttk.Button(
             self.top_frame,
@@ -151,11 +160,18 @@ class SearchDialog(ToplevelDialog):
             command=self.findall_clicked,
         ).grid(row=2, column=4, padx=PADX, pady=PADY, sticky="NSEW")
 
+        def set_first_last() -> None:
+            """Set text in First/Last button depending on direction."""
+            first_button["text"] = (
+                "Last" if preferences.get(PrefKey.SEARCHDIALOG_REVERSE) else "First",
+            )
+
         # Options
         ttk.Checkbutton(
             options_frame,
             text="Reverse",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REVERSE),
+            command=set_first_last,
             takefocus=False,
         ).grid(row=0, column=0, padx=2, sticky="NSEW")
         ttk.Checkbutton(
@@ -320,11 +336,14 @@ class SearchDialog(ToplevelDialog):
         self.search_box.icursor(tk.END)
         self.search_box.focus()
 
-    def search_clicked(self, opposite_dir: bool = False) -> str:
+    def search_clicked(
+        self, opposite_dir: bool = False, first_last: bool = False
+    ) -> str:
         """Search for the string in the search box.
 
         Args:
             opposite_dir: True to search in opposite direction to reverse flag setting
+            first_last: True to begin search at start/end of file
         Returns:
             "break" to avoid calling other callbacks
         """
@@ -335,7 +354,14 @@ class SearchDialog(ToplevelDialog):
 
         # "Reverse flag XOR Shift-key" searches backwards
         backwards = preferences.get(PrefKey.SEARCHDIALOG_REVERSE) ^ opposite_dir
-        start_rowcol = get_search_start(backwards)
+        if first_last:
+            start_rowcol = (
+                maintext().end()
+                if preferences.get(PrefKey.SEARCHDIALOG_REVERSE)
+                else maintext().start()
+            )
+        else:
+            start_rowcol = get_search_start(backwards)
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
         try:
@@ -702,7 +728,7 @@ def _do_find_next(
 def get_search_start(backwards: bool) -> IndexRowCol:
     """Find point to start searching from.
 
-    Start from current insert point unless the following are true:
+    Start from current insert point unless following are true:
     We are searching forward;
     Current insert point is at start of previously found match;
     Start of previous match is still selected (or it was a zero-length match)
