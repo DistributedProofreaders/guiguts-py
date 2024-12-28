@@ -122,14 +122,22 @@ class TextColumnNumbers(tk.Text):
         """Build a ruler string for re-use later."""
         ruler_stub = ""
         for n in range(9):
-            ruler_stub += f"····▾····{n+1}"
+            ruler_stub += f"····▾····{n + 1}"
         ruler = ""
         for n in range(5):
-            ruler += f"{ruler_stub}····▾···{(n+1)}0"
+            ruler += f"{ruler_stub}····▾···{(n + 1)}0"
         return ruler
 
     def redraw(self) -> None:
         """Redraw the column ruler."""
+        if not preferences.get(PrefKey.COLUMN_NUMBERS):
+            return
+
+        if self.textwidget is maintext().peer and not preferences.get(
+            PrefKey.SPLIT_TEXT_WINDOW
+        ):
+            return
+
         # respond to font size changing
         self.configure(height=1)
         self.tag_remove(HighlightTag.COLUMN_RULER, "1.0", tk.END)
@@ -152,7 +160,7 @@ class TextColumnNumbers(tk.Text):
         # Highlight the current column (unless we're at column 0)
         cur_col = IndexRowCol(self.textwidget.index(tk.INSERT)).col
         if cur_col:
-            self.tag_add(HighlightTag.COLUMN_RULER, f"1.{cur_col-1}")
+            self.tag_add(HighlightTag.COLUMN_RULER, f"1.{cur_col - 1}")
 
     def longest_line(self) -> int:
         """Look at lines in the current text widget's viewport and
@@ -3151,7 +3159,7 @@ class MainText(tk.Text):
         # Don't re-highlight if there's currently a selection
         if not self.selected_ranges():
             row = self.get_insert_index().row
-            self.tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row+1}.0")
+            self.tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row + 1}.0")
 
     def highlight_configure_tags(self, first_run: bool = False) -> None:
         """Configure highlight tags with colors based on the current theme.
