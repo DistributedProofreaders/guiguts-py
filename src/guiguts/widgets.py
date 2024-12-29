@@ -242,11 +242,7 @@ class ToplevelDialog(tk.Toplevel):
         Returns:
             String containing geometry, or empty string if none stored.
         """
-        config_dict = preferences.get(PrefKey.DIALOG_GEOMETRY)
-        try:
-            return config_dict[self.__class__.__name__]
-        except KeyError:
-            return ""
+        return self.get_dialog_pref(PrefKey.DIALOG_GEOMETRY)
 
     def allow_geometry_save(self) -> None:
         """Enable the saving of geometry changes via Configure events.
@@ -274,11 +270,40 @@ class ToplevelDialog(tk.Toplevel):
         dialog creation and resizing. Only the first will actually
         do a save, because the flag will only be true on the first call."""
         if self.save_config:
-            config_dict = preferences.get(PrefKey.DIALOG_GEOMETRY)
-            key = self.__class__.__name__
-            config_dict[key] = self.geometry()
-            preferences.set(PrefKey.DIALOG_GEOMETRY, config_dict)
+            self.save_dialog_pref(PrefKey.DIALOG_GEOMETRY, self.geometry())
             self.save_config = False
+
+    def save_dialog_pref(self, key: PrefKey, value: Any) -> None:
+        """Save a preference that is unique to the dialog class.
+
+        Dictionary indexed by classname is saved in the prefs file,
+        so a preference can be saved per dialog.
+
+        Args:
+            key: Preference to be saved.
+            value: New value for preference.
+        """
+        config_dict = preferences.get(key)
+        config_dict[self.__class__.__name__] = value
+        preferences.set(key, config_dict)
+
+    def get_dialog_pref(self, key: PrefKey) -> Any:
+        """Get a preference that is unique to the dialog class.
+
+        Dictionary in prefs file is indexed by classname,
+        so a preference can be obtained per dialog.
+
+        Args:
+            key: Preference to be fetched.
+
+        Returns:
+            Preference value.
+        """
+        config_dict = preferences.get(key)
+        try:
+            return config_dict[self.__class__.__name__]
+        except KeyError:
+            return None
 
 
 class OkApplyCancelDialog(ToplevelDialog):

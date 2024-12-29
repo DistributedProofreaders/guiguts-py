@@ -9,12 +9,7 @@ import regex as re
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.preferences import (
-    PersistentString,
-    PersistentBoolean,
-    PrefKey,
-    preferences,
-)
+from guiguts.preferences import PrefKey
 from guiguts.root import root
 from guiguts.utilities import (
     IndexRowCol,
@@ -151,11 +146,22 @@ class CheckerDialog(ToplevelDialog):
         self.count_label.grid(row=0, column=0, sticky="NSW")
         self.suspects_only_btn: Optional[ttk.Checkbutton]
         if show_suspects_only:
+            # Can't use a PersistentBoolean directly, since we save this value for each checker dialog
+            suspects_only_var = tk.BooleanVar(
+                self, self.get_dialog_pref(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT)
+            )
+
+            def suspects_only_changed() -> None:
+                self.save_dialog_pref(
+                    PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT, suspects_only_var.get()
+                )
+                self.display_entries()
+
             self.suspects_only_btn = ttk.Checkbutton(
                 left_frame,
                 text="Suspects Only",
-                variable=PersistentBoolean(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY),
-                command=self.display_entries,
+                variable=suspects_only_var,
+                command=suspects_only_changed,
                 takefocus=False,
             )
             self.suspects_only_btn.grid(row=0, column=1, sticky="NSW", padx=(10, 0))
@@ -174,11 +180,22 @@ class CheckerDialog(ToplevelDialog):
             left_frame,
             text="Sort:",
         ).grid(row=0, column=3, sticky="NSE", padx=5)
-        sort_type = PersistentString(PrefKey.CHECKERDIALOG_SORT_TYPE)
+
+        # Can't use a PersistentString directly, since we save this value for each checker dialog
+        sort_type = tk.StringVar(
+            self,
+            self.get_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT)
+            or CheckerSortType.ROWCOL,
+        )
+
+        def sort_type_changed() -> None:
+            self.save_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT, sort_type.get())
+            self.display_entries()
+
         ttk.Radiobutton(
             left_frame,
             text="Line & Col",
-            command=self.display_entries,
+            command=sort_type_changed,
             variable=sort_type,
             value=CheckerSortType.ROWCOL,
             takefocus=False,
@@ -186,7 +203,7 @@ class CheckerDialog(ToplevelDialog):
         ttk.Radiobutton(
             left_frame,
             text="Alpha/Type",
-            command=self.display_entries,
+            command=sort_type_changed,
             variable=sort_type,
             value=CheckerSortType.ALPHABETIC,
             takefocus=False,
@@ -486,7 +503,7 @@ class CheckerDialog(ToplevelDialog):
         Busy.busy()
         sort_key: Callable[[CheckerEntry], tuple]
         if (
-            preferences.get(PrefKey.CHECKERDIALOG_SORT_TYPE)
+            self.get_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT)
             == CheckerSortType.ALPHABETIC
         ):
             sort_key = self.alpha_key
@@ -589,8 +606,8 @@ class CheckerDialog(ToplevelDialog):
 
         Returns: True if there's a Suspects Only button that is switched on.
         """
-        return self.suspects_only_btn is not None and preferences.get(
-            PrefKey.CHECKERDIALOG_SUSPECTS_ONLY
+        return self.suspects_only_btn is not None and self.get_dialog_pref(
+            PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT
         )
 
     def skip_suspect_entry(self, entry: CheckerEntry) -> bool:
