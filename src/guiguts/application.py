@@ -16,6 +16,7 @@ from guiguts.checkers import CheckerSortType
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle
+from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
 from guiguts.illo_sn_fixup import illosn_check
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
@@ -431,6 +432,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(
             PrefKey.COLUMN_NUMBERS, lambda value: maintext().show_column_numbers(value)
         )
+        preferences.set_default(PrefKey.HTML_ITALIC_MARKUP, HTMLMarkupTypes.KEEP)
+        preferences.set_default(PrefKey.HTML_BOLD_MARKUP, HTMLMarkupTypes.KEEP)
+        preferences.set_default(PrefKey.HTML_GESPERRT_MARKUP, HTMLMarkupTypes.EM_CLASS)
+        preferences.set_default(PrefKey.HTML_FONT_MARKUP, HTMLMarkupTypes.SPAN_CLASS)
+        preferences.set_default(
+            PrefKey.HTML_UNDERLINE_MARKUP, HTMLMarkupTypes.SPAN_CLASS
+        )
+        preferences.set_default(PrefKey.HTML_SHOW_PAGE_NUMBERS, True)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -448,6 +457,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         self.init_search_menu()
         self.init_tools_menu()
         self.init_text_menu()
+        self.init_html_menu()
         self.init_view_menu()
         self.init_help_menu()
         self.init_os_menu()
@@ -755,6 +765,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         menu_tools.add_button(
             "Convert ~Markup...", TextMarkupConvertorDialog.show_dialog
         )
+
+    def init_html_menu(self) -> None:
+        """Create the HTML menu."""
+        menu_tools = Menu(menubar(), "HT~ML")
+        menu_tools.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""

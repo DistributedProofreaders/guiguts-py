@@ -84,6 +84,12 @@ class PrefKey(StrEnum):
     SCANNOS_HISTORY = auto()
     HIGHLIGHT_QUOTBRAC = auto()
     COLUMN_NUMBERS = auto()
+    HTML_ITALIC_MARKUP = auto()
+    HTML_BOLD_MARKUP = auto()
+    HTML_GESPERRT_MARKUP = auto()
+    HTML_FONT_MARKUP = auto()
+    HTML_UNDERLINE_MARKUP = auto()
+    HTML_SHOW_PAGE_NUMBERS = auto()
 
 
 class Preferences:
