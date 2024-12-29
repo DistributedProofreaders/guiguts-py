@@ -3266,27 +3266,20 @@ class MainText(tk.Text):
         if 0 <= widget_x <= width and 0 <= widget_y <= height:
             return
 
-        delay = 50
+        scroll_delay = 100
 
-        # Scroll in the appropriate direction (x or y).  If scrolling
-        # vertically, set the delay before the next loop a little longer.
-        # (Because that "feels right".)
+        # Scroll in the appropriate direction (x or y).
         if widget_y < 0:
             event.widget.yview_scroll(-1, "units")
-            delay = 150
         elif widget_y > height:
             event.widget.yview_scroll(1, "units")
-            delay = 150
         elif widget_x < 0:
             event.widget.xview_scroll(-1, "units")
-            delay = 100
         elif widget_x > width:
             event.widget.xview_scroll(1, "units")
-            delay = 100
 
-        self.after(delay, lambda: callback(event))
         self._on_change()
-        self.after(delay, lambda: self._autoscroll_callback(event))
+        self.after(scroll_delay, lambda: self._autoscroll_callback(event))
 
 
 def img_from_page_mark(mark: str) -> str:
