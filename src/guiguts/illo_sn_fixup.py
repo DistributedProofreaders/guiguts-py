@@ -56,13 +56,25 @@ class SelectedIlloSNRecord:
         self.last_line_num = last
 
 
+class IlloSNCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
+class IlloCheckerDialog(IlloSNCheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
+class SNCheckerDialog(IlloSNCheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
 class IlloSNChecker:
     """Find, check & record Illos or SNs."""
 
-    def __init__(self, checker_dialog: CheckerDialog) -> None:
+    def __init__(self, checker_dialog: IlloSNCheckerDialog) -> None:
         """Initialize IlloSNChecker."""
         self.illosn_records: list[IlloSNRecord] = []
-        self.checker_dialog: CheckerDialog = checker_dialog
+        self.checker_dialog: IlloSNCheckerDialog = checker_dialog
 
     def reset(self) -> None:
         """Reset IlloSNChecker."""
@@ -579,7 +591,9 @@ def illosn_check(tag_type: str) -> None:
 
     if not tool_save():
         return
-    checker_dialog = CheckerDialog.show_dialog(
+    assert tag_type in ("Illustration", "Sidenote")
+    dialog_type = IlloCheckerDialog if tag_type == "Illustration" else SNCheckerDialog
+    checker_dialog = dialog_type.show_dialog(
         f"{tag_type} Check Results",
         rerun_command=lambda: illosn_check(tag_type),
         show_suspects_only=True,

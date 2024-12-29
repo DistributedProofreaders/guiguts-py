@@ -271,6 +271,12 @@ class CheckerDialog(ToplevelDialog):
         self.selected_text_range: Optional[IndexRange] = None
         self.reset()
 
+    def __new__(cls, *args: Any, **kwargs: Any) -> "CheckerDialog":
+        """Ensure CheckerDialogs are not instantiated directly."""
+        if cls is CheckerDialog:
+            raise TypeError(f"only children of '{cls.__name__}' may be instantiated")
+        return object.__new__(cls)
+
     @classmethod
     def show_dialog(
         cls: type[TlDlg],

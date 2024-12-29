@@ -10,10 +10,15 @@ from guiguts.misc_tools import tool_save
 from guiguts.utilities import IndexRowCol, IndexRange
 from guiguts.widgets import ToolTip
 
+
+class PPtxtCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
 REPORT_LIMIT = 5  # Max number of times to report same issue for some checks
 
 found_long_doctype_declaration: bool
-checker_dialog: CheckerDialog
+checker_dialog: PPtxtCheckerDialog
 book: list[str]
 word_list_map_count: dict[str, int]
 word_list_map_lines: dict[str, list[int]]
@@ -2482,7 +2487,7 @@ def pptxt(project_dict: ProjectDict) -> None:
     found_long_doctype_declaration = False
 
     # Create the checker dialog to show results
-    checker_dialog = CheckerDialog.show_dialog(
+    checker_dialog = PPtxtCheckerDialog.show_dialog(
         "PPtxt Results", rerun_command=lambda: pptxt(project_dict)
     )
     ToolTip(

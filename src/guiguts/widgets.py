@@ -86,6 +86,12 @@ class ToplevelDialog(tk.Toplevel):
 
         grab_focus(self)
 
+    def __new__(cls, *args: Any, **kwargs: Any) -> "ToplevelDialog":
+        """Ensure ToplevelDialogs are not instantiated directly."""
+        if cls is ToplevelDialog:
+            raise TypeError(f"only children of '{cls.__name__}' may be instantiated")
+        return object.__new__(cls)
+
     @classmethod
     def show_dialog(
         cls: type[TlDlg],

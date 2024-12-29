@@ -43,6 +43,18 @@ DEFAULT_REGEX_SCANNOS = "regex.json"
 DEFAULT_STEALTH_SCANNOS = "en-common.json"
 
 
+class BasicFixupCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
+class UnmatchedCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
+class AsteriskCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
 def tool_save() -> bool:
     """File must be saved before running tool, so check if it has been,
     and if not, check if user wants to save, or cancel the tool run.
@@ -67,8 +79,10 @@ def process_fixup(checker_entry: CheckerEntry) -> None:
     if checker_entry.text_range is None:
         return
     entry_type = checker_entry.text.split(":", 1)[0]
-    start_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.start)
-    end_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
+    start_mark = BasicFixupCheckerDialog.mark_from_rowcol(
+        checker_entry.text_range.start
+    )
+    end_mark = BasicFixupCheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
     match_text = maintext().get(start_mark, end_mark)
     # Several fixup errors are "Spaced ..." and need spaces removing.
     if entry_type.startswith("Spaced "):
@@ -117,7 +131,7 @@ def basic_fixup_check() -> None:
     if not tool_save():
         return
 
-    checker_dialog = CheckerDialog.show_dialog(
+    checker_dialog = BasicFixupCheckerDialog.show_dialog(
         "Basic Fixup Check Results",
         rerun_command=basic_fixup_check,
         process_command=process_fixup,
@@ -689,11 +703,11 @@ def unmatched_curly_quotes() -> None:
                 return "[‘’]", True
         assert False, f"'{quote_in}' is not a curly quote"
 
-    def unmatched_single_quotes(dialog: CheckerDialog) -> None:
+    def unmatched_single_quotes(dialog: UnmatchedCheckerDialog) -> None:
         """Add warnings about unmatched single quotes to given dialog.
 
         Args:
-            dialog: Checkerdialog to receive error messages.
+            dialog: UnmatchedCheckerDialog to receive error messages.
         """
         nestable = preferences.get(PrefKey.UNMATCHED_NESTABLE)
         prefix = "Unmatched: "
@@ -807,11 +821,11 @@ def unmatched_block_markup() -> None:
         block_type = re.escape(block_type)
         return rf"^(/{block_type}(\[\d+)?(\.\d+)?(,\d+)?]?|{block_type}/)$", close
 
-    def malformed_block_markup(dialog: CheckerDialog) -> None:
+    def malformed_block_markup(dialog: UnmatchedCheckerDialog) -> None:
         """Add warnings about malformed block markup to given dialog.
 
         Args:
-            dialog: Checkerdialog to receive error messages.
+            dialog: UnmatchedCheckerDialog to receive error messages.
         """
         search_range = IndexRange(maintext().start(), maintext().end())
         prefix = "Badly formed markup: "
@@ -885,7 +899,7 @@ def unmatched_markup_check(
     nest_reg: Optional[str] = None,
     ignore_reg: Optional[str] = None,
     sort_key_alpha: Optional[Callable[[CheckerEntry], tuple]] = None,
-    additional_check_command: Optional[Callable[[CheckerDialog], None]] = None,
+    additional_check_command: Optional[Callable[[UnmatchedCheckerDialog], None]] = None,
 ) -> None:
     """Check the currently loaded file for unmatched markup errors.
 
@@ -903,7 +917,7 @@ def unmatched_markup_check(
     if not tool_save():
         return
 
-    checker_dialog = CheckerDialog.show_dialog(
+    checker_dialog = UnmatchedCheckerDialog.show_dialog(
         title,
         rerun_command=rerun_command,
         sort_key_alpha=sort_key_alpha,
@@ -1170,7 +1184,7 @@ def proofer_comment_check() -> None:
     )
 
     class ProoferCommentCheckerDialog(CheckerDialog):
-        """Minimal class inheriting from CheckerDialog so that it can exist
+        """Minimal class to identify dialog type so that it can exist
         simultaneously with other checker dialogs."""
 
     checker_dialog = ProoferCommentCheckerDialog.show_dialog(
@@ -1212,7 +1226,7 @@ def asterisk_check() -> None:
         regexp=True,
     )
 
-    checker_dialog = CheckerDialog.show_dialog(
+    checker_dialog = AsteriskCheckerDialog.show_dialog(
         "Asterisk Check", rerun_command=asterisk_check
     )
     ToolTip(

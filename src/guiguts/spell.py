@@ -58,6 +58,10 @@ class SpellingError(FindMatch):
         self.bad_word = bad_word
 
 
+class SpellCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
 class SpellChecker:
     """Provides spell check functionality."""
 
@@ -358,7 +362,7 @@ def spell_check(
         if checker_entry.text_range:
             add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
 
-    checker_dialog = CheckerDialog.show_dialog(
+    checker_dialog = SpellCheckerDialog.show_dialog(
         "Spelling Check Results",
         rerun_command=lambda: spell_check(
             project_dict, add_project_word_callback, add_global_word_callback

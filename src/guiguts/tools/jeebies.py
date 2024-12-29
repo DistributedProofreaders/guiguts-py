@@ -52,6 +52,10 @@ class DictionaryNotFoundError(Exception):
         self.file = file
 
 
+class JeebiesCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
 class JeebiesChecker:
     """Provides jeebies check functionality."""
 
@@ -65,7 +69,7 @@ class JeebiesChecker:
         """Check for jeebies in the currently loaded file."""
 
         # Create the checker dialog to show results
-        checker_dialog = CheckerDialog.show_dialog(
+        checker_dialog = JeebiesCheckerDialog.show_dialog(
             "Jeebies Results",
             rerun_command=jeebies_check,
             process_command=self.process_jeebies,
@@ -286,7 +290,7 @@ class JeebiesChecker:
         paragraph_start_line_numbers: list[int],
         paragraph_line_boundaries: list[list[int]],
         file_lines_list: list[str],
-        checker_dialog: CheckerDialog,
+        checker_dialog: JeebiesCheckerDialog,
         order: str,
         check_level: str,
     ) -> int:
@@ -464,12 +468,12 @@ class JeebiesChecker:
         paragraph_start_line_numbers: list[int],
         paragraph_line_boundaries: list[list[int]],
         file_lines_list: list[str],
-        checker_dialog: CheckerDialog,
+        checker_dialog: JeebiesCheckerDialog,
         check_level: str,
     ) -> int:
         """Look for suspect "w1 be w2" or "w1 he w2" phrases in paragraphs."""
 
-        def make_dialog_line(info: str, checker_dialog: CheckerDialog) -> None:
+        def make_dialog_line(info: str, checker_dialog: JeebiesCheckerDialog) -> None:
             """Helper function for abstraction of repeated code."""
 
             # We have the start position in the paragraph string of a suspect hebe.
@@ -618,7 +622,7 @@ class JeebiesChecker:
         line: str,
         line_number: int,
         hebe_start: int,
-        checker_dialog: CheckerDialog,
+        checker_dialog: JeebiesCheckerDialog,
     ) -> None:
         """Helper function that abstracts repeated code.
 
@@ -674,8 +678,10 @@ class JeebiesChecker:
         """Process the Jeebies query."""
         if checker_entry.text_range is None:
             return
-        start_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.start)
-        end_mark = CheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
+        start_mark = JeebiesCheckerDialog.mark_from_rowcol(
+            checker_entry.text_range.start
+        )
+        end_mark = JeebiesCheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
         match_text = maintext().get(start_mark, end_mark)
         # Toggle match text
         replacement_text = HB_TOGGLE[match_text[0]] + match_text[1]
