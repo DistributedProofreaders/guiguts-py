@@ -1584,6 +1584,9 @@ class MainText(tk.Text):
 
         self.do_column_select(IndexRange(self.rowcol(TK_ANCHOR_MARK), cur_rowcol))
 
+        # Handle scrolling past edge of widget
+        self._autoscroll_callback(event)
+
     def column_select_release(self, event: tk.Event) -> None:
         """Callback when column selection is stopped via mouse button release.
 
@@ -1603,10 +1606,12 @@ class MainText(tk.Text):
         """
         self.mark_set(TK_ANCHOR_MARK, anchor.index())
         self.column_selecting = True
+        self._autoscroll_active = True
 
     def column_select_stop(self) -> None:
         """Stop column selection."""
         self.column_selecting = False
+        self._autoscroll_active = False
         self.focus_widget().config(cursor="")
 
     def rowcol(self, index: str) -> IndexRowCol:
