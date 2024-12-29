@@ -3215,24 +3215,28 @@ class MainText(tk.Text):
     ) -> None:
         """When Button-1 is pressed, turn mouse-drag monitoring on"""
         self._autoscroll_active = True
+        self._on_change()
 
     def _autoscroll_stop(
         self, event: tk.Event  # pylint: disable=unused-argument
     ) -> None:
         """When Button-1 is released, turn mouse-drag monitoring off"""
         self._autoscroll_active = False
+        self._on_change()
 
     def _autoscroll_start_peer(
         self, event: tk.Event  # pylint: disable=unused-argument
     ) -> None:
         """When Button-1 is pressed, turn mouse-drag monitoring on"""
         self._autoscroll_peer_active = True
+        self._on_change()
 
     def _autoscroll_stop_peer(
         self, event: tk.Event  # pylint: disable=unused-argument
     ) -> None:
         """When Button-1 is released, turn mouse-drag monitoring off"""
         self._autoscroll_peer_active = False
+        self._on_change()
 
     def _autoscroll_main(self, event: tk.Event) -> None:
         """Auto-scroll the main text view when dragging beyond widget border"""
@@ -3297,6 +3301,7 @@ class MainText(tk.Text):
             delay = 100
 
         self.after(delay, lambda: callback(event))
+        self._on_change()
 
 
 def img_from_page_mark(mark: str) -> str:
