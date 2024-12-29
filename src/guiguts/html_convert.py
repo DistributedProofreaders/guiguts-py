@@ -191,7 +191,7 @@ def html_convert_title() -> None:
         if in_title:
             # Check if title complete (blank line or end of frontmatter/center/right/etc markup)
             if not selection or re.match("[*$fxcr]/", selection, flags=re.IGNORECASE):
-                maintext().insert(f"{step-1}.end", "</h1>")
+                maintext().insert(f"{step - 1}.end", "</h1>")
                 return
             # Not complete, keep going
             continue
@@ -534,7 +534,7 @@ def html_convert_body() -> None:
             elif index_blank_lines == 1:  # Top-level entry
                 classname = "indx"
             else:
-                classname = f"isub{int((n_spaces+1)/2)}"
+                classname = f"isub{int((n_spaces + 1) / 2)}"
             # Convert numbers to page links where the formatting guidelines have been followed:
             # 1. Number must be preceded by a comma (optionally close quote) then one or more spaces
             # 2. Number must be no more than 3 digits (to avoid converting dates, like 1910)
@@ -1125,12 +1125,12 @@ def html_convert_footnotes() -> None:
         # For all matching anchors in that range, add HTML markup to anchor, with id on the first only
         id_markup = f'id="{an_id}" '
         while an_start := maintext().search(f"[{fn_label}]", an_search_start, fn_start):
-            an_end = f"{an_start}+{len(fn_label)+2}c"
+            an_end = f"{an_start}+{len(fn_label) + 2}c"
             maintext().insert(an_end, "</a>")
             open_markup = f'<a {id_markup}href="#{fn_id}" class="fnanchor">'
             maintext().insert(an_start, open_markup)
             id_markup = ""
-            an_search_start = maintext().index(f"{an_start}+{len(open_markup)+4}c")
+            an_search_start = maintext().index(f"{an_start}+{len(open_markup) + 4}c")
 
 
 def html_convert_footnote_landing_zones() -> None:
@@ -1202,4 +1202,4 @@ def html_wrap_long_lines() -> None:
             count=count,
         ):
             # Insert a newline and three extra spaces before the space that was found
-            maintext().insert(f"{insert_point}+{count.get()-1}c", "\n   ")
+            maintext().insert(f"{insert_point}+{count.get() - 1}c", "\n   ")
