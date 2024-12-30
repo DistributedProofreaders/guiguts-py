@@ -369,10 +369,13 @@ class FootnoteChecker:
         the corresponding footnote will be moved. There may be many marks at the
         same location.
 
-        The insertion point for marks is immediately before the line that separates
+        The insertion point for marks is immediately BEFORE the line that separates
         the end of a paragraph from all that follows. That line is either a blank
-        line or a Page Marker. Care is taken to ensure that all marks are located
-        on the same page as the paragraph that they follow.
+        line that is not followed by a '[Footnote ...' line or is a Page Marker if
+        that immediately precedes such a blank line. In this way care is taken to
+        ensure insertion marks are located on the same page as the paragraph that
+        they follow. Special action is required for blank lines that separate
+        paragraphs in a multi-paragraph footnote.
 
         The second pass simply iterates through the footnote record array copying
         the text of each footnote before deleting the original and then inserting
@@ -430,9 +433,41 @@ class FootnoteChecker:
                     f"{blank_line_start} +1l lineend",
                 )
                 if line_after_text[0:10] == "[Footnote ":
-                    # Ignore this blank line and continue searching.
+                    # Ignore this blank line and continue searching. However there is a problem
+                    # if the footnote is a multi-paragraph one since there will be one or more
+                    # blank lines within the footnote. We need to skip past these to the end of
+                    # the footnote before restarting the 'paragraph separator' search.
+                    #
+                    # Find closing square bracket - allow open/close bracket within footnote.
+                    start = maintext().rowcol(f"{blank_line_start} +1l +1c")
+                    end_match = None
+                    nested = False
+                    while True:
+                        end_match = maintext().find_match(
+                            "[][]", IndexRange(start, maintext().end()), regexp=True
+                        )
+                        if end_match is None:
+                            break
+                        end_point = maintext().rowcol(f"{end_match.rowcol.index()}+1c")
+                        if maintext().get_match_text(end_match) == "]":
+                            if not nested:
+                                break  # Found the one we want
+                            nested = False  # Closing nesting
+                        else:
+                            if nested:
+                                end_match = (
+                                    None  # Not attempting to handle double nesting
+                                )
+                                break
+                            nested = True  # Opening nesting
+
+                    # If closing [ not found, use end of line
+                    if end_match is None:
+                        end_point = maintext().rowcol(f"{start.row}.end")
+                    # We have the end point of the footnote. Restart blank line search
+                    # from there.
                     search_range = IndexRange(
-                        maintext().rowcol(f"{blank_line_start} +1l linestart"),
+                        end_point,
                         maintext().rowcol(f"{file_end} + 1l linestart"),
                     )
                     continue
