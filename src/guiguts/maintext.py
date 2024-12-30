@@ -2177,6 +2177,7 @@ class MainText(tk.Text):
         """
         if not (ranges := self.selected_ranges()):
             return
+        maintext().undo_block_begin()
         for _range in ranges:
             start = _range.start.index()
             end = _range.end.index()
