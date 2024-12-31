@@ -213,7 +213,7 @@ This project uses Github Actions to ensure running `pytest` does not report an e
 
 ### Visual Studio Code
 
-Three debugger configs are provided.
+Several debugger configs are provided:
 
 - "Guiguts"
     - Run Guiguts with debug output enabled
@@ -222,6 +222,9 @@ Three debugger configs are provided.
     - Open the most recently opened file
 - "Guiguts (no debug output)"
     - Run Guiguts without debug output
+- "Guiguts (use default settings)"
+    - Run Guiguts with `--nohome` to not load your settings file
+    - Therefore all settings should be reset to their defaults
 
 Requirement: [Python Debugger][vsc_debugpy] extension
 
