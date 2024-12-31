@@ -293,8 +293,9 @@ class SearchDialog(ToplevelDialog):
         self.config_width()
         self.allow_geometry_save()
 
-        self.protocol("WM_DELETE_WINDOW", self.on_closing)
-
+        # Handle tag cleanup when search panel is closed
+        self.top_frame.bind("<Destroy>", lambda _event: search_tag_cleanup())
+    
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
 
@@ -674,11 +675,6 @@ class SearchDialog(ToplevelDialog):
         """
         self.message["text"] = message
 
-    def on_closing(self):
-        """When closing the search window, remove search-related tags"""
-        print(time.time(), "window close fired")
-        maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
-
 
 def show_search_dialog() -> None:
     """Show the Search dialog and set the string in search box
@@ -905,3 +901,7 @@ def message_from_regex_exception(exc: re.error) -> str:
     message = str(exc)
     message = message[0].upper() + message[1:]
     return message + " in regex " + exc.pattern  # type:ignore[attr-defined]
+
+
+def search_tag_cleanup() -> None:
+    maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
