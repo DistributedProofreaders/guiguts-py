@@ -439,12 +439,15 @@ class FootnoteChecker:
                     # the footnote before restarting the 'paragraph separator' search.
                     #
                     # Find closing square bracket - allow open/close bracket within footnote.
-                    start = maintext().rowcol(f"{blank_line_start} +1l +1c")
+                    # Start of line beginning '[Footnote ...'.
+                    start = maintext().rowcol(f"{blank_line_start} +1l linestart")
+                    # One character on from the above.
+                    end_point = maintext().rowcol(f"{blank_line_start} +1l +1c")
                     end_match = None
                     nested = False
                     while True:
                         end_match = maintext().find_match(
-                            "[][]", IndexRange(start, maintext().end()), regexp=True
+                            "[][]", IndexRange(end_point, maintext().end()), regexp=True
                         )
                         if end_match is None:
                             break
