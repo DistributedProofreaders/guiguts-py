@@ -3275,8 +3275,37 @@ class MainText(tk.Text):
         # Stop scrolling if the mouse pointer is within the text widget bounds
         if 0 <= widget_x <= width and 0 <= widget_y <= height:
             return
+        
+        DIRECTION_N_S = 1
+        DIRECTION_E_W = 2
 
-        scroll_delay = 100
+        out_of_bounds_distance = 0
+        out_of_bounds_direction = None
+
+        if widget_x < 0:
+            out_of_bounds_distance = abs(widget_x)
+            out_of_bounds_direction = DIRECTION_E_W
+        elif widget_x > width:
+            out_of_bounds_distance = abs(widget_x - width)
+            out_of_bounds_direction = DIRECTION_E_W
+        elif widget_y < 0:
+            out_of_bounds_distance = abs(widget_y)
+            out_of_bounds_direction = DIRECTION_N_S
+        elif widget_y > height:
+            out_of_bounds_distance = abs(widget_y - height)
+            out_of_bounds_direction = DIRECTION_N_S
+        else:
+            print("um. should not get here.")
+
+        scroll_delay = 125
+        if out_of_bounds_distance < 20:
+            scroll_delay = 500
+        elif out_of_bounds_distance < 40:
+            scroll_delay = 250
+        # horizontal scrolling should be faster than vertical
+        if out_of_bounds_direction == DIRECTION_E_W:
+            scroll_delay = int(scroll_delay / 2)
+        print(f"scroll={scroll_delay} out of bounds {out_of_bounds_direction} by {out_of_bounds_distance}")
 
         # Scroll in the appropriate direction (x or y).
         if widget_y < 0:
