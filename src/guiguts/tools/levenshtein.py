@@ -54,6 +54,10 @@ class LevenshteinEditDistance(StrEnum):
     TWO = auto()
 
 
+class LevenshteinCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
 class LevenshteinChecker:
     """Provide Levenshtein edit distance functionality."""
 
@@ -233,7 +237,7 @@ class LevenshteinChecker:
             the required Levenshtein edit distance criteria. It calls utility
             functions to generate the header line and select and highlight all
             the file lines that make up the report for that word pair. It then
-            calls CheckerDialog methods to report the header line and all the
+            calls checker dialog methods to report the header line and all the
             accompanying file lines.
 
             Arg:
@@ -648,7 +652,7 @@ class LevenshteinChecker:
             return
 
         # Create the checker dialog to show results
-        checker_dialog = CheckerDialog.show_dialog(
+        checker_dialog = LevenshteinCheckerDialog.show_dialog(
             "Levenshtein Edit Distance Check",
             rerun_command=lambda: levenshtein_check(project_dict),
         )

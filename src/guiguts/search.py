@@ -470,8 +470,7 @@ class SearchDialog(ToplevelDialog):
             return
 
         class FindAllCheckerDialog(CheckerDialog):
-            """Minimal class inheriting from CheckerDialog so that it can exist
-            simultaneously with other checker dialogs."""
+            """Minimal class to identify dialog typepylint."""
 
         checker_dialog = FindAllCheckerDialog.show_dialog(
             "Search Results", rerun_command=self.findall_clicked

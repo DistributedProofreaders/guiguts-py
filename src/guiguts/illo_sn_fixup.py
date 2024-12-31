@@ -15,7 +15,8 @@ from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
-_the_illosn_checker: Optional["IlloSNChecker"] = None  # pylint: disable=invalid-name
+_the_illo_checker: Optional["IlloSNChecker"] = None  # pylint: disable=invalid-name
+_the_sn_checker: Optional["IlloSNChecker"] = None  # pylint: disable=invalid-name
 
 
 class IlloSNRecord:
@@ -56,13 +57,25 @@ class SelectedIlloSNRecord:
         self.last_line_num = last
 
 
+class IlloSNCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
+class IlloCheckerDialog(IlloSNCheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
+class SNCheckerDialog(IlloSNCheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
 class IlloSNChecker:
     """Find, check & record Illos or SNs."""
 
-    def __init__(self, checker_dialog: CheckerDialog) -> None:
+    def __init__(self, checker_dialog: IlloSNCheckerDialog) -> None:
         """Initialize IlloSNChecker."""
         self.illosn_records: list[IlloSNRecord] = []
-        self.checker_dialog: CheckerDialog = checker_dialog
+        self.checker_dialog: IlloSNCheckerDialog = checker_dialog
 
     def reset(self) -> None:
         """Reset IlloSNChecker."""
@@ -84,9 +97,8 @@ class IlloSNChecker:
             Line number index of first line of the record; e.g. '5.0'
             Line number index of last line of the record; e.g. '6.14'
         """
-        assert _the_illosn_checker is not None
         # We built a list of Illo or SN records with start/end RowCol details.
-        records = _the_illosn_checker.get_illosn_records()
+        records = self.get_illosn_records()
         # Get record of the selected tag
         selected_record = records[selected_illosn_index]
         # Get line number index of the first line of the selected record.
@@ -104,14 +116,13 @@ class IlloSNChecker:
 
         Returns:
             Index into self.illosn_records array, negative if none selected."""
-        assert _the_illosn_checker is not None
         cur_idx = self.checker_dialog.current_entry_index()
         if cur_idx is None:
             return -1
         text_range = self.checker_dialog.entries[cur_idx].text_range
         assert text_range is not None
         illosn_start = text_range.start
-        illosn_records = _the_illosn_checker.get_illosn_records()
+        illosn_records = self.get_illosn_records()
         for illosn_index, illosn_record in enumerate(illosn_records):
             if illosn_record.start == illosn_start:
                 return illosn_index
@@ -274,7 +285,7 @@ class IlloSNChecker:
         # Update illosn_records list
         self.run_check(tag_type)
         # Update dialog
-        display_illosn_entries()
+        display_illosn_entries(tag_type)
         # Select again the tag we have just moved so it is highlighted.
         self.checker_dialog.select_entry_by_index(selected_illosn_index)
 
@@ -402,7 +413,6 @@ class IlloSNChecker:
         Args:
             tag_type: a string which is either "Sidenote" or "Illustration".
         """
-        assert _the_illosn_checker is not None
         selected_illosn_index = self.get_selected_illosn_index()
         if selected_illosn_index < 0:
             return  # No selection.
@@ -491,7 +501,6 @@ class IlloSNChecker:
         Args:
             tag_type: a string which is either "Sidenote" or "Illustration".
         """
-        assert _the_illosn_checker is not None
         selected_illosn_index = self.get_selected_illosn_index()
         if selected_illosn_index < 0:
             return  # No selection
@@ -575,19 +584,30 @@ def illosn_check(tag_type: str) -> None:
     Args:
         tag_type: which tag to check for - "Illustration" or "Sidenote"
     """
-    global _the_illosn_checker
+    global _the_illo_checker
+    global _the_sn_checker
 
     if not tool_save():
         return
-    checker_dialog = CheckerDialog.show_dialog(
+    assert tag_type in ("Illustration", "Sidenote")
+    dialog_type = IlloCheckerDialog if tag_type == "Illustration" else SNCheckerDialog
+    checker_dialog = dialog_type.show_dialog(
         f"{tag_type} Check Results",
         rerun_command=lambda: illosn_check(tag_type),
         show_suspects_only=True,
     )
-    if _the_illosn_checker is None:
-        _the_illosn_checker = IlloSNChecker(checker_dialog)
-    elif not _the_illosn_checker.checker_dialog.winfo_exists():
-        _the_illosn_checker.checker_dialog = checker_dialog
+    if tag_type == "Illustration":
+        if _the_illo_checker is None:
+            _the_illo_checker = IlloSNChecker(checker_dialog)
+        elif not _the_illo_checker.checker_dialog.winfo_exists():
+            _the_illo_checker.checker_dialog = checker_dialog
+        the_checker = _the_illo_checker
+    else:
+        if _the_sn_checker is None:
+            _the_sn_checker = IlloSNChecker(checker_dialog)
+        elif not _the_sn_checker.checker_dialog.winfo_exists():
+            _the_sn_checker.checker_dialog = checker_dialog
+        the_checker = _the_sn_checker
 
     ToolTip(
         checker_dialog.text,
@@ -606,23 +626,29 @@ def illosn_check(tag_type: str) -> None:
     ttk.Button(
         frame,
         text="Move Selection Up",
-        command=lambda: _the_illosn_checker.move_selection_up(tag_type),
+        command=lambda: the_checker.move_selection_up(tag_type),
     ).grid(column=0, row=0, sticky="NSW")
     ttk.Button(
         frame,
         text="Move Selection Down",
-        command=lambda: _the_illosn_checker.move_selection_down(tag_type),
+        command=lambda: the_checker.move_selection_down(tag_type),
     ).grid(column=1, row=0, sticky="NSW")
-    _the_illosn_checker.run_check(tag_type)
-    display_illosn_entries()
+    the_checker.run_check(tag_type)
+    display_illosn_entries(tag_type)
 
 
-def display_illosn_entries() -> None:
-    """(Re-)display the requested Illo/SN tag types in the checker dialog."""
-    assert _the_illosn_checker is not None
-    checker_dialog = _the_illosn_checker.checker_dialog
+def display_illosn_entries(tag_type: str) -> None:
+    """(Re-)display the requested Illo/SN tag types in the checker dialog.
+
+    Args:
+        tag_type: which tag to check for - "Illustration" or "Sidenote"
+    """
+    assert tag_type in ("Illustration", "Sidenote")
+    the_checker = _the_illo_checker if tag_type == "Illustration" else _the_sn_checker
+    assert the_checker is not None
+    checker_dialog = the_checker.checker_dialog
     checker_dialog.reset()
-    illosn_records = _the_illosn_checker.get_illosn_records()
+    illosn_records = the_checker.get_illosn_records()
     for illosn_record in illosn_records:
         error_prefix = ""
         if illosn_record.mid_para:

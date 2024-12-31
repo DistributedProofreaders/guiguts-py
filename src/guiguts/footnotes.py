@@ -99,14 +99,18 @@ class FootnoteRecord:
         self.an_index = an_index
 
 
+class FootnoteCheckerDialog(CheckerDialog):
+    """Minimal class to identify dialog type."""
+
+
 class FootnoteChecker:
     """Find, check & record footnotes."""
 
-    def __init__(self, checker_dialog: CheckerDialog) -> None:
+    def __init__(self, checker_dialog: FootnoteCheckerDialog) -> None:
         """Initialize footnote checker."""
         self.fn_records: list[FootnoteRecord] = []
         self.an_records: list[AnchorRecord] = []
-        self.checker_dialog: CheckerDialog = checker_dialog
+        self.checker_dialog: FootnoteCheckerDialog = checker_dialog
         self.fn_index_style = PersistentString(PrefKey.FOOTNOTE_INDEX_STYLE)
         self.fn_check_errors = False
         self.fns_have_been_moved = False
@@ -1308,7 +1312,7 @@ def footnote_check() -> None:
     if not tool_save():
         return
 
-    checker_dialog = CheckerDialog.show_dialog(
+    checker_dialog = FootnoteCheckerDialog.show_dialog(
         "Footnote Check Results",
         rerun_command=footnote_check,
         sort_key_alpha=sort_key_type,
