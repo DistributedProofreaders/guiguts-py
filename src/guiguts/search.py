@@ -1,5 +1,6 @@
 """Search/Replace functionality"""
 
+import time
 import logging
 import tkinter as tk
 from tkinter import ttk
@@ -292,6 +293,8 @@ class SearchDialog(ToplevelDialog):
         self.config_width()
         self.allow_geometry_save()
 
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
 
@@ -365,29 +368,19 @@ class SearchDialog(ToplevelDialog):
             start_rowcol = get_search_start(backwards)
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
-        # XXX: Lot of stuff needs doing ...
-        # TODO: search & tag the range, not the entire file
-        # NOTE: is this already being done because .count_clicked() is aware??
         # TODO: enumerate when to un-tag and implement that. Right now the tags
         #       persist unless a new search is executed.
         #         1. [ ] when a new search is executed
         #         2. [ ] when the find dialog is closed?
-        #         3. [ ] ...
-        # NOTE: look at what other implementations do, particularly text editors.
+        #         3. [ ] When user runs "remove all highlights" command
+        #  [see issue or PR discussion for some more notes on this]
+        # TODO: look at what other implementations do, particularly text editors.
         #       Do they keep the selections / highlights active after you click
         #       into the text? Select something? Press Esc? Type to insert?
         #       Delete anything? Copy? Paste?
-        # XXX: if "in selection" is in use, it will highlight as inactive_search
-        #      the match just prior to the current, and that behavior will roll along,
-        #      and it seems to have nothing to do with the selection?
-        #      it probably has to do with the range being from <here> to <next>?
-        #      anyway, it's terrible and probably instead we should tag all? Hm.
-        # NOTE: Or maybe this is yet another of those "only look at the active
-        #       viewport" situations? We needn't tag things that aren't showing?
         # TODO: might need to refactor search_clicked() to not use count_clicked();
         #       instead have them both call some other routine that returns the
         #       results?
-        # maintext().tag_remove(HighlightTag.SEARCH_ACTIVE, "1.0", tk.END)
         maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
         try:
             matchez = self.count_clicked()
@@ -681,6 +674,11 @@ class SearchDialog(ToplevelDialog):
         """
         self.message["text"] = message
 
+    def on_closing(self):
+        """When closing the search window, remove search-related tags"""
+        print(time.time(), "window close fired")
+        maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
+
 
 def show_search_dialog() -> None:
     """Show the Search dialog and set the string in search box
@@ -755,7 +753,6 @@ def _do_find_next(
         maintext().do_select(IndexRange(match.rowcol, rowcol_end))
         maintext().set_mark_position(MARK_FOUND_START, match.rowcol, gravity=tk.LEFT)
         maintext().set_mark_position(MARK_FOUND_END, rowcol_end, gravity=tk.RIGHT)
-        # maintext().tag_add(HighlightTag.SEARCH_ACTIVE, match.rowcol.index(), rowcol_end.index())
     else:
         sound_bell()
 

@@ -351,24 +351,7 @@ class HighlightColors:
         "Light": {"bg": "#A6CDFF", "fg": "black"},
         "Dark": {"bg": "#324F78", "fg": "white"},
     }
-    # SEARCH_ACTIVE = {
-    #     "Light": {"bg": "yellow", "fg": "black", "relief": "solid", "borderwidth": 1},
-    #     "Dark": {"bg": "red", "fg": "white"},
-    # }
-    # valid reliefs: flat, groove, raised, ridge, solid, sunken
-    #    if you use solid the border seems to be *always* black.
-    #    (so kind of useless with the dark theme.)
-    #    using other reliefs it can find better colors. but you need
-    #    borderwidth to be at least 2 or it's shown on 2 sides only,
-    #    for at least some reliefs.
-    #      - [ ] flat      -- no apparent border shown
-    #      - [ ] groove    -- light: border intersects left edge of char. dark: insersects even 1 pixel in!
-    #      - [ ] raised    -- less intersection issue but doesn't look great.
-    #      - [ ] ridge     -- similar intersection issue to groove
-    #      - [ ] solid     -- border always black. borderwidth=1 works.
-    #      - [ ] sunken    -- okay-ish; inverse 2 sided issue of others
-    # stipples: 'gray75', 'gray50', 'gray25', 'gray12'
-    #    https://tkdocs.com/shipman/bitmaps.html
+
     SEARCH_INACTIVE = {
         "Light": {
             "bg": "#f0f0f0",
@@ -2861,9 +2844,6 @@ class MainText(tk.Text):
                 relief=tag_colors[theme]["relief"],
                 borderwidth=tag_colors[theme]["borderwidth"],
             )
-        # should this be elif? mutually exclusive?
-        # if "bgstipple" in tag_colors[theme]:
-        #     self.tag_configure(tag_name, bgstipple=tag_colors[theme]["bgstipple"])
 
     def highlight_selection(
         self,
@@ -2894,6 +2874,7 @@ class MainText(tk.Text):
     def remove_highlights(self) -> None:
         """Remove active highlights."""
         self.tag_remove(HighlightTag.QUOTEMARK, "1.0", tk.END)
+        self.tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
 
     def highlight_quotemarks(self, pat: str) -> None:
         """Highlight quote marks in current selection which match a pattern."""

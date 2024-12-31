@@ -856,6 +856,7 @@ class MainWindow:
 
     def hide_image(self) -> None:
         """Stop showing the current image."""
+        print(time.time(), "hide_image fired")
         preferences.set(PrefKey.AUTO_IMAGE, False)
         self.clear_image()
         root().wm_forget(mainimage())  # type: ignore[arg-type]
