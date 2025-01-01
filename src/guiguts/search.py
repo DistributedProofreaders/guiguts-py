@@ -369,19 +369,6 @@ class SearchDialog(ToplevelDialog):
             start_rowcol = get_search_start(backwards)
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
-        # TODO: enumerate when to un-tag and implement that. Right now the tags
-        #       persist unless a new search is executed.
-        #         1. [ ] when a new search is executed
-        #         2. [ ] when the find dialog is closed?
-        #         3. [ ] When user runs "remove all highlights" command
-        #  [see issue or PR discussion for some more notes on this]
-        # TODO: look at what other implementations do, particularly text editors.
-        #       Do they keep the selections / highlights active after you click
-        #       into the text? Select something? Press Esc? Type to insert?
-        #       Delete anything? Copy? Paste?
-        # TODO: might need to refactor search_clicked() to not use count_clicked();
-        #       instead have them both call some other routine that returns the
-        #       results?
         maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
         try:
             matchez = self.count_clicked()
