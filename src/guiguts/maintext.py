@@ -573,13 +573,12 @@ class MainText(tk.Text):
             f"<{modifier}-B1-Motion>", self.column_select_motion, bind_peer=True
         )
         self.bind_event(
-            f"<{modifier}-ButtonRelease-1>", self.column_select_release, bind_peer=True
-        )
-        self.bind_event(
-            "<KeyRelease-Alt_L>",
-            lambda _event: self.column_select_stop(),
+            f"<{modifier}-ButtonRelease-1>",
+            self.column_select_release,
             bind_peer=True,
+            add=True,
         )
+        self.bind_event("<KeyRelease-Alt_L>", self.column_select_stop, bind_peer=True)
         # Make use of built-in Shift click functionality to extend selections,
         # but adapt for column select with Option/Alt key
         self.bind_event(
@@ -1529,8 +1528,9 @@ class MainText(tk.Text):
         # Force an update so the focus is actually set before it's queried during motion
         event.widget.focus()
         event.widget.update()
-        self.focus_widget().config(cursor="tcross")
+        event.widget.config(cursor="tcross")
         self.column_select_start(self.rowcol(f"@{event.x},{event.y}"))
+        self._autoscroll_active = True
 
     def column_select_motion(self, event: tk.Event) -> None:
         """Callback when column selection continues via mouse motion.
@@ -1554,7 +1554,7 @@ class MainText(tk.Text):
         maxlen = -1
         y_maxlen = -1
         for row in range(minrow, maxrow + 1):
-            geometry = self.focus_widget().bbox(f"{row}.{cur_rowcol.col}")
+            geometry = event.widget.bbox(f"{row}.{cur_rowcol.col}")
             if geometry is None:
                 continue
             line_len = len(self.get(f"{row}.0", f"{row}.0 lineend"))
@@ -1585,7 +1585,8 @@ class MainText(tk.Text):
         self.do_column_select(IndexRange(self.rowcol(TK_ANCHOR_MARK), cur_rowcol))
 
         # Handle scrolling past edge of widget
-        self._autoscroll_callback(event)
+        if self._autoscroll_active:
+            self._autoscroll_callback(event)
 
     def column_select_release(self, event: tk.Event) -> None:
         """Callback when column selection is stopped via mouse button release.
@@ -1593,9 +1594,10 @@ class MainText(tk.Text):
         Args:
             event: Event containing mouse coordinates.
         """
+        self._autoscroll_active = False
         self.column_select_motion(event)
-        self.column_select_stop()
-        self.focus_widget().mark_set(tk.INSERT, f"@{event.x},{event.y}")
+        self.column_select_stop(event)
+        event.widget.mark_set(tk.INSERT, f"@{event.x},{event.y}")
 
     def column_select_start(self, anchor: IndexRowCol) -> None:
         """Begin column selection.
@@ -1606,13 +1608,11 @@ class MainText(tk.Text):
         """
         self.mark_set(TK_ANCHOR_MARK, anchor.index())
         self.column_selecting = True
-        self._autoscroll_active = True
 
-    def column_select_stop(self) -> None:
+    def column_select_stop(self, event: tk.Event) -> None:
         """Stop column selection."""
         self.column_selecting = False
-        self._autoscroll_active = False
-        self.focus_widget().config(cursor="")
+        event.widget.config(cursor="")
 
     def rowcol(self, index: str) -> IndexRowCol:
         """Return IndexRowCol corresponding to given index in maintext/peer.
