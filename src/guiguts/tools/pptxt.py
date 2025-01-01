@@ -941,7 +941,7 @@ def specials_check(project_dict: ProjectDict) -> None:
         # The following check for double punctuation consists of:
         #
         # GENERAL TEST
-        pattern = r",\.|\.,|,,|(?!<\.)\.\.(?!\.)"
+        pattern = r",\.|\.,|,,|(?<!\.)\.\.(?!\.)"
         if re.search(pattern, line):
             # Here if possible issue.
             #
