@@ -67,9 +67,13 @@ class IlloSNCheckerDialog(CheckerDialog):
 class IlloCheckerDialog(IlloSNCheckerDialog):
     """Minimal class to identify dialog type."""
 
+    manual_page = "Tools_Menu#Illustration_Fixup"
+
 
 class SNCheckerDialog(IlloSNCheckerDialog):
     """Minimal class to identify dialog type."""
+
+    manual_page = "Tools_Menu#Sidenote_Fixup"
 
 
 class IlloSNChecker:

@@ -53,6 +53,7 @@ class HTMLMarkupTypes(StrEnum):
 class HTMLGeneratorDialog(ToplevelDialog):
     """Dialog for converting text file to HTML."""
 
+    manual_page = "HTML_Menu#HTML_Generator"
     book_title = None
 
     def __init__(self) -> None:

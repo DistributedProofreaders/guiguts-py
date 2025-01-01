@@ -61,6 +61,8 @@ class SpellingError(FindMatch):
 class SpellCheckerDialog(CheckerDialog):
     """Minimal class to identify dialog type."""
 
+    manual_page = "Tools_Menu#Spelling"
+
 
 class SpellChecker:
     """Provides spell check functionality."""

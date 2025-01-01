@@ -102,6 +102,8 @@ class FootnoteRecord:
 class FootnoteCheckerDialog(CheckerDialog):
     """Minimal class to identify dialog type."""
 
+    manual_page = "Tools_Menu#Footnote_Fixup"
+
 
 class FootnoteChecker:
     """Find, check & record footnotes."""

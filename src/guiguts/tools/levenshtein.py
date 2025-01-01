@@ -57,6 +57,8 @@ class LevenshteinEditDistance(StrEnum):
 class LevenshteinCheckerDialog(CheckerDialog):
     """Minimal class to identify dialog type."""
 
+    manual_page = "Tools_Menu#Word_Distance_Check"
+
 
 class LevenshteinChecker:
     """Provide Levenshtein edit distance functionality."""

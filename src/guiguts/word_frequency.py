@@ -171,6 +171,7 @@ class WordFrequencyDialog(ToplevelDialog):
         text: Text widget to contain results.
     """
 
+    manual_page = "Tools_Menu#Word_Frequency"
     CHAR_DISPLAY: dict[str, str] = {
         " ": "*space*",
         "\u00a0": "*nbsp*",

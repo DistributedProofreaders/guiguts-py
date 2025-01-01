@@ -107,6 +107,8 @@ class PageDetailsDialog(OkApplyCancelDialog):
         changed: True if any changes have been made in dialog.
     """
 
+    manual_page = "File_Menu#Configure_Page_Markers_and_Page_Labels"
+
     def __init__(self, page_details: PageDetails) -> None:
         """Initialize class members from page details."""
         super().__init__("Configure Page Labels")

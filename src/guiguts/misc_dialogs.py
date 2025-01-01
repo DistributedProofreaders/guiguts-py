@@ -33,6 +33,8 @@ COMBO_SEPARATOR = "―" * 20
 class PreferencesDialog(ToplevelDialog):
     """A dialog that displays settings/preferences."""
 
+    manual_page = "Edit_Menu#Preferences"
+
     def __init__(self) -> None:
         """Initialize preferences dialog."""
         super().__init__("Settings", resize_x=False, resize_y=False)
@@ -225,6 +227,8 @@ class ComposeSequenceDialog(OkApplyCancelDialog):
     Attributes:
         dict: Dictionary mapping sequence of keystrokes to character.
     """
+
+    manual_page = "Tools_Menu#Compose_Sequence"
 
     def __init__(self) -> None:
         """Initialize compose sequence dialog."""
@@ -577,6 +581,8 @@ def init_greek_breathing(char: str, base: str, uiota: str = "") -> None:
 class ComposeHelpDialog(ToplevelDialog):
     """A dialog to show the compose sequences."""
 
+    manual_page = "Tools_Menu#Compose_Sequence"
+
     def __init__(self) -> None:
         """Initialize class members from page details."""
         super().__init__("List of Compose Sequences")
@@ -738,6 +744,7 @@ class UnicodeBlockDialog(ToplevelDialog):
     """A dialog that displays a block of Unicode characters, and allows
     the user to click on them to insert them into text window."""
 
+    manual_page = "Tools_Menu#Unicode_Blocks"
     commonly_used_characters_name = "Commonly Used Characters"
 
     def __init__(self) -> None:
@@ -840,6 +847,7 @@ class UnicodeSearchDialog(ToplevelDialog):
     given partial name match or Unicode ordinal, and allows
     the user to insert it into text window."""
 
+    manual_page = "Tools_Menu#Unicode_Search/Entry"
     CHAR_COL_ID = "#1"
     CHAR_COL_HEAD = "Char"
     CHAR_COL_WIDTH = 50

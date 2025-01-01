@@ -55,6 +55,8 @@ class DictionaryNotFoundError(Exception):
 class JeebiesCheckerDialog(CheckerDialog):
     """Minimal class to identify dialog type."""
 
+    manual_page = "Tools_Menu#Jeebies"
+
 
 class JeebiesChecker:
     """Provides jeebies check functionality."""

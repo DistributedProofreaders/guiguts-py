@@ -689,6 +689,8 @@ class ScrolledReadOnlyText(tk.Text):
 class MessageLogDialog(ToplevelDialog):
     """A dialog that displays error/info messages."""
 
+    manual_page = "View_Menu#Message_Log"
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize messagelog dialog."""
         super().__init__("Message Log", *args, **kwargs)

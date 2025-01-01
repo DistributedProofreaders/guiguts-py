@@ -46,13 +46,19 @@ DEFAULT_STEALTH_SCANNOS = "en-common.json"
 class BasicFixupCheckerDialog(CheckerDialog):
     """Minimal class to identify dialog type."""
 
+    manual_page = "Tools_Menu#Basic_Fixup"
+
 
 class UnmatchedCheckerDialog(CheckerDialog):
     """Minimal class to identify dialog type."""
 
+    manual_page = 'Tools_Menu#"Unmatched"_Submenu'
+
 
 class AsteriskCheckerDialog(CheckerDialog):
     """Minimal class to identify dialog type."""
+
+    manual_page = "Navigation#Find_Asterisks_w/o_Slash"
 
 
 def tool_save() -> bool:
@@ -240,6 +246,7 @@ class PageSepAutoType(StrEnum):
 class PageSeparatorDialog(ToplevelDialog):
     """Dialog for fixing page separators."""
 
+    manual_page = "Tools_Menu#Page_Separator_Fixup"
     SEPARATOR_REGEX = r"^-----File: .+"
     BTN_WIDTH = 16
 
@@ -1187,6 +1194,8 @@ def proofer_comment_check() -> None:
         """Minimal class to identify dialog type so that it can exist
         simultaneously with other checker dialogs."""
 
+        manual_page = "Navigation#Find_Proofer_Comments_(_[**notes]_)"
+
     checker_dialog = ProoferCommentCheckerDialog.show_dialog(
         "Proofer Comments", rerun_command=proofer_comment_check
     )
@@ -1262,6 +1271,8 @@ def asterisk_check() -> None:
 
 class TextMarkupConvertorDialog(ToplevelDialog):
     """Dialog for converting DP markup to text markup."""
+
+    manual_page = "Text_Menu#Convert_Markup"
 
     def __init__(self) -> None:
         """Initialize text markup convertor dialog."""
@@ -1385,6 +1396,8 @@ class Scanno(dict):
 
 class ScannoCheckerDialog(CheckerDialog):
     """Dialog to handle stealth scanno checks."""
+
+    manual_page = "Tools_Menu#Stealth_Scannos"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize scanno checker dialog."""
@@ -1814,6 +1827,8 @@ def convert_to_curly_quotes() -> None:
 
 class CurlyQuotesDialog(CheckerDialog):
     """Dialog to handle curly quotes checks."""
+
+    manual_page = "Tools_Menu#Convert_to_Curly_Quotes"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize curly quotes checker dialog."""

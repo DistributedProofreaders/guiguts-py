@@ -3,6 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Optional, TypeVar, Callable
+import webbrowser
 
 import regex as re
 
@@ -65,7 +66,11 @@ class ToplevelDialog(tk.Toplevel):
 
         self._do_config()
         self.save_config = False
-        self.bind("<Configure>", self._handle_config)
+        self.bind("<Configure>", self._handle_config)  #
+
+        # Bind help key to open obligatory manual page
+        assert hasattr(self, "manual_page")
+        self.bind("<F1>", lambda event: self.show_manual_page())
 
         self.wm_withdraw()
         self.wm_attributes("-fullscreen", False)
@@ -304,6 +309,15 @@ class ToplevelDialog(tk.Toplevel):
             return config_dict[self.__class__.__name__]
         except KeyError:
             return None
+
+    def show_manual_page(self) -> None:
+        """Show the manual page for the dialog."""
+        try:
+            suffix = type(self).manual_page  # type:ignore[attr-defined]
+        except AttributeError:
+            return
+        prefix = "https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/"
+        webbrowser.open(prefix + suffix)
 
 
 class OkApplyCancelDialog(ToplevelDialog):
