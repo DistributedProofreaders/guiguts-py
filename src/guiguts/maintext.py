@@ -3276,24 +3276,21 @@ class MainText(tk.Text):
         if 0 <= widget_x <= width and 0 <= widget_y <= height:
             return
         
-        DIRECTION_N_S = 1
-        DIRECTION_E_W = 2
-
         out_of_bounds_distance = 0
-        out_of_bounds_direction = None
+        out_of_bounds_direction = ""
 
         if widget_x < 0:
             out_of_bounds_distance = abs(widget_x)
-            out_of_bounds_direction = DIRECTION_E_W
+            out_of_bounds_direction = "left"
         elif widget_x > width:
             out_of_bounds_distance = abs(widget_x - width)
-            out_of_bounds_direction = DIRECTION_E_W
+            out_of_bounds_direction = "right"
         elif widget_y < 0:
             out_of_bounds_distance = abs(widget_y)
-            out_of_bounds_direction = DIRECTION_N_S
+            out_of_bounds_direction = "up"
         elif widget_y > height:
             out_of_bounds_distance = abs(widget_y - height)
-            out_of_bounds_direction = DIRECTION_N_S
+            out_of_bounds_direction = "down"
         else:
             print("um. should not get here.")
 
@@ -3303,7 +3300,7 @@ class MainText(tk.Text):
         elif out_of_bounds_distance < 40:
             scroll_delay = 250
         # horizontal scrolling should be faster than vertical
-        if out_of_bounds_direction == DIRECTION_E_W:
+        if out_of_bounds_direction in ("left", "right"):
             scroll_delay = int(scroll_delay / 2)
         print(f"scroll={scroll_delay} out of bounds {out_of_bounds_direction} by {out_of_bounds_distance}")
 
