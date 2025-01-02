@@ -2149,8 +2149,13 @@ class MainText(tk.Text):
                     slurp_text = slurp_text + "\n"
         else:
             search_string = re.escape(search_string)
+        # Don't use \b for word boundary because it includes underscore
         if wholeword:
-            search_string = r"\b" + search_string + r"\b"
+            search_string = (
+                r"(?=[[:alnum:]])(?<![[:alnum:]])"
+                + search_string
+                + r"(?<=[[:alnum:]])(?![[:alnum:]])"
+            )
         # Preferable to use flags rather than prepending "(?i)", for example,
         # because if we need to report bad regex to user, it's better if it's
         # the regex they typed.

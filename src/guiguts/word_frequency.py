@@ -101,11 +101,11 @@ class WFWordLists:
                 line = line.lower()
             line = re.sub(r"<\/?[a-z]*>", " ", line)  # throw away DP tags
             # get rid of nonalphanumeric (retaining combining characters)
-            line = re.sub(r"[^'’\.,\p{Alnum}\p{Mark}*-]", " ", line)
+            line = re.sub(r"[^'’\.,\p{Alnum}\p{Mark}*_-]", " ", line)
 
             def strip_punc(word: str) -> str:
                 """Strip relevant leading/trailing punctuation from word."""
-                return re.sub(r"^[\.,'’-]+|[\.,'’-]+$", "", word)
+                return re.sub(r"^[\.,'’_-]+|[\.,'’_-]+$", "", word)
 
             # Build a list of emdash words, i.e. "word1--word2"
             words = re.split(r"\s+", line)
