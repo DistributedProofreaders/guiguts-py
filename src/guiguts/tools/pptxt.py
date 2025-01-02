@@ -14,6 +14,8 @@ from guiguts.widgets import ToolTip
 class PPtxtCheckerDialog(CheckerDialog):
     """Minimal class to identify dialog type."""
 
+    manual_page = "Tools_Menu#PPtxt"
+
 
 REPORT_LIMIT = 5  # Max number of times to report same issue for some checks
 

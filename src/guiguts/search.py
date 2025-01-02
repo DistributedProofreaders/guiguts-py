@@ -42,6 +42,7 @@ class SearchDialog(ToplevelDialog):
         selection: True to restrict counting, replacing, etc., to selected text.
     """
 
+    manual_page = "Searching"
     # Cannot be initialized here, since Tk root may not be created yet
     selection: tk.BooleanVar
 
@@ -471,6 +472,8 @@ class SearchDialog(ToplevelDialog):
 
         class FindAllCheckerDialog(CheckerDialog):
             """Minimal class to identify dialog typepylint."""
+
+            manual_page = "Searching#Find_All"
 
         checker_dialog = FindAllCheckerDialog.show_dialog(
             "Search Results", rerun_command=self.findall_clicked
