@@ -3218,10 +3218,10 @@ class MainText(tk.Text):
         # ** THE ORDER MATTERS HERE **
         #
         for tag, colors in (
-            (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
             (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
             # "sel" is for active selections - don't override the default color
             ("sel", None),
+            (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
             (HighlightTag.PAREN, HighlightColors.PAREN),
             (HighlightTag.CURLY_BRACKET, HighlightColors.CURLY_BRACKET),
             (HighlightTag.SQUARE_BRACKET, HighlightColors.SQUARE_BRACKET),
