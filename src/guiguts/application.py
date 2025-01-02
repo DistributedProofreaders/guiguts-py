@@ -805,7 +805,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_help_menu(self) -> None:
         """Create the Help menu."""
         menu_help = Menu(menubar(), "~Help")
-        menu_help.add_button("Guiguts ~Manual", self.show_help_manual, "F1")
+        menu_help.add_button(
+            "Guiguts ~Manual", self.show_help_manual, "F1", force_main_only=True
+        )
         menu_help.add_button("About ~Guiguts", self.help_about)
         menu_help.add_button("~Regex Quick Reference", self.show_help_regex)
         menu_help.add_button(

@@ -66,7 +66,7 @@ class ToplevelDialog(tk.Toplevel):
 
         self._do_config()
         self.save_config = False
-        self.bind("<Configure>", self._handle_config)  #
+        self.bind("<Configure>", self._handle_config)
 
         # Bind help key to open obligatory manual page
         assert hasattr(self, "manual_page")

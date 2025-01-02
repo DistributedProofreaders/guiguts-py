@@ -66,7 +66,11 @@ class Menu(tk.Menu):
             parent.add_cascade(command_args)
 
     def add_button(
-        self, label: str, handler: str | Callable[[], Any], accel: str = ""
+        self,
+        label: str,
+        handler: str | Callable[[], Any],
+        accel: str = "",
+        force_main_only: bool = False,
     ) -> None:
         """Add a button to the menu.
 
@@ -80,6 +84,7 @@ class Menu(tk.Menu):
               on the button, and will be bound to the same action as the menu
               button. "Cmd/Ctrl" means `Cmd` key on Mac; `Ctrl` key on
               Windows/Linux.
+            force_main_only: True to only bind to the main window, not other dialogs
         """
         (label_tilde, label_txt) = process_label(label)
         (accel, key_event) = process_accel(accel)
@@ -97,6 +102,9 @@ class Menu(tk.Menu):
             bind_all = True
             # Handler is function, so may need key binding
             command = handler
+
+        if force_main_only:
+            bind_all = False
 
         # If key binding given, then bind it
         if accel:
