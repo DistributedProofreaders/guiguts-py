@@ -1,5 +1,6 @@
 """Search/Replace functionality"""
 
+import time
 import logging
 import tkinter as tk
 from tkinter import ttk
@@ -10,7 +11,7 @@ from typing import Any, Tuple, Optional
 import regex as re
 
 from guiguts.checkers import CheckerDialog
-from guiguts.maintext import maintext, TclRegexCompileError, FindMatch
+from guiguts.maintext import maintext, TclRegexCompileError, FindMatch, HighlightTag
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey
 from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, sing_plur
 from guiguts.widgets import (
@@ -292,6 +293,9 @@ class SearchDialog(ToplevelDialog):
         self.config_width()
         self.allow_geometry_save()
 
+        # Handle tag cleanup when search panel is closed
+        self.top_frame.bind("<Destroy>", lambda _event: search_tag_cleanup())
+    
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
 
@@ -365,7 +369,15 @@ class SearchDialog(ToplevelDialog):
             start_rowcol = get_search_start(backwards)
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
+        maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
         try:
+            matchez = self.count_clicked()
+            for matchz in matchez:
+                maintext().tag_add(
+                    HighlightTag.SEARCH_INACTIVE,
+                    matchz.rowcol.index(),
+                    f"{matchz.rowcol.index()}+{matchz.count}c",
+                )
             _do_find_next(
                 search_string, backwards, IndexRange(start_rowcol, stop_rowcol)
             )
@@ -707,6 +719,7 @@ def _do_find_next(
         backwards: True to search backwards.
         start_point: Point to search from.
     """
+    # maintext().tag_remove(HighlightTag.SEARCH_ACTIVE, "1.0", tk.END)
     match = maintext().find_match_user(
         search_string,
         search_limits.start,
@@ -875,3 +888,7 @@ def message_from_regex_exception(exc: re.error) -> str:
     message = str(exc)
     message = message[0].upper() + message[1:]
     return message + " in regex " + exc.pattern  # type:ignore[attr-defined]
+
+
+def search_tag_cleanup() -> None:
+    maintext().tag_remove(HighlightTag.SEARCH_INACTIVE, "1.0", tk.END)
