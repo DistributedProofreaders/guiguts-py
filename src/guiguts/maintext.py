@@ -3294,15 +3294,22 @@ class MainText(tk.Text):
         else:
             print("um. should not get here.")
 
-        scroll_delay = 125
-        if out_of_bounds_distance < 20:
-            scroll_delay = 500
-        elif out_of_bounds_distance < 40:
-            scroll_delay = 250
+        # "smooth scroll" by basing the delay on math rather than choosing
+        # some arbitrary boundaries. choose a sane minimum value, otherwise
+        # being barely outside the boundary creates a 5-second scroll delay.
+        # also don't let it go below a certain value or the loop speed will
+        # get out of control.
+        scroll_delay = max(50, min(500, (250 * 20 / out_of_bounds_distance)))
+
+        # scroll_delay = 125
+        # if out_of_bounds_distance < 20:
+        #     scroll_delay = 500
+        # elif out_of_bounds_distance < 40:
+        #     scroll_delay = 250
         # horizontal scrolling should be faster than vertical
         if out_of_bounds_direction in ("left", "right"):
-            scroll_delay = int(scroll_delay / 2)
-        print(f"scroll={scroll_delay} out of bounds {out_of_bounds_direction} by {out_of_bounds_distance}")
+            scroll_delay = scroll_delay / 1.5
+        print(f"scroll={int(scroll_delay)} out of bounds {out_of_bounds_direction} by {out_of_bounds_distance}")
 
         # Scroll in the appropriate direction (x or y).
         if widget_y < 0:
@@ -3315,7 +3322,7 @@ class MainText(tk.Text):
             event.widget.xview_scroll(1, "units")
 
         self._on_change()
-        self.after(scroll_delay, lambda: self._autoscroll_callback(event))
+        self.after(int(scroll_delay), lambda: self._autoscroll_callback(event))
 
 
 def img_from_page_mark(mark: str) -> str:
