@@ -3275,8 +3275,41 @@ class MainText(tk.Text):
         # Stop scrolling if the mouse pointer is within the text widget bounds
         if 0 <= widget_x <= width and 0 <= widget_y <= height:
             return
+        
+        out_of_bounds_distance = 0
+        out_of_bounds_direction = ""
 
-        scroll_delay = 100
+        if widget_x < 0:
+            out_of_bounds_distance = abs(widget_x)
+            out_of_bounds_direction = "left"
+        elif widget_x > width:
+            out_of_bounds_distance = abs(widget_x - width)
+            out_of_bounds_direction = "right"
+        elif widget_y < 0:
+            out_of_bounds_distance = abs(widget_y)
+            out_of_bounds_direction = "up"
+        elif widget_y > height:
+            out_of_bounds_distance = abs(widget_y - height)
+            out_of_bounds_direction = "down"
+        else:
+            print("um. should not get here.")
+
+        # "smooth scroll" by basing the delay on math rather than choosing
+        # some arbitrary boundaries. choose a sane minimum value, otherwise
+        # being barely outside the boundary creates a 5-second scroll delay.
+        # also don't let it go below a certain value or the loop speed will
+        # get out of control.
+        scroll_delay = max(50, min(500, (250 * 20 / out_of_bounds_distance)))
+
+        # scroll_delay = 125
+        # if out_of_bounds_distance < 20:
+        #     scroll_delay = 500
+        # elif out_of_bounds_distance < 40:
+        #     scroll_delay = 250
+        # horizontal scrolling should be faster than vertical
+        if out_of_bounds_direction in ("left", "right"):
+            scroll_delay = scroll_delay / 1.5
+        print(f"scroll={int(scroll_delay)} out of bounds {out_of_bounds_direction} by {out_of_bounds_distance}")
 
         # Scroll in the appropriate direction (x or y).
         if widget_y < 0:
@@ -3289,7 +3322,7 @@ class MainText(tk.Text):
             event.widget.xview_scroll(1, "units")
 
         self._on_change()
-        self.after(scroll_delay, lambda: self._autoscroll_callback(event))
+        self.after(int(scroll_delay), lambda: self._autoscroll_callback(event))
 
 
 def img_from_page_mark(mark: str) -> str:
