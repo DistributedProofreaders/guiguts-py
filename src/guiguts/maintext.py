@@ -790,7 +790,9 @@ class MainText(tk.Text):
             self.bind_event(
                 "<B1-Motion>", self._autoscroll_callback, add=True, bind_peer=True
             )
-            self._autoscroll_active = False
+
+        # Also used for column selection, not just above bug fix, so needed on all platforms
+        self._autoscroll_active = False
 
         # Need to wait until maintext has been registered to set the font preference
         preferences.set(PrefKey.TEXT_FONT_FAMILY, family)
@@ -1518,6 +1520,18 @@ class MainText(tk.Text):
         self.column_delete()
         return "break"  # Skip default behavior
 
+    def column_select_click_action(self, start: IndexRowCol) -> None:
+        """Do that needs to be done when the user clicks to start column selection.
+        Since user can click first then press modifier key, or hold modifier while
+        clicking, there are two routes into this point.
+
+        Args:
+            start: Start index of column selection.
+        """
+        self.focus_widget().config(cursor="tcross")
+        self.column_select_start(start)
+        self._autoscroll_active = True
+
     def column_select_click(self, event: tk.Event) -> None:
         """Callback when column selection is started via mouse click.
 
@@ -1528,9 +1542,7 @@ class MainText(tk.Text):
         # Force an update so the focus is actually set before it's queried during motion
         event.widget.focus()
         event.widget.update()
-        event.widget.config(cursor="tcross")
-        self.column_select_start(self.rowcol(f"@{event.x},{event.y}"))
-        self._autoscroll_active = True
+        self.column_select_click_action(self.rowcol(f"@{event.x},{event.y}"))
 
     def column_select_motion(self, event: tk.Event) -> None:
         """Callback when column selection continues via mouse motion.
@@ -1581,6 +1593,7 @@ class MainText(tk.Text):
             else:
                 anchor = ranges[-1].end
             self.column_select_start(anchor)
+            self.column_select_click_action(anchor)  # Fake a column_select_click
 
         self.do_column_select(IndexRange(self.rowcol(TK_ANCHOR_MARK), cur_rowcol))
 
