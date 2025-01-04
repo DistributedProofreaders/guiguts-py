@@ -628,6 +628,8 @@ def weird_characters() -> None:
             # Under the header add to the dialog every line containing an instance of the weirdo.
             # If there are multiple instances of a weirdo on a line then the line will appear in
             # the dialog multiple times, each time highlighting a different instance of it.
+            # If character is in `report_once_list`, just report once per line (used for text tables)
+            report_once_list = "+|"
 
             prev_line_number = -1
             regx = "(" + "\\" + weirdo + ")"
@@ -647,7 +649,10 @@ def weird_characters() -> None:
                 # ... but note that a new dialog line is generated for each time the word appears
                 # on the line so there may be more than 5 dialog lines output.
                 line = book[line_number - 1]
-                report_all_occurrences_on_line(regx, line, line_number)
+                if weirdo in report_once_list:
+                    report_multiple_occurrences_on_line(regx, line, line_number)
+                else:
+                    report_all_occurrences_on_line(regx, line, line_number)
                 count += 1
                 prev_line_number = line_number
 
