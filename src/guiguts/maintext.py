@@ -3289,7 +3289,36 @@ class MainText(tk.Text):
         if 0 <= widget_x <= width and 0 <= widget_y <= height:
             return
 
-        scroll_delay = 100
+        out_of_bounds_distance = 0
+        out_of_bounds_direction = ""
+
+        if widget_x < 0:
+            out_of_bounds_distance = abs(widget_x)
+            out_of_bounds_direction = "left"
+        elif widget_x > width:
+            out_of_bounds_distance = abs(widget_x - width)
+            out_of_bounds_direction = "right"
+        elif widget_y < 0:
+            out_of_bounds_distance = abs(widget_y)
+            out_of_bounds_direction = "up"
+        elif widget_y > height:
+            out_of_bounds_distance = abs(widget_y - height)
+            out_of_bounds_direction = "down"
+
+        # Attempt to "smooth scroll" by basing the delay on math rather than
+        # choosing some arbitrary boundaries. Enforce a minimum and maximum
+        # value, otherwise we start at about 5 seconds and get to ridiculous
+        # minimums.
+        scroll_delay_fastest = 100
+        scroll_delay_slowest = 500
+        scroll_delay = max(
+            scroll_delay_slowest,
+            min(scroll_delay_fastest, (5000 / out_of_bounds_distance)),
+        )
+
+        # Increase speed for horizontal scrolling
+        if out_of_bounds_direction in ("left", "right"):
+            scroll_delay = scroll_delay / 1.5
 
         # Scroll in the appropriate direction (x or y).
         if widget_y < 0:
@@ -3302,7 +3331,7 @@ class MainText(tk.Text):
             event.widget.xview_scroll(1, "units")
 
         self._on_change()
-        self.after(scroll_delay, lambda: self._autoscroll_callback(event))
+        self.after(int(scroll_delay), lambda: self._autoscroll_callback(event))
 
 
 def img_from_page_mark(mark: str) -> str:
