@@ -1521,7 +1521,7 @@ class MainText(tk.Text):
         return "break"  # Skip default behavior
 
     def column_select_click_action(self, start: IndexRowCol) -> None:
-        """Do that needs to be done when the user clicks to start column selection.
+        """Do what needs to be done when the user clicks to start column selection.
         Since user can click first then press modifier key, or hold modifier while
         clicking, there are two routes into this point.
 
