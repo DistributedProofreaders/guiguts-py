@@ -810,6 +810,40 @@ class MainText(tk.Text):
         # Initialize highlighting tags
         self.after_idle(lambda: self.highlight_configure_tags(first_run=True))
 
+        # Set up proxy to intercept Tcl commands
+        name = str(self)
+        self._orig_self = name + "_orig"
+        # If debugging is being complicated by everything passing through self.__proxy
+        self.tk.call("rename", name, self._orig_self)
+        self.tk.createcommand(name, self._proxy)
+
+        # Use this tag to bypass the interception of the tk.SEL tag
+        self.force_sel_tag = "FORCESEL"
+
+    def _proxy(self, cmd: str, *args: Any) -> Any:
+        """Proxy method to intercept Tcl commands.
+
+        Suppress add/remove operations on the tk.SEL tag if currently doing
+        column selection - can override by using self.force_sel_tag.
+        Allows us to suppress default Tcl behavior (e.g. drag mouse selection)
+        while permitting us to set selection ranges (for column select).
+        """
+        # Only intercept tag add/remove during column selection
+        if (
+            self.column_selecting
+            and cmd == "tag"
+            and args
+            and args[0] in ("add", "remove")
+        ):
+            # If tag is default sel tag, suppress it.
+            if args[1] == tk.SEL:
+                return None
+            # If tag is force_sel_tag, replace that with default sel tag
+            if args[1] == self.force_sel_tag:
+                args = args[:1] + (tk.SEL,) + args[2:]
+
+        return self.tk.call((self._orig_self, cmd) + args)
+
     def do_nothing(self) -> None:
         """The only winning move is not to play."""
         return
@@ -1226,13 +1260,15 @@ class MainText(tk.Text):
             return
         self.do_column_select(IndexRange(ranges[0].start, ranges[-1].end))
 
-    def do_column_select(self, col_range: IndexRange) -> None:
+    def do_column_select(self, col_range: IndexRange, tag: str = tk.SEL) -> None:
         """Use multiple selection ranges to select a block
         defined by the start & end of the given range.
 
         Args:
-            IndexRange containing corners of block to be selected."""
-        self.clear_selection()
+            col_range: IndexRange containing corners of block to be selected.
+            tag: Tag to use for selection - defaults to tk.SEL
+        """
+        self.focus_widget().tag_remove(tag, "1.0", tk.END)
         min_row = min(col_range.start.row, col_range.end.row)
         max_row = max(col_range.start.row, col_range.end.row)
         min_col = min(col_range.start.col, col_range.end.col)
@@ -1240,7 +1276,7 @@ class MainText(tk.Text):
         for line in range(min_row, max_row + 1):
             beg = IndexRowCol(line, min_col).index()
             end = IndexRowCol(line, max_col).index()
-            self.focus_widget().tag_add("sel", beg, end)
+            self.focus_widget().tag_add(tag, beg, end)
 
     def clear_selection(self) -> None:
         """Clear any current text selection."""
@@ -1595,7 +1631,11 @@ class MainText(tk.Text):
             self.column_select_start(anchor)
             self.column_select_click_action(anchor)  # Fake a column_select_click
 
-        self.do_column_select(IndexRange(self.rowcol(TK_ANCHOR_MARK), cur_rowcol))
+        # Force the selection tag in do_column_select - the proxy will then permit
+        # the setting of the selected range with the tk.SEL tag
+        self.do_column_select(
+            IndexRange(self.rowcol(TK_ANCHOR_MARK), cur_rowcol), tag=self.force_sel_tag
+        )
 
         # Handle scrolling past edge of widget
         if self._autoscroll_active:
