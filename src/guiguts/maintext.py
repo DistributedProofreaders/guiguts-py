@@ -810,15 +810,10 @@ class MainText(tk.Text):
         # Initialize highlighting tags
         self.after_idle(lambda: self.highlight_configure_tags(first_run=True))
 
-        # Set up proxy to intercept Tcl commands
-        name = str(self)
-        self._orig_self = name + "_orig"
-        # If debugging is being complicated by everything passing through self.__proxy
-        self.tk.call("rename", name, self._orig_self)
-        self.tk.createcommand(name, self._proxy)
-
         # Use this tag to bypass the interception of the tk.SEL tag
         self.force_sel_tag = "FORCESEL"
+        self._self_name = str(self)
+        self._self_name_orig = self._self_name + "_orig"
 
     def _proxy(self, cmd: str, *args: Any) -> Any:
         """Proxy method to intercept Tcl commands.
@@ -827,22 +822,27 @@ class MainText(tk.Text):
         column selection - can override by using self.force_sel_tag.
         Allows us to suppress default Tcl behavior (e.g. drag mouse selection)
         while permitting us to set selection ranges (for column select).
+
+        Only used during column selection because of the side effect that it
+        interferes with timely reporting/catching of TclError exceptions.
         """
-        # Only intercept tag add/remove during column selection
-        if (
-            self.column_selecting
-            and cmd == "tag"
-            and args
-            and args[0] in ("add", "remove")
-        ):
+        if cmd == "tag" and args and args[0] in ("add", "remove"):
             # If tag is default sel tag, suppress it.
             if args[1] == tk.SEL:
                 return None
             # If tag is force_sel_tag, replace that with default sel tag
             if args[1] == self.force_sel_tag:
                 args = args[:1] + (tk.SEL,) + args[2:]
-
-        return self.tk.call((self._orig_self, cmd) + args)
+        # Suppressing Tcl errors here is necessary, since this method is
+        # called from main loop, so application code can't catch exceptions.
+        # Since proxy is only used during column selection, this seems OK.
+        # If attempting to debug column selection, developers may find it
+        # easier to disable col_proxy_start() & col_proxy_end()
+        try:
+            result = self.tk.call((self._self_name_orig, cmd) + args)
+        except tk.TclError:
+            result = None
+        return result
 
     def do_nothing(self) -> None:
         """The only winning move is not to play."""
@@ -1556,6 +1556,38 @@ class MainText(tk.Text):
         self.column_delete()
         return "break"  # Skip default behavior
 
+    def col_proxy_start(self) -> None:
+        """Set up proxy to intercept Tcl commands.
+
+        Column selection should still work, but maybe not as cleanly
+        if these 2 methods are disabled, which could be useful if trying
+        to debug column selection.
+        """
+        try:
+            self.tk.createcommand("tempself", self._proxy)
+            self.tk.call("rename", self._self_name, self._self_name_orig)
+            self.tk.call("rename", "tempself", self._self_name)
+            self.update()
+        except tk.TclError:
+            # It's OK if the above rename fails, because that means the proxy is already set up
+            pass
+
+    def col_proxy_end(self) -> None:
+        """Stop using proxy to intercept Tcl commands.
+
+        Column selection should still work, but maybe not as cleanly
+        if these 2 methods are disabled, which could be useful if trying
+        to debug column selection.
+        """
+        try:
+            self.tk.call("rename", self._self_name, "tempself")
+            self.tk.call("rename", self._self_name_orig, self._self_name)
+            self.tk.deletecommand("tempself")
+            self.update()
+        except tk.TclError:
+            # Devs want to know if this happens - users probably don't
+            assert False, "Failed to stop using proxy"
+
     def column_select_click_action(self, start: IndexRowCol) -> None:
         """Do what needs to be done when the user clicks to start column selection.
         Since user can click first then press modifier key, or hold modifier while
@@ -1567,6 +1599,7 @@ class MainText(tk.Text):
         self.focus_widget().config(cursor="tcross")
         self.column_select_start(start)
         self._autoscroll_active = True
+        self.col_proxy_start()
 
     def column_select_click(self, event: tk.Event) -> None:
         """Callback when column selection is started via mouse click.
@@ -1649,8 +1682,8 @@ class MainText(tk.Text):
         """
         self._autoscroll_active = False
         self.column_select_motion(event)
-        self.column_select_stop(event)
         event.widget.mark_set(tk.INSERT, f"@{event.x},{event.y}")
+        self.column_select_stop(event)
 
     def column_select_start(self, anchor: IndexRowCol) -> None:
         """Begin column selection.
@@ -1666,6 +1699,7 @@ class MainText(tk.Text):
         """Stop column selection."""
         self.column_selecting = False
         event.widget.config(cursor="")
+        self.col_proxy_end()
 
     def rowcol(self, index: str) -> IndexRowCol:
         """Return IndexRowCol corresponding to given index in maintext/peer.
