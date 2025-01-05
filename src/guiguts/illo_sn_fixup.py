@@ -302,12 +302,12 @@ class IlloSNChecker:
         Do this from the start of (its first) line so that any prefixing '*' is
         included in the deletion. There are 3 cases to consider:
         1. The tag is immediately above a bottom of page Page Marker. Delete the
-           tag line(s) and the preceding blank line.
+        tag line(s) and the preceding blank line.
         2. The tag is immediately below a bottom of page Page Marker. Delete the
-           tag line(s) and the following blank line.
+        tag line(s) and the following blank line.
         3. The tag is mid-page so preceded and followed by a blank line. Delete
-           the tag line(s) and the following blank line but leave the preceding
-           one.
+        the tag line(s) and the following blank line but leave the preceding
+        one.
         """
         # Use marks to get updated index for start & end
         first_line_num = self.updated_index(selected.first_line_num)

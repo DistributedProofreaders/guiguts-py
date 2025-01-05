@@ -2,8 +2,9 @@
 Guiguts Documentation
 #####################
 
+*******
 Guiguts
-=======
+*******
 
 .. automodule:: application
  
@@ -16,6 +17,21 @@ File
 ====
     
 .. automodule:: file
+ 
+Footnotes
+=========
+    
+.. automodule:: footnotes
+ 
+HTML Convert
+============
+    
+.. automodule:: html_convert
+ 
+Illo/Sidenote Fixup
+===================
+    
+.. automodule:: illo_sn_fixup
 
 MainText
 ========
@@ -26,6 +42,16 @@ MainWindow
 ==========
      
 .. automodule:: mainwindow
+ 
+Misc. Dialogs
+=============
+    
+.. automodule:: misc_dialogs
+ 
+Misc. Tools
+===========
+    
+.. automodule:: misc_tools
  
 Page Details
 ============
@@ -71,23 +97,22 @@ Word Frequency
 ==============
     
 .. automodule:: word_frequency
- 
-Footnotes
-==============
+
+*****
+Tools
+*****
+
+Jeebies
+=======
     
-.. automodule:: footnotes
+.. automodule:: tools.jeebies
+
+Levenshtein
+===========
+    
+.. automodule:: tools.levenshtein
 
 PPtxt
 =====
     
 .. automodule:: tools.pptxt
- 
-Misc. Dialogs
-=============
-    
-.. automodule:: misc_dialogs
- 
-Misc. Tools
-===========
-    
-.. automodule:: misc_tools
