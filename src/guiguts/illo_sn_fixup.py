@@ -300,7 +300,7 @@ class IlloSNChecker:
         prev_line_num = maintext().index(f"{first_line_num}-1l")
         prev_line_txt = maintext().get(prev_line_num, f"{prev_line_num} lineend")
         # Line after the (last record of the) Illo or SN record.
-        next_line_num = maintext().index(f"{last_line_num}+1l")
+        next_line_num = maintext().index(f"{last_line_num}+1l linestart")
         next_line_txt = maintext().get(next_line_num, f"{next_line_num} lineend")
         # Assume it's a mid-page Illo or SN record unless found otherwise. This is case 3.
         if prev_line_txt != "":
