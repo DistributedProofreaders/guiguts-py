@@ -160,60 +160,44 @@ class IlloSNChecker:
         # of an Illo or SN record, such as by a blank line on one side and
         # a non-blank line on the other which isn't a Page Marker record.
         #
-        # Get file first and last file lines.
-        file_first_line_num = "1.0"
-        file_last_line_num = maintext().end().index()
-        # Get line numbers and text of the records we are interested in.
-        illosn_first_line_num = maintext().index(f"{start.index()} linestart")
-        illosn_last_line_num = maintext().index(f"{end.index()} linestart")
-        above_illosn_line_num = maintext().index(
-            f"{illosn_first_line_num}-1l linestart"
-        )
-        below_illosn_line_num = maintext().index(f"{illosn_last_line_num}+1l linestart")
-        above_illosn_line_txt = maintext().get(
-            above_illosn_line_num, f"{above_illosn_line_num} lineend"
-        )
-        below_illosn_line_txt = maintext().get(
-            below_illosn_line_num, f"{below_illosn_line_num} lineend"
-        )
-        # Look at text of the line above the (first line of the) Illo or
-        # SN record and below the (last line of the) Illo or SN record.
-        #
-        # Treat Illo or SN record on first line of the file specially.
-        if file_first_line_num == illosn_first_line_num:
-            # Just look at the line after the (last line of the) tag.
-            mid_para = False
-            if not (
-                below_illosn_line_txt == ""
-                or below_illosn_line_txt[0:10] == "-----File:"
-            ):
-                # Looks anomalous so flag it.
-                mid_para = True
-            return mid_para
-        # Treat Illo or SN record on last line of the file specially.
-        if file_last_line_num == illosn_last_line_num:
-            # Just look at the line above the (first line of the) tag.
-            mid_para = False
+        file_last_line_num = maintext().end().row
+        illosn_first_line_num = start.row
+        illosn_last_line_num = end.row
+        # Anomalous if line above illo/SN is not blank or page separator (except for first line of file)
+        if illosn_first_line_num > 1:
+            above_illosn_line_txt = maintext().get(
+                f"{illosn_first_line_num - 1}.0", f"{illosn_first_line_num - 1}.end"
+            )
             if not (
                 above_illosn_line_txt == ""
-                or above_illosn_line_txt[0:10] == "-----File:"
+                or above_illosn_line_txt.startswith("-----File:")
             ):
-                # Looks anomalous so flag it.
-                mid_para = True
-            return mid_para
-        # For an Illo or SN record anywhere else in the file look first
-        # at the line above then the line below.
-        if not (
-            above_illosn_line_txt == "" or above_illosn_line_txt[0:10] == "-----File:"
-        ):
-            # Looks anomalous so flag it.
-            return True
-        if not (
-            below_illosn_line_txt == "" or below_illosn_line_txt[0:10] == "-----File:"
-        ):
-            # Looks anomalous so flag it.
-            return True
-        # Looks a normally formatted Illo or SN record so don't flag it.
+                return True
+
+        # Find first line below illo/SN that is not blank/[Blank page]/page separator/illo/sidenote
+        in_illo_sn = False
+        for line_num in range(illosn_last_line_num + 1, file_last_line_num + 1):
+            below_illosn_line_txt = maintext().get(f"{line_num}.0", f"{line_num}.end")
+            if (
+                below_illosn_line_txt == ""
+                or below_illosn_line_txt == "[Blank Page]"
+                or below_illosn_line_txt.startswith("-----File:")
+            ):
+                continue
+            # Check if starting illo/SN markup. If on single line, flag is reset below
+            if re.match(r"\*?\[(Illustration|Sidenote)", below_illosn_line_txt):
+                in_illo_sn = True
+            # If in illo/SN, keep on ignoring lines
+            if in_illo_sn:
+                # If illo/SN ends, reset the flag
+                if "]" in below_illosn_line_txt:
+                    in_illo_sn = False
+                continue
+            # Found "normal" text line - anomalous if previous line is not blank,
+            # i.e. not a paragraph start, and ok if previous line is blank
+            return maintext().get(f"{line_num - 1}.0", f"{line_num - 1}.end") != ""
+
+        # Hit end of file before finding "normal" text, so not anomalous
         return False
 
     def run_check(self, tag_type: str) -> None:
