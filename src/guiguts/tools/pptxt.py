@@ -628,6 +628,8 @@ def weird_characters() -> None:
             # Under the header add to the dialog every line containing an instance of the weirdo.
             # If there are multiple instances of a weirdo on a line then the line will appear in
             # the dialog multiple times, each time highlighting a different instance of it.
+            # If character is in `report_once_list`, just report once per line (used for text tables)
+            report_once_list = "+|"
 
             prev_line_number = -1
             regx = "(" + "\\" + weirdo + ")"
@@ -647,7 +649,10 @@ def weird_characters() -> None:
                 # ... but note that a new dialog line is generated for each time the word appears
                 # on the line so there may be more than 5 dialog lines output.
                 line = book[line_number - 1]
-                report_all_occurrences_on_line(regx, line, line_number)
+                if weirdo in report_once_list:
+                    report_multiple_occurrences_on_line(regx, line, line_number)
+                else:
+                    report_all_occurrences_on_line(regx, line, line_number)
                 count += 1
                 prev_line_number = line_number
 
@@ -1259,7 +1264,7 @@ def adjacent_spaces_check() -> None:
         if re.search(r"\s\s+?", line) and not re.search(r"^\s+?", line):
             no_adjacent_spaces_found = False
             # Generate a new dialog line for each match on the line.
-            report_all_occurrences_on_line(r"\s\s+", line, line_number)
+            report_multiple_occurrences_on_line(r"\s\s+", line, line_number)
 
         line_number += 1
 
@@ -1322,6 +1327,33 @@ def double_dash_replace(matchobj: re.Match) -> str:
     """
 
     return matchobj.group(1) + "—" + matchobj.group(2)
+
+
+def report_multiple_occurrences_on_line(
+    pattern: str, line: str, line_number: int
+) -> None:
+    """Report multiple occurrences in one message for this line.
+
+    Args:
+        pattern: A regex of the pattern to be matched and highlighted.
+        line: The string on which to match the pattern.
+        line_number: The line number of the line in the file.
+    """
+
+    matches = list(re.finditer(pattern, line))
+    if not matches:
+        return
+    # Get start/end of first/last error on line.
+    error_start = matches[0].start()
+    error_end = matches[-1].end()
+    # Add record to the dialog with prefix if repeated matches.
+    checker_dialog.add_entry(
+        line,
+        IndexRange(f"{line_number}.{error_start}", f"{line_number}.{error_end}"),
+        error_start,
+        error_end,
+        error_prefix=f"(x{len(matches)}) " if len(matches) > 1 else "",
+    )
 
 
 def report_all_occurrences_on_line(pattern: str, line: str, line_number: int) -> int:
@@ -1847,7 +1879,7 @@ def dash_review() -> None:
         for record in a_hh:
             line_number = record[0]
             line = record[1]
-            report_all_occurrences_on_line(r"(\p{Pd}\p{Pd}+)", line, line_number)
+            report_multiple_occurrences_on_line(r"(\p{Pd}\p{Pd}+)", line, line_number)
 
     # Report hyphen-minus
 
