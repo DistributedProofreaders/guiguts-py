@@ -392,7 +392,8 @@ class MainImage(tk.Frame):
 
     def image_zoom_to_width(self) -> None:
         """Zoom image to fit to width of image window."""
-        assert self.imageid is not None
+        if self.imageid is None:
+            return
         bbox_image = self.canvas.bbox(self.imageid)
         scale_factor = (
             self.canvas.canvasx(self.canvas.winfo_width()) - self.canvas.canvasx(0)
@@ -401,7 +402,8 @@ class MainImage(tk.Frame):
 
     def image_zoom_to_height(self) -> None:
         """Zoom image to fit to height of image window."""
-        assert self.imageid is not None
+        if self.imageid is None:
+            return
         bbox_image = self.canvas.bbox(self.imageid)
         scale_factor = (
             self.canvas.canvasy(self.canvas.winfo_height()) - self.canvas.canvasy(0)
