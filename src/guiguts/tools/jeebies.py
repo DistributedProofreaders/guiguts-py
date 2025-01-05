@@ -661,7 +661,7 @@ class JeebiesChecker:
 
     def load_phrases_file_into_dictionary(self) -> None:
         """Load a phrase-per-line file into the target dictionary. Entries in the file
-        are either 2-form (e.g. |he|a:168) or 3-form (e.g. since|he|stopped:7) phrases.
+        are either 2-form (e.g. `|he|a:168`) or 3-form (e.g. `since|he|stopped:7`) phrases.
         """
         file = "hebelist.txt"
         path = DEFAULT_DICTIONARY_DIR.joinpath(file)
