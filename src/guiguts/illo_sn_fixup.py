@@ -114,7 +114,7 @@ class IlloSNChecker:
         # Get line number index of the last line of the selected record.
         # If not a multi-line record then this will be same index as above.
         selected_record_end = selected_record.end.index()
-        last_line_num = maintext().index(f"{selected_record_end} linestart")
+        last_line_num = maintext().index(f"{selected_record_end}")
         rec = SelectedIlloSNRecord(first_line_num, last_line_num)
         return rec
 
@@ -300,7 +300,7 @@ class IlloSNChecker:
         prev_line_num = maintext().index(f"{first_line_num}-1l")
         prev_line_txt = maintext().get(prev_line_num, f"{prev_line_num} lineend")
         # Line after the (last record of the) Illo or SN record.
-        next_line_num = maintext().index(f"{last_line_num}+1l")
+        next_line_num = maintext().index(f"{last_line_num}+1l linestart")
         next_line_txt = maintext().get(next_line_num, f"{next_line_num} lineend")
         # Assume it's a mid-page Illo or SN record unless found otherwise. This is case 3.
         if prev_line_txt != "":
@@ -477,7 +477,7 @@ class IlloSNChecker:
                 # Copy the lines of the Illo or SN record to be moved. Don't include the
                 # prefixing "*" if present.
                 the_selected_record_lines = maintext().get(
-                    first_line_num, f"{last_line_num} lineend"
+                    first_line_num, f"{last_line_num}"
                 )
                 if the_selected_record_lines[0:1] == "*":
                     the_selected_record_lines = the_selected_record_lines[1:]
@@ -522,7 +522,7 @@ class IlloSNChecker:
         # Look for a suitable blank line. Start at line immediately below the (last line of
         # the) selected Illo or SN record. NB We may not be able to move the record at all if
         # it means skipping over another tag of the same type.
-        line_num = maintext().index(f"{last_line_num}+1l")
+        line_num = maintext().index(f"{last_line_num}+1l linestart")
         # Set end of loop criteria.
         file_end = maintext().end().index()
         file_end_line_num_plus_1 = maintext().index(f"{file_end}+1l linestart")
@@ -556,11 +556,9 @@ class IlloSNChecker:
             #
             # If we are not in this situation, insert selected tag below the blank line we are at.
             # Otherwise look for next blank line below that one.
-            if (
-                line_txt == ""
-                and not maintext().index(f"{line_num}-1l linestart")
-                == selected.last_line_num
-            ):
+            if line_txt == "" and not maintext().index(
+                f"{line_num}-1l linestart"
+            ) == maintext().index(f"{last_line_num} linestart"):
                 # If we are at the top of a block of blank lines, move the insertion
                 # point to the bottom of the block. If the 'block' is just a single blank
                 # line then the returned line_num is the same as the argument line_num.
