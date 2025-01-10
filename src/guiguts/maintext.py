@@ -292,17 +292,17 @@ class HighlightColors:
     # Must be a definition for each available theme
     QUOTEMARK = {
         "Light": {"bg": "#a08dfc", "fg": "black"},
-        "Dark": {"bg": "#a08dfc", "fg": "white"},
+        "Dark": {"bg": "darkmagenta", "fg": "white"},
     }
 
     SPOTLIGHT = {
         "Light": {"bg": "orange", "fg": "black"},
-        "Dark": {"bg": "orange", "fg": "white"},
+        "Dark": {"bg": "darkorange", "fg": "white"},
     }
 
     PAREN = {
         "Light": {"bg": "violet", "fg": "white"},
-        "Dark": {"bg": "violet", "fg": "white"},
+        "Dark": {"bg": "mediumpurple", "fg": "white"},
     }
 
     CURLY_BRACKET = {
@@ -322,17 +322,17 @@ class HighlightColors:
 
     CURLY_DOUBLE_QUOTE = {
         "Light": {"bg": "limegreen", "fg": "white"},
-        "Dark": {"bg": "limegreen", "fg": "white"},
+        "Dark": {"bg": "teal", "fg": "white"},
     }
 
     STRAIGHT_SINGLE_QUOTE = {
         "Light": {"bg": "grey", "fg": "white"},
-        "Dark": {"bg": "grey", "fg": "white"},
+        "Dark": {"bg": "sienna", "fg": "white"},
     }
 
     CURLY_SINGLE_QUOTE = {
         "Light": {"bg": "dodgerblue", "fg": "white"},
-        "Dark": {"bg": "dodgerblue", "fg": "white"},
+        "Dark": {"bg": "#b23e0c", "fg": "white"},
     }
 
     ALIGNCOL = {
