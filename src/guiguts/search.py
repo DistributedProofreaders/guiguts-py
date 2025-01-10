@@ -548,8 +548,12 @@ class SearchDialog(ToplevelDialog):
             start_index = maintext().index(MARK_FOUND_START)
             end_index = maintext().index(MARK_FOUND_END)
         except tk.TclError:
-            sound_bell()
-            self.display_message("No text found to replace")
+            # If Replace & Search, then even if we can't Replace, do a Search
+            if search_again:
+                self.search_clicked(opposite_dir=opposite_dir)
+            else:
+                sound_bell()
+                self.display_message("No text found to replace")
             return "break"
 
         match_text = maintext().get(start_index, end_index)
