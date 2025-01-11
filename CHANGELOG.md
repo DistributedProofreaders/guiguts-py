@@ -1,6 +1,69 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.13
+
+- HTML Autogeneration has been added. This performs basic conversion to HTML
+  in a similar way to GG1. Other features such as image and table conversion
+  are not included. To customize the HTML header, the user has two choices.
+  The recommended method is to leave the default header as it is in
+  `data/html/html_header.txt`, and create a new `html_header.txt` in their
+  GGprefs folder which only contains CSS to override or add to the defaults.
+  When the HTML file is generated, the default header will be inserted at
+  the top of the file, and the user's header will be inserted at the bottom
+  of the CSS, just before the closing `</style>` so that the user's CSS
+  will override the earlier default settings. This method has the advantage
+  that when future releases are made with adjustments to the default header,
+  you will not usually need to edit your customized header text.
+  The alternative method, which does not have this advantage, is to
+  copy the file `html_header.txt` from the `data/html` folder in the
+  release into their GGprefs folder and edit it there. That file will be
+  used as the complete header for generated HTML files. If the default
+  header is altered in a future release, you would need to either copy across
+  any new changes into your header, or copy the whole file across and make
+  your customizing edits again.
+- There is a manual page for all the features currently in GG2. The top level
+  of the manual is https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual
+- Pressing the F1 function key in any dialog brings up the manual page for
+  that dialog
+- Checker dialogs, e.g. Jeebies, now have a Copy Results button which copies
+  all the messages from the dialog to the clipboard, so the user can paste
+  them elsewhere to help with reporting issues or to analyze results
+- Regex Cheat Sheet link added to Help menu
+- Search dialog now has a First (or Last) button. This finds the first
+  occurrence of the search term in the file (or last if Reverse searching).
+  This is equivalent to Start at Beginning, followed by Search in GG1
+- Each checker dialog, e.g. Jeebies and Spell check, now has its own settings
+  for sorting the messages, either by line/column or by type/alphabetic
+- PPtext now reports occurrences of multiple spaces/dashes once per line
+  rather than every occurrence. The number of occurrences on the line
+  is displayed in the error message 
+- Detection of mid-paragraph illustrations/sidenotes has been improved
+- Pressing "R&S" in the Search dialog after pressing Replace now does
+  a Search
+- Highlight colors have been adjusted for dark themes.
+
+### Bug Fixes
+
+- Ditto marks were not recognized if they appeared at the beginning or end
+  of the line during curly quote conversion
+- Blank lines at page breaks could be lost during rewrap
+- Case changes required several Undo clicks to undo the changes made
+- The text window could fail to scroll correctly when the mouse was clicked
+  and dragged outside the window. Also other column-selection bugs.
+- Multi-paragraph footnotes didn't "move to paragraph" correctly
+- Illustration/Sidenote Fixup could move the wrong lines if the file had been
+  edited since the tool was first run
+- When selecting text to make an edit within an orange spotlighted piece of
+  text, the selection was not visible
+- Word Frequency and Search's ideas of what constitutes a word were
+  inconsistent meaning that some "words" found by WF could not be found by
+  searching
+- Some ellipses were reported as "double punctuation" by PPtext
+- Using Ctrl/Cmd+0 to fit the image to the image viewer window crashed if
+  the image viewer was hidden at the time.
+
+
 ## Version 2.0.0-alpha.12
 
 - There are no additional features - the primary reason for this release is
