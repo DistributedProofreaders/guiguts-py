@@ -294,10 +294,29 @@ class File:
         Returns:
             Chosen filename or None if save is cancelled
         """
+        # If no current extension, or ".txt" extension, set extension to ".html"
+        # if it's an HTML file. Similarly for text files, otherwise leave alone.
+        cur_ext = os.path.splitext(self.filename)[1]
+        html_file = maintext().get("1.0", "1.end") == "<!DOCTYPE html>"
+        if html_file and cur_ext in ("", ".txt", ".html"):
+            extension = ".html"
+        elif not html_file and cur_ext in ("", ".txt"):
+            extension = ".txt"
+        else:
+            extension = cur_ext
+        match extension:
+            case ".html":
+                file_type = "HTML files"
+            case ".txt":
+                file_type = "Text files"
+            case _:
+                file_type = f"{extension} files"
+        suggested_fn = os.path.splitext(self.filename)[0] + extension
+
         if fn := filedialog.asksaveasfilename(
-            initialfile=os.path.basename(self.filename),
-            initialdir=os.path.dirname(self.filename),
-            filetypes=[("All files", "*")],
+            initialfile=os.path.basename(suggested_fn),
+            initialdir=os.path.dirname(suggested_fn),
+            filetypes=[(file_type, f"*{extension}"), ("All files", "*")],
             title="Save As",
         ):
             self.store_recent_file(fn)
