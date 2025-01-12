@@ -278,7 +278,7 @@ class Preferences:
                 try:
                     self.dict[PrefKey(key)] = value
                 except ValueError:
-                    logger.warning(f"'{key}' is not a valid PrefKey - ignored")
+                    logger.debug(f"'{key}' is not a valid PrefKey - ignored")
 
     def run_callbacks(self) -> None:
         """Run all defined callbacks, passing value as argument.
