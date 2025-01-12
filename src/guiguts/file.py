@@ -313,8 +313,11 @@ class File:
                 file_type = f"{extension} files"
         suggested_fn = os.path.splitext(self.filename)[0] + extension
 
+        initialfile = (
+            os.path.basename(suggested_fn) if self.filename else f"untitled{extension}"
+        )
         if fn := filedialog.asksaveasfilename(
-            initialfile=os.path.basename(suggested_fn),
+            initialfile=initialfile,
             initialdir=os.path.dirname(suggested_fn),
             filetypes=[(file_type, f"*{extension}"), ("All files", "*")],
             title="Save As",
