@@ -920,6 +920,7 @@ class CheckerDialog(ToplevelDialog):
             maintext().set_insert_index(
                 IndexRowCol(start), focus=(focus and not is_mac())
             )
+            maintext().clear_selection()
         self.lift()
 
     @classmethod
