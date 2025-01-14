@@ -841,6 +841,22 @@ def insert_header_footer() -> None:
     User's header can either be a complete header, or just some CSS
     to be inserted at the end of the default CSS.
     """
+    # Temporarily set the gravity on page markers at the start
+    # of the file to RIGHT to ensure the header gets added above them.
+    # Need to create list of marks first before changing any gravities,
+    # because if pages 1 & 2 are both at the start, then changing the
+    # gravity of page 1 to RIGHT means that page 2 is no longer the
+    # "next" mark after page 1 (because page 1 is to the right of page 2).
+    # Then page 2 would be skipped and remain with LEFT gravity.
+    page_mark_list = []
+    page_mark = "1.0"
+    while page_mark := maintext().page_mark_next(page_mark):
+        if maintext().compare(page_mark, ">", "1.0"):
+            break
+        page_mark_list.append(page_mark)
+    for page_mark in page_mark_list:
+        maintext().mark_gravity(page_mark, tk.RIGHT)
+
     # Get user's header file if there is one
     user_path = Path(preferences.prefsdir, HTML_HEADER_NAME)
     if user_path.is_file():
@@ -862,6 +878,9 @@ def insert_header_footer() -> None:
             maintext().insert(end_of_css(), f"{user_header}\n")
     # Insert footer
     maintext().insert(tk.END, "\n</body>\n</html>\n")
+    # Restore mark gravity if changed above
+    for page_mark in page_mark_list:
+        maintext().mark_gravity(page_mark, tk.LEFT)
 
 
 def replace_header_keywords(header: str) -> str:
