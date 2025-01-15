@@ -22,6 +22,7 @@ from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind, Busy
 MARK_ENTRY_TO_SELECT = "MarkEntryToSelect"
 HILITE_TAG_NAME = "chk_hilite"
 ERROR_PREFIX_TAG_NAME = "chk_error_prefix"
+REFRESH_MESSAGE = "Click this message to refresh after Undo/Redo"
 
 
 class CheckerEntryType(Enum):
@@ -112,6 +113,13 @@ class CheckerDialog(ToplevelDialog):
         count_label: Label showing how many linked entries there are in the dialog
     """
 
+    # Slight complexity needed.
+    # 1. Each type of checker dialog needs its own selection_on_clear flag
+    # 2. Flag should be persistent across different instances of dialog, since
+    #    some dialogs are deleted & recreated
+    # Therefore store as a dict class variable keyed on class name
+    selection_on_clear: dict[str, Optional[int]] = {}
+
     def __init__(
         self,
         title: str,
@@ -120,6 +128,7 @@ class CheckerDialog(ToplevelDialog):
         sort_key_rowcol: Optional[Callable[[CheckerEntry], tuple]] = None,
         sort_key_alpha: Optional[Callable[[CheckerEntry], tuple]] = None,
         show_suspects_only: bool = False,
+        clear_on_undo_redo: bool = False,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -209,7 +218,12 @@ class CheckerDialog(ToplevelDialog):
             takefocus=False,
         ).grid(row=0, column=5, sticky="NSE", padx=2)
 
-        self.rerun_button = ttk.Button(left_frame, text="Re-run", command=rerun_command)
+        def rerunner() -> None:
+            self.selection_on_clear[self.__class__.__name__] = None
+            self.rerun_command()
+
+        self.rerun_command = rerun_command
+        self.rerun_button = ttk.Button(left_frame, text="Re-run", command=rerunner)
         self.rerun_button.grid(row=0, column=6, sticky="NSE", padx=(20, 0))
 
         self.top_frame.rowconfigure(1, weight=1)
@@ -281,6 +295,28 @@ class CheckerDialog(ToplevelDialog):
             foreground=maintext()["selectforeground"],
         )
         self.text.tag_configure(ERROR_PREFIX_TAG_NAME, foreground="red")
+
+        def do_clear_on_undo_redo() -> None:
+            """If undo/redo operation should trigger user to Re-run tool, clear dialog."""
+            self.selection_on_clear[self.__class__.__name__] = (
+                self.current_entry_index()
+            )
+            self.reset()
+            self.text.insert(tk.END, REFRESH_MESSAGE)
+            self.update_count_label()
+
+        # Ensure this class has an entry in `selection_on_clear`
+        # Only if not there already, because we don't want to overwrite it
+        # if this is a new instance of a previously existing dialog, with the old
+        # one destroyed and this one created due to a refresh/re-run.
+        if self.__class__.__name__ not in self.selection_on_clear:
+            self.selection_on_clear[self.__class__.__name__] = None
+        # If this dialog should be cleared on undo/redo, add callback to maintext
+        if clear_on_undo_redo:
+            maintext().add_undo_redo_callback(
+                self.__class__.__name__, do_clear_on_undo_redo
+            )
+
         self.count_linked_entries = 0  # Not the same as len(self.entries)
         self.count_suspects = 0
         self.section_count = 0
@@ -406,6 +442,27 @@ class CheckerDialog(ToplevelDialog):
                 if mark.startswith(self.get_mark_prefix()):
                     maintext().mark_unset(mark)
             maintext().remove_spotlights()
+
+    def select_entry_after_undo_redo(self) -> None:
+        """Select the saved entry, if any, after a re-run following undo/redo."""
+        entry_index = self.selection_on_clear[self.__class__.__name__]
+        if entry_index is not None:
+            self.select_entry_by_index(entry_index)
+
+    def tidy_up(self, event: tk.Event) -> None:
+        """Tidy up when the dialog is destroyed.
+
+        Calls the reset method which may be overridden.
+
+        Args:
+            event: identifies the widget being destroyed.
+        """
+        # Since this method is bound to the "<Destroy>" event on the dialog,
+        # it will also be called for all child widgets - ignore them.
+        if not issubclass(type(event.widget), ToplevelDialog):
+            return
+        super().tidy_up(event)
+        maintext().remove_undo_redo_callback(self.__class__.__name__)
 
     def new_section(self) -> None:
         """Start a new section in the dialog.
@@ -749,6 +806,14 @@ class CheckerDialog(ToplevelDialog):
             Raises IndexError exception if out of range
         """
         linenum = self.linenum_from_click(event)
+
+        # Convenient place to intercept mouse click and see if user
+        # was actually requesting a refresh
+        if linenum == 1 and self.text.get("1.0", "1.end") == REFRESH_MESSAGE:
+            self.rerun_command()
+            self.selection_on_clear[self.__class__.__name__] = None
+            raise IndexError  # No valid index selected
+
         return self.entry_index_from_linenum(linenum)
 
     def linenum_from_click(self, event: tk.Event) -> int:
@@ -907,7 +972,11 @@ class CheckerDialog(ToplevelDialog):
         self.text.mark_set(tk.INSERT, f"{linenum}.0")
         self.text.focus_set()
         self.text.tag_remove("sel", "1.0", tk.END)
-        entry = self.entries[entry_index]
+        self.lift()
+        try:
+            entry = self.entries[entry_index]
+        except IndexError:
+            return  # OK if index is no longer valid
         self.selected_text = entry.text
         self.selected_text_range = entry.text_range
         maintext().remove_spotlights()
@@ -921,7 +990,6 @@ class CheckerDialog(ToplevelDialog):
                 IndexRowCol(start), focus=(focus and not is_mac())
             )
             maintext().clear_selection()
-        self.lift()
 
     @classmethod
     def mark_from_rowcol(cls, rowcol: IndexRowCol) -> str:

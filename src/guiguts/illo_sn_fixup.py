@@ -602,6 +602,7 @@ def illosn_check(tag_type: str) -> None:
         f"{tag_type} Check Results",
         rerun_command=lambda: illosn_check(tag_type),
         show_suspects_only=True,
+        clear_on_undo_redo=True,
     )
     if tag_type == "Illustration":
         if _the_illo_checker is None:
@@ -642,6 +643,8 @@ def illosn_check(tag_type: str) -> None:
     ).grid(column=1, row=0, sticky="NSW")
     the_checker.run_check(tag_type)
     display_illosn_entries(tag_type)
+    # Reselect correct entry in case this re-run was after an undo/redo
+    checker_dialog.select_entry_after_undo_redo()
 
 
 def display_illosn_entries(tag_type: str) -> None:
