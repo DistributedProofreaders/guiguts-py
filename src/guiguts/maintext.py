@@ -2563,6 +2563,8 @@ class MainText(tk.Text):
             wrap_params: Wrapping parameters.
             wrapper: TextWrapper object to perform the wrapping - re-used for efficiency.
         """
+        if paragraph.startswith("       *" * 5):
+            return
         # Remove leading/trailing space
         paragraph = paragraph.strip()
         # Replace all multiple whitespace with single space
