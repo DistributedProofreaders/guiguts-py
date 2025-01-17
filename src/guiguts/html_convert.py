@@ -21,7 +21,7 @@ from guiguts.preferences import (
     PersistentBoolean,
 )
 from guiguts.utilities import IndexRange, DiacriticRemover, IndexRowCol
-from guiguts.widgets import ToplevelDialog
+from guiguts.widgets import ToplevelDialog, Busy
 
 logger = logging.getLogger(__package__)
 
@@ -125,6 +125,7 @@ class HTMLGeneratorDialog(ToplevelDialog):
 
 def html_autogenerate() -> None:
     """Autogenerate HTML from text file."""
+    Busy.busy()
     fn = re.sub(r"\.[^\.]*$", "-htmlbak.txt", the_file().filename)
     the_file().save_copy(fn)
     css_indents.clear()
@@ -147,6 +148,7 @@ def html_autogenerate() -> None:
     html_add_chapter_divs()
     html_wrap_long_lines()
     maintext().set_insert_index(maintext().start())
+    Busy.unbusy()
 
 
 def remove_trailing_spaces() -> None:
