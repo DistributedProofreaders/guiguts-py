@@ -1118,6 +1118,12 @@ def html_convert_footnotes() -> None:
     ):
         # Find end of footnote
         fn_end = maintext().search(r"]</p>$", fn_start, tk.END, regexp=True)
+        if not fn_end:
+            logger.error(
+                f"No paragraph break at footnote end: {maintext().get(f'{fn_start}+3c', f'{fn_start} lineend')}"
+            )
+            fn_end = f"{fn_start}+1l"
+            continue
         # Extract label for footnote
         fn_label_end = maintext().search(":", fn_start, tk.END)
         fn_label = maintext().get(f"{fn_start}+13c", fn_label_end)
