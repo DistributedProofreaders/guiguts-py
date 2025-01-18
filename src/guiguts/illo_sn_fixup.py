@@ -645,6 +645,9 @@ def illosn_check(tag_type: str) -> None:
     display_illosn_entries(tag_type)
     # Reselect correct entry in case this re-run was after an undo/redo
     checker_dialog.select_entry_after_undo_redo()
+    # If that didn't cause anything to be selected, just select the first entry
+    if checker_dialog.current_entry_index() is None:
+        checker_dialog.select_entry_by_index(0)
 
 
 def display_illosn_entries(tag_type: str) -> None:
