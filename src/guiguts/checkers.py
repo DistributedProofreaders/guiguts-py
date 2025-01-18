@@ -972,10 +972,10 @@ class CheckerDialog(ToplevelDialog):
         self.text.mark_set(tk.INSERT, f"{linenum}.0")
         self.text.focus_set()
         self.text.tag_remove("sel", "1.0", tk.END)
-        self.lift()
         try:
             entry = self.entries[entry_index]
         except IndexError:
+            self.lift()
             return  # OK if index is no longer valid
         self.selected_text = entry.text
         self.selected_text_range = entry.text_range
@@ -990,6 +990,7 @@ class CheckerDialog(ToplevelDialog):
                 IndexRowCol(start), focus=(focus and not is_mac())
             )
             maintext().clear_selection()
+        self.lift()
 
     @classmethod
     def mark_from_rowcol(cls, rowcol: IndexRowCol) -> str:
