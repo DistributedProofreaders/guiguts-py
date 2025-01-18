@@ -241,8 +241,11 @@ class BookloupeChecker:
                 or test_text == '  "  '
             ):
                 continue
-            # Always an error to not have whitespace on one side or the other
-            if not test_text[1].isspace() and not test_text[3].isspace():
+            # Always an error to not have whitespace or punctuation on one side or the other
+            space_punc_regex = r"[\s\p{Punctuation}]"
+            if not re.match(space_punc_regex, test_text[1]) and not re.match(
+                space_punc_regex, test_text[3]
+            ):
                 self.dialog.add_entry(
                     "Unspaced quotes?",
                     IndexRange(quote_index, quote_index_p1),
