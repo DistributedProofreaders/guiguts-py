@@ -955,9 +955,9 @@ def get_title() -> str:
         # Skip blank lines, illos or block markup
         if not selection or re.match(H1_SKIP_REGEX, selection, flags=re.IGNORECASE):
             continue
-        # Strip inline markup & compress multiple spaces
+        # Strip inline markup, compress multiple spaces & trim trailing spaces
         selection = re.sub(r"<.+?>", "", selection)
-        selection = re.sub(r"  +", " ", selection)
+        selection = re.sub(r"  +", " ", selection).strip()
         complete_title = f"{complete_title}{selection} "
         in_title = True
 
