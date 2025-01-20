@@ -5,7 +5,7 @@ import importlib.resources
 import logging
 from pathlib import Path
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from typing import Optional
 
 import regex as re
@@ -126,21 +126,40 @@ class HTMLGeneratorDialog(ToplevelDialog):
 def html_autogenerate() -> None:
     """Autogenerate HTML from text file."""
     Busy.busy()
-    fn = re.sub(r"\.[^\.]*$", "-htmlbak.txt", the_file().filename)
-    the_file().save_copy(fn)
-    css_indents.clear()
+    backup_fn = re.sub(r"\.[^\.]*$", "-htmlbak.txt", the_file().filename)
+    the_file().save_copy(backup_fn)
+    try:
+        do_html_autogenerate()
+    except SyntaxError as exc:
+        logger.error(exc)
+        # Check if user would like to reload backup file
+        reload = messagebox.askokcancel(
+            title="Re-load backup file?",
+            message="An error occurred during HTML autogeneration,\nand the file was not completely converted.",
+            detail='Click "OK" to re-load pre-conversion backup file,\nor "Cancel" to explore partially converted file.',
+            icon=messagebox.QUESTION,
+        )
+        if reload:
+            old_filename = (
+                the_file().filename
+            )  # Save name because load_file will overwrite it
+            the_file().load_file(backup_fn)
+            the_file().filename = old_filename  # Restore original filename
+            the_file().store_recent_file(
+                old_filename
+            )  # Put it at the top of the recent files list
+    Busy.unbusy()
 
+
+def do_html_autogenerate() -> None:
+    """Do the work of HTML autogenerate."""
+    css_indents.clear()
     maintext().undo_block_begin()
     remove_trailing_spaces()
     adjust_pagemark_postions()
     html_convert_entities()
     html_convert_title()
-    try:
-        html_convert_body()
-    except SyntaxError as exc:
-        logger.error(exc)
-        Busy.unbusy()
-        return
+    html_convert_body()
     html_convert_inline()
     html_convert_smallcaps()
     html_convert_footnotes()
@@ -150,7 +169,6 @@ def html_autogenerate() -> None:
     html_add_chapter_divs()
     html_wrap_long_lines()
     maintext().set_insert_index(maintext().start())
-    Busy.unbusy()
 
 
 def remove_trailing_spaces() -> None:
@@ -296,6 +314,8 @@ def html_convert_body() -> None:
         for key in ibs_dict:
             ibs_dict[key] = False
 
+    markup_start = 1
+    chap_start = 1
     while next_step <= maintext().end().row:
         step = next_step
         next_step += 1
@@ -331,6 +351,7 @@ def html_convert_body() -> None:
         if selection_lower == "/x":  # open
             maintext().replace(line_start, line_end, "<pre>")
             pre_flag = True
+            markup_start = step
             continue
         if pre_flag:
             if selection_lower == "x/":  # close
@@ -346,6 +367,7 @@ def html_convert_body() -> None:
         if selection_lower == "/f":  # open
             maintext().delete(line_start, line_end)
             front_flag = True
+            markup_start = step
             in_front_para = False
             continue
         if front_flag:
@@ -371,6 +393,7 @@ def html_convert_body() -> None:
                 '<div class="poetry-container"><div class="poetry">',
             )
             poetry_flag = True
+            markup_start = step
             in_stanza = False
             poetry_end = maintext().search(
                 "^p/$", line_end, tk.END, regexp=True, nocase=True
@@ -422,6 +445,7 @@ def html_convert_body() -> None:
                 "<ul>",
             )
             list_flag = True
+            markup_start = step
             reset_ibs_dict()
             continue
         if list_flag:
@@ -443,6 +467,7 @@ def html_convert_body() -> None:
                 line_end,
                 '<div class="blockquot">',
             )
+            markup_start = step
             continue
         if selection == "#/":  # close
             if blockquote_level > 0:
@@ -463,6 +488,7 @@ def html_convert_body() -> None:
         if selection == "/$":  # open
             check_illegal_nesting()
             dollar_nowrap_flag = True
+            markup_start = step
             maintext().replace(
                 line_start,
                 line_end,
@@ -482,6 +508,7 @@ def html_convert_body() -> None:
         if selection == "/*":  # open
             check_illegal_nesting()
             asterisk_nowrap_flag = True
+            markup_start = step
             maintext().replace(
                 line_start,
                 line_end,
@@ -514,6 +541,7 @@ def html_convert_body() -> None:
         if selection_lower.startswith("/i"):  # open
             check_illegal_nesting()
             index_flag = True
+            markup_start = step
             maintext().replace(
                 line_start,
                 line_end,
@@ -560,6 +588,7 @@ def html_convert_body() -> None:
         if selection_lower == "/c":  # open
             check_illegal_nesting()
             center_nowrap_flag = True
+            markup_start = step
             maintext().replace(
                 line_start,
                 line_end,
@@ -584,6 +613,7 @@ def html_convert_body() -> None:
         if selection_lower == "/r":  # open
             check_illegal_nesting()
             right_nowrap_flag = True
+            markup_start = step
             maintext().replace(
                 line_start,
                 line_end,
@@ -673,6 +703,7 @@ def html_convert_body() -> None:
                     f"{line_start}+1l linestart", f'<h2 class="nobreak" id="{chap_id}">'
                 )
                 in_chap_heading = True
+                chap_start = step
                 chap_head_blanks = 0
                 chap_heading = ""
     # End of line-at-a-time loop
@@ -682,24 +713,40 @@ def html_convert_body() -> None:
         maintext().insert(tk.END, "</p>")
 
     if pre_flag:
-        raise SyntaxError("Pre-formatted (/x) markup not closed by end of file")
+        raise SyntaxError(
+            f"Line {markup_start}: Pre-formatted (/x) markup not closed by end of file"
+        )
     if front_flag:
-        raise SyntaxError("Frontmatter (/f) markup not closed by end of file")
+        raise SyntaxError(
+            f"Line {markup_start}: Frontmatter (/f) markup not closed by end of file"
+        )
     if poetry_flag:
-        raise SyntaxError("Poetry (/p) markup not closed by end of file")
+        raise SyntaxError(
+            f"Line {markup_start}: Poetry (/p) markup not closed by end of file"
+        )
     if list_flag:
-        raise SyntaxError("List (/l) markup not closed by end of file")
+        raise SyntaxError(
+            f"Line {markup_start}: List (/l) markup not closed by end of file"
+        )
     if dollar_nowrap_flag:
-        raise SyntaxError("List (/$) markup not closed by end of file")
+        raise SyntaxError(
+            f"Line {markup_start}: No rewrap (/$) markup not closed by end of file"
+        )
     if asterisk_nowrap_flag:
-        raise SyntaxError("List (/*) markup not closed by end of file")
+        raise SyntaxError(
+            f"Line {markup_start}: No rewrap (/*) markup not closed by end of file"
+        )
     if index_flag:
-        raise SyntaxError("List (/i) markup not closed by end of file")
+        raise SyntaxError(
+            f"Line {markup_start}: Index (/i) markup not closed by end of file"
+        )
     if blockquote_level > 0:
-        raise SyntaxError("Blockquote (/#) not closed by end of file")
+        raise SyntaxError(
+            f"Line {markup_start}: Blockquote (/#) not closed by end of file"
+        )
     if in_chap_heading:
         raise SyntaxError(
-            "Chapter heading does not have two blank lines before end of file"
+            f"Line {chap_start}: Chapter heading does not have two blank lines before end of file"
         )
 
     # Add autogenerated ToC
@@ -1096,10 +1143,9 @@ def html_convert_sidenotes() -> None:
     while sidenote_start := maintext().search("<p>[Sidenote: ", sidenote_end, tk.END):
         sidenote_end = maintext().search("]</p>", sidenote_start, tk.END)
         if not sidenote_end:
-            logger.error(
-                f"Unclosed sidenote: {maintext().get(f'{sidenote_start}+3c', f'{sidenote_start} lineend')}"
+            raise SyntaxError(
+                f"Unclosed sidenote:\n{maintext().get(f'{sidenote_start}+3c', f'{sidenote_start} lineend')}"
             )
-            return
         sidenote_text = maintext().get(sidenote_start, sidenote_end)
         p_open = p_close = ""
         if "\n\n" in sidenote_text:
@@ -1127,11 +1173,9 @@ def html_convert_footnotes() -> None:
         # Find end of footnote
         fn_end = maintext().search(r"]</p>$", fn_start, tk.END, regexp=True)
         if not fn_end:
-            logger.error(
-                f"No paragraph break at footnote end: {maintext().get(f'{fn_start}+3c', f'{fn_start} lineend')}"
+            raise SyntaxError(
+                f"No paragraph break at footnote end:\n{maintext().get(f'{fn_start}+3c', f'{fn_start} lineend')}"
             )
-            fn_end = f"{fn_start}+1l"
-            continue
         # Extract label for footnote
         fn_label_end = maintext().search(":", fn_start, tk.END)
         fn_label = maintext().get(f"{fn_start}+13c", fn_label_end)
