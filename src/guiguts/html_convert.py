@@ -140,14 +140,18 @@ def html_autogenerate() -> None:
             icon=messagebox.QUESTION,
         )
         if reload:
-            old_filename = (
-                the_file().filename
-            )  # Save name because load_file will overwrite it
+            # Save name because load_file will overwrite it
+            old_filename = the_file().filename
             the_file().load_file(backup_fn)
-            the_file().filename = old_filename  # Restore original filename
-            the_file().store_recent_file(
-                old_filename
-            )  # Put it at the top of the recent files list
+            # Restore original filename
+            the_file().filename = old_filename
+            # Put it at the top of the recent files list
+            the_file().store_recent_file(old_filename)
+        # Go to error line number if available
+        line_num, is_line_num = re.subn(r"Line (\d+):.*", r"\1", str(exc))
+        if is_line_num:
+            maintext().set_insert_index(IndexRowCol(int(line_num), 0))
+
     Busy.unbusy()
 
 
