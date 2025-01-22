@@ -136,7 +136,7 @@ def html_autogenerate() -> None:
         reload = messagebox.askokcancel(
             title="Re-load backup file?",
             message="An error occurred during HTML autogeneration,\nand the file was not completely converted.",
-            detail='Click "OK" to re-load pre-conversion backup file,\nor "Cancel" to explore partially converted file.',
+            detail='Click "OK" to re-load pre-conversion backup file,\nor "Cancel" to explore partially converted file (see manual).',
             icon=messagebox.QUESTION,
         )
         if reload:
