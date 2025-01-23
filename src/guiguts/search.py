@@ -652,7 +652,8 @@ class SearchDialog(ToplevelDialog):
         Args:
             message: Message to be displayed - clears message if arg omitted
         """
-        self.message["text"] = message
+        if self.message.winfo_exists():
+            self.message["text"] = message
 
 
 def show_search_dialog() -> None:
