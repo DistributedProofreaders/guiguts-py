@@ -339,8 +339,8 @@ class BookloupeChecker:
         # last character (ignoring inline markup) must be sentence-ending punctuation.
         para_punc = re.escape("])}-—.:!?")
         last_line = para_text.splitlines()[-1]
-        last_line = re.sub(rf"[^{para_punc}\p{{Letter}}\p{{Number}}]", "", last_line)
         last_line = self.remove_inline_markup(last_line)
+        last_line = re.sub(rf"[^{para_punc}\p{{Letter}}\p{{Number}}]", "", last_line)
         if last_line[-1] not in para_punc:
             self.dialog.add_entry(
                 "No punctuation at para end?",
@@ -362,14 +362,12 @@ class BookloupeChecker:
             "/": "Forward slash?",
             "*": "Asterisk",
         }
-        # Hide slash in "</x>
+        # Hide slash in "</x>" - keep line length the same
         prep_line = re.sub("(?<=<)/(?=.+?>)", " ", line)
-        for idx, ltr in enumerate(prep_line):
-            if ltr in odd_char_names:
-                self.dialog.add_entry(
-                    odd_char_names[ltr],
-                    IndexRange(f"{step}.{idx}", f"{step}.{idx + 1}"),
-                )
+        # Find occurrences of one or more consecutive odd chars
+        for char, msg in odd_char_names.items():
+            for match in re.finditer(rf"{re.escape(char)}+", prep_line):
+                self.add_match_entry(step, match, msg)
 
     def check_hyphens(self, step: int, line: str) -> None:
         """Check for leading/trailing hyphens, etc.
@@ -572,8 +570,8 @@ class BookloupeChecker:
             step: Line number being checked.
             line: Text of line being checked.
         """
-        # Consider hyphenated words as two separate words
-        line = line.replace("-", " ")
+        # Consider hyphenated words (but not numbers, e.g. 1-3/4) as two separate words
+        line = re.sub(r"(?<!\d)-(?!\d)", " ", line)
         # Split at spaces, ignoring leading/trailing non-word characters on words
         for match in re.finditer(
             r"(?<![^ ])[^\p{Letter}\p{Number}'’{}]*(.+?)[^\p{Letter}\p{Number}'’{}]*(?![^ ])",
