@@ -5,7 +5,7 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk, Text
 from tkinter import font as tk_font
-from typing import Any, Callable, Optional, Literal, Generator
+from typing import Any, Callable, Optional, Literal, Generator, cast
 from enum import auto, StrEnum
 
 import regex as re
@@ -275,6 +275,7 @@ class HighlightTag(StrEnum):
     ALIGNCOL = auto()
     CURSOR_LINE = auto()
     COLUMN_RULER = auto()
+    SEARCH = auto()
 
 
 class HighlightColors:
@@ -348,6 +349,21 @@ class HighlightColors:
     COLUMN_RULER = {
         "Light": {"bg": "#A6CDFF", "fg": "black"},
         "Dark": {"bg": "#324F78", "fg": "white"},
+    }
+
+    SEARCH = {
+        "Light": {
+            "bg": "#f0f0f0",
+            "fg": "#a8a8a8",
+            "relief": "ridge",
+            "borderwidth": "2",
+        },
+        "Dark": {
+            "bg": "#0f0f0f",
+            "fg": "#8a8a8a",
+            "relief": "ridge",
+            "borderwidth": "2",
+        },
     }
 
 
@@ -2875,6 +2891,16 @@ class MainText(tk.Text):
             background=tag_colors[theme]["bg"],
             foreground=tag_colors[theme]["fg"],
         )
+        if "borderwidth" in tag_colors[theme]:
+            self.tag_configure(tag_name, borderwidth=tag_colors[theme]["borderwidth"])
+        if "relief" in tag_colors[theme]:
+            self.tag_configure(
+                tag_name,
+                relief=cast(
+                    Literal["raised", "sunken", "flat", "ridge", "solid", "groove"],
+                    tag_colors[theme]["relief"],
+                ),
+            )
 
     def highlight_selection(
         self,
@@ -2902,8 +2928,14 @@ class MainText(tk.Text):
                     tag_name, match.rowcol.index(), match.rowcol.index() + "+1c"
                 )
 
+    def remove_search_highlights(self) -> None:
+        """Remove highlights for search"""
+        if maintext().winfo_exists():
+            self.tag_remove(HighlightTag.SEARCH, "1.0", tk.END)
+
     def remove_highlights(self) -> None:
         """Remove active highlights."""
+        self.remove_search_highlights()
         self.tag_remove(HighlightTag.QUOTEMARK, "1.0", tk.END)
 
     def highlight_quotemarks(self, pat: str) -> None:
@@ -3278,8 +3310,7 @@ class MainText(tk.Text):
         #
         for tag, colors in (
             (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
-            # "sel" is for active selections - don't override the default color
-            ("sel", None),
+            (HighlightTag.SEARCH, HighlightColors.SEARCH),
             (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
             (HighlightTag.PAREN, HighlightColors.PAREN),
             (HighlightTag.CURLY_BRACKET, HighlightColors.CURLY_BRACKET),
@@ -3295,6 +3326,11 @@ class MainText(tk.Text):
                 self._highlight_configure_tag(tag, colors)
             if order_needs_update:
                 self.tag_lower(tag)
+
+        # Position the "sel" tag specially. This must be done for both widgets
+        # since they're independent.
+        self.tag_lower("sel", HighlightTag.QUOTEMARK)
+        self.peer.tag_lower("sel", HighlightTag.QUOTEMARK)
 
     def _autoscroll_start(
         self, event: tk.Event  # pylint: disable=unused-argument
