@@ -478,6 +478,8 @@ class SearchDialog(ToplevelDialog):
         checker_dialog = FindAllCheckerDialog.show_dialog(
             "Search Results", rerun_command=self.findall_clicked
         )
+        if not checker_dialog.winfo_exists():
+            return
         ToolTip(
             checker_dialog.text,
             "\n".join(
@@ -490,6 +492,8 @@ class SearchDialog(ToplevelDialog):
             use_pointer_pos=True,
         )
         checker_dialog.reset()
+        if not self.winfo_exists():
+            return
         # Construct opening line describing the search
         desc_reg = "regex" if preferences.get(PrefKey.SEARCHDIALOG_REGEX) else "string"
         prefix = f'Search for {desc_reg} "'
