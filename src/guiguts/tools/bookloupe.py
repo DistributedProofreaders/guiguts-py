@@ -133,7 +133,13 @@ class BookloupeChecker:
         )
         ToolTip(
             self.dialog.text,
-            "Left click: Select & find issue",
+            "\n".join(
+                [
+                    "Left click: Select & find issue",
+                    "Right click: Remove message from list",
+                    "Shift-Right click: Remove all matching messages",
+                ]
+            ),
             use_pointer_pos=True,
         )
         self.dialog.reset()
@@ -355,18 +361,19 @@ class BookloupeChecker:
             line: Text of line being checked.
         """
         assert self.dialog is not None
+        # Regexes & names of odd characters
         odd_char_names = {
-            "\t": "Tab character?",
-            "~": "Tilde character?",
-            "^": "Caret character?",
-            "/": "Forward slash?",
-            "*": "Asterisk",
+            r"\t+": "Tab character?",
+            r"~+": "Tilde character?",
+            r"\^+": "Caret character?",
+            r"(?<!\d)/+|/+(?!\d)": "Forward slash?",  # But not if surrounded by numbers (e.g 3/4)
+            r"\*+": "Asterisk",
         }
         # Hide slash in "</x>" - keep line length the same
         prep_line = re.sub("(?<=<)/(?=.+?>)", " ", line)
         # Find occurrences of one or more consecutive odd chars
-        for char, msg in odd_char_names.items():
-            for match in re.finditer(rf"{re.escape(char)}+", prep_line):
+        for regex, msg in odd_char_names.items():
+            for match in re.finditer(regex, prep_line):
                 self.add_match_entry(step, match, msg)
 
     def check_hyphens(self, step: int, line: str) -> None:
