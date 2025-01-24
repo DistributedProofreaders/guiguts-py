@@ -20,6 +20,7 @@ from guiguts.widgets import (
     ToolTip,
     register_focus_widget,
     process_accel,
+    Busy,
 )
 
 logger = logging.getLogger(__package__)
@@ -498,6 +499,9 @@ class SearchDialog(ToplevelDialog):
         checker_dialog = FindAllCheckerDialog.show_dialog(
             "Search Results", rerun_command=self.findall_clicked
         )
+        if not checker_dialog.winfo_exists():
+            Busy.unbusy()
+            return
         ToolTip(
             checker_dialog.text,
             "\n".join(
@@ -510,6 +514,9 @@ class SearchDialog(ToplevelDialog):
             use_pointer_pos=True,
         )
         checker_dialog.reset()
+        if not self.winfo_exists():
+            Busy.unbusy()
+            return
         # Construct opening line describing the search
         desc_reg = "regex" if preferences.get(PrefKey.SEARCHDIALOG_REGEX) else "string"
         prefix = f'Search for {desc_reg} "'
@@ -672,7 +679,8 @@ class SearchDialog(ToplevelDialog):
         Args:
             message: Message to be displayed - clears message if arg omitted
         """
-        self.message["text"] = message
+        if self.message.winfo_exists():
+            self.message["text"] = message
 
 
 def show_search_dialog() -> None:
