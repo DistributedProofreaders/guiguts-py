@@ -342,7 +342,7 @@ class WordFrequencyDialog(ToplevelDialog):
             italic_frame,
             PrefKey.WFDIALOG_ITALIC_THRESHOLD,
             width=6,
-            validate="all",
+            validate=tk.ALL,
             validatecommand=(self.register(is_nonnegative_int), "%P"),
         )
         self.threshold_box.grid(row=0, column=1, sticky="NSEW", padx=(0, 5))

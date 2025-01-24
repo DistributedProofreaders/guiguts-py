@@ -16,6 +16,7 @@ from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle
 from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
+from guiguts.html_tools import HTMLImageDialog
 from guiguts.illo_sn_fixup import illosn_check
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
@@ -440,6 +441,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             PrefKey.HTML_UNDERLINE_MARKUP, HTMLMarkupTypes.SPAN_CLASS
         )
         preferences.set_default(PrefKey.HTML_SHOW_PAGE_NUMBERS, True)
+        preferences.set_default(PrefKey.HTML_IMAGE_UNIT, "%")
+        preferences.set_default(PrefKey.HTML_IMAGE_OVERRIDE_EPUB, True)
+        preferences.set_default(PrefKey.HTML_IMAGE_ALIGNMENT, "center")
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -771,6 +775,9 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Create the HTML menu."""
         menu_tools = Menu(menubar(), "HT~ML")
         menu_tools.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
+        menu_tools.add_button(
+            "Auto-~Illustrations...", lambda: HTMLImageDialog.show_dialog(destroy=True)
+        )
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
