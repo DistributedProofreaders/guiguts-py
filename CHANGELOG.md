@@ -21,7 +21,7 @@
 
 ### Bug fixes
 
-- Orange spotlights could be hidden by selected text
+- Orange spotlights were hidden when doing Find All within a selection
 - Could get warnings if preferences were removed in a previous release
 - Asterisk thoughtbreaks were broken by rewrapping
 - The first page number in HTML could get inserted before the HTML header
