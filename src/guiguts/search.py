@@ -293,10 +293,9 @@ class SearchDialog(ToplevelDialog):
         self.config_width()
         self.allow_geometry_save()
 
-        # Handle tag cleanup when search panel is closed
-        self.top_frame.bind(
-            "<Destroy>", lambda _event: maintext().remove_search_highlights()
-        )
+    def reset(self) -> None:
+        """Called when dialog is reset/destroyed - remove search highlights."""
+        maintext().remove_search_highlights()
 
         class SearchParamsState:
             """Ephemeral container to store information about search parameters.
