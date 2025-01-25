@@ -903,7 +903,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             """Format current selection range for statusbar.
 
             Returns:
-                "Start-End" for a regualar selection, and "R:rows C:cols" for column selection.
+                "Start-End" for a regular selection, and "R:rows C:cols" for column selection.
             """
             maintext().selection_cursor()
             ranges = maintext().selected_ranges()
