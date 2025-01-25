@@ -1,6 +1,41 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.14
+
+- When using the Search dialog to search for a string, all occurrences
+  of the string are highlighted faintly, in addition to the first occurrence
+  being selected as previously. These faint highlights are removes when
+  the user begins a new search or closes the Search dialog
+- The bookloupe tool has been added. Although it is not identical in 
+  behavior to the old external tool, it essentially does the same checks
+  and reports issues in a similar way. Most of the differences relate to
+  changes in DP/PG texts since the forerunner of bookloupe (gutcheck) was
+  first written, such as use of non-ASCII characters.
+- When using Save As, GG2 now adds an appropriate extension, which is
+  `.txt` unless the file has an HTML header, in which case it is `.html`.
+  Also, if there is no filename, Save As suggests `untitled.txt`
+- Illo/Sidenote Fixup now automatically select the first message when run
+- HTML Autogeneration now reports more specific errors it discovers while
+  running, and allows user to re-load the previous backup to fix them
+
+### Bug fixes
+
+- Orange spotlights were hidden when doing Find All within a selection
+- Could get warnings if preferences were removed in a previous release
+- Asterisk thoughtbreaks were broken by rewrapping
+- The first page number in HTML could get inserted before the HTML header
+- Swap/delete space functions in curly quote check didn't always work
+- Using undo/redo did not cause Sidenote/Illo Fixup to recalculate positions
+- The final footnote in the file could cause an error during HTML generation
+- HTML Autogeneration didn't show the "busy" cursor to indicate it was working
+- HTML Autogeneration didn't consider the last line of the file
+- HTML Autogeneration didn't fail gracefully if the final chapter heading did
+  not have 2 blank lines after it
+- Rapidly cancelling the Search dialog with the Escape key while it was still
+  working caused an error to occur
+
+
 ## Version 2.0.0-alpha.13
 
 - HTML Autogeneration has been added. This performs basic conversion to HTML
