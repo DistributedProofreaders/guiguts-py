@@ -347,7 +347,7 @@ class BookloupeChecker:
         last_line = para_text.splitlines()[-1]
         last_line = self.remove_inline_markup(last_line)
         last_line = re.sub(rf"[^{para_punc}\p{{Letter}}\p{{Number}}]", "", last_line)
-        if last_line[-1] not in para_punc:
+        if last_line and last_line[-1] not in para_punc:
             self.dialog.add_entry(
                 "No punctuation at para end?",
                 IndexRange(maintext().rowcol(f"{end_index}-1c"), end_index),
