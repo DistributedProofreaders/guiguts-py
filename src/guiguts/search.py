@@ -298,6 +298,22 @@ class SearchDialog(ToplevelDialog):
             "<Destroy>", lambda _event: maintext().remove_search_highlights()
         )
 
+        class SearchParamsState:
+            """Ephemeral container to store information about search parameters.
+
+            Memorized parameter state can be compared to current parameter state
+            to determine whether the state changed since the last memorization.
+            """
+
+            def __init__(self) -> None:
+                self.pattern = ""
+                self.match_case = preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
+                self.regex = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
+                self.whole_word = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
+
+        # container to track search parameter state
+        self.search_params_state = SearchParamsState()
+
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
 
@@ -343,6 +359,39 @@ class SearchDialog(ToplevelDialog):
         self.search_box.icursor(tk.END)
         self.search_box.focus()
 
+    def search_params_memorize(self) -> None:
+        """Store the current search parameters for later comparison"""
+        self.search_params_state.pattern = self.search_box.get()
+        self.search_params_state.match_case = preferences.get(
+            PrefKey.SEARCHDIALOG_MATCH_CASE
+        )
+        self.search_params_state.regex = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
+        self.search_params_state.whole_word = preferences.get(
+            PrefKey.SEARCHDIALOG_WHOLE_WORD
+        )
+
+    def search_params_have_changed(self) -> bool:
+        """Compare search params to last known state. Returns true if
+        there has been a change since params were memorized, false
+        otherwise.
+        """
+        if self.search_params_state.pattern != self.search_box.get():
+            return True
+        if self.search_params_state.match_case != preferences.get(
+            PrefKey.SEARCHDIALOG_MATCH_CASE
+        ):
+            return True
+        if self.search_params_state.regex != preferences.get(
+            PrefKey.SEARCHDIALOG_REGEX
+        ):
+            return True
+        if self.search_params_state.whole_word != preferences.get(
+            PrefKey.SEARCHDIALOG_WHOLE_WORD
+        ):
+            return True
+
+        return False
+
     def search_clicked(
         self, opposite_dir: bool = False, first_last: bool = False
     ) -> str:
@@ -372,19 +421,22 @@ class SearchDialog(ToplevelDialog):
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
 
-        # Find all matching occurrences, tag with the "SEARCH" highlight.
+        # If search params have changed since last time the button was clicked,
+        # then find all matching occurrences, tag with the "SEARCH" highlight.
         # Clean up any existing "SEARCH" highlights first.
-        maintext().remove_search_highlights()
         try:
-            allmatches = self._find_all(
-                IndexRange(maintext().start(), maintext().end()), self.search_box.get()
-            )
-            for _match in allmatches:
-                maintext().tag_add(
-                    HighlightTag.SEARCH,
-                    _match.rowcol.index(),
-                    f"{_match.rowcol.index()}+{_match.count}c",
-                )
+            if self.search_params_have_changed():
+                maintext().remove_search_highlights()
+                for _match in self._find_all(
+                    IndexRange(maintext().start(), maintext().end()),
+                    self.search_box.get(),
+                ):
+                    maintext().tag_add(
+                        HighlightTag.SEARCH,
+                        _match.rowcol.index(),
+                        f"{_match.rowcol.index()}+{_match.count}c",
+                    )
+
             # Now that "background" matches are highlighted, find the next match
             # and jump there as the "active" match. Uses the "sel" highlight.
             _do_find_next(
@@ -393,6 +445,7 @@ class SearchDialog(ToplevelDialog):
         except re.error as e:
             message = message_from_regex_exception(e)
         self.display_message(message)
+        self.search_params_memorize()
         return "break"
 
     def search_forwards(self) -> str:
