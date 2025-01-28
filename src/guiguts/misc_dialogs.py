@@ -95,7 +95,7 @@ class PreferencesDialog(ToplevelDialog):
             font_frame,
             textvariable=PersistentString(PrefKey.TEXT_FONT_FAMILY),
             width=30,
-            validate="all",
+            validate=tk.ALL,
             validatecommand=(self.register(is_valid_font), "%P"),
             values=font_list,
             state="readonly",
