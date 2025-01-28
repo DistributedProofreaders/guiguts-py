@@ -535,7 +535,12 @@ class BookloupeChecker:
             step: Line number being checked.
             line: Text of line being checked.
         """
-        for match in re.finditer(r"(\p{Letter}+)(\. \W*\p{Lowercase_Letter})", line):
+        # Allow inline markup before start of next sentence as well as other non-word characters,
+        # such as quotes or brackets. use `[^\w<]` rather than `\W`to stop it matching inline markup at that point
+        for match in re.finditer(
+            r"(\p{Letter}+)[\"”'’\)]*(\. (</?[a-z]+>)*[^\w<]*\p{Lowercase_Letter})",
+            line,
+        ):
             # Get the word before the period
             test_word = match[1]
             # Ignore single letter words or common abbreviations
@@ -587,8 +592,11 @@ class BookloupeChecker:
             # Trim any markup or footnote remnants left at start/end of word
             word = re.sub(r"^.+>|<.+$|\[.+$", "", match[1])
             word_lower = word.lower()
-            # Query standalone 0 or 1
-            if word in ("0", "1"):
+            # Query standalone 0 or 1 except in `^[Footnote 1:`
+            if word in ("0", "1") and (
+                match.start() != 10
+                or maintext().get(f"{step}.0", f"{step}.12") != "[Footnote 1:"
+            ):
                 self.add_match_entry(step, match, f"Query standalone {word}")
                 continue
             # Check for mixed alpha & numeric (with some exceptions)
