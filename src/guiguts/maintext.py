@@ -2860,10 +2860,10 @@ class MainText(tk.Text):
 
     def selection_cursor(self) -> None:
         """Make the insert cursor (in)visible depending on selection."""
-        current = maintext().cget("insertontime")
-        ontime = 0 if maintext().selected_ranges() else 600
+        current = self.focus_widget().cget("insertontime")
+        ontime = 0 if self.selected_ranges() else 600
         if ontime != current:
-            maintext().configure(insertontime=ontime)
+            self.focus_widget().configure(insertontime=ontime)
 
     def is_dark_theme(self) -> bool:
         """Returns True if theme is dark, which is assumed to be the case if
