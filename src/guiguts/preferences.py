@@ -90,9 +90,6 @@ class PrefKey(StrEnum):
     HTML_FONT_MARKUP = auto()
     HTML_UNDERLINE_MARKUP = auto()
     HTML_SHOW_PAGE_NUMBERS = auto()
-    HTML_IMAGE_UNIT = auto()
-    HTML_IMAGE_OVERRIDE_EPUB = auto()
-    HTML_IMAGE_ALIGNMENT = auto()
 
 
 class Preferences:
