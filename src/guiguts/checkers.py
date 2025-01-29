@@ -453,9 +453,6 @@ class CheckerDialog(ToplevelDialog):
         """Override method that tidies up when the dialog is destroyed.
 
         Needs to remove the undo_redo callback if there is one.
-
-        Args:
-            event: identifies the widget being destroyed.
         """
         super().on_destroy()
         maintext().remove_undo_redo_callback(self.__class__.__name__)
