@@ -41,6 +41,7 @@ NEVER_MATCH_REG = r"(?!)"
 DEFAULT_SCANNOS_DIR = importlib.resources.files(scannos)
 DEFAULT_REGEX_SCANNOS = "regex.json"
 DEFAULT_STEALTH_SCANNOS = "en-common.json"
+DEFAULT_MISSPELLED_SCANNOS = "misspelled.json"
 
 
 class BasicFixupCheckerDialog(CheckerDialog):
@@ -1560,38 +1561,6 @@ class ScannoCheckerDialog(CheckerDialog):
                 return
         # No matches found, so display first/last scanno
         self.scanno_number = 0 if prev else len(self.scanno_list) - 1
-        self.list_scannos()
-
-    def previous_scanno(self) -> None:
-        """Display previous scanno & list of results.
-
-        Auto-advances until it finds a scanno that has some results.
-        """
-        slurp_text = maintext().get_text()
-        find_range = IndexRange(maintext().start().index(), maintext().end().index())
-        while self.scanno_number > 0:
-            self.scanno_number -= 1
-            if self.any_matches(slurp_text, find_range):
-                self.list_scannos()
-                return
-        # No matches found, so display first scanno
-        self.scanno_number = 0
-        self.list_scannos()
-
-    def next_scanno(self) -> None:
-        """Display next scanno & list of results.
-
-        Auto-advances until it finds a scanno that has some results.
-        """
-        slurp_text = maintext().get_text()
-        find_range = IndexRange(maintext().start().index(), maintext().end().index())
-        while self.scanno_number < len(self.scanno_list) - 1:
-            self.scanno_number += 1
-            if self.any_matches(slurp_text, find_range):
-                self.list_scannos()
-                return
-        # No matches found, so display last scanno
-        self.scanno_number = len(self.scanno_list) - 1
         self.list_scannos()
 
     def any_matches(self, slurp_text: str, find_range: IndexRange) -> bool:
