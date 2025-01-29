@@ -428,7 +428,7 @@ class SearchDialog(ToplevelDialog):
             if self.search_params_have_changed():
                 maintext().remove_search_highlights()
                 for _match in self._find_all(
-                    IndexRange(maintext().start(), maintext().end()),
+                    maintext().start_to_end(),
                     self.search_box.get(),
                 ):
                     maintext().tag_add(
@@ -939,7 +939,7 @@ def get_search_range() -> Tuple[Optional[IndexRange], str]:
     else:
         if preferences.get(PrefKey.SEARCHDIALOG_WRAP):
             range_name = "in entire file"
-            replace_range = IndexRange(maintext().start(), maintext().end())
+            replace_range = maintext().start_to_end()
         elif preferences.get(PrefKey.SEARCHDIALOG_REVERSE):
             range_name = "from start of file to current location"
             replace_range = IndexRange(
