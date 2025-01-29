@@ -293,10 +293,6 @@ class SearchDialog(ToplevelDialog):
         self.config_width()
         self.allow_geometry_save()
 
-    def reset(self) -> None:
-        """Called when dialog is reset/destroyed - remove search highlights."""
-        maintext().remove_search_highlights()
-
         class SearchParamsState:
             """Ephemeral container to store information about search parameters.
 
@@ -312,6 +308,10 @@ class SearchDialog(ToplevelDialog):
 
         # container to track search parameter state
         self.search_params_state = SearchParamsState()
+
+    def reset(self) -> None:
+        """Called when dialog is reset/destroyed - remove search highlights."""
+        maintext().remove_search_highlights()
 
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
