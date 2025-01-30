@@ -647,6 +647,8 @@ class ScrolledReadOnlyText(tk.Text):
             foreground="#000000",
         )
 
+        self["cursor"] = "arrow"
+
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
         super().bind(
