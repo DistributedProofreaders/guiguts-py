@@ -112,7 +112,7 @@ class SearchDialog(ToplevelDialog):
             PrefKey.SEARCH_HISTORY,
             width=30,
             font=self.font,
-            validate="all",
+            validate=tk.ALL,
             validatecommand=(self.register(is_valid_regex), "%P"),
         )
         self.search_box.grid(row=2, column=0, padx=PADX, pady=PADY, sticky="NSEW")
