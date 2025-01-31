@@ -1879,6 +1879,7 @@ class CurlyQuotesDialog(CheckerDialog):
         search_start = maintext().start()
         search_end = maintext().index(tk.END)
         last_open_double_idx = ""
+        punctuation = ".,;:!?"
         while match := maintext().find_match(
             rf"^$|[{DQUOTES}{SQUOTES}\"']",
             IndexRange(search_start, search_end),
@@ -1919,6 +1920,8 @@ class CurlyQuotesDialog(CheckerDialog):
                     add_quote_entry("DOUBLE OPEN QUOTE FOLLOWED BY SPACE: ")
                 elif context[0].isalnum():
                     add_quote_entry("DOUBLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ")
+                elif context[0] in punctuation:
+                    add_quote_entry("DOUBLE OPEN QUOTE PRECEDED BY PUNCTUATION: ")
                 dqtype = 1
                 last_open_double_idx = match.rowcol.index()
             elif match_text == DQUOTES[1]:  # Close double
@@ -1954,6 +1957,8 @@ class CurlyQuotesDialog(CheckerDialog):
                     add_quote_entry("SINGLE OPEN QUOTE FOLLOWED BY SPACE: ")
                 elif context[0].isalnum():
                     add_quote_entry("SINGLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ")
+                elif context[0] in punctuation:
+                    add_quote_entry("SINGLE OPEN QUOTE PRECEDED BY PUNCTUATION: ")
             elif match_text == SQUOTES[1]:  # Close single
                 pass  # Close singles/apostrophes can go almost anywhere
             elif match_text == '"':  # Straight double
