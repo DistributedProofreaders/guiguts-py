@@ -53,6 +53,7 @@ from guiguts.misc_tools import (
     DEFAULT_SCANNOS_DIR,
     DEFAULT_REGEX_SCANNOS,
     DEFAULT_STEALTH_SCANNOS,
+    DEFAULT_MISSPELLED_SCANNOS,
     convert_to_curly_quotes,
     check_curly_quotes,
 )
@@ -423,6 +424,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             [
                 str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)),
                 str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_STEALTH_SCANNOS)),
+                str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_MISSPELLED_SCANNOS)),
             ],
         )
         preferences.set_default(PrefKey.HIGHLIGHT_QUOTBRAC, False)
