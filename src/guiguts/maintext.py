@@ -437,6 +437,10 @@ class MainText(tk.Text):
         self.aligncol = -1
         self.aligncol_active = tk.BooleanVar()
 
+        # whether search highlights should be active
+        self.search_highlight_active = tk.BooleanVar()
+        self.search_pattern = ""
+
         # Create Line Numbers widget
         self.linenumbers = TextLineNumbers(self.frame, self)
         self.linenumbers.grid(column=0, row=1, sticky="NSEW")
@@ -995,6 +999,7 @@ class MainText(tk.Text):
             self.root.after_idle(self.highlight_quotbrac)
             self.root.after_idle(self.highlight_aligncol)
             self.root.after_idle(self.highlight_cursor_line)
+            self.root.after_idle(self.highlight_search)
             self.numbers_need_updating = True
 
     def save_sash_coords(self) -> None:
@@ -2252,6 +2257,42 @@ class MainText(tk.Text):
             match.start() - slurp_newline_adjustment,
         )
 
+    def find_all(self, find_range: IndexRange, search_string: str) -> list[FindMatch]:
+        """Find all matches in given range.
+
+        Returns:
+            List of FindMatch objects.
+        """
+        regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
+        wholeword = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
+        nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
+
+        slurp_text = self.get(find_range.start.index(), find_range.end.index())
+        slice_start = 0
+
+        matches: list[FindMatch] = []
+        while True:
+            match, match_start = self.find_match_in_range(
+                search_string,
+                slurp_text[slice_start:],
+                find_range,
+                nocase=nocase,
+                regexp=regexp,
+                wholeword=wholeword,
+                backwards=False,
+            )
+            if match is None:
+                break
+            matches.append(match)
+            # Adjust start of slice of slurped text, and where that point is in the file
+            advance = max(match.count, 1)
+            slice_start += match_start + advance
+            if slice_start >= len(slurp_text):  # No text left to match
+                break
+            slurp_start = IndexRowCol(self.index(f"{match.rowcol.index()}+{advance}c"))
+            find_range = IndexRange(slurp_start, find_range.end)
+        return matches
+
     def transform_selection(self, fn: Callable[[str], str]) -> None:
         """Transform a text selection by applying a function or method.
 
@@ -2939,7 +2980,7 @@ class MainText(tk.Text):
 
     def remove_highlights(self) -> None:
         """Remove active highlights."""
-        self.remove_search_highlights()
+        self.highlight_search_deactivate()
         self.tag_remove(HighlightTag.QUOTEMARK, "1.0", tk.END)
 
     def highlight_quotemarks(self, pat: str) -> None:
@@ -2972,10 +3013,10 @@ class MainText(tk.Text):
 
     def get_screen_window_coordinates(
         self, viewport: Text, offscreen_lines: int = 5
-    ) -> tuple[str, str]:
+    ) -> IndexRange:
         """
         Find start and end coordinates for a viewport (with a margin of offscreen
-        text added for padding).
+        text added for padding). Returns an IndexRange.
 
         Args:
             viewport: the viewport to inspect
@@ -2994,7 +3035,7 @@ class MainText(tk.Text):
         top_line = max(int((top_frac * end_index.row) - offscreen_lines), 1)
         bot_line = min(int((bot_frac * end_index.row) + offscreen_lines), end_index.row)
 
-        return (f"{top_line}.0", f"{bot_line}.0")
+        return IndexRange(f"{top_line}.0", f"{bot_line}.0")
 
     def search_for_base_character_in_pair(
         self,
@@ -3115,9 +3156,7 @@ class MainText(tk.Text):
         self.tag_remove(tag_name, "1.0", tk.END)
         cursor = self.get_insert_index().index()
 
-        (top_index, bot_index) = self.get_screen_window_coordinates(
-            self.focus_widget(), 80
-        )
+        viewport_range = self.get_screen_window_coordinates(self.focus_widget(), 80)
 
         if sel_ranges := maintext().selected_ranges():
             cursor = sel_ranges[0].start.index()
@@ -3126,9 +3165,9 @@ class MainText(tk.Text):
 
         # search backward for the startchar
         startindex = self.search_for_base_character_in_pair(
-            top_index,
+            viewport_range.start.index(),
             cursor,
-            bot_index,
+            viewport_range.end.index(),
             startchar,
             endchar,
             charpair=charpair,
@@ -3142,7 +3181,12 @@ class MainText(tk.Text):
 
         # search forward for the endchar
         endindex = self.search_for_base_character_in_pair(
-            top_index, cursor, bot_index, startchar, endchar, charpair=charpair
+            viewport_range.start.index(),
+            cursor,
+            viewport_range.end.index(),
+            startchar,
+            endchar,
+            charpair=charpair,
         )
 
         if not (startindex and endindex):
@@ -3226,11 +3270,11 @@ class MainText(tk.Text):
 
     def highlight_aligncol_in_viewport(self, viewport: Text) -> None:
         """Do highlighting of the alignment column in a single viewport."""
-        (top_index, bot_index) = self.get_screen_window_coordinates(viewport)
+        viewport_range = self.get_screen_window_coordinates(viewport)
 
         col = self.aligncol
-        row = IndexRowCol(top_index).row
-        end_row = IndexRowCol(bot_index).row
+        row = viewport_range.start.row
+        end_row = viewport_range.end.row
 
         while row <= end_row:
             # find length of row; don't highlight if row is too short to contain col
@@ -3282,6 +3326,37 @@ class MainText(tk.Text):
         if not self.selected_ranges():
             row = self.get_insert_index().row
             self.tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row + 1}.0")
+
+    def highlight_search_in_viewport(self, viewport: Text) -> None:
+        """Highlights current search pattern in designated viewport."""
+        if not self.search_pattern:
+            return
+        for _match in self.find_all(
+            self.get_screen_window_coordinates(viewport, 80), self.search_pattern
+        ):
+            viewport.tag_add(
+                HighlightTag.SEARCH,
+                _match.rowcol.index(),
+                f"{_match.rowcol.index()}+{_match.count}c",
+            )
+
+    def highlight_search(self) -> None:
+        """Highlight search matches during redraw."""
+        self.remove_highlights_search()
+        if self.search_highlight_active.get():
+
+            self.highlight_search_in_viewport(self)
+            if PrefKey.SPLIT_TEXT_WINDOW:
+                self.highlight_search_in_viewport(self.peer)
+
+    def remove_highlights_search(self) -> None:
+        """Remove highlights for search."""
+        self.tag_remove(HighlightTag.SEARCH, "1.0", tk.END)
+
+    def highlight_search_deactivate(self) -> None:
+        """Turn off the highlight-matches mode."""
+        self.search_highlight_active.set(False)
+        self.remove_highlights_search()
 
     def highlight_configure_tags(self, first_run: bool = False) -> None:
         """Configure highlight tags with colors based on the current theme.
