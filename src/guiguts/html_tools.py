@@ -8,7 +8,9 @@ from typing import Optional
 
 from PIL import Image, ImageTk, UnidentifiedImageError
 import regex as re
+import requests
 
+from guiguts.checkers import CheckerDialog
 from guiguts.file import the_file
 from guiguts.maintext import maintext
 from guiguts.preferences import (
@@ -17,8 +19,8 @@ from guiguts.preferences import (
     PrefKey,
     preferences,
 )
-from guiguts.utilities import IndexRange, sound_bell, DiacriticRemover
-from guiguts.widgets import ToplevelDialog
+from guiguts.utilities import IndexRange, sound_bell, DiacriticRemover, IndexRowCol
+from guiguts.widgets import ToplevelDialog, ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -532,3 +534,111 @@ class HTMLImageDialog(ToplevelDialog):
             case "px":
                 return f"{width_fl * self.image_height / self.image_width:.0f}"
         return "--"
+
+
+def html_validator_check() -> None:
+    """Validate the current HTML file."""
+
+    class HTMLValidatorDialog(CheckerDialog):
+        """Minimal class to identify dialog type so that it can exist
+        simultaneously with other checker dialogs."""
+
+        manual_page = "HTML_Menu#HTML_Validator"
+
+    checker_dialog = HTMLValidatorDialog.show_dialog(
+        "HTML Validator Results", rerun_command=html_validator_check
+    )
+    ToolTip(
+        checker_dialog.text,
+        "\n".join(
+            [
+                "Left click: Select & find comment",
+                "Right click: Remove comment from this list",
+            ]
+        ),
+        use_pointer_pos=True,
+    )
+
+    validator_url = "https://validator.w3.org/nu/"
+    try:
+        req = requests.post(
+            validator_url,
+            data=maintext().get("1.0", tk.END),
+            params={"out": "json"},
+            headers={"Content-Type": "text/html; charset=UTF-8"},
+            timeout=30,
+        )
+    except requests.exceptions.Timeout:
+        logger.error(f"Request to {validator_url} timed out\nValidate manually online")
+        return
+    except ConnectionError:
+        logger.error(f"Connection error to {validator_url}\nValidate manually online")
+        return
+    # Check if HTTP request was unsuccessful
+    try:
+        req.raise_for_status()
+    except (requests.exceptions.HTTPError, requests.exceptions.TooManyRedirects):
+        logger.error(
+            f"Request to {validator_url} was unsuccessful\nValidate manually online"
+        )
+        return
+
+    # Even if there are no errors, there should still be a messages list
+    try:
+        messages = req.json()["messages"]
+    except KeyError:
+        logger.error(
+            f"Invalid data returned from {validator_url}\nValidate manually online"
+        )
+        return
+
+    # Add a line to the checker dialog for each message
+    for message in messages:
+        try:
+            end = IndexRowCol(int(message["lastLine"]), int(message["lastColumn"]))
+        except KeyError:
+            end = None
+        # Missing start line means it's all on one line, so same as end line
+        try:
+            start_row = int(message["firstLine"])
+        except KeyError:
+            if end is None:
+                start_row = None
+            else:
+                start_row = end.row
+        # Missing start column means it's just one character
+        try:
+            start_col = int(message["firstColumn"]) - 1
+        except KeyError:
+            if end is None:
+                start_col = None
+            else:
+                start_col = end.col - 1
+        if start_row is None or start_col is None:
+            start = None
+        else:
+            # Messages sometimes range from end of previous line,
+            # in which case switch to start of next line
+            if start_col >= maintext().rowcol(f"{start_row}.end").col:
+                start_col = 0
+                start_row += 1
+            start = IndexRowCol(start_row, start_col)
+        if start is None or end is None:
+            error_range = None
+        else:
+            error_range = IndexRange(start, end)
+        try:
+            line = message["message"]
+        except KeyError:
+            line = "Data error - no message found"
+        try:
+            error_type = f'{message["type"].upper()}: '
+        except KeyError:
+            error_type = ""
+
+        checker_dialog.add_entry(line, error_range, error_prefix=error_type)
+
+    if not messages:
+        checker_dialog.add_entry("No errors reported by validator")
+
+    checker_dialog.display_entries()

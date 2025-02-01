@@ -16,7 +16,7 @@ from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle
 from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
-from guiguts.html_tools import HTMLImageDialog
+from guiguts.html_tools import HTMLImageDialog, html_validator_check
 from guiguts.illo_sn_fixup import illosn_check
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
@@ -786,6 +786,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Auto-~Illustrations...", lambda: HTMLImageDialog.show_dialog(destroy=True)
         )
         html_menu.add_button("~Unmatched HTML Tags...", unmatched_html_markup)
+        html_menu.add_button("HTML ~Validator...", html_validator_check)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""

@@ -13,6 +13,7 @@ pywin32 = {version = "^306", platform = "win32"}
 roman = "^4.1"
 regex = "^2024.5"
 levenshtein = "^0.26.1"
+requests = "^2.32.3"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4"
@@ -23,6 +24,7 @@ mypy = "^1.8"
 pylint = "^3.0.3"
 types-Pillow = "^10.1"
 types-regex = "^2024.5"
+types-requests = "^2.32.0"
 build = "^1.0.3"
 
 [tool.poetry.scripts]
