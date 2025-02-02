@@ -786,7 +786,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "Auto-~Illustrations...", lambda: HTMLImageDialog.show_dialog(destroy=True)
         )
         html_menu.add_button("~Unmatched HTML Tags...", unmatched_html_markup)
-        html_menu.add_button("HTML5 ~Validator...", html_validator_check)
+        html_menu.add_button("HTML5 ~Validator (online)...", html_validator_check)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
