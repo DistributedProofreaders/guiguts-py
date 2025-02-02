@@ -559,36 +559,52 @@ def html_validator_check() -> None:
         use_pointer_pos=True,
     )
 
+    do_validator_check(checker_dialog)
+
+
+def do_validator_check(checker_dialog: CheckerDialog) -> None:
+    """Do the actual check and add messages to the dialog."""
+
     validator_url = "https://validator.w3.org/nu/"
+
+    def report_exception(message: str, exc: Exception | str) -> None:
+        """Report exception to user and suggest manual validation.
+        Also call `display_entries to clear "busy" message.
+
+        Args:
+            message: Initial part of message to user.
+            exc: Exception that was thrown, or a string describing the problem
+        """
+        logger.error(f"{message}\nValidate manually online.\nError details:\n{exc}")
+        checker_dialog.display_entries()
+
     try:
         req = requests.post(
             validator_url,
             data=maintext().get("1.0", tk.END),
             params={"out": "json"},
             headers={"Content-Type": "text/html; charset=UTF-8"},
-            timeout=30,
+            timeout=15,
         )
-    except requests.exceptions.Timeout:
-        logger.error(f"Request to {validator_url} timed out\nValidate manually online")
+    except requests.exceptions.Timeout as exc:
+        report_exception(f"Request to {validator_url} timed out.", exc)
         return
-    except ConnectionError:
-        logger.error(f"Connection error to {validator_url}\nValidate manually online")
+    except ConnectionError as exc:
+        report_exception(f"Connection error to {validator_url}.", exc)
         return
     # Check if HTTP request was unsuccessful
     try:
         req.raise_for_status()
-    except (requests.exceptions.HTTPError, requests.exceptions.TooManyRedirects):
-        logger.error(
-            f"Request to {validator_url} was unsuccessful\nValidate manually online"
-        )
+    except (requests.exceptions.HTTPError, requests.exceptions.TooManyRedirects) as exc:
+        report_exception(f"Request to {validator_url} was unsuccessful.", exc)
         return
 
     # Even if there are no errors, there should still be a messages list
     try:
         messages = req.json()["messages"]
     except KeyError:
-        logger.error(
-            f"Invalid data returned from {validator_url}\nValidate manually online"
+        report_exception(
+            f"Invalid data returned from {validator_url}.", 'No "messages" key'
         )
         return
 
@@ -640,5 +656,4 @@ def html_validator_check() -> None:
 
     if not messages:
         checker_dialog.add_entry("No errors reported by validator")
-
     checker_dialog.display_entries()
