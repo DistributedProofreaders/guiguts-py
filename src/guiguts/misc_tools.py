@@ -861,6 +861,7 @@ def unmatched_html_markup() -> None:
         match_reg=f"{open_regex}|{close_regex}",
         match_pair_func=matched_pair_html_markup,
         nest_reg=ALWAYS_MATCH_REG,
+        ignore_reg="<(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr).*?>",
         sort_key_alpha=sort_key_html_markup,
     )
 
