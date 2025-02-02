@@ -1,5 +1,6 @@
 """Tools relating to HTML."""
 
+import gzip
 import logging
 import os.path
 import tkinter as tk
@@ -581,9 +582,13 @@ def do_validator_check(checker_dialog: CheckerDialog) -> None:
     try:
         req = requests.post(
             validator_url,
-            data=maintext().get("1.0", tk.END),
+            data=gzip.compress(bytes(maintext().get("1.0", tk.END), "UTF-8")),
             params={"out": "json"},
-            headers={"Content-Type": "text/html; charset=UTF-8"},
+            headers={
+                "Content-Type": "text/html; charset=UTF-8",
+                "Content-Encoding": "gzip",
+                "Accept-Encoding": "gzip",
+            },
             timeout=15,
         )
     except requests.exceptions.Timeout as exc:
