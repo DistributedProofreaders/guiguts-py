@@ -969,7 +969,7 @@ def specials_check(project_dict: ProjectDict) -> None:
 
         # Unexpected comma check. Commas should not occur after these words:
         pattern = (
-            r"(?i)\bthe,|\bit’s,|\btheir,|\ban,|\ba,|\bour,|\bthat’s,|\bits,|\bwhose,|\bevery,"
+            r"(?i)\bit’s,|\btheir,|\ban,|\ba,|\bour,|\bthat’s,|\bits,|\bwhose,|\bevery,"
             r"|\bi’ll,|\byour,|\bmy,|\bmr,|\bmrs,|\bmss,|\bmssrs,|\bft,|\bpm,|\bst,|\bdr,|\brd,|\bpp,|\bcf,"
             r"|\bjr,|\bsr,|\bvs,|\blb,|\blbs,|\bltd,|\bi’m,|\bduring,|\blet,|\btoward,|\bamong,"
         )
@@ -981,7 +981,7 @@ def specials_check(project_dict: ProjectDict) -> None:
         # Unexpected period check. Periods should not occur after these words:
         pattern = (
             r"(?i)\bevery\.|\bi’m\.|\bduring\.|\bthat’s\.|\bthis’s\.|\btheir\.|\byour\.|\bour\.|\bmy\.|\bor\."
-            r"|\band\.|\bbut\.|\bas\.|\bif\.|\bthe\.|\bits\.|\bit’s\.|\buntil\.|\bthan\.|\bwhether\.|\bi’ll\."
+            r"|\band\.|\bbut\.|\bas\.|\bif\.|\bits\.|\bit’s\.|\buntil\.|\bthan\.|\bwhether\.|\bi’ll\."
             r"|\bwhose\.|\bwho\.|\bbecause\.|\bwhen\.|\blet\.|\btill\.|\bvery\.|\ban\.|\bamong\."
             r"|\binto\.|\bwhom\.|\bhaving\.|\bthence\."
         )
