@@ -106,6 +106,7 @@ checker_filters = [
     CheckerFilterText("Broken em-dash", "Broken em-dash.*"),
     CheckerFilterText('Capital "S"', 'Capital "S".*'),
     CheckerFilterText("Caret character", "Caret character.*"),
+    CheckerFilterText("Digit in...", "Digit in.*"),
     CheckerFilterText("Double punctuation", "Double punctuation.*"),
     CheckerFilterText("Endquote missing punctuation", "Endquote missing punctuation.*"),
     CheckerFilterText("Extra period", "Extra period.*"),
@@ -120,34 +121,29 @@ checker_filters = [
     CheckerFilterText("Mismatched single quotes", "Mismatched single quotes.*"),
     CheckerFilterText("Mismatched square brackets", "Mismatched square brackets.*"),
     CheckerFilterText("Mismatched underscores", "Mismatched underscores.*"),
+    CheckerFilterText("Missing paragraph break", "Missing paragraph break.*"),
     CheckerFilterText("Missing space", "Missing space.*"),
     CheckerFilterText("No punctuation at para end", "No punctuation at para end.*"),
-    CheckerFilterText(
-        "Paragraph starts with lower-case", "Paragraph starts with lower-case.*"
-    ),
-    CheckerFilterText("Query digit in", "Query digit in.*"),
-    CheckerFilterText("Query had/bad error", "Query had/bad error.*"),
-    CheckerFilterText("Query he/be error", "Query he/be error.*"),
-    CheckerFilterText("Query hut/but error", "Query hut/but error.*"),
-    CheckerFilterText("Query I=exclamation mark", "Query I=exclamation mark.*"),
-    CheckerFilterText(
-        "Query missing paragraph break", "Query missing paragraph break.*"
-    ),
-    CheckerFilterText("Query punctuation after", "Query punctuation after .*"),
-    CheckerFilterText("Query single character line", "Query single character line.*"),
-    CheckerFilterText("Query standalone 0", "Query standalone 0.*"),
-    CheckerFilterText("Query standalone 1", "Query standalone 1.*"),
+    CheckerFilterText("Para starts with lower-case", "Para starts with lower-case.*"),
+    CheckerFilterText("Punctuation after...", "Punctuation after .*"),
+    CheckerFilterText("Query I/!", "Query I/!.*"),
+    CheckerFilterText("Query had/bad", "Query had/bad.*"),
+    CheckerFilterText("Query he/be", "Query he/be.*"),
+    CheckerFilterText("Query hut/but", "Query hut/but.*"),
     CheckerFilterText("Query word", "Query word .*"),
     CheckerFilterText("Short line", "Short line .*"),
+    CheckerFilterText("Single character line", "Single character line.*"),
     CheckerFilterText("Spaced dash", "Spaced dash.*"),
     CheckerFilterText("Spaced em-dash", "Spaced em-dash.*"),
     CheckerFilterText("Spaced punctuation", "Spaced punctuation.*"),
+    CheckerFilterText("Standalone 0", "Standalone 0.*"),
+    CheckerFilterText("Standalone 1", "Standalone 1.*"),
     CheckerFilterText("Tab character", "Tab character.*"),
     CheckerFilterText("Tilde character", "Tilde character.*"),
     CheckerFilterText("Unspaced bracket", "Unspaced bracket.*"),
-    CheckerFilterText("Unspaced quotes", "Unspaced quotes.*"),
-    CheckerFilterText("Wrongspaced quotes", "Wrongspaced quotes.*"),
-    CheckerFilterText("Wrongspaced singlequotes", "Wrongspaced singlequotes.*"),
+    CheckerFilterText("Unspaced double quotes", "Unspaced double quotes.*"),
+    CheckerFilterText("Wrongspaced double quotes", "Wrongspaced double quotes.*"),
+    CheckerFilterText("Wrongspaced single quotes", "Wrongspaced single quotes.*"),
 ]
 
 
@@ -310,7 +306,7 @@ class BookloupeChecker:
                 space_punc_regex, test_text[3]
             ):
                 self.dialog.add_entry(
-                    "Unspaced quotes?",
+                    "Unspaced double quotes?",
                     IndexRange(quote_index, quote_index_p1),
                 )
                 continue
@@ -322,7 +318,7 @@ class BookloupeChecker:
                 should_be_open and test_text[3] == " "
             ):
                 self.dialog.add_entry(
-                    "Wrongspaced quotes?",
+                    "Wrongspaced double quotes?",
                     IndexRange(quote_index, quote_index_p1),
                 )
                 continue
@@ -339,7 +335,7 @@ class BookloupeChecker:
             if not quote_index:
                 break
             self.dialog.add_entry(
-                "Wrongspaced singlequotes?",
+                "Wrongspaced single quotes?",
                 IndexRange(quote_index, maintext().index(f"{quote_index}+2c")),
             )
 
@@ -356,29 +352,29 @@ class BookloupeChecker:
             or maintext().get(f"{para_end}.0+2l") != "'"
         ):
             self.dialog.add_entry(
-                "Mismatched single quotes?",
+                "Mismatched single quotes",
                 para_range,
             )
         # Underscores - should be an even number
         if para_text.count("_") % 2:
             self.dialog.add_entry(
-                "Mismatched underscores?",
+                "Mismatched underscores",
                 para_range,
             )
         # Brackets - should be equal number of open & close
         if para_text.count("(") != para_text.count(")"):
             self.dialog.add_entry(
-                "Mismatched round brackets?",
+                "Mismatched round brackets",
                 para_range,
             )
         if para_text.count("[") != para_text.count("]"):
             self.dialog.add_entry(
-                "Mismatched square brackets?",
+                "Mismatched square brackets",
                 para_range,
             )
         if para_text.count("{") != para_text.count("}"):
             self.dialog.add_entry(
-                "Mismatched curly brackets?",
+                "Mismatched curly brackets",
                 para_range,
             )
         # Does paragraph begin with a lowercase letter?
@@ -387,7 +383,7 @@ class BookloupeChecker:
         if re.match(r"\p{Lowercase_Letter}", skip_para):
             skip_len = len(para_text) - len(skip_para)
             self.dialog.add_entry(
-                "Paragraph starts with lower-case",
+                "Para starts with lower-case",
                 IndexRange(
                     maintext().rowcol(f"{start_index}+{skip_len}c"),
                     maintext().rowcol(f"{start_index}+{skip_len + 1}c"),
@@ -406,7 +402,7 @@ class BookloupeChecker:
         last_line = re.sub(rf"[^{para_punc}\p{{Letter}}\p{{Number}}]", "", last_line)
         if last_line and last_line[-1] not in para_punc:
             self.dialog.add_entry(
-                "No punctuation at para end?",
+                "No punctuation at para end",
                 IndexRange(maintext().rowcol(f"{end_index}-1c"), end_index),
             )
 
@@ -420,10 +416,10 @@ class BookloupeChecker:
         assert self.dialog is not None
         # Regexes & names of odd characters
         odd_char_names = {
-            r"\t+": "Tab character?",
-            r"~+": "Tilde character?",
-            r"\^+": "Caret character?",
-            r"(?<!\d)/+|/+(?!\d)": "Forward slash?",  # But not if surrounded by numbers (e.g 3/4)
+            r"\t+": "Tab character",
+            r"~+": "Tilde character",
+            r"\^+": "Caret character",
+            r"(?<!\d)/+|/+(?!\d)": "Forward slash",  # But not if surrounded by numbers (e.g 3/4)
             r"\*+": "Asterisk",
         }
         # Hide slash in "</x>" - keep line length the same
@@ -446,13 +442,13 @@ class BookloupeChecker:
             # If next line starts with hyphen, broken emdash?
             if maintext().get(f"{step + 1}.0") == "-":
                 self.dialog.add_entry(
-                    "Broken em-dash?",
+                    "Broken em-dash",
                     IndexRange(maintext().rowcol(f"{step}.end-1c"), f"{step + 1}.1"),
                 )
             # Otherwise query end of line hyphen
             else:
                 self.dialog.add_entry(
-                    "Hyphen at end of line?",
+                    "Hyphen at end of line",
                     IndexRange(
                         maintext().rowcol(f"{step}.end-1c"),
                         maintext().rowcol(f"{step}.end"),
@@ -460,10 +456,10 @@ class BookloupeChecker:
                 )
         # Spaced emdash (4 hyphens represents a word, so is allowed to be spaced)
         for match in re.finditer(" -- |(?<!--)-- | --(?!--)", line):
-            self.add_match_entry(step, match, "Spaced em-dash?")
+            self.add_match_entry(step, match, "Spaced em-dash")
         # Spaced single hyphen/dash (don't report emdashes again)
         for match in re.finditer(" - |(?<!-)- | -(?!-)", line):
-            self.add_match_entry(step, match, "Spaced dash?")
+            self.add_match_entry(step, match, "Spaced dash")
 
     def check_line_length(self, step: int, line: str) -> None:
         """Check for long or short lines.
@@ -514,7 +510,7 @@ class BookloupeChecker:
                 break
         # None of the situations above happened, so it's a suspect short line
         self.dialog.add_entry(
-            f"Short line {line_len}?",
+            f"Short line {line_len}",
             IndexRange(f"{step}.0", f"{step}.{line_len + 1}"),
         )
 
@@ -528,7 +524,7 @@ class BookloupeChecker:
         assert self.dialog is not None
         if re.match(r"[?!,;:]|\.(?!( \. \.|\.\.))", line):
             self.dialog.add_entry(
-                "Begins with punctuation?",
+                "Begins with punctuation",
                 IndexRange(f"{step}.0", f"{step}.1"),
             )
 
@@ -543,7 +539,7 @@ class BookloupeChecker:
             self.add_match_entry(
                 step,
                 match,
-                "Query missing paragraph break?",
+                "Missing paragraph break",
             )
 
     def check_jeebies(self, step: int, line: str) -> None:
@@ -555,11 +551,11 @@ class BookloupeChecker:
         """
         assert self.dialog is not None
         for match in re.finditer(self.hebe_regex, line):
-            self.add_match_entry(step, match, "Query he/be error?")
+            self.add_match_entry(step, match, "Query he/be")
         for match in re.finditer(self.hadbad_regex, line):
-            self.add_match_entry(step, match, "Query had/bad error?")
+            self.add_match_entry(step, match, "Query had/bad")
         for match in re.finditer(self.hutbut_regex, line):
-            self.add_match_entry(step, match, "Query hut/but error?")
+            self.add_match_entry(step, match, "Query hut/but")
 
     def check_orphan_character(self, step: int, line: str) -> None:
         """Check for single character line, except (chapter/section/Roman?) numbers
@@ -571,7 +567,7 @@ class BookloupeChecker:
         assert self.dialog is not None
         if len(line) == 1 and line[0] not in "IVXL0123456789":
             self.dialog.add_entry(
-                "Query single character line",
+                "Single character line",
                 IndexRange(f"{step}.0", f"{step}.1"),
             )
 
@@ -583,7 +579,7 @@ class BookloupeChecker:
             line: Text of line being checked.
         """
         for match in re.finditer(' I"', line):
-            self.add_match_entry(step, match, "Query I=exclamation mark?")
+            self.add_match_entry(step, match, "Query I/exclamation mark")
 
     def check_extra_period(self, step: int, line: str) -> None:
         """Check for period not followed by capital letter.
@@ -612,7 +608,7 @@ class BookloupeChecker:
             # Only report if previous word contains vowels
             # (backward compatibility, except for addition of "y" as a vowel, for words like "try")
             if re.search("[aeiouy]", DiacriticRemover.remove_diacritics(test_word)):
-                self.add_match_entry(step, match, "Extra period?", group=2)
+                self.add_match_entry(step, match, "Extra period", group=2)
 
     def check_following_punctuation(self, step: int, line: str) -> None:
         """Check for surprising punctuation following certain words.
@@ -628,9 +624,7 @@ class BookloupeChecker:
                     rf"\b({word}){sep_regex}", line, flags=re.IGNORECASE
                 ):
                     # Use correctly-cased match in message, not lower-case word
-                    self.add_match_entry(
-                        step, match, f"Query punctuation after {match[1]}?"
-                    )
+                    self.add_match_entry(step, match, f"Punctuation after {match[1]}")
 
     def check_typos(self, step: int, line: str) -> None:
         """Check for common typos.
@@ -654,7 +648,7 @@ class BookloupeChecker:
                 match.start() != 10
                 or maintext().get(f"{step}.0", f"{step}.12") != "[Footnote 1:"
             ):
-                self.add_match_entry(step, match, f"Query standalone {word}")
+                self.add_match_entry(step, match, f"Standalone {word}")
                 continue
             # Check for mixed alpha & numeric (with some exceptions)
             if re.search(r"\p{Letter}", word_lower) and re.search(
@@ -665,7 +659,7 @@ class BookloupeChecker:
                 # If "L/l" followed by number, it's OK (English pounds)
                 prefix = re.sub(r"[\p{Number},]+$", "", word_lower)
                 if suffix not in _alnum_suffixes and prefix != "l":
-                    self.add_match_entry(step, match, f"Query digit in {word}?")
+                    self.add_match_entry(step, match, f"Digit in {word}")
                     continue
             # if not Latin script, then checks below are pointless
             if not re.search(r"[\p{Latin}\p{Common}]", word_lower):
@@ -752,7 +746,7 @@ class BookloupeChecker:
                     and (position >= 2 and line[position - 2] == ".")
                     or (position < len(line) - 2 and line[position + 2] == ".")
                 ):
-                    self.add_match_entry(step, match, "Missing space?")
+                    self.add_match_entry(step, match, "Missing space")
                     continue
             # Check for space before punctuation
             if line[position - 1] == " ":
@@ -763,7 +757,7 @@ class BookloupeChecker:
                     or position >= len(line) - 1
                     or line[position + 1].isalpha()
                 ):
-                    self.add_match_entry(step, match, "Spaced punctuation?")
+                    self.add_match_entry(step, match, "Spaced punctuation")
                     continue
 
     def check_double_punctuation(self, step: int, line: str) -> None:
@@ -779,7 +773,7 @@ class BookloupeChecker:
             self.add_match_entry(
                 step,
                 match,
-                "Double punctuation?",
+                "Double punctuation",
             )
 
     def check_miscased_genitive(self, step: int, line: str) -> None:
@@ -793,7 +787,7 @@ class BookloupeChecker:
             self.add_match_entry(
                 step,
                 match,
-                'Capital "S"?',
+                'Capital "S"',
             )
 
     def check_unspaced_bracket(self, step: int, line: str) -> None:
@@ -807,7 +801,7 @@ class BookloupeChecker:
             self.add_match_entry(
                 step,
                 match,
-                "Unspaced bracket?",
+                "Unspaced bracket",
             )
 
     def check_unpunctuated_endquote(self, step: int, line: str) -> None:
@@ -821,7 +815,7 @@ class BookloupeChecker:
             self.add_match_entry(
                 step,
                 match,
-                "Endquote missing punctuation?",
+                "Endquote missing punctuation",
             )
 
     def check_html_tag(self, step: int, line: str) -> None:
@@ -837,7 +831,7 @@ class BookloupeChecker:
             self.add_match_entry(
                 step,
                 match,
-                f"HTML Tag? {match[0]}",
+                f"HTML Tag {match[0]}",
             )
 
     def check_html_entity(self, step: int, line: str) -> None:
@@ -851,7 +845,7 @@ class BookloupeChecker:
             self.add_match_entry(
                 step,
                 match,
-                f"HTML symbol? {match[0]}",
+                f"HTML symbol {match[0]}",
             )
 
     def add_match_entry(
