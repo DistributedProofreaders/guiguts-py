@@ -112,7 +112,6 @@ class ToplevelDialog(tk.Toplevel):
         Args:
             title: Dialog title.
             destroy: True (default is False) if dialog should be destroyed & re-created, rather than re-used
-            args: Optional args to pass to dialog constructor.
             kwargs: Optional kwargs to pass to dialog constructor.
         """
         # If dialog exists, either destroy it or deiconify

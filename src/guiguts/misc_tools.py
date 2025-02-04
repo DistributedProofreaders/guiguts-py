@@ -30,7 +30,7 @@ from guiguts.utilities import (
     sound_bell,
     load_dict_from_json,
 )
-from guiguts.widgets import ToolTip, ToplevelDialog, Combobox, insert_in_focus_widget
+from guiguts.widgets import ToplevelDialog, Combobox, insert_in_focus_widget
 
 logger = logging.getLogger(__package__)
 
@@ -145,10 +145,7 @@ def basic_fixup_check() -> None:
         rerun_command=basic_fixup_check,
         process_command=process_fixup,
         sort_key_alpha=sort_key_type,
-    )
-    ToolTip(
-        checker_dialog.text,
-        "\n".join(
+        tooltip="\n".join(
             [
                 "Left click: Select & find issue",
                 "Right click: Remove issue from list",
@@ -156,7 +153,6 @@ def basic_fixup_check() -> None:
                 "With Shift key: Also remove/fix matching issues",
             ]
         ),
-        use_pointer_pos=True,
     )
     checker_dialog.reset()
 
@@ -996,17 +992,13 @@ def unmatched_markup_check(
         title,
         rerun_command=rerun_command,
         sort_key_alpha=sort_key_alpha,
-    )
-    ToolTip(
-        checker_dialog.text,
-        "\n".join(
+        tooltip="\n".join(
             [
                 "Left click: Select & find issue",
                 "Right click: Remove issue from list",
                 "Shift-Right click: Remove all matching issues",
             ]
         ),
-        use_pointer_pos=True,
     )
     # User can control nestability of some unmatched check types
     if nest_reg is None:
@@ -1280,17 +1272,14 @@ def proofer_comment_check() -> None:
         manual_page = "Navigation#Find_Proofer_Comments_(_[**notes]_)"
 
     checker_dialog = ProoferCommentCheckerDialog.show_dialog(
-        "Proofer Comments", rerun_command=proofer_comment_check
-    )
-    ToolTip(
-        checker_dialog.text,
-        "\n".join(
+        "Proofer Comments",
+        rerun_command=proofer_comment_check,
+        tooltip="\n".join(
             [
                 "Left click: Select & find comment",
                 "Right click: Remove comment from this list",
             ]
         ),
-        use_pointer_pos=True,
     )
     checker_dialog.reset()
     for match in matches:
@@ -1319,17 +1308,14 @@ def asterisk_check() -> None:
     )
 
     checker_dialog = AsteriskCheckerDialog.show_dialog(
-        "Asterisk Check", rerun_command=asterisk_check
-    )
-    ToolTip(
-        checker_dialog.text,
-        "\n".join(
+        "Asterisk Check",
+        rerun_command=asterisk_check,
+        tooltip="\n".join(
             [
                 "Left click: Select & find occurrence of asterisk",
                 "Right click: Remove occurrence from this list",
             ]
         ),
-        use_pointer_pos=True,
     )
     checker_dialog.reset()
     for match in matches:
@@ -1484,19 +1470,17 @@ class ScannoCheckerDialog(CheckerDialog):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize scanno checker dialog."""
-        super().__init__(*args, **kwargs)
-
-        ToolTip(
-            self.text,
-            "\n".join(
-                [
-                    "Left click: Select & find occurrence of scanno",
-                    "Right click: Remove occurrence of scanno from list",
-                    f"With {cmd_ctrl_string()} key: Also fix this occurrence",
-                    "With Shift key: Also remove/fix matching occurrences",
-                ]
-            ),
-            use_pointer_pos=True,
+        kwargs["tooltip"] = "\n".join(
+            [
+                "Left click: Select & find occurrence of scanno",
+                "Right click: Remove occurrence of scanno from list",
+                f"With {cmd_ctrl_string()} key: Also fix this occurrence",
+                "With Shift key: Also remove/fix matching occurrences",
+            ]
+        )
+        super().__init__(
+            *args,
+            **kwargs,
         )
 
         frame = ttk.Frame(self.header_frame)
@@ -1883,18 +1867,16 @@ class CurlyQuotesDialog(CheckerDialog):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize curly quotes checker dialog."""
-        super().__init__(*args, **kwargs)
-
-        ToolTip(
-            self.text,
-            "\n".join(
-                [
-                    "Left click: Select & find curly quote warning",
-                    "Right click: Remove warning from list",
-                    f"With {cmd_ctrl_string()} key: Convert straight to curly, or swap open⇔close",
-                ]
-            ),
-            use_pointer_pos=True,
+        kwargs["tooltip"] = "\n".join(
+            [
+                "Left click: Select & find curly quote warning",
+                "Right click: Remove warning from list",
+                f"With {cmd_ctrl_string()} key: Convert straight to curly, or swap open⇔close",
+            ]
+        )
+        super().__init__(
+            *args,
+            **kwargs,
         )
 
         frame = ttk.Frame(self.header_frame)

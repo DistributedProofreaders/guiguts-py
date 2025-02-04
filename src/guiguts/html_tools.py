@@ -21,7 +21,7 @@ from guiguts.preferences import (
     preferences,
 )
 from guiguts.utilities import IndexRange, sound_bell, DiacriticRemover, IndexRowCol
-from guiguts.widgets import ToplevelDialog, ToolTip
+from guiguts.widgets import ToplevelDialog
 
 logger = logging.getLogger(__package__)
 
@@ -547,17 +547,14 @@ def html_validator_check() -> None:
         manual_page = "HTML_Menu#HTML_Validator"
 
     checker_dialog = HTMLValidatorDialog.show_dialog(
-        "HTML Validator Results", rerun_command=html_validator_check
-    )
-    ToolTip(
-        checker_dialog.text,
-        "\n".join(
+        "HTML Validator Results",
+        rerun_command=html_validator_check,
+        tooltip="\n".join(
             [
                 "Left click: Select & find comment",
                 "Right click: Remove comment from this list",
             ]
         ),
-        use_pointer_pos=True,
     )
 
     do_validator_check(checker_dialog)

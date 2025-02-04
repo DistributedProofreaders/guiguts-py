@@ -17,7 +17,6 @@ from guiguts.widgets import (
     ToplevelDialog,
     Combobox,
     mouse_bind,
-    ToolTip,
     register_focus_widget,
     process_accel,
     Busy,
@@ -449,22 +448,19 @@ class SearchDialog(ToplevelDialog):
             manual_page = "Searching#Find_All"
 
         checker_dialog = FindAllCheckerDialog.show_dialog(
-            "Search Results", rerun_command=self.findall_clicked
-        )
-        if not checker_dialog.winfo_exists():
-            Busy.unbusy()
-            return
-        ToolTip(
-            checker_dialog.text,
-            "\n".join(
+            "Search Results",
+            rerun_command=self.findall_clicked,
+            tooltip="\n".join(
                 [
                     "Left click: Select & find string",
                     "Right click: Remove string from this list",
                     "Shift Right click: Remove all occurrences of string from this list",
                 ]
             ),
-            use_pointer_pos=True,
         )
+        if not checker_dialog.winfo_exists():
+            Busy.unbusy()
+            return
         checker_dialog.reset()
         if not self.winfo_exists():
             Busy.unbusy()

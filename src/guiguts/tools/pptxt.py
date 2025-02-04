@@ -8,7 +8,6 @@ from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
 from guiguts.utilities import IndexRowCol, IndexRange
-from guiguts.widgets import ToolTip
 
 
 class PPtxtCheckerDialog(CheckerDialog):
@@ -2522,18 +2521,15 @@ def pptxt(project_dict: ProjectDict) -> None:
 
     # Create the checker dialog to show results
     checker_dialog = PPtxtCheckerDialog.show_dialog(
-        "PPtxt Results", rerun_command=lambda: pptxt(project_dict)
-    )
-    ToolTip(
-        checker_dialog.text,
-        "\n".join(
+        "PPtxt Results",
+        rerun_command=lambda: pptxt(project_dict),
+        tooltip="\n".join(
             [
                 "Left click: Select & find issue",
                 "Right click: Remove issue from list",
                 "Shift Right click: Remove all matching issues",
             ]
         ),
-        use_pointer_pos=True,
     )
     checker_dialog.reset()
 

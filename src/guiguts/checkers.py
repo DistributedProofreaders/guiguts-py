@@ -17,7 +17,7 @@ from guiguts.utilities import (
     is_mac,
     sing_plur,
 )
-from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind, Busy
+from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind, Busy, ToolTip
 
 MARK_ENTRY_TO_SELECT = "MarkEntryToSelect"
 HILITE_TAG_NAME = "chk_hilite"
@@ -220,6 +220,7 @@ class CheckerDialog(ToplevelDialog):
         self,
         title: str,
         rerun_command: Callable[[], None],
+        tooltip: str,
         process_command: Optional[Callable[[CheckerEntry], None]] = None,
         sort_key_rowcol: Optional[Callable[[CheckerEntry], tuple]] = None,
         sort_key_alpha: Optional[Callable[[CheckerEntry], tuple]] = None,
@@ -234,6 +235,7 @@ class CheckerDialog(ToplevelDialog):
         Args:
             title: Title for dialog.
             rerun_command: Function to call to re-run the check.
+            tooltip: Tooltip to show in messages text widget.
             process_command: Function to call to "process" the current error, e.g. swap he/be.
             sort_key_rowcol: Function to sort by row & column.
             sort_key_alpha: Function to sort by alpha/type.
@@ -358,6 +360,7 @@ class CheckerDialog(ToplevelDialog):
             font=maintext().font,
         )
         self.text.grid(row=1, column=0, sticky="NSEW")
+        ToolTip(self.text, tooltip, use_pointer_pos=True)
 
         # 3 binary choices:
         #     remove/not_remove (just select) - controlled by button 3 or button 1

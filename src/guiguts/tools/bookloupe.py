@@ -13,7 +13,6 @@ from guiguts.checkers import CheckerDialog, CheckerViewOptionsDialog, CheckerFil
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
 from guiguts.utilities import IndexRange, DiacriticRemover
-from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -183,17 +182,13 @@ class BookloupeChecker:
             rerun_command=bookloupe_check,
             view_options_dialog_class=BookloupeCheckerViewOptionsDialog,
             view_options_filters=checker_filters,
-        )
-        ToolTip(
-            self.dialog.text,
-            "\n".join(
+            tooltip="\n".join(
                 [
                     "Left click: Select & find issue",
                     "Right click: Remove message from list",
                     "Shift-Right click: Remove all matching messages",
                 ]
             ),
-            use_pointer_pos=True,
         )
         self.dialog.reset()
         self.run_bookloupe()

@@ -23,7 +23,6 @@ from guiguts.preferences import (
     PrefKey,
 )
 from guiguts.utilities import IndexRowCol, IndexRange
-from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -657,6 +656,13 @@ class LevenshteinChecker:
         checker_dialog = LevenshteinCheckerDialog.show_dialog(
             "Levenshtein Edit Distance Check",
             rerun_command=lambda: levenshtein_check(project_dict),
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find highlighted word in file",
+                    "Right click: Remove line with highlighted word from list",
+                    "Shift Right click: Also remove all matching lines from list",
+                ]
+            ),
         )
         frame = ttk.Frame(checker_dialog.header_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
@@ -678,18 +684,6 @@ class LevenshteinChecker:
             value=LevenshteinEditDistance.TWO,
             takefocus=False,
         ).grid(row=0, column=3, sticky="NSE", padx=2)
-
-        ToolTip(
-            checker_dialog.text,
-            "\n".join(
-                [
-                    "Left click: Select & find highlighted word in file",
-                    "Right click: Remove line with highlighted word from list",
-                    "Shift Right click: Also remove all matching lines from list",
-                ]
-            ),
-            use_pointer_pos=True,
-        )
 
         checker_dialog.reset()
 

@@ -370,10 +370,7 @@ def spell_check(
             project_dict, add_project_word_callback, add_global_word_callback
         ),
         process_command=process_spelling,
-    )
-    ToolTip(
-        checker_dialog.text,
-        "\n".join(
+        tooltip="\n".join(
             [
                 "Left click: Select & find spelling error",
                 "Right click: Remove spelling error from list",
@@ -381,7 +378,6 @@ def spell_check(
                 f"With {cmd_ctrl_string()} key: Also add spelling to project dictionary",
             ]
         ),
-        use_pointer_pos=True,
     )
     frame = ttk.Frame(checker_dialog.header_frame)
     frame.grid(column=0, row=1, sticky="NSEW", pady=5)

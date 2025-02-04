@@ -19,7 +19,6 @@ from guiguts.utilities import (
     IndexRowCol,
     IndexRange,
 )
-from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -1327,6 +1326,13 @@ def footnote_check() -> None:
         rerun_command=footnote_check,
         sort_key_alpha=sort_key_type,
         show_suspects_only=True,
+        tooltip="\n".join(
+            [
+                "Left click: Select & find footnote",
+                "Right click: Remove item from list",
+                "Shift-Right click: Remove all matching items",
+            ]
+        ),
     )
 
     if _the_footnote_checker is None:
@@ -1334,18 +1340,6 @@ def footnote_check() -> None:
     elif not _the_footnote_checker.checker_dialog.winfo_exists():
         _the_footnote_checker.checker_dialog = checker_dialog
     _the_footnote_checker.fns_have_been_moved = False
-
-    ToolTip(
-        checker_dialog.text,
-        "\n".join(
-            [
-                "Left click: Select & find footnote",
-                "Right click: Remove item from list",
-                "Shift-Right click: Remove all matching items",
-            ]
-        ),
-        use_pointer_pos=True,
-    )
 
     _the_footnote_checker.run_check()
     # Order below is important. The display_footnote_entries() function will
