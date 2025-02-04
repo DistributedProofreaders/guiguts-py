@@ -10,7 +10,7 @@ from typing import Any, Tuple, Optional
 import regex as re
 
 from guiguts.checkers import CheckerDialog
-from guiguts.maintext import maintext, TclRegexCompileError, FindMatch, HighlightTag
+from guiguts.maintext import maintext, TclRegexCompileError, FindMatch
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey
 from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, sing_plur
 from guiguts.widgets import (
@@ -293,25 +293,9 @@ class SearchDialog(ToplevelDialog):
         self.config_width()
         self.allow_geometry_save()
 
-        class SearchParamsState:
-            """Ephemeral container to store information about search parameters.
-
-            Memorized parameter state can be compared to current parameter state
-            to determine whether the state changed since the last memorization.
-            """
-
-            def __init__(self) -> None:
-                self.pattern = ""
-                self.match_case = preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
-                self.regex = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
-                self.whole_word = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
-
-        # container to track search parameter state
-        self.search_params_state = SearchParamsState()
-
     def reset(self) -> None:
         """Called when dialog is reset/destroyed - remove search highlights."""
-        maintext().remove_search_highlights()
+        maintext().highlight_search_deactivate()
 
     def show_multi_replace(self, show: bool, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons.
@@ -358,39 +342,6 @@ class SearchDialog(ToplevelDialog):
         self.search_box.icursor(tk.END)
         self.search_box.focus()
 
-    def search_params_memorize(self) -> None:
-        """Store the current search parameters for later comparison"""
-        self.search_params_state.pattern = self.search_box.get()
-        self.search_params_state.match_case = preferences.get(
-            PrefKey.SEARCHDIALOG_MATCH_CASE
-        )
-        self.search_params_state.regex = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
-        self.search_params_state.whole_word = preferences.get(
-            PrefKey.SEARCHDIALOG_WHOLE_WORD
-        )
-
-    def search_params_have_changed(self) -> bool:
-        """Compare search params to last known state. Returns true if
-        there has been a change since params were memorized, false
-        otherwise.
-        """
-        if self.search_params_state.pattern != self.search_box.get():
-            return True
-        if self.search_params_state.match_case != preferences.get(
-            PrefKey.SEARCHDIALOG_MATCH_CASE
-        ):
-            return True
-        if self.search_params_state.regex != preferences.get(
-            PrefKey.SEARCHDIALOG_REGEX
-        ):
-            return True
-        if self.search_params_state.whole_word != preferences.get(
-            PrefKey.SEARCHDIALOG_WHOLE_WORD
-        ):
-            return True
-
-        return False
-
     def search_clicked(
         self, opposite_dir: bool = False, first_last: bool = False
     ) -> str:
@@ -420,21 +371,9 @@ class SearchDialog(ToplevelDialog):
         stop_rowcol = maintext().start() if backwards else maintext().end()
         message = ""
 
-        # If search params have changed since last time the button was clicked,
-        # then find all matching occurrences, tag with the "SEARCH" highlight.
-        # Clean up any existing "SEARCH" highlights first.
         try:
-            if self.search_params_have_changed():
-                maintext().remove_search_highlights()
-                for _match in self._find_all(
-                    maintext().start_to_end(),
-                    self.search_box.get(),
-                ):
-                    maintext().tag_add(
-                        HighlightTag.SEARCH,
-                        _match.rowcol.index(),
-                        f"{_match.rowcol.index()}+{_match.count}c",
-                    )
+            maintext().search_pattern = self.search_box.get()
+            maintext().search_highlight_active.set(True)
 
             # Now that "background" matches are highlighted, find the next match
             # and jump there as the "active" match. Uses the "sel" highlight.
@@ -444,7 +383,6 @@ class SearchDialog(ToplevelDialog):
         except re.error as e:
             message = message_from_regex_exception(e)
         self.display_message(message)
-        self.search_params_memorize()
         return "break"
 
     def search_forwards(self) -> str:
@@ -467,44 +405,6 @@ class SearchDialog(ToplevelDialog):
         )
         return "break"
 
-    def _find_all(self, find_range: IndexRange, search_string: str) -> list[FindMatch]:
-        """Find all matches in given range.
-
-        Returns:
-            List of FindMatch objects.
-        """
-        regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
-        wholeword = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
-        nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
-
-        slurp_text = maintext().get(find_range.start.index(), find_range.end.index())
-        slice_start = 0
-
-        matches: list[FindMatch] = []
-        while True:
-            match, match_start = maintext().find_match_in_range(
-                search_string,
-                slurp_text[slice_start:],
-                find_range,
-                nocase=nocase,
-                regexp=regexp,
-                wholeword=wholeword,
-                backwards=False,
-            )
-            if match is None:
-                break
-            matches.append(match)
-            # Adjust start of slice of slurped text, and where that point is in the file
-            advance = max(match.count, 1)
-            slice_start += match_start + advance
-            if slice_start >= len(slurp_text):  # No text left to match
-                break
-            slurp_start = IndexRowCol(
-                maintext().index(f"{match.rowcol.index()}+{advance}c")
-            )
-            find_range = IndexRange(slurp_start, find_range.end)
-        return matches
-
     def count_clicked(self) -> Optional[list[FindMatch]]:
         """Count how many times search string occurs in file (or selection).
 
@@ -525,7 +425,7 @@ class SearchDialog(ToplevelDialog):
             return None
 
         try:
-            matches = self._find_all(find_range, search_string)
+            matches = maintext().find_all(find_range, search_string)
         except re.error as e:
             self.display_message(message_from_regex_exception(e))
             return None
@@ -694,7 +594,7 @@ class SearchDialog(ToplevelDialog):
         replace_match = replace_string
 
         try:
-            matches = self._find_all(replace_range, search_string)
+            matches = maintext().find_all(replace_range, search_string)
         except re.error as e:
             self.display_message(message_from_regex_exception(e))
             return
@@ -808,6 +708,7 @@ def _do_find_next(
         maintext().set_mark_position(MARK_FOUND_START, match.rowcol, gravity=tk.LEFT)
         maintext().set_mark_position(MARK_FOUND_END, rowcol_end, gravity=tk.RIGHT)
     else:
+        maintext().highlight_search_deactivate()
         sound_bell()
 
 
