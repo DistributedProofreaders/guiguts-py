@@ -3,6 +3,7 @@
 from enum import Enum, StrEnum, auto
 import importlib.resources
 import logging
+import operator
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from typing import Callable, Optional, Any
@@ -37,7 +38,8 @@ BLOCK_TYPES = "[$*XxFf]"
 POEM_TYPES = "[Pp]"
 ALL_BLOCKS_REG = f"[{re.escape('#$*FILPXCR')}]"
 QUOTE_APOS_REG = "[[:alpha:]]’[[:alpha:]]"
-NEVER_MATCH_REG = r"(?!)"
+NEVER_MATCH_REG = "NEVER"
+ALWAYS_MATCH_REG = "ALWAYS"
 DEFAULT_SCANNOS_DIR = importlib.resources.files(scannos)
 DEFAULT_REGEX_SCANNOS = "regex.json"
 DEFAULT_STEALTH_SCANNOS = "en-common.json"
@@ -812,6 +814,69 @@ def unmatched_dp_markup() -> None:
     )
 
 
+def unmatched_html_markup() -> None:
+    """Check for unmatched HTML markup."""
+
+    open_regex = "<([[:alnum:]]+)( [^>\n]+)?>"
+    close_regex = "</([[:alnum:]]+)>"
+
+    def get_tag_type_regex(markup_in: str) -> str:
+        """Get the type of the given tag, e.g. "<div class='abc'>" gives "div".
+
+        Escaped so suitable for use in a regex.
+        """
+        return re.escape(re.sub(open_regex, r"\1", markup_in.replace("/", "")))
+
+    def matched_pair_html_markup(markup_in: str) -> tuple[str, bool]:
+        """Get regex that matches open and close HTML markup.
+
+        Args:
+            markup_in: Markup string - must be "<i>", "</b>", "<div class='...'>", etc.
+
+        Returns:
+            Tuple with regex, True if markup_in was close markup.
+        """
+        mtype = get_tag_type_regex(markup_in)
+        return f"(<{mtype}( [^>\n]+)?>|</{mtype}>)", (markup_in[1] == "/")
+
+    def sort_key_html_markup(
+        entry: CheckerEntry,
+    ) -> tuple[str, bool, int, int]:
+        """Sort key function to sort bad HTML tags.
+
+        Order is type of markup (e.g. b, div, span), open/close, row, col.
+        """
+        assert entry.text_range is not None
+        text = entry.text[entry.hilite_start : entry.hilite_end]
+        mtype = get_tag_type_regex(text)
+        return (
+            mtype,
+            "/" in text,
+            entry.text_range.start.row,
+            entry.text_range.start.col,
+        )
+
+    def equiv_func(s1: str, s2: str) -> bool:
+        """Check if two html tags are equivalent, i.e. the same type of tag,
+        and both opening or both closing. This is to make `<p class="center">`
+        match `<p>`, for example, which simple equality would not.
+        """
+        s1 = re.sub(open_regex, r"<\1>", s1)
+        s2 = re.sub(open_regex, r"<\1>", s2)
+        return s1 == s2
+
+    unmatched_markup_check(
+        "Unmatched HTML tags",
+        rerun_command=unmatched_html_markup,
+        match_reg=f"{open_regex}|{close_regex}",
+        match_pair_func=matched_pair_html_markup,
+        nest_reg=ALWAYS_MATCH_REG,
+        ignore_reg="<(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr).*?>",
+        sort_key_alpha=sort_key_html_markup,
+        equiv_func=equiv_func,
+    )
+
+
 def unmatched_block_markup() -> None:
     """Check for unmatched block markup."""
 
@@ -908,6 +973,7 @@ def unmatched_markup_check(
     ignore_reg: Optional[str] = None,
     sort_key_alpha: Optional[Callable[[CheckerEntry], tuple]] = None,
     additional_check_command: Optional[Callable[[UnmatchedCheckerDialog], None]] = None,
+    equiv_func: Optional[Callable[[str, str], bool]] = None,
 ) -> None:
     """Check the currently loaded file for unmatched markup errors.
 
@@ -920,6 +986,7 @@ def unmatched_markup_check(
         ignore_reg: Regex matching markup that is to be ignored during check.
         sort_key_alpha: Function to provide type/alphabetic sorting
         additional_check_command: Function to perform extra checks
+        equiv_func: Function to check if items are equivalent - defaults to `==`
     """
 
     if not tool_save():
@@ -970,12 +1037,21 @@ def unmatched_markup_check(
         # Is this markup permitted to nest?
         if nest_reg is None:
             nestable = preferences.get(PrefKey.UNMATCHED_NESTABLE)
+        elif nest_reg == NEVER_MATCH_REG:
+            nestable = False
+        elif nest_reg == ALWAYS_MATCH_REG:
+            nestable = True
         else:
             nestable = bool(re.fullmatch(nest_reg, match_str, flags=re.IGNORECASE))
         prefix = "Unmatched: "
         # Search for the matching pair to this markup
         if not find_match_pair(
-            match_index, match_str, match_pair_reg, reverse, nestable
+            match_index,
+            match_str,
+            match_pair_reg,
+            reverse,
+            nestable,
+            equiv_func=equiv_func,
         ):
             checker_dialog.add_entry(
                 f"{prefix}{match_str}",
@@ -996,6 +1072,7 @@ def find_match_pair(
     reverse: bool,
     nestable: bool,
     ignore_func: Optional[Callable[[str], bool]] = None,
+    equiv_func: Optional[Callable[[str, str], bool]] = None,
 ) -> str:
     """Find the pair to the given match.
 
@@ -1012,6 +1089,9 @@ def find_match_pair(
     depth = 1
     start = match_index if reverse else maintext().index(f"{match_index}+{match_len}c")
     end = maintext().start() if reverse else maintext().end()
+
+    if equiv_func is None:
+        equiv_func = operator.eq
     # Keep searching until we find the markup that brings us back
     # to the same depth as the given markup (or until there's an error)
     while depth > 0:
@@ -1032,7 +1112,9 @@ def find_match_pair(
         if ignore_func is None or not ignore_func(match_index):
             depth += (
                 1
-                if maintext().get_match_text(match).lower() == match_str.lower()
+                if equiv_func(
+                    maintext().get_match_text(match).lower(), match_str.lower()
+                )
                 else -1
             )
             # Check it's not nested when nesting isn't allowed
