@@ -18,7 +18,6 @@ from guiguts.preferences import (
     PrefKey,
 )
 from guiguts.utilities import IndexRowCol, IndexRange
-from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -75,6 +74,14 @@ class JeebiesChecker:
             "Jeebies Results",
             rerun_command=jeebies_check,
             process_command=self.process_jeebies,
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find he/be error",
+                    "Right click: Remove he/be error from list",
+                    f"With {cmd_ctrl_string()} key: Also toggle queried he/be",
+                    "Shift Right click: Also remove all matching he/be errors",
+                ]
+            ),
         )
         frame = ttk.Frame(checker_dialog.header_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
@@ -103,18 +110,6 @@ class JeebiesChecker:
             value=JeebiesParanoiaLevel.TOLERANT,
             takefocus=False,
         ).grid(row=0, column=4, sticky="NSE", padx=2)
-        ToolTip(
-            checker_dialog.text,
-            "\n".join(
-                [
-                    "Left click: Select & find he/be error",
-                    "Right click: Remove he/be error from list",
-                    f"With {cmd_ctrl_string()} key: Also toggle queried he/be",
-                    "Shift Right click: Also remove all matching he/be errors",
-                ]
-            ),
-            use_pointer_pos=True,
-        )
         checker_dialog.reset()
 
         # Check level used last time Jeebies was run or default if first run.

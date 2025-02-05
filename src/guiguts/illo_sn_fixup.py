@@ -14,7 +14,6 @@ from guiguts.utilities import (
     IndexRowCol,
     IndexRange,
 )
-from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -603,6 +602,13 @@ def illosn_check(tag_type: str) -> None:
         rerun_command=lambda: illosn_check(tag_type),
         show_suspects_only=True,
         clear_on_undo_redo=True,
+        tooltip="\n".join(
+            [
+                f"Left click: Select & find {tag_type} tag",
+                "Right click: Remove item from list",
+                "Shift-Right click: Remove all matching items",
+            ]
+        ),
     )
     if tag_type == "Illustration":
         if _the_illo_checker is None:
@@ -616,18 +622,6 @@ def illosn_check(tag_type: str) -> None:
         elif not _the_sn_checker.checker_dialog.winfo_exists():
             _the_sn_checker.checker_dialog = checker_dialog
         the_checker = _the_sn_checker
-
-    ToolTip(
-        checker_dialog.text,
-        "\n".join(
-            [
-                f"Left click: Select & find {tag_type} tag",
-                "Right click: Remove item from list",
-                "Shift-Right click: Remove all matching items",
-            ]
-        ),
-        use_pointer_pos=True,
-    )
 
     frame = ttk.Frame(checker_dialog.header_frame)
     frame.grid(column=0, row=1, sticky="NSEW")
