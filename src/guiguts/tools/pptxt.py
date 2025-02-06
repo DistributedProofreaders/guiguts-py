@@ -628,7 +628,7 @@ def weird_characters() -> None:
             # If there are multiple instances of a weirdo on a line then the line will appear in
             # the dialog multiple times, each time highlighting a different instance of it.
             # If character is in `report_once_list`, just report once per line (used for text tables)
-            report_once_list = "+|"
+            report_once_list = "+|*"
 
             prev_line_number = -1
             regx = "(" + "\\" + weirdo + ")"
