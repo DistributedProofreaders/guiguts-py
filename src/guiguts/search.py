@@ -31,6 +31,10 @@ PADX = 2
 PADY = 2
 
 
+class NoMatchFoundError(Exception):
+    """Raised when no match is found for the search string."""
+
+
 class SearchDialog(ToplevelDialog):
     """A Toplevel dialog that allows the user to search/replace.
 
@@ -381,6 +385,8 @@ class SearchDialog(ToplevelDialog):
             )
         except re.error as e:
             message = message_from_regex_exception(e)
+        except NoMatchFoundError:
+            message = "No matches found"
         self.display_message(message)
         return "break"
 
@@ -557,7 +563,6 @@ class SearchDialog(ToplevelDialog):
         maintext().clear_selection()
         if search_again:
             find_next(backwards=backwards)
-        self.display_message()
         return "break"
 
     def replaceall_clicked(self, box_num: int) -> None:
@@ -662,6 +667,7 @@ def find_next(backwards: bool = False) -> None:
     if dlg := SearchDialog.get_dialog():
         search_string = dlg.search_box.get()
         dlg.search_box.add_to_history(search_string)
+        dlg.display_message("")
     if not search_string:
         try:
             search_string = preferences.get(PrefKey.SEARCH_HISTORY)[0]
@@ -675,6 +681,9 @@ def find_next(backwards: bool = False) -> None:
         _do_find_next(search_string, backwards, IndexRange(start_rowcol, stop_rowcol))
     except TclRegexCompileError as exc:
         logger.error(str(exc))
+    except NoMatchFoundError:
+        if dlg:
+            dlg.display_message("No more matches found")
 
 
 def _do_find_next(
@@ -706,6 +715,7 @@ def _do_find_next(
     else:
         maintext().highlight_search_deactivate()
         sound_bell()
+        raise NoMatchFoundError
 
 
 def get_search_start(backwards: bool) -> IndexRowCol:
