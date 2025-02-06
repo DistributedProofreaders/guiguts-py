@@ -292,12 +292,12 @@ class FootnoteChecker:
 
         An issue arises if the last line of the file is a footnote.
         Inserting a newline character programatically will place it
-        before the footnote's end "Checker" mark if tk.RIGHT gravity
+        before the footnote's end Checker mark if tk.RIGHT gravity
         was specified when the mark was set. We want the newline
         placed after the mark otherwise the blank line will be
         carried with the footnote if it is moved.
 
-        There will be at most one such "Checker" mark at the end of
+        There will be at most one such Checker mark at the end of
         file in this case.
 
         Search for it. If present, remember its position at the current
@@ -306,13 +306,14 @@ class FootnoteChecker:
         The mark will now be positioned before the blank line we just
         added.
         """
+        mark_prefix = self.checker_dialog.get_mark_prefix()
         # Note the index of current end of file.
         old_end_of_file = maintext().end().index()
         blank_line_inserted = False
         # Initialise start position of mark search.
         mark_name = old_end_of_file
         while mark_name := maintext().mark_next(mark_name):  # type: ignore[assignment]
-            if mark_name.startswith("Checker"):
+            if mark_name.startswith(mark_prefix):
                 maintext().mark_unset(mark_name)
                 maintext().insert(old_end_of_file, "\n")
                 # Set mark again at its original position; i.e. the old end of file.
@@ -324,17 +325,18 @@ class FootnoteChecker:
                 blank_line_inserted = True
                 break
         if not blank_line_inserted:
-            # No 'Checker' mark at end of file.
+            # No Checker mark at end of file.
             maintext().insert(old_end_of_file, "\n")
 
     def change_gravity_right_to_left(self) -> None:
         """Change gravity of a FN-end Checker mark to tk.LEFT."""
+        mark_prefix = self.checker_dialog.get_mark_prefix()
         fn_records = self.get_fn_records()
         for fn_record in fn_records:
             fn_cur_end = fn_record.end.index()
             mark_name = fn_cur_end
             while mark_name := maintext().mark_next(mark_name):  # type: ignore[assignment]
-                if mark_name.startswith("Checker"):
+                if mark_name.startswith(mark_prefix):
                     save_name = mark_name
                     if maintext().compare(fn_cur_end, "==", save_name):
                         maintext().mark_unset(save_name)
@@ -347,12 +349,13 @@ class FootnoteChecker:
 
     def change_gravity_left_to_right(self) -> None:
         """Change gravity of a FN-end Checker mark to tk.RIGHT."""
+        mark_prefix = self.checker_dialog.get_mark_prefix()
         fn_records = self.get_fn_records()
         for fn_record in fn_records:
             fn_cur_end = fn_record.end.index()
             mark_name = fn_cur_end
             while mark_name := maintext().mark_next(mark_name):  # type: ignore[assignment]
-                if mark_name.startswith("Checker"):
+                if mark_name.startswith(mark_prefix):
                     save_name = mark_name
                     if maintext().compare(fn_cur_end, "==", save_name):
                         maintext().mark_unset(save_name)
@@ -550,7 +553,7 @@ class FootnoteChecker:
         # left behind when FNs are deleted between the end of a paragraph and the
         # insertion mark after the last FN in a list of FNs that followed it.
 
-        # Restore RIGHT gravity to the 'Checker' mark at the end of each footnote.
+        # Restore RIGHT gravity to the Checker mark at the end of each footnote.
         self.change_gravity_left_to_right()
         # Rebuild FN and AN record arrays.
         self.run_check()
