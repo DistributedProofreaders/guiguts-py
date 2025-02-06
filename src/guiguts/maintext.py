@@ -3351,7 +3351,8 @@ class MainText(tk.Text):
 
     def remove_highlights_search(self) -> None:
         """Remove highlights for search."""
-        self.tag_remove(HighlightTag.SEARCH, "1.0", tk.END)
+        if self.winfo_exists():
+            self.tag_remove(HighlightTag.SEARCH, "1.0", tk.END)
 
     def highlight_search_deactivate(self) -> None:
         """Turn off the highlight-matches mode."""
