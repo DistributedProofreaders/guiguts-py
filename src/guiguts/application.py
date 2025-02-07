@@ -717,7 +717,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
                 self.file.add_good_word_to_global_dictionary,
             ),
         )
-        tools_menu.add_button("PP~txt...", lambda: pptxt(self.file.project_dict))
         tools_menu.add_button("~Jeebies...", jeebies_check)
         tools_menu.add_button("Stealth S~cannos...", stealth_scannos)
         tools_menu.add_button(
@@ -777,6 +776,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         text_menu.add_button(
             "Convert ~Markup...", TextMarkupConvertorDialog.show_dialog
         )
+        text_menu.add_button("PP~txt...", lambda: pptxt(self.file.project_dict))
 
     def init_html_menu(self) -> None:
         """Create the HTML menu."""
