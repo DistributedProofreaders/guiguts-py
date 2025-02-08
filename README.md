@@ -16,9 +16,19 @@ Guiguts - an application to support creation of ebooks for PG
    ```
    If additional dependencies are added to GG2, or you use pyenv to switch
    to a new version of python, you will need to re-run this command.
-3. You can then run GG2 directly with `poetry run guiguts`. Alternatively, 
-   you can start a virtual environment shell with `poetry shell`, then run
-   GG2 with `guiguts`.
+3. You can then run GG2 directly with `poetry run guiguts`.
+
+An alternative to `poetry run` is to enable your shell to use the poetry
+environment. How to accomplish this differs depending which version of Poetry
+you're using (which you can see by running `poetry --version`):
+
+For Poetry 1, you can start a virtual environment shell with `poetry shell`,
+then run GG2 with `guiguts`.
+
+In Poetry 2, the `shell` command has been removed; instead, activate the virtual
+environment with `eval $(poetry env activate)`. Once activated, you can run GG2
+using `guiguts`.  To deactivate the environment and return to your base
+environment, either exit the shell or run `deactivate`.
 
 ## Windows Development Setup
 
