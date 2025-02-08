@@ -11,12 +11,7 @@ from enum import auto, StrEnum
 import regex as re
 
 from guiguts.preferences import preferences, PrefKey
-from guiguts.utilities import (
-    is_mac,
-    IndexRowCol,
-    IndexRange,
-    TextWrapper,
-)
+from guiguts.utilities import is_mac, IndexRowCol, IndexRange, TextWrapper, sound_bell
 from guiguts.widgets import (
     theme_set_tk_widget_colors,
     themed_style,
@@ -385,6 +380,25 @@ class TextPeer(tk.Text):
 
 class MainText(tk.Text):
     """MainText is the main text window, and inherits from ``tk.Text``."""
+
+    class VimFlags:
+        """Class to store vim-mode info."""
+
+        def __init__(self) -> None:
+            """Initialize vim flags."""
+            self.insert_mode = False
+            self.multiplier = ""
+            self.paste_buffer = ""
+            self.pending_command = ""
+            self.pending_multiplier = ""
+
+        def get_multiplier(self) -> int:
+            """Return multiplier for commands. If no multiplier, it equals 1."""
+            return int(self.multiplier) if self.multiplier else 1
+
+        def get_pending_multiplier(self) -> int:
+            """Return multiplier for pending commands. If no multiplier, it equals 1."""
+            return int(self.pending_multiplier) if self.pending_multiplier else 1
 
     def __init__(self, parent: tk.PanedWindow, root: tk.Tk, **kwargs: Any) -> None:
         """Create a Frame, and put a TextLineNumbers widget, a Text and two
@@ -783,6 +797,9 @@ class MainText(tk.Text):
                     lambda _event: self.do_nothing(),
                     bind_all=False,
                 )
+
+        self.vim_flags = MainText.VimFlags()
+        self.set_vim_mode()
 
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
@@ -3489,6 +3506,161 @@ class MainText(tk.Text):
 
         self._on_change()
         self.after(int(scroll_delay), lambda: self._autoscroll_callback(event))
+
+    def set_vim_mode(self) -> None:
+        """Turn vim mode on or off depending on pref."""
+        if preferences.get(PrefKey.VIM_MODE):
+            self.bind("<Key>", self.vim_handler)
+            self["blockcursor"] = True
+        else:
+            self.unbind("<Key>")
+            self["blockcursor"] = False
+
+    def vim_handler(self, event: tk.Event) -> str:
+        """Handle vim commands.
+
+        Returns:
+            "break" to avoid default processing of event; "" to allow default processing.
+        """
+        wgt = self.focus_widget()
+        key = event.char
+        if not key:
+            return ""
+        # If in insert mode, need to catch Escape, but otherwise
+        # just let key be processed as normal
+        if self.vim_flags.insert_mode:
+            if key == "\x1b":  # Escape key
+                wgt.mark_set(tk.INSERT, f"{tk.INSERT}-1c")
+                self.vim_flags.insert_mode = False
+                return "break"
+            return ""
+        # Not in insert mode, so check for commands
+        insert_rowcol = IndexRowCol(wgt.index(tk.INSERT))
+        cur_line = wgt.get(f"{tk.INSERT} linestart", f"{tk.INSERT} lineend")
+        line_len = len(cur_line)
+        # Handle pending commands next
+        if self.vim_flags.pending_command:
+            # Pending multiplier commands (digits)
+            if key in "123456789" or key == "0" and self.vim_flags.pending_multiplier:
+                self.vim_flags.pending_multiplier += key
+            # Repeated command (whole lines) or w (words)
+            elif key in (self.vim_flags.pending_command, "w"):
+                multiplier = (
+                    self.vim_flags.get_pending_multiplier()
+                    * self.vim_flags.get_multiplier()
+                )
+                pending_start = wgt.index(f"{tk.INSERT} linestart")
+                if key == "w":
+                    # NYI - change line below to set pending_end to a point pending_mult*mult words on from tk.INSERT
+                    pending_end = wgt.index(f"{tk.INSERT} linestart + {multiplier}l")
+                else:
+                    pending_end = wgt.index(f"{tk.INSERT} linestart + {multiplier}l")
+                if key == "d":
+                    self.vim_flags.paste_buffer = wgt.get(pending_start, pending_end)
+                    wgt.delete(pending_start, pending_end)
+                elif key == "c":
+                    wgt.delete(pending_start, pending_end)
+                    self.vim_flags.insert_mode = True
+                elif key == "y":
+                    self.vim_flags.paste_buffer = wgt.get(pending_start, pending_end)
+                self.vim_flags.pending_command = ""
+                self.vim_flags.multiplier = ""
+                self.vim_flags.pending_multiplier = ""
+            else:
+                self.vim_flags.pending_command = ""
+                self.vim_flags.multiplier = ""
+                self.vim_flags.pending_multiplier = ""
+                sound_bell()
+        # Multiplier commands (digits)
+        elif key in "123456789" or key == "0" and self.vim_flags.multiplier:
+            self.vim_flags.multiplier += key
+        elif key == "0":
+            wgt.mark_set(tk.INSERT, f"{tk.INSERT} linestart")
+        elif key == "\x1b":  # Escape key
+            self.vim_flags.pending_multiplier = ""
+            self.vim_flags.multiplier = ""
+        # Insert commands
+        elif key in "aAiIoO":
+            self.vim_flags.insert_mode = True
+            if key == "a":
+                nchars = 1 if insert_rowcol.col < line_len else 0
+                wgt.mark_set(tk.INSERT, f"{tk.INSERT}+{nchars}c")
+            elif key == "A":
+                wgt.mark_set(tk.INSERT, f"{tk.INSERT} lineend")
+            elif key == "I":
+                wgt.mark_set(tk.INSERT, f"{tk.INSERT} linestart")
+            elif key == "o":
+                self.insert(f"{tk.INSERT}+1l linestart", "\n")
+                wgt.mark_set(tk.INSERT, f"{tk.INSERT}+1l linestart")
+            elif key == "O":
+                self.insert(f"{tk.INSERT} linestart", "\n")
+                wgt.mark_set(tk.INSERT, f"{tk.INSERT}-1l")
+        # Cursor movement commands
+        elif key == "h":
+            nchars = min(self.vim_flags.get_multiplier(), insert_rowcol.col)
+            wgt.mark_set(tk.INSERT, f"{tk.INSERT}-{nchars}c")
+        elif key == "l":
+            nchars = min(
+                self.vim_flags.get_multiplier(), line_len - insert_rowcol.col - 1
+            )
+            wgt.mark_set(tk.INSERT, f"{tk.INSERT}+{nchars}c")
+        elif key == "j":
+            nlines = min(
+                self.vim_flags.get_multiplier(), self.end().row - insert_rowcol.row
+            )
+            wgt.mark_set(tk.INSERT, f"{tk.INSERT}+{nlines}l")
+        elif key == "k":
+            nlines = min(self.vim_flags.get_multiplier(), insert_rowcol.row - 1)
+            wgt.mark_set(tk.INSERT, f"{tk.INSERT}-{nlines}l")
+        # Delete commands
+        elif key == "x":
+            nchars = min(self.vim_flags.get_multiplier(), line_len - insert_rowcol.col)
+            self.vim_flags.paste_buffer = wgt.get(tk.INSERT, f"{tk.INSERT}+{nchars}c")
+            wgt.delete(tk.INSERT, f"{tk.INSERT}+{nchars}c")
+            if (
+                self.compare(tk.INSERT, ">=", f"{tk.INSERT} lineend")
+                and insert_rowcol.col > 0
+            ):
+                wgt.mark_set(tk.INSERT, f"{insert_rowcol.row}.{insert_rowcol.col - 1}")
+        elif key == "X":
+            nchars = min(self.vim_flags.get_multiplier(), insert_rowcol.col)
+            wgt.delete(f"{tk.INSERT}-{nchars}c", tk.INSERT)
+        elif key == "D":
+            wgt.delete(tk.INSERT, f"{tk.INSERT} lineend")
+            if insert_rowcol.col > 0:
+                wgt.mark_set(tk.INSERT, f"{insert_rowcol.row}.{insert_rowcol.col - 1}")
+        # Change commands
+        elif key == "C":
+            wgt.delete(tk.INSERT, f"{tk.INSERT} lineend")
+            self.vim_flags.insert_mode = True
+        elif key == "s":
+            nchars = min(self.vim_flags.get_multiplier(), line_len - insert_rowcol.col)
+            self.vim_flags.paste_buffer = wgt.get(tk.INSERT, f"{tk.INSERT}+{nchars}c")
+            wgt.delete(tk.INSERT, f"{tk.INSERT}+{nchars}c")
+            self.vim_flags.insert_mode = True
+        # Copy/Paste commands
+        elif key == "p":
+            nchars = 1 if insert_rowcol.col < line_len else 0
+            nreps = self.vim_flags.get_multiplier()
+            wgt.insert(f"{tk.INSERT}+{nchars}c", self.vim_flags.paste_buffer * nreps)
+            wgt.mark_set(
+                tk.INSERT, f"{tk.INSERT}+{len(self.vim_flags.paste_buffer) * nreps}c"
+            )
+        elif key == "P":
+            nreps = self.vim_flags.get_multiplier()
+            wgt.insert(tk.INSERT, self.vim_flags.paste_buffer * nreps)
+        # Undo commands:
+        elif key == "u":
+            wgt.event_generate("<<Undo>>")
+        # Commands pending more info
+        elif key in "cdy":
+            self.vim_flags.pending_command = key
+            self.vim_flags.pending_multiplier = ""
+        # If not a multiplier or a pending, clear multiplier
+        if key not in "0123456789cdy" or key == "0" and self.vim_flags.multiplier:
+            self.vim_flags.multiplier = ""
+        self.see(tk.INSERT)
+        return "break"
 
 
 def img_from_page_mark(mark: str) -> str:

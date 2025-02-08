@@ -447,6 +447,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.HTML_IMAGE_UNIT, "%")
         preferences.set_default(PrefKey.HTML_IMAGE_OVERRIDE_EPUB, True)
         preferences.set_default(PrefKey.HTML_IMAGE_ALIGNMENT, "center")
+        preferences.set_default(PrefKey.VIM_MODE, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:

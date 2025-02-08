@@ -217,6 +217,16 @@ class PreferencesDialog(ToplevelDialog):
             "Right margin for index entries",
         )
 
+        # Advanced tab
+        advanced_frame = ttk.LabelFrame(self.top_frame, text="Advanced", padding=10)
+        advanced_frame.grid(column=0, row=2, sticky="NSEW", pady=(10, 0))
+        ttk.Checkbutton(
+            advanced_frame,
+            text="Vim mode",
+            variable=PersistentBoolean(PrefKey.VIM_MODE),
+            command=maintext().set_vim_mode,
+        ).grid(column=0, row=0, sticky="NEW", pady=5)
+
 
 _compose_dict: dict[str, str] = {}
 

@@ -93,6 +93,7 @@ class PrefKey(StrEnum):
     HTML_IMAGE_UNIT = auto()
     HTML_IMAGE_OVERRIDE_EPUB = auto()
     HTML_IMAGE_ALIGNMENT = auto()
+    VIM_MODE = auto()
 
 
 class Preferences:
