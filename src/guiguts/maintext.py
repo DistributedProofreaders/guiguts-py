@@ -3526,10 +3526,11 @@ class MainText(tk.Text):
         key = event.char
         if not key:
             return ""
+        escape = "\x1b"
         # If in insert mode, need to catch Escape, but otherwise
         # just let key be processed as normal
         if self.vim_flags.insert_mode:
-            if key == "\x1b":  # Escape key
+            if key == escape:
                 wgt.mark_set(tk.INSERT, f"{tk.INSERT}-1c")
                 self.vim_flags.insert_mode = False
                 return "break"
@@ -3540,8 +3541,34 @@ class MainText(tk.Text):
         line_len = len(cur_line)
         # Handle pending commands next
         if self.vim_flags.pending_command:
+            if key == escape:
+                if self.vim_flags.pending_command == "R":
+                    wgt.mark_set(tk.INSERT, f"{tk.INSERT}-1c")
+                self.vim_flags.pending_command = ""
+            # Replace commands
+            elif self.vim_flags.pending_command == "r":
+                wgt.replace(
+                    tk.INSERT,
+                    f"{tk.INSERT}+{self.vim_flags.get_multiplier()}c",
+                    key * self.vim_flags.get_multiplier(),
+                )
+                wgt.mark_set(tk.INSERT, f"{tk.INSERT}-1c")
+                self.vim_flags.pending_command = ""
+            elif self.vim_flags.pending_command == "R":
+                wgt.replace(tk.INSERT, f"{tk.INSERT}+1c", key)
+            # Mark commands
+            elif self.vim_flags.pending_command == "m":
+                wgt.mark_set(f"VIM_MARK{key}", tk.INSERT)
+                self.vim_flags.pending_command = ""
+            elif self.vim_flags.pending_command in "`'":
+                ls = " linestart" if self.vim_flags.pending_command == "'" else ""
+                try:
+                    wgt.mark_set(tk.INSERT, f"VIM_MARK{key}{ls}")
+                except tk.TclError:
+                    sound_bell()
+                self.vim_flags.pending_command = ""
             # Pending multiplier commands (digits)
-            if key in "123456789" or key == "0" and self.vim_flags.pending_multiplier:
+            elif key in "123456789" or key == "0" and self.vim_flags.pending_multiplier:
                 self.vim_flags.pending_multiplier += key
             # Repeated command (whole lines) or w (words)
             elif key in (self.vim_flags.pending_command, "w"):
@@ -3550,18 +3577,20 @@ class MainText(tk.Text):
                     * self.vim_flags.get_multiplier()
                 )
                 pending_start = wgt.index(f"{tk.INSERT} linestart")
+                # Probably doesn't match vim "words" - would need manual word skipping
                 if key == "w":
-                    # NYI - change line below to set pending_end to a point pending_mult*mult words on from tk.INSERT
-                    pending_end = wgt.index(f"{tk.INSERT} linestart + {multiplier}l")
+                    pending_end = pending_start
+                    for _ in range(multiplier):
+                        pending_end = wgt.index(f"{pending_end} +1c wordend")
                 else:
                     pending_end = wgt.index(f"{tk.INSERT} linestart + {multiplier}l")
-                if key == "d":
+                if self.vim_flags.pending_command == "d":
                     self.vim_flags.paste_buffer = wgt.get(pending_start, pending_end)
                     wgt.delete(pending_start, pending_end)
-                elif key == "c":
+                elif self.vim_flags.pending_command == "c":
                     wgt.delete(pending_start, pending_end)
                     self.vim_flags.insert_mode = True
-                elif key == "y":
+                elif self.vim_flags.pending_command == "y":
                     self.vim_flags.paste_buffer = wgt.get(pending_start, pending_end)
                 self.vim_flags.pending_command = ""
                 self.vim_flags.multiplier = ""
@@ -3576,7 +3605,9 @@ class MainText(tk.Text):
             self.vim_flags.multiplier += key
         elif key == "0":
             wgt.mark_set(tk.INSERT, f"{tk.INSERT} linestart")
-        elif key == "\x1b":  # Escape key
+        elif key == "$":
+            wgt.mark_set(tk.INSERT, f"{tk.INSERT} lineend")
+        elif key == escape:
             self.vim_flags.pending_multiplier = ""
             self.vim_flags.multiplier = ""
         # Insert commands
@@ -3653,11 +3684,11 @@ class MainText(tk.Text):
         elif key == "u":
             wgt.event_generate("<<Undo>>")
         # Commands pending more info
-        elif key in "cdy":
+        elif key in "cdyrRm'`":
             self.vim_flags.pending_command = key
             self.vim_flags.pending_multiplier = ""
-        # If not a multiplier or a pending, clear multiplier
-        if key not in "0123456789cdy" or key == "0" and self.vim_flags.multiplier:
+        # If not a multiplier or a pending that uses multipliers, clear multiplier
+        if key not in "0123456789cdyr" or key == "0" and self.vim_flags.multiplier:
             self.vim_flags.multiplier = ""
         self.see(tk.INSERT)
         return "break"
