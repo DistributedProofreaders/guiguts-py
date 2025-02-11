@@ -20,6 +20,7 @@ from guiguts.utilities import (
     process_accel,
     process_label,
     IndexRowCol,
+    sound_bell,
 )
 from guiguts.widgets import (
     ToplevelDialog,
@@ -233,64 +234,91 @@ class MainImage(tk.Frame):
         self.allow_geometry_storage = False
 
         control_frame = ttk.Frame(self)
-        control_frame.grid(row=0, column=0, columnspan=2, sticky="NEW")
-        invert_btn = ttk.Checkbutton(
+        control_frame.grid(row=0, column=0, sticky="NSEW")
+
+        min_button_width = 1 if is_mac() else 2
+
+        self.prev_img_button = ttk.Button(
             control_frame,
-            text="Invert image",
+            text="<",
+            width=min_button_width,
+            takefocus=False,
+            command=lambda: self.next_image(reverse=True),
+        )
+        self.prev_img_button.grid(row=0, column=0, sticky="NSEW")
+
+        self.next_img_button = ttk.Button(
+            control_frame,
+            text=">",
+            width=min_button_width,
+            takefocus=False,
+            command=self.next_image,
+        )
+        self.next_img_button.grid(row=0, column=1, sticky="NSEW")
+
+        self.zoom_in_btn = ttk.Button(
+            control_frame,
+            text="+",
+            width=min_button_width,
+            takefocus=False,
+            command=lambda: self.image_zoom(zoom_in=True),
+        )
+        self.zoom_in_btn.grid(row=0, column=2, sticky="NSEW", padx=(5, 0))
+
+        self.zoom_out_btn = ttk.Button(
+            control_frame,
+            text="-",
+            width=min_button_width,
+            takefocus=False,
+            command=lambda: self.image_zoom(zoom_in=False),
+        )
+        self.zoom_out_btn.grid(row=0, column=3, sticky="NSEW")
+
+        self.ftw_btn = ttk.Button(
+            control_frame,
+            text="← Fit →",
+            takefocus=False,
+            command=self.image_zoom_to_width,
+        )
+        self.ftw_btn.grid(row=0, column=4, sticky="NSEW", padx=(5, 0))
+
+        self.fth_btn = ttk.Button(
+            control_frame,
+            text="↑ Fit ↓",
+            takefocus=False,
+            command=self.image_zoom_to_height,
+        )
+        self.fth_btn.grid(row=0, column=5, sticky="NSEW")
+
+        self.invert_btn = ttk.Checkbutton(
+            control_frame,
+            text="Invert",
             takefocus=False,
             command=self.show_image,
             variable=PersistentBoolean(PrefKey.IMAGE_INVERT),
         )
-        invert_btn.grid(row=0, column=0, sticky="NSEW", padx=(5, 3), pady=(5, 0))
-        dock_btn = ttk.Checkbutton(
+        self.invert_btn.grid(row=0, column=6, sticky="NSEW", padx=(5, 0))
+
+        self.dock_btn = ttk.Checkbutton(
             control_frame,
-            text="Dock image",
+            text="Dock",
             takefocus=False,
             command=self.set_image_docking,
             variable=root().image_window_docked_state,
         )
-        dock_btn.grid(row=0, column=1, sticky="NSE", padx=3, pady=(5, 0))
-        ttk.Button(
-            control_frame,
-            text="Close",
+        self.dock_btn.grid(row=0, column=7, sticky="NSEW", padx=(5, 0))
+
+        close_frame = ttk.Frame(self)
+        close_frame.grid(row=0, column=1, sticky="NSEW")
+
+        self.close_btn = ttk.Button(
+            close_frame,
+            text="×",
+            width=min_button_width,
             takefocus=False,
             command=self.hide_func,
-        ).grid(row=0, column=2, sticky="NSEW", padx=(3, 5), pady=(5, 0))
-        control_frame.columnconfigure(1, weight=1)
-
-        zoom_frame = ttk.Frame(self)
-        zoom_frame.grid(row=1, column=0, columnspan=2, sticky="NEW")
-        ttk.Label(zoom_frame, text="Zoom:").grid(
-            row=1, column=0, sticky="NSEW", padx=(5, 3), pady=5
         )
-        self.zoom_in_btn = ttk.Button(
-            zoom_frame,
-            text="+",
-            takefocus=False,
-            command=lambda: self.image_zoom(zoom_in=True),
-        )
-        self.zoom_in_btn.grid(row=1, column=1, sticky="NSEW", padx=3, pady=5)
-        self.zoom_out_btn = ttk.Button(
-            zoom_frame,
-            text="-",
-            takefocus=False,
-            command=lambda: self.image_zoom(zoom_in=False),
-        )
-        self.zoom_out_btn.grid(row=1, column=2, sticky="NSEW", padx=3, pady=5)
-        ttk.Button(
-            zoom_frame,
-            text="Fit to width",
-            takefocus=False,
-            command=self.image_zoom_to_width,
-        ).grid(row=1, column=3, sticky="NSEW", padx=3, pady=5)
-        fth_btn = ttk.Button(
-            zoom_frame,
-            text="Fit to height",
-            takefocus=False,
-            command=self.image_zoom_to_height,
-        )
-        fth_btn.grid(row=1, column=4, sticky="NSEW", padx=3, pady=5)
-        zoom_frame.columnconfigure(5, weight=1)
+        self.close_btn.grid(row=0, column=0, sticky="NSEW")
 
         # Separate bindings needed for docked (root) and floated (self) states
         for widget in (root(), self):
@@ -301,7 +329,7 @@ class MainImage(tk.Frame):
             widget.bind(cp, lambda _: self.zoom_in_btn.invoke())
             widget.bind(ce, lambda _: self.zoom_in_btn.invoke())
             widget.bind(cm, lambda _: self.zoom_out_btn.invoke())
-            widget.bind(c0, lambda _: fth_btn.invoke())
+            widget.bind(c0, lambda _: self.fth_btn.invoke())
 
         self.hbar = ttk.Scrollbar(self, orient=tk.HORIZONTAL)
         self.hbar.grid(row=3, column=0, sticky="EW")
@@ -336,7 +364,7 @@ class MainImage(tk.Frame):
             self.canvas.bind("<MouseWheel>", self.wheel_scroll)
 
         self.image_scale = float(preferences.get(PrefKey.IMAGE_SCALE_FACTOR))
-        self.scale_delta = 1.3
+        self.scale_delta = 1.1
         self.image: Optional[Image.Image] = None
         self.imageid = None
         self.imagetk = None
@@ -533,6 +561,41 @@ class MainImage(tk.Frame):
                 preferences.set(PrefKey.IMAGE_FLOAT_GEOMETRY, tk.Wm.geometry(self))  # type: ignore[call-overload]
             except tk.TclError:
                 pass
+
+    def next_image(self, reverse: bool = False) -> None:
+        """Load the next image alphabetically.
+
+        Args:
+            reverse: True to load previous image instead.
+        """
+        if not self.filename:
+            sound_bell()
+            return
+
+        # Check current directory is valid
+        current_dir = os.path.dirname(self.filename)
+        if not os.path.isdir(current_dir):
+            logger.error(f"Image directory invalid: {current_dir}")
+            return
+
+        # Turn off auto-image; we're going to manual control.
+        preferences.set(PrefKey.AUTO_IMAGE, False)
+
+        current_basename = os.path.basename(self.filename)
+        found = False
+        for fn in sorted(os.listdir(current_dir), reverse=reverse):
+            # Skip non-image files by checking extension
+            if os.path.splitext(fn)[1] not in (".jpg", ".gif", ".png"):
+                continue
+            # If found on previous time through loop, this is the file we want
+            if found:
+                self.load_image(os.path.join(current_dir, fn))
+                return
+            if fn == current_basename:
+                found = True
+
+        # Reached end of dir listing without finding next file
+        sound_bell()
 
 
 class StatusBar(ttk.Frame):
