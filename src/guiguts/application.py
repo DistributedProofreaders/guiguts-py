@@ -27,6 +27,7 @@ from guiguts.mainwindow import (
     statusbar,
     ErrorHandler,
     process_accel,
+    mainimage,
 )
 from guiguts.misc_dialogs import (
     PreferencesDialog,
@@ -188,7 +189,10 @@ class Guiguts:
     def auto_image_check(self) -> None:
         """Function called repeatedly to check whether an image needs loading."""
         if preferences.get(PrefKey.AUTO_IMAGE):
-            self.mainwindow.load_image(self.file.get_current_image_path())
+            # Image viewer can temporarily pause auto image viewing,
+            # but still need to schedule another call to this method.
+            if not mainimage().auto_image_paused:
+                self.mainwindow.load_image(self.file.get_current_image_path())
             root().after(200, self.auto_image_check)
 
     def show_image(self) -> None:

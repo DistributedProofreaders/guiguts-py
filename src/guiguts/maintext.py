@@ -433,6 +433,9 @@ class MainText(tk.Text):
 
         self.languages = ""
 
+        # Store current page mark to cope with case where several page marks are coincident
+        self._stored_page_mark = ""
+
         # alignment column
         self.aligncol = -1
         self.aligncol_active = tk.BooleanVar()
@@ -1151,14 +1154,18 @@ class MainText(tk.Text):
             "\ufeff", IndexRange("1.0", self.index("1.0 lineend"))
         ):
             self.delete(bom_match.rowcol.index())
-        self.set_modified(False)
-        self.edit_reset()
+        self.reset()
 
     def do_close(self) -> None:
         """Close current file and clear widget."""
         self.delete("1.0", tk.END)
+        self.reset()
+
+    def reset(self) -> None:
+        """Reset widget & variables when new file opened or closed."""
         self.set_modified(False)
         self.edit_reset()
+        self.store_page_mark("")
 
     def undo_block_begin(self) -> None:
         """Begin a block of changes that will be undone with one undo operation.
@@ -2869,6 +2876,18 @@ class MainText(tk.Text):
         while start := self.search(" +$", start, regexp=True):
             self.delete(start, f"{start} lineend")
 
+    def store_page_mark(self, mark: str) -> None:
+        """Store a page mark for use when page marks are coincident.
+
+        Args:
+            mark: Name of mark to be stored.
+        """
+        self._stored_page_mark = mark
+
+    def stored_page_mark(self) -> str:
+        """Store a page mark for use when page marks are coincident."""
+        return self._stored_page_mark
+
     def get_current_page_mark(self) -> str:
         """Find page mark corresponding to where the insert cursor is.
 
@@ -2878,9 +2897,14 @@ class MainText(tk.Text):
         insert = self.get_insert_index().index()
         mark = insert
         good_mark = ""
-        # First check for page marks at the current cursor position & return last one
+        # First check for page marks at the current cursor position
+        # If stored page mark is one of them, use it, otherwise use the last mark
+        # This allows us elsewhere to set the stored page mark to a mark
+        # other than the last one at a place with coincident marks
         while (mark := self.page_mark_next(mark)) and self.compare(mark, "==", insert):
             good_mark = mark
+            if good_mark == self.stored_page_mark():
+                break
         # If not, then find page mark before current position
         if not good_mark:
             if mark := self.page_mark_previous(insert):
@@ -2889,6 +2913,7 @@ class MainText(tk.Text):
         if not good_mark:
             if mark := self.page_mark_next(insert):
                 good_mark = mark
+        self.store_page_mark(good_mark)
         return good_mark
 
     def get_current_image_name(self) -> str:
