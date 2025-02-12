@@ -1,6 +1,6 @@
 """Levenshtein edit distance check tool"""
 
-from enum import StrEnum, auto
+from enum import IntEnum, auto
 import importlib.resources
 import logging
 import time
@@ -15,7 +15,7 @@ from guiguts.data import dictionaries
 from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
-from guiguts.preferences import PersistentString, PrefKey, preferences
+from guiguts.preferences import PersistentInt, PrefKey, preferences
 from guiguts.spell import get_spell_checker
 from guiguts.utilities import IndexRowCol, IndexRange
 
@@ -41,7 +41,7 @@ _the_levenshtein_checker = None  # pylint: disable=invalid-name
 #########################################################
 
 
-class LevenshteinEditDistance(StrEnum):
+class LevenshteinEditDistance(IntEnum):
     """Enum class to store Levenshtein Edit Distance."""
 
     ONE = auto()
@@ -67,7 +67,7 @@ class LevenshteinCheckerDialog(CheckerDialog):
             **kwargs,
         )
 
-        self.edit_distance = PersistentString(PrefKey.LEVENSHTEIN_EDIT_DISTANCE)
+        self.edit_distance = PersistentInt(PrefKey.LEVENSHTEIN_DISTANCE)
 
         frame = ttk.Frame(self.header_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
@@ -671,13 +671,8 @@ def run_levenshtein_check_on_file(project_dict: ProjectDict) -> None:
         rerun_command=lambda: levenshtein_check(project_dict),
     )
 
-    # Convert to int the edit distance used last time Levenshtein was run or default if first run.
-    distance_to_check = (
-        1
-        if preferences.get(PrefKey.LEVENSHTEIN_EDIT_DISTANCE)
-        == LevenshteinEditDistance.ONE
-        else 2
-    )
+    # Get the edit distance used last time Levenshtein was run or default if first run.
+    distance_to_check = preferences.get(PrefKey.LEVENSHTEIN_DISTANCE)
 
     # Build maps of the good words and the suspect words in the file.
     # Ideally should only do this once and not every time the tool is

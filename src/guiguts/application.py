@@ -369,7 +369,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             PrefKey.JEEBIES_PARANOIA_LEVEL, JeebiesParanoiaLevel.NORMAL
         )
         preferences.set_default(
-            PrefKey.LEVENSHTEIN_EDIT_DISTANCE, LevenshteinEditDistance.ONE
+            PrefKey.LEVENSHTEIN_DISTANCE, LevenshteinEditDistance.ONE
         )
         preferences.set_default(PrefKey.FOOTNOTE_INDEX_STYLE, FootnoteIndexStyle.NUMBER)
         preferences.set_default(PrefKey.WRAP_LEFT_MARGIN, 0)
