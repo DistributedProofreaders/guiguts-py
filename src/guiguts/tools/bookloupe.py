@@ -616,10 +616,13 @@ class BookloupeChecker:
         for sep_regex, word_list in ((r"[,;:]", _nocomma), (r"\.", _noperiod)):
             for word in word_list:
                 for match in re.finditer(
-                    rf"\b({word}){sep_regex}", line, flags=re.IGNORECASE
+                    rf"(\[Footnote )?\b({word})({sep_regex})", line, flags=re.IGNORECASE
                 ):
-                    # Use correctly-cased match in message, not lower-case word
-                    self.add_match_entry(step, match, f"Punctuation after {match[1]}")
+                    # Don't want to report "[Footnote A:"
+                    if match[1] != "[Footnote " or match[3] != ":":
+                        self.add_match_entry(
+                            step, match, f"Punctuation after {match[2]}", group=2
+                        )
 
     def check_typos(self, step: int, line: str) -> None:
         """Check for common typos.
@@ -703,6 +706,10 @@ class BookloupeChecker:
                 for ok_word in _okwords:
                     if word_lower == ok_word:
                         typo = False
+                # Also permit "words" that consist of single letters with periods,
+                # like "i.e" or "B.B.C" (trailing period already stripped)
+                if re.fullmatch(r"\p{Letter}(\.\p{Letter})+", word_lower):
+                    typo = False
             # But certain words are always typos
             for typo_word in _typos:
                 if word_lower == typo_word:
@@ -762,14 +769,15 @@ class BookloupeChecker:
             step: Line number being checked.
             line: Text of line being checked.
         """
-        for match in re.finditer(r"[.?!,;:]{2,}", line):
-            if re.fullmatch(r"([.?!])\1+", match[0]):
+        for match in re.finditer(r"(etc|&c|i\.e|e\.g)?([.?!,;:]{2,})", line):
+            if re.fullmatch(r"([.?!])\1+", match[2]) or match[0] in (
+                "etc.,",
+                "&c.,",
+                "i.e.,",
+                "e.g.,",
+            ):
                 continue
-            self.add_match_entry(
-                step,
-                match,
-                "Double punctuation",
-            )
+            self.add_match_entry(step, match, "Double punctuation", group=2)
 
     def check_miscased_genitive(self, step: int, line: str) -> None:
         """Check for "lowercase'S".
@@ -792,7 +800,9 @@ class BookloupeChecker:
             step: Line number being checked.
             line: Text of line being checked.
         """
-        for match in re.finditer(r"(?<=\p{Letter})[][}{)(](?=\p{Letter})", line):
+        for match in re.finditer(
+            r"\p{Letter}[]}{)(]\p{Letter}|\p{Letter}\[\p{Letter}(?!\])", line
+        ):
             self.add_match_entry(
                 step,
                 match,
