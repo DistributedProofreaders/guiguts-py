@@ -234,7 +234,8 @@ class MainImage(tk.Frame):
         self.allow_geometry_storage = False
 
         control_frame = ttk.Frame(self)
-        control_frame.grid(row=0, column=0, sticky="NSEW")
+        control_frame.grid(row=0, column=0, columnspan=2, sticky="NSEW")
+        control_frame.columnconfigure(8, weight=1)
 
         min_button_width = 1 if is_mac() else 2
 
@@ -308,17 +309,14 @@ class MainImage(tk.Frame):
         )
         self.dock_btn.grid(row=0, column=7, sticky="NSEW", padx=(5, 0))
 
-        close_frame = ttk.Frame(self)
-        close_frame.grid(row=0, column=1, sticky="NSEW")
-
         self.close_btn = ttk.Button(
-            close_frame,
+            control_frame,
             text="×",
             width=min_button_width,
             takefocus=False,
             command=self.hide_func,
         )
-        self.close_btn.grid(row=0, column=0, sticky="NSEW")
+        self.close_btn.grid(row=0, column=8, sticky="NSE")
 
         # Separate bindings needed for docked (root) and floated (self) states
         for widget in (root(), self):
