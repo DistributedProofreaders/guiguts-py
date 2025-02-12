@@ -109,16 +109,16 @@ class CheckerViewOptionsDialog(ToplevelDialog):
 
     def __init__(
         self,
-        title: str,
         checker_dialog: "CheckerDialog",
     ) -> None:
         """Create View Options dialog.
 
         Args:
-            title: Title for dialog.
             checker_dialog: The checker dialog that this dialog belongs to.
         """
-        super().__init__(title, resize_x=False, resize_y=False)
+        super().__init__(
+            f"{checker_dialog.title()} - View Options", resize_x=False, resize_y=False
+        )
         self.checker_dialog = checker_dialog
 
         self.flags: list[tk.BooleanVar] = []
@@ -342,7 +342,7 @@ class CheckerDialog(ToplevelDialog):
             """Show the view options dialog."""
             assert view_options_dialog_class is not None
             self.view_options_dialog = view_options_dialog_class.show_dialog(
-                title + " - View Options", checker_dialog=self
+                checker_dialog=self
             )
 
         if view_options_dialog_class is not None:
@@ -465,20 +465,17 @@ class CheckerDialog(ToplevelDialog):
     @classmethod
     def show_dialog(
         cls: type[TlDlg],
-        title: Optional[str] = None,
-        destroy: bool = False,
         **kwargs: Any,
     ) -> TlDlg:
         """Show the instance of this dialog class, or create it if it doesn't exist.
 
         Args:
             title: Dialog title.
-            destroy: Set to True if dialog should be destroyed & re-created, rather than re-used
             args: Optional args to pass to dialog constructor.
             kwargs: Optional kwargs to pass to dialog constructor.
         """
         Busy.busy()
-        return super().show_dialog(title, destroy, **kwargs)
+        return super().show_dialog(**kwargs)
 
     @classmethod
     def sort_key_rowcol(

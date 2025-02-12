@@ -103,32 +103,25 @@ class ToplevelDialog(tk.Toplevel):
     @classmethod
     def show_dialog(
         cls: type[TlDlg],
-        title: Optional[str] = None,
-        destroy: bool = False,
         **kwargs: Any,
     ) -> TlDlg:
         """Show the instance of this dialog class, or create it if it doesn't exist.
 
         Args:
             title: Dialog title.
-            destroy: True (default is False) if dialog should be destroyed & re-created, rather than re-used
             kwargs: Optional kwargs to pass to dialog constructor.
         """
-        # If dialog exists, either destroy it or deiconify
+        # If dialog already exists, deiconify it
         dlg_name = cls.__name__
+        # Can we just deiconify dialog
         if dlg := cls.get_dialog():
-            if destroy:
-                dlg.destroy()
-            else:
-                dlg.deiconify()
-        # Now, if dialog doesn't exist (may have been destroyed above) (re-)create it
-        if not cls.get_dialog():
-            if title is not None:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(title, **kwargs)  # type: ignore[call-arg]
-            else:
-                ToplevelDialog._toplevel_dialogs[dlg_name] = cls(**kwargs)  # type: ignore[call-arg]
-        ToplevelDialog._toplevel_dialogs[dlg_name].reset()
-        return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
+            dlg.deiconify()
+        # Or do we need to create it
+        else:
+            dlg = cls(**kwargs)
+        dlg.reset()
+        ToplevelDialog._toplevel_dialogs[dlg_name] = dlg
+        return dlg
 
     @classmethod
     def get_dialog(cls) -> Optional[TlDlg]:

@@ -49,21 +49,21 @@ class LevenshteinEditDistance(StrEnum):
 
 
 class LevenshteinCheckerDialog(CheckerDialog):
-    """Minimal class to identify dialog type."""
+    """Levenshtein Checker Dialog."""
 
     manual_page = "Tools_Menu#Word_Distance_Check"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize curly quotes checker dialog."""
-        kwargs["tooltip"] = "\n".join(
-            [
-                "Left click: Select & find highlighted word in file",
-                "Right click: Remove line with highlighted word from list",
-                "Shift Right click: Also remove all matching lines from list",
-            ]
-        )
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Levenshtein checker dialog."""
         super().__init__(
-            *args,
+            "Levenshtein Edit Distance Check",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find highlighted word in file",
+                    "Right click: Remove line with highlighted word from list",
+                    "Shift Right click: Also remove all matching lines from list",
+                ]
+            ),
             **kwargs,
         )
 
@@ -668,7 +668,6 @@ def run_levenshtein_check_on_file(project_dict: ProjectDict) -> None:
 
     # Create the checker dialog to show results
     checker_dialog = LevenshteinCheckerDialog.show_dialog(
-        "Levenshtein Edit Distance Check",
         rerun_command=lambda: levenshtein_check(project_dict),
     )
 

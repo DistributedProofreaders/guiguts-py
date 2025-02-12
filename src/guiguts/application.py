@@ -786,9 +786,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Create the HTML menu."""
         html_menu = Menu(menubar(), "HT~ML")
         html_menu.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
-        html_menu.add_button(
-            "Auto-~Illustrations...", lambda: HTMLImageDialog.show_dialog(destroy=True)
-        )
+        html_menu.add_button("Auto-~Illustrations...", HTMLImageDialog.show_dialog)
         html_menu.add_button("~Unmatched HTML Tags...", unmatched_html_markup)
         html_menu.add_button("HTML5 ~Validator (online)...", html_validator_check)
         html_menu.add_button("HTML ~Link Checker...", html_link_check)

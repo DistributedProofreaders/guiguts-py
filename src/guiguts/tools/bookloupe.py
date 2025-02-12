@@ -3,9 +3,9 @@
 # Based on http://www.juiblex.co.uk/pgdp/bookloupe which
 # was based on https://sourceforge.net/projects/gutcheck
 
-from typing import Optional
-
 import logging
+from typing import Optional, Any
+
 import regex as re
 import roman  # type: ignore[import-untyped]
 
@@ -15,8 +15,6 @@ from guiguts.misc_tools import tool_save
 from guiguts.utilities import IndexRange, DiacriticRemover
 
 logger = logging.getLogger(__package__)
-
-_the_bookloupe_checker = None  # pylint: disable=invalid-name
 
 # fmt: off
 # Period after these is abbreviation, not end of sentence
@@ -153,9 +151,24 @@ class BookloupeCheckerViewOptionsDialog(CheckerViewOptionsDialog):
 
 
 class BookloupeCheckerDialog(CheckerDialog):
-    """Minimal class to identify dialog type."""
+    """Bookloupe dialog."""
 
     manual_page = "Tools_Menu#Bookloupe"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Bookloupe dialog."""
+
+        super().__init__(
+            "Bookloupe Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find issue",
+                    "Right click: Remove message from list",
+                    "Shift-Right click: Remove all matching messages",
+                ]
+            ),
+            **kwargs,
+        )
 
 
 class BookloupeChecker:
@@ -163,7 +176,6 @@ class BookloupeChecker:
 
     def __init__(self) -> None:
         """Initialize BookloupeChecker class."""
-        self.dictionary: dict[str, int] = {}
         self.dialog: Optional[BookloupeCheckerDialog] = None
         self.hebe_regex = re.compile(
             r'(?i)(\b(be could|be would|be is|was be|is be|to he)|",? be)\b'
@@ -178,19 +190,10 @@ class BookloupeChecker:
 
         # Create the checker dialog to show results
         self.dialog = BookloupeCheckerDialog.show_dialog(
-            "Bookloupe Results",
             rerun_command=bookloupe_check,
             view_options_dialog_class=BookloupeCheckerViewOptionsDialog,
             view_options_filters=checker_filters,
-            tooltip="\n".join(
-                [
-                    "Left click: Select & find issue",
-                    "Right click: Remove message from list",
-                    "Shift-Right click: Remove all matching messages",
-                ]
-            ),
         )
-        self.dialog.reset()
         self.run_bookloupe()
         self.dialog.display_entries()
 
@@ -907,13 +910,9 @@ class BookloupeChecker:
 
 
 def bookloupe_check() -> None:
-    """Check for jeebies in the currently loaded file."""
-    global _the_bookloupe_checker
+    """Check for bookloupe errors in the currently loaded file."""
 
     if not tool_save():
         return
 
-    if _the_bookloupe_checker is None:
-        _the_bookloupe_checker = BookloupeChecker()
-
-    _the_bookloupe_checker.check_file()
+    BookloupeChecker().check_file()

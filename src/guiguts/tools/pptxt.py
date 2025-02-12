@@ -1,6 +1,6 @@
 """PPtxt tool"""
 
-from typing import Dict, Sequence, List
+from typing import Dict, Sequence, List, Any
 import regex as re
 
 from guiguts.checkers import CheckerDialog
@@ -11,9 +11,23 @@ from guiguts.utilities import IndexRowCol, IndexRange
 
 
 class PPtxtCheckerDialog(CheckerDialog):
-    """Minimal class to identify dialog type."""
+    """PPtxt dialog."""
 
     manual_page = "Tools_Menu#PPtxt"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize PPtxt dialog."""
+        super().__init__(
+            "PPtxt Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find issue",
+                    "Right click: Remove issue from list",
+                    "Shift Right click: Remove all matching issues",
+                ]
+            ),
+            **kwargs,
+        )
 
 
 REPORT_LIMIT = 5  # Max number of times to report same issue for some checks
@@ -2521,21 +2535,11 @@ def pptxt(project_dict: ProjectDict) -> None:
 
     # Create the checker dialog to show results
     checker_dialog = PPtxtCheckerDialog.show_dialog(
-        "PPtxt Results",
         rerun_command=lambda: pptxt(project_dict),
-        tooltip="\n".join(
-            [
-                "Left click: Select & find issue",
-                "Right click: Remove issue from list",
-                "Shift Right click: Remove all matching issues",
-            ]
-        ),
     )
-    checker_dialog.reset()
 
     # Get the whole of the file from the main text widget
 
-    # text = maintext().get_text()
     text = maintext().get_text()
     input_lines = text.splitlines()
 
