@@ -671,7 +671,6 @@ def run_levenshtein_check_on_file(project_dict: ProjectDict) -> None:
         "Levenshtein Edit Distance Check",
         rerun_command=lambda: levenshtein_check(project_dict),
     )
-    checker_dialog.reset()
 
     # Convert to int the edit distance used last time Levenshtein was run or default if first run.
     distance_to_check = (

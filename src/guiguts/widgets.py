@@ -127,6 +127,7 @@ class ToplevelDialog(tk.Toplevel):
                 ToplevelDialog._toplevel_dialogs[dlg_name] = cls(title, **kwargs)  # type: ignore[call-arg]
             else:
                 ToplevelDialog._toplevel_dialogs[dlg_name] = cls(**kwargs)  # type: ignore[call-arg]
+        ToplevelDialog._toplevel_dialogs[dlg_name].reset()
         return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
 
     @classmethod
