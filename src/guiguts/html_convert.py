@@ -217,17 +217,27 @@ def html_convert_title() -> None:
         selection = maintext().get(f"{step}.0", f"{step}.end")
         if in_title:
             # Check if title complete (blank line or end of frontmatter/center/right/etc markup)
-            if not selection or re.match("[*$fxcr]/", selection, flags=re.IGNORECASE):
+            if not selection:
                 maintext().insert(f"{step - 1}.end", "</h1>")
                 return
-            # Not complete, keep going
+            if re.match("[*$fxcr]/", selection, flags=re.IGNORECASE):
+                maintext().replace(f"{step}.0", f"{step}.end", "</h1>")
+                return
+            # Not complete - add <br> to end of previous line to preserve line breaks
+            maintext().insert(f"{step - 1}.end", "<br>")
             continue
         # Not in title yet, so skip blank lines, illos or block markup
         if not selection or re.match(H1_SKIP_REGEX, selection, flags=re.IGNORECASE):
             continue
         # Found start of title
         in_title = True
-        maintext().insert(f"{step}.0", "<h1>")
+        if step > 1 and re.match(
+            "/[*$fxcr]",
+            maintext().get(f"{step - 1}.0", f"{step - 1}.end"),
+        ):
+            maintext().replace(f"{step - 1}.0", f"{step - 1}.end", "<h1>")
+        else:
+            maintext().insert(f"{step}.0", "<h1>")
 
 
 def html_convert_inline() -> None:
