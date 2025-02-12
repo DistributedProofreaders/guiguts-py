@@ -813,6 +813,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         )
         view_menu.add_button("~See Image", self.show_image)
         view_menu.add_button("~Hide Image", self.hide_image)
+        view_menu.add_checkbox(
+            "~Invert Image",
+            root().invert_image_state,
+            mainimage().show_image,
+            mainimage().show_image,
+        )
         view_menu.add_separator()
         view_menu.add_button("~Message Log", self.mainwindow.messagelog.show)
         view_menu.add_separator()

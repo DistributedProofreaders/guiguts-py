@@ -41,6 +41,7 @@ class Root(tk.Tk):
         )
         self.image_window_docked_state = PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED)
         self.auto_image_state = PersistentBoolean(PrefKey.AUTO_IMAGE)
+        self.invert_image_state = PersistentBoolean(PrefKey.IMAGE_INVERT)
         self.ordinal_names_state = PersistentBoolean(PrefKey.ORDINAL_NAMES)
         self.allow_config_saves = False
         self.split_text_window = PersistentBoolean(PrefKey.SPLIT_TEXT_WINDOW)
