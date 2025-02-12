@@ -687,22 +687,20 @@ class File:
         self._next_prev_page(1)
 
     def _next_prev_page(self, direction: Literal[1, -1]) -> None:
-        """Go to the page before/after the current one
+        """Go to the page before/after the current one.
 
-        Always moves backward/forward in file, even if cursor and page mark(s)
-        are coincident or multiple coincident page marks. Will not remain in
-        the same location unless no further page marks are found.
+        Note that cursor may not move if more than one mark is at the same point.
 
         Args:
             direction: +1 to go to next page; -1 for previous page
         """
         insert = maintext().get_insert_index().index()
-        cur_page = maintext().get_current_image_name()
-        mark = page_mark_from_img(cur_page) if cur_page else insert
-        while mark := maintext().page_mark_next_previous(mark, direction):
-            if maintext().compare(mark, "!=", insert):
-                maintext().set_insert_index(maintext().rowcol(mark))
-                return
+        mark = maintext().get_current_page_mark() or insert
+        if mark := maintext().page_mark_next_previous(mark, direction):
+            # Store mark to cope with coincident page marks
+            maintext().store_page_mark(mark)
+            maintext().set_insert_index(maintext().rowcol(mark))
+            return
         sound_bell()
 
     # Note that the following code must match the equivalent code in Guiguts 1

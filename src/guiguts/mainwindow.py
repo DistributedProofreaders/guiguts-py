@@ -371,6 +371,8 @@ class MainImage(tk.Frame):
         self.filename = ""
         self.width = 0
         self.height = 0
+        # May want to pause auto image if user clicks prev/next file buttons
+        self.auto_image_paused = False
 
     def scroll_y(self, *args: Any, **kwargs: Any) -> None:
         """Scroll canvas vertically and redraw the image"""
@@ -561,6 +563,7 @@ class MainImage(tk.Frame):
                 preferences.set(PrefKey.IMAGE_FLOAT_GEOMETRY, tk.Wm.geometry(self))  # type: ignore[call-overload]
             except tk.TclError:
                 pass
+        self.auto_image_paused = False
 
     def next_image(self, reverse: bool = False) -> None:
         """Load the next image alphabetically.
@@ -578,9 +581,6 @@ class MainImage(tk.Frame):
             logger.error(f"Image directory invalid: {current_dir}")
             return
 
-        # Turn off auto-image; we're going to manual control.
-        preferences.set(PrefKey.AUTO_IMAGE, False)
-
         current_basename = os.path.basename(self.filename)
         found = False
         for fn in sorted(os.listdir(current_dir), reverse=reverse):
@@ -590,6 +590,7 @@ class MainImage(tk.Frame):
             # If found on previous time through loop, this is the file we want
             if found:
                 self.load_image(os.path.join(current_dir, fn))
+                self.auto_image_paused = True
                 return
             if fn == current_basename:
                 found = True
