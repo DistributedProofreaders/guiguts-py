@@ -223,7 +223,8 @@ def html_convert_title() -> None:
             if re.match("[*$fxcr]/", selection, flags=re.IGNORECASE):
                 maintext().replace(f"{step}.0", f"{step}.end", "</h1>")
                 return
-            # Not complete - keep going
+            # Not complete - add <br> to end of previous line to preserve line breaks
+            maintext().insert(f"{step - 1}.end", "<br>")
             continue
         # Not in title yet, so skip blank lines, illos or block markup
         if not selection or re.match(H1_SKIP_REGEX, selection, flags=re.IGNORECASE):
