@@ -297,6 +297,10 @@ class HTMLImageDialog(ToplevelDialog):
         self.file_info_textvariable.set(f"File size: {em_info} {px_info}")
         self.lift()
 
+    def reset(self) -> None:
+        """Reset dialog, removing spotlights."""
+        maintext().remove_spotlights()
+
     def choose_file(self) -> None:
         """Allow user to choose image file."""
         if file_name := filedialog.askopenfilename(
@@ -356,11 +360,24 @@ class HTMLImageDialog(ToplevelDialog):
             return
         maintext().set_insert_index(illo_match_start.rowcol, focus=False)
         # Find end of markup and spotlight it
-        illo_match_end = maintext().find_match(
-            r"](</p>)?",
-            IndexRange(illo_match_start.rowcol, maintext().end()),
-            regexp=True,
-        )
+        search_start = maintext().rowcol(f"{illo_match_start.rowcol.index()}+12c")
+        nested = False
+        while True:
+            illo_match_end = maintext().find_match(
+                r"[][]",
+                IndexRange(search_start, maintext().end()),
+                regexp=True,
+            )
+            if illo_match_end is None:
+                break
+            start_index = illo_match_end.rowcol.index()
+            match_text = maintext().get(start_index, f"{start_index} lineend")
+            # Have we found the end of the illo markup (i.e. end of line bracket)
+            if not nested and re.fullmatch("] *$", match_text):
+                break
+            # Keep track of whether there are nested brackets, e.g. [12] inside illo markup
+            nested = match_text[0] == "["
+            search_start = maintext().rowcol(f"{illo_match_end.rowcol.index()}+1c")
         if illo_match_end is None:
             logger.error("Unclosed [Illustration markup")
             return
@@ -376,19 +393,12 @@ class HTMLImageDialog(ToplevelDialog):
             self.illo_range.start.index(), self.illo_range.end.index()
         )
         caption = re.sub(r"(?<=(^<p.?>|^))\[Illustration:? ?", "", caption)
-        caption = re.sub(r"\](?=(</p>$|$))", "", caption)
-        # Ensure paragraphs in caption have <p> markup
+        caption = re.sub(r"\](?=(</p> *$| *$))", "", caption)
+        # Remove simple <p> markup and replace newlines with return_arrow character
         if caption:
-            caption = re.sub("^(?!<p)", "<p>", caption)
-            caption = re.sub("(?<!</p>)$", "</p>", caption)
-            # If already has </p>\n\n<p...>, just reduce to a single newline
-            caption = re.sub("(?<=</p>)\n\n+(?=<p)", "\n", caption)
-            # If no </p> before but <p...> after, add </p>
-            caption = re.sub("(?<!</p>)\n\n+(?=<p)", "</p>\n", caption)
-            # If </p> before but no <p...> after, add <p>
-            caption = re.sub("(?<=</p>)\n\n+(?!<p)", "\n<p>", caption)
-            # If neither </p> before nor <p...> after, add both
-            caption = re.sub("(?<!</p>)\n\n+(?!<p)", "</p>\n<p>", caption)
+            caption = re.sub("</?p>", "", caption)
+            caption = re.sub("^\n+", "", caption)
+            caption = re.sub("\n$", "", caption)
             caption = re.sub("\n", RETURN_ARROW, caption)
         self.caption_textvariable.set(caption)
         # Clear alt text, ready for user to type in required string
@@ -404,10 +414,9 @@ class HTMLImageDialog(ToplevelDialog):
             return
         # Get caption & add some space to prettify HTML
         caption = self.caption_textvariable.get()
-        caption = re.sub("^<p", "    <p", caption)
-        caption = re.sub(RETURN_ARROW, "\n    ", caption)
         if caption:
-            caption = f'  <figcaption class="caption">\n{caption}\n  </figcaption>\n'
+            caption = re.sub(RETURN_ARROW, "\n    ", f"      {caption}")
+            caption = f"  <figcaption>\n{caption}\n  </figcaption>\n"
         # Now alt text - escape any double quotes
         alt = self.alt_textvariable.get().replace('"', "&quot;")
         alt = f' alt="{alt}"'
@@ -442,7 +451,7 @@ class HTMLImageDialog(ToplevelDialog):
         # Construct HTML
         html = f'<figure class="{alignment}{fig_class}" id="{image_id}"{style}>\n'
         html += f'  <img{img_class} src="{filename}"{img_size}{alt}>\n'
-        html += f"{caption}</figure>\n"
+        html += f"{caption}</figure>"
 
         # Replace [Illustration...] with HTML
         maintext().undo_block_begin()
@@ -472,6 +481,8 @@ class HTMLImageDialog(ToplevelDialog):
         # Only insert if definition not already in file
         if not maintext().search(class_def, "1.0", insert_point):
             maintext().insert(f"{insert_point} linestart", f"{cssdef}\n")
+        # Remove spotlight
+        maintext().remove_spotlights()
 
     def clear_image(self) -> None:
         """Clear the image and reset variables accordingly."""
