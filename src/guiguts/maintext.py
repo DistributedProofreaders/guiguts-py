@@ -3034,7 +3034,8 @@ class MainText(tk.Text):
 
     def remove_spotlights(self) -> None:
         """Remove active spotlights"""
-        self.tag_remove(HighlightTag.SPOTLIGHT, "1.0", tk.END)
+        if self.winfo_exists():
+            self.tag_remove(HighlightTag.SPOTLIGHT, "1.0", tk.END)
 
     def get_screen_window_coordinates(
         self, viewport: Text, offscreen_lines: int = 5
