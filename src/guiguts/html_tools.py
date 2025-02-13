@@ -870,7 +870,7 @@ def do_link_check(checker_dialog: CheckerDialog) -> None:
     checker_dialog.add_entry(f"{len(ids)} anchors (tags with id attribute)")
     n_refs = sum(1 for link in links if link.value.startswith("#"))
     checker_dialog.add_entry(f"{n_refs} internal links (using href)")
-    checker_dialog.add_entry(f"{len(links)-n_refs} file links (using href or src)")
+    checker_dialog.add_entry(f"{len(links) - n_refs} file links (using href or src)")
     checker_dialog.add_entry(f"{len(urls)} url links (using CSS style url)")
 
     # Report any unused anchors - last because only informational and may be long
