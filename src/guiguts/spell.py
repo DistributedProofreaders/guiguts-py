@@ -4,7 +4,7 @@ import importlib.resources
 import logging
 from pathlib import Path
 from tkinter import ttk
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 import regex as re
 
 from guiguts.data import dictionaries
@@ -60,9 +60,122 @@ class SpellingError(FindMatch):
 
 
 class SpellCheckerDialog(CheckerDialog):
-    """Minimal class to identify dialog type."""
+    """Spell Checker dialog."""
 
     manual_page = "Tools_Menu#Spelling"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Spell Checker dialog."""
+        assert "add_global_word_callback" in kwargs
+        self.add_global_word_callback = kwargs["add_global_word_callback"]
+        del kwargs["add_global_word_callback"]
+        super().__init__(
+            "Spelling Check Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find spelling error",
+                    "Right click: Remove spelling error from list",
+                    "Shift Right click: Remove all occurrences of spelling error from list",
+                    f"With {cmd_ctrl_string()} key: Also add spelling to project dictionary",
+                ]
+            ),
+            **kwargs,
+        )
+        frame = ttk.Frame(self.header_frame)
+        frame.grid(column=0, row=1, sticky="NSEW", pady=5)
+        ttk.Label(
+            frame,
+            text="Threshold ≤ ",
+        ).grid(column=0, row=0, sticky="NSW")
+        threshold_spinbox = ttk.Spinbox(
+            frame,
+            textvariable=PersistentInt(PrefKey.SPELL_THRESHOLD),
+            from_=1,
+            to=999,
+            width=4,
+        )
+        threshold_spinbox.grid(column=1, row=0, sticky="NW", padx=(0, 10))
+        ToolTip(
+            threshold_spinbox,
+            "Do not show errors that appear more than this number of times",
+        )
+
+        def invoke_and_break(button: ttk.Button) -> str:
+            """Invoke a button and return "break" to avoid further callbacks."""
+            button.invoke()
+            return "break"
+
+        def add_to_global_dict() -> None:
+            """Add current word to global dictionary."""
+            current_index = self.current_entry_index()
+            if current_index is None:
+                return
+            checker_entry = self.entries[current_index]
+            if checker_entry.text_range:
+                word = checker_entry.text.split(maxsplit=1)[0]
+                self.add_global_word_callback(word)
+                checker = get_spell_checker()
+                assert checker is not None
+                checker.dictionary[word] = True
+            self.remove_entry_current(all_matching=True)
+
+        lang = maintext().get_language_list()[0]
+        global_dict_button = ttk.Button(
+            frame,
+            text=f"Add to Global Dict ({lang})",
+            command=add_to_global_dict,
+        )
+        global_dict_button.grid(column=2, row=0, sticky="NSW")
+        for accel in ("Cmd/Ctrl+a", "Cmd/Ctrl+A"):
+            _, key_event = process_accel(accel)
+            self.bind(key_event, lambda _: invoke_and_break(global_dict_button))
+        ToolTip(
+            global_dict_button,
+            f"{cmd_ctrl_string()}+A",
+            use_pointer_pos=True,
+        )
+        project_dict_button = ttk.Button(
+            frame,
+            text="Add to Project Dict",
+            command=lambda: self.process_remove_entry_current(all_matching=True),
+        )
+        project_dict_button.grid(column=3, row=0, sticky="NSW")
+        for accel in ("Cmd/Ctrl+p", "Cmd/Ctrl+P"):
+            _, key_event = process_accel(accel)
+            self.bind(key_event, lambda _: invoke_and_break(project_dict_button))
+        ToolTip(
+            project_dict_button,
+            f"{cmd_ctrl_string()}+P",
+            use_pointer_pos=True,
+        )
+        skip_button = ttk.Button(
+            frame,
+            text="Skip",
+            command=lambda: self.remove_entry_current(all_matching=False),
+        )
+        skip_button.grid(column=4, row=0, sticky="NSW")
+        for accel in ("Cmd/Ctrl+s", "Cmd/Ctrl+S"):
+            _, key_event = process_accel(accel)
+            self.bind(key_event, lambda _: invoke_and_break(skip_button))
+        ToolTip(
+            skip_button,
+            f"{cmd_ctrl_string()}+S",
+            use_pointer_pos=True,
+        )
+        skip_all_button = ttk.Button(
+            frame,
+            text="Skip All",
+            command=lambda: self.remove_entry_current(all_matching=True),
+        )
+        skip_all_button.grid(column=5, row=0, sticky="NSW")
+        for accel in ("Cmd/Ctrl+i", "Cmd/Ctrl+I"):
+            _, key_event = process_accel(accel)
+            self.bind(key_event, lambda _: invoke_and_break(skip_all_button))
+        ToolTip(
+            skip_all_button,
+            f"{cmd_ctrl_string()}+I",
+            use_pointer_pos=True,
+        )
 
 
 class SpellChecker:
@@ -366,116 +479,16 @@ def spell_check(
             add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
 
     checker_dialog = SpellCheckerDialog.show_dialog(
-        "Spelling Check Results",
         rerun_command=lambda: spell_check(
-            project_dict, add_project_word_callback, add_global_word_callback
+            project_dict,
+            add_project_word_callback,
+            add_global_word_callback,
         ),
         process_command=process_spelling,
-        tooltip="\n".join(
-            [
-                "Left click: Select & find spelling error",
-                "Right click: Remove spelling error from list",
-                "Shift Right click: Remove all occurrences of spelling error from list",
-                f"With {cmd_ctrl_string()} key: Also add spelling to project dictionary",
-            ]
-        ),
         switch_focus_when_clicked=False,
-    )
-    frame = ttk.Frame(checker_dialog.header_frame)
-    frame.grid(column=0, row=1, sticky="NSEW", pady=5)
-    ttk.Label(
-        frame,
-        text="Threshold ≤ ",
-    ).grid(column=0, row=0, sticky="NSW")
-    threshold_spinbox = ttk.Spinbox(
-        frame,
-        textvariable=PersistentInt(PrefKey.SPELL_THRESHOLD),
-        from_=1,
-        to=999,
-        width=4,
-    )
-    threshold_spinbox.grid(column=1, row=0, sticky="NW", padx=(0, 10))
-    ToolTip(
-        threshold_spinbox,
-        "Do not show errors that appear more than this number of times",
+        add_global_word_callback=add_global_word_callback,
     )
 
-    def invoke_and_break(button: ttk.Button) -> str:
-        """Invoke a button and return "break" to avoid further callbacks."""
-        button.invoke()
-        return "break"
-
-    def add_to_global_dict() -> None:
-        """Add current word to global dictionary."""
-        current_index = checker_dialog.current_entry_index()
-        if current_index is None:
-            return
-        checker_entry = checker_dialog.entries[current_index]
-        if checker_entry.text_range:
-            word = checker_entry.text.split(maxsplit=1)[0]
-            add_global_word_callback(word)
-            checker.dictionary[word] = True
-        checker_dialog.remove_entry_current(all_matching=True)
-
-    lang = maintext().get_language_list()[0]
-    global_dict_button = ttk.Button(
-        frame,
-        text=f"Add to Global Dict ({lang})",
-        command=add_to_global_dict,
-    )
-    global_dict_button.grid(column=2, row=0, sticky="NSW")
-    for accel in ("Cmd/Ctrl+a", "Cmd/Ctrl+A"):
-        _, key_event = process_accel(accel)
-        checker_dialog.bind(key_event, lambda _: invoke_and_break(global_dict_button))
-    ToolTip(
-        global_dict_button,
-        f"{cmd_ctrl_string()}+A",
-        use_pointer_pos=True,
-    )
-    project_dict_button = ttk.Button(
-        frame,
-        text="Add to Project Dict",
-        command=lambda: checker_dialog.process_remove_entry_current(all_matching=True),
-    )
-    project_dict_button.grid(column=3, row=0, sticky="NSW")
-    for accel in ("Cmd/Ctrl+p", "Cmd/Ctrl+P"):
-        _, key_event = process_accel(accel)
-        checker_dialog.bind(key_event, lambda _: invoke_and_break(project_dict_button))
-    ToolTip(
-        project_dict_button,
-        f"{cmd_ctrl_string()}+P",
-        use_pointer_pos=True,
-    )
-    skip_button = ttk.Button(
-        frame,
-        text="Skip",
-        command=lambda: checker_dialog.remove_entry_current(all_matching=False),
-    )
-    skip_button.grid(column=4, row=0, sticky="NSW")
-    for accel in ("Cmd/Ctrl+s", "Cmd/Ctrl+S"):
-        _, key_event = process_accel(accel)
-        checker_dialog.bind(key_event, lambda _: invoke_and_break(skip_button))
-    ToolTip(
-        skip_button,
-        f"{cmd_ctrl_string()}+S",
-        use_pointer_pos=True,
-    )
-    skip_all_button = ttk.Button(
-        frame,
-        text="Skip All",
-        command=lambda: checker_dialog.remove_entry_current(all_matching=True),
-    )
-    skip_all_button.grid(column=5, row=0, sticky="NSW")
-    for accel in ("Cmd/Ctrl+i", "Cmd/Ctrl+I"):
-        _, key_event = process_accel(accel)
-        checker_dialog.bind(key_event, lambda _: invoke_and_break(skip_all_button))
-    ToolTip(
-        skip_all_button,
-        f"{cmd_ctrl_string()}+I",
-        use_pointer_pos=True,
-    )
-
-    checker_dialog.reset()
     # Construct opening line describing the search
     sel_only = " (selected text only)" if len(maintext().selected_ranges()) > 0 else ""
     checker_dialog.add_header("Start of Spelling Check" + sel_only, "")
