@@ -359,7 +359,7 @@ class HTMLImageDialog(ToplevelDialog):
             return
         maintext().set_insert_index(illo_match_start.rowcol, focus=False)
         # Find end of markup and spotlight it
-        search_start = illo_match_start.rowcol
+        search_start = maintext().rowcol(f"{illo_match_start.rowcol.index()}+12c")
         nested = False
         while True:
             illo_match_end = maintext().find_match(
