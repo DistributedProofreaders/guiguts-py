@@ -6,7 +6,7 @@ import logging
 import operator
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from typing import Callable, Optional, Any
+from typing import Callable, Optional, Any, TypeVar
 import unicodedata
 
 import regex as re
@@ -46,24 +46,6 @@ DEFAULT_STEALTH_SCANNOS = "en-common.json"
 DEFAULT_MISSPELLED_SCANNOS = "misspelled.json"
 
 
-class BasicFixupCheckerDialog(CheckerDialog):
-    """Minimal class to identify dialog type."""
-
-    manual_page = "Tools_Menu#Basic_Fixup"
-
-
-class UnmatchedCheckerDialog(CheckerDialog):
-    """Minimal class to identify dialog type."""
-
-    manual_page = 'Tools_Menu#"Unmatched"_Submenu'
-
-
-class AsteriskCheckerDialog(CheckerDialog):
-    """Minimal class to identify dialog type."""
-
-    manual_page = "Navigation#Find_Asterisks_w/o_Slash"
-
-
 def tool_save() -> bool:
     """File must be saved before running tool, so check if it has been,
     and if not, check if user wants to save, or cancel the tool run.
@@ -81,6 +63,27 @@ def tool_save() -> bool:
     )
     # User could cancel from messagebox or save-as dialog
     return save and bool(the_file().save_file())
+
+
+class BasicFixupCheckerDialog(CheckerDialog):
+    """Basic Fixup dialog."""
+
+    manual_page = "Tools_Menu#Basic_Fixup"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Basic Fixup dialog."""
+        super().__init__(
+            "Basic Fixup Check Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find issue",
+                    "Right click: Remove issue from list",
+                    f"With {cmd_ctrl_string()} key: Also fix issue",
+                    "With Shift key: Also remove/fix matching issues",
+                ]
+            ),
+            **kwargs,
+        )
 
 
 def process_fixup(checker_entry: CheckerEntry) -> None:
@@ -141,18 +144,9 @@ def basic_fixup_check() -> None:
         return
 
     checker_dialog = BasicFixupCheckerDialog.show_dialog(
-        "Basic Fixup Check Results",
         rerun_command=basic_fixup_check,
         process_command=process_fixup,
         sort_key_alpha=sort_key_type,
-        tooltip="\n".join(
-            [
-                "Left click: Select & find issue",
-                "Right click: Remove issue from list",
-                f"With {cmd_ctrl_string()} key: Also fix issue",
-                "With Shift key: Also remove/fix matching issues",
-            ]
-        ),
     )
     checker_dialog.reset()
 
@@ -651,6 +645,69 @@ def page_separator_fixup() -> None:
     dlg.view()
 
 
+UnMatchedChkDlg = TypeVar("UnMatchedChkDlg", bound="UnmatchedCheckerDialog")
+
+
+class UnmatchedCheckerDialog(CheckerDialog):
+    """Unmatched Pairs Checker dialog."""
+
+    manual_page = 'Tools_Menu#"Unmatched"_Submenu'
+
+    def __init__(self, title: str, **kwargs: Any) -> None:
+        """Initialize Unmatched Pairs Checker dialog."""
+        super().__init__(
+            title,
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find issue",
+                    "Right click: Remove issue from list",
+                    "Shift-Right click: Remove all matching issues",
+                ]
+            ),
+            **kwargs,
+        )
+
+
+class UnmatchedBracketDialog(UnmatchedCheckerDialog):
+    """Unmatched Bracket Markup dialog."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Unmatched Bracket Markup dialog."""
+        super().__init__("Unmatched Bracket markup", **kwargs)
+
+
+class UnmatchedCurlyQuoteDialog(UnmatchedCheckerDialog):
+    """Unmatched Curly Quote dialog."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Unmatched Curly Quote dialog."""
+        super().__init__("Unmatched Curly Quotes", **kwargs)
+
+
+class UnmatchedDPMarkupDialog(UnmatchedCheckerDialog):
+    """Unmatched DP Markup dialog."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Unmatched DP Markup dialog."""
+        super().__init__("Unmatched DP markup", **kwargs)
+
+
+class UnmatchedHTMLTagDialog(UnmatchedCheckerDialog):
+    """Unmatched HTML Tag dialog."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Unmatched HTML Tag dialog."""
+        super().__init__("Unmatched HTML tags", **kwargs)
+
+
+class UnmatchedBlockMarkupDialog(UnmatchedCheckerDialog):
+    """Unmatched Block Markup dialog."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Unmatched Block Markup dialog."""
+        super().__init__("Unmatched Block markup", **kwargs)
+
+
 def unmatched_brackets() -> None:
     """Check for unmatched brackets."""
 
@@ -679,7 +736,7 @@ def unmatched_brackets() -> None:
         assert False, f"'{bracket_in}' is not a bracket character"
 
     unmatched_markup_check(
-        "Unmatched Brackets",
+        UnmatchedBracketDialog,
         rerun_command=unmatched_brackets,
         match_reg="[][}{)(]",
         match_pair_func=toggle_bracket,
@@ -746,7 +803,7 @@ def unmatched_curly_quotes() -> None:
                 )
 
     unmatched_markup_check(
-        "Unmatched Curly Quotes",
+        UnmatchedCurlyQuoteDialog,
         rerun_command=unmatched_curly_quotes,
         match_reg="[“”]",
         match_pair_func=toggle_quote,
@@ -800,7 +857,7 @@ def unmatched_dp_markup() -> None:
         )
 
     unmatched_markup_check(
-        "Unmatched DP markup",
+        UnmatchedDPMarkupDialog,
         rerun_command=unmatched_dp_markup,
         match_reg="<(i|b|u|g|f|sc)>|</(i|b|u|g|f|sc)>",
         match_pair_func=matched_pair_dp_markup,
@@ -862,7 +919,7 @@ def unmatched_html_markup() -> None:
         return s1 == s2
 
     unmatched_markup_check(
-        "Unmatched HTML tags",
+        UnmatchedHTMLTagDialog,
         rerun_command=unmatched_html_markup,
         match_reg=f"{open_regex}|{close_regex}",
         match_pair_func=matched_pair_html_markup,
@@ -950,7 +1007,7 @@ def unmatched_block_markup() -> None:
         )
 
     unmatched_markup_check(
-        "Unmatched Block markup",
+        UnmatchedBlockMarkupDialog,
         rerun_command=unmatched_block_markup,
         match_reg=f"^(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/)",
         match_pair_func=match_pair_block_markup,
@@ -961,7 +1018,7 @@ def unmatched_block_markup() -> None:
 
 
 def unmatched_markup_check(
-    title: str,
+    dlg_type: type[UnMatchedChkDlg],
     rerun_command: Callable[[], None],
     match_reg: str,
     match_pair_func: Callable[[str], tuple[str, bool]],
@@ -974,7 +1031,7 @@ def unmatched_markup_check(
     """Check the currently loaded file for unmatched markup errors.
 
     Args:
-        title: Title for dialog.
+        dlg_type: Dialog type to display results in.
         rerun_command: Function to re-run check.
         match_reg: Regex matching open & close markup.
         nest_reg: Regex matching markup that is allowed to be nested.
@@ -988,18 +1045,11 @@ def unmatched_markup_check(
     if not tool_save():
         return
 
-    checker_dialog = UnmatchedCheckerDialog.show_dialog(
-        title,
+    checker_dialog = dlg_type.show_dialog(
         rerun_command=rerun_command,
         sort_key_alpha=sort_key_alpha,
-        tooltip="\n".join(
-            [
-                "Left click: Select & find issue",
-                "Right click: Remove issue from list",
-                "Shift-Right click: Remove all matching issues",
-            ]
-        ),
     )
+
     # User can control nestability of some unmatched check types
     if nest_reg is None:
         frame = ttk.Frame(checker_dialog.header_frame)
@@ -1009,8 +1059,6 @@ def unmatched_markup_check(
             text="Allow nesting",
             variable=PersistentBoolean(PrefKey.UNMATCHED_NESTABLE),
         ).grid(row=0, column=0, sticky="NSEW")
-
-    checker_dialog.reset()
 
     search_range = maintext().start_to_end()
     # Find each piece of markup that matches the regex
@@ -1266,22 +1314,26 @@ def proofer_comment_check() -> None:
     )
 
     class ProoferCommentCheckerDialog(CheckerDialog):
-        """Minimal class to identify dialog type so that it can exist
-        simultaneously with other checker dialogs."""
+        """Proofer Comment Checker dialog."""
 
         manual_page = "Navigation#Find_Proofer_Comments_(_[**notes]_)"
 
+        def __init__(self, **kwargs: Any) -> None:
+            """Initialize Proofer Comment dialog."""
+            super().__init__(
+                "Proofer Comments",
+                tooltip="\n".join(
+                    [
+                        "Left click: Select & find comment",
+                        "Right click: Remove comment from this list",
+                    ]
+                ),
+                **kwargs,
+            )
+
     checker_dialog = ProoferCommentCheckerDialog.show_dialog(
-        "Proofer Comments",
         rerun_command=proofer_comment_check,
-        tooltip="\n".join(
-            [
-                "Left click: Select & find comment",
-                "Right click: Remove comment from this list",
-            ]
-        ),
     )
-    checker_dialog.reset()
     for match in matches:
         line = maintext().get(
             f"{match.rowcol.index()} linestart",
@@ -1307,17 +1359,27 @@ def asterisk_check() -> None:
         regexp=True,
     )
 
+    class AsteriskCheckerDialog(CheckerDialog):
+        """Asterisk Checker Dialog."""
+
+        manual_page = "Navigation#Find_Asterisks_w/o_Slash"
+
+        def __init__(self, **kwargs: Any) -> None:
+            """Initialize Asterisk Checker dialog."""
+            super().__init__(
+                "Asterisk Check",
+                tooltip="\n".join(
+                    [
+                        "Left click: Select & find occurrence of asterisk",
+                        "Right click: Remove occurrence from this list",
+                    ]
+                ),
+                **kwargs,
+            )
+
     checker_dialog = AsteriskCheckerDialog.show_dialog(
-        "Asterisk Check",
         rerun_command=asterisk_check,
-        tooltip="\n".join(
-            [
-                "Left click: Select & find occurrence of asterisk",
-                "Right click: Remove occurrence from this list",
-            ]
-        ),
     )
-    checker_dialog.reset()
     for match in matches:
         line = maintext().get(
             f"{match.rowcol.index()} linestart",
@@ -1468,18 +1530,18 @@ class ScannoCheckerDialog(CheckerDialog):
 
     manual_page = "Tools_Menu#Stealth_Scannos"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize scanno checker dialog."""
-        kwargs["tooltip"] = "\n".join(
-            [
-                "Left click: Select & find occurrence of scanno",
-                "Right click: Remove occurrence of scanno from list",
-                f"With {cmd_ctrl_string()} key: Also fix this occurrence",
-                "With Shift key: Also remove/fix matching occurrences",
-            ]
-        )
         super().__init__(
-            *args,
+            "Stealth Scanno Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find occurrence of scanno",
+                    "Right click: Remove occurrence of scanno from list",
+                    f"With {cmd_ctrl_string()} key: Also fix this occurrence",
+                    "With Shift key: Also remove/fix matching occurrences",
+                ]
+            ),
             **kwargs,
         )
 
@@ -1494,9 +1556,7 @@ class ScannoCheckerDialog(CheckerDialog):
         )
         self.file_combo.grid(column=1, row=0, sticky="NSEW", pady=5)
         self.file_combo["state"] = "readonly"
-        self.file_combo.bind(
-            "<<ComboboxSelected>>", lambda _e: self.rerun_button.invoke()
-        )
+        self.file_combo.bind("<<ComboboxSelected>>", lambda _e: self.select_file())
         ttk.Button(
             frame, text="Load File", command=self.choose_file, takefocus=False
         ).grid(column=2, row=0, sticky="NSEW", padx=(5, 0), pady=5)
@@ -1567,6 +1627,12 @@ class ScannoCheckerDialog(CheckerDialog):
             self.focus()
             preferences.set(PrefKey.SCANNOS_FILENAME, filename)
             self.load_scannos()
+            self.list_scannos()
+
+    def select_file(self) -> None:
+        """Handle selection of a scannos file."""
+        self.load_scannos()
+        self.list_scannos()
 
     def load_scannos(self) -> None:
         """Load a scannos file."""
@@ -1604,9 +1670,7 @@ class ScannoCheckerDialog(CheckerDialog):
             except KeyError:
                 scanno[Scanno.HINT] = ""
 
-        if self.scanno_list:
-            self.scanno_number = 0
-            self.list_scannos()
+        self.scanno_number = 0
 
     def prev_next_scanno(self, prev: bool) -> None:
         """Display previous/next scanno & list of results.
@@ -1653,6 +1717,9 @@ class ScannoCheckerDialog(CheckerDialog):
     def list_scannos(self) -> None:
         """Display current scanno and list of results."""
         self.reset()
+        if not self.scanno_list:
+            self.display_entries()
+            return
         scanno = self.scanno_list[self.scanno_number]
         self.scanno_textvariable.set(scanno[Scanno.MATCH])
         self.replacement_textvariable.set(scanno[Scanno.REPLACEMENT])
@@ -1753,12 +1820,10 @@ def stealth_scannos() -> None:
         return
 
     _the_stealth_scannos_dialog = ScannoCheckerDialog.show_dialog(
-        "Stealth Scanno Results",
         rerun_command=stealth_scannos,
         process_command=do_replace_scanno,
     )
-
-    _the_stealth_scannos_dialog.display_entries()
+    _the_stealth_scannos_dialog.list_scannos()
 
 
 DQUOTES = "“”"
@@ -1865,17 +1930,17 @@ class CurlyQuotesDialog(CheckerDialog):
 
     manual_page = "Tools_Menu#Convert_to_Curly_Quotes"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize curly quotes checker dialog."""
-        kwargs["tooltip"] = "\n".join(
-            [
-                "Left click: Select & find curly quote warning",
-                "Right click: Remove warning from list",
-                f"With {cmd_ctrl_string()} key: Convert straight to curly, or swap open⇔close",
-            ]
-        )
         super().__init__(
-            *args,
+            "Curly Quotes Check",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find curly quote warning",
+                    "Right click: Remove warning from list",
+                    f"With {cmd_ctrl_string()} key: Convert straight to curly, or swap open⇔close",
+                ]
+            ),
             **kwargs,
         )
 
@@ -1934,7 +1999,6 @@ class CurlyQuotesDialog(CheckerDialog):
             command=lambda: insert_in_focus_widget(SQUOTES[1]),
             takefocus=False,
         ).grid(column=8, row=0, sticky="NSE")
-        self.populate()
 
     def populate(self) -> None:
         """Populate list with suspect curly quotes."""
@@ -2047,6 +2111,7 @@ class CurlyQuotesDialog(CheckerDialog):
                         error_prefix="DOUBLE QUOTE NOT CLOSED: ",
                     )
                 dqtype = 0  # Reset double quotes at paragraph break
+        self.display_entries()
 
     def swap_open_close(self) -> None:
         """Swap current quote open<-->close."""
@@ -2183,11 +2248,12 @@ def check_curly_quotes() -> None:
     """Check for suspect curly quotes."""
     global _the_curly_quotes_dialog
 
+    if not tool_save():
+        return
+
     _the_curly_quotes_dialog = CurlyQuotesDialog.show_dialog(
-        "Curly Quotes Check",
         rerun_command=check_curly_quotes,
         process_command=do_fix_quote,
         sort_key_alpha=sort_key_error,
     )
-
-    _the_curly_quotes_dialog.display_entries()
+    _the_curly_quotes_dialog.populate()

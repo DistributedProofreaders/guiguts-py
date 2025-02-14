@@ -113,13 +113,13 @@ class ToplevelDialog(tk.Toplevel):
         """
         # If dialog already exists, deiconify it
         dlg_name = cls.__name__
-        # Can we just deiconify dialog
+        # Can we just deiconify dialog & reset it?
         if dlg := cls.get_dialog():
             dlg.deiconify()
-        # Or do we need to create it
+            dlg.reset()
+        # Or do we need to create it?
         else:
             dlg = cls(**kwargs)
-        dlg.reset()
         ToplevelDialog._toplevel_dialogs[dlg_name] = dlg
         return dlg
 
