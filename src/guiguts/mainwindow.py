@@ -29,6 +29,7 @@ from guiguts.widgets import (
     themed_style,
     theme_set_tk_widget_colors,
     Busy,
+    theme_set_tk_widget_highlightcolor,
 )
 
 logger = logging.getLogger(__package__)
@@ -338,17 +339,18 @@ class MainImage(tk.Frame):
 
         self.canvas = tk.Canvas(
             self,
-            highlightthickness=0,
+            highlightthickness=2,
             xscrollcommand=self.hbar.set,
             yscrollcommand=self.vbar.set,
         )
+        theme_set_tk_widget_highlightcolor(self.canvas)
         self.canvas.grid(row=2, column=0, sticky="NSEW")
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
 
         self.canvas.bind("<Configure>", self.handle_configure)
-        self.bind("<Enter>", self.handle_configure)
-        self.bind("<Leave>", self.handle_configure)
+        self.bind("<Enter>", self.handle_enter)
+        self.bind("<Leave>", self.handle_leave)
         self.canvas.bind("<ButtonPress-1>", self.move_from)
         self.canvas.bind("<B1-Motion>", self.move_to)
         if is_x11():
@@ -561,7 +563,19 @@ class MainImage(tk.Frame):
                 preferences.set(PrefKey.IMAGE_FLOAT_GEOMETRY, tk.Wm.geometry(self))  # type: ignore[call-overload]
             except tk.TclError:
                 pass
+
+    def handle_enter(self, event: tk.Event) -> None:
+        """Handle enter event."""
+        self.handle_configure(event)
+        self.canvas["highlightbackground"] = (
+            "white" if maintext().is_dark_theme() else "black"
+        )
+
+    def handle_leave(self, event: tk.Event) -> None:
+        """Handle leave event."""
+        self.handle_configure(event)
         self.auto_image_paused = False
+        theme_set_tk_widget_highlightcolor(self.canvas)
 
     def next_image(self, reverse: bool = False) -> None:
         """Load the next image alphabetically.

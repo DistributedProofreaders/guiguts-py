@@ -700,22 +700,36 @@ def theme_set_tk_widget_colors(widget: tk.Text) -> None:
             background="black",
             foreground="white",
             insertbackground="white",
-            highlightbackground="black",
         )
     elif theme_name == "Light":
         widget.configure(
             background="white",
             foreground="black",
             insertbackground="black",
-            highlightbackground="white",
         )
     elif theme_name == "Default":
         widget.configure(
             background=_theme_default_text_bg,
             foreground=_theme_default_text_fg,
             insertbackground=_theme_default_text_ibg,
-            highlightbackground=_theme_default_text_bg,
         )
+    theme_set_tk_widget_highlightcolor(widget)
+
+
+def theme_set_tk_widget_highlightcolor(widget: tk.Text | tk.Canvas) -> None:
+    """Set border highlight color of a (non-themed) Text or Canvas widget to match
+    the theme colors.
+
+    Args:
+        widget: The widget to be customized.
+    """
+    theme_name = preferences.get(PrefKey.THEME_NAME)
+    if theme_name == "Dark":
+        widget.configure(highlightbackground="black")
+    elif theme_name == "Light":
+        widget.configure(highlightbackground="white")
+    elif theme_name == "Default":
+        widget.configure(highlightbackground=_theme_default_text_bg)
 
 
 def _theme_init_tk_widget_colors() -> None:
