@@ -6,7 +6,7 @@ import logging
 import os.path
 import tkinter as tk
 from tkinter import ttk, filedialog
-from typing import Optional
+from typing import Optional, Any
 
 from PIL import Image, ImageTk, UnidentifiedImageError
 import regex as re
@@ -556,18 +556,23 @@ def html_validator_check() -> None:
         """Minimal class to identify dialog type so that it can exist
         simultaneously with other checker dialogs."""
 
-        manual_page = "HTML_Menu#HTML_Validator"
+        manual_page = "HTML_Menu#HTML_Link_Checker"
 
-    checker_dialog = HTMLValidatorDialog.show_dialog(
-        "HTML Validator Results",
-        rerun_command=html_validator_check,
-        tooltip="\n".join(
-            [
-                "Left click: Select & find validation error",
-                "Right click: Remove validation error from this list",
-            ]
-        ),
-    )
+        def __init__(self, **kwargs: Any) -> None:
+            """Initialize HTML Validator dialog."""
+
+            super().__init__(
+                "HTML Validator Results",
+                tooltip="\n".join(
+                    [
+                        "Left click: Select & find validation error",
+                        "Right click: Remove validation error from this list",
+                    ]
+                ),
+                **kwargs,
+            )
+
+    checker_dialog = HTMLValidatorDialog.show_dialog(rerun_command=html_validator_check)
 
     do_validator_check(checker_dialog)
 
@@ -677,22 +682,25 @@ def html_link_check() -> None:
     """Validate the current HTML file."""
 
     class HTMLLinkCheckerDialog(CheckerDialog):
-        """Minimal class to identify dialog type so that it can exist
-        simultaneously with other checker dialogs."""
+        """HTML Link Checker dialog."""
 
         manual_page = "HTML_Menu#HTML_Link_Checker"
 
-    checker_dialog = HTMLLinkCheckerDialog.show_dialog(
-        "HTML Link Checker Results",
-        rerun_command=html_link_check,
-        tooltip="\n".join(
-            [
-                "Left click: Select & find issue",
-                "Right click: Remove issue from this list",
-            ]
-        ),
-    )
-    checker_dialog.reset()
+        def __init__(self, **kwargs: Any) -> None:
+            """Initialize HTML Link Checker dialog."""
+
+            super().__init__(
+                "HTML Link Checker Results",
+                tooltip="\n".join(
+                    [
+                        "Left click: Select & find issue",
+                        "Right click: Remove issue from this list",
+                    ]
+                ),
+                **kwargs,
+            )
+
+    checker_dialog = HTMLLinkCheckerDialog.show_dialog(rerun_command=html_link_check)
 
     do_link_check(checker_dialog)
 
@@ -806,7 +814,12 @@ def do_link_check(checker_dialog: CheckerDialog) -> None:
     # Get list of image files to check if they are referenced
     cur_dir = os.path.dirname(the_file().filename)
     images_used: dict[str, bool] = {}
-    for fn in os.listdir(os.path.join(cur_dir, "images")):
+    images_dir = os.path.join(cur_dir, "images")
+    if not os.path.isdir(images_dir):
+        logger.error(f"Directory {images_dir} does not exist")
+        checker_dialog.display_entries()
+        return
+    for fn in os.listdir(images_dir):
         # Force forward slash (unlike os.join) so it matches attribute value
         images_used[f"images/{fn}"] = False
 
