@@ -1,5 +1,6 @@
 """Define key components of main window"""
 
+from enum import Enum, auto
 from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found]
 import logging
 import os.path
@@ -29,7 +30,6 @@ from guiguts.widgets import (
     themed_style,
     theme_set_tk_widget_colors,
     Busy,
-    theme_set_tk_widget_highlightcolor,
 )
 
 logger = logging.getLogger(__package__)
@@ -195,6 +195,15 @@ class Menu(tk.Menu):
         self.add_button("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
 
 
+class AutoImageState(Enum):
+    """Enum class to store AutoImage states to facilitate pausing
+    and restarting AutoImage when needed."""
+
+    NORMAL = auto()
+    PAUSED = auto()
+    RESTARTING = auto()
+
+
 class MainImage(tk.Frame):
     """MainImage is a Frame, containing a Canvas which can display a png/jpeg file.
 
@@ -234,7 +243,20 @@ class MainImage(tk.Frame):
         self.dock_func = dock_func
         self.allow_geometry_storage = False
 
-        control_frame = ttk.Frame(self)
+        # Introduce an apparently superfluous Frame to contain everything.
+        # This is because when MainImage is undocked, Tk converts it to a
+        # Toplevel widget. Any bindings on the MainImage are then reapplied
+        # to the Toplevel widget, and Toplevel widgets apply their bindings
+        # to all their children. So an Enter/Leave binding on MainImage would
+        # cause an Enter/Leave to trigger when the mouse enters/leaves a button,
+        # for example. Binding to top_frame instead means that the binding
+        # doesn't get reapplied to the Toplevel widget, and it continues to
+        # behave as required.
+        top_frame = ttk.Frame(self)
+        top_frame.grid(row=0, column=0, columnspan=2, sticky="NSEW")
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+        control_frame = ttk.Frame(top_frame)
         control_frame.grid(row=0, column=0, columnspan=2, sticky="NSEW")
         control_frame.columnconfigure(8, weight=1)
 
@@ -330,27 +352,27 @@ class MainImage(tk.Frame):
             widget.bind(cm, lambda _: self.zoom_out_btn.invoke())
             widget.bind(c0, lambda _: self.fth_btn.invoke())
 
-        self.hbar = ttk.Scrollbar(self, orient=tk.HORIZONTAL)
+        self.hbar = ttk.Scrollbar(top_frame, orient=tk.HORIZONTAL)
         self.hbar.grid(row=3, column=0, sticky="EW")
         self.hbar.configure(command=self.scroll_x)
-        self.vbar = ttk.Scrollbar(self, orient=tk.VERTICAL)
+        self.vbar = ttk.Scrollbar(top_frame, orient=tk.VERTICAL)
         self.vbar.grid(row=2, column=1, sticky="NS")
         self.vbar.configure(command=self.scroll_y)
 
         self.canvas = tk.Canvas(
-            self,
-            highlightthickness=2,
+            top_frame,
             xscrollcommand=self.hbar.set,
             yscrollcommand=self.vbar.set,
+            highlightthickness=0,
+            highlightbackground="darkorange",
         )
-        theme_set_tk_widget_highlightcolor(self.canvas)
         self.canvas.grid(row=2, column=0, sticky="NSEW")
-        self.rowconfigure(2, weight=1)
-        self.columnconfigure(0, weight=1)
+        top_frame.rowconfigure(2, weight=1)
+        top_frame.columnconfigure(0, weight=1)
 
         self.canvas.bind("<Configure>", self.handle_configure)
-        self.bind("<Enter>", self.handle_enter)
-        self.bind("<Leave>", self.handle_leave)
+        top_frame.bind("<Enter>", self.handle_enter)
+        top_frame.bind("<Leave>", self.handle_leave)
         self.canvas.bind("<ButtonPress-1>", self.move_from)
         self.canvas.bind("<B1-Motion>", self.move_to)
         if is_x11():
@@ -372,7 +394,7 @@ class MainImage(tk.Frame):
         self.width = 0
         self.height = 0
         # May want to pause auto image if user clicks prev/next file buttons
-        self.auto_image_paused = False
+        self._auto_image_state = AutoImageState.NORMAL
 
     def scroll_y(self, *args: Any, **kwargs: Any) -> None:
         """Scroll canvas vertically and redraw the image"""
@@ -567,15 +589,32 @@ class MainImage(tk.Frame):
     def handle_enter(self, event: tk.Event) -> None:
         """Handle enter event."""
         self.handle_configure(event)
-        self.canvas["highlightbackground"] = (
-            "white" if maintext().is_dark_theme() else "black"
-        )
+        self.auto_image_state(AutoImageState.NORMAL)
 
     def handle_leave(self, event: tk.Event) -> None:
         """Handle leave event."""
         self.handle_configure(event)
-        self.auto_image_paused = False
-        theme_set_tk_widget_highlightcolor(self.canvas)
+        # Restart auto img
+        if self.auto_image_state() == AutoImageState.PAUSED:
+            self.auto_image_state(AutoImageState.RESTARTING)
+
+    def alert_user(self) -> None:
+        """Flash the image border."""
+
+        def set_canvas_highlight(thickness: int) -> None:
+            """Set highlightthickness for canvas"""
+            self.canvas["highlightthickness"] = thickness
+
+        set_canvas_highlight(2)
+        self.after(150, lambda: set_canvas_highlight(0))
+
+    def auto_image_state(
+        self, value: Optional[AutoImageState] = None
+    ) -> AutoImageState:
+        """Set or query whether auto_image is paused or restarting."""
+        if value is not None:
+            self._auto_image_state = value
+        return self._auto_image_state
 
     def next_image(self, reverse: bool = False) -> None:
         """Load the next image alphabetically.
@@ -602,7 +641,7 @@ class MainImage(tk.Frame):
             # If found on previous time through loop, this is the file we want
             if found:
                 self.load_image(os.path.join(current_dir, fn))
-                self.auto_image_paused = True
+                self.auto_image_state(AutoImageState.PAUSED)
                 return
             if fn == current_basename:
                 found = True
