@@ -276,6 +276,7 @@ class HighlightTag(StrEnum):
     CURSOR_LINE = auto()
     COLUMN_RULER = auto()
     SEARCH = auto()
+    PROOFERCOMMENT = auto()
 
 
 class HighlightColors:
@@ -364,6 +365,11 @@ class HighlightColors:
             "relief": "ridge",
             "borderwidth": "2",
         },
+    }
+
+    PROOFERCOMMENT = {
+        "Light": {"bg": "LightYellow", "fg": "Red"},
+        "Dark": {"bg": "#1C1C1C", "fg": "DarkOrange"},
     }
 
 
@@ -1003,6 +1009,7 @@ class MainText(tk.Text):
             self.root.after_idle(self.highlight_aligncol)
             self.root.after_idle(self.highlight_cursor_line)
             self.root.after_idle(self.highlight_search)
+            self.root.after_idle(self.highlight_proofercomment)
             self.numbers_need_updating = True
 
     def save_sash_coords(self) -> None:
@@ -3395,6 +3402,31 @@ class MainText(tk.Text):
         self.search_highlight_active.set(False)
         self.remove_highlights_search()
 
+    def highlight_proofercomment(self) -> None:
+        """Highlight [** proofer comments] for attention."""
+        self.remove_highlights_proofercomment()
+        if preferences.get(PrefKey.HIGHLIGHT_PROOFERCOMMENT):
+            self.highlight_proofercomment_in_viewport(maintext())
+            if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+                self.highlight_proofercomment_in_viewport(maintext().peer)
+
+    def highlight_proofercomment_in_viewport(self, viewport: Text) -> None:
+        """Highlight [** proofer comments] in a single viewport."""
+        for _match in self.find_matches(
+            r"\[\*\*[^]]*\]",
+            self.get_screen_window_coordinates(viewport),
+            regexp=True,
+        ):
+            viewport.tag_add(
+                HighlightTag.PROOFERCOMMENT,
+                _match.rowcol.index(),
+                f"{_match.rowcol.index()}+{_match.count}c",
+            )
+
+    def remove_highlights_proofercomment(self) -> None:
+        """Remove proofer comment-related highlights"""
+        self.tag_remove(HighlightTag.PROOFERCOMMENT, "1.0", tk.END)
+
     def highlight_configure_tags(self, first_run: bool = False) -> None:
         """Configure highlight tags with colors based on the current theme.
         On first run, will also initialize the tag stack order.
@@ -3428,6 +3460,7 @@ class MainText(tk.Text):
             (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
             (HighlightTag.SEARCH, HighlightColors.SEARCH),
             (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
+            (HighlightTag.PROOFERCOMMENT, HighlightColors.PROOFERCOMMENT),
             (HighlightTag.PAREN, HighlightColors.PAREN),
             (HighlightTag.CURLY_BRACKET, HighlightColors.CURLY_BRACKET),
             (HighlightTag.SQUARE_BRACKET, HighlightColors.SQUARE_BRACKET),
