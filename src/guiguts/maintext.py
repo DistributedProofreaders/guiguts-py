@@ -1024,6 +1024,7 @@ class MainText(tk.Text):
             self.paned_text_window.sash_place(0, 0, sash_coord)
         preferences.set(PrefKey.SPLIT_TEXT_WINDOW, True)
         self.peer_linenumbers.theme_change()
+        self.peer_colnumbers.theme_change()
 
     def hide_peer(self) -> None:
         """Remove the peer text widget from the text's parent's paned window."""
