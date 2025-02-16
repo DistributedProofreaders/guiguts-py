@@ -427,6 +427,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.IMAGE_FLOAT_GEOMETRY, "400x600+100+100")
         preferences.set_default(PrefKey.IMAGE_DOCK_SASH_COORD, 300)
         preferences.set_default(PrefKey.IMAGE_SCALE_FACTOR, 0.5)
+        preferences.set_default(PrefKey.IMAGE_VIEWER_ALERT, True)
         preferences.set_default(
             PrefKey.SCANNOS_FILENAME,
             str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)),

@@ -599,14 +599,16 @@ class MainImage(tk.Frame):
             self.auto_image_state(AutoImageState.RESTARTING)
 
     def alert_user(self) -> None:
-        """Flash the image border."""
+        """Flash the image border if preference enabled."""
+        if not preferences.get(PrefKey.IMAGE_VIEWER_ALERT):
+            return
 
         def set_canvas_highlight(thickness: int) -> None:
             """Set highlightthickness for canvas"""
             self.canvas["highlightthickness"] = thickness
 
-        set_canvas_highlight(2)
-        self.after(150, lambda: set_canvas_highlight(0))
+        set_canvas_highlight(4)
+        self.after(500, lambda: set_canvas_highlight(0))
 
     def auto_image_state(
         self, value: Optional[AutoImageState] = None
