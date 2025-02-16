@@ -63,7 +63,7 @@ from guiguts.misc_tools import (
     check_curly_quotes,
 )
 from guiguts.page_details import PageDetailsDialog
-from guiguts.preferences import preferences, PrefKey
+from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.root import root
 from guiguts.search import show_search_dialog, find_next
 from guiguts.spell import spell_check
@@ -467,6 +467,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_callback(
             PrefKey.HIGHLIGHT_QUOTBRAC, self.highlight_quotbrac_callback
         )
+        preferences.set_default(PrefKey.HIGHLIGHT_HTML_TAGS, False)
         preferences.set_default(PrefKey.COLUMN_NUMBERS, False)
         preferences.set_callback(
             PrefKey.COLUMN_NUMBERS, lambda value: maintext().show_column_numbers(value)
@@ -679,6 +680,12 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         search_menu.add_checkbox(
             "Highlight ~Proofer Comments",
             root().highlight_proofercomment,
+        )
+        search_menu.add_checkbox(
+            "Highlight ~HTML tags",
+            PersistentBoolean(PrefKey.HIGHLIGHT_HTML_TAGS),
+            lambda: maintext().highlight_html_tags_callback(True),
+            lambda: maintext().highlight_html_tags_callback(False),
         )
         search_menu.add_separator()
         self.init_bookmark_menu(search_menu)
