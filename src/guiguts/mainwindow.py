@@ -30,7 +30,6 @@ from guiguts.widgets import (
     mouse_bind,
     ToolTip,
     themed_style,
-    theme_set_tk_widget_colors,
     Busy,
 )
 
@@ -835,10 +834,11 @@ class ScrolledReadOnlyText(tk.Text):
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
         super().bind(
-            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
+            "<<ThemeChanged>>",
+            lambda _event: maintext().theme_set_tk_widget_colors(self),
         )
         # Also on creation, so it's correct for the current theme
-        theme_set_tk_widget_colors(self)
+        maintext().theme_set_tk_widget_colors(self)
 
         # Redirect attempts to undo & redo to main text window
         # Keystrokes match those in Undo/Redo menu buttons, with case handled manually here
