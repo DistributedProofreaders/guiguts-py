@@ -449,28 +449,32 @@ class SearchDialog(ToplevelDialog):
             return
 
         class FindAllCheckerDialog(CheckerDialog):
-            """Minimal class to identify dialog typepylint."""
+            """Find All dialog."""
 
             manual_page = "Searching#Find_All"
 
+            def __init__(self, **kwargs: Any) -> None:
+                """Initialize Find All dialog."""
+
+                super().__init__(
+                    "Search Results",
+                    tooltip="\n".join(
+                        [
+                            "Left click: Select & find string",
+                            "Right click: Remove string from this list",
+                            "Shift Right click: Remove all occurrences of string from this list",
+                        ]
+                    ),
+                    **kwargs,
+                )
+
         checker_dialog = FindAllCheckerDialog.show_dialog(
-            "Search Results",
             rerun_command=self.findall_clicked,
-            tooltip="\n".join(
-                [
-                    "Left click: Select & find string",
-                    "Right click: Remove string from this list",
-                    "Shift Right click: Remove all occurrences of string from this list",
-                ]
-            ),
         )
-        if not checker_dialog.winfo_exists():
+        if not checker_dialog.winfo_exists() or not self.winfo_exists():
             Busy.unbusy()
             return
-        checker_dialog.reset()
-        if not self.winfo_exists():
-            Busy.unbusy()
-            return
+
         # Construct opening line describing the search
         desc_reg = "regex" if preferences.get(PrefKey.SEARCHDIALOG_REGEX) else "string"
         prefix = f'Search for {desc_reg} "'

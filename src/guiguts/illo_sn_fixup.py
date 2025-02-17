@@ -3,7 +3,7 @@
 import logging
 import tkinter as tk
 from tkinter import ttk
-from typing import Optional
+from typing import Optional, Any
 
 import regex as re
 
@@ -60,19 +60,56 @@ class SelectedIlloSNRecord:
 
 
 class IlloSNCheckerDialog(CheckerDialog):
-    """Minimal class to identify dialog type."""
+    """Illo or Sidenote Checker dialog."""
+
+    def __init__(self, tag_type: str, **kwargs: Any) -> None:
+        """Initialize Illo or Sidenote Checker dialog."""
+
+        super().__init__(
+            f"{tag_type} Check Results",
+            tooltip="\n".join(
+                [
+                    f"Left click: Select & find {tag_type} tag",
+                    "Right click: Remove item from list",
+                    "Shift-Right click: Remove all matching items",
+                ]
+            ),
+            **kwargs,
+        )
+        frame = ttk.Frame(self.header_frame)
+        frame.grid(column=0, row=1, sticky="NSEW")
+        self.move_up_btn = ttk.Button(
+            frame,
+            text="Move Selection Up",
+            command=lambda: move_selection_up(tag_type),
+        )
+        self.move_up_btn.grid(column=0, row=0, sticky="NSW")
+        self.move_down_btn = ttk.Button(
+            frame,
+            text="Move Selection Down",
+            command=lambda: move_selection_down(tag_type),
+        )
+        self.move_down_btn.grid(column=1, row=0, sticky="NSW")
 
 
 class IlloCheckerDialog(IlloSNCheckerDialog):
-    """Minimal class to identify dialog type."""
+    """Illustration Fixup dialog."""
 
     manual_page = "Tools_Menu#Illustration_Fixup"
 
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Illustration Fixup dialog."""
+        super().__init__("Illustration", **kwargs)
+
 
 class SNCheckerDialog(IlloSNCheckerDialog):
-    """Minimal class to identify dialog type."""
+    """Sidenote Fixup dialog."""
 
     manual_page = "Tools_Menu#Sidenote_Fixup"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Sidenote Fixup dialog."""
+        super().__init__("Sidenote", **kwargs)
 
 
 class IlloSNChecker:
@@ -408,180 +445,186 @@ class IlloSNChecker:
             new_index = re.sub(r"\.1$", ".0", new_index)
         return new_index
 
-    def move_selection_up(self, tag_type: str) -> None:
-        """Move selected Illo/SN tag up towards the start of the file.
 
-        We won't move a tag past another tag of the same type.
+def move_selection_up(tag_type: str) -> None:
+    """Move selected Illo/SN tag up towards the start of the file.
 
-        Args:
-            tag_type: a string which is either "Sidenote" or "Illustration".
-        """
-        selected_illosn_index = self.get_selected_illosn_index()
-        if selected_illosn_index < 0:
-            return  # No selection.
-        # Get the record for the selected tag from the records array we
-        # built in run_check().
-        selected = self.get_selected_illosn_record(selected_illosn_index)
-        # Group together all inserts/deletes that happen while moving the
-        # selected tag.
-        maintext().undo_block_begin()
-        # Use marks to get updated index for start & end
-        first_line_num = self.updated_index(selected.first_line_num)
-        last_line_num = self.updated_index(selected.last_line_num)
-        # Look for a suitable blank line. Start at line immediately above the (first line of
-        # the) selected Illo or SN record. NB We may not be able to move the record at all if
-        # it means skipping over another tag of the same type.
-        line_num = maintext().index(f"{first_line_num}-1l")
-        while (
-            line_num != "0.0"
-        ):  # NB That index does not exist but see at end of while loop.
-            # What is on this line?
-            line_txt = maintext().get(line_num, f"{line_num} lineend")
-            # Is it a tag of the same type as the selected one?
-            if tag_type == "Sidenote" and (
-                line_txt[0:10] == "[Sidenote:" or line_txt[0:11] == "*[Sidenote:"
-            ):
-                # Can't move selected Sidenote above another Sidenote.
-                return
-            if tag_type == "Illustration" and (
-                line_txt[0:14] == "[Illustration]"
-                or line_txt[0:14] == "[Illustration:"
-                or line_txt[0:15] == "*[Illustration]"
-                or line_txt[0:15] == "*[Illustration:"
-            ):
-                # Can't move selected Illustration above another Illustration.
-                return
-            # No point in inserting the selected tag above the blank line in the situation below
-            # as it will become the same place after the deletion of the Illo or SN record lines
-            # from their original position.
-            #
-            # BL
-            # ...
-            # BL                     <- blank line we are at.
-            # [Sidenote: Some text.] <- (first line of) the selected tag.
-            # BL
-            # ...
-            #
-            # If we are not in this situation, insert selected tag above the blank line we are at.
-            # Otherwise look for next blank line above that one.
-            if (
-                line_txt == ""
-                and not maintext().index(f"{line_num}+1l linestart") == first_line_num
-            ):
-                # If we are at the bottom of a block of blank lines, move the insertion
-                # point to the top of the block. If the 'block' is just a single blank
-                # line then the returned line_num is the same as the argument line_num.
-                line_num = self.advance_up_to_first_bl_of_block(line_num)
-                # We can insert the selected tag above the blank line at line_num.
-                # Copy the lines of the Illo or SN record to be moved. Don't include the
-                # prefixing "*" if present.
-                the_selected_record_lines = maintext().get(
-                    first_line_num, f"{last_line_num}"
-                )
-                if the_selected_record_lines[0:1] == "*":
-                    the_selected_record_lines = the_selected_record_lines[1:]
-                # Delete the selected tag from its current position in the file.
-                self.delete_illosn_record_from_file(selected)
-                # Insert copied lines above the blank line we are at and prefix it with a blank line.
-                maintext().insert(
-                    maintext().index(f"{line_num}"),
-                    "\n" + the_selected_record_lines + "\n",
-                )
-                self.update_after_move(tag_type, selected_illosn_index)
-                return
-            # If we have reached the top of the file, and it is not a blank line, then we
-            # have to 'create' non-existent line number '0.0' to terminate the while-loop.
-            if line_num == "1.0":
-                line_num = "0.0"
-            else:
-                # Decrement line_num normally.
-                line_num = maintext().index(f"{line_num}-1l")
-        return
+    We won't move a tag past another tag of the same type.
 
-    def move_selection_down(self, tag_type: str) -> None:
-        """Move selected Illo/SN tag down towards the end of the file.
+    Args:
+        tag_type: a string which is either "Sidenote" or "Illustration".
+    """
+    checker = _the_illo_checker if tag_type == "Illustration" else _the_sn_checker
+    assert checker is not None
+    selected_illosn_index = checker.get_selected_illosn_index()
+    if selected_illosn_index < 0:
+        return  # No selection.
+    # Get the record for the selected tag from the records array we
+    # built in run_check().
+    selected = checker.get_selected_illosn_record(selected_illosn_index)
+    # Group together all inserts/deletes that happen while moving the
+    # selected tag.
+    maintext().undo_block_begin()
+    # Use marks to get updated index for start & end
+    first_line_num = checker.updated_index(selected.first_line_num)
+    last_line_num = checker.updated_index(selected.last_line_num)
+    # Look for a suitable blank line. Start at line immediately above the (first line of
+    # the) selected Illo or SN record. NB We may not be able to move the record at all if
+    # it means skipping over another tag of the same type.
+    line_num = maintext().index(f"{first_line_num}-1l")
+    while (
+        line_num != "0.0"
+    ):  # NB That index does not exist but see at end of while loop.
+        # What is on this line?
+        line_txt = maintext().get(line_num, f"{line_num} lineend")
+        # Is it a tag of the same type as the selected one?
+        if tag_type == "Sidenote" and (
+            line_txt[0:10] == "[Sidenote:" or line_txt[0:11] == "*[Sidenote:"
+        ):
+            # Can't move selected Sidenote above another Sidenote.
+            return
+        if tag_type == "Illustration" and (
+            line_txt[0:14] == "[Illustration]"
+            or line_txt[0:14] == "[Illustration:"
+            or line_txt[0:15] == "*[Illustration]"
+            or line_txt[0:15] == "*[Illustration:"
+        ):
+            # Can't move selected Illustration above another Illustration.
+            return
+        # No point in inserting the selected tag above the blank line in the situation below
+        # as it will become the same place after the deletion of the Illo or SN record lines
+        # from their original position.
+        #
+        # BL
+        # ...
+        # BL                     <- blank line we are at.
+        # [Sidenote: Some text.] <- (first line of) the selected tag.
+        # BL
+        # ...
+        #
+        # If we are not in this situation, insert selected tag above the blank line we are at.
+        # Otherwise look for next blank line above that one.
+        if (
+            line_txt == ""
+            and not maintext().index(f"{line_num}+1l linestart") == first_line_num
+        ):
+            # If we are at the bottom of a block of blank lines, move the insertion
+            # point to the top of the block. If the 'block' is just a single blank
+            # line then the returned line_num is the same as the argument line_num.
+            line_num = checker.advance_up_to_first_bl_of_block(line_num)
+            # We can insert the selected tag above the blank line at line_num.
+            # Copy the lines of the Illo or SN record to be moved. Don't include the
+            # prefixing "*" if present.
+            the_selected_record_lines = maintext().get(
+                first_line_num, f"{last_line_num}"
+            )
+            if the_selected_record_lines[0:1] == "*":
+                the_selected_record_lines = the_selected_record_lines[1:]
+            # Delete the selected tag from its current position in the file.
+            checker.delete_illosn_record_from_file(selected)
+            # Insert copied lines above the blank line we are at and prefix it with a blank line.
+            maintext().insert(
+                maintext().index(f"{line_num}"),
+                "\n" + the_selected_record_lines + "\n",
+            )
+            checker.update_after_move(tag_type, selected_illosn_index)
+            return
+        # If we have reached the top of the file, and it is not a blank line, then we
+        # have to 'create' non-existent line number '0.0' to terminate the while-loop.
+        if line_num == "1.0":
+            line_num = "0.0"
+        else:
+            # Decrement line_num normally.
+            line_num = maintext().index(f"{line_num}-1l")
+    return
 
-        We won't move a tag past another tag of the same type.
 
-        Args:
-            tag_type: a string which is either "Sidenote" or "Illustration".
-        """
-        selected_illosn_index = self.get_selected_illosn_index()
-        if selected_illosn_index < 0:
-            return  # No selection
-        # Get the record for the selected tag from the records array we
-        # built in run_check().
-        selected = self.get_selected_illosn_record(selected_illosn_index)
-        # Group together all inserts/deletes that happen while moving the
-        # selected tag.
-        maintext().undo_block_begin()
-        # Use marks to get updated index for start & end
-        first_line_num = self.updated_index(selected.first_line_num)
-        last_line_num = self.updated_index(selected.last_line_num)
-        # Look for a suitable blank line. Start at line immediately below the (last line of
-        # the) selected Illo or SN record. NB We may not be able to move the record at all if
-        # it means skipping over another tag of the same type.
-        line_num = maintext().index(f"{last_line_num}+1l linestart")
-        # Set end of loop criteria.
-        file_end = maintext().end().index()
-        file_end_line_num_plus_1 = maintext().index(f"{file_end}+1l linestart")
-        while line_num != file_end_line_num_plus_1:
-            # What is on this line?
-            line_txt = maintext().get(line_num, f"{line_num} lineend")
-            # Is it a tag of the same type as the selected one?
-            if tag_type == "Sidenote" and (
-                line_txt[0:10] == "[Sidenote:" or line_txt[0:11] == "*[Sidenote:"
-            ):
-                # Can't move selected Sidenote above another Sidenote.
-                return
-            if tag_type == "Illustration" and (
-                line_txt[0:14] == "[Illustration]"
-                or line_txt[0:14] == "[Illustration:"
-                or line_txt[0:15] == "*[Illustration]"
-                or line_txt[0:15] == "*[Illustration:"
-            ):
-                # Can't move selected Illustration above another Illustration.
-                return
-            # No point in inserting the selected tag below the blank line in the situation below
-            # as it will become the same place after the deletion of the Illo or SN record lines
-            # from their original position.
-            #
-            # ...
-            # BL
-            # [Sidenote: Some text.] <- (last line of) the selected tag.
-            # BL                     <- blank line we are at.
-            # ...
-            # BL
-            #
-            # If we are not in this situation, insert selected tag below the blank line we are at.
-            # Otherwise look for next blank line below that one.
-            if line_txt == "" and not maintext().index(
-                f"{line_num}-1l linestart"
-            ) == maintext().index(f"{last_line_num} linestart"):
-                # If we are at the top of a block of blank lines, move the insertion
-                # point to the bottom of the block. If the 'block' is just a single blank
-                # line then the returned line_num is the same as the argument line_num.
-                line_num = self.advance_down_to_last_bl_of_block(line_num)
-                # We can insert the selected tag below the blank line at line_num.
-                # Copy the lines of the Illo or SN record to be moved. Don't include the
-                # prefixing "*" if present.
-                the_selected_record_lines = maintext().get(
-                    first_line_num, f"{last_line_num} lineend"
-                )
-                if the_selected_record_lines[0:1] == "*":
-                    the_selected_record_lines = the_selected_record_lines[1:]
-                # Insert copied lines below the blank line we are at and suffix it with a blank line.
-                maintext().insert(
-                    maintext().index(f"{line_num} lineend"),
-                    "\n" + the_selected_record_lines + "\n",
-                )
-                # Delete the selected tag from its current position in the file.
-                self.delete_illosn_record_from_file(selected)
-                self.update_after_move(tag_type, selected_illosn_index)
-                return
-            # Increment line_num.
-            line_num = maintext().index(f"{line_num}+1l")
-        return
+def move_selection_down(tag_type: str) -> None:
+    """Move selected Illo/SN tag down towards the end of the file.
+
+    We won't move a tag past another tag of the same type.
+
+    Args:
+        tag_type: a string which is either "Sidenote" or "Illustration".
+    """
+    checker = _the_illo_checker if tag_type == "Illustration" else _the_sn_checker
+    assert checker is not None
+    selected_illosn_index = checker.get_selected_illosn_index()
+    if selected_illosn_index < 0:
+        return  # No selection
+    # Get the record for the selected tag from the records array we
+    # built in run_check().
+    selected = checker.get_selected_illosn_record(selected_illosn_index)
+    # Group together all inserts/deletes that happen while moving the
+    # selected tag.
+    maintext().undo_block_begin()
+    # Use marks to get updated index for start & end
+    first_line_num = checker.updated_index(selected.first_line_num)
+    last_line_num = checker.updated_index(selected.last_line_num)
+    # Look for a suitable blank line. Start at line immediately below the (last line of
+    # the) selected Illo or SN record. NB We may not be able to move the record at all if
+    # it means skipping over another tag of the same type.
+    line_num = maintext().index(f"{last_line_num}+1l linestart")
+    # Set end of loop criteria.
+    file_end = maintext().end().index()
+    file_end_line_num_plus_1 = maintext().index(f"{file_end}+1l linestart")
+    while line_num != file_end_line_num_plus_1:
+        # What is on this line?
+        line_txt = maintext().get(line_num, f"{line_num} lineend")
+        # Is it a tag of the same type as the selected one?
+        if tag_type == "Sidenote" and (
+            line_txt[0:10] == "[Sidenote:" or line_txt[0:11] == "*[Sidenote:"
+        ):
+            # Can't move selected Sidenote above another Sidenote.
+            return
+        if tag_type == "Illustration" and (
+            line_txt[0:14] == "[Illustration]"
+            or line_txt[0:14] == "[Illustration:"
+            or line_txt[0:15] == "*[Illustration]"
+            or line_txt[0:15] == "*[Illustration:"
+        ):
+            # Can't move selected Illustration above another Illustration.
+            return
+        # No point in inserting the selected tag below the blank line in the situation below
+        # as it will become the same place after the deletion of the Illo or SN record lines
+        # from their original position.
+        #
+        # ...
+        # BL
+        # [Sidenote: Some text.] <- (last line of) the selected tag.
+        # BL                     <- blank line we are at.
+        # ...
+        # BL
+        #
+        # If we are not in this situation, insert selected tag below the blank line we are at.
+        # Otherwise look for next blank line below that one.
+        if line_txt == "" and not maintext().index(
+            f"{line_num}-1l linestart"
+        ) == maintext().index(f"{last_line_num} linestart"):
+            # If we are at the top of a block of blank lines, move the insertion
+            # point to the bottom of the block. If the 'block' is just a single blank
+            # line then the returned line_num is the same as the argument line_num.
+            line_num = checker.advance_down_to_last_bl_of_block(line_num)
+            # We can insert the selected tag below the blank line at line_num.
+            # Copy the lines of the Illo or SN record to be moved. Don't include the
+            # prefixing "*" if present.
+            the_selected_record_lines = maintext().get(
+                first_line_num, f"{last_line_num} lineend"
+            )
+            if the_selected_record_lines[0:1] == "*":
+                the_selected_record_lines = the_selected_record_lines[1:]
+            # Insert copied lines below the blank line we are at and suffix it with a blank line.
+            maintext().insert(
+                maintext().index(f"{line_num} lineend"),
+                "\n" + the_selected_record_lines + "\n",
+            )
+            # Delete the selected tag from its current position in the file.
+            checker.delete_illosn_record_from_file(selected)
+            checker.update_after_move(tag_type, selected_illosn_index)
+            return
+        # Increment line_num.
+        line_num = maintext().index(f"{line_num}+1l")
+    return
 
 
 def illosn_check(tag_type: str) -> None:
@@ -598,17 +641,9 @@ def illosn_check(tag_type: str) -> None:
     assert tag_type in ("Illustration", "Sidenote")
     dialog_type = IlloCheckerDialog if tag_type == "Illustration" else SNCheckerDialog
     checker_dialog = dialog_type.show_dialog(
-        f"{tag_type} Check Results",
         rerun_command=lambda: illosn_check(tag_type),
         show_suspects_only=True,
         clear_on_undo_redo=True,
-        tooltip="\n".join(
-            [
-                f"Left click: Select & find {tag_type} tag",
-                "Right click: Remove item from list",
-                "Shift-Right click: Remove all matching items",
-            ]
-        ),
     )
     if tag_type == "Illustration":
         if _the_illo_checker is None:
@@ -623,18 +658,6 @@ def illosn_check(tag_type: str) -> None:
             _the_sn_checker.checker_dialog = checker_dialog
         the_checker = _the_sn_checker
 
-    frame = ttk.Frame(checker_dialog.header_frame)
-    frame.grid(column=0, row=1, sticky="NSEW")
-    ttk.Button(
-        frame,
-        text="Move Selection Up",
-        command=lambda: the_checker.move_selection_up(tag_type),
-    ).grid(column=0, row=0, sticky="NSW")
-    ttk.Button(
-        frame,
-        text="Move Selection Down",
-        command=lambda: the_checker.move_selection_down(tag_type),
-    ).grid(column=1, row=0, sticky="NSW")
     the_checker.run_check(tag_type)
     display_illosn_entries(tag_type)
     # Reselect correct entry in case this re-run was after an undo/redo

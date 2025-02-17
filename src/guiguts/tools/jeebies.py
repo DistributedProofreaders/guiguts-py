@@ -2,7 +2,7 @@
 
 from enum import StrEnum, auto
 from tkinter import ttk
-from typing import List
+from typing import List, Any
 
 import importlib.resources
 import logging
@@ -13,10 +13,7 @@ from guiguts.data import dictionaries
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
 from guiguts.utilities import cmd_ctrl_string
-from guiguts.preferences import (
-    PersistentString,
-    PrefKey,
-)
+from guiguts.preferences import PersistentString, PrefKey, preferences
 from guiguts.utilities import IndexRowCol, IndexRange
 
 logger = logging.getLogger(__package__)
@@ -24,8 +21,6 @@ logger = logging.getLogger(__package__)
 DEFAULT_DICTIONARY_DIR = importlib.resources.files(dictionaries)
 DISCRIMINATOR_LEVEL = 1.0
 HB_TOGGLE = {"h": "b", "H": "B", "b": "h", "B": "H"}
-
-_the_jeebies_checker = None  # pylint: disable=invalid-name
 
 
 ########################################################
@@ -52,28 +47,15 @@ class DictionaryNotFoundError(Exception):
 
 
 class JeebiesCheckerDialog(CheckerDialog):
-    """Minimal class to identify dialog type."""
+    """Jeebies dialog."""
 
     manual_page = "Tools_Menu#Jeebies"
 
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Jeebies dialog."""
 
-class JeebiesChecker:
-    """Provides jeebies check functionality."""
-
-    def __init__(self) -> None:
-        """Initialize SpellChecker class."""
-        self.dictionary: dict[str, int] = {}
-        self.load_phrases_file_into_dictionary()
-        self.paranoia_level = PersistentString(PrefKey.JEEBIES_PARANOIA_LEVEL)
-
-    def check_for_jeebies_in_file(self) -> None:
-        """Check for jeebies in the currently loaded file."""
-
-        # Create the checker dialog to show results
-        checker_dialog = JeebiesCheckerDialog.show_dialog(
+        super().__init__(
             "Jeebies Results",
-            rerun_command=jeebies_check,
-            process_command=self.process_jeebies,
             tooltip="\n".join(
                 [
                     "Left click: Select & find he/be error",
@@ -82,13 +64,15 @@ class JeebiesChecker:
                     "Shift Right click: Also remove all matching he/be errors",
                 ]
             ),
+            **kwargs,
         )
-        frame = ttk.Frame(checker_dialog.header_frame)
+        frame = ttk.Frame(self.header_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
         ttk.Label(
             frame,
             text="Check Level:",
         ).grid(row=0, column=1, sticky="NSE", padx=(0, 5))
+        self.paranoia_level = PersistentString(PrefKey.JEEBIES_PARANOIA_LEVEL)
         ttk.Radiobutton(
             frame,
             text="Paranoid",
@@ -110,10 +94,27 @@ class JeebiesChecker:
             value=JeebiesParanoiaLevel.TOLERANT,
             takefocus=False,
         ).grid(row=0, column=4, sticky="NSE", padx=2)
-        checker_dialog.reset()
+
+
+class JeebiesChecker:
+    """Provides jeebies check functionality."""
+
+    def __init__(self) -> None:
+        """Initialize SpellChecker class."""
+        self.dictionary: dict[str, int] = {}
+        self.load_phrases_file_into_dictionary()
+
+    def check_for_jeebies_in_file(self) -> None:
+        """Check for jeebies in the currently loaded file."""
+
+        # Create the checker dialog to show results
+        checker_dialog = JeebiesCheckerDialog.show_dialog(
+            rerun_command=jeebies_check,
+            process_command=self.process_jeebies,
+        )
 
         # Check level used last time Jeebies was run or default if first run.
-        check_level = self.paranoia_level.get()
+        check_level = preferences.get(PrefKey.JEEBIES_PARANOIA_LEVEL)
 
         # Get the paragraph strings and the ancillary lists that allow
         # us to map a hebe in a paragraph string to its actual line/col
@@ -687,16 +688,11 @@ class JeebiesChecker:
 
 def jeebies_check() -> None:
     """Check for jeebies in the currently loaded file."""
-    global _the_jeebies_checker
 
     if not tool_save():
         return
-
-    if _the_jeebies_checker is None:
-        try:
-            _the_jeebies_checker = JeebiesChecker()
-        except DictionaryNotFoundError as exc:
-            logger.error(f"Dictionary not found: {exc.file}")
-            return
-
-    _the_jeebies_checker.check_for_jeebies_in_file()
+    try:
+        JeebiesChecker().check_for_jeebies_in_file()
+    except DictionaryNotFoundError as exc:
+        logger.error(f"Dictionary not found: {exc.file}")
+        return
