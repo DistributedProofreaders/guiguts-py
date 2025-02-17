@@ -19,7 +19,6 @@ from guiguts.utilities import (
     TextWrapper,
 )
 from guiguts.widgets import (
-    theme_set_tk_widget_colors,
     themed_style,
     register_focus_widget,
     grab_focus,
@@ -483,12 +482,12 @@ class HighlightColors:
         "Dark": {"foreground": "blue2"},
     }
     HTML_TAG_P = {
-        "Light": {"foreground": "cyan"},
+        "Light": {"foreground": "cyan3"},
         "Dark": {"foreground": "cyan2"},
     }
     HTML_TAG_A = {
-        "Light": {"foreground": "yellow4"},
-        "Dark": {"foreground": "yellow2"},
+        "Light": {"foreground": "gold4"},
+        "Dark": {"foreground": "gold2"},
     }
 
 
@@ -661,9 +660,10 @@ class MainText(tk.Text):
             wrap=self["wrap"],
         )
         self.peer.bind(
-            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self.peer)
+            "<<ThemeChanged>>",
+            lambda _event: self.theme_set_tk_widget_colors(self.peer),
         )
-        theme_set_tk_widget_colors(self.peer)
+        self.theme_set_tk_widget_colors(self.peer)
 
         self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
         self.peer_linenumbers.grid(column=0, row=1, sticky="NSEW")
@@ -915,7 +915,7 @@ class MainText(tk.Text):
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
         self.bind_event(
-            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
+            "<<ThemeChanged>>", lambda _event: self.theme_set_tk_widget_colors(self)
         )
 
         # Fix macOS text selection bug
@@ -970,6 +970,35 @@ class MainText(tk.Text):
     def do_nothing(self) -> None:
         """The only winning move is not to play."""
         return
+
+    def theme_set_tk_widget_colors(self, widget: tk.Text) -> None:
+        """Set bg & fg colors of a Text (non-themed) widget to match
+        the theme colors.
+
+        Args:
+            widget: The widget to be customized.
+        """
+        dark_bg = "gray10"
+        dark_fg = "white"
+        light_bg = "gray90"
+        light_fg = "black"
+        theme_name = preferences.get(PrefKey.THEME_NAME)
+        if theme_name == "Default":
+            theme_name = "Dark" if self.is_dark_theme() else "Light"
+        if theme_name == "Dark":
+            widget.configure(
+                background=dark_bg,
+                foreground=dark_fg,
+                insertbackground=dark_fg,
+                highlightbackground=dark_bg,
+            )
+        elif theme_name == "Light":
+            widget.configure(
+                background=light_bg,
+                foreground=light_fg,
+                insertbackground=light_fg,
+                highlightbackground=light_fg,
+            )
 
     def focus_widget(self) -> tk.Text:
         """Return whether main text or peer last had focus.
@@ -3075,8 +3104,8 @@ class MainText(tk.Text):
 
     def is_dark_theme(self) -> bool:
         """Returns True if theme is dark, which is assumed to be the case if
-        the brightness of the text color is greater than half strength (mid-gray)."""
-        text_color = maintext().cget("foreground")
+        the brightness of button text color is greater than half strength (mid-gray)."""
+        text_color = themed_style().lookup("TButton", "foreground")
         rgb_sum = sum(self.winfo_rgb(text_color))  # 0-65535 for each component
         return rgb_sum > 12767 * 3
 
@@ -3089,11 +3118,7 @@ class MainText(tk.Text):
             tag_name: Tag to be configured.
             tag_colors: Dictionary of attributes for each theme.
         """
-        if self.dark_theme:
-            theme = "Dark"
-        else:
-            theme = "Light"
-
+        theme = "Dark" if self.dark_theme else "Light"
         self.tag_configure(tag_name, **tag_colors[theme])
 
     def highlight_selection(
