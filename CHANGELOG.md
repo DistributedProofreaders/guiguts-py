@@ -1,6 +1,44 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.15
+
+- HTML Auto Illustrations feature has been added
+- Unmatched HTML tag check has been added 
+- HTML Validator added using the Nu validator: https://validator.w3.org/nu/
+- HTML Link Checker added
+- Bookloupe now has a View Options dialog to control which messages are shown
+- Image viewer buttons improved, including ability to page through the files
+  in the images folder without moving the current text position
+- Proofer notes are now optionally highlighted
+- A `misspelled.json` stealth scannos file has been added to the release
+- Mouse pointer in checker dialogs is now the normal cursor arrow
+- Spell Check dialog has shortcut keys using Cmd/Ctrl plus a letter, like GG1:
+  A - Add to global dictionary, P - add to Project dictionary, S - Skip,
+  I - skIp all
+- Search match highlighting speed has been improved
+- Previous/next image buttons in the status bar now move to the next image
+  even if the text position does not move
+- Curly Quote checker reports open quotes preceded by punctuation
+- Some Bookloupe false positive reports have been removed, and the wording
+  of some messages improved
+- Some repeated PPtxt messages removed
+- Search dialog shows "No matches found" in addition to sounding the bell
+- "Invert Image" has been added to the View menu
+- README updated to include changes due to Poetry version 2
+
+### Bug fixes
+
+- Bookloupe could crash when processing a text table using `=` for borders
+- Insert cursor wasn't hidden in text split window when a selection was made
+- Split text window's column ruler did not always follow the theme color
+- Footnotes LZ heading could have 4 blank lines before, but only 1 after  
+- Orange spotlights could be left behind when WF or other dialogs closed
+- An exception could happen if GG exited while certain dialogs were visible
+- Footnotes "Move to paragraphs" could fail due to editing side effect
+- HTML Autogen could wrap the book title in both `<h1>` and `<p>` markup
+
+
 ## Version 2.0.0-alpha.14
 
 - When using the Search dialog to search for a string, all occurrences
