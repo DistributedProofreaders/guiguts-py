@@ -339,6 +339,13 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         else:
             maintext().remove_highlights_quotbrac()
 
+    def highlight_proofercomment_callback(self, value: bool) -> None:
+        """Callback when highlight_proofercomment preference is changed."""
+        if value:
+            maintext().highlight_proofercomment()
+        else:
+            maintext().remove_highlights_proofercomment()
+
     def initialize_preferences(self) -> None:
         """Set default preferences and load settings from the GGPrefs file."""
         preferences.set_default(PrefKey.AUTO_IMAGE, False)
@@ -459,6 +466,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.HTML_IMAGE_UNIT, "%")
         preferences.set_default(PrefKey.HTML_IMAGE_OVERRIDE_EPUB, True)
         preferences.set_default(PrefKey.HTML_IMAGE_ALIGNMENT, "center")
+        preferences.set_default(PrefKey.HIGHLIGHT_PROOFERCOMMENT, True)
+        preferences.set_callback(
+            PrefKey.HIGHLIGHT_PROOFERCOMMENT, self.highlight_proofercomment_callback
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -648,6 +659,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             maintext().aligncol_active,
             lambda: maintext().highlight_aligncol_callback(True),
             lambda: maintext().highlight_aligncol_callback(False),
+        )
+        search_menu.add_checkbox(
+            "Highlight ~Proofer Comments",
+            root().highlight_proofercomment,
         )
         search_menu.add_separator()
         self.init_bookmark_menu(search_menu)
