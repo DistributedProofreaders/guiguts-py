@@ -80,6 +80,7 @@ class PrefKey(StrEnum):
     IMAGE_FLOAT_GEOMETRY = auto()
     IMAGE_DOCK_SASH_COORD = auto()
     IMAGE_SCALE_FACTOR = auto()
+    IMAGE_VIEWER_ALERT = auto()
     SCANNOS_FILENAME = auto()
     SCANNOS_HISTORY = auto()
     HIGHLIGHT_QUOTBRAC = auto()

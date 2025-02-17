@@ -141,6 +141,18 @@ class PreferencesDialog(ToplevelDialog):
             variable=PersistentBoolean(PrefKey.BELL_VISUAL),
         ).grid(column=2, row=0, sticky="NEW")
 
+        iv_btn = ttk.Checkbutton(
+            appearance_frame,
+            text="Image Viewer Alert",
+            variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_ALERT),
+        )
+        iv_btn.grid(column=0, row=8, sticky="NEW", pady=5)
+        ToolTip(
+            iv_btn,
+            "Whether to flash the border when Auto Img re-loads the\n"
+            "default image after you manually select a different image",
+        )
+
         # Wrapping tab
         wrapping_frame = ttk.LabelFrame(self.top_frame, text="Wrapping", padding=10)
         wrapping_frame.grid(column=0, row=1, sticky="NSEW", pady=(10, 0))

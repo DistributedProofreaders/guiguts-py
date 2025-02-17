@@ -28,6 +28,7 @@ from guiguts.mainwindow import (
     ErrorHandler,
     process_accel,
     mainimage,
+    AutoImageState,
 )
 from guiguts.misc_dialogs import (
     PreferencesDialog,
@@ -183,6 +184,7 @@ class Guiguts:
         """Callback when auto_image preference is changed."""
         statusbar().set("see img", "Auto Img" if value else "See Img")
         if value:
+            mainimage().auto_image_state(AutoImageState.NORMAL)
             self.image_dir_check()
             self.auto_image_check()
 
@@ -191,8 +193,13 @@ class Guiguts:
         if preferences.get(PrefKey.AUTO_IMAGE):
             # Image viewer can temporarily pause auto image viewing,
             # but still need to schedule another call to this method.
-            if not mainimage().auto_image_paused:
+            auto_image_state = mainimage().auto_image_state()
+            if auto_image_state != AutoImageState.PAUSED:
                 self.mainwindow.load_image(self.file.get_current_image_path())
+                if auto_image_state == AutoImageState.RESTARTING:
+                    mainimage().alert_user()
+                    mainimage().auto_image_state(AutoImageState.NORMAL)
+
             root().after(200, self.auto_image_check)
 
     def show_image(self) -> None:
@@ -420,6 +427,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.IMAGE_FLOAT_GEOMETRY, "400x600+100+100")
         preferences.set_default(PrefKey.IMAGE_DOCK_SASH_COORD, 300)
         preferences.set_default(PrefKey.IMAGE_SCALE_FACTOR, 0.5)
+        preferences.set_default(PrefKey.IMAGE_VIEWER_ALERT, True)
         preferences.set_default(
             PrefKey.SCANNOS_FILENAME,
             str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)),
