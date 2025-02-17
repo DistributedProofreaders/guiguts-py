@@ -462,28 +462,28 @@ class HighlightColors:
     }
 
     PROOFERCOMMENT = {
-        "Light": {"bg": "LightYellow", "fg": "Red"},
-        "Dark": {"bg": "#1C1C1C", "fg": "DarkOrange"},
+        "Light": {"background": "LightYellow", "foreground": "Red"},
+        "Dark": {"background": "#1C1C1C", "foreground": "DarkOrange"},
     }
 
     HTML_TAG_BAD = {
-        "Light": {"foreground": "red4"},
+        "Light": {"foreground": "red"},
         "Dark": {"foreground": "red2"},
     }
     HTML_TAG_GOOD = {
-        "Light": {"foreground": "purple4"},
+        "Light": {"foreground": "purple"},
         "Dark": {"foreground": "purple2"},
     }
     HTML_TAG_DIV = {
-        "Light": {"foreground": "green4"},
+        "Light": {"foreground": "green"},
         "Dark": {"foreground": "green2"},
     }
     HTML_TAG_SPAN = {
-        "Light": {"foreground": "blue4"},
+        "Light": {"foreground": "blue"},
         "Dark": {"foreground": "blue2"},
     }
     HTML_TAG_P = {
-        "Light": {"foreground": "cyan4"},
+        "Light": {"foreground": "cyan"},
         "Dark": {"foreground": "cyan2"},
     }
     HTML_TAG_A = {
