@@ -1205,7 +1205,7 @@ class FootnoteCheckerDialog(CheckerDialog):
             **kwargs,
         )
 
-        fixit_frame = ttk.Frame(self.header_frame)
+        fixit_frame = ttk.Frame(self.custom_frame)
         fixit_frame.grid(column=0, row=1, sticky="NSEW")
         # Weight only needs setting once for each column, not every row of
         # every column.

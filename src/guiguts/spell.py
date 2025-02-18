@@ -81,7 +81,7 @@ class SpellCheckerDialog(CheckerDialog):
             ),
             **kwargs,
         )
-        frame = ttk.Frame(self.header_frame)
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW", pady=5)
         ttk.Label(
             frame,
