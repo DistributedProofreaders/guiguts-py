@@ -1052,7 +1052,7 @@ def unmatched_markup_check(
 
     # User can control nestability of some unmatched check types
     if nest_reg is None:
-        frame = ttk.Frame(checker_dialog.header_frame)
+        frame = ttk.Frame(checker_dialog.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
         ttk.Checkbutton(
             frame,
@@ -1545,7 +1545,7 @@ class ScannoCheckerDialog(CheckerDialog):
             **kwargs,
         )
 
-        frame = ttk.Frame(self.header_frame)
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
         frame.columnconfigure(1, weight=1)
 
@@ -1944,7 +1944,7 @@ class CurlyQuotesDialog(CheckerDialog):
             **kwargs,
         )
 
-        frame = ttk.Frame(self.header_frame)
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW", pady=5)
         frame.columnconfigure(3, weight=1)
         ttk.Button(
