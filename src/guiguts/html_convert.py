@@ -685,6 +685,8 @@ def html_convert_body() -> None:
                 maintext().replace(
                     f"{line_start}-2l lineend", f"{line_start}-1l lineend", "</h2>\n"
                 )
+                # Don't want footnote anchors in auto ToC
+                chap_heading = re.sub(r"\[.{1,5}\]", "", chap_heading)
                 auto_toc += f'<a href="#{chap_id}">{chap_heading}</a><br>\n'
                 in_chap_heading = False
             continue
