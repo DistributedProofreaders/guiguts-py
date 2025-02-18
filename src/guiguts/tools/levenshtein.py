@@ -69,7 +69,7 @@ class LevenshteinCheckerDialog(CheckerDialog):
 
         self.edit_distance = PersistentInt(PrefKey.LEVENSHTEIN_DISTANCE)
 
-        frame = ttk.Frame(self.header_frame)
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
         ttk.Label(
             frame,
