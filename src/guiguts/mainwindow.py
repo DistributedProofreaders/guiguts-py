@@ -299,21 +299,25 @@ class MainImage(tk.Frame):
         )
         self.zoom_out_btn.grid(row=0, column=3, sticky="NSEW")
 
-        self.ftw_btn = ttk.Button(
-            control_frame,
-            text="← Fit →",
-            takefocus=False,
-            command=self.image_zoom_to_width,
+        ttk.Label(control_frame, text="Fit:", takefocus=False).grid(
+            row=0, column=4, sticky="NSEW", padx=(5, 0)
         )
-        self.ftw_btn.grid(row=0, column=4, sticky="NSEW", padx=(5, 0))
 
-        self.fth_btn = ttk.Button(
+        self.ftw_btn = ttk.Checkbutton(
             control_frame,
-            text="↑ Fit ↓",
+            text="←→",
             takefocus=False,
-            command=self.image_zoom_to_height,
+            variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_WIDTH),
         )
-        self.fth_btn.grid(row=0, column=5, sticky="NSEW")
+        self.ftw_btn.grid(row=0, column=5, sticky="NSEW")
+
+        self.fth_btn = ttk.Checkbutton(
+            control_frame,
+            text="↑↓",
+            takefocus=False,
+            variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_HEIGHT),
+        )
+        self.fth_btn.grid(row=0, column=6, sticky="NSEW")
 
         self.invert_btn = ttk.Checkbutton(
             control_frame,
@@ -322,7 +326,7 @@ class MainImage(tk.Frame):
             command=self.show_image,
             variable=PersistentBoolean(PrefKey.IMAGE_INVERT),
         )
-        self.invert_btn.grid(row=0, column=6, sticky="NSEW", padx=(5, 0))
+        self.invert_btn.grid(row=0, column=7, sticky="NSEW", padx=(5, 0))
 
         self.dock_btn = ttk.Checkbutton(
             control_frame,
@@ -331,7 +335,7 @@ class MainImage(tk.Frame):
             command=self.set_image_docking,
             variable=root().image_window_docked_state,
         )
-        self.dock_btn.grid(row=0, column=7, sticky="NSEW", padx=(5, 0))
+        self.dock_btn.grid(row=0, column=8, sticky="NSEW", padx=(5, 0))
 
         self.close_btn = ttk.Button(
             control_frame,
@@ -340,7 +344,7 @@ class MainImage(tk.Frame):
             takefocus=False,
             command=self.hide_func,
         )
-        self.close_btn.grid(row=0, column=8, sticky="NSE")
+        self.close_btn.grid(row=0, column=9, sticky="NSE")
 
         # Separate bindings needed for docked (root) and floated (self) states
         for widget in (root(), self):
@@ -601,6 +605,10 @@ class MainImage(tk.Frame):
             self.canvas.yview_moveto(0)
             self.canvas.xview_moveto(0)
             self.show_image()
+            if preferences.get(PrefKey.IMAGE_AUTOFIT_WIDTH):
+                mainimage().image_zoom_to_width()
+            elif preferences.get(PrefKey.IMAGE_AUTOFIT_HEIGHT):
+                mainimage().image_zoom_to_height()
         else:
             self.clear_image()
         return True
@@ -1167,3 +1175,23 @@ def statusbar() -> StatusBar:
     """Return the single StatusBar widget"""
     assert MainWindow.statusbar is not None
     return MainWindow.statusbar
+
+
+def image_autofit_width_callback(value: bool) -> None:
+    """Callback when fit-to-width checkbox is clicked.
+
+    Deactivates the other mode (due to mutual exclusivity), then
+    activates the appropriate zoom mode."""
+    if value:
+        preferences.set(PrefKey.IMAGE_AUTOFIT_HEIGHT, False)
+        mainimage().image_zoom_to_width()
+
+
+def image_autofit_height_callback(value: bool) -> None:
+    """Callback when fit-to-height checkbox is clicked.
+
+    Deactivates the other mode (due to mutual exclusivity), then
+    activates the appropriate zoom mode."""
+    if value:
+        preferences.set(PrefKey.IMAGE_AUTOFIT_WIDTH, False)
+        mainimage().image_zoom_to_height()
