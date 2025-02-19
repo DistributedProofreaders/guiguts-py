@@ -4,6 +4,7 @@ from enum import Enum, auto
 from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found]
 import logging
 import os.path
+from subprocess import Popen
 import time
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -17,6 +18,7 @@ from guiguts.root import Root, root
 from guiguts.utilities import (
     is_mac,
     is_x11,
+    is_windows,
     bell_set_callback,
     process_accel,
     process_label,
@@ -226,8 +228,8 @@ class MainImage(tk.Frame):
         self,
         parent: tk.PanedWindow,
         hide_func: Callable[[], None],
-        float_func: Callable[[Optional[tk.Event]], None],
-        dock_func: Callable[[Optional[tk.Event]], None],
+        float_func: Callable[[Any], None],
+        dock_func: Callable[[Any], None],
     ) -> None:
         """Initialize the MainImage to contain an empty Canvas with scrollbars.
 
@@ -476,6 +478,44 @@ class MainImage(tk.Frame):
 
     def show_image(self, _event=None):  # type: ignore[no-untyped-def]
         """Show image on the Canvas"""
+        # If using external viewer, spawn it
+        # If internal viewer is shown, image will be loaded in that too
+        if preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL):
+            viewer_path = preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH)
+            # The following is an attempt to cope with the fact that Windows users
+            # will likely have spaces in viewer_path, and that Mac users may well
+            # use "open -a <appname>" as their viewer_path
+            if is_windows():
+                cmd = [viewer_path, self.filename]
+            else:
+                cmd = f"{viewer_path} {self.filename}"
+            try:
+                focus_widget = root().focus_get()
+                Popen(cmd)  # pylint: disable=consider-using-with
+                grab_period = 200
+                # try to get focus back for 200 milliseconds
+                grab_interval = 10
+                # try to get focus back every 10 milliseconds
+
+                def grab_focus(wgt: tk.Widget, remaining_period: int) -> None:
+                    if wgt is None:
+                        return
+                    if not wgt.winfo_exists():
+                        wgt = maintext()
+                    wgt.focus_force()
+                    if remaining_period > 0:
+                        self.after(
+                            grab_interval,
+                            lambda: grab_focus(wgt, remaining_period - grab_interval),
+                        )
+
+                grab_focus(focus_widget, grab_period)
+
+            except OSError:
+                logger.error(
+                    f'Unable to execute "{viewer_path}"\non file "{self.filename}"\nTry configuring viewer in Preferences dialog.'
+                )
+
         # get image area & remove 1 pixel shift
         if self.image is None:
             return
@@ -490,8 +530,9 @@ class MainImage(tk.Frame):
         image = image.resize(
             size=(scaled_width, scaled_height), resample=Image.Resampling.LANCZOS
         )
-        alpha_value = 180 if maintext().is_dark_theme() else 200
-        image.putalpha(alpha_value)  # Reduce contrast by making slightly transparent
+        if not preferences.get(PrefKey.IMAGE_VIEWER_HI_CONTRAST):
+            alpha_value = 180 if maintext().is_dark_theme() else 200
+            image.putalpha(alpha_value)  # Adjust contrast using transparency
         self.imagetk = ImageTk.PhotoImage(image)
         if self.imageid:
             self.canvas.delete(self.imageid)
@@ -977,15 +1018,17 @@ class MainWindow:
 
     def hide_image(self) -> None:
         """Stop showing the current image."""
-        preferences.set(PrefKey.AUTO_IMAGE, False)
+        # preferences.set(PrefKey.AUTO_IMAGE, False)
         self.clear_image()
         root().wm_forget(mainimage())  # type: ignore[arg-type]
         self.paned_window.forget(mainimage())
 
-    def float_image(self, _event: Optional[tk.Event] = None) -> None:
+    def float_image(
+        self, force_show: bool = False, _event: Optional[tk.Event] = None
+    ) -> None:
         """Float the image into a separate window"""
         mainimage().grid_remove()
-        if mainimage().is_image_loaded():
+        if force_show or mainimage().is_image_loaded():
             root().wm_manage(mainimage())
             mainimage().lift()
             # Obscure tk.Wm calls needed because although mainimage has been converted
@@ -1001,10 +1044,12 @@ class MainWindow:
         # It is OK to save image viewer geometry from now on
         mainimage().enable_geometry_storage()
 
-    def dock_image(self, _event: Optional[tk.Event] = None) -> None:
+    def dock_image(
+        self, force_show: bool = False, _event: Optional[tk.Event] = None
+    ) -> None:
         """Dock the image back into the main window"""
         root().wm_forget(mainimage())  # type: ignore[arg-type]
-        if mainimage().is_image_loaded():
+        if force_show or mainimage().is_image_loaded():
             self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
             self.paned_window.sash_place(
                 0, preferences.get(PrefKey.IMAGE_DOCK_SASH_COORD), 0
@@ -1016,7 +1061,7 @@ class MainWindow:
                 pass  # OK - image wasn't being managed by paned_window
         preferences.set(PrefKey.IMAGE_WINDOW_DOCKED, True)
 
-    def load_image(self, filename: str) -> None:
+    def load_image(self, filename: str, force_show: bool = False) -> None:
         """Load the image for the given page.
 
         Args:
@@ -1024,11 +1069,13 @@ class MainWindow:
             force_show: True to force dock or float image
         """
         image_already_loaded = mainimage().is_image_loaded()
-        if mainimage().load_image(filename) and not image_already_loaded:
+        if force_show or mainimage().load_image(filename) and not image_already_loaded:
+            if preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL) and not force_show:
+                return  # External viewer launched from MainImage
             if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
-                self.dock_image()
+                self.dock_image(force_show=force_show)
             else:
-                self.float_image()
+                self.float_image(force_show=force_show)
 
     def clear_image(self) -> None:
         """Clear the image currently being shown."""

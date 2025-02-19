@@ -1,7 +1,7 @@
 """Miscellaneous dialogs."""
 
 import tkinter as tk
-from tkinter import ttk, font
+from tkinter import ttk, font, filedialog
 from typing import Any
 import sys
 import unicodedata
@@ -141,21 +141,62 @@ class PreferencesDialog(ToplevelDialog):
             variable=PersistentBoolean(PrefKey.BELL_VISUAL),
         ).grid(column=2, row=0, sticky="NEW")
 
+        # Image Viewer
+        image_viewer_frame = ttk.LabelFrame(
+            self.top_frame, text="Image Viewer", padding=10
+        )
+        image_viewer_frame.grid(column=0, row=1, sticky="NSEW")
+        image_viewer_frame.columnconfigure(0, weight=1)
+        image_viewer_frame.columnconfigure(1, weight=1)
+
         iv_btn = ttk.Checkbutton(
-            appearance_frame,
-            text="Image Viewer Alert",
+            image_viewer_frame,
+            text="Auto Img Reload Alert",
             variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_ALERT),
         )
-        iv_btn.grid(column=0, row=8, sticky="NEW", pady=5)
+        iv_btn.grid(column=0, row=0, sticky="NEW", pady=5)
         ToolTip(
             iv_btn,
             "Whether to flash the border when Auto Img re-loads the\n"
             "default image after you manually select a different image",
         )
+        ttk.Checkbutton(
+            image_viewer_frame,
+            text="High Contrast Images",
+            variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_HI_CONTRAST),
+        ).grid(column=1, row=0, sticky="NEW", padx=(10, 0), pady=5)
+        ttk.Checkbutton(
+            image_viewer_frame,
+            text="Use External Viewer",
+            variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_EXTERNAL),
+        ).grid(column=0, row=1, sticky="NEW", pady=5)
+        file_name_frame = ttk.Frame(image_viewer_frame)
+        file_name_frame.grid(row=2, column=0, columnspan=2, sticky="NSEW")
+        file_name_frame.columnconfigure(0, weight=1)
+        self.filename_textvariable = tk.StringVar(self, "")
+        ttk.Entry(
+            file_name_frame,
+            textvariable=PersistentString(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH),
+            width=30,
+        ).grid(row=0, column=0, sticky="EW", padx=(0, 2))
+
+        def choose_external_viewer() -> None:
+            """Choose program to view images."""
+            if filename := filedialog.askopenfilename(
+                parent=self, title="Choose Image Viewer"
+            ):
+                preferences.set(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH, filename)
+
+        ttk.Button(
+            file_name_frame,
+            text="Browse...",
+            command=choose_external_viewer,
+            takefocus=False,
+        ).grid(row=0, column=1, sticky="NSEW")
 
         # Wrapping tab
         wrapping_frame = ttk.LabelFrame(self.top_frame, text="Wrapping", padding=10)
-        wrapping_frame.grid(column=0, row=1, sticky="NSEW", pady=(10, 0))
+        wrapping_frame.grid(column=0, row=2, sticky="NSEW", pady=(10, 0))
 
         def add_label_spinbox(row: int, label: str, key: PrefKey, tooltip: str) -> None:
             """Add a label and spinbox to the wrapping frame.
