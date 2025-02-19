@@ -471,7 +471,7 @@ class HighlightColors:
     }
     HTML_TAG_GOOD = {
         "Light": {"foreground": "purple"},
-        "Dark": {"foreground": "purple2"},
+        "Dark": {"foreground": "purple1"},
     }
     HTML_TAG_DIV = {
         "Light": {"foreground": "green"},
@@ -479,7 +479,7 @@ class HighlightColors:
     }
     HTML_TAG_SPAN = {
         "Light": {"foreground": "blue"},
-        "Dark": {"foreground": "blue2"},
+        "Dark": {"foreground": "RoyalBlue2"},
     }
     HTML_TAG_P = {
         "Light": {"foreground": "cyan3"},
