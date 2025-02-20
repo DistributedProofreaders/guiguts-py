@@ -4,7 +4,7 @@ from enum import Enum, auto
 from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found]
 import logging
 import os.path
-from subprocess import Popen
+import subprocess
 import time
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -478,45 +478,56 @@ class MainImage(tk.Frame):
 
     def show_image(self, _event=None):  # type: ignore[no-untyped-def]
         """Show image on the Canvas"""
-        # If using external viewer, spawn it
+        # If using external viewer, spawn a process to run it
         # If internal viewer is shown, image will be loaded in that too
         if preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL):
             viewer_path = preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH)
-            # The following is an attempt to cope with the fact that Windows users
-            # will likely have spaces in viewer_path, and that Mac users may well
-            # use "open -a <appname>" as their viewer_path
+
+            # All 3 OSes can open a file with the default viewer or specific app:
+            # Windows (default):  `start "" <filename>`
+            # Windows (with app): `<app> <filename>`
+            # macOS (default):    `open -g <filename>`
+            # macOS (with app):   `open -g [-a <app>] <filename>`
+            # Linux (default):    `open <filename>`
+            # Linux (with app):   `<app> <filename>`
+
+            # Only Windows needs `shell=True` arg to use with `start`
+            shell = False
+            # Linux/Windows using `<app>` need                        `Popen` instead of `run` to avoid blocking
+            run_func = subprocess.run
+
             if is_windows():
-                cmd = [viewer_path, self.filename]
+                if viewer_path:
+                    cmd = [viewer_path]
+                    run_func = subprocess.Popen
+                else:
+                    cmd = ["start", ""]
+                    shell = True
+            elif is_mac():
+                cmd = ["open", "-g"]  # `-g` to avoid bringing app to foreground
+                if viewer_path:
+                    cmd += ["-a", viewer_path]
             else:
-                cmd = f"{viewer_path} {self.filename}"
+                if viewer_path:
+                    cmd = [viewer_path]
+                    run_func = subprocess.Popen
+                else:
+                    cmd = ["open"]
+            cmd.append(self.filename)
+
+            focus_widget = root().focus_get()
             try:
-                focus_widget = root().focus_get()
-                Popen(cmd)  # pylint: disable=consider-using-with
-                grab_period = 200
-                # try to get focus back for 200 milliseconds
-                grab_interval = 10
-                # try to get focus back every 10 milliseconds
-
-                def grab_focus(wgt: tk.Widget, remaining_period: int) -> None:
-                    if wgt is None:
-                        return
-                    if not wgt.winfo_exists():
-                        wgt = maintext()
-                    wgt.focus_force()
-                    if remaining_period > 0:
-                        self.after(
-                            grab_interval,
-                            lambda: grab_focus(wgt, remaining_period - grab_interval),
-                        )
-
-                grab_focus(focus_widget, grab_period)
-
+                print(cmd, flush=True)
+                run_func(cmd, shell=shell)  # pylint: disable=subprocess-run-check
             except OSError:
                 logger.error(
-                    f'Unable to execute "{viewer_path}"\non file "{self.filename}"\nTry configuring viewer in Preferences dialog.'
+                    f"Unable to execute {cmd}\nTry configuring viewer in Preferences dialog."
                 )
+            # Try to get focus back for 200 milliseconds
+            if not is_mac():
+                self.regrab_focus(focus_widget, 200)
 
-        # get image area & remove 1 pixel shift
+        # Get image area & remove 1 pixel shift
         if self.image is None:
             return
         self.canvas["background"] = themed_style().lookup("TButton", "background")
@@ -543,6 +554,21 @@ class MainImage(tk.Frame):
             image=self.imagetk,
         )
         self.canvas.configure(scrollregion=self.canvas.bbox(self.imageid))
+
+    def regrab_focus(self, focus_widget: tk.Widget, remaining_period: int) -> None:
+        """Grab focus back from external image viewer.
+
+        Args:
+            focus_widget: Widget to return focus to
+            remaining_period: Number of milliseconds remaining in regrab period
+        """
+        # If focus widget no longer exists, then focus in main text instead
+        if focus_widget is None or not focus_widget.winfo_exists():
+            focus_widget = maintext()
+        focus_widget.focus_force()
+        remaining_period -= 10
+        if remaining_period >= 0:
+            self.after(10, lambda: self.regrab_focus(focus_widget, remaining_period))
 
     def wheel_scroll(self, evt: tk.Event) -> None:
         """Scroll image up/down using mouse wheel"""

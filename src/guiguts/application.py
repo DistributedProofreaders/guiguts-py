@@ -219,7 +219,9 @@ class Guiguts:
     def image_dir_check(self) -> None:
         """Check if image dir is set up correctly."""
         if self.file.filename and not (
-            self.file.image_dir and os.path.exists(self.file.image_dir)
+            self.file.image_dir
+            and os.path.isdir(self.file.image_dir)
+            and os.path.isfile(self.file.get_current_image_path())
         ):
             self.file.choose_image_dir()
 
