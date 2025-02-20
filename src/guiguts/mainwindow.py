@@ -1052,46 +1052,30 @@ class MainWindow:
         self.paned_window.forget(mainimage())
         preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, False)
 
-    def float_image(
-        self, force_show: bool = False, _event: Optional[tk.Event] = None
-    ) -> None:
+    def float_image(self, _event: Optional[tk.Event] = None) -> None:
         """Float the image into a separate window"""
         mainimage().grid_remove()
-        if force_show or mainimage().is_image_loaded():
-            root().wm_manage(mainimage())
-            mainimage().lift()
-            # Obscure tk.Wm calls needed because although mainimage has been converted
-            # to a toplevel by Tk, it doesn't appear as though tkinter knows about it,
-            # so can't call mainimage().wm_geometry() or set the size via normal config
-            # methods.
-            tk.Wm.geometry(mainimage(), preferences.get(PrefKey.IMAGE_FLOAT_GEOMETRY))  # type: ignore[call-overload]
-            tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.hide_image)  # type: ignore[call-overload]
-            preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, True)
-        else:
-            root().wm_forget(mainimage())  # type: ignore[arg-type]
-            preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, False)
-        preferences.set(PrefKey.IMAGE_WINDOW_DOCKED, False)
+        root().wm_manage(mainimage())
+        mainimage().lift()
+        # Obscure tk.Wm calls needed because although mainimage has been converted
+        # to a toplevel by Tk, it doesn't appear as though tkinter knows about it,
+        # so can't call mainimage().wm_geometry() or set the size via normal config
+        # methods.
+        tk.Wm.geometry(mainimage(), preferences.get(PrefKey.IMAGE_FLOAT_GEOMETRY))  # type: ignore[call-overload]
+        tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.hide_image)  # type: ignore[call-overload]
+        preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, True)
 
         # It is OK to save image viewer geometry from now on
         mainimage().enable_geometry_storage()
 
-    def dock_image(
-        self, force_show: bool = False, _event: Optional[tk.Event] = None
-    ) -> None:
+    def dock_image(self, _event: Optional[tk.Event] = None) -> None:
         """Dock the image back into the main window"""
         root().wm_forget(mainimage())  # type: ignore[arg-type]
-        if force_show or mainimage().is_image_loaded():
-            self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
-            self.paned_window.sash_place(
-                0, preferences.get(PrefKey.IMAGE_DOCK_SASH_COORD), 0
-            )
-            preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, True)
-        else:
-            try:
-                self.paned_window.forget(mainimage())
-            except tk.TclError:
-                pass  # OK - image wasn't being managed by paned_window
-            preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, False)
+        self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
+        self.paned_window.sash_place(
+            0, preferences.get(PrefKey.IMAGE_DOCK_SASH_COORD), 0
+        )
+        preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, True)
         preferences.set(PrefKey.IMAGE_WINDOW_DOCKED, True)
 
     def load_image(self, filename: str, force_show: bool = False) -> None:
@@ -1106,9 +1090,9 @@ class MainWindow:
             if preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL) and not force_show:
                 return  # External viewer launched from MainImage
             if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
-                self.dock_image(force_show=force_show)
+                self.dock_image()
             else:
-                self.float_image(force_show=force_show)
+                self.float_image()
 
     def clear_image(self) -> None:
         """Clear the image currently being shown."""
