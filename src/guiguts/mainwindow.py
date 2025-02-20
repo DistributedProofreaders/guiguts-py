@@ -493,7 +493,7 @@ class MainImage(tk.Frame):
 
             # Only Windows needs `shell=True` arg to use with `start`
             shell = False
-            # Linux/Windows using `<app>` need                        `Popen` instead of `run` to avoid blocking
+            # Linux/Windows using `<app>` need `Popen` instead of `run` to avoid blocking
             run_func = subprocess.run
 
             if is_windows():
@@ -1041,6 +1041,8 @@ class MainWindow:
             float_func=self.float_image,
             dock_func=self.dock_image,
         )
+        if preferences.get(PrefKey.IMAGE_VIEWER_INTERNAL):
+            root().after_idle(lambda: self.load_image("", force_show=True))
 
     def hide_image(self) -> None:
         """Stop showing the current image."""
@@ -1048,6 +1050,7 @@ class MainWindow:
         self.clear_image()
         root().wm_forget(mainimage())  # type: ignore[arg-type]
         self.paned_window.forget(mainimage())
+        preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, False)
 
     def float_image(
         self, force_show: bool = False, _event: Optional[tk.Event] = None
@@ -1063,8 +1066,10 @@ class MainWindow:
             # methods.
             tk.Wm.geometry(mainimage(), preferences.get(PrefKey.IMAGE_FLOAT_GEOMETRY))  # type: ignore[call-overload]
             tk.Wm.protocol(mainimage(), "WM_DELETE_WINDOW", self.hide_image)  # type: ignore[call-overload]
+            preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, True)
         else:
             root().wm_forget(mainimage())  # type: ignore[arg-type]
+            preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, False)
         preferences.set(PrefKey.IMAGE_WINDOW_DOCKED, False)
 
         # It is OK to save image viewer geometry from now on
@@ -1080,11 +1085,13 @@ class MainWindow:
             self.paned_window.sash_place(
                 0, preferences.get(PrefKey.IMAGE_DOCK_SASH_COORD), 0
             )
+            preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, True)
         else:
             try:
                 self.paned_window.forget(mainimage())
             except tk.TclError:
                 pass  # OK - image wasn't being managed by paned_window
+            preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, False)
         preferences.set(PrefKey.IMAGE_WINDOW_DOCKED, True)
 
     def load_image(self, filename: str, force_show: bool = False) -> None:

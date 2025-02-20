@@ -441,6 +441,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.IMAGE_WINDOW_SHOW, False)
         preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL, False)
         preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH, "")
+        preferences.set_default(PrefKey.IMAGE_VIEWER_INTERNAL, False)
         preferences.set_default(
             PrefKey.SCANNOS_FILENAME,
             str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)),

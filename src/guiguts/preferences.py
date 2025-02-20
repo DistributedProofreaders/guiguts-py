@@ -85,6 +85,7 @@ class PrefKey(StrEnum):
     IMAGE_WINDOW_SHOW = auto()
     IMAGE_VIEWER_EXTERNAL = auto()
     IMAGE_VIEWER_EXTERNAL_PATH = auto()
+    IMAGE_VIEWER_INTERNAL = auto()
     SCANNOS_FILENAME = auto()
     SCANNOS_HISTORY = auto()
     HIGHLIGHT_QUOTBRAC = auto()
