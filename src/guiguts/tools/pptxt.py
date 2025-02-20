@@ -608,9 +608,12 @@ def weird_characters() -> None:
     line_number = 1
     for line in book:
         # Get list of weirdos on this line. That means any character NOT in the regex.
-        weirdos_list = re.findall(r"[^A-Za-z0-9\s.,:;?!\\\-_—–=“”‘’\[\]\(\){}]", line)
+        weirdos_list = re.findall(r"[^A-Za-z0-9\s.,:;?!&\\\-_—–=“”‘’\[\]\(\){}]", line)
         # Update dictionary with the weirdos from the line.
         for weirdo in weirdos_list:
+            # Skip exceptions
+            if weirdo == "*" and line == "       *" * 5:
+                continue
             if weirdo in weirdos_lines_dictionary:
                 weirdos_lines_dictionary[weirdo].append(line_number)
             else:
