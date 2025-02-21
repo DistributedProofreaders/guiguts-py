@@ -7,6 +7,8 @@ import logging
 import importlib.resources
 from importlib.metadata import version
 import os.path
+import platform
+import sys
 from tkinter import messagebox
 from typing import Optional
 import unicodedata
@@ -258,7 +260,14 @@ class Guiguts:
 
     def help_about(self) -> None:
         """Display a 'Help About' dialog."""
-        help_message = """Guiguts - an application to support creation of ebooks for PG
+        help_message = f"""Guiguts - an application to support creation of ebooks for PG
+
+Guiguts version: {version('guiguts')}
+
+Python version: {sys.version}
+Tk/Tcl version: {root().call("info", "patchlevel")}
+OS Platform: {platform.platform()}
+OS Release: {platform.release()}
 
 Copyright Contributors to the Guiguts-py project.
 
