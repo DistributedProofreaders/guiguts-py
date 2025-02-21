@@ -612,7 +612,7 @@ def weird_characters() -> None:
         # Update dictionary with the weirdos from the line.
         for weirdo in weirdos_list:
             # Skip exceptions
-            if weirdo == "*" and line == "       *" * 5:
+            if weirdo == "*" and re.fullmatch(r"( {3,10}\*)\1\1\1\1", line):
                 continue
             if weirdo in weirdos_lines_dictionary:
                 weirdos_lines_dictionary[weirdo].append(line_number)
