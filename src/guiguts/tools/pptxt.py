@@ -608,9 +608,14 @@ def weird_characters() -> None:
     line_number = 1
     for line in book:
         # Get list of weirdos on this line. That means any character NOT in the regex.
-        weirdos_list = re.findall(r"[^A-Za-z0-9\s.,:;?!\\\-_—–=“”‘’\[\]\(\){}]", line)
+        weirdos_list = re.findall(r"[^A-Za-z0-9\s.,:;?!&\\\-_—–=“”‘’\[\]\(\){}]", line)
         # Update dictionary with the weirdos from the line.
         for weirdo in weirdos_list:
+            # Skip exceptions
+            # Thoughtbreak consists of 5 asterisks equally spaced,
+            # and indented by at least 3 spaces.
+            if weirdo == "*" and re.fullmatch(r" {3,}\*( {3,10}\*)\1\1\1", line):
+                continue
             if weirdo in weirdos_lines_dictionary:
                 weirdos_lines_dictionary[weirdo].append(line_number)
             else:
