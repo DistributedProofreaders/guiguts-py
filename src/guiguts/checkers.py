@@ -223,6 +223,7 @@ class CheckerDialog(ToplevelDialog):
         view_options_dialog_class: Optional[type[CheckerViewOptionsDialog]] = None,
         view_options_filters: Optional[list[CheckerFilter]] = None,
         switch_focus_when_clicked: Optional[bool] = None,
+        generic_buttons: bool = True,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -238,6 +239,7 @@ class CheckerDialog(ToplevelDialog):
             clear_on_undo_redo: True to cause dialog to be cleared if Undo/Redo are used.
             view_options_dialog_class: Class to use for a View Options dialog.
             view_options_filters: List of filters to control which messages are shown.
+            process_buttons: Set to False to disable generic Remove/Fix/etc buttons.
         """
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
@@ -315,60 +317,68 @@ class CheckerDialog(ToplevelDialog):
         for col in range(6):
             message_controls_frame.columnconfigure(col, weight=1)
 
-        rem_btn = ttk.Button(
-            message_controls_frame,
-            text="Remove",
-            command=lambda: self.remove_entry_current(all_matching=False),
-        )
-        rem_btn.grid(row=0, column=0, sticky="NSEW")
-        ToolTip(rem_btn, "Remove selected message (right-click)")
-        remall_btn = ttk.Button(
-            message_controls_frame,
-            text="Rem. All",
-            command=lambda: self.remove_entry_current(all_matching=True),
-        )
-        remall_btn.grid(row=0, column=1, sticky="NSEW")
-        ToolTip(
-            remall_btn, "Remove all messages matching selected one (Shift right-click)"
-        )
-        if process_command is not None:
-            fix_btn = ttk.Button(
+        if generic_buttons:
+            rem_btn = ttk.Button(
                 message_controls_frame,
-                text="Fix",
-                command=lambda: self.process_entry_current(all_matching=False),
+                text="Remove",
+                command=lambda: self.remove_entry_current(all_matching=False),
             )
-            fix_btn.grid(row=0, column=2, sticky="NSEW")
-            ToolTip(fix_btn, f"Fix selected problem ({cmd_ctrl_string()} left-click)")
-            fixall_btn = ttk.Button(
+            rem_btn.grid(row=0, column=0, sticky="NSEW")
+            ToolTip(rem_btn, "Remove selected message (right-click)")
+            remall_btn = ttk.Button(
                 message_controls_frame,
-                text="Fix All",
-                command=lambda: self.process_entry_current(all_matching=True),
+                text="Rem. All",
+                command=lambda: self.remove_entry_current(all_matching=True),
             )
-            fixall_btn.grid(row=0, column=3, sticky="NSEW")
+            remall_btn.grid(row=0, column=1, sticky="NSEW")
             ToolTip(
-                fixall_btn,
-                f"Fix all problems matching selected message (Shift {cmd_ctrl_string()} left-click)",
+                remall_btn,
+                "Remove all messages matching selected one (Shift right-click)",
             )
-            fixrem_btn = ttk.Button(
-                message_controls_frame,
-                text="Fix&Rem.",
-                command=lambda: self.process_remove_entry_current(all_matching=False),
-            )
-            fixrem_btn.grid(row=0, column=4, sticky="NSEW")
-            ToolTip(
-                fixrem_btn,
-                f"Fix selected problem & remove message ({cmd_ctrl_string()} right-click)",
-            )
-            fixremall_btn = ttk.Button(
-                message_controls_frame,
-                text="Fix&Rem. All",
-                command=lambda: self.process_remove_entry_current(all_matching=True),
-            )
-            fixremall_btn.grid(row=0, column=5, sticky="NSEW")
-            ToolTip(
-                fixremall_btn,
-                f"Fix and remove all problems matching selected message (Shift {cmd_ctrl_string()} right-click)",
-            )
+            if process_command is not None:
+                fix_btn = ttk.Button(
+                    message_controls_frame,
+                    text="Fix",
+                    command=lambda: self.process_entry_current(all_matching=False),
+                )
+                fix_btn.grid(row=0, column=2, sticky="NSEW")
+                ToolTip(
+                    fix_btn, f"Fix selected problem ({cmd_ctrl_string()} left-click)"
+                )
+                fixall_btn = ttk.Button(
+                    message_controls_frame,
+                    text="Fix All",
+                    command=lambda: self.process_entry_current(all_matching=True),
+                )
+                fixall_btn.grid(row=0, column=3, sticky="NSEW")
+                ToolTip(
+                    fixall_btn,
+                    f"Fix all problems matching selected message (Shift {cmd_ctrl_string()} left-click)",
+                )
+                fixrem_btn = ttk.Button(
+                    message_controls_frame,
+                    text="Fix&Rem.",
+                    command=lambda: self.process_remove_entry_current(
+                        all_matching=False
+                    ),
+                )
+                fixrem_btn.grid(row=0, column=4, sticky="NSEW")
+                ToolTip(
+                    fixrem_btn,
+                    f"Fix selected problem & remove message ({cmd_ctrl_string()} right-click)",
+                )
+                fixremall_btn = ttk.Button(
+                    message_controls_frame,
+                    text="Fix&Rem. All",
+                    command=lambda: self.process_remove_entry_current(
+                        all_matching=True
+                    ),
+                )
+                fixremall_btn.grid(row=0, column=5, sticky="NSEW")
+                ToolTip(
+                    fixremall_btn,
+                    f"Fix and remove all problems matching selected message (Shift {cmd_ctrl_string()} right-click)",
+                )
 
         sort_frame = ttk.Frame(message_controls_frame)
         sort_frame.grid(row=0, column=6, sticky="NSE", pady=5)
