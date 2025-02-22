@@ -506,10 +506,10 @@ class MainImage(tk.Frame):
             elif is_mac():
                 cmd = ["open", "-g"]  # `-g` to avoid bringing app to foreground
                 if viewer_path:
-                    cmd += ["-a", viewer_path]
+                    cmd += ["-a"] + viewer_path.split()
             else:
                 if viewer_path:
-                    cmd = [viewer_path]
+                    cmd = viewer_path.split()
                     run_func = subprocess.Popen
                 else:
                     cmd = ["open"]
@@ -517,7 +517,6 @@ class MainImage(tk.Frame):
 
             focus_widget = root().focus_get()
             try:
-                print(cmd, flush=True)
                 run_func(cmd, shell=shell)  # pylint: disable=subprocess-run-check
             except OSError:
                 logger.error(
