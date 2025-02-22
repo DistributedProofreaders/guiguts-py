@@ -39,6 +39,7 @@ class Root(tk.Tk):
             value=preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
             == RootWindowState.FULLSCREEN
         )
+        self.image_window_show = PersistentBoolean(PrefKey.IMAGE_WINDOW_SHOW)
         self.image_window_docked_state = PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED)
         self.auto_image_state = PersistentBoolean(PrefKey.AUTO_IMAGE)
         self.invert_image_state = PersistentBoolean(PrefKey.IMAGE_INVERT)

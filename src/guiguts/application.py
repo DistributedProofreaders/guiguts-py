@@ -204,20 +204,26 @@ class Guiguts:
 
             root().after(200, self.auto_image_check)
 
-    def show_image(self) -> None:
+    def see_image(self) -> None:
         """Show the image corresponding to current location."""
         self.image_dir_check()
         self.mainwindow.load_image(self.file.get_current_image_path())
 
-    def hide_image(self) -> None:
-        """Hide the image."""
-        preferences.set(PrefKey.AUTO_IMAGE, False)
+    def show_image_viewer(self) -> None:
+        """Show the image viewer."""
+        self.image_dir_check()
+        self.mainwindow.load_image(self.file.get_current_image_path(), force_show=True)
+
+    def hide_image_viewer(self) -> None:
+        """Hide the image viewer."""
         self.mainwindow.hide_image()
 
     def image_dir_check(self) -> None:
         """Check if image dir is set up correctly."""
         if self.file.filename and not (
-            self.file.image_dir and os.path.exists(self.file.image_dir)
+            self.file.image_dir
+            and os.path.isdir(self.file.image_dir)
+            and os.path.isfile(self.file.get_current_image_path())
         ):
             self.file.choose_image_dir()
 
@@ -326,10 +332,6 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Close currently loaded file and associated image."""
         self.file.close_file()
         self.mainwindow.clear_image()
-
-    def load_current_image(self) -> None:
-        """Load image corresponding to current cursor position"""
-        self.mainwindow.load_image(self.file.get_current_image_path())
 
     def show_help_manual(self) -> None:
         """Display the manual."""
@@ -444,6 +446,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.IMAGE_DOCK_SASH_COORD, 300)
         preferences.set_default(PrefKey.IMAGE_SCALE_FACTOR, 0.5)
         preferences.set_default(PrefKey.IMAGE_VIEWER_ALERT, True)
+        preferences.set_default(PrefKey.IMAGE_VIEWER_HI_CONTRAST, False)
+        preferences.set_default(PrefKey.IMAGE_WINDOW_SHOW, False)
+        preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL, False)
+        preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH, "")
+        preferences.set_default(PrefKey.IMAGE_VIEWER_INTERNAL, False)
         preferences.set_default(
             PrefKey.SCANNOS_FILENAME,
             str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)),
@@ -832,8 +839,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             lambda: maintext().show_peer(),
             lambda: maintext().hide_peer(),
         )
+        view_menu.add_separator()
+        view_menu.add_button("~Show Image Viewer", self.show_image_viewer)
+        view_menu.add_button("~Hide Image Viewer", self.hide_image_viewer)
         view_menu.add_checkbox(
-            "~Dock Image",
+            "~Dock Image Viewer",
             root().image_window_docked_state,
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
@@ -842,8 +852,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
             "~Auto Image",
             root().auto_image_state,
         )
-        view_menu.add_button("~See Image", self.show_image)
-        view_menu.add_button("~Hide Image", self.hide_image)
+        view_menu.add_button("~See Image", self.see_image)
         view_menu.add_checkbox(
             "~Invert Image",
             root().invert_image_state,
@@ -932,7 +941,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         the_statusbar.add_binding(
             "see img",
             "ButtonRelease-1",
-            self.show_image,
+            self.see_image,
         )
         the_statusbar.add_binding(
             "see img",
