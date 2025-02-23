@@ -1,11 +1,12 @@
 """Handle main text widget"""
 
+from html.parser import HTMLParser
 import logging
 import subprocess
 import tkinter as tk
 from tkinter import ttk, Text
 from tkinter import font as tk_font
-from typing import Any, Callable, Optional, Literal, Generator, cast
+from typing import Any, Callable, Optional, Literal, Generator
 from enum import auto, StrEnum
 
 import regex as re
@@ -18,7 +19,6 @@ from guiguts.utilities import (
     TextWrapper,
 )
 from guiguts.widgets import (
-    theme_set_tk_widget_colors,
     themed_style,
     register_focus_widget,
     grab_focus,
@@ -277,6 +277,99 @@ class HighlightTag(StrEnum):
     COLUMN_RULER = auto()
     SEARCH = auto()
     PROOFERCOMMENT = auto()
+    HTML_TAG_BAD = auto()
+    HTML_TAG_GOOD = auto()
+    HTML_TAG_DIV = auto()
+    HTML_TAG_SPAN = auto()
+    HTML_TAG_P = auto()
+    HTML_TAG_A = auto()
+
+
+# Dictionary to map HTML tags to HighlightTags
+HTML_TAG_TAGS = {
+    "div": HighlightTag.HTML_TAG_DIV,
+    "span": HighlightTag.HTML_TAG_SPAN,
+    "p": HighlightTag.HTML_TAG_P,
+    "a": HighlightTag.HTML_TAG_A,
+    "!DOCTYPE": HighlightTag.HTML_TAG_GOOD,
+    "abbr": HighlightTag.HTML_TAG_GOOD,
+    "area": HighlightTag.HTML_TAG_GOOD,
+    "article": HighlightTag.HTML_TAG_GOOD,
+    "audio": HighlightTag.HTML_TAG_GOOD,
+    "b": HighlightTag.HTML_TAG_GOOD,
+    "bdi": HighlightTag.HTML_TAG_GOOD,
+    "bdo": HighlightTag.HTML_TAG_GOOD,
+    "blockquote": HighlightTag.HTML_TAG_GOOD,
+    "body": HighlightTag.HTML_TAG_GOOD,
+    "br": HighlightTag.HTML_TAG_GOOD,
+    "caption": HighlightTag.HTML_TAG_GOOD,
+    "cite": HighlightTag.HTML_TAG_GOOD,
+    "code": HighlightTag.HTML_TAG_GOOD,
+    "col": HighlightTag.HTML_TAG_GOOD,
+    "colgroup": HighlightTag.HTML_TAG_GOOD,
+    "dd": HighlightTag.HTML_TAG_GOOD,
+    "del": HighlightTag.HTML_TAG_GOOD,
+    "dfn": HighlightTag.HTML_TAG_GOOD,
+    "dl": HighlightTag.HTML_TAG_GOOD,
+    "dt": HighlightTag.HTML_TAG_GOOD,
+    "em": HighlightTag.HTML_TAG_GOOD,
+    "figcaption": HighlightTag.HTML_TAG_GOOD,
+    "figure": HighlightTag.HTML_TAG_GOOD,
+    "footer": HighlightTag.HTML_TAG_GOOD,
+    "h1": HighlightTag.HTML_TAG_GOOD,
+    "h2": HighlightTag.HTML_TAG_GOOD,
+    "h3": HighlightTag.HTML_TAG_GOOD,
+    "h4": HighlightTag.HTML_TAG_GOOD,
+    "h5": HighlightTag.HTML_TAG_GOOD,
+    "h6": HighlightTag.HTML_TAG_GOOD,
+    "head": HighlightTag.HTML_TAG_GOOD,
+    "header": HighlightTag.HTML_TAG_GOOD,
+    "hgroup": HighlightTag.HTML_TAG_GOOD,
+    "hr": HighlightTag.HTML_TAG_GOOD,
+    "html": HighlightTag.HTML_TAG_GOOD,
+    "i": HighlightTag.HTML_TAG_GOOD,
+    "img": HighlightTag.HTML_TAG_GOOD,
+    "ins": HighlightTag.HTML_TAG_GOOD,
+    "kbd": HighlightTag.HTML_TAG_GOOD,
+    "legend": HighlightTag.HTML_TAG_GOOD,
+    "li": HighlightTag.HTML_TAG_GOOD,
+    "link": HighlightTag.HTML_TAG_GOOD,
+    "main": HighlightTag.HTML_TAG_GOOD,
+    "map": HighlightTag.HTML_TAG_GOOD,
+    "mark": HighlightTag.HTML_TAG_GOOD,
+    "meta": HighlightTag.HTML_TAG_GOOD,
+    "ol": HighlightTag.HTML_TAG_GOOD,
+    "optgroup": HighlightTag.HTML_TAG_GOOD,
+    "picture": HighlightTag.HTML_TAG_GOOD,
+    "pre": HighlightTag.HTML_TAG_GOOD,
+    "q": HighlightTag.HTML_TAG_GOOD,
+    "rp": HighlightTag.HTML_TAG_GOOD,
+    "rt": HighlightTag.HTML_TAG_GOOD,
+    "ruby": HighlightTag.HTML_TAG_GOOD,
+    "s": HighlightTag.HTML_TAG_GOOD,
+    "section": HighlightTag.HTML_TAG_GOOD,
+    "small": HighlightTag.HTML_TAG_GOOD,
+    "source": HighlightTag.HTML_TAG_GOOD,
+    "strong": HighlightTag.HTML_TAG_GOOD,
+    "style": HighlightTag.HTML_TAG_GOOD,
+    "sub": HighlightTag.HTML_TAG_GOOD,
+    "summary": HighlightTag.HTML_TAG_GOOD,
+    "sup": HighlightTag.HTML_TAG_GOOD,
+    "svg": HighlightTag.HTML_TAG_GOOD,
+    "table": HighlightTag.HTML_TAG_GOOD,
+    "tbody": HighlightTag.HTML_TAG_GOOD,
+    "td": HighlightTag.HTML_TAG_GOOD,
+    "tfoot": HighlightTag.HTML_TAG_GOOD,
+    "th": HighlightTag.HTML_TAG_GOOD,
+    "thead": HighlightTag.HTML_TAG_GOOD,
+    "title": HighlightTag.HTML_TAG_GOOD,
+    "tr": HighlightTag.HTML_TAG_GOOD,
+    "track": HighlightTag.HTML_TAG_GOOD,
+    "u": HighlightTag.HTML_TAG_GOOD,
+    "ul": HighlightTag.HTML_TAG_GOOD,
+    "var": HighlightTag.HTML_TAG_GOOD,
+    "wbr": HighlightTag.HTML_TAG_GOOD,
+}
 
 
 class HighlightColors:
@@ -293,83 +386,108 @@ class HighlightColors:
 
     # Must be a definition for each available theme
     QUOTEMARK = {
-        "Light": {"bg": "#a08dfc", "fg": "black"},
-        "Dark": {"bg": "darkmagenta", "fg": "white"},
+        "Light": {"background": "#a08dfc", "foreground": "black"},
+        "Dark": {"background": "darkmagenta", "foreground": "white"},
     }
 
     SPOTLIGHT = {
-        "Light": {"bg": "orange", "fg": "black"},
-        "Dark": {"bg": "darkorange", "fg": "white"},
+        "Light": {"background": "orange", "foreground": "black"},
+        "Dark": {"background": "darkorange", "foreground": "white"},
     }
 
     PAREN = {
-        "Light": {"bg": "violet", "fg": "white"},
-        "Dark": {"bg": "mediumpurple", "fg": "white"},
+        "Light": {"background": "violet", "foreground": "white"},
+        "Dark": {"background": "mediumpurple", "foreground": "white"},
     }
 
     CURLY_BRACKET = {
-        "Light": {"bg": "blue", "fg": "white"},
-        "Dark": {"bg": "blue", "fg": "white"},
+        "Light": {"background": "blue", "foreground": "white"},
+        "Dark": {"background": "blue", "foreground": "white"},
     }
 
     SQUARE_BRACKET = {
-        "Light": {"bg": "purple", "fg": "white"},
-        "Dark": {"bg": "purple", "fg": "white"},
+        "Light": {"background": "purple", "foreground": "white"},
+        "Dark": {"background": "purple", "foreground": "white"},
     }
 
     STRAIGHT_DOUBLE_QUOTE = {
-        "Light": {"bg": "green", "fg": "white"},
-        "Dark": {"bg": "green", "fg": "white"},
+        "Light": {"background": "green", "foreground": "white"},
+        "Dark": {"background": "green", "foreground": "white"},
     }
 
     CURLY_DOUBLE_QUOTE = {
-        "Light": {"bg": "limegreen", "fg": "white"},
-        "Dark": {"bg": "teal", "fg": "white"},
+        "Light": {"background": "limegreen", "foreground": "white"},
+        "Dark": {"background": "teal", "foreground": "white"},
     }
 
     STRAIGHT_SINGLE_QUOTE = {
-        "Light": {"bg": "grey", "fg": "white"},
-        "Dark": {"bg": "sienna", "fg": "white"},
+        "Light": {"background": "grey", "foreground": "white"},
+        "Dark": {"background": "sienna", "foreground": "white"},
     }
 
     CURLY_SINGLE_QUOTE = {
-        "Light": {"bg": "dodgerblue", "fg": "white"},
-        "Dark": {"bg": "#b23e0c", "fg": "white"},
+        "Light": {"background": "dodgerblue", "foreground": "white"},
+        "Dark": {"background": "#b23e0c", "foreground": "white"},
     }
 
     ALIGNCOL = {
-        "Light": {"bg": "greenyellow", "fg": "black"},
-        "Dark": {"bg": "green", "fg": "white"},
+        "Light": {"background": "greenyellow", "foreground": "black"},
+        "Dark": {"background": "green", "foreground": "white"},
     }
 
     CURSOR_LINE = {
-        "Light": {"bg": "#efefef", "fg": "black"},
-        "Dark": {"bg": "#303030", "fg": "white"},
+        "Light": {"background": "#efefef", "foreground": "black"},
+        "Dark": {"background": "#303030", "foreground": "white"},
     }
 
     COLUMN_RULER = {
-        "Light": {"bg": "#A6CDFF", "fg": "black"},
-        "Dark": {"bg": "#324F78", "fg": "white"},
+        "Light": {"background": "#A6CDFF", "foreground": "black"},
+        "Dark": {"background": "#324F78", "foreground": "white"},
     }
 
     SEARCH = {
         "Light": {
-            "bg": "#f0f0f0",
-            "fg": "#a8a8a8",
+            "background": "#f0f0f0",
+            "foreground": "#a8a8a8",
             "relief": "ridge",
             "borderwidth": "2",
         },
         "Dark": {
-            "bg": "#0f0f0f",
-            "fg": "#8a8a8a",
+            "background": "#0f0f0f",
+            "foreground": "#8a8a8a",
             "relief": "ridge",
             "borderwidth": "2",
         },
     }
 
     PROOFERCOMMENT = {
-        "Light": {"bg": "LightYellow", "fg": "Red"},
-        "Dark": {"bg": "#1C1C1C", "fg": "DarkOrange"},
+        "Light": {"background": "LightYellow", "foreground": "Red"},
+        "Dark": {"background": "#1C1C1C", "foreground": "DarkOrange"},
+    }
+
+    HTML_TAG_BAD = {
+        "Light": {"foreground": "red"},
+        "Dark": {"foreground": "red2"},
+    }
+    HTML_TAG_GOOD = {
+        "Light": {"foreground": "purple"},
+        "Dark": {"foreground": "purple1"},
+    }
+    HTML_TAG_DIV = {
+        "Light": {"foreground": "green"},
+        "Dark": {"foreground": "green2"},
+    }
+    HTML_TAG_SPAN = {
+        "Light": {"foreground": "blue"},
+        "Dark": {"foreground": "RoyalBlue2"},
+    }
+    HTML_TAG_P = {
+        "Light": {"foreground": "cyan3"},
+        "Dark": {"foreground": "cyan2"},
+    }
+    HTML_TAG_A = {
+        "Light": {"foreground": "gold4"},
+        "Dark": {"foreground": "gold2"},
     }
 
 
@@ -542,9 +660,10 @@ class MainText(tk.Text):
             wrap=self["wrap"],
         )
         self.peer.bind(
-            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self.peer)
+            "<<ThemeChanged>>",
+            lambda _event: self.theme_set_tk_widget_colors(self.peer),
         )
-        theme_set_tk_widget_colors(self.peer)
+        self.theme_set_tk_widget_colors(self.peer)
 
         self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
         self.peer_linenumbers.grid(column=0, row=1, sticky="NSEW")
@@ -796,7 +915,7 @@ class MainText(tk.Text):
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
         self.bind_event(
-            "<<ThemeChanged>>", lambda _event: theme_set_tk_widget_colors(self)
+            "<<ThemeChanged>>", lambda _event: self.theme_set_tk_widget_colors(self)
         )
 
         # Fix macOS text selection bug
@@ -851,6 +970,35 @@ class MainText(tk.Text):
     def do_nothing(self) -> None:
         """The only winning move is not to play."""
         return
+
+    def theme_set_tk_widget_colors(self, widget: tk.Text) -> None:
+        """Set bg & fg colors of a Text (non-themed) widget to match
+        the theme colors.
+
+        Args:
+            widget: The widget to be customized.
+        """
+        dark_bg = "gray10"
+        dark_fg = "white"
+        light_bg = "gray90"
+        light_fg = "black"
+        theme_name = preferences.get(PrefKey.THEME_NAME)
+        if theme_name == "Default":
+            theme_name = "Dark" if self.is_dark_theme() else "Light"
+        if theme_name == "Dark":
+            widget.configure(
+                background=dark_bg,
+                foreground=dark_fg,
+                insertbackground=dark_fg,
+                highlightbackground=dark_bg,
+            )
+        elif theme_name == "Light":
+            widget.configure(
+                background=light_bg,
+                foreground=light_fg,
+                insertbackground=light_fg,
+                highlightbackground=light_fg,
+            )
 
     def focus_widget(self) -> tk.Text:
         """Return whether main text or peer last had focus.
@@ -1010,6 +1158,7 @@ class MainText(tk.Text):
             self.root.after_idle(self.highlight_cursor_line)
             self.root.after_idle(self.highlight_search)
             self.root.after_idle(self.highlight_proofercomment)
+            self.root.after_idle(self.highlight_html_tags)
             self.numbers_need_updating = True
 
     def save_sash_coords(self) -> None:
@@ -2955,8 +3104,8 @@ class MainText(tk.Text):
 
     def is_dark_theme(self) -> bool:
         """Returns True if theme is dark, which is assumed to be the case if
-        the brightness of the text color is greater than half strength (mid-gray)."""
-        text_color = maintext().cget("foreground")
+        the brightness of button text color is greater than half strength (mid-gray)."""
+        text_color = themed_style().lookup("TButton", "foreground")
         rgb_sum = sum(self.winfo_rgb(text_color))  # 0-65535 for each component
         return rgb_sum > 12767 * 3
 
@@ -2967,28 +3116,10 @@ class MainText(tk.Text):
 
         Args:
             tag_name: Tag to be configured.
-            tag_colors: Dictionary of fg/bg colors for each theme.
+            tag_colors: Dictionary of attributes for each theme.
         """
-        if self.dark_theme:
-            theme = "Dark"
-        else:
-            theme = "Light"
-
-        self.tag_configure(
-            tag_name,
-            background=tag_colors[theme]["bg"],
-            foreground=tag_colors[theme]["fg"],
-        )
-        if "borderwidth" in tag_colors[theme]:
-            self.tag_configure(tag_name, borderwidth=tag_colors[theme]["borderwidth"])
-        if "relief" in tag_colors[theme]:
-            self.tag_configure(
-                tag_name,
-                relief=cast(
-                    Literal["raised", "sunken", "flat", "ridge", "solid", "groove"],
-                    tag_colors[theme]["relief"],
-                ),
-            )
+        theme = "Dark" if self.dark_theme else "Light"
+        self.tag_configure(tag_name, **tag_colors[theme])
 
     def highlight_selection(
         self,
@@ -3428,6 +3559,63 @@ class MainText(tk.Text):
         """Remove proofer comment-related highlights"""
         self.tag_remove(HighlightTag.PROOFERCOMMENT, "1.0", tk.END)
 
+    def highlight_html_tags_callback(self, value: bool) -> None:
+        """Callback when highlight HTML tags state is changed."""
+        if value:
+            self.highlight_html_tags()
+        else:
+            self.remove_highlights_html_tags()
+
+    def highlight_html_tags(self) -> None:
+        """Highlight visible HTML tags in text file."""
+        if not preferences.get(PrefKey.HIGHLIGHT_HTML_TAGS):
+            return
+        self.remove_highlights_html_tags()
+        self.highlight_html_tags_in_viewport(self)
+        if PrefKey.SPLIT_TEXT_WINDOW:
+            self.highlight_html_tags_in_viewport(self.peer)
+
+    def highlight_html_tags_in_viewport(self, viewport: Text) -> None:
+        """Highlight visible HTML tags in given viewport."""
+        vp_range = self.get_screen_window_coordinates(viewport)
+
+        class HTMLParserTags(HTMLParser):
+            """Class to parse and tk-tag HTML tags in a section of the file."""
+
+            def handle_starttag(
+                self, tag: str, _attrs: list[tuple[str, str | None]]
+            ) -> None:
+                """Handle an HTML start tag"""
+                tag_text = self.get_starttag_text()
+                if tag_text is None:
+                    return
+                self.handle_tag(tag, len(tag_text))
+
+            def handle_endtag(self, tag: str) -> None:
+                """Handle an HTML end tag"""
+                self.handle_tag(tag, len(tag) + 3)
+
+            def handle_tag(self, tag: str, tag_len: int) -> None:
+                """Highlight an HTML tag"""
+                line, col = self.getpos()
+                start = f"{vp_range.start.row - 1 + line}.{col}"
+                end = f"{start}+{tag_len}c"
+                try:
+                    highlight_tag = HTML_TAG_TAGS[tag]
+                except KeyError:
+                    highlight_tag = HighlightTag.HTML_TAG_BAD
+                viewport.tag_add(highlight_tag, start, end)
+
+        parser = HTMLParserTags()
+        parser.feed(self.get(vp_range.start.index(), vp_range.end.index()))
+        parser.close()
+
+    def remove_highlights_html_tags(self) -> None:
+        """Remove HTML tag highlighting in text file."""
+        self.tag_remove(HighlightTag.HTML_TAG_BAD, "1.0", tk.END)
+        for tag in HTML_TAG_TAGS.values():
+            self.tag_remove(tag, "1.0", tk.END)
+
     def highlight_configure_tags(self, first_run: bool = False) -> None:
         """Configure highlight tags with colors based on the current theme.
         On first run, will also initialize the tag stack order.
@@ -3459,9 +3647,9 @@ class MainText(tk.Text):
         #
         for tag, colors in (
             (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
-            (HighlightTag.SEARCH, HighlightColors.SEARCH),
             (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
             (HighlightTag.PROOFERCOMMENT, HighlightColors.PROOFERCOMMENT),
+            (HighlightTag.SEARCH, HighlightColors.SEARCH),
             (HighlightTag.PAREN, HighlightColors.PAREN),
             (HighlightTag.CURLY_BRACKET, HighlightColors.CURLY_BRACKET),
             (HighlightTag.SQUARE_BRACKET, HighlightColors.SQUARE_BRACKET),
@@ -3469,6 +3657,12 @@ class MainText(tk.Text):
             (HighlightTag.CURLY_DOUBLE_QUOTE, HighlightColors.CURLY_DOUBLE_QUOTE),
             (HighlightTag.STRAIGHT_SINGLE_QUOTE, HighlightColors.STRAIGHT_SINGLE_QUOTE),
             (HighlightTag.CURLY_SINGLE_QUOTE, HighlightColors.CURLY_SINGLE_QUOTE),
+            (HighlightTag.HTML_TAG_BAD, HighlightColors.HTML_TAG_BAD),
+            (HighlightTag.HTML_TAG_GOOD, HighlightColors.HTML_TAG_GOOD),
+            (HighlightTag.HTML_TAG_DIV, HighlightColors.HTML_TAG_DIV),
+            (HighlightTag.HTML_TAG_SPAN, HighlightColors.HTML_TAG_SPAN),
+            (HighlightTag.HTML_TAG_P, HighlightColors.HTML_TAG_P),
+            (HighlightTag.HTML_TAG_A, HighlightColors.HTML_TAG_A),
             (HighlightTag.ALIGNCOL, HighlightColors.ALIGNCOL),
             (HighlightTag.CURSOR_LINE, HighlightColors.CURSOR_LINE),
         ):
