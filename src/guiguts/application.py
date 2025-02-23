@@ -853,6 +853,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         html_menu.add_button("HTML5 ~Validator (online)...", html_validator_check)
         html_menu.add_button("~CSS Validator (online)...", css_validator_check)
         html_menu.add_button("HTML ~Link Checker...", html_link_check)
+        html_menu.add_separator()
+        html_menu.add_button(
+            "~PP Workbench (www)",
+            lambda: webbrowser.open("https://www.pgdp.net/ppwb/"),
+        )
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
@@ -898,10 +903,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         """Create the Help menu."""
         help_menu = Menu(menubar(), "~Help")
         help_menu.add_button(
-            "Guiguts ~Manual", self.show_help_manual, "F1", force_main_only=True
+            "Guiguts ~Manual (www)", self.show_help_manual, "F1", force_main_only=True
         )
         help_menu.add_button("About ~Guiguts", self.help_about)
-        help_menu.add_button("~Regex Quick Reference", self.show_help_regex)
+        help_menu.add_button("~Regex Quick Reference (www)", self.show_help_regex)
         help_menu.add_button(
             "List of ~Compose Sequences", ComposeHelpDialog.show_dialog
         )
