@@ -127,7 +127,6 @@ class CheckerViewOptionsDialog(ToplevelDialog):
         check_frame.grid(row=0, column=0)
         max_height = 15  # Don't want too many checkbuttons per column
         for row, option_filter in enumerate(self.checker_dialog.view_options_filters):
-
             check_var = tk.BooleanVar(value=option_filter.on)
 
             def btn_clicked(row: int = row, var: tk.BooleanVar = check_var) -> None:
@@ -690,12 +689,10 @@ class CheckerDialog(ToplevelDialog):
 
         Args:
             hf_type: Either header or footer type
-            headfoot_lines: Section header or footer (tuple, list, or string with newlines)
+            headfoot_lines: Section header or footer lines
         """
         assert hf_type in (CheckerEntryType.HEADER, CheckerEntryType.FOOTER)
         self.new_section()
-        if isinstance(headfoot_lines, str):
-            headfoot_lines = headfoot_lines.split("\n")
         for line in headfoot_lines:
             self.add_entry(line, None, None, None, hf_type)
         self.new_section()
@@ -704,7 +701,7 @@ class CheckerDialog(ToplevelDialog):
         """Add header to dialog.
 
         Args:
-            header_lines: strings to add as header lines (strings may contain newlines)
+            header_lines: Strings to add as header lines
         """
         self._add_headfoot(CheckerEntryType.HEADER, *header_lines)
 
@@ -712,7 +709,7 @@ class CheckerDialog(ToplevelDialog):
         """Add footer to dialog.
 
         Args:
-            footer_lines: strings to add as footer lines (strings may contain newlines)
+            footer_lines: Strings to add as footer lines
         """
         self._add_headfoot(CheckerEntryType.FOOTER, *footer_lines)
 
