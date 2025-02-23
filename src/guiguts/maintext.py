@@ -980,7 +980,7 @@ class MainText(tk.Text):
         """
         dark_bg = "gray10"
         dark_fg = "white"
-        light_bg = "gray90"
+        light_bg = "gray98"
         light_fg = "black"
         theme_name = preferences.get(PrefKey.THEME_NAME)
         if theme_name == "Default":
