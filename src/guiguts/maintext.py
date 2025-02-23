@@ -3694,7 +3694,6 @@ class MainText(tk.Text):
         """Highlight search matches during redraw."""
         self.remove_highlights_search()
         if self.search_highlight_active.get():
-
             self.highlight_search_in_viewport(self)
             if PrefKey.SPLIT_TEXT_WINDOW:
                 self.highlight_search_in_viewport(self.peer)

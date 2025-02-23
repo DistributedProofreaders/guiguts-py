@@ -28,6 +28,11 @@ HTML Convert
     
 .. automodule:: html_convert
  
+HTML Tools
+==========
+    
+.. automodule:: html_tools
+ 
 Illo/Sidenote Fixup
 ===================
     
@@ -116,6 +121,11 @@ Levenshtein
 ===========
     
 .. automodule:: tools.levenshtein
+
+PPhtml
+======
+    
+.. automodule:: tools.pphtml
 
 PPtxt
 =====
