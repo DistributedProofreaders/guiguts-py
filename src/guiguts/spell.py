@@ -74,8 +74,8 @@ class SpellCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find spelling error",
-                    "Right click: Remove spelling error from list",
-                    "Shift Right click: Remove all occurrences of spelling error from list",
+                    "Right click: Skip spelling error",
+                    "Shift Right click: Skip all matching spelling errors",
                     f"With {cmd_ctrl_string()} key: Also add spelling to project dictionary",
                 ]
             ),

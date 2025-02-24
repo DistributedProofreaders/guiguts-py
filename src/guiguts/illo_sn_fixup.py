@@ -70,8 +70,8 @@ class IlloSNCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     f"Left click: Select & find {tag_type} tag",
-                    "Right click: Remove item from list",
-                    "Shift-Right click: Remove all matching items",
+                    "Right click: Hide item",
+                    "Shift-Right click: Also hide all matching items",
                 ]
             ),
             **kwargs,

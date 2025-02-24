@@ -60,8 +60,8 @@ class LevenshteinCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find highlighted word in file",
-                    "Right click: Remove line with highlighted word from list",
-                    "Shift Right click: Also remove all matching lines from list",
+                    "Right click: Hide line in list",
+                    "Shift Right click: Also Hide all matching lines in list",
                 ]
             ),
             **kwargs,

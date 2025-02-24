@@ -566,7 +566,8 @@ def html_validator_check() -> None:
                 tooltip="\n".join(
                     [
                         "Left click: Select & find validation error",
-                        "Right click: Remove validation error from this list",
+                        "Right click: Hide validation error",
+                        "Shift Right click: Also hide all matching validation errors",
                     ]
                 ),
                 **kwargs,
@@ -694,7 +695,8 @@ def html_link_check() -> None:
                 tooltip="\n".join(
                     [
                         "Left click: Select & find issue",
-                        "Right click: Remove issue from this list",
+                        "Right click: Hide issue",
+                        "Shift Right click: Also hide all matching issues",
                     ]
                 ),
                 **kwargs,

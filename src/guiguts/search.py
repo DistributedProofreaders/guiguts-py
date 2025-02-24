@@ -461,8 +461,8 @@ class SearchDialog(ToplevelDialog):
                     tooltip="\n".join(
                         [
                             "Left click: Select & find string",
-                            "Right click: Remove string from this list",
-                            "Shift Right click: Remove all occurrences of string from this list",
+                            "Right click: Hide string from this list",
+                            "Shift Right click: Hide all occurrences of string in this list",
                         ]
                     ),
                     **kwargs,

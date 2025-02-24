@@ -320,20 +320,20 @@ class CheckerDialog(ToplevelDialog):
         if generic_buttons:
             rem_btn = ttk.Button(
                 message_controls_frame,
-                text="Remove",
+                text="Hide",
                 command=lambda: self.remove_entry_current(all_matching=False),
             )
             rem_btn.grid(row=0, column=0, sticky="NSEW")
-            ToolTip(rem_btn, "Remove selected message (right-click)")
+            ToolTip(rem_btn, "Hide selected message (right-click)")
             remall_btn = ttk.Button(
                 message_controls_frame,
-                text="Rem. All",
+                text="Hide All",
                 command=lambda: self.remove_entry_current(all_matching=True),
             )
             remall_btn.grid(row=0, column=1, sticky="NSEW")
             ToolTip(
                 remall_btn,
-                "Remove all messages matching selected one (Shift right-click)",
+                "Hide all messages matching selected one (Shift right-click)",
             )
             if process_command is not None:
                 fix_btn = ttk.Button(
@@ -357,7 +357,7 @@ class CheckerDialog(ToplevelDialog):
                 )
                 fixrem_btn = ttk.Button(
                     message_controls_frame,
-                    text="Fix&Rem.",
+                    text="Fix&Hide",
                     command=lambda: self.process_remove_entry_current(
                         all_matching=False
                     ),
@@ -365,11 +365,11 @@ class CheckerDialog(ToplevelDialog):
                 fixrem_btn.grid(row=0, column=4, sticky="NSEW")
                 ToolTip(
                     fixrem_btn,
-                    f"Fix selected problem & remove message ({cmd_ctrl_string()} right-click)",
+                    f"Fix selected problem & hide message ({cmd_ctrl_string()} right-click)",
                 )
                 fixremall_btn = ttk.Button(
                     message_controls_frame,
-                    text="Fix&Rem. All",
+                    text="Fix&Hide All",
                     command=lambda: self.process_remove_entry_current(
                         all_matching=True
                     ),
@@ -377,7 +377,7 @@ class CheckerDialog(ToplevelDialog):
                 fixremall_btn.grid(row=0, column=5, sticky="NSEW")
                 ToolTip(
                     fixremall_btn,
-                    f"Fix and remove all problems matching selected message (Shift {cmd_ctrl_string()} right-click)",
+                    f"Fix and hide all problems matching selected message (Shift {cmd_ctrl_string()} right-click)",
                 )
 
         sort_frame = ttk.Frame(message_controls_frame)
@@ -428,7 +428,7 @@ class CheckerDialog(ToplevelDialog):
         if view_options_dialog_class is not None:
             ttk.Button(
                 message_controls_frame, text="View Options", command=show_view_options
-            ).grid(row=1, column=2, sticky="NSE", pady=5)
+            ).grid(row=1, column=0, sticky="NS", columnspan=7)
         if view_options_filters is None:
             view_options_filters = []
         self.view_options_filters = view_options_filters

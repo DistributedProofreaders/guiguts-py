@@ -22,8 +22,8 @@ class PPtxtCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find issue",
-                    "Right click: Remove issue from list",
-                    "Shift Right click: Remove all matching issues",
+                    "Right click: Hide issue",
+                    "Shift Right click: Hide all matching issues",
                 ]
             ),
             **kwargs,
