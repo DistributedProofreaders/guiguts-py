@@ -7,6 +7,7 @@ import os.path
 import tkinter as tk
 from tkinter import ttk, filedialog
 from typing import Optional, Any
+import xml.sax
 
 from PIL import Image, ImageTk, UnidentifiedImageError
 import regex as re
@@ -676,6 +677,178 @@ def do_validator_check(checker_dialog: CheckerDialog) -> None:
     if not messages:
         checker_dialog.add_entry("No errors reported by validator")
     checker_dialog.display_entries()
+
+
+class CSSValidatorDialog(CheckerDialog):
+    """Dialog to show CSS validation results.
+
+    Uses SOAP/XML interface to CSS validator."""
+
+    manual_page = "HTML_Menu#PPhtml"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize CSS Checker dialog."""
+        super().__init__(
+            "CSS Validation Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find error",
+                    "Right click: Remove error from list",
+                ]
+            ),
+            **kwargs,
+        )
+        frame = ttk.Frame(self.header_frame)
+        frame.grid(column=0, row=1, sticky="NSEW")
+        css_level = PersistentString(PrefKey.CSS_VALIDATION_LEVEL)
+        ttk.Radiobutton(
+            frame,
+            text="CSS level 2.1",
+            variable=css_level,
+            value="css21",
+            takefocus=False,
+        ).grid(row=0, column=0, sticky="NSEW", padx=(0, 10))
+        ttk.Radiobutton(
+            frame,
+            text="CSS level 3",
+            variable=css_level,
+            value="css3",
+            takefocus=False,
+        ).grid(row=0, column=1, sticky="NSEW")
+
+
+class CSSValidator:
+    """CSS Validator."""
+
+    def __init__(self) -> None:
+        """Initialize CSS Validator"""
+        self.dialog = CSSValidatorDialog.show_dialog(rerun_command=self.run)
+
+    def run(self) -> None:
+        """Validate CSS using SOAP interface."""
+        self.dialog.reset()
+        # Only permitted to send the CSS block to the validator.
+        css_start = maintext().search("<style", "1.0")
+        css_end = maintext().search("</style", "1.0")
+        if not css_start or not css_end:
+            logger.error("No CSS style block found")
+            self.dialog.display_entries()
+            return
+
+        def report_exception(message: str, exc: Exception | str) -> None:
+            """Report exception to user and suggest manual validation.
+            Also call `display_entries to clear "busy" message.
+
+            Args:
+                message: Initial part of message to user.
+                exc: Exception that was thrown, or a string describing the problem
+            """
+            logger.error(f"{message}\nValidate manually online.\nError details:\n{exc}")
+            self.dialog.display_entries()
+
+        # Send the text for validation & get SOAP1.2/XML response
+        validator_url = "https://jigsaw.w3.org/css-validator/validator"
+        headers = {"Content-Type": "text/xml; charset=utf-8"}
+        payload = {
+            "output": "soap12",
+            "profile": preferences.get(PrefKey.CSS_VALIDATION_LEVEL),
+            "text": maintext().get(f"{css_start}+1l linestart", f"{css_end} linestart"),
+        }
+        try:
+            response = requests.get(
+                validator_url, headers=headers, params=payload, timeout=15
+            )
+        except requests.exceptions.Timeout as exc:
+            report_exception(f"Request to {validator_url} timed out.", exc)
+            return
+        except ConnectionError as exc:
+            report_exception(f"Connection error to {validator_url}.", exc)
+            return
+        # Check if HTTP request was unsuccessful
+        try:
+            response.raise_for_status()
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.TooManyRedirects,
+        ) as exc:
+            report_exception(f"Request to {validator_url} was unsuccessful.", exc)
+            return
+
+        class XMLHandler(xml.sax.ContentHandler):
+            """Class to handle SOAP 1.2 / XML response from validator"""
+
+            def __init__(self, dialog: CSSValidatorDialog):
+                super().__init__()
+                self.dialog = dialog
+                self.current_tag = ""
+                self.line = ""
+                self.skippedstring = ""
+                self.message = ""
+                self.pass_fail = "FAILED"
+
+            def startElement(self, name: str, _: Any) -> None:
+                """Handle an XML start tag.
+
+                Args:
+                    name: Name of tag.
+                """
+                match name:
+                    case "m:error":
+                        self.line = ""
+                        self.skippedstring = ""
+                        self.message = ""
+                self.current_tag = name
+
+            def characters(self, content: str) -> None:
+                """Store the data - may come in chunks."""
+                match self.current_tag:
+                    case "m:line":
+                        self.line += content.strip()
+                    case "m:skippedstring":
+                        self.skippedstring += content.strip()
+                    case "m:message":
+                        content = re.sub(r" \(\[error.+?#.+?\)", "", content)
+                        self.message += re.sub("\n+", RETURN_ARROW, content).strip()
+                    case "m:validity":
+                        if content.strip() == "true":
+                            self.pass_fail = "PASSED"
+
+            def endElement(self, name: str) -> None:
+                """Handle an XML end tag - add error to dialog
+
+                Args:
+                    name: Name of tag.
+                """
+                match name:
+                    case "m:validity":
+                        if preferences.get(PrefKey.CSS_VALIDATION_LEVEL) == "css3":
+                            level = "CSS Level 3"
+                        else:
+                            level = "CSS Level 2.1"
+                        self.dialog.add_header(
+                            f"{self.pass_fail} {level} validation.", ""
+                        )
+                    case "m:error":
+                        message = re.sub(f"^{RETURN_ARROW}+", "", self.message)
+                        message = re.sub(f"{RETURN_ARROW}+$", "", message)
+                        message = re.sub(f"{RETURN_ARROW}+", ": ", message)
+                        if self.skippedstring:
+                            if message[-1] != ":":
+                                message += ":"
+                            message += f" {self.skippedstring}"
+                        line = int(self.line.strip()) + IndexRowCol(css_start).row
+                        location = IndexRange(f"{line}.0", f"{line}.0")
+                        self.dialog.add_entry(message, location)
+
+        xml_handler = XMLHandler(self.dialog)
+        xml.sax.parseString(response.text, xml_handler)
+
+        self.dialog.display_entries()
+
+
+def css_validator_check() -> None:
+    """Instantiate & run CSS Validator."""
+    CSSValidator().run()
 
 
 def html_link_check() -> None:

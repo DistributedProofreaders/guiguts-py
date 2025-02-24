@@ -18,7 +18,12 @@ from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle
 from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
-from guiguts.html_tools import HTMLImageDialog, html_validator_check, html_link_check
+from guiguts.html_tools import (
+    HTMLImageDialog,
+    html_validator_check,
+    html_link_check,
+    css_validator_check,
+)
 from guiguts.illo_sn_fixup import illosn_check
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
@@ -483,6 +488,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.HTML_IMAGE_UNIT, "%")
         preferences.set_default(PrefKey.HTML_IMAGE_OVERRIDE_EPUB, True)
         preferences.set_default(PrefKey.HTML_IMAGE_ALIGNMENT, "center")
+        preferences.set_default(PrefKey.CSS_VALIDATION_LEVEL, "css3")
         preferences.set_default(PrefKey.HIGHLIGHT_PROOFERCOMMENT, True)
         preferences.set_callback(
             PrefKey.HIGHLIGHT_PROOFERCOMMENT, self.highlight_proofercomment_callback
@@ -835,6 +841,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         html_menu.add_button("Auto-~Illustrations...", HTMLImageDialog.show_dialog)
         html_menu.add_button("~Unmatched HTML Tags...", unmatched_html_markup)
         html_menu.add_button("HTML5 ~Validator (online)...", html_validator_check)
+        html_menu.add_button("~CSS Validator (online)...", css_validator_check)
         html_menu.add_button("HTML ~Link Checker...", html_link_check)
 
     def init_view_menu(self) -> None:
