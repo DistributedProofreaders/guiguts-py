@@ -77,9 +77,9 @@ class BasicFixupCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find issue",
-                    "Right click: Remove issue from list",
+                    "Right click: Hide issue",
                     f"With {cmd_ctrl_string()} key: Also fix issue",
-                    "With Shift key: Also remove/fix matching issues",
+                    "With Shift key: Also hide/fix all matching issues",
                 ]
             ),
             **kwargs,
@@ -660,8 +660,8 @@ class UnmatchedCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find issue",
-                    "Right click: Remove issue from list",
-                    "Shift-Right click: Remove all matching issues",
+                    "Right click: Hide issue",
+                    "Shift-Right click: Also hide all matching issues",
                 ]
             ),
             **kwargs,
@@ -1052,7 +1052,7 @@ def unmatched_markup_check(
 
     # User can control nestability of some unmatched check types
     if nest_reg is None:
-        frame = ttk.Frame(checker_dialog.header_frame)
+        frame = ttk.Frame(checker_dialog.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
         ttk.Checkbutton(
             frame,
@@ -1325,7 +1325,8 @@ def proofer_comment_check() -> None:
                 tooltip="\n".join(
                     [
                         "Left click: Select & find comment",
-                        "Right click: Remove comment from this list",
+                        "Right click: Hide commentt",
+                        "Right click: Also hide all matching comments",
                     ]
                 ),
                 **kwargs,
@@ -1371,7 +1372,8 @@ def asterisk_check() -> None:
                 tooltip="\n".join(
                     [
                         "Left click: Select & find occurrence of asterisk",
-                        "Right click: Remove occurrence from this list",
+                        "Right click: Hide message",
+                        "Shfit Right click: Also hide all matching message",
                     ]
                 ),
                 **kwargs,
@@ -1537,15 +1539,15 @@ class ScannoCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find occurrence of scanno",
-                    "Right click: Remove occurrence of scanno from list",
+                    "Right click: Hide occurrence of scanno in list",
                     f"With {cmd_ctrl_string()} key: Also fix this occurrence",
-                    "With Shift key: Also remove/fix matching occurrences",
+                    "With Shift key: Also hide/fix matching occurrences",
                 ]
             ),
             **kwargs,
         )
 
-        frame = ttk.Frame(self.header_frame)
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
         frame.columnconfigure(1, weight=1)
 
@@ -1937,14 +1939,15 @@ class CurlyQuotesDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find curly quote warning",
-                    "Right click: Remove warning from list",
+                    "Right click: Hide warning",
+                    "Shift Right click: Hide all matching warnings",
                     f"With {cmd_ctrl_string()} key: Convert straight to curly, or swap open⇔close",
                 ]
             ),
             **kwargs,
         )
 
-        frame = ttk.Frame(self.header_frame)
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW", pady=5)
         frame.columnconfigure(3, weight=1)
         ttk.Button(

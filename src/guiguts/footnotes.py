@@ -1198,14 +1198,14 @@ class FootnoteCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find footnote",
-                    "Right click: Remove item from list",
-                    "Shift-Right click: Remove all matching items",
+                    "Right click: Hide item in list",
+                    "Shift-Right click: Also hide all matching items",
                 ]
             ),
             **kwargs,
         )
 
-        fixit_frame = ttk.Frame(self.header_frame)
+        fixit_frame = ttk.Frame(self.custom_frame)
         fixit_frame.grid(column=0, row=1, sticky="NSEW")
         # Weight only needs setting once for each column, not every row of
         # every column.
@@ -1223,7 +1223,7 @@ class FootnoteCheckerDialog(CheckerDialog):
         # --
         self.prev_fn_button = ttk.Button(
             fixit_frame,
-            text="<-- Prev. FN",
+            text="<-- Prev FN",
             command=lambda: next_footnote("back"),
         )
         self.prev_fn_button.grid(column=1, row=0, pady=2, sticky="NSEW")
@@ -1296,7 +1296,7 @@ class FootnoteCheckerDialog(CheckerDialog):
         # --
         self.lz_set_at_chapter_button = ttk.Button(
             fixit_frame,
-            text="Autoset Chap. LZ",
+            text="Autoset Chap LZ",
             command=autoset_chapter_lz,
         )
         self.lz_set_at_chapter_button.grid(column=2, row=2, pady=2, sticky="NSEW")

@@ -16,6 +16,7 @@ from guiguts.utilities import (
     IndexRange,
     is_mac,
     sing_plur,
+    cmd_ctrl_string,
 )
 from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind, Busy, ToolTip
 
@@ -200,14 +201,7 @@ class CheckerFilterErrorPrefix(CheckerFilter):
 
 
 class CheckerDialog(ToplevelDialog):
-    """Dialog to show results of running a check.
-
-    Attributes:
-        text: Text widget to contain results.
-        header_frame: Frame at top of widget containing configuration buttons, fields, etc.
-                      Row 0 contains common controls, rows 1+ available for specific dialogs.
-        count_label: Label showing how many linked entries there are in the dialog
-    """
+    """Dialog to show results of running a check."""
 
     # Slight complexity needed.
     # 1. Each type of checker dialog needs its own selection_on_clear flag
@@ -229,6 +223,7 @@ class CheckerDialog(ToplevelDialog):
         view_options_dialog_class: Optional[type[CheckerViewOptionsDialog]] = None,
         view_options_filters: Optional[list[CheckerFilter]] = None,
         switch_focus_when_clicked: Optional[bool] = None,
+        generic_buttons: bool = True,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -244,37 +239,24 @@ class CheckerDialog(ToplevelDialog):
             clear_on_undo_redo: True to cause dialog to be cleared if Undo/Redo are used.
             view_options_dialog_class: Class to use for a View Options dialog.
             view_options_filters: List of filters to control which messages are shown.
+            process_buttons: Set to False to disable generic Remove/Fix/etc buttons.
         """
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
-        self.header_frame = ttk.Frame(self.top_frame, padding=2)
-        self.header_frame.grid(row=0, column=0, sticky="NSEW")
 
-        self.header_frame.columnconfigure(0, weight=1)
-        options_frame = ttk.Frame(self.header_frame)
-        options_frame.grid(row=0, column=0, sticky="NSEW")
-        options_frame.columnconfigure(0, weight=0)
-        options_frame.columnconfigure(1, weight=1)
-        self.count_label = ttk.Label(options_frame, text="No results")
-        self.count_label.grid(row=0, column=0, sticky="NSW")
-
-        def copy_errors() -> None:
-            """Copy text messages to clipboard."""
-            self.clipboard_clear()
-            self.clipboard_append(self.text.get("1.0", tk.END))
-
-        copy_button = ttk.Button(
-            options_frame, text="Copy Results", command=copy_errors
+        # At top of dialog, header Frame to hold "count" label and Re-run button
+        count_header_frame = ttk.Frame(
+            self.top_frame,
+            padding=2,
+            borderwidth=1,
+            relief=tk.GROOVE,
         )
-        copy_button.grid(row=0, column=1, sticky="NS")
+        count_header_frame.grid(row=0, column=0, sticky="NSEW")
+        count_header_frame.rowconfigure(0, weight=1)
+        count_header_frame.columnconfigure(2, weight=1)
 
-        def rerunner() -> None:
-            self.selection_on_clear[self.__class__.__name__] = None
-            self.rerun_command()
-
-        self.rerun_command = rerun_command
-        self.rerun_button = ttk.Button(options_frame, text="Re-run", command=rerunner)
-        self.rerun_button.grid(row=0, column=2, sticky="NSE", padx=(10, 0))
+        self.count_label = ttk.Label(count_header_frame, text="No results")
+        self.count_label.grid(row=0, column=0, sticky="NSW")
 
         self.suspects_only_btn: Optional[ttk.Checkbutton]
         if show_suspects_only:
@@ -290,18 +272,116 @@ class CheckerDialog(ToplevelDialog):
                 self.display_entries()
 
             self.suspects_only_btn = ttk.Checkbutton(
-                options_frame,
+                count_header_frame,
                 text="Suspects Only",
                 variable=suspects_only_var,
                 command=suspects_only_changed,
                 takefocus=False,
             )
-            self.suspects_only_btn.grid(row=1, column=0, sticky="NSW")
+            self.suspects_only_btn.grid(row=0, column=1, sticky="NSW", padx=(10, 0))
         else:
             self.suspects_only_btn = None
 
-        sort_frame = ttk.Frame(options_frame)
-        sort_frame.grid(row=1, column=1, sticky="NS", pady=5)
+        def copy_errors() -> None:
+            """Copy text messages to clipboard."""
+            self.clipboard_clear()
+            self.clipboard_append(self.text.get("1.0", tk.END))
+
+        copy_button = ttk.Button(
+            count_header_frame, text="Copy Results", command=copy_errors
+        )
+        copy_button.grid(row=0, column=2, sticky="NSE")
+
+        def rerunner() -> None:
+            self.selection_on_clear[self.__class__.__name__] = None
+            self.rerun_command()
+
+        self.rerun_command = rerun_command
+        self.rerun_button = ttk.Button(
+            count_header_frame, text="Re-run", command=rerunner
+        )
+        self.rerun_button.grid(row=0, column=3, sticky="NSE", padx=(10, 0))
+
+        # Next a custom frame with contents determined by the dialog, e.g. Footnote tools
+        self.custom_frame = ttk.Frame(
+            self.top_frame, padding=2, borderwidth=1, relief=tk.GROOVE
+        )
+        self.custom_frame.grid(row=1, column=0, sticky="NSEW")
+
+        # Next controls relating to the message list
+        message_controls_frame = ttk.Frame(
+            self.top_frame, padding=2, borderwidth=1, relief=tk.GROOVE
+        )
+        message_controls_frame.grid(row=2, column=0, sticky="NSEW")
+        message_controls_frame.rowconfigure(0, weight=1)
+        for col in range(6):
+            message_controls_frame.columnconfigure(col, weight=1)
+
+        if generic_buttons:
+            rem_btn = ttk.Button(
+                message_controls_frame,
+                text="Hide",
+                command=lambda: self.remove_entry_current(all_matching=False),
+            )
+            rem_btn.grid(row=0, column=0, sticky="NSEW")
+            ToolTip(rem_btn, "Hide selected message (right-click)")
+            remall_btn = ttk.Button(
+                message_controls_frame,
+                text="Hide All",
+                command=lambda: self.remove_entry_current(all_matching=True),
+            )
+            remall_btn.grid(row=0, column=1, sticky="NSEW")
+            ToolTip(
+                remall_btn,
+                "Hide all messages matching selected one (Shift right-click)",
+            )
+            if process_command is not None:
+                fix_btn = ttk.Button(
+                    message_controls_frame,
+                    text="Fix",
+                    command=lambda: self.process_entry_current(all_matching=False),
+                )
+                fix_btn.grid(row=0, column=2, sticky="NSEW")
+                ToolTip(
+                    fix_btn, f"Fix selected problem ({cmd_ctrl_string()} left-click)"
+                )
+                fixall_btn = ttk.Button(
+                    message_controls_frame,
+                    text="Fix All",
+                    command=lambda: self.process_entry_current(all_matching=True),
+                )
+                fixall_btn.grid(row=0, column=3, sticky="NSEW")
+                ToolTip(
+                    fixall_btn,
+                    f"Fix all problems matching selected message (Shift {cmd_ctrl_string()} left-click)",
+                )
+                fixrem_btn = ttk.Button(
+                    message_controls_frame,
+                    text="Fix&Hide",
+                    command=lambda: self.process_remove_entry_current(
+                        all_matching=False
+                    ),
+                )
+                fixrem_btn.grid(row=0, column=4, sticky="NSEW")
+                ToolTip(
+                    fixrem_btn,
+                    f"Fix selected problem & hide message ({cmd_ctrl_string()} right-click)",
+                )
+                fixremall_btn = ttk.Button(
+                    message_controls_frame,
+                    text="Fix&Hide All",
+                    command=lambda: self.process_remove_entry_current(
+                        all_matching=True
+                    ),
+                )
+                fixremall_btn.grid(row=0, column=5, sticky="NSEW")
+                ToolTip(
+                    fixremall_btn,
+                    f"Fix and hide all problems matching selected message (Shift {cmd_ctrl_string()} right-click)",
+                )
+
+        sort_frame = ttk.Frame(message_controls_frame)
+        sort_frame.grid(row=0, column=6, sticky="NSE", pady=5)
         sort_frame.rowconfigure(0, weight=1)
         ttk.Label(
             sort_frame,
@@ -347,20 +427,21 @@ class CheckerDialog(ToplevelDialog):
 
         if view_options_dialog_class is not None:
             ttk.Button(
-                options_frame, text="View Options", command=show_view_options
-            ).grid(row=1, column=2, sticky="NSE", pady=5)
+                message_controls_frame, text="View Options", command=show_view_options
+            ).grid(row=1, column=0, sticky="NS", columnspan=7)
         if view_options_filters is None:
             view_options_filters = []
         self.view_options_filters = view_options_filters
 
-        self.top_frame.rowconfigure(1, weight=1)
+        # Next the message list itself
+        self.top_frame.rowconfigure(3, weight=1)
         self.text = ScrolledReadOnlyText(
             self.top_frame,
             context_menu=False,
             wrap=tk.NONE,
             font=maintext().font,
         )
-        self.text.grid(row=1, column=0, sticky="NSEW")
+        self.text.grid(row=3, column=0, sticky="NSEW")
         ToolTip(self.text, tooltip, use_pointer_pos=True)
 
         # 3 binary choices:

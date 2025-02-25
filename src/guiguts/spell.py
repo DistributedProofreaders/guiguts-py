@@ -74,14 +74,14 @@ class SpellCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find spelling error",
-                    "Right click: Remove spelling error from list",
-                    "Shift Right click: Remove all occurrences of spelling error from list",
+                    "Right click: Skip spelling error",
+                    "Shift Right click: Skip all matching spelling errors",
                     f"With {cmd_ctrl_string()} key: Also add spelling to project dictionary",
                 ]
             ),
             **kwargs,
         )
-        frame = ttk.Frame(self.header_frame)
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW", pady=5)
         ttk.Label(
             frame,
@@ -132,7 +132,6 @@ class SpellCheckerDialog(CheckerDialog):
         ToolTip(
             global_dict_button,
             f"{cmd_ctrl_string()}+A",
-            use_pointer_pos=True,
         )
         project_dict_button = ttk.Button(
             frame,
@@ -145,8 +144,7 @@ class SpellCheckerDialog(CheckerDialog):
             self.bind(key_event, lambda _: invoke_and_break(project_dict_button))
         ToolTip(
             project_dict_button,
-            f"{cmd_ctrl_string()}+P",
-            use_pointer_pos=True,
+            f"{cmd_ctrl_string()}+P or {cmd_ctrl_string()}-click message",
         )
         skip_button = ttk.Button(
             frame,
@@ -159,8 +157,7 @@ class SpellCheckerDialog(CheckerDialog):
             self.bind(key_event, lambda _: invoke_and_break(skip_button))
         ToolTip(
             skip_button,
-            f"{cmd_ctrl_string()}+S",
-            use_pointer_pos=True,
+            f"{cmd_ctrl_string()}+S or right-click message",
         )
         skip_all_button = ttk.Button(
             frame,
@@ -173,8 +170,7 @@ class SpellCheckerDialog(CheckerDialog):
             self.bind(key_event, lambda _: invoke_and_break(skip_all_button))
         ToolTip(
             skip_all_button,
-            f"{cmd_ctrl_string()}+I",
-            use_pointer_pos=True,
+            f"{cmd_ctrl_string()}+I or Shift+right-click message",
         )
 
 
@@ -485,6 +481,7 @@ def spell_check(
             add_global_word_callback,
         ),
         process_command=process_spelling,
+        generic_buttons=False,
         switch_focus_when_clicked=False,
         add_global_word_callback=add_global_word_callback,
     )

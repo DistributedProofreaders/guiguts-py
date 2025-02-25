@@ -163,8 +163,8 @@ class BookloupeCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find issue",
-                    "Right click: Remove message from list",
-                    "Shift-Right click: Remove all matching messages",
+                    "Right click: Hide message",
+                    "Shift-Right click: Hide all matching messages",
                 ]
             ),
             **kwargs,

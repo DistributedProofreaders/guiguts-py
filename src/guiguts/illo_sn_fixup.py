@@ -70,13 +70,13 @@ class IlloSNCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     f"Left click: Select & find {tag_type} tag",
-                    "Right click: Remove item from list",
-                    "Shift-Right click: Remove all matching items",
+                    "Right click: Hide item",
+                    "Shift-Right click: Also hide all matching items",
                 ]
             ),
             **kwargs,
         )
-        frame = ttk.Frame(self.header_frame)
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
         self.move_up_btn = ttk.Button(
             frame,

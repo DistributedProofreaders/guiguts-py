@@ -59,14 +59,14 @@ class JeebiesCheckerDialog(CheckerDialog):
             tooltip="\n".join(
                 [
                     "Left click: Select & find he/be error",
-                    "Right click: Remove he/be error from list",
+                    "Right click: Hide he/be error",
                     f"With {cmd_ctrl_string()} key: Also toggle queried he/be",
-                    "Shift Right click: Also remove all matching he/be errors",
+                    "Shift Right click: Also hide all matching he/be errors",
                 ]
             ),
             **kwargs,
         )
-        frame = ttk.Frame(self.header_frame)
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
         ttk.Label(
             frame,
