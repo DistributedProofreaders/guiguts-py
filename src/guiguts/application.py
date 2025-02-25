@@ -31,6 +31,8 @@ from guiguts.mainwindow import (
     process_accel,
     mainimage,
     AutoImageState,
+    image_autofit_width_callback,
+    image_autofit_height_callback,
 )
 from guiguts.misc_dialogs import (
     PreferencesDialog,
@@ -486,6 +488,14 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.HIGHLIGHT_PROOFERCOMMENT, True)
         preferences.set_callback(
             PrefKey.HIGHLIGHT_PROOFERCOMMENT, self.highlight_proofercomment_callback
+        )
+        preferences.set_default(PrefKey.IMAGE_AUTOFIT_WIDTH, False)
+        preferences.set_callback(
+            PrefKey.IMAGE_AUTOFIT_WIDTH, image_autofit_width_callback
+        )
+        preferences.set_default(PrefKey.IMAGE_AUTOFIT_HEIGHT, False)
+        preferences.set_callback(
+            PrefKey.IMAGE_AUTOFIT_HEIGHT, image_autofit_height_callback
         )
 
         # Check all preferences have a default

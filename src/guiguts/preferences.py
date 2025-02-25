@@ -101,6 +101,8 @@ class PrefKey(StrEnum):
     HTML_IMAGE_OVERRIDE_EPUB = auto()
     HTML_IMAGE_ALIGNMENT = auto()
     HIGHLIGHT_PROOFERCOMMENT = auto()
+    IMAGE_AUTOFIT_WIDTH = auto()
+    IMAGE_AUTOFIT_HEIGHT = auto()
 
 
 class Preferences:
