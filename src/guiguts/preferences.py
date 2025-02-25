@@ -100,6 +100,7 @@ class PrefKey(StrEnum):
     HTML_IMAGE_UNIT = auto()
     HTML_IMAGE_OVERRIDE_EPUB = auto()
     HTML_IMAGE_ALIGNMENT = auto()
+    CSS_VALIDATION_LEVEL = auto()
     HIGHLIGHT_PROOFERCOMMENT = auto()
     IMAGE_AUTOFIT_WIDTH = auto()
     IMAGE_AUTOFIT_HEIGHT = auto()
