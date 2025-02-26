@@ -454,6 +454,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.IMAGE_SCALE_FACTOR, 0.5)
         preferences.set_default(PrefKey.IMAGE_VIEWER_ALERT, True)
         preferences.set_default(PrefKey.IMAGE_VIEWER_HI_CONTRAST, False)
+        preferences.set_callback(
+            PrefKey.IMAGE_VIEWER_HI_CONTRAST,
+            lambda *value: mainimage().show_image(internal_only=True),
+        )
         preferences.set_default(PrefKey.IMAGE_WINDOW_SHOW, False)
         preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL, False)
         preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH, "")

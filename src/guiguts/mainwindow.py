@@ -402,8 +402,8 @@ class MainImage(tk.Frame):
         self.image_scale = float(preferences.get(PrefKey.IMAGE_SCALE_FACTOR))
         self.scale_delta = 1.1
         self.image: Optional[Image.Image] = None
-        self.imageid = None
-        self.imagetk = None
+        self.imageid = 0
+        self.imagetk: Optional[ImageTk.PhotoImage] = None
         self.filename = ""
         self.width = 0
         self.height = 0
@@ -458,7 +458,7 @@ class MainImage(tk.Frame):
 
     def image_zoom_to_width(self) -> None:
         """Zoom image to fit to width of image window."""
-        if self.imageid is None:
+        if not self.imageid:
             return
         bbox_image = self.canvas.bbox(self.imageid)
         scale_factor = (
@@ -468,7 +468,7 @@ class MainImage(tk.Frame):
 
     def image_zoom_to_height(self) -> None:
         """Zoom image to fit to height of image window."""
-        if self.imageid is None:
+        if not self.imageid:
             return
         bbox_image = self.canvas.bbox(self.imageid)
         scale_factor = (
@@ -488,11 +488,14 @@ class MainImage(tk.Frame):
         self.canvas.yview_moveto(0.0)
         self.show_image()
 
-    def show_image(self, _event=None):  # type: ignore[no-untyped-def]
-        """Show image on the Canvas"""
+    def show_image(self, internal_only: bool = False) -> None:
+        """Show image on the Canvas.
+
+        Args:
+            internal_only: Whether to only reload internal viewer."""
         # If using external viewer, spawn a process to run it
         # If internal viewer is shown, image will be loaded in that too
-        if preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL):
+        if preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL) and not internal_only:
             viewer_path = preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH)
 
             # All 3 OSes can open a file with the default viewer or specific app:
@@ -506,7 +509,7 @@ class MainImage(tk.Frame):
             # Only Windows needs `shell=True` arg to use with `start`
             shell = False
             # Linux/Windows using `<app>` need `Popen` instead of `run` to avoid blocking
-            run_func = subprocess.run
+            run_func: Callable[..., Any] = subprocess.run
 
             if is_windows():
                 if viewer_path:
@@ -566,7 +569,9 @@ class MainImage(tk.Frame):
         )
         self.canvas.configure(scrollregion=self.canvas.bbox(self.imageid))
 
-    def regrab_focus(self, focus_widget: tk.Widget, remaining_period: int) -> None:
+    def regrab_focus(
+        self, focus_widget: Optional[tk.Misc], remaining_period: int
+    ) -> None:
         """Grab focus back from external image viewer.
 
         Args:
@@ -628,7 +633,7 @@ class MainImage(tk.Frame):
         self.image = None
         if self.imageid:
             self.canvas.delete(self.imageid)
-        self.imageid = None
+        self.imageid = 0
 
     def set_image_docking(self) -> None:
         """Float/dock image depending on flag."""
