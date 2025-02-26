@@ -849,10 +849,11 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         html_menu = Menu(menubar(), "HT~ML")
         html_menu.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
         html_menu.add_button("Auto-~Illustrations...", HTMLImageDialog.show_dialog)
+        html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags...", unmatched_html_markup)
+        html_menu.add_button("HTML ~Link Checker...", html_link_check)
         html_menu.add_button("HTML5 ~Validator (online)...", html_validator_check)
         html_menu.add_button("~CSS Validator (online)...", css_validator_check)
-        html_menu.add_button("HTML ~Link Checker...", html_link_check)
         html_menu.add_separator()
         html_menu.add_button(
             "~PP Workbench (www)",
