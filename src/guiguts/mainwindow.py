@@ -488,11 +488,14 @@ class MainImage(tk.Frame):
         self.canvas.yview_moveto(0.0)
         self.show_image()
 
-    def show_image(self) -> None:
-        """Show image on the Canvas"""
+    def show_image(self, internal_only: bool = False) -> None:
+        """Show image on the Canvas.
+
+        Args:
+            internal_only: Whether to only reload internal viewer."""
         # If using external viewer, spawn a process to run it
         # If internal viewer is shown, image will be loaded in that too
-        if preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL):
+        if preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL) and not internal_only:
             viewer_path = preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH)
 
             # All 3 OSes can open a file with the default viewer or specific app:
