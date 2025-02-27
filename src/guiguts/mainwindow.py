@@ -1067,7 +1067,12 @@ class MainWindow:
 
     def hide_image(self) -> None:
         """Stop showing the current image."""
-        # preferences.set(PrefKey.AUTO_IMAGE, False)
+        # If only showing internal viewer, then closing it also requires
+        # turning off AutoImg, or it will just be shown again
+        # If external viewer is on, then AutoImg can remain on, and
+        # display images in external viewer once internal viewer is closed.
+        if not preferences.get(PrefKey.IMAGE_VIEWER_EXTERNAL):
+            preferences.set(PrefKey.AUTO_IMAGE, False)
         self.clear_image()
         root().wm_forget(mainimage())  # type: ignore[arg-type]
         self.paned_window.forget(mainimage())
