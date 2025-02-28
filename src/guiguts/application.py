@@ -776,28 +776,28 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         tools_menu = Menu(menubar(), "~Tools")
-        tools_menu.add_button("Basic Fi~xup...", basic_fixup_check)
-        tools_menu.add_button("~Word Frequency...", word_frequency)
-        tools_menu.add_button("~Bookloupe...", bookloupe_check)
+        tools_menu.add_button("Basic Fi~xup", basic_fixup_check)
+        tools_menu.add_button("~Word Frequency", word_frequency)
+        tools_menu.add_button("~Bookloupe", bookloupe_check)
         tools_menu.add_button(
-            "~Spelling...",
+            "~Spelling",
             lambda: spell_check(
                 self.file.project_dict,
                 self.file.add_good_word_to_project_dictionary,
                 self.file.add_good_word_to_global_dictionary,
             ),
         )
-        tools_menu.add_button("~Jeebies...", jeebies_check)
-        tools_menu.add_button("Stealth S~cannos...", stealth_scannos)
+        tools_menu.add_button("~Jeebies", jeebies_check)
+        tools_menu.add_button("Stealth S~cannos", stealth_scannos)
         tools_menu.add_button(
-            "Word ~Distance Check...", lambda: levenshtein_check(self.file.project_dict)
+            "Word ~Distance Check", lambda: levenshtein_check(self.file.project_dict)
         )
         tools_menu.add_separator()
-        tools_menu.add_button("~Page Separator Fixup...", page_separator_fixup)
-        tools_menu.add_button("~Footnote Fixup...", footnote_check)
-        tools_menu.add_button("Side~note Fixup...", lambda: illosn_check("Sidenote"))
+        tools_menu.add_button("~Page Separator Fixup", page_separator_fixup)
+        tools_menu.add_button("~Footnote Fixup", footnote_check)
+        tools_menu.add_button("Side~note Fixup", lambda: illosn_check("Sidenote"))
         tools_menu.add_button(
-            "~Illustration Fixup...", lambda: illosn_check("Illustration")
+            "~Illustration Fixup", lambda: illosn_check("Illustration")
         )
         tools_menu.add_separator()
         tools_menu.add_button("~Rewrap All", self.file.rewrap_all)
@@ -807,10 +807,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         tools_menu.add_button("Convert to Curly ~Quotes", convert_to_curly_quotes)
         tools_menu.add_button("Check Curly Q~uotes", check_curly_quotes)
         unmatched_menu = Menu(tools_menu, "Un~matched")
-        unmatched_menu.add_button("Bloc~k Markup...", unmatched_block_markup)
-        unmatched_menu.add_button("~DP Markup...", unmatched_dp_markup)
-        unmatched_menu.add_button("~Brackets...", unmatched_brackets)
-        unmatched_menu.add_button("Curly ~Quotes...", unmatched_curly_quotes)
+        unmatched_menu.add_button("Bloc~k Markup", unmatched_block_markup)
+        unmatched_menu.add_button("~DP Markup", unmatched_dp_markup)
+        unmatched_menu.add_button("~Brackets", unmatched_brackets)
+        unmatched_menu.add_button("Curly ~Quotes", unmatched_curly_quotes)
 
         fraction_menu = Menu(tools_menu, "~Convert Fractions")
         fraction_menu.add_button(
@@ -846,7 +846,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         text_menu.add_button(
             "Convert ~Markup...", TextMarkupConvertorDialog.show_dialog
         )
-        text_menu.add_button("PP~txt...", lambda: pptxt(self.file.project_dict))
+        text_menu.add_button("PP~txt", lambda: pptxt(self.file.project_dict))
 
     def init_html_menu(self) -> None:
         """Create the HTML menu."""
@@ -854,10 +854,10 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         html_menu.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
         html_menu.add_button("Auto-~Illustrations...", HTMLImageDialog.show_dialog)
         html_menu.add_separator()
-        html_menu.add_button("~Unmatched HTML Tags...", unmatched_html_markup)
-        html_menu.add_button("HTML ~Link Checker...", html_link_check)
-        html_menu.add_button("HTML5 ~Validator (online)...", html_validator_check)
-        html_menu.add_button("~CSS Validator (online)...", css_validator_check)
+        html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
+        html_menu.add_button("HTML ~Link Checker", html_link_check)
+        html_menu.add_button("HTML5 ~Validator (online)", html_validator_check)
+        html_menu.add_button("~CSS Validator (online)", css_validator_check)
         html_menu.add_separator()
         html_menu.add_button(
             "~PP Workbench (www)",
