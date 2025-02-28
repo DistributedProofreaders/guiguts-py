@@ -374,7 +374,7 @@ class HTMLImageDialog(ToplevelDialog):
             start_index = illo_match_end.rowcol.index()
             match_text = maintext().get(start_index, f"{start_index} lineend")
             # Have we found the end of the illo markup (i.e. end of line bracket)
-            if not nested and re.fullmatch("] *$", match_text):
+            if not nested and re.fullmatch("] *(</p>)?$", match_text):
                 break
             # Keep track of whether there are nested brackets, e.g. [12] inside illo markup
             nested = match_text[0] == "["
@@ -384,9 +384,7 @@ class HTMLImageDialog(ToplevelDialog):
             return
         self.illo_range = IndexRange(
             illo_match_start.rowcol,
-            maintext().rowcol(
-                f"{illo_match_end.rowcol.index()}+{illo_match_end.count}c"
-            ),
+            maintext().rowcol(f"{illo_match_end.rowcol.index()} lineend"),
         )
         maintext().spotlight_range(self.illo_range)
         # Display caption in dialog and add <p> markup if none
