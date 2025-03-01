@@ -1,7 +1,7 @@
 """Define key components of main window"""
 
 from enum import Enum, auto
-from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found]
+from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found, import-untyped]
 import logging
 import os.path
 import subprocess
@@ -555,7 +555,7 @@ class MainImage(tk.Frame):
         image = image.resize(
             size=(scaled_width, scaled_height), resample=Image.Resampling.LANCZOS
         )
-        if not preferences.get(PrefKey.IMAGE_VIEWER_HI_CONTRAST):
+        if not preferences.get(PrefKey.HIGH_CONTRAST):
             alpha_value = 180 if maintext().is_dark_theme() else 200
             image.putalpha(alpha_value)  # Adjust contrast using transparency
         self.imagetk = ImageTk.PhotoImage(image)

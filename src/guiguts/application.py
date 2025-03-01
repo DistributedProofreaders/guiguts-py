@@ -13,6 +13,7 @@ from tkinter import messagebox
 from typing import Optional
 import unicodedata
 import webbrowser
+import darkdetect  # type: ignore[import-untyped]
 
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -147,6 +148,9 @@ class Guiguts:
                 root().destroy()
 
         root().protocol("WM_DELETE_WINDOW", check_save_and_destroy)
+
+        # Start autodetect loop for OS dark mode, if appropriate
+        self.update_theme()
 
     def parse_args(self) -> None:
         """Parse command line args"""
@@ -420,12 +424,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.TEXT_MARKUP_FONT, "=")
         preferences.set_default(PrefKey.PAGESEP_AUTO_TYPE, PageSepAutoType.AUTO_FIX)
         preferences.set_default(PrefKey.THEME_NAME, "Default")
-        preferences.set_callback(
-            PrefKey.THEME_NAME,
-            lambda value: themed_style().theme_use(
-                theme_name_internal_from_user(value)
-            ),
-        )
+        preferences.set_callback(PrefKey.THEME_NAME, self.theme_name_callback)
         preferences.set_default(PrefKey.TEAROFF_MENUS, False)
         preferences.set_default(PrefKey.COMPOSE_HISTORY, [])
         # Since fonts aren't available until Tk has initialized, set default font family
@@ -453,11 +452,8 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         preferences.set_default(PrefKey.IMAGE_DOCK_SASH_COORD, 300)
         preferences.set_default(PrefKey.IMAGE_SCALE_FACTOR, 0.5)
         preferences.set_default(PrefKey.IMAGE_VIEWER_ALERT, True)
-        preferences.set_default(PrefKey.IMAGE_VIEWER_HI_CONTRAST, False)
-        preferences.set_callback(
-            PrefKey.IMAGE_VIEWER_HI_CONTRAST,
-            lambda *value: mainimage().show_image(internal_only=True),
-        )
+        preferences.set_default(PrefKey.HIGH_CONTRAST, False)
+        preferences.set_callback(PrefKey.HIGH_CONTRAST, self.high_contrast_callback)
         preferences.set_default(PrefKey.IMAGE_WINDOW_SHOW, False)
         preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL, False)
         preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH, "")
@@ -1118,6 +1114,40 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         alert_handler.setLevel(logging.ERROR)
         alert_handler.setFormatter(formatter)
         logger.addHandler(alert_handler)
+
+    def theme_name_callback(self, value: str) -> None:
+        """Callback for when THEME_NAME preference is changed.
+
+        Responsible for starting auto-dark-detection loop for Default theme,
+        if theme was not Default at startup."""
+        if value == "Default":
+            self.update_theme()
+        elif value in ("Light", "Dark"):
+            themed_style().theme_use(theme_name_internal_from_user(value))
+
+    def update_theme(self) -> None:
+        """Self-calling method to check OS dark mode on a repeating cycle,
+        updating application theme if necessary."""
+        if preferences.get(PrefKey.THEME_NAME) == "Default":
+            os_mode = darkdetect.theme()
+            tk_theme = themed_style().theme_use()
+
+            if os_mode == "Light" and tk_theme != "awlight":
+                themed_style().theme_use("awlight")
+            elif os_mode == "Dark" and tk_theme != "awdark":
+                themed_style().theme_use("awdark")
+
+            root().after(2500, self.update_theme)
+
+    def high_contrast_callback(
+        self, value: bool  # pylint: disable=unused-argument
+    ) -> None:
+        """Callback for when HIGH_CONTRAST preference is changed"""
+        # re-display image
+        mainimage().show_image(internal_only=True)
+        # change theme colors for text areas
+        for _widget in (maintext(), maintext().peer):
+            maintext().theme_set_tk_widget_colors(_widget)
 
 
 def main() -> None:

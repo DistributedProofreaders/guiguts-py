@@ -55,12 +55,17 @@ class PreferencesDialog(ToplevelDialog):
         cb.grid(column=1, row=0, sticky="NEW")
         cb["values"] = ["Default", "Dark", "Light"]
         cb["state"] = "readonly"
+        ttk.Checkbutton(
+            appearance_frame,
+            text="High Contrast",
+            variable=PersistentBoolean(PrefKey.HIGH_CONTRAST),
+        ).grid(column=0, row=1, sticky="NEW", pady=5)
         tearoff_check = ttk.Checkbutton(
             appearance_frame,
             text="Use Tear-Off Menus (change requires restart)",
             variable=PersistentBoolean(PrefKey.TEAROFF_MENUS),
         )
-        tearoff_check.grid(column=0, row=1, sticky="NEW", pady=5)
+        tearoff_check.grid(column=0, row=2, sticky="NEW", pady=5)
         if is_mac():
             tearoff_check["state"] = tk.DISABLED
             ToolTip(tearoff_check, "Not available on macOS")
@@ -160,11 +165,6 @@ class PreferencesDialog(ToplevelDialog):
             "Whether to flash the border when Auto Img re-loads the\n"
             "default image after you manually select a different image",
         )
-        ttk.Checkbutton(
-            image_viewer_frame,
-            text="High Contrast Images",
-            variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_HI_CONTRAST),
-        ).grid(column=1, row=0, sticky="NEW", padx=(10, 0), pady=5)
         ttk.Checkbutton(
             image_viewer_frame,
             text="Use External Viewer",
