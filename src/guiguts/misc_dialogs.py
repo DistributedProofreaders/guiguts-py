@@ -295,8 +295,8 @@ class HelpAboutDialog(ToplevelDialog):
 
         def copy_to_clipboard() -> None:
             """Copy text to clipboard."""
-            self.clipboard_clear()
-            self.clipboard_append(self.text.get(version_start, version_end))
+            maintext().clipboard_clear()
+            maintext().clipboard_append(self.text.get(version_start, version_end))
 
         copy_button = ttk.Button(
             self.top_frame,

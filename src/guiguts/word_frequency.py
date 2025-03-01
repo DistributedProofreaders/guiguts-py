@@ -234,8 +234,8 @@ class WordFrequencyDialog(ToplevelDialog):
 
         def copy_errors() -> None:
             """Copy text messages to clipboard."""
-            self.clipboard_clear()
-            self.clipboard_append(self.text.get("1.0", tk.END))
+            maintext().clipboard_clear()
+            maintext().clipboard_append(self.text.get("1.0", tk.END))
 
         copy_button = ttk.Button(
             options_frame, text="Copy Results", command=copy_errors

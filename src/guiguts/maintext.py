@@ -556,6 +556,7 @@ class MainText(tk.Text):
         tk.Text.grid(self, column=1, row=1, sticky="NSEW")
 
         self.languages = ""
+        self.clipboard_fix_pending = False
 
         # Store current page mark to cope with case where several page marks are coincident
         self._stored_page_mark = ""
@@ -1696,38 +1697,48 @@ class MainText(tk.Text):
         rowcol = self.rowcol(f"{start_rowcol.index()} + {len(clipline)}c")
         self.set_insert_index(rowcol)
 
-    def affirm_clipboard_contents(self) -> None:
-        """Ensure clipboard is set to its "current" contents.
+    def clipboard_append(self, string: str, **kw: Any) -> None:
+        """Override appending text to clipboard to deal with macOS limitation."""
+        super().clipboard_append(string, **kw)
+        self.clipboard_fix()
+
+    def clipboard_fix(self) -> None:
+        """Deal with macOS-specific clipboard limitation.
 
         The purpose of this is to set the clipboard by non-Tcl/Tk means.
-        This should bypass the bug where Tcl/Tk doesn't update the
+        This should bypass the bug where Tcl/Tk doesn't update the macOS
         system clipboard counter. Some apps, e.g. BBEdit, need this to detect the
         clipboard has changed: https://github.com/python/cpython/issues/104613
         """
-        if not is_mac():
-            raise NotImplementedError("This function only works on macOS")
+        if self.clipboard_fix_pending or not is_mac():
+            return
 
-        # Use pbcopy macOS command to "touch" the clipboard contents
-        try:
-            with subprocess.Popen(["/usr/bin/pbcopy"], stdin=subprocess.PIPE) as proc:
-                proc.communicate(input=self.clipboard_get().encode())
-        except tk.TclError:
-            pass
+        def _fix() -> None:
+            """Use pbcopy macOS command to "touch" the clipboard contents."""
+            try:
+                with subprocess.Popen(
+                    ["/usr/bin/pbcopy"], stdin=subprocess.PIPE
+                ) as proc:
+                    proc.communicate(input=self.clipboard_get().encode())
+            except tk.TclError:
+                pass
+            self.clipboard_fix_pending = False
+
+        self.after_idle(_fix)
+        self.clipboard_fix_pending = True
 
     def smart_copy(self) -> str:
         """Do column copy if multiple ranges selected, else default copy."""
-        if is_mac():
-            self.after_idle(self.affirm_clipboard_contents)
         if len(self.selected_ranges()) <= 1:
+            self.clipboard_fix()
             return ""  # Permit default behavior to happen
         self.column_copy_cut()
         return "break"  # Skip default behavior
 
     def smart_cut(self) -> str:
         """Do column cut if multiple ranges selected, else default cut."""
-        if is_mac():
-            self.after_idle(self.affirm_clipboard_contents)
         if len(self.selected_ranges()) <= 1:
+            self.clipboard_fix()
             return ""  # Permit default behavior to happen
         self.column_copy_cut(cut=True)
         return "break"  # Skip default behavior
