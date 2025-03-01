@@ -8,6 +8,7 @@ from tkinter import ttk, Text
 from tkinter import font as tk_font
 from typing import Any, Callable, Optional, Literal, Generator
 from enum import auto, StrEnum
+import darkdetect  # type: ignore[import-untyped]
 
 import regex as re
 
@@ -372,6 +373,21 @@ HTML_TAG_TAGS = {
 }
 
 
+class BaseColors:
+    """Global base color settings (text panel foreground/background)."""
+
+    DEFAULT = {
+        "Light": {"background": "#F1F1F1", "foreground": "#4A3F31"},
+        "Dark": {"background": "#061626", "foreground": "#DADADA"},
+    }
+
+    # Simple: black and white.
+    HIGH_CONTRAST = {
+        "Light": {"background": "#FFFFFF", "foreground": "#000000"},
+        "Dark": {"background": "#000000", "foreground": "#FFFFFF"},
+    }
+
+
 class HighlightColors:
     """Global highlight color settings."""
 
@@ -436,8 +452,8 @@ class HighlightColors:
     }
 
     CURSOR_LINE = {
-        "Light": {"background": "#efefef", "foreground": "black"},
-        "Dark": {"background": "#303030", "foreground": "white"},
+        "Light": {"background": "#E8E1DC"},
+        "Dark": {"background": "#122E57"},
     }
 
     COLUMN_RULER = {
@@ -978,13 +994,19 @@ class MainText(tk.Text):
         Args:
             widget: The widget to be customized.
         """
-        dark_bg = "gray10"
-        dark_fg = "white"
-        light_bg = "gray98"
-        light_fg = "black"
+        if preferences.get(PrefKey.HIGH_CONTRAST):
+            dark_bg = BaseColors.HIGH_CONTRAST["Dark"]["background"]
+            dark_fg = BaseColors.HIGH_CONTRAST["Dark"]["foreground"]
+            light_bg = BaseColors.HIGH_CONTRAST["Light"]["background"]
+            light_fg = BaseColors.HIGH_CONTRAST["Light"]["foreground"]
+        else:
+            dark_bg = BaseColors.DEFAULT["Dark"]["background"]
+            dark_fg = BaseColors.DEFAULT["Dark"]["foreground"]
+            light_bg = BaseColors.DEFAULT["Light"]["background"]
+            light_fg = BaseColors.DEFAULT["Light"]["foreground"]
         theme_name = preferences.get(PrefKey.THEME_NAME)
         if theme_name == "Default":
-            theme_name = "Dark" if self.is_dark_theme() else "Light"
+            theme_name = darkdetect.theme()
         if theme_name == "Dark":
             widget.configure(
                 background=dark_bg,
@@ -3103,11 +3125,10 @@ class MainText(tk.Text):
             self.focus_widget().configure(insertontime=ontime)
 
     def is_dark_theme(self) -> bool:
-        """Returns True if theme is dark, which is assumed to be the case if
-        the brightness of button text color is greater than half strength (mid-gray)."""
-        text_color = themed_style().lookup("TButton", "foreground")
-        rgb_sum = sum(self.winfo_rgb(text_color))  # 0-65535 for each component
-        return rgb_sum > 12767 * 3
+        """Returns True if theme is set to awdark."""
+        if themed_style().theme_use() == "awdark":
+            return True
+        return False
 
     def _highlight_configure_tag(
         self, tag_name: str, tag_colors: dict[str, dict[str, str]]

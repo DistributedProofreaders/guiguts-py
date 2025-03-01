@@ -81,7 +81,7 @@ class PrefKey(StrEnum):
     IMAGE_DOCK_SASH_COORD = auto()
     IMAGE_SCALE_FACTOR = auto()
     IMAGE_VIEWER_ALERT = auto()
-    IMAGE_VIEWER_HI_CONTRAST = auto()
+    HIGH_CONTRAST = auto()
     IMAGE_WINDOW_SHOW = auto()
     IMAGE_VIEWER_EXTERNAL = auto()
     IMAGE_VIEWER_EXTERNAL_PATH = auto()
