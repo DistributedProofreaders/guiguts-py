@@ -1710,20 +1710,24 @@ class MainText(tk.Text):
         system clipboard counter. Some apps, e.g. BBEdit, need this to detect the
         clipboard has changed: https://github.com/python/cpython/issues/104613
         """
+        print("clipboard_fix", flush=True)
         if self.clipboard_fix_pending or not is_mac():
             return
 
         def _fix() -> None:
             """Use pbcopy macOS command to "touch" the clipboard contents."""
+            print("running _fix", flush=True)
             try:
                 with subprocess.Popen(
                     ["/usr/bin/pbcopy"], stdin=subprocess.PIPE
                 ) as proc:
                     proc.communicate(input=self.clipboard_get().encode())
             except tk.TclError:
+                print("_fix failed", flush=True)
                 pass
             self.clipboard_fix_pending = False
 
+        print("queuing _fix", flush=True)
         self.after_idle(_fix)
         self.clipboard_fix_pending = True
 
