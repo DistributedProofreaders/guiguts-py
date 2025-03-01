@@ -360,7 +360,7 @@ class File:
             True if OK to continue with intended operation.
         """
         # Good(?) place to ensure image position gets saved
-        mainimage().handle_configure(tk.Event())
+        mainimage().handle_configure(None)
 
         if not maintext().is_modified():
             return True
