@@ -1728,8 +1728,8 @@ class MainText(tk.Text):
             self.clipboard_fix_pending = False
 
         print("queuing _fix", flush=True)
-        self.after_idle(_fix)
         self.clipboard_fix_pending = True
+        self.after_idle(_fix)
 
     def smart_copy(self) -> str:
         """Do column copy if multiple ranges selected, else default copy."""
