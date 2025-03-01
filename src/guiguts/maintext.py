@@ -1724,7 +1724,7 @@ class MainText(tk.Text):
                     proc.communicate(input=self.clipboard_get().encode())
             except tk.TclError:
                 print("_fix failed", flush=True)
-                pass
+                #pass
             self.clipboard_fix_pending = False
 
         print("queuing _fix", flush=True)
