@@ -1325,7 +1325,7 @@ def proofer_comment_check() -> None:
                 tooltip="\n".join(
                     [
                         "Left click: Select & find comment",
-                        "Right click: Hide commentt",
+                        "Right click: Hide comment",
                         "Right click: Also hide all matching comments",
                     ]
                 ),
