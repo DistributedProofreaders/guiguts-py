@@ -590,12 +590,12 @@ class MainImage(tk.Frame):
         """Scroll image up/down using mouse wheel"""
         if evt.state == 0:
             if is_mac():
-                self.canvas.yview_scroll(-1 * (evt.delta), "units")
+                self.canvas.yview_scroll(int(-1 * evt.delta), "units")
             else:
                 self.canvas.yview_scroll(int(-1 * (evt.delta / 120)), "units")
         if evt.state == 1:
             if is_mac():
-                self.canvas.xview_scroll(-1 * (evt.delta), "units")
+                self.canvas.xview_scroll(int(-1 * evt.delta), "units")
             else:
                 self.canvas.xview_scroll(int(-1 * (evt.delta / 120)), "units")
         self.show_image()
