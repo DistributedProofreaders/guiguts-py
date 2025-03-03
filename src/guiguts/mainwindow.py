@@ -881,6 +881,14 @@ class ScrolledReadOnlyText(tk.Text):
         _, key_event = process_accel("Cmd+Shift+z" if is_mac() else "Ctrl+y")
         super().bind(key_event, lambda _event: maintext().event_generate("<<Redo>>"))
 
+        # Intercept copy/cut to queue macOS fix before default copy/cut behavior
+        def copy_fix(_e: tk.Event) -> str:
+            maintext().clipboard_fix()
+            return ""  # Permit default behavior to happen
+
+        super().bind("<<Copy>>", copy_fix)
+        super().bind("<<Cut>>", copy_fix)
+
         if context_menu:
             add_text_context_menu(self, read_only=True)
 

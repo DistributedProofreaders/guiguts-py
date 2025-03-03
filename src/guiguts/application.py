@@ -7,9 +7,6 @@ import logging
 import importlib.resources
 from importlib.metadata import version
 import os.path
-import platform
-import sys
-from tkinter import messagebox
 from typing import Optional
 import unicodedata
 import webbrowser
@@ -46,6 +43,7 @@ from guiguts.misc_dialogs import (
     ComposeHelpDialog,
     UnicodeBlockDialog,
     UnicodeSearchDialog,
+    HelpAboutDialog,
 )
 from guiguts.misc_tools import (
     basic_fixup_check,
@@ -274,38 +272,6 @@ class Guiguts:
         """Exit the program."""
         if self.file.check_save():
             root().quit()
-
-    def help_about(self) -> None:
-        """Display a 'Help About' dialog."""
-        help_message = f"""Guiguts - an application to support creation of ebooks for PG
-
-Guiguts version: {version('guiguts')}
-
-Python version: {sys.version}
-Tk/Tcl version: {root().call("info", "patchlevel")}
-OS Platform: {platform.platform()}
-OS Release: {platform.release()}
-
-Copyright Contributors to the Guiguts-py project.
-
-This program is free software; you can redistribute it
-and/or modify it under the terms of the GNU General Public
-License as published by the Free Software Foundation;
-either version 2 of the License, or (at your option) any
-later version.
-
-This program is distributed in the hope that it will be
-useful, but WITHOUT ANY WARRANTY; without even
-the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General
-Public License for more details.
-
-You should have received a copy of the GNU General Public
-License along with this program; if not, write to the
-Free Software Foundation, Inc., 51 Franklin Street,
-Fifth Floor, Boston, MA 02110-1301 USA."""
-
-        messagebox.showinfo(title="About Guiguts", message=help_message)
 
     def show_page_details_dialog(self) -> None:
         """Show the page details display/edit dialog."""
@@ -906,7 +872,7 @@ Fifth Floor, Boston, MA 02110-1301 USA."""
         help_menu.add_button(
             "Guiguts ~Manual (www)", self.show_help_manual, "F1", force_main_only=True
         )
-        help_menu.add_button("About ~Guiguts", self.help_about)
+        help_menu.add_button("About ~Guiguts", HelpAboutDialog.show_dialog)
         help_menu.add_button("~Regex Quick Reference (www)", self.show_help_regex)
         help_menu.add_button(
             "List of ~Compose Sequences", ComposeHelpDialog.show_dialog

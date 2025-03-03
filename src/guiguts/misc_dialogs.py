@@ -1,14 +1,17 @@
 """Miscellaneous dialogs."""
 
+from importlib.metadata import version
+import platform
+import sys
 import tkinter as tk
 from tkinter import ttk, font, filedialog
 from typing import Any
-import sys
 import unicodedata
 
 import regex as re
 
 from guiguts.maintext import maintext
+from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
@@ -269,6 +272,85 @@ class PreferencesDialog(ToplevelDialog):
             PrefKey.WRAP_INDEX_RIGHT_MARGIN,
             "Right margin for index entries",
         )
+
+
+class HelpAboutDialog(ToplevelDialog):
+    """A "Help About Guiguts" dialog with version numbers."""
+
+    manual_page = ""  # Main manual page
+
+    def __init__(self) -> None:
+        """Initialize preferences dialog."""
+        super().__init__("Help About Guiguts", resize_x=False, resize_y=False)
+
+        # Default font is monospaced. Helvetica is guaranteed to give a proportional font
+        font_family = "Helvetica"
+        font_small = 10
+        font_medium = 12
+        font_large = 14
+        title_start = "1.0"
+        title_end = "2.0 lineend"
+        version_start = "3.0"
+        version_end = "9.0"
+
+        def copy_to_clipboard() -> None:
+            """Copy text to clipboard."""
+            maintext().clipboard_clear()
+            maintext().clipboard_append(self.text.get(version_start, version_end))
+
+        copy_button = ttk.Button(
+            self.top_frame,
+            text="Copy Version Information to Clipboard",
+            command=copy_to_clipboard,
+            takefocus=False,
+        )
+        copy_button.grid(row=0, column=0, pady=(5, 5))
+        self.text = ScrolledReadOnlyText(
+            self.top_frame, wrap=tk.NONE, font=(font_family, font_small)
+        )
+        self.text.grid(row=1, column=0, sticky="NSEW")
+        ToolTip(
+            self.text,
+            "Copy version information when reporting issues",
+            use_pointer_pos=True,
+        )
+
+        self.text.insert(
+            tk.END,
+            f"""Guiguts - an application to support creation of ebooks for PG
+
+Guiguts version: {version('guiguts')}
+
+Python version: {sys.version}
+Tk/Tcl version: {root().call("info", "patchlevel")}
+OS Platform: {platform.platform()}
+OS Release: {platform.release()}
+
+
+
+Copyright Contributors to the Guiguts-py project.
+
+This program is free software; you can redistribute it
+and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be
+useful, but WITHOUT ANY WARRANTY; without even
+the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General
+Public License for more details.
+
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the
+Free Software Foundation, Inc., 51 Franklin Street,
+Fifth Floor, Boston, MA 02110-1301 USA.""",
+        )
+        self.text.tag_add("title_tag", title_start, title_end)
+        self.text.tag_config("title_tag", font=(font_family, font_large))
+        self.text.tag_add("version_tag", version_start, version_end)
+        self.text.tag_config("version_tag", font=(font_family, font_medium))
 
 
 _compose_dict: dict[str, str] = {}
