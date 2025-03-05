@@ -216,6 +216,9 @@ class TextLineNumbers(tk.Canvas):
         self.drag_begin_index = IndexRowCol(1, 0)
         self.bind("<Button-1>", self.drag_handler_start)
         self.bind("<B1-Motion>", self.drag_handler)
+        # Shift-click in line number gutter to extend selection to start of clicked line
+        self.bind("<Shift-Button-1>", self.shift_click_handler)
+        self.bind("<Shift-B1-Motion>", self.shift_drag_handler)
 
     def redraw(self) -> None:
         """Redraw line numbers."""
@@ -311,6 +314,18 @@ class TextLineNumbers(tk.Canvas):
             # clicked only a single line
             self.textwidget.mark_set(tk.INSERT, _range.end.index())
             self.textwidget.mark_set(TK_ANCHOR_MARK, _range.start.index())
+
+    def shift_click_handler(self, evt: tk.Event) -> None:
+        """Convert shift click in line numbers to shift-click in maintext."""
+        self.textwidget.focus_set()
+        self.textwidget.event_generate("<Shift-Button-1>", x=0, y=evt.y)
+        self.redraw()
+
+    def shift_drag_handler(self, evt: tk.Event) -> None:
+        """Convert shift click in line numbers to shift-click in maintext."""
+        self.textwidget.focus_set()
+        self.textwidget.event_generate("<Shift-B1-Motion>", x=0, y=evt.y)
+        self.redraw()
 
 
 class HighlightTag(StrEnum):
