@@ -212,6 +212,11 @@ class TextLineNumbers(tk.Canvas):
         self.bind("<<ThemeChanged>>", lambda event: self.theme_change())
         self.text_color = themed_style().lookup("TButton", "foreground")
 
+        # Drag along the line number gutter to select lines
+        self.drag_begin_index = IndexRowCol(1, 0)
+        self.bind("<Button-1>", self.drag_handler_start)
+        self.bind("<B1-Motion>", self.drag_handler)
+
     def redraw(self) -> None:
         """Redraw line numbers."""
         # Allow for 5 digit line numbers
@@ -259,6 +264,53 @@ class TextLineNumbers(tk.Canvas):
         """Handle change of color theme"""
         self.configure(background=themed_style().lookup("TButton", "background"))
         self.text_color = themed_style().lookup("TButton", "foreground")
+
+    def drag_handler_start(self, evt: tk.Event) -> None:
+        """Handle initial click for drag-select operation."""
+        self.textwidget.focus_set()
+        self.drag_begin_index = self.cursor_index(evt)
+        self.drag_handler(evt)
+
+    def drag_handler(self, evt: tk.Event) -> None:
+        """Select text based on the current drag-select motion event."""
+        _range = self.drag_range(evt)
+        maintext().do_select(_range)
+        self.set_insert_index(evt)
+        maintext().linenumbers.redraw()
+        maintext().peer_linenumbers.redraw()
+
+    def cursor_index(self, evt: tk.Event) -> IndexRowCol:
+        """Return IndexRowCol for the row the cursor is positioned on."""
+        return IndexRowCol(self.textwidget.index(f"@0,{evt.y}"))
+
+    def drag_range(self, evt: tk.Event) -> IndexRange:
+        """Return an IndexRange representing text to select for the
+        drag-selection operation in progress."""
+        sorted_rows = sorted((self.drag_begin_index.row, self.cursor_index(evt).row))
+        # Add 1 to end row to select entire row. Instead of using `lineend`
+        # which would leave a jagged end to our selection, select up to the
+        # 0 index on the following line to get the nice rectangle, selecting
+        # only full lines.
+        return IndexRange(
+            IndexRowCol(sorted_rows[0], 0), IndexRowCol(sorted_rows[1] + 1, 0)
+        )
+
+    def set_insert_index(self, evt: tk.Event) -> None:
+        """Set the insert index so the line number is highlighted properly."""
+        cursor = self.cursor_index(evt)
+        _range = self.drag_range(evt)
+        if self.drag_begin_index.row < cursor.row:
+            # we were dragging downward
+            self.textwidget.mark_set(tk.INSERT, f"{cursor.index()} +1l linestart")
+            self.textwidget.mark_set(TK_ANCHOR_MARK, _range.start.index())
+        elif self.drag_begin_index.row > cursor.row:
+            # we were dragging upward
+            self.textwidget.mark_set(tk.INSERT, _range.start.index())
+            self.textwidget.mark_set(TK_ANCHOR_MARK, f"{_range.end.row}.0")
+        else:
+            # clicked only a single line
+            self.textwidget.mark_set(tk.INSERT, _range.end.index())
+            self.textwidget.mark_set(TK_ANCHOR_MARK, _range.start.index())
 
 
 class HighlightTag(StrEnum):
