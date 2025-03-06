@@ -11,7 +11,7 @@ from typing import Any, Callable, Final, TypedDict, Literal, Optional
 
 import regex as re
 
-from guiguts.mainwindow import mainimage
+from guiguts.mainwindow import mainimage, MainWindow, AutoImageState
 from guiguts.maintext import (
     maintext,
     PAGE_FLAG_TAG,
@@ -118,6 +118,7 @@ class File:
         self._languages_callback = languages_callback
         self.page_details = PageDetails()
         self.project_dict = ProjectDict()
+        self.mainwindow: Optional[MainWindow] = None
 
     @property
     def filename(self) -> str:
@@ -275,6 +276,10 @@ class File:
         self.project_dict.load(filename)
         # Load complete, so set filename (including side effects)
         self.filename = filename
+        # After loading, may need to show image
+        if preferences.get(PrefKey.AUTO_IMAGE):
+            self.image_dir_check()
+            self.auto_image_check()
 
     def save_file(self) -> str:
         """Save the current file.
@@ -599,11 +604,37 @@ class File:
                 return path
         return ""
 
+    def image_dir_check(self) -> None:
+        """Check if image dir is set up correctly."""
+        if self.filename and not (
+            self.image_dir
+            and os.path.isdir(self.image_dir)
+            and os.path.isfile(self.get_current_image_path())
+        ):
+            self.choose_image_dir()
+
     def choose_image_dir(self) -> None:
         """Allow user to select directory containing png image files"""
         self.image_dir = filedialog.askdirectory(
             mustexist=True, title=f"Select {folder_dir_str(True)} containing scans"
         )
+
+    def auto_image_check(self) -> None:
+        """Function called repeatedly to check whether an image needs loading."""
+        if preferences.get(PrefKey.AUTO_IMAGE):
+            # Image viewer can temporarily pause auto image viewing,
+            # but still need to schedule another call to this method.
+            auto_image_state = mainimage().auto_image_state()
+            if (
+                auto_image_state != AutoImageState.PAUSED
+                and self.mainwindow is not None
+            ):
+                self.mainwindow.load_image(self.get_current_image_path())
+                if auto_image_state == AutoImageState.RESTARTING:
+                    mainimage().alert_user()
+                    mainimage().auto_image_state(AutoImageState.NORMAL)
+
+            root().after(200, self.auto_image_check)
 
     def get_current_page_label(self) -> str:
         """Find page label corresponding to where the insert cursor is.
