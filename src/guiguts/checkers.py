@@ -145,11 +145,11 @@ class CheckerViewOptionsDialog(ToplevelDialog):
 
         btn_frame = ttk.Frame(self.top_frame)
         btn_frame.grid(row=1, column=0, pady=(5, 0))
-        ttk.Button(btn_frame, text="Hide All", command=lambda: self.set_all(True)).grid(
+        ttk.Button(
+            btn_frame, text="Hide All", command=lambda: self.set_all(False)
+        ).grid(row=0, column=1, padx=5)
+        ttk.Button(btn_frame, text="Show All", command=lambda: self.set_all(True)).grid(
             row=0, column=0, padx=5
-        )
-        ttk.Button(btn_frame, text="See All", command=lambda: self.set_all(False)).grid(
-            row=0, column=1, padx=5
         )
 
     def set_all(self, value: bool) -> None:
@@ -169,7 +169,7 @@ class CheckerViewOptionsDialog(ToplevelDialog):
 class CheckerFilter:
     """Class to store a single filter used for View Options."""
 
-    def __init__(self, label: str, regex: str, on: bool = False) -> None:
+    def __init__(self, label: str, regex: str, on: bool = True) -> None:
         """Initialize checker filter class.
 
         Args:
@@ -223,7 +223,8 @@ class CheckerDialog(ToplevelDialog):
         view_options_dialog_class: Optional[type[CheckerViewOptionsDialog]] = None,
         view_options_filters: Optional[list[CheckerFilter]] = None,
         switch_focus_when_clicked: Optional[bool] = None,
-        generic_buttons: bool = True,
+        show_hide_buttons: bool = True,
+        show_process_buttons: bool = True,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -239,7 +240,10 @@ class CheckerDialog(ToplevelDialog):
             clear_on_undo_redo: True to cause dialog to be cleared if Undo/Redo are used.
             view_options_dialog_class: Class to use for a View Options dialog.
             view_options_filters: List of filters to control which messages are shown.
-            process_buttons: Set to False to disable generic Remove/Fix/etc buttons.
+            switch_focus_when_clicked: Whether to switch focus to main window when message is clicked.
+                `None` gives default behavior, i.e. False on macOS, True elsewhere.
+            show_remove_buttons: Set to False to hide generic Hide/Hide All buttons.
+            show_process_buttons: Set to False to hide all generic Fix buttons.
         """
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
@@ -317,7 +321,7 @@ class CheckerDialog(ToplevelDialog):
         for col in range(6):
             message_controls_frame.columnconfigure(col, weight=1)
 
-        if generic_buttons:
+        if show_hide_buttons:
             rem_btn = ttk.Button(
                 message_controls_frame,
                 text="Hide",
@@ -335,6 +339,7 @@ class CheckerDialog(ToplevelDialog):
                 remall_btn,
                 "Hide all messages matching selected one (Shift right-click)",
             )
+        if show_process_buttons:
             if process_command is not None:
                 fix_btn = ttk.Button(
                     message_controls_frame,
@@ -900,7 +905,7 @@ class CheckerDialog(ToplevelDialog):
         Returns: True if entry is hidden by View Options settings.
         """
         for view_option_filter in self.view_options_filters:
-            if view_option_filter.on and view_option_filter.matches(entry):
+            if not view_option_filter.on and view_option_filter.matches(entry):
                 return True
         return False
 

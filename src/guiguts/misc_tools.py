@@ -2258,5 +2258,6 @@ def check_curly_quotes() -> None:
         rerun_command=check_curly_quotes,
         process_command=do_fix_quote,
         sort_key_alpha=sort_key_error,
+        show_process_buttons=False,
     )
     _the_curly_quotes_dialog.populate()

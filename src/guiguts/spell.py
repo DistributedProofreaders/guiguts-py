@@ -481,7 +481,8 @@ def spell_check(
             add_global_word_callback,
         ),
         process_command=process_spelling,
-        generic_buttons=False,
+        show_hide_buttons=False,
+        show_process_buttons=False,
         switch_focus_when_clicked=False,
         add_global_word_callback=add_global_word_callback,
     )
