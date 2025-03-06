@@ -6,7 +6,6 @@ import argparse
 import logging
 import importlib.resources
 from importlib.metadata import version
-import os.path
 from typing import Optional
 import unicodedata
 import webbrowser
@@ -107,6 +106,7 @@ class Guiguts:
         the_file(self.file)
 
         self.mainwindow = MainWindow()
+        self.file.mainwindow = self.mainwindow
         self.update_title()
 
         theme_path = THEMES_DIR.joinpath("awthemes-10.4.0")
@@ -196,45 +196,22 @@ class Guiguts:
         statusbar().set("see img", "Auto Img" if value else "See Img")
         if value:
             mainimage().auto_image_state(AutoImageState.NORMAL)
-            self.image_dir_check()
-            self.auto_image_check()
-
-    def auto_image_check(self) -> None:
-        """Function called repeatedly to check whether an image needs loading."""
-        if preferences.get(PrefKey.AUTO_IMAGE):
-            # Image viewer can temporarily pause auto image viewing,
-            # but still need to schedule another call to this method.
-            auto_image_state = mainimage().auto_image_state()
-            if auto_image_state != AutoImageState.PAUSED:
-                self.mainwindow.load_image(self.file.get_current_image_path())
-                if auto_image_state == AutoImageState.RESTARTING:
-                    mainimage().alert_user()
-                    mainimage().auto_image_state(AutoImageState.NORMAL)
-
-            root().after(200, self.auto_image_check)
+            self.file.image_dir_check()
+            self.file.auto_image_check()
 
     def see_image(self) -> None:
         """Show the image corresponding to current location."""
-        self.image_dir_check()
+        self.file.image_dir_check()
         self.mainwindow.load_image(self.file.get_current_image_path())
 
     def show_image_viewer(self) -> None:
         """Show the image viewer."""
-        self.image_dir_check()
+        self.file.image_dir_check()
         self.mainwindow.load_image(self.file.get_current_image_path(), force_show=True)
 
     def hide_image_viewer(self) -> None:
         """Hide the image viewer."""
         self.mainwindow.hide_image()
-
-    def image_dir_check(self) -> None:
-        """Check if image dir is set up correctly."""
-        if self.file.filename and not (
-            self.file.image_dir
-            and os.path.isdir(self.file.image_dir)
-            and os.path.isfile(self.file.get_current_image_path())
-        ):
-            self.file.choose_image_dir()
 
     def run(self) -> None:
         """Run the app."""
@@ -244,8 +221,6 @@ class Guiguts:
         """Handle side effects needed when filename changes."""
         self.init_file_menu()  # Recreate file menu to reflect recent files
         self.update_title()
-        if preferences.get(PrefKey.AUTO_IMAGE):
-            self.image_dir_check()
         maintext().after_idle(maintext().focus_set)
 
     def languages_changed(self) -> None:
