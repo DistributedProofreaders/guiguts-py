@@ -1266,7 +1266,9 @@ class CheckerDialog(ToplevelDialog):
             end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
             maintext().spotlight_range(IndexRange(start, end))
             maintext().set_insert_index(
-                IndexRowCol(start), focus=(focus and self.switch_focus_when_clicked)
+                IndexRowCol(start),
+                focus=(focus and self.switch_focus_when_clicked),
+                see_end_rowcol=IndexRowCol(end),
             )
             maintext().clear_selection()
         self.lift()

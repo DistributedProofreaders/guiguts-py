@@ -1466,6 +1466,7 @@ class MainText(tk.Text):
         insert_pos: IndexRowCol,
         focus: bool = True,
         focus_widget: Optional[tk.Text] = None,
+        see_end_rowcol: Optional[IndexRowCol] = None,
     ) -> None:
         """Set the position of the insert cursor.
 
@@ -1473,10 +1474,15 @@ class MainText(tk.Text):
             insert_pos: Location to position insert cursor.
             focus: Optional, False means focus will not be forced to maintext
             focus_widget: Optionally set index in this widget, not the default
+            see_end_rowcol: Optional rowcol marking the end of the text to be seen.
+                If specified, and its row is the same as `insert_pos.row`, then the
+                final `see` uses the mid point of these two positions. Will only
+                change things if there are long lines that don't fit in screen width.
         """
         if focus_widget is None:
             focus_widget = self.focus_widget()
-        focus_widget.mark_set(tk.INSERT, insert_pos.index())
+        insert_index = insert_pos.index()
+        focus_widget.mark_set(tk.INSERT, insert_index)
         # The `see` method can leave the desired line at the top or bottom of window.
         # So, we "see" lines above and below desired line incrementally up to
         # half window height each way, ensuring desired line is left in the middle.
@@ -1490,7 +1496,17 @@ class MainText(tk.Text):
         for inc in range(1, int(n_lines / 2) + 1):
             focus_widget.see(f"{tk.INSERT}-{inc}l")
             focus_widget.see(f"{tk.INSERT}+{inc}l")
-        focus_widget.see(tk.INSERT)
+        # If an endpoint hint is given, try to improve the "see" position horizontally
+        # by first seeing the endpoint, before seeing the start point, then the mid-point
+        if see_end_rowcol is not None and insert_pos.row == see_end_rowcol.row:
+            focus_widget.see(see_end_rowcol.index())
+        focus_widget.see(insert_index)
+        # Final attempt to improve the "see" position horizontally
+        # by using the midpoint of the match to help with offscreen long lines
+        if see_end_rowcol is not None and insert_pos.row == see_end_rowcol.row:
+            focus_widget.see(
+                f"{insert_pos.row}.{int((insert_pos.col+see_end_rowcol.col)/2)}"
+            )
         if focus:
             focus_widget.focus_set()
 
