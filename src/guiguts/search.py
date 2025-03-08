@@ -712,7 +712,9 @@ def _do_find_next(
 
     if match:
         rowcol_end = maintext().rowcol(match.rowcol.index() + f"+{match.count}c")
-        maintext().set_insert_index(match.rowcol, focus=False)
+        maintext().set_insert_index(
+            match.rowcol, focus=False, see_end_rowcol=rowcol_end
+        )
         maintext().do_select(IndexRange(match.rowcol, rowcol_end))
         maintext().set_mark_position(MARK_FOUND_START, match.rowcol, gravity=tk.LEFT)
         maintext().set_mark_position(MARK_FOUND_END, rowcol_end, gravity=tk.RIGHT)
