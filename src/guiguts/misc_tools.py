@@ -965,8 +965,16 @@ def unmatched_block_markup() -> None:
             after_match = maintext().index(f"{match_index}+{match.count}c")
             search_range = IndexRange(after_match, maintext().end())
             match_str = maintext().get_match_text(match)
-            # Don't report if open markup preceded by "<", e.g. "</i>"
-            if match_str[0] == "/" and maintext().get(f"{match_index}-1c") == "<":
+            # Don't report if open markup preceded by non-space, e.g. "</i>"(markup) or "z/l"(math)
+            if (
+                match_str[0] == "/"
+                and not maintext().get(f"{match_index}-1c").isspace()
+            ):
+                continue
+            # Nor if close markup followed by word character, e.g. "i/j"(math)
+            if match_str[1] == "/" and re.match(
+                r"\w", maintext().get(f"{match_index}+2c")
+            ):
                 continue
             # Now check if markup is malformed - get whole line and check against regex
             line = maintext().get(f"{match_index} linestart", f"{match_index} lineend")
@@ -977,7 +985,7 @@ def unmatched_block_markup() -> None:
                 idx_start = None
                 idx_end = None
             block_type = re.escape(match_str.replace("/", ""))
-            regex = rf"^(/{block_type}(\[\d+)?(\.\d+)?(,\d+)?]?|{block_type}/)$"
+            regex = rf"^(/{block_type}(\[(\d+)?(\.\d+)?(,\d+)?])?|{block_type}/)$"
             if not re.fullmatch(regex, line):
                 dialog.add_entry(
                     f"{prefix}{line}",
