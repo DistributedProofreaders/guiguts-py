@@ -838,7 +838,7 @@ class ScrolledReadOnlyText(tk.Text):
         self.frame.columnconfigure(0, weight=1)
         self.frame.rowconfigure(0, weight=1)
 
-        super().__init__(self.frame, **kwargs)
+        super().__init__(self.frame, spacing1=maintext()["spacing1"], **kwargs)
         super().grid(column=0, row=0, sticky="NSEW")
         self.redirector = WidgetRedirector(self)
         self.insert = self.redirector.register("insert", lambda *args, **kw: "break")
