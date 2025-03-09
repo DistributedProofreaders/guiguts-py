@@ -20,6 +20,7 @@ from guiguts.html_tools import (
     html_validator_check,
     html_link_check,
     css_validator_check,
+    ebookmaker_check,
 )
 from guiguts.illo_sn_fixup import illosn_check
 from guiguts.maintext import maintext
@@ -444,6 +445,11 @@ class Guiguts:
         preferences.set_callback(
             PrefKey.IMAGE_AUTOFIT_HEIGHT, image_autofit_height_callback
         )
+        preferences.set_default(PrefKey.EBOOKMAKER_PATH, "")
+        preferences.set_default(PrefKey.EBOOKMAKER_EPUB2, True)
+        preferences.set_default(PrefKey.EBOOKMAKER_EPUB3, True)
+        preferences.set_default(PrefKey.EBOOKMAKER_KINDLE, False)
+        preferences.set_default(PrefKey.EBOOKMAKER_KF8, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -795,6 +801,8 @@ class Guiguts:
         html_menu.add_button("HTML ~Link Checker", html_link_check)
         html_menu.add_button("HTML5 ~Validator (online)", html_validator_check)
         html_menu.add_button("~CSS Validator (online)", css_validator_check)
+        html_menu.add_separator()
+        html_menu.add_button("~Ebookmaker check", ebookmaker_check)
         html_menu.add_separator()
         html_menu.add_button(
             "~PP Workbench (www)",
