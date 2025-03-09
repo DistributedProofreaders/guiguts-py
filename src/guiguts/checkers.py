@@ -692,6 +692,7 @@ class CheckerDialog(ToplevelDialog):
         self.update_count_label(working=True)
         if self.text.winfo_exists():
             self.text.delete("1.0", tk.END)
+            self.update()
         if maintext().winfo_exists():
             maintext().clear_marks(self.get_mark_prefix())
             maintext().remove_spotlights()
