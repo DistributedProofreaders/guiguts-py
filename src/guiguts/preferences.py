@@ -108,6 +108,11 @@ class PrefKey(StrEnum):
     IMAGE_AUTOFIT_WIDTH = auto()
     IMAGE_AUTOFIT_HEIGHT = auto()
     CHECKER_GRAY_UNUSED_OPTIONS = auto()
+    EBOOKMAKER_PATH = auto()
+    EBOOKMAKER_EPUB2 = auto()
+    EBOOKMAKER_EPUB3 = auto()
+    EBOOKMAKER_KINDLE = auto()
+    EBOOKMAKER_KF8 = auto()
 
 
 class Preferences:
