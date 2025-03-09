@@ -43,9 +43,14 @@ class PreferencesDialog(ToplevelDialog):
         super().__init__("Settings", resize_x=False, resize_y=False)
         self.minsize(250, 10)
 
+        # Set up tab notebook
+        notebook = ttk.Notebook(self.top_frame, takefocus=False)
+        notebook.grid(column=0, row=0, sticky="NSEW")
+        notebook.enable_traversal()
+
         # Appearance
-        appearance_frame = ttk.LabelFrame(self.top_frame, text="Appearance", padding=10)
-        appearance_frame.grid(column=0, row=0, sticky="NSEW")
+        appearance_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(appearance_frame, text="Appearance")
         theme_frame = ttk.Frame(appearance_frame)
         theme_frame.grid(column=0, row=0, sticky="NSEW")
         theme_frame.columnconfigure(1, weight=1)
@@ -150,10 +155,8 @@ class PreferencesDialog(ToplevelDialog):
         ).grid(column=2, row=0, sticky="NEW")
 
         # Image Viewer
-        image_viewer_frame = ttk.LabelFrame(
-            self.top_frame, text="Image Viewer", padding=10
-        )
-        image_viewer_frame.grid(column=0, row=1, sticky="NSEW")
+        image_viewer_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(image_viewer_frame, text="Image Viewer")
         image_viewer_frame.columnconfigure(0, weight=1)
         image_viewer_frame.columnconfigure(1, weight=1)
 
@@ -197,22 +200,20 @@ class PreferencesDialog(ToplevelDialog):
             takefocus=False,
         ).grid(row=0, column=1, sticky="NSEW")
 
-        # Wrapping tab
-        wrapping_frame = ttk.LabelFrame(self.top_frame, text="Wrapping", padding=10)
-        wrapping_frame.grid(column=0, row=2, sticky="NSEW", pady=(10, 0))
-
-        def add_label_spinbox(row: int, label: str, key: PrefKey, tooltip: str) -> None:
-            """Add a label and spinbox to the wrapping frame.
+        def add_label_spinbox(
+            frame: ttk.Frame, row: int, label: str, key: PrefKey, tooltip: str
+        ) -> None:
+            """Add a label and spinbox to given frame.
             Args:
+                frame: Frame to add label & spinbox to.
+                row: Which row in frame to add to.
                 label: Text for label.
                 key: Prefs key to use to store preference.
                 tooltip: Text for tooltip.
             """
-            ttk.Label(wrapping_frame, text=label).grid(
-                column=0, row=row, sticky="NSE", pady=2
-            )
+            ttk.Label(frame, text=label).grid(column=0, row=row, sticky="NSE", pady=2)
             spinbox = ttk.Spinbox(
-                wrapping_frame,
+                frame,
                 textvariable=PersistentInt(key),
                 from_=0,
                 to=999,
@@ -221,57 +222,103 @@ class PreferencesDialog(ToplevelDialog):
             spinbox.grid(column=1, row=row, sticky="NW", padx=5, pady=2)
             ToolTip(spinbox, tooltip)
 
+        # Wrapping tab
+        wrapping_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(wrapping_frame, text="Wrapping")
+
         add_label_spinbox(
-            0, "Left Margin:", PrefKey.WRAP_LEFT_MARGIN, "Left margin for normal text"
+            wrapping_frame,
+            0,
+            "Left Margin:",
+            PrefKey.WRAP_LEFT_MARGIN,
+            "Left margin for normal text",
         )
         add_label_spinbox(
+            wrapping_frame,
             1,
             "Right Margin:",
             PrefKey.WRAP_RIGHT_MARGIN,
             "Right margin for normal text",
         )
         add_label_spinbox(
+            wrapping_frame,
             2,
             "Blockquote Indent:",
             PrefKey.WRAP_BLOCKQUOTE_INDENT,
             "Extra indent for each level of /# blockquotes",
         )
         add_label_spinbox(
+            wrapping_frame,
             3,
             "Blockquote Right Margin:",
             PrefKey.WRAP_BLOCKQUOTE_RIGHT_MARGIN,
             "Right margin for /# blockquotes",
         )
         add_label_spinbox(
+            wrapping_frame,
             4,
             "Nowrap Block Indent:",
             PrefKey.WRAP_BLOCK_INDENT,
             "Indent for /* and /L blocks",
         )
         add_label_spinbox(
+            wrapping_frame,
             5,
             "Poetry Indent:",
             PrefKey.WRAP_POETRY_INDENT,
             "Indent for /P poetry blocks",
         )
         add_label_spinbox(
+            wrapping_frame,
             6,
             "Index Main Entry Margin:",
             PrefKey.WRAP_INDEX_MAIN_MARGIN,
             "Indent for main entries in index - sub-entries retain their indent relative to this",
         )
         add_label_spinbox(
+            wrapping_frame,
             8,
             "Index Wrap Margin:",
             PrefKey.WRAP_INDEX_WRAP_MARGIN,
             "Left margin for all lines rewrapped in index",
         )
         add_label_spinbox(
+            wrapping_frame,
             9,
             "Index Right Margin:",
             PrefKey.WRAP_INDEX_RIGHT_MARGIN,
             "Right margin for index entries",
         )
+
+        # Advanced tab
+        advance_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(advance_frame, text="Advanced")
+
+        add_label_spinbox(
+            advance_frame,
+            0,
+            "Text Line Spacing:",
+            PrefKey.TEXT_LINE_SPACING,
+            "Additional line spacing in text windows",
+        )
+
+        add_label_spinbox(
+            advance_frame,
+            1,
+            "Text Cursor Width:",
+            PrefKey.TEXT_CURSOR_WIDTH,
+            "Width of insert cursor in main text window",
+        )
+
+        notebook.bind(
+            "<<NotebookTabChanged>>",
+            lambda _: preferences.set(
+                PrefKey.PREF_TAB_CURRENT, notebook.index(tk.CURRENT)
+            ),
+        )
+        tab = preferences.get(PrefKey.PREF_TAB_CURRENT)
+        if 0 <= tab < notebook.index(tk.END):
+            notebook.select(tab)
 
 
 class HelpAboutDialog(ToplevelDialog):

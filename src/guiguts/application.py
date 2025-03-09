@@ -380,6 +380,18 @@ class Guiguts:
             PrefKey.TEXT_FONT_SIZE,
             lambda *value: maintext().set_font(),
         )
+        # For some reason line spacing on Mac is very tight, so pad a bit here
+        preferences.set_default(PrefKey.TEXT_LINE_SPACING, 4 if is_mac() else 0)
+        preferences.set_callback(
+            PrefKey.TEXT_LINE_SPACING,
+            lambda *value: maintext().set_spacing1(),
+        )
+        preferences.set_default(PrefKey.TEXT_CURSOR_WIDTH, 2)
+        preferences.set_callback(
+            PrefKey.TEXT_CURSOR_WIDTH,
+            lambda *value: maintext().set_insertwidth(),
+        )
+        preferences.set_default(PrefKey.PREF_TAB_CURRENT, 0)
         preferences.set_default(PrefKey.SPELL_THRESHOLD, 3)
         preferences.set_default(PrefKey.UNMATCHED_NESTABLE, False)
         preferences.set_default(
