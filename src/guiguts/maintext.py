@@ -632,10 +632,14 @@ class MainText(tk.Text):
             family=family,
             size=preferences.get(PrefKey.TEXT_FONT_SIZE),
         )
-        # For some reason line spacing on Mac is very tight, so pad a bit here
-        line_spacing = 4 if is_mac() else 0
         # Create Text itself & place in Frame
-        super().__init__(self.frame, font=self.font, spacing1=line_spacing, **kwargs)
+        super().__init__(
+            self.frame,
+            font=self.font,
+            spacing1=preferences.get(PrefKey.TEXT_LINE_SPACING),
+            insertwidth=preferences.get(PrefKey.TEXT_CURSOR_WIDTH),
+            **kwargs,
+        )
         tk.Text.grid(self, column=1, row=1, sticky="NSEW")
 
         self.languages = ""
@@ -740,6 +744,7 @@ class MainText(tk.Text):
             font=self.font,
             highlightthickness=self["highlightthickness"],
             spacing1=self["spacing1"],
+            insertwidth=self["insertwidth"],
             inactiveselectbackground=self["inactiveselectbackground"],
             wrap=self["wrap"],
         )
@@ -1284,6 +1289,17 @@ class MainText(tk.Text):
             family=preferences.get(PrefKey.TEXT_FONT_FAMILY),
             size=preferences.get(PrefKey.TEXT_FONT_SIZE),
         )
+
+    def set_spacing1(self) -> None:
+        """Set the line spacing1 setting for the text widgets, based on the current Prefs value."""
+        self["spacing1"] = preferences.get(PrefKey.TEXT_LINE_SPACING)
+        self.peer["spacing1"] = preferences.get(PrefKey.TEXT_LINE_SPACING)
+
+    def set_insertwidth(self) -> None:
+        """Set the insert cursor width for the text widgets, based on the current Prefs value."""
+        width = max(preferences.get(PrefKey.TEXT_CURSOR_WIDTH), 1)
+        self["insertwidth"] = width
+        self.peer["insertwidth"] = width
 
         # On some systems, window isn't updated properly, so temporarily select all
         # then restore selection to force it to update.
