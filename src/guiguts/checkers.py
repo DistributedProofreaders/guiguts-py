@@ -172,7 +172,7 @@ class CheckerViewOptionsDialog(ToplevelDialog):
 
             btn = ttk.Checkbutton(
                 check_frame,
-                text=option_filter.label,
+                text=f"{option_filter.label} (0)",
                 command=btn_clicked,
                 variable=check_var,
             )
@@ -205,27 +205,32 @@ class CheckerViewOptionsDialog(ToplevelDialog):
         self.checker_dialog.display_entries()
 
     def refresh_checkboxes(self) -> None:
-        """Set status of checkboxes based on if any messages of that type."""
+        """Set status of checkboxes based on if any messages of that type, and
+        update the (count) at the end of the label."""
         for row, option_filter in enumerate(self.checker_dialog.view_options_filters):
+            matches = self.filter_matches(option_filter)
+            self.checkbuttons[row]["text"] = re.sub(
+                r"\(\d+\)$", f"({matches})", self.checkbuttons[row]["text"]
+            )
             self.checkbuttons[row]["state"] = (
                 tk.DISABLED
-                if preferences.get(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS)
-                and self.filter_unused(option_filter)
+                if preferences.get(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS) and matches == 0
                 else tk.NORMAL
             )
 
-    def filter_unused(self, option_filter: CheckerFilter) -> bool:
-        """Return whether no CheckerEntry messages match the given filter.
+    def filter_matches(self, option_filter: CheckerFilter) -> int:
+        """Return how many messages match the given filter.
 
         Args:
             filter: Filter to be checked.
 
-        Returns: True if no entries would be selected by the filter.
+        Returns: Number of matching messages.
         """
+        matches = 0
         for entry in self.checker_dialog.entries:
             if option_filter.matches(entry):
-                return False
-        return True
+                matches += 1
+        return matches
 
     def on_destroy(self) -> None:
         if self.checker_dialog.winfo_exists():
