@@ -9,7 +9,7 @@ import regex as re
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.preferences import PrefKey
+from guiguts.preferences import PrefKey, preferences, PersistentBoolean
 from guiguts.root import root
 from guiguts.utilities import (
     IndexRowCol,
@@ -192,7 +192,7 @@ class CheckerViewOptionsDialog(ToplevelDialog):
             btn_frame,
             text="Gray out unused view options",
             command=self.refresh_checkboxes,
-            variable=self.checker_dialog.suppress_unused_message_types,
+            variable=PersistentBoolean(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS),
         ).grid(row=0, column=2, padx=(40, 0))
         self.refresh_checkboxes()
 
@@ -209,7 +209,7 @@ class CheckerViewOptionsDialog(ToplevelDialog):
         for row, option_filter in enumerate(self.checker_dialog.view_options_filters):
             self.checkbuttons[row]["state"] = (
                 tk.DISABLED
-                if self.checker_dialog.suppress_unused_message_types.get()
+                if preferences.get(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS)
                 and self.filter_unused(option_filter)
                 else tk.NORMAL
             )
@@ -472,7 +472,6 @@ class CheckerDialog(ToplevelDialog):
         if view_options_filters is None:
             view_options_filters = []
         self.view_options_filters = view_options_filters
-        self.suppress_unused_message_types = tk.BooleanVar(value=False)
 
         # Next the message list itself
         self.top_frame.rowconfigure(3, weight=1)

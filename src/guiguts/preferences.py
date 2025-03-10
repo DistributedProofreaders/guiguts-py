@@ -104,6 +104,7 @@ class PrefKey(StrEnum):
     HIGHLIGHT_PROOFERCOMMENT = auto()
     IMAGE_AUTOFIT_WIDTH = auto()
     IMAGE_AUTOFIT_HEIGHT = auto()
+    CHECKER_GRAY_UNUSED_OPTIONS = auto()
 
 
 class Preferences:

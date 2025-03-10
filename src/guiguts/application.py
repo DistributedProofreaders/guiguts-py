@@ -444,6 +444,7 @@ class Guiguts:
         preferences.set_callback(
             PrefKey.IMAGE_AUTOFIT_HEIGHT, image_autofit_height_callback
         )
+        preferences.set_default(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
