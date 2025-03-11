@@ -9,7 +9,7 @@ import regex as re
 
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.preferences import PrefKey
+from guiguts.preferences import PrefKey, preferences, PersistentBoolean
 from guiguts.root import root
 from guiguts.utilities import (
     IndexRowCol,
@@ -105,67 +105,6 @@ class CheckerSortType(StrEnum):
     ROWCOL = auto()
 
 
-class CheckerViewOptionsDialog(ToplevelDialog):
-    """Dialog to allow user to show/hide checker message types."""
-
-    def __init__(
-        self,
-        checker_dialog: "CheckerDialog",
-    ) -> None:
-        """Create View Options dialog.
-
-        Args:
-            checker_dialog: The checker dialog that this dialog belongs to.
-        """
-        super().__init__(
-            f"{checker_dialog.title()} - View Options", resize_x=False, resize_y=False
-        )
-        self.checker_dialog = checker_dialog
-
-        self.flags: list[tk.BooleanVar] = []
-        check_frame = ttk.Frame(self.top_frame)
-        check_frame.grid(row=0, column=0)
-        max_height = 15  # Don't want too many checkbuttons per column
-        for row, option_filter in enumerate(self.checker_dialog.view_options_filters):
-
-            check_var = tk.BooleanVar(value=option_filter.on)
-
-            def btn_clicked(row: int = row, var: tk.BooleanVar = check_var) -> None:
-                """Called when filter setting is changed."""
-                self.checker_dialog.view_options_filters[row].on = var.get()
-                self.checker_dialog.display_entries()
-
-            ttk.Checkbutton(
-                check_frame,
-                text=option_filter.label,
-                command=btn_clicked,
-                variable=check_var,
-            ).grid(row=row % max_height, column=row // max_height, sticky="NSW")
-            self.flags.append(check_var)
-
-        btn_frame = ttk.Frame(self.top_frame)
-        btn_frame.grid(row=1, column=0, pady=(5, 0))
-        ttk.Button(
-            btn_frame, text="Hide All", command=lambda: self.set_all(False)
-        ).grid(row=0, column=1, padx=5)
-        ttk.Button(btn_frame, text="Show All", command=lambda: self.set_all(True)).grid(
-            row=0, column=0, padx=5
-        )
-
-    def set_all(self, value: bool) -> None:
-        """Set all the checkbuttons to the given value."""
-        for flag in self.flags:
-            flag.set(value)
-        for row, _ in enumerate(self.checker_dialog.view_options_filters):
-            self.checker_dialog.view_options_filters[row].on = value
-        self.checker_dialog.display_entries()
-
-    def on_destroy(self) -> None:
-        if self.checker_dialog.winfo_exists():
-            self.checker_dialog.lift()
-        super().on_destroy()
-
-
 class CheckerFilter:
     """Class to store a single filter used for View Options."""
 
@@ -198,6 +137,106 @@ class CheckerFilterErrorPrefix(CheckerFilter):
     def matches(self, entry: CheckerEntry) -> bool:
         """Return whether filter matches given entry."""
         return bool(self.regex.fullmatch(entry.error_prefix))
+
+
+class CheckerViewOptionsDialog(ToplevelDialog):
+    """Dialog to allow user to show/hide checker message types."""
+
+    def __init__(
+        self,
+        checker_dialog: "CheckerDialog",
+    ) -> None:
+        """Create View Options dialog.
+
+        Args:
+            checker_dialog: The checker dialog that this dialog belongs to.
+        """
+        super().__init__(
+            f"{checker_dialog.title()} - View Options", resize_x=False, resize_y=False
+        )
+        self.checker_dialog = checker_dialog
+
+        self.flags: list[tk.BooleanVar] = []
+        self.checkbuttons: list[ttk.Checkbutton] = []
+        check_frame = ttk.Frame(self.top_frame)
+        check_frame.grid(row=0, column=0)
+        max_height = 15  # Don't want too many checkbuttons per column
+        for row, option_filter in enumerate(self.checker_dialog.view_options_filters):
+
+            check_var = tk.BooleanVar(value=option_filter.on)
+
+            def btn_clicked(row: int = row, var: tk.BooleanVar = check_var) -> None:
+                """Called when filter setting is changed."""
+                self.checker_dialog.view_options_filters[row].on = var.get()
+                self.checker_dialog.display_entries()
+
+            btn = ttk.Checkbutton(
+                check_frame,
+                text=f"{option_filter.label} (0)",
+                command=btn_clicked,
+                variable=check_var,
+            )
+            btn.grid(row=row % max_height, column=row // max_height, sticky="NSW")
+            self.flags.append(check_var)
+            self.checkbuttons.append(btn)
+
+        btn_frame = ttk.Frame(self.top_frame)
+        btn_frame.grid(row=1, column=0, pady=(5, 0))
+        ttk.Button(btn_frame, text="Show All", command=lambda: self.set_all(True)).grid(
+            row=0, column=0, padx=5
+        )
+        ttk.Button(
+            btn_frame, text="Hide All", command=lambda: self.set_all(False)
+        ).grid(row=0, column=1, padx=5)
+        ttk.Checkbutton(
+            btn_frame,
+            text="Gray out options with no matches",
+            command=self.refresh_checkboxes,
+            variable=PersistentBoolean(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS),
+        ).grid(row=0, column=2, padx=(40, 0))
+        self.refresh_checkboxes()
+
+    def set_all(self, value: bool) -> None:
+        """Set all the checkbuttons to the given value."""
+        for flag in self.flags:
+            flag.set(value)
+        for row, _ in enumerate(self.checker_dialog.view_options_filters):
+            self.checker_dialog.view_options_filters[row].on = value
+        self.checker_dialog.display_entries()
+
+    def refresh_checkboxes(self) -> None:
+        """Set status of checkboxes based on if any messages of that type, and
+        update the (count) at the end of the label."""
+        for row, option_filter in enumerate(self.checker_dialog.view_options_filters):
+            matches = self.filter_matches(option_filter)
+            self.checkbuttons[row]["text"] = re.sub(
+                r"\(\d+\)$", f"({matches})", self.checkbuttons[row]["text"]
+            )
+            self.checkbuttons[row]["state"] = (
+                tk.DISABLED
+                if preferences.get(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS) and matches == 0
+                else tk.NORMAL
+            )
+
+    def filter_matches(self, option_filter: CheckerFilter) -> int:
+        """Return how many messages match the given filter.
+
+        Args:
+            filter: Filter to be checked.
+
+        Returns: Number of matching messages.
+        """
+        matches = 0
+        for entry in self.checker_dialog.entries:
+            if option_filter.matches(entry):
+                matches += 1
+        return matches
+
+    def on_destroy(self) -> None:
+        if self.checker_dialog.winfo_exists():
+            self.checker_dialog.lift()
+            self.checker_dialog.view_options_dialog = None
+        super().on_destroy()
 
 
 class CheckerDialog(ToplevelDialog):
@@ -299,6 +338,7 @@ class CheckerDialog(ToplevelDialog):
         def rerunner() -> None:
             self.selection_on_clear[self.__class__.__name__] = None
             self.rerun_command()
+            self.refresh_view_options()
 
         self.rerun_command = rerun_command
         self.rerun_button = ttk.Button(
@@ -676,6 +716,14 @@ class CheckerDialog(ToplevelDialog):
         ):
             self.view_options_dialog.destroy()
             self.view_options_dialog = None
+
+    def refresh_view_options(self) -> None:
+        """Update view options dialog if it's visible."""
+        if (
+            self.view_options_dialog is not None
+            and self.view_options_dialog.winfo_exists()
+        ):
+            self.view_options_dialog.refresh_checkboxes()
 
     def new_section(self) -> None:
         """Start a new section in the dialog.
@@ -1134,6 +1182,7 @@ class CheckerDialog(ToplevelDialog):
                     self.text.delete(f"{linenum}.0", f"{linenum + 1}.0")
                     del self.entries[ii]
         self.update_count_label()
+        self.refresh_view_options()
         # Select line that is now where the first processed/removed line was
         entry_rowcol = IndexRowCol(self.text.index(MARK_ENTRY_TO_SELECT))
         last_row = IndexRowCol(self.text.index(tk.END)).row - 1
