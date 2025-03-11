@@ -463,6 +463,7 @@ class Notebook(ttk.Notebook):
     def __init__(self, parent: tk.Widget, *args: Any, **kwargs: Any) -> None:
         super().__init__(parent, *args, **kwargs)
         self.toplevel = self.winfo_toplevel()
+        self.tab_list: list[tk.Widget] = []
 
         # On Macs, bind Command-Option with Left/Right arrows to switch tabs
         # Standard Ctrl-tab & Shift-Ctrl-tab are inbuilt on all systems
@@ -481,6 +482,7 @@ class Notebook(ttk.Notebook):
 
     def add(self, child: tk.Widget, *args: Any, **kwargs: Any) -> None:
         super().add(child, *args, **kwargs)
+        self.tab_list.append(child)
 
         def select_tab(tab: int) -> str:
             """Select specific tab (for use with keyboard binding).
@@ -491,6 +493,31 @@ class Notebook(ttk.Notebook):
             Returns:
                 "break" to avoid default behavior (bookmark shortcuts)
             """
+            # TESTING: try uncommenting each of the following blocks of code one at a time
+
+            # Test 1
+            # self.hide(tab-1)
+
+            # Test 2
+            # self.select(tab - 1)
+            # self.hide(tab-1)
+
+            # Test 3
+            # self.select(tab - 1)
+            # self.hide(tab-1)
+            # self.add(self.tabs()[tab-1])
+
+            # Test 4
+            # self.select(tab - 1)
+            # self.hide(tab-1)
+            # self.update()
+            # self.add(self.tabs()[tab-1])
+            # self.update()
+
+            # Test 5
+            # self.tab_list[tab-1].focus_force()
+
+            # Keep the following lines unchanged in all tests
             self.select(tab - 1)
             return "break"
 
