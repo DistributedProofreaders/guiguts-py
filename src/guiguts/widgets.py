@@ -10,7 +10,7 @@ import regex as re
 
 from guiguts.preferences import preferences, PrefKey
 from guiguts.root import root, RootWindowState
-from guiguts.utilities import is_windows, is_mac, process_accel
+from guiguts.utilities import is_windows, is_mac, process_accel, cmd_ctrl_string
 
 NUM_HISTORY = 10
 
@@ -450,6 +450,58 @@ class Combobox(ttk.Combobox):
             self.current(0)
         except tk.TclError:
             self.set("")
+
+
+class Notebook(ttk.Notebook):
+    """A ttk Notebook with some additional bindings.
+
+    In particular, provide keyboard bindings for switching tabs. Note that
+    bindings are made to parent dialog, i.e. code assumes that there is
+    nothing else in the dialog that the bindings will clash with.
+    """
+
+    def __init__(self, parent: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        """Initialize Notebook - standard ttk.Notebook with extra bindings."""
+        super().__init__(parent, *args, **kwargs)
+        self.toplevel = self.winfo_toplevel()
+
+        # On Macs, bind Command-Option with Left/Right arrows to switch tabs
+        # Standard Ctrl-tab & Shift-Ctrl-tab are inbuilt on all systems
+        if is_mac():
+            self.toplevel.bind(
+                "<Command-Option-Left>",
+                lambda _: self.select_tab((self.index(tk.CURRENT) - 1)),
+            )
+            self.toplevel.bind(
+                "<Command-Option-Right>",
+                lambda _: self.select_tab((self.index(tk.CURRENT) + 1)),
+            )
+
+    def add(self, child: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        """Override add method to bind Cmd/Ctrl-digit keyboard shortcuts."""
+        super().add(child, *args, **kwargs)
+        tab = self.index(tk.END)
+        if 1 <= tab <= 9:
+            self.toplevel.bind(
+                f"<{cmd_ctrl_string()}-Key-{tab}>",
+                lambda _, tab=tab: self.select_tab(tab - 1),  # type:ignore[misc]
+            )
+
+    def select_tab(self, tab: int) -> str:
+        """Select specific tab (for use with keyboard bindings
+        to avoid macOS bug).
+
+        Args:
+            tab: zero-based tab number, wraps around from last tab to first.
+
+        Returns:
+            "break" to avoid default behavior (bookmark shortcuts)
+        """
+        tab %= self.index(tk.END)
+        self.select(tab)
+        self.hide(tab)  # Hide then reselect forces macOS to display it
+        self.select(tab)
+        return "break"
 
 
 class ToolTip:

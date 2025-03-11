@@ -28,6 +28,7 @@ from guiguts.widgets import (
     OkApplyCancelDialog,
     mouse_bind,
     Combobox,
+    Notebook,
 )
 
 COMBO_SEPARATOR = "―" * 20
@@ -44,7 +45,7 @@ class PreferencesDialog(ToplevelDialog):
         self.minsize(250, 10)
 
         # Set up tab notebook
-        notebook = ttk.Notebook(self.top_frame, takefocus=False)
+        notebook = Notebook(self.top_frame, takefocus=False)
         notebook.grid(column=0, row=0, sticky="NSEW")
         notebook.enable_traversal()
 
