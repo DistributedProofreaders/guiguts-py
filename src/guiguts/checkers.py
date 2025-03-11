@@ -190,7 +190,7 @@ class CheckerViewOptionsDialog(ToplevelDialog):
         ).grid(row=0, column=1, padx=5)
         ttk.Checkbutton(
             btn_frame,
-            text="Gray out unused view options",
+            text="Gray out options with no matches",
             command=self.refresh_checkboxes,
             variable=PersistentBoolean(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS),
         ).grid(row=0, column=2, padx=(40, 0))
