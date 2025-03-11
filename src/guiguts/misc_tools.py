@@ -1307,7 +1307,7 @@ def proofer_comment_check() -> None:
     """Find all proofer comments."""
 
     matches = maintext().find_matches(
-        r"\[\*\*[^]]*]",
+        r"\[\*\*([^]]|\n)*]",
         maintext().start_to_end(),
         nocase=False,
         regexp=True,

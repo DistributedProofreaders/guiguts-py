@@ -3676,7 +3676,7 @@ class MainText(tk.Text):
     def highlight_proofercomment_in_viewport(self, viewport: Text) -> None:
         """Highlight [** proofer comments] in a single viewport."""
         for _match in self.find_matches(
-            r"\[\*\*[^]]*\]",
+            r"\[\*\*([^]]|\n)*\]",
             self.get_screen_window_coordinates(viewport),
             regexp=True,
         ):
