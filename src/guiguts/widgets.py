@@ -461,72 +461,47 @@ class Notebook(ttk.Notebook):
     """
 
     def __init__(self, parent: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        """Initialize Notebook - standard ttk.Notebook with extra bindings."""
         super().__init__(parent, *args, **kwargs)
         self.toplevel = self.winfo_toplevel()
-        self.tab_list: list[tk.Widget] = []
 
         # On Macs, bind Command-Option with Left/Right arrows to switch tabs
         # Standard Ctrl-tab & Shift-Ctrl-tab are inbuilt on all systems
         if is_mac():
-
-            def prev_next_tab(pn: int) -> None:
-                """Select prev/next tab.
-
-                Args:
-                    pn: -1 for previous tab, +1 for next tab.
-                """
-                self.select((self.index(tk.CURRENT) + pn) % self.index(tk.END))
-
-            self.toplevel.bind("<Command-Option-Left>", lambda _: prev_next_tab(-1))
-            self.toplevel.bind("<Command-Option-Right>", lambda _: prev_next_tab(1))
+            self.toplevel.bind(
+                "<Command-Option-Left>",
+                lambda _: self.select_tab((self.index(tk.CURRENT) - 1)),
+            )
+            self.toplevel.bind(
+                "<Command-Option-Right>",
+                lambda _: self.select_tab((self.index(tk.CURRENT) + 1)),
+            )
 
     def add(self, child: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        """Override add method to bind Cmd/Ctrl-digit keyboard shortcuts."""
         super().add(child, *args, **kwargs)
-        self.tab_list.append(child)
-
-        def select_tab(tab: int) -> str:
-            """Select specific tab (for use with keyboard binding).
-
-            Args:
-                tab: 1-based tab number, assumed valid
-
-            Returns:
-                "break" to avoid default behavior (bookmark shortcuts)
-            """
-            # TESTING: try uncommenting each of the following blocks of code one at a time
-
-            # Test 1
-            # self.hide(tab-1)
-
-            # Test 2
-            # self.select(tab - 1)
-            # self.hide(tab-1)
-
-            # Test 3
-            # self.select(tab - 1)
-            # self.hide(tab-1)
-            # self.add(self.tabs()[tab-1])
-
-            # Test 4
-            # self.select(tab - 1)
-            # self.hide(tab-1)
-            # self.update()
-            # self.add(self.tabs()[tab-1])
-            # self.update()
-
-            # Test 5
-            # self.tab_list[tab-1].focus_force()
-
-            # Keep the following lines unchanged in all tests
-            self.select(tab - 1)
-            return "break"
-
         tab = self.index(tk.END)
-        assert 0 < tab < 10
-        self.toplevel.bind(
-            f"<{cmd_ctrl_string()}-Key-{tab}>",
-            lambda _, tab=tab: select_tab(tab),  # type:ignore[misc]
-        )
+        if 1 <= tab <= 9:
+            self.toplevel.bind(
+                f"<{cmd_ctrl_string()}-Key-{tab}>",
+                lambda _, tab=tab: self.select_tab(tab - 1),  # type:ignore[misc]
+            )
+
+    def select_tab(self, tab: int) -> str:
+        """Select specific tab (for use with keyboard bindings
+        to avoid macOS bug).
+
+        Args:
+            tab: zero-based tab number, wraps around from last tab to first.
+
+        Returns:
+            "break" to avoid default behavior (bookmark shortcuts)
+        """
+        tab %= self.index(tk.END)
+        self.select(tab)
+        self.hide(tab)  # Hide then reselect forces macOS to display it
+        self.select(tab)
+        return "break"
 
 
 class ToolTip:
