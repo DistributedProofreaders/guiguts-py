@@ -10,7 +10,7 @@ import regex as re
 
 from guiguts.preferences import preferences, PrefKey
 from guiguts.root import root, RootWindowState
-from guiguts.utilities import is_windows, is_mac, process_accel
+from guiguts.utilities import is_windows, is_mac, process_accel, cmd_ctrl_string
 
 NUM_HISTORY = 10
 
@@ -450,6 +450,56 @@ class Combobox(ttk.Combobox):
             self.current(0)
         except tk.TclError:
             self.set("")
+
+
+class Notebook(ttk.Notebook):
+    """A ttk Notebook with some additional bindings.
+
+    In particular, provide keyboard bindings for switching tabs. Note that
+    bindings are made to parent dialog, i.e. code assumes that there is
+    nothing else in the dialog that the bindings will clash with.
+    """
+
+    def __init__(self, parent: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        super().__init__(parent, *args, **kwargs)
+        self.toplevel = self.winfo_toplevel()
+
+        # On Macs, bind Command-Option with Left/Right arrows to switch tabs
+        # Standard Ctrl-tab & Shift-Ctrl-tab are inbuilt on all systems
+        if is_mac():
+
+            def prev_next_tab(pn: int) -> None:
+                """Select prev/next tab.
+
+                Args:
+                    pn: -1 for previous tab, +1 for next tab.
+                """
+                self.select((self.index(tk.CURRENT) + pn) % self.index(tk.END))
+
+            self.toplevel.bind("<Command-Option-Left>", lambda _: prev_next_tab(-1))
+            self.toplevel.bind("<Command-Option-Right>", lambda _: prev_next_tab(1))
+
+    def add(self, child: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        super().add(child, *args, **kwargs)
+
+        def select_tab(tab: int) -> str:
+            """Select specific tab (for use with keyboard binding).
+
+            Args:
+                tab: 1-based tab number, assumed valid
+
+            Returns:
+                "break" to avoid default behavior (bookmark shortcuts)
+            """
+            self.select(tab - 1)
+            return "break"
+
+        tab = self.index(tk.END)
+        assert 0 < tab < 10
+        self.toplevel.bind(
+            f"<{cmd_ctrl_string()}-Key-{tab}>",
+            lambda _, tab=tab: select_tab(tab),  # type:ignore[misc]
+        )
 
 
 class ToolTip:
