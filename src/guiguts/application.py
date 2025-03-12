@@ -76,7 +76,7 @@ from guiguts.tools.bookloupe import bookloupe_check
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
 from guiguts.tools.pptxt import pptxt
-from guiguts.utilities import is_mac, folder_dir_str
+from guiguts.utilities import is_mac, is_windows, is_x11, folder_dir_str
 from guiguts.widgets import themed_style, theme_name_internal_from_user
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
@@ -456,7 +456,12 @@ class Guiguts:
             PrefKey.IMAGE_AUTOFIT_HEIGHT, image_autofit_height_callback
         )
         preferences.set_default(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS, False)
-        preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, not is_mac())
+        if is_windows():
+            preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, "word")
+        elif is_x11():
+            preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, "char")
+        else:
+            preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, "off")
 
         # Check all preferences have a default
         for pref_key in PrefKey:

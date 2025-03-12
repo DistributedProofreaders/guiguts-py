@@ -1830,13 +1830,20 @@ class MainText(tk.Text):
 
     def reverse_rtl(self, text: str) -> str:
         """Reverse sections of RTL text within string."""
-        if not preferences.get(PrefKey.AUTOFIX_RTL_TEXT):
-            return text
-        return re.sub(
-            r"[\u0590-\u05FF\uFB2A-\uFB4E][\u0590-\u05FF\uFB2A-\uFB4E ]*[\u0590-\u05FF\uFB2A-\uFB4E]",
-            lambda match: " ".join(reversed(match.group().split(" "))),
-            text,
-        )
+        autofix_rtl = preferences.get(PrefKey.AUTOFIX_RTL_TEXT)
+        if autofix_rtl == "word":
+            return re.sub(
+                r"[\u0590-\u05FF\uFB2A-\uFB4E][\u0590-\u05FF\uFB2A-\uFB4E ]*[\u0590-\u05FF\uFB2A-\uFB4E]",
+                lambda match: " ".join(reversed(match.group().split(" "))),
+                text,
+            )
+        if autofix_rtl == "char":
+            return re.sub(
+                r"[\u0590-\u05FF\uFB2A-\uFB4E][\u0590-\u05FF\uFB2A-\uFB4E ]*[\u0590-\u05FF\uFB2A-\uFB4E]",
+                lambda match: match.group()[::-1],
+                text,
+            )
+        return text
 
     def clipboard_append(self, string: str, **kw: Any) -> None:
         """Override appending text to clipboard to deal with macOS limitation."""
