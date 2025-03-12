@@ -310,6 +310,11 @@ class PreferencesDialog(ToplevelDialog):
             PrefKey.TEXT_CURSOR_WIDTH,
             "Width of insert cursor in main text window",
         )
+        ttk.Checkbutton(
+            advance_frame,
+            text="Auto-fix Hebrew/RTL text (not usually needed on Mac)",
+            variable=PersistentBoolean(PrefKey.AUTOFIX_RTL_TEXT),
+        ).grid(column=0, row=2, sticky="NEW", pady=5, columnspan=2)
 
         notebook.bind(
             "<<NotebookTabChanged>>",

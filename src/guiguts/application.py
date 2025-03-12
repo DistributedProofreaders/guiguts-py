@@ -456,6 +456,7 @@ class Guiguts:
             PrefKey.IMAGE_AUTOFIT_HEIGHT, image_autofit_height_callback
         )
         preferences.set_default(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS, False)
+        preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, not is_mac())
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -562,6 +563,11 @@ class Guiguts:
         edit_menu.add_button(
             "To~ggle Column/Regular Selection",
             maintext().toggle_selection_type,
+        )
+        edit_menu.add_separator()
+        edit_menu.add_button(
+            "Paste ~Hebrew/RTL text",
+            maintext().paste_rtl,
         )
         edit_menu.add_separator()
         case_menu = Menu(edit_menu, "C~hange Case")

@@ -1395,7 +1395,7 @@ class MainText(tk.Text):
             fname: Name of file to save text to.
         """
         with open(fname, "w", encoding="utf-8") as fh:
-            fh.write(self.get_text())
+            fh.write(maintext().reverse_rtl(self.get_text()))
         if clear_modified_flag:
             self.set_modified(False)
 
@@ -1408,7 +1408,7 @@ class MainText(tk.Text):
         self.delete("1.0", tk.END)
         try:
             with open(fname, "r", encoding="utf-8") as fh:
-                self.insert(tk.END, fh.read())
+                self.insert(tk.END, maintext().reverse_rtl(fh.read()))
         except UnicodeDecodeError:
             with open(fname, "r", encoding="iso-8859-1") as fh:
                 self.insert(tk.END, fh.read())
@@ -1817,6 +1817,26 @@ class MainText(tk.Text):
                 self.insert(start_rowcol.index(), clipline)
         rowcol = self.rowcol(f"{start_rowcol.index()} + {len(clipline)}c")
         self.set_insert_index(rowcol)
+
+    def paste_rtl(self) -> None:
+        """Paste the clipboard text assuming it is RTL text."""
+        # Trap empty clipboard or no STRING representation
+        try:
+            clipboard = self.clipboard_get()
+        except tk.TclError:
+            return
+        clipboard = self.reverse_rtl(clipboard)
+        maintext().insert(tk.INSERT, clipboard)
+
+    def reverse_rtl(self, text: str) -> str:
+        """Reverse sections of RTL text within string."""
+        if not preferences.get(PrefKey.AUTOFIX_RTL_TEXT):
+            return text
+        return re.sub(
+            r"[\u0590-\u05FF\uFB2A-\uFB4E][\u0590-\u05FF\uFB2A-\uFB4E ]*[\u0590-\u05FF\uFB2A-\uFB4E]",
+            lambda match: " ".join(reversed(match.group().split(" "))),
+            text,
+        )
 
     def clipboard_append(self, string: str, **kw: Any) -> None:
         """Override appending text to clipboard to deal with macOS limitation."""
