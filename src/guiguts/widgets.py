@@ -472,6 +472,7 @@ class ToolTip:
         self.widget = widget
         self.widget_tl = widget.winfo_toplevel()
 
+        # If widget part of a dialog, register so tooltip can be deleted when dialog destroyed
         if issubclass(type(self.widget_tl), ToplevelDialog):
             self.widget_tl.register_tooltip(self)  # type: ignore[union-attr]
         self.use_pointer_pos = use_pointer_pos

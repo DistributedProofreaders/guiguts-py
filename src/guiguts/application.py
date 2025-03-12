@@ -114,9 +114,8 @@ class Guiguts:
         root().tk.call("package", "require", "awdark")
         root().tk.call("package", "require", "awlight")
 
-        self.file_menu: Optional[Menu] = (
-            None  # File menu is saved to allow deletion & re-creation
-        )
+        # Recent menu is saved to allow deletion & re-creation when files loaded/saved
+        self.recent_menu: Optional[Menu] = None
         self.init_menus()
 
         self.init_statusbar(statusbar())
@@ -219,7 +218,7 @@ class Guiguts:
 
     def filename_changed(self) -> None:
         """Handle side effects needed when filename changes."""
-        self.init_file_menu()  # Recreate file menu to reflect recent files
+        self.populate_recent_menu()  # Recreate menu to reflect recent files
         self.update_title()
         maintext().after_idle(maintext().focus_set)
 
@@ -488,31 +487,29 @@ class Guiguts:
 
     def init_file_menu(self) -> None:
         """(Re-)create the File menu."""
-        try:
-            self.file_menu.delete(0, "end")  # type:ignore[union-attr]
-        except AttributeError:
-            self.file_menu = Menu(menubar(), "~File")
-        assert self.file_menu is not None
-        self.file_menu.add_button("~Open...", self.open_file, "Cmd/Ctrl+O")
-        self.init_file_recent_menu(self.file_menu)
-        self.file_menu.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
-        self.file_menu.add_button(
-            "Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S"
-        )
-        self.file_menu.add_button("Sa~ve a Copy As...", self.file.save_copy_as_file)
-        self.file_menu.add_button(
-            "~Close", self.close_command, "Cmd+W" if is_mac() else ""
-        )
-        self.init_file_project_menu(self.file_menu)
+        file_menu = Menu(menubar(), "~File")
+        file_menu.add_button("~Open...", self.open_file, "Cmd/Ctrl+O")
+        self.init_file_recent_menu(file_menu)
+        file_menu.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
+        file_menu.add_button("Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S")
+        file_menu.add_button("Sa~ve a Copy As...", self.file.save_copy_as_file)
+        file_menu.add_button("~Close", self.close_command, "Cmd+W" if is_mac() else "")
+        self.init_file_project_menu(file_menu)
         if not is_mac():
-            self.file_menu.add_separator()
-            self.file_menu.add_button("E~xit", self.quit_program, "")
+            file_menu.add_separator()
+            file_menu.add_button("E~xit", self.quit_program, "")
 
     def init_file_recent_menu(self, parent: Menu) -> None:
         """Create the Recent Documents menu."""
-        recent_menu = Menu(parent, "Recent Doc~uments")
+        self.recent_menu = Menu(parent, "Recent Doc~uments")
+        self.populate_recent_menu()
+
+    def populate_recent_menu(self) -> None:
+        """Populate recent menu with recent filenames"""
+        assert self.recent_menu is not None
+        self.recent_menu.delete(0, "end")
         for count, file in enumerate(preferences.get(PrefKey.RECENT_FILES), start=1):
-            recent_menu.add_button(
+            self.recent_menu.add_button(
                 f"~{count}: {file}",
                 lambda fn=file: self.open_file(fn),  # type:ignore[misc]
             )

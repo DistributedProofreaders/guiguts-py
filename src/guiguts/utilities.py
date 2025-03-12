@@ -6,7 +6,7 @@ import platform
 import logging
 from pathlib import Path
 import os.path
-from tkinter import _tkinter
+from tkinter import _tkinter  # type: ignore[attr-defined]
 from typing import Any, Optional, Callable, Mapping
 from unicodedata import combining, normalize
 
@@ -38,20 +38,15 @@ def is_x11() -> bool:
     return _is_system("Linux")
 
 
-# mypy: disable-error-code="attr-defined"
 def _is_system(system: str) -> bool:
     """Return true if running on given system
 
     Args:
         system: Name of system to check against
     """
-    try:
-        return _is_system.system == system
-    except AttributeError as exc:
-        _is_system.system = platform.system()
-        if _is_system.system not in ["Darwin", "Linux", "Windows"]:
-            raise RuntimeError("Unknown windowing system") from exc
-        return _is_system.system == system
+    my_system = platform.system()
+    assert my_system in ("Darwin", "Linux", "Windows")
+    return my_system == system
 
 
 def load_dict_from_json(filename: str) -> Optional[dict[str, Any]]:

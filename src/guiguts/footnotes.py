@@ -312,13 +312,11 @@ class FootnoteChecker:
         Wraps back to AAA,AAB,etc., if >= 18728 (26^3+26^2+26)
         footnotes.
 
-        Algorithm devised by @windymilla (Nigel Blower).
-
         Arg:
             label: an integer footnote or anchor label/index.
 
         Returns:
-            # The corresponding alphabetic formhe label/index.
+            The corresponding alphabetic formhe label/index.
         """
         label -= 1
         _single = label % 26
@@ -631,7 +629,8 @@ def set_anchor() -> None:
     fn_record = fn_records[fn_index]
     # From that we can get the start index of the new anchor we created.
     an_records = _the_footnote_checker.get_an_records()
-    an_record = an_records[fn_record.an_index]  # type: ignore[index]
+    assert fn_record.an_index is not None
+    an_record = an_records[fn_record.an_index]
     # Get index into dialog entries for this record.
     dialog_entry_index = _the_footnote_checker.map_an_record_to_dialog_index(an_record)
     if dialog_entry_index < 0:
@@ -679,16 +678,13 @@ def reindex() -> None:
     an_records = _the_footnote_checker.get_an_records()
     fn_records = _the_footnote_checker.get_fn_records()
     for index in range(1, len(an_records) + 1):
-        if index_style == "number":
-            label = index
-        elif index_style == "roman":
+        if index_style == "roman":
             label = roman.toRoman(index)
-            label = label + "."  # type: ignore[operator]
+            label = label + "."
         elif index_style == "letter":
-            label = _the_footnote_checker.alpha(index)  # type: ignore[assignment]
+            label = _the_footnote_checker.alpha(index)
         else:
-            # Default
-            label = index
+            label = str(index)
         an_record = an_records[index - 1]
         an_line_text = maintext().get(
             f"{an_record.start.index()} linestart",
@@ -1075,7 +1071,8 @@ def move_footnotes_to_lz() -> None:
         )
         fn_lines = maintext().get(fn_cur_start, fn_cur_end)
         # Get anchor record for this footnote.
-        an_cur = an_records[fn_record.an_index]  # type: ignore[index]
+        assert fn_record.an_index is not None
+        an_cur = an_records[fn_record.an_index]
         an_cur_end = maintext().index(
             _the_footnote_checker.checker_dialog.mark_from_rowcol(an_cur.end)
         )
@@ -1420,7 +1417,9 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
                     and fn_record.an_index is not None
                     and fn_records[fn_index - 1].an_index is not None
                 ):
-                    an_prev = an_records[fn_records[fn_index - 1].an_index]  # type: ignore[index]
+                    an_idx = fn_records[fn_index - 1].an_index
+                    assert an_idx is not None
+                    an_prev = an_records[an_idx]
                     if an_prev.start.row > an_record.start.row or (
                         an_prev.start.row == an_record.start.row
                         and an_prev.start.col > an_record.start.col
@@ -1433,7 +1432,9 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
                     and fn_record.an_index is not None
                     and fn_records[fn_index + 1].an_index is not None
                 ):
-                    an_next = an_records[fn_records[fn_index + 1].an_index]  # type: ignore[index]
+                    an_idx = fn_records[fn_index + 1].an_index
+                    assert an_idx is not None
+                    an_next = an_records[an_idx]
                     if an_next.start.row < an_record.start.row or (
                         an_next.start.row == an_record.start.row
                         and an_next.start.col < an_record.start.col

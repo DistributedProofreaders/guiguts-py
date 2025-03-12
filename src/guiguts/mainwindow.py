@@ -830,7 +830,7 @@ class ScrolledReadOnlyText(tk.Text):
     # Can't use standard selection since that would interfere with user trying to copy/paste, etc.
     SELECT_TAG_NAME = "chk_select"
 
-    def __init__(self, parent, context_menu=True, **kwargs):  # type: ignore[no-untyped-def]
+    def __init__(self, parent: tk.Widget, context_menu: bool = True, **kwargs: Any):
         """Init the class and set the insert and delete event bindings."""
 
         self.frame = ttk.Frame(parent)
@@ -841,8 +841,8 @@ class ScrolledReadOnlyText(tk.Text):
         super().__init__(self.frame, spacing1=maintext()["spacing1"], **kwargs)
         super().grid(column=0, row=0, sticky="NSEW")
         self.redirector = WidgetRedirector(self)
-        self.insert = self.redirector.register("insert", lambda *args, **kw: "break")
-        self.delete = self.redirector.register("delete", lambda *args, **kw: "break")
+        self.insert = self.redirector.register("insert", lambda *args, **kw: "break")  # type: ignore[method-assign]
+        self.delete = self.redirector.register("delete", lambda *args, **kw: "break")  # type: ignore[method-assign]
 
         hscroll = ttk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=self.xview)
         hscroll.grid(column=0, row=1, sticky="NSEW")
