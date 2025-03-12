@@ -7,7 +7,7 @@ import os.path
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
-from typing import Any, Callable, Final, TypedDict, Literal, Optional
+from typing import Any, Callable, Final, TypedDict, Literal, Optional, cast
 
 import regex as re
 
@@ -395,10 +395,10 @@ class File:
         Returns:
             True if no bin, or bin matches main file; False otherwise
         """
-        bin_dict = load_dict_from_json(bin_name(basename))
+        bin_dict = cast(BinDict, load_dict_from_json(bin_name(basename)))
         if bin_dict is None:
             return True
-        return self.interpret_bin(bin_dict)  # type: ignore[arg-type]
+        return self.interpret_bin(bin_dict)
 
     def save_bin(self, basename: str) -> None:
         """Save bin file associated with current file.

@@ -5,7 +5,7 @@ import platform
 import sys
 import tkinter as tk
 from tkinter import ttk, font, filedialog
-from typing import Any
+from typing import Any, Literal
 import unicodedata
 
 import regex as re
@@ -802,7 +802,7 @@ class ComposeHelpDialog(ToplevelDialog):
         self.scrollbar = ttk.Scrollbar(
             self.top_frame, orient=tk.VERTICAL, command=self.help.yview
         )
-        self.help.configure(yscroll=self.scrollbar.set)  # type: ignore[call-overload]
+        self.help.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
         mouse_bind(self.help, "1", self.insert_char)
@@ -1118,21 +1118,23 @@ class UnicodeSearchDialog(ToplevelDialog):
         )
         for col, column in enumerate(columns):
             col_id = f"#{col + 1}"
-            anchor = tk.CENTER if col_id == UnicodeSearchDialog.CHAR_COL_ID else tk.W
-            self.list.column(  # type: ignore[call-overload]
+            anchor: Literal["center", "w"] = (
+                tk.CENTER if col_id == UnicodeSearchDialog.CHAR_COL_ID else tk.W
+            )
+            self.list.column(
                 col_id,
                 minwidth=20,
                 width=widths[col],
                 stretch=(col_id == UnicodeSearchDialog.NAME_COL_ID),
                 anchor=anchor,
             )
-            self.list.heading(col_id, text=column, anchor=anchor)  # type: ignore[call-overload]
+            self.list.heading(col_id, text=column, anchor=anchor)
         self.list.grid(row=1, column=0, sticky=tk.NSEW, pady=(5, 0))
 
         self.scrollbar = ttk.Scrollbar(
             self.top_frame, orient=tk.VERTICAL, command=self.list.yview
         )
-        self.list.configure(yscroll=self.scrollbar.set)  # type: ignore[call-overload]
+        self.list.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.grid(row=1, column=1, sticky=tk.NS)
         mouse_bind(self.list, "1", self.item_clicked)
 

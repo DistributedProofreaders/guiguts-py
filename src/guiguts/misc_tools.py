@@ -1184,7 +1184,7 @@ def fraction_convert(conversion_type: FractionConvertType) -> None:
     """Convert fractions in selection or whole file, e.g. 1/2 --> ½
 
     Args:
-        type: Determines which/how fractions will be converted.
+        conversion_type: Determines which/how fractions will be converted.
     """
 
     unicode_fractions = {

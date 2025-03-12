@@ -749,10 +749,14 @@ def specials_check(project_dict: ProjectDict) -> None:
             # Highlight occurrence of word in the line.
             hilite_start = match_obj.start(0)
             hilite_end = match_obj.end(0)
-            if heading in specials_report:  # type: ignore[has-type]
-                specials_report[heading].append((line, error_start, error_end, hilite_start, hilite_end))  # type: ignore[has-type]
+            if heading in specials_report:
+                specials_report[heading].append(
+                    (line, error_start, error_end, hilite_start, hilite_end)
+                )
             else:
-                specials_report[heading] = [(line, error_start, error_end, hilite_start, hilite_end)]  # type: ignore[has-type]
+                specials_report[heading] = [
+                    (line, error_start, error_end, hilite_start, hilite_end)
+                ]
 
     def process_word(word: str, exceptions: Sequence[str], line: str) -> None:
         """Helper function for abstraction of processing logic.
@@ -783,10 +787,14 @@ def specials_check(project_dict: ProjectDict) -> None:
                 # Highlight occurrence of word in the line.
                 hilite_start = match_obj.start(0)
                 hilite_end = match_obj.end(0)
-                if heading in specials_report:  # type: ignore[has-type]
-                    specials_report[heading].append((line, error_start, error_end, hilite_start, hilite_end))  # type: ignore[has-type]
+                if heading in specials_report:
+                    specials_report[heading].append(
+                        (line, error_start, error_end, hilite_start, hilite_end)
+                    )
                 else:
-                    specials_report[heading] = [(line, error_start, error_end, hilite_start, hilite_end)]  # type: ignore[has-type]
+                    specials_report[heading] = [
+                        (line, error_start, error_end, hilite_start, hilite_end)
+                    ]
 
     specials_report: Dict[str, list[tuple]] = {}
 
@@ -1803,13 +1811,13 @@ def dash_review() -> None:
             # Look for pairs of hyphen-minus (keyboard "-") possibly being
             # used in place of em-dash. We will check and flag this later.
             if re.search(r"(?<!-)--(?!-)", line):
-                res = re.findall(r"(?<!-)--(?!-)", line)
-                counth2 += len(res)
+                resall = re.findall(r"(?<!-)--(?!-)", line)
+                counth2 += len(resall)
                 a_h2.append((line_index + 1, book[line_index]))
                 # Delete all the pairs just found.
                 line = re.sub(r"(?<!-)--(?!-)", "", line)
             # Look for other consecutive dashes (of any kind).
-            if res := re.search(r"\p{Pd}\p{Pd}+", line):  # type: ignore  # bug in mypy?
+            if re.search(r"\p{Pd}\p{Pd}+", line):
                 a_hh.append((line_index + 1, book[line_index]))
                 # Delete consecutive dashes just found. Any left at final test are 'unecognised'.
                 line = re.sub(r"\p{Pd}\p{Pd}+", "", line)

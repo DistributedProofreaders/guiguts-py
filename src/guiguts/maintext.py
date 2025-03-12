@@ -6,7 +6,7 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk, Text
 from tkinter import font as tk_font
-from typing import Any, Callable, Optional, Literal, Generator
+from typing import Any, Callable, Optional, Literal, Generator, cast
 from enum import auto, StrEnum
 import darkdetect  # type: ignore[import-untyped]
 
@@ -578,7 +578,7 @@ class TextPeer(tk.Text):
     """A peer of maintext's text widget.
 
     Note that tk.Text.peer_create() doesn't work properly, creating a tk widget, but
-    not an tkinter instance of tk.Text. Hence the need for this:
+    not a tkinter instance of tk.Text. Hence the need for this:
     https://stackoverflow.com/questions/58286794 - see top answer
     """
 
@@ -790,7 +790,7 @@ class MainText(tk.Text):
         # Track whether main text or peer most recently had focus
         def text_peer_focus_track(event: tk.Event) -> None:
             assert event.widget in (self, self.peer)
-            self._text_peer_focus = event.widget  # type: ignore[assignment]
+            self._text_peer_focus = cast(tk.Text, event.widget)
 
         self.bind_event("<FocusIn>", text_peer_focus_track, add=True, bind_peer=True)
 

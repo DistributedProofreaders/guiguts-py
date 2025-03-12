@@ -188,7 +188,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
         self.scrollbar = ttk.Scrollbar(
             self.top_frame, orient=tk.VERTICAL, command=self.list.yview
         )
-        self.list.configure(yscroll=self.scrollbar.set)  # type: ignore[call-overload]
+        self.list.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
         self.populate_list(self.details)
