@@ -694,21 +694,21 @@ def mouse_bind(
 # with a function to set/query it.
 # Also store the default colors for a Text widget that are not
 # altered by the default themes.
-_single_style = None  # pylint: disable=invalid-name
-_theme_default_text_bg = ""  # pylint: disable=invalid-name
-_theme_default_text_fg = ""  # pylint: disable=invalid-name
-_theme_default_text_ibg = ""  # pylint: disable=invalid-name
+_SINGLE_STYLE = None
+_THEME_DEFAULT_TEXT_BG = ""
+_THEME_DEFAULT_TEXT_FG = ""
+_THEME_DEFAULT_TEXT_IBG = ""
 
 
 def themed_style(style: Optional[ttk.Style] = None) -> ttk.Style:
     """Store and return the single Style object"""
-    global _single_style
+    global _SINGLE_STYLE
     if style is not None:
-        assert _single_style is None
-        _single_style = style
+        assert _SINGLE_STYLE is None
+        _SINGLE_STYLE = style
         _theme_init_tk_widget_colors()
-    assert _single_style is not None
-    return _single_style
+    assert _SINGLE_STYLE is not None
+    return _SINGLE_STYLE
 
 
 def theme_name_internal_from_user(user_theme: str) -> str:
@@ -741,11 +741,11 @@ def _theme_init_tk_widget_colors() -> None:
 
     Needs to be called before theme is changed from default theme.
     """
-    global _theme_default_text_bg, _theme_default_text_fg, _theme_default_text_ibg
+    global _THEME_DEFAULT_TEXT_BG, _THEME_DEFAULT_TEXT_FG, _THEME_DEFAULT_TEXT_IBG
     temp_text = tk.Text()
-    _theme_default_text_bg = temp_text.cget("background")
-    _theme_default_text_fg = temp_text.cget("foreground")
-    _theme_default_text_ibg = temp_text.cget("insertbackground")
+    _THEME_DEFAULT_TEXT_BG = temp_text.cget("background")
+    _THEME_DEFAULT_TEXT_FG = temp_text.cget("foreground")
+    _THEME_DEFAULT_TEXT_IBG = temp_text.cget("insertbackground")
     temp_text.destroy()
 
 

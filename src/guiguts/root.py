@@ -13,7 +13,7 @@ from guiguts.utilities import is_x11
 
 logger = logging.getLogger(__package__)
 
-_the_root = None  # pylint: disable=invalid-name
+_THE_ROOT = None
 
 
 class RootWindowState(StrEnum):
@@ -28,9 +28,9 @@ class Root(tk.Tk):
     """Inherits from Tk root window"""
 
     def __init__(self, **kwargs: Any) -> None:
-        global _the_root
-        assert _the_root is None
-        _the_root = self
+        global _THE_ROOT
+        assert _THE_ROOT is None
+        _THE_ROOT = self
 
         super().__init__(**kwargs)
         self.geometry(preferences.get(PrefKey.ROOT_GEOMETRY))
@@ -138,5 +138,5 @@ class Root(tk.Tk):
 
 def root() -> Root:
     """Return the single instance of Root"""
-    assert _the_root is not None
-    return _the_root
+    assert _THE_ROOT is not None
+    return _THE_ROOT

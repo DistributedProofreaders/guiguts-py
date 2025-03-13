@@ -3807,16 +3807,12 @@ class MainText(tk.Text):
         self.tag_lower("sel", HighlightTag.QUOTEMARK)
         self.peer.tag_lower("sel", HighlightTag.QUOTEMARK)
 
-    def _autoscroll_start(
-        self, event: tk.Event  # pylint: disable=unused-argument
-    ) -> None:
+    def _autoscroll_start(self, _event: tk.Event) -> None:
         """When Button-1 is pressed, turn mouse-drag monitoring on"""
         self._autoscroll_active = True
         self._on_change()
 
-    def _autoscroll_stop(
-        self, event: tk.Event  # pylint: disable=unused-argument
-    ) -> None:
+    def _autoscroll_stop(self, _event: tk.Event) -> None:
         """When Button-1 is released, turn mouse-drag monitoring off"""
         self._autoscroll_active = False
         self._on_change()
@@ -3919,14 +3915,14 @@ class TclRegexCompileError(Exception):
 
 # For convenient access, store the single MainText instance here,
 # with a function to set/query it.
-_single_widget = None  # pylint: disable=invalid-name
+_THE_MAINTEXT = None
 
 
 def maintext(text_widget: Optional[MainText] = None) -> MainText:
     """Store and return the single MainText widget"""
-    global _single_widget
+    global _THE_MAINTEXT
     if text_widget is not None:
-        assert _single_widget is None
-        _single_widget = text_widget
-    assert _single_widget is not None
-    return _single_widget
+        assert _THE_MAINTEXT is None
+        _THE_MAINTEXT = text_widget
+    assert _THE_MAINTEXT is not None
+    return _THE_MAINTEXT
