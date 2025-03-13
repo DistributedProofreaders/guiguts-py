@@ -29,8 +29,6 @@ SPELL_CHECK_OK_BAD = 2
 
 LINES_IN_REPORT_LIMIT = 4
 
-_the_levenshtein_checker = None  # pylint: disable=invalid-name
-
 #########################################################
 # levenshtein.py
 # Python author: Quentin Campbell (DP:qgc) - 2024.

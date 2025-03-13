@@ -352,7 +352,6 @@ class JeebiesChecker:
                     hebe_count == 0 or behe_count / hebe_count > DISCRIMINATOR_LEVEL
                 ):
                     count_of_suspects += 1
-                    info = f"({behe_count}/{hebe_count})"
 
                     # Add this 2-form and its info to the dialog
 
@@ -369,7 +368,6 @@ class JeebiesChecker:
                     line = file_lines_list[line_number - 1]
 
                     self.add_to_dialog(
-                        info,
                         line,
                         line_number,
                         hebe_position_on_line,
@@ -385,7 +383,6 @@ class JeebiesChecker:
                     # dictionary.
 
                     count_of_suspects += 1
-                    info = f"({behe_count}/{hebe_count})"
 
                     # Query this 2-form phrase in the report.
 
@@ -402,7 +399,6 @@ class JeebiesChecker:
                     line = file_lines_list[line_number - 1]
 
                     self.add_to_dialog(
-                        info,
                         line,
                         line_number,
                         hebe_position_on_line,
@@ -471,7 +467,7 @@ class JeebiesChecker:
     ) -> int:
         """Look for suspect "w1 be w2" or "w1 he w2" phrases in paragraphs."""
 
-        def make_dialog_line(info: str, checker_dialog: JeebiesCheckerDialog) -> None:
+        def make_dialog_line(checker_dialog: JeebiesCheckerDialog) -> None:
             """Helper function for abstraction of repeated code."""
 
             # We have the start position in the paragraph string of a suspect hebe.
@@ -486,9 +482,7 @@ class JeebiesChecker:
             )
             line = file_lines_list[line_number - 1]
 
-            self.add_to_dialog(
-                info, line, line_number, hebe_position_on_line, checker_dialog
-            )
+            self.add_to_dialog(line, line_number, hebe_position_on_line, checker_dialog)
 
         ####
         # Find and report 3-word hebe suspects in paragraph text
@@ -531,11 +525,10 @@ class JeebiesChecker:
             ):
                 # Query this 3-form phrase.
                 suspects_count += 1
-                info = f"({behe_count}/{hebe_count})"
 
                 # Query this 3-form phrase in the report.
 
-                make_dialog_line(info, checker_dialog)
+                make_dialog_line(checker_dialog)
 
             elif check_level == "normal" and hebe_count == 0 and behe_count == 0:
                 # Neither 'he' nor 'be' versions of our 3-form phrase are in the
@@ -557,21 +550,19 @@ class JeebiesChecker:
 
                 # Neither 2-form phrase in the dictionary.
                 suspects_count += 1
-                info = f"({behe_count}/{hebe_count})"
 
                 # Query this 3-form phrase in the report.
 
-                make_dialog_line(info, checker_dialog)
+                make_dialog_line(checker_dialog)
 
             elif check_level == "paranoid" and hebe_count == 0 and behe_count == 0:
                 # Neither 'he' nor 'be' versions of our 3-form phrase are in the
                 # dictionary. Query it in report.
                 suspects_count += 1
-                info = f"({behe_count}/{hebe_count})"
 
                 # Query this 3-form phrase in the report.
 
-                make_dialog_line(info, checker_dialog)
+                make_dialog_line(checker_dialog)
 
         return suspects_count
 
@@ -616,7 +607,6 @@ class JeebiesChecker:
 
     def add_to_dialog(
         self,
-        info: str,  # pylint: disable=unused-argument
         line: str,
         line_number: int,
         hebe_start: int,
@@ -625,7 +615,6 @@ class JeebiesChecker:
         """Helper function that abstracts repeated code.
 
         Args:
-            info: Ratio of 'he' or 'be freq / 'be' or 'he' freq expressed as a string.
             line: Text of file line.
             line_num: Its line number in the file.
             hebe_start: The position on line of string 'he' or 'be'.

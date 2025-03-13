@@ -23,9 +23,7 @@ from guiguts.utilities import (
 
 logger = logging.getLogger(__package__)
 
-_the_footnote_checker: Optional["FootnoteChecker"] = (
-    None  # pylint: disable=invalid-name
-)
+_THE_FOOTNOTE_CHECKER: Optional["FootnoteChecker"] = None
 
 INSERTION_MARK_PREFIX = "Shadow"
 
@@ -532,41 +530,41 @@ def sort_key_type(
 
 def join_to_previous() -> None:
     """Join the selected footnote to the previous one."""
-    assert _the_footnote_checker is not None
+    assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
-    fn_index = _the_footnote_checker.get_selected_fn_index()
+    fn_index = _THE_FOOTNOTE_CHECKER.get_selected_fn_index()
     if fn_index < 0:
         return  # No selection
     if fn_index == 0:
         return  # Can't join first footnote to previous
-    fn_records = _the_footnote_checker.get_fn_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     fn_record = fn_records[fn_index]
-    fn_cur_start = _the_footnote_checker.checker_dialog.mark_from_rowcol(
+    fn_cur_start = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(
         fn_record.start
     )
-    fn_cur_end = _the_footnote_checker.checker_dialog.mark_from_rowcol(fn_record.end)
+    fn_cur_end = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(fn_record.end)
     prev_record = fn_records[fn_index - 1]
-    fn_prev_end = _the_footnote_checker.checker_dialog.mark_from_rowcol(prev_record.end)
+    fn_prev_end = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(prev_record.end)
     continuation_text = maintext().get(fn_cur_start, fn_cur_end)[11:]
     maintext().delete(f"{fn_cur_start} -1l linestart", f"{fn_cur_end} +1l linestart")
     maintext().delete(f"{fn_prev_end} -1c", f"{fn_prev_end} lineend")
     maintext().insert(fn_prev_end, "\n" + continuation_text)
-    _the_footnote_checker.checker_dialog.remove_entry_current()
+    _THE_FOOTNOTE_CHECKER.checker_dialog.remove_entry_current()
     # Note index of the record to which we joined the continuation text.
     saved_prev_rec_index = fn_index - 1
-    _the_footnote_checker.run_check()
+    _THE_FOOTNOTE_CHECKER.run_check()
     display_footnote_entries(auto_select_line=False)
-    fn_records = _the_footnote_checker.get_fn_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     prev_record = fn_records[saved_prev_rec_index]
     # Get index into dialog entries for this record.
-    dialog_entry_index = _the_footnote_checker.map_fn_record_to_dialog_index(
+    dialog_entry_index = _THE_FOOTNOTE_CHECKER.map_fn_record_to_dialog_index(
         prev_record
     )
     if dialog_entry_index < 0:
         logger.error("Unexpected return from 'join_to_previous()'")
         return
     # Make it the selected entry in the dialog.
-    _the_footnote_checker.checker_dialog.select_entry_by_index(dialog_entry_index)
+    _THE_FOOTNOTE_CHECKER.checker_dialog.select_entry_by_index(dialog_entry_index)
 
 
 def next_footnote(direction: str) -> None:
@@ -577,12 +575,12 @@ def next_footnote(direction: str) -> None:
     Args:
         direction: "back" to previous FN or "forward" to next FN.
     """
-    assert _the_footnote_checker is not None
-    cur_fn_index = _the_footnote_checker.get_selected_fn_index()
+    assert _THE_FOOTNOTE_CHECKER is not None
+    cur_fn_index = _THE_FOOTNOTE_CHECKER.get_selected_fn_index()
     if cur_fn_index < 0:
         logger.error("No footnote selected")  # No selection
         return
-    fn_records = _the_footnote_checker.get_fn_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     if cur_fn_index == 0 and direction == "back":
         # Can't move behind first footnote.
         fn_record = fn_records[cur_fn_index]
@@ -595,25 +593,25 @@ def next_footnote(direction: str) -> None:
         # direction must be "back".
         fn_record = fn_records[cur_fn_index - 1]
     # Get index into dialog entries for the footnote we've moved to.
-    dialog_entry_index = _the_footnote_checker.map_fn_record_to_dialog_index(fn_record)
+    dialog_entry_index = _THE_FOOTNOTE_CHECKER.map_fn_record_to_dialog_index(fn_record)
     if dialog_entry_index < 0:
         logger.error("Unexpected return from 'next_footnote()'")
         return
     # Make it the selected entry in the dialog.
-    _the_footnote_checker.checker_dialog.select_entry_by_index(dialog_entry_index)
+    _THE_FOOTNOTE_CHECKER.checker_dialog.select_entry_by_index(dialog_entry_index)
 
 
 def set_anchor() -> None:
     """Insert anchor using label of selected footnote."""
-    assert _the_footnote_checker is not None
+    assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     insert_index = maintext().get_insert_index().index()
     # Get label to use  for anchor from the selected FN.
-    fn_index = _the_footnote_checker.get_selected_fn_index()
+    fn_index = _THE_FOOTNOTE_CHECKER.get_selected_fn_index()
     if fn_index < 0:
         logger.error("No footnote selected")  # No selection
         return
-    fn_records = _the_footnote_checker.get_fn_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     fn_record = fn_records[fn_index]
     fn_line_text = fn_record.text
     fn_label_start = 10
@@ -621,28 +619,28 @@ def set_anchor() -> None:
     fn_label = fn_line_text[fn_label_start:fn_label_end]
     maintext().insert(f"{insert_index}", f"[{fn_label}]")
     # Update AN and FN record arrays then refresh the dialog.
-    _the_footnote_checker.run_check()
+    _THE_FOOTNOTE_CHECKER.run_check()
     display_footnote_entries(auto_select_line=False)
     # Make new anchor the selected entry in the dialog.
-    fn_records = _the_footnote_checker.get_fn_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     # Get the footnote we previously selected.
     fn_record = fn_records[fn_index]
     # From that we can get the start index of the new anchor we created.
-    an_records = _the_footnote_checker.get_an_records()
+    an_records = _THE_FOOTNOTE_CHECKER.get_an_records()
     assert fn_record.an_index is not None
     an_record = an_records[fn_record.an_index]
     # Get index into dialog entries for this record.
-    dialog_entry_index = _the_footnote_checker.map_an_record_to_dialog_index(an_record)
+    dialog_entry_index = _THE_FOOTNOTE_CHECKER.map_an_record_to_dialog_index(an_record)
     if dialog_entry_index < 0:
         logger.error("Unexpected return from 'set_anchor()'")
         return
     # Make it the selected entry in the dialog.
-    _the_footnote_checker.checker_dialog.select_entry_by_index(dialog_entry_index)
+    _THE_FOOTNOTE_CHECKER.checker_dialog.select_entry_by_index(dialog_entry_index)
 
 
 def set_lz_at_cursor() -> None:
     """Insert FOOTNOTES: header at cursor."""
-    assert _the_footnote_checker is not None
+    assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     insert_index = maintext().get_insert_index().index()
     insert_rowcol = maintext().get_insert_index()
@@ -652,12 +650,12 @@ def set_lz_at_cursor() -> None:
     # add spacing as appropriate.
     maintext().insert(f"{insert_index}", "FOOTNOTES:")
     # The file has changed so rebuild AN/FN records and refresh dialog.
-    _the_footnote_checker.run_check()
+    _THE_FOOTNOTE_CHECKER.run_check()
     # Order below is important. A flag is set in display_footnote_entries()
     # that will determine which, if any, buttons are disabled when they are
     # displayed.
     display_footnote_entries()
-    _the_footnote_checker.enable_disable_buttons()
+    _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
     # Reposition main text window to display the inserted header in the midle of the window.
     maintext().set_insert_index(insert_rowcol)
 
@@ -671,18 +669,18 @@ def reindex() -> None:
 
     FOOTNOTE_INDEX_STYLE values are 'number', 'letter' or 'roman'.
     """
-    assert _the_footnote_checker is not None
+    assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     # Check index style used last time Footnotes Fixup was run or default if first run.
     index_style = preferences.get(PrefKey.FOOTNOTE_INDEX_STYLE)
-    an_records = _the_footnote_checker.get_an_records()
-    fn_records = _the_footnote_checker.get_fn_records()
+    an_records = _THE_FOOTNOTE_CHECKER.get_an_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     for index in range(1, len(an_records) + 1):
         if index_style == "roman":
             label = roman.toRoman(index)
             label = label + "."
         elif index_style == "letter":
-            label = _the_footnote_checker.alpha(index)
+            label = _THE_FOOTNOTE_CHECKER.alpha(index)
         else:
             label = str(index)
         an_record = an_records[index - 1]
@@ -690,7 +688,7 @@ def reindex() -> None:
             f"{an_record.start.index()} linestart",
             f"{an_record.start.index()} lineend",
         )
-        hl_start, hl_end = _the_footnote_checker.get_anchor_hilite_columns_from_marks(
+        hl_start, hl_end = _THE_FOOTNOTE_CHECKER.get_anchor_hilite_columns_from_marks(
             an_record
         )
         replacement_text = f"{an_line_text[0:hl_start]}[{label}]{an_line_text[hl_end:]}"
@@ -708,22 +706,22 @@ def reindex() -> None:
         maintext().delete(f"{fn_start}", f"{fn_start} lineend")
         maintext().insert(f"{fn_start}", fn_line_text)
     # AN/FN file entries have changed. Update AN/FN records.
-    _the_footnote_checker.run_check()
+    _THE_FOOTNOTE_CHECKER.run_check()
     # Maintain the order of function calls below.
     display_footnote_entries()
-    _the_footnote_checker.enable_disable_buttons()
+    _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
 
 
 def autoset_end_lz() -> None:
     """Insert a 'FOOTNOTES:' LZ header line at end of file."""
-    assert _the_footnote_checker is not None
+    assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     # If the last line of the file is not a blank line then add one.
     end_of_file = maintext().end().index()
     if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
-        _the_footnote_checker.add_blank_line_at_eof()
+        _THE_FOOTNOTE_CHECKER.add_blank_line_at_eof()
     end_of_file = maintext().end().index()
-    _the_footnote_checker.set_lz(end_of_file)
+    _THE_FOOTNOTE_CHECKER.set_lz(end_of_file)
 
 
 def autoset_chapter_lz() -> None:
@@ -741,18 +739,18 @@ def autoset_chapter_lz() -> None:
     are deleted after footnotes have been moved to LZs - see call to
     remove_unused_lz_headers() in the function move_footnotes_to_lz().
     """
-    assert _the_footnote_checker is not None
+    assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     # If the last line of the file is not a blank line then add one.
     end_of_file = maintext().end().index()
     if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
-        _the_footnote_checker.add_blank_line_at_eof()
+        _THE_FOOTNOTE_CHECKER.add_blank_line_at_eof()
     # Append LZ header to end of file to catch footnotes in the last chapter
     autoset_end_lz()
     # Set search range for finding 'chapter breaks'. Look for them from the
     # start of the first anchor rather than after the first 200 lines as
     # in GG1.
-    an_records = _the_footnote_checker.get_an_records()
+    an_records = _THE_FOOTNOTE_CHECKER.get_an_records()
     first_an = an_records[0]
     search_range = IndexRange(first_an.start, maintext().end())
     # Loop, finding all chapter breaks; i.e. block of 4 blank lines. Method
@@ -781,7 +779,7 @@ def autoset_chapter_lz() -> None:
             == ""
         ):
             # Insert the LZ header.
-            _the_footnote_checker.set_lz(start_index)
+            _THE_FOOTNOTE_CHECKER.set_lz(start_index)
             # Advance past inserted LZ.
             restart_point = maintext().rowcol(f"{start_index} +6l")
         else:
@@ -790,12 +788,12 @@ def autoset_chapter_lz() -> None:
         search_range = IndexRange(restart_point, maintext().end())
 
         # The file has changed so rebuild AN/FN records and refresh dialog.
-        _the_footnote_checker.run_check()
+        _THE_FOOTNOTE_CHECKER.run_check()
         # Order below is important. A flag is set in display_footnote_entries()
         # that will determine which, if any, buttons are disabled when they are
         # displayed.
         display_footnote_entries()
-        _the_footnote_checker.enable_disable_buttons()
+        _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
 
 
 def move_footnotes_to_paragraphs() -> None:
@@ -824,11 +822,11 @@ def move_footnotes_to_paragraphs() -> None:
     The third pass iterates through footnote records in reverse order removing
     any blank lines left behind when footnotes are deleted.
     """
-    assert _the_footnote_checker is not None
+    assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     # Check for any duplicate footnote labels and warn user that they should
     # reindex footnotes before attempting to move them to paragraphs or LZ(s).
-    if not _the_footnote_checker.ok_to_move_fns():
+    if not _THE_FOOTNOTE_CHECKER.ok_to_move_fns():
         logger.error(
             "Duplicate labels - reindex footnotes before moving them to paragraphs"
         )
@@ -837,8 +835,8 @@ def move_footnotes_to_paragraphs() -> None:
     # Can now reliably place insertion marks after the Checker mark so that
     # they maintain the required ordering. We'll flip the gravity back again
     # at the end of this function.
-    _the_footnote_checker.change_gravity_right_to_left()
-    an_records = _the_footnote_checker.get_an_records()
+    _THE_FOOTNOTE_CHECKER.change_gravity_right_to_left()
+    an_records = _THE_FOOTNOTE_CHECKER.get_an_records()
     # If the last line of the file is not a blank line then add one. If the
     # last line of the file is a footnote then because its end Checker mark
     # is currently tk.LEFT the newline will be correctly placed after the
@@ -855,7 +853,7 @@ def move_footnotes_to_paragraphs() -> None:
     # at the start of the Page Marker. Those two locations are the same.
 
     mark_prefix = (
-        _the_footnote_checker.checker_dialog.get_mark_prefix() + INSERTION_MARK_PREFIX
+        _THE_FOOTNOTE_CHECKER.checker_dialog.get_mark_prefix() + INSERTION_MARK_PREFIX
     )
     file_end = maintext().end().index()
     match_regex = r"^$"
@@ -944,12 +942,12 @@ def move_footnotes_to_paragraphs() -> None:
     # before deleting the original and then inserting the unchanged footnote text
     # at its named insertion mark from the first pass.
 
-    fn_records = _the_footnote_checker.get_fn_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     for fn_record_index, fn_record in enumerate(fn_records):
-        fn_cur_start = _the_footnote_checker.checker_dialog.mark_from_rowcol(
+        fn_cur_start = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(
             fn_record.start
         )
-        fn_cur_end = _the_footnote_checker.checker_dialog.mark_from_rowcol(
+        fn_cur_end = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(
             fn_record.end
         )
         fn_lines = maintext().get(fn_cur_start, fn_cur_end)
@@ -988,14 +986,14 @@ def move_footnotes_to_paragraphs() -> None:
     # insertion mark after the last FN in a list of FNs that followed it.
 
     # Restore RIGHT gravity to the Checker mark at the end of each footnote.
-    _the_footnote_checker.change_gravity_left_to_right()
+    _THE_FOOTNOTE_CHECKER.change_gravity_left_to_right()
     # Rebuild FN and AN record arrays.
-    _the_footnote_checker.run_check()
+    _THE_FOOTNOTE_CHECKER.run_check()
     # Get FN records in reverse order. It is necessary that the 'for' loop below
     # works backwards from the last footnote to the first footnote so that the
     # location of each footnote that is processed is not affected by the deletion
     # of blank lines below it in the file.
-    fn_records = _the_footnote_checker.get_fn_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     fn_records_reversed = fn_records.copy()
     fn_records_reversed.reverse()
     for fn_record in fn_records_reversed:
@@ -1021,13 +1019,13 @@ def move_footnotes_to_paragraphs() -> None:
 
     # Footnotes have been moved. Rebuild anchor and footnote record arrays
     # to reflect the changes.
-    _the_footnote_checker.run_check()
+    _THE_FOOTNOTE_CHECKER.run_check()
     # Set flag to disable buttons after dialog refreshed so that user
     # cannot execute a second FN move that might corrupt the file.
-    _the_footnote_checker.fns_have_been_moved = True
+    _THE_FOOTNOTE_CHECKER.fns_have_been_moved = True
     # Maintain the order of function calls below.
     display_footnote_entries()
-    _the_footnote_checker.enable_disable_buttons()
+    _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
 
 
 def move_footnotes_to_lz() -> None:
@@ -1038,11 +1036,11 @@ def move_footnotes_to_lz() -> None:
     4-line chapter break and an added one at end of file. This means that all
     footnotes have a LZ below them.
     """
-    assert _the_footnote_checker is not None
+    assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     # Check for any duplicate footnote labels and warn user that they should
     # reindex footnotes before attempting to move them to paragraphs or LZ(s).
-    if not _the_footnote_checker.ok_to_move_fns():
+    if not _THE_FOOTNOTE_CHECKER.ok_to_move_fns():
         logger.error("Duplicate labels - reindex footnotes before moving them to LZ(s)")
         return
 
@@ -1057,16 +1055,16 @@ def move_footnotes_to_lz() -> None:
     # first footnote. Each footnote moved is inserted immediately below the LZ
     # header so pushing down higher-numbered footnotes already moved.
 
-    fn_records = _the_footnote_checker.get_fn_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     fn_records_reversed = fn_records.copy()
     fn_records_reversed.reverse()
-    an_records = _the_footnote_checker.get_an_records()
+    an_records = _THE_FOOTNOTE_CHECKER.get_an_records()
     footnotes_header = "FOOTNOTES:"
     for fn_record in fn_records_reversed:
-        fn_cur_start = _the_footnote_checker.checker_dialog.mark_from_rowcol(
+        fn_cur_start = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(
             fn_record.start
         )
-        fn_cur_end = _the_footnote_checker.checker_dialog.mark_from_rowcol(
+        fn_cur_end = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(
             fn_record.end
         )
         fn_lines = maintext().get(fn_cur_start, fn_cur_end)
@@ -1074,7 +1072,7 @@ def move_footnotes_to_lz() -> None:
         assert fn_record.an_index is not None
         an_cur = an_records[fn_record.an_index]
         an_cur_end = maintext().index(
-            _the_footnote_checker.checker_dialog.mark_from_rowcol(an_cur.end)
+            _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(an_cur.end)
         )
         # Is there an LZ below the *anchor* of this footnote?
         #
@@ -1124,12 +1122,12 @@ def move_footnotes_to_lz() -> None:
             )
             # The last line of the file will be (the last line of) a
             # footnote. Add a blank line after it.
-            _the_footnote_checker.add_blank_line_at_eof()
+            _THE_FOOTNOTE_CHECKER.add_blank_line_at_eof()
     # Remove unused LZ headers ('FOOTNOTES:'). Only needed when moving to
     # chapter end LZs but will be invoked for end LZ too. It does no harm
     # in this latter case and saves setting/testing flags to make it apply
     # only when moving FNs to chapter end LZs.
-    _the_footnote_checker.remove_unused_lz_headers()
+    _THE_FOOTNOTE_CHECKER.remove_unused_lz_headers()
     # Ensure correct number of lines after 'FOOTNOTES:' header. If 4 blank
     # lines before, then add extra blank line after to make 2 blank lines.
     matches = maintext().find_matches(footnotes_header, maintext().start_to_end())
@@ -1142,13 +1140,13 @@ def move_footnotes_to_lz() -> None:
             maintext().insert(f"{match_idx}+1l", "\n")
     # Footnotes have been moved. Rebuild anchor and footnote record arrays
     # to reflect the changes.
-    _the_footnote_checker.run_check()
+    _THE_FOOTNOTE_CHECKER.run_check()
     # Set flag to disable buttons when dialog refreshed so that user cannot
     # execute a second footnote move that might corrupt the file.
-    _the_footnote_checker.fns_have_been_moved = True
+    _THE_FOOTNOTE_CHECKER.fns_have_been_moved = True
     # Maintain order of function calls below.
     display_footnote_entries()
-    _the_footnote_checker.enable_disable_buttons()
+    _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
 
 
 def tidy_footnotes() -> None:
@@ -1157,14 +1155,14 @@ def tidy_footnotes() -> None:
     Copies and deletes the original footnote then reinserts edited
     version at the same place.
     """
-    assert _the_footnote_checker is not None
+    assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
-    fn_records = _the_footnote_checker.get_fn_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
     for fn_record in fn_records:
-        fn_cur_start = _the_footnote_checker.checker_dialog.mark_from_rowcol(
+        fn_cur_start = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(
             fn_record.start
         )
-        fn_cur_end = _the_footnote_checker.checker_dialog.mark_from_rowcol(
+        fn_cur_end = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(
             fn_record.end
         )
         fn_label_and_text_part = maintext().get(
@@ -1176,10 +1174,10 @@ def tidy_footnotes() -> None:
     # As there are no longer any '[Footnote ...' style records in the file
     # the effect of invoking run_check() here will be to clear the dialog
     # as there are no footnotes to report.
-    _the_footnote_checker.run_check()
+    _THE_FOOTNOTE_CHECKER.run_check()
     # Maintain order of function calls below.
     display_footnote_entries()
-    _the_footnote_checker.enable_disable_buttons()
+    _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
 
 
 class FootnoteCheckerDialog(CheckerDialog):
@@ -1322,7 +1320,7 @@ class FootnoteCheckerDialog(CheckerDialog):
 
 def footnote_check() -> None:
     """Check footnotes in the currently loaded file."""
-    global _the_footnote_checker
+    global _THE_FOOTNOTE_CHECKER
 
     if not tool_save():
         return
@@ -1333,19 +1331,19 @@ def footnote_check() -> None:
         show_suspects_only=True,
     )
 
-    if _the_footnote_checker is None:
-        _the_footnote_checker = FootnoteChecker(checker_dialog)
-    elif not _the_footnote_checker.checker_dialog.winfo_exists():
-        _the_footnote_checker.checker_dialog = checker_dialog
-    _the_footnote_checker.fns_have_been_moved = False
+    if _THE_FOOTNOTE_CHECKER is None:
+        _THE_FOOTNOTE_CHECKER = FootnoteChecker(checker_dialog)
+    elif not _THE_FOOTNOTE_CHECKER.checker_dialog.winfo_exists():
+        _THE_FOOTNOTE_CHECKER.checker_dialog = checker_dialog
+    _THE_FOOTNOTE_CHECKER.fns_have_been_moved = False
 
-    _the_footnote_checker.run_check()
+    _THE_FOOTNOTE_CHECKER.run_check()
     # Order below is important. The display_footnote_entries() function will
     # set a flag if any dialog records have an error prefix. This flag is
     # checked in display_buttons() and will determine which, if any, buttons
     # are disabled when they are displayed.
     display_footnote_entries()
-    _the_footnote_checker.enable_disable_buttons()
+    _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
 
 
 def check_fn_string(fn_record: FootnoteRecord) -> str:
@@ -1375,13 +1373,13 @@ def check_fn_string(fn_record: FootnoteRecord) -> str:
 
 def display_footnote_entries(auto_select_line: bool = True) -> None:
     """(Re-)display the footnotes in the checker dialog."""
-    assert _the_footnote_checker is not None
-    checker_dialog = _the_footnote_checker.checker_dialog
+    assert _THE_FOOTNOTE_CHECKER is not None
+    checker_dialog = _THE_FOOTNOTE_CHECKER.checker_dialog
     checker_dialog.reset()
-    fn_records = _the_footnote_checker.get_fn_records()
-    an_records = _the_footnote_checker.get_an_records()
+    fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
+    an_records = _THE_FOOTNOTE_CHECKER.get_an_records()
     # Boolean to determine if buttons are to be set disabled or normal.
-    _the_footnote_checker.fn_check_errors = False
+    _THE_FOOTNOTE_CHECKER.fn_check_errors = False
     errors_flagged = False
     for fn_index, fn_record in enumerate(fn_records):
         # Flag common footnote typos. All non-conformant FNs
@@ -1459,10 +1457,10 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
         # and moved to their required landing zone. This flag is checked by the
         # display_buttons() function and determines which, if any, buttons are
         # disabled when displayed.
-        _the_footnote_checker.fn_check_errors = True
+        _THE_FOOTNOTE_CHECKER.fn_check_errors = True
     else:
-        _the_footnote_checker.fn_check_errors = False
-    for an_record in _the_footnote_checker.get_an_records():
+        _THE_FOOTNOTE_CHECKER.fn_check_errors = False
+    for an_record in _THE_FOOTNOTE_CHECKER.get_an_records():
         checker_dialog.add_entry(
             an_record.text,
             IndexRange(an_record.start, an_record.end),
@@ -1470,4 +1468,4 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
             an_record.hilite_end,
         )
     checker_dialog.display_entries(auto_select_line)
-    _the_footnote_checker.enable_disable_buttons()
+    _THE_FOOTNOTE_CHECKER.enable_disable_buttons()

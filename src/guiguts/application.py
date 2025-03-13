@@ -1090,9 +1090,7 @@ class Guiguts:
 
             root().after(2500, self.update_theme)
 
-    def high_contrast_callback(
-        self, value: bool  # pylint: disable=unused-argument
-    ) -> None:
+    def high_contrast_callback(self, _value: bool) -> None:
         """Callback for when HIGH_CONTRAST preference is changed"""
         # re-display image
         mainimage().show_image(internal_only=True)

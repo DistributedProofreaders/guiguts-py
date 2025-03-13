@@ -18,7 +18,7 @@ TraversablePath = importlib.resources.abc.Traversable | Path
 
 # Flag so application code can detect if within a pytest run - only use if really needed
 # See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
-called_from_test = False  # pylint: disable=invalid-name
+CALLED_FROM_TEST = False
 
 
 #
@@ -211,7 +211,7 @@ def sing_plur(count: int, singular: str, plural: str = "") -> str:
 # This is necessary since the bell requires various Tk features/widgets,
 # like root and the status bar. We don't want to have to import those
 # into every module that wants to sound the bell, e.g. Search.
-_bell_callback = None  # pylint: disable=invalid-name
+_BELL_CALLBACK = None
 
 
 def bell_set_callback(callback: Callable[[], None]) -> None:
@@ -219,14 +219,14 @@ def bell_set_callback(callback: Callable[[], None]) -> None:
 
     Args:
         callback: Bell-sounding function."""
-    global _bell_callback
-    _bell_callback = callback
+    global _BELL_CALLBACK
+    _BELL_CALLBACK = callback
 
 
 def sound_bell() -> None:
     """Call the registered bell callback in order to sound the bell."""
-    assert _bell_callback is not None
-    _bell_callback()
+    assert _BELL_CALLBACK is not None
+    _BELL_CALLBACK()
 
 
 def process_label(label: str) -> tuple[int, str]:

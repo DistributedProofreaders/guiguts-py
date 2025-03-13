@@ -1061,14 +1061,14 @@ def bin_name(basename: str) -> str:
 
 # For convenient access, store the single File instance here,
 # with a function to set/query it.
-_the_file = None  # pylint: disable=invalid-name
+_THE_FILE = None
 
 
 def the_file(file: Optional[File] = None) -> File:
     """Store and return the single File widget"""
-    global _the_file
+    global _THE_FILE
     if file is not None:
-        assert _the_file is None
-        _the_file = file
-    assert _the_file is not None
-    return _the_file
+        assert _THE_FILE is None
+        _THE_FILE = file
+    assert _THE_FILE is not None
+    return _THE_FILE

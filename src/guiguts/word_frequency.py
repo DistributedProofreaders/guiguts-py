@@ -36,7 +36,7 @@ from guiguts.widgets import (
     Busy,
 )
 
-_the_word_lists = None  # pylint: disable=invalid-name
+_THE_WORD_LISTS = None
 
 RETURN_ARROW = "⏎"
 MARKUP_TYPES = "i|b|sc|f|g|u|cite|em|strong"
@@ -745,12 +745,12 @@ class WordFrequencyDialog(ToplevelDialog):
 
 def word_frequency() -> None:
     """Do word frequency analysis on file."""
-    global _the_word_lists
+    global _THE_WORD_LISTS
 
     if not tool_save():
         return
 
-    _the_word_lists = WFWordLists()
+    _THE_WORD_LISTS = WFWordLists()
 
     wf_dialog = WordFrequencyDialog.show_dialog()
     wf_populate(wf_dialog)
@@ -815,10 +815,10 @@ def wf_populate_all(wf_dialog: WordFrequencyDialog) -> None:
     Args:
         wf_dialog: The word frequency dialog.
     """
-    assert _the_word_lists is not None
+    assert _THE_WORD_LISTS is not None
     wf_dialog.reset()
 
-    all_words = _the_word_lists.get_all_words()
+    all_words = _THE_WORD_LISTS.get_all_words()
     total_cnt = 0
     for word, freq in all_words.items():
         wf_dialog.add_entry(word, freq)
@@ -835,11 +835,11 @@ def wf_populate_emdashes(wf_dialog: WordFrequencyDialog) -> None:
     Args:
         wf_dialog: The word frequency dialog.
     """
-    assert _the_word_lists is not None
+    assert _THE_WORD_LISTS is not None
     wf_dialog.reset()
 
-    all_words = _the_word_lists.get_all_words()
-    emdash_words = _the_word_lists.get_emdash_words()
+    all_words = _THE_WORD_LISTS.get_all_words()
+    emdash_words = _THE_WORD_LISTS.get_emdash_words()
     suspect_cnt = 0
     for emdash_word, freq in emdash_words.items():
         # Check for suspect, i.e. also seen with a single hyphen
@@ -865,11 +865,11 @@ def wf_populate_hyphens(wf_dialog: WordFrequencyDialog) -> None:
     Args:
         wf_dialog: The word frequency dialog.
     """
-    assert _the_word_lists is not None
+    assert _THE_WORD_LISTS is not None
     wf_dialog.reset()
 
-    all_words = _the_word_lists.get_all_words()
-    emdash_words = _the_word_lists.get_emdash_words()
+    all_words = _THE_WORD_LISTS.get_all_words()
+    emdash_words = _THE_WORD_LISTS.get_emdash_words()
 
     # See if word pair suspects exist, e.g. "flash light" for "flash-light"
     word_pairs: WFDict = WFDict()
@@ -951,10 +951,10 @@ def wf_populate_by_match(
         desc: Description for message, e.g. desc "ALLCAPS" -> message "27 ALLCAPS words"
         match_func: Function that returns Truthy result if word matches the required criteria
     """
-    assert _the_word_lists is not None
+    assert _THE_WORD_LISTS is not None
     wf_dialog.reset()
 
-    all_words = _the_word_lists.get_all_words()
+    all_words = _THE_WORD_LISTS.get_all_words()
     count = 0
     for word, freq in all_words.items():
         if match_func(word):
@@ -1094,10 +1094,10 @@ def wf_populate_accents(wf_dialog: WordFrequencyDialog) -> None:
     Args:
         wf_dialog: The word frequency dialog.
     """
-    assert _the_word_lists is not None
+    assert _THE_WORD_LISTS is not None
     wf_dialog.reset()
 
-    all_words = _the_word_lists.get_all_words()
+    all_words = _THE_WORD_LISTS.get_all_words()
     suspect_cnt = 0
     total_cnt = 0
     for word, freq in all_words.items():
@@ -1128,10 +1128,10 @@ def wf_populate_ligatures(wf_dialog: WordFrequencyDialog) -> None:
     Args:
         wf_dialog: The word frequency dialog.
     """
-    assert _the_word_lists is not None
+    assert _THE_WORD_LISTS is not None
     wf_dialog.reset()
 
-    all_words = _the_word_lists.get_all_words()
+    all_words = _THE_WORD_LISTS.get_all_words()
     suspect_cnt = 0
     total_cnt = 0
     suspects_only = preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY)
