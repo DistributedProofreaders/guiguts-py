@@ -310,33 +310,6 @@ class PreferencesDialog(ToplevelDialog):
             PrefKey.TEXT_CURSOR_WIDTH,
             "Width of insert cursor in main text window",
         )
-        rtl_frame = ttk.Frame(advance_frame)
-        rtl_frame.grid(row=2, column=0, sticky="NSEW", columnspan=2)
-        ttk.Label(rtl_frame, text="RTL Text Autofix:").grid(
-            row=0, column=0, sticky="NSEW", padx=(0, 10)
-        )
-        autofix_rtl = PersistentString(PrefKey.AUTOFIX_RTL_TEXT)
-        ttk.Radiobutton(
-            rtl_frame,
-            text="Off",
-            variable=autofix_rtl,
-            value="off",
-            takefocus=False,
-        ).grid(row=0, column=1, sticky="NSEW", padx=(0, 10))
-        ttk.Radiobutton(
-            rtl_frame,
-            text="Word",
-            variable=autofix_rtl,
-            value="word",
-            takefocus=False,
-        ).grid(row=0, column=2, sticky="NSEW", padx=(0, 10))
-        ttk.Radiobutton(
-            rtl_frame,
-            text="Char",
-            variable=autofix_rtl,
-            value="char",
-            takefocus=False,
-        ).grid(row=0, column=3, sticky="NSEW")
 
         notebook.bind(
             "<<NotebookTabChanged>>",
