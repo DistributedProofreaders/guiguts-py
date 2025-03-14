@@ -8,7 +8,6 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any, Optional
 
-import cssutils  # type: ignore[import-untyped]
 from PIL import Image
 import regex as re
 
@@ -819,19 +818,71 @@ class PPhtmlChecker:
             )
         )
 
-        parser = cssutils.CSSParser()
-        stylesheet = parser.parseString(css_content)
         self.defined_classes = set()
+        split_content = css_content.split("\n")
 
-        for rule in stylesheet.cssRules:
-            if rule.type != rule.STYLE_RULE:  # Ignore comments, etc
+        # Strip out any comments in css
+        lnum = 0
+        while lnum < len(split_content):
+            # Single line
+            if split_content[lnum].strip().startswith("/*") and split_content[
+                lnum
+            ].strip().endswith("*/"):
+                del split_content[lnum]
                 continue
-            # Split selectors at commas
-            selectors: str = rule.selectorText.split(",")
-            for selector in selectors:
-                # Grab each class (selector that is preceded by a period)
-                for match in re.finditer(r"(?<=\.)\w+", selector):
-                    self.defined_classes.add(match[0])
+            # Nulti line
+            if split_content[lnum].strip().startswith("/*"):
+                del split_content[lnum]
+                while not split_content[lnum].strip().endswith("*/"):
+                    del split_content[lnum]
+                del split_content[lnum]
+            lnum += 1
+
+        # Unwrap CSS to put whole of {...} on one line
+        lnum = 0
+        while lnum < len(split_content):
+            # Keep joining lines until number of open/close braces are equal
+            while lnum < len(split_content) - 1 and (
+                split_content[lnum].count("{") != split_content[lnum].count("}")
+            ):
+                split_content[lnum] = (
+                    split_content[lnum] + " " + split_content[lnum + 1]
+                )
+                del split_content[lnum + 1]
+            # Warn user if we didn't manage to get open/close braces to match
+            if split_content[lnum].count("{") != split_content[lnum].count("}"):
+                line = re.sub(r"\s+", " ", split_content[lnum]).strip()
+                if len(line) > 40:
+                    line = line[0:40] + "..."
+                self.output_subsection_errors(
+                    False,
+                    f"Runaway CSS block near: {line}",
+                    [],
+                )
+                return
+            lnum += 1
+
+        for lnum, _ in enumerate(split_content):
+            # Remove @media bracketing
+            if "@media" in split_content[lnum]:
+                split_content[lnum] = re.sub(r"@media.*?{", "", split_content[lnum])
+                split_content[lnum] = re.sub(r"}$", "", split_content[lnum])
+            # Remove declaration blocks: ".large { font-size: large; }" -> ".large"
+            split_content[lnum] = re.sub(r"{[^}]+}", "", split_content[lnum])
+            # Remove child combinator ">" div.linegroup > :first-child
+            split_content[lnum] = re.sub(r">", "", split_content[lnum])
+            # "hr.pb" -> ".pb"
+            split_content[lnum] = re.sub(r"\w+(\.\w+)", r"\1", split_content[lnum])
+
+        for line in split_content:
+            line = line.replace(".", " .")  # ".poem.apdx" becomes " .poem .apdx"
+            line = line.replace(",", " ")  # splits h1,h2,h3
+            line = re.sub("  +", " ", line)
+            line = line.strip()
+            for a_class in line.split(" "):
+                # Classes that are not pseudo-classes
+                if a_class.startswith(".") and ":" not in a_class:
+                    self.defined_classes.add(a_class[1:])
 
     def resolve_css(self) -> None:
         """Resolve CSS classes used and defined."""
@@ -1061,7 +1112,7 @@ class PPhtmlChecker:
 
     def add_section(self, text: str) -> None:
         """Add section heading to dialog."""
-        self.dialog.add_header("", f"----- {text} -----")
+        self.dialog.add_header("", f"===== {text} =====")
 
     def add_subsection(self, text: str) -> None:
         """Add subsection heading to dialog."""
