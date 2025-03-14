@@ -15,7 +15,6 @@ regex = "^2024.5"
 levenshtein = "^0.26.1"
 requests = "^2.32.3"
 darkdetect = "^0.8.0"
-cssutils = "^1.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4"
