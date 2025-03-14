@@ -11,7 +11,12 @@ import unicodedata
 
 import regex as re
 
-from guiguts.checkers import CheckerDialog, CheckerEntry
+from guiguts.checkers import (
+    CheckerDialog,
+    CheckerEntry,
+    CheckerFilterErrorPrefix,
+    CheckerViewOptionsDialog,
+)
 from guiguts.data import scannos
 from guiguts.file import the_file
 from guiguts.maintext import maintext
@@ -44,6 +49,60 @@ DEFAULT_SCANNOS_DIR = importlib.resources.files(scannos)
 DEFAULT_REGEX_SCANNOS = "regex.json"
 DEFAULT_STEALTH_SCANNOS = "en-common.json"
 DEFAULT_MISSPELLED_SCANNOS = "misspelled.json"
+
+CURLY_QUOTES_CHECKER_FILTERS = [
+    CheckerFilterErrorPrefix(
+        "Double quote not converted", "DOUBLE QUOTE NOT CONVERTED: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Double open quote unexpected", "DOUBLE OPEN QUOTE UNEXPECTED: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Double open quote at end of line", "DOUBLE OPEN QUOTE AT END OF LINE: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Double open quote followed by space", "DOUBLE OPEN QUOTE FOLLOWED BY SPACE: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Double open quote preceded by word character",
+        "DOUBLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ",
+    ),
+    CheckerFilterErrorPrefix(
+        "Double open quote preceded by punctuation",
+        "DOUBLE OPEN QUOTE PRECEDED BY PUNCTUATION: ",
+    ),
+    CheckerFilterErrorPrefix(
+        "Double close quote unexpected", "DOUBLE CLOSE QUOTE UNEXPECTED: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Double close quote at start of line", "DOUBLE CLOSE QUOTE AT START OF LINE: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Double close quote preceded by space", "DOUBLE CLOSE QUOTE PRECEDED BY SPACE: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Double close quote followed by letter",
+        "DOUBLE CLOSE QUOTE FOLLOWED BY LETTER: ",
+    ),
+    CheckerFilterErrorPrefix("Double quote not closed", "DOUBLE QUOTE NOT CLOSED: "),
+    CheckerFilterErrorPrefix(
+        "Single quote not converted", "SINGLE QUOTE NOT CONVERTED: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Single open quote at end of line", "SINGLE OPEN QUOTE AT END OF LINE: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Single open quote followed by space", "SINGLE OPEN QUOTE FOLLOWED BY SPACE: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Single open quote preceded by word character",
+        "SINGLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ",
+    ),
+    CheckerFilterErrorPrefix(
+        "Single open quote preceded by punctuation",
+        "SINGLE OPEN QUOTE PRECEDED BY PUNCTUATION: ",
+    ),
+]
 
 
 def tool_save() -> bool:
@@ -1935,6 +1994,12 @@ def convert_to_curly_quotes() -> None:
     check_curly_quotes()
 
 
+class CurlyQuotesViewOptionsDialog(CheckerViewOptionsDialog):
+    """Minimal class to identify dialog type."""
+
+    manual_page = "Tools_Menu#Convert_to_Curly_Quotes"
+
+
 class CurlyQuotesDialog(CheckerDialog):
     """Dialog to handle curly quotes checks."""
 
@@ -2267,5 +2332,7 @@ def check_curly_quotes() -> None:
         process_command=do_fix_quote,
         sort_key_alpha=sort_key_error,
         show_process_buttons=False,
+        view_options_dialog_class=CurlyQuotesViewOptionsDialog,
+        view_options_filters=CURLY_QUOTES_CHECKER_FILTERS,
     )
     _the_curly_quotes_dialog.populate()
