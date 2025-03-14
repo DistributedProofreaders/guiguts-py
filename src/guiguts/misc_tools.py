@@ -55,53 +55,12 @@ CURLY_QUOTES_CHECKER_FILTERS = [
         "Double quote not converted", "DOUBLE QUOTE NOT CONVERTED: "
     ),
     CheckerFilterErrorPrefix(
-        "Double open quote unexpected", "DOUBLE OPEN QUOTE UNEXPECTED: "
+        "Other double quote errors", "DOUBLE (OPEN|CLOSE|QUOTE NOT CLOSED).*"
     ),
-    CheckerFilterErrorPrefix(
-        "Double open quote at end of line", "DOUBLE OPEN QUOTE AT END OF LINE: "
-    ),
-    CheckerFilterErrorPrefix(
-        "Double open quote followed by space", "DOUBLE OPEN QUOTE FOLLOWED BY SPACE: "
-    ),
-    CheckerFilterErrorPrefix(
-        "Double open quote preceded by word character",
-        "DOUBLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ",
-    ),
-    CheckerFilterErrorPrefix(
-        "Double open quote preceded by punctuation",
-        "DOUBLE OPEN QUOTE PRECEDED BY PUNCTUATION: ",
-    ),
-    CheckerFilterErrorPrefix(
-        "Double close quote unexpected", "DOUBLE CLOSE QUOTE UNEXPECTED: "
-    ),
-    CheckerFilterErrorPrefix(
-        "Double close quote at start of line", "DOUBLE CLOSE QUOTE AT START OF LINE: "
-    ),
-    CheckerFilterErrorPrefix(
-        "Double close quote preceded by space", "DOUBLE CLOSE QUOTE PRECEDED BY SPACE: "
-    ),
-    CheckerFilterErrorPrefix(
-        "Double close quote followed by letter",
-        "DOUBLE CLOSE QUOTE FOLLOWED BY LETTER: ",
-    ),
-    CheckerFilterErrorPrefix("Double quote not closed", "DOUBLE QUOTE NOT CLOSED: "),
     CheckerFilterErrorPrefix(
         "Single quote not converted", "SINGLE QUOTE NOT CONVERTED: "
     ),
-    CheckerFilterErrorPrefix(
-        "Single open quote at end of line", "SINGLE OPEN QUOTE AT END OF LINE: "
-    ),
-    CheckerFilterErrorPrefix(
-        "Single open quote followed by space", "SINGLE OPEN QUOTE FOLLOWED BY SPACE: "
-    ),
-    CheckerFilterErrorPrefix(
-        "Single open quote preceded by word character",
-        "SINGLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ",
-    ),
-    CheckerFilterErrorPrefix(
-        "Single open quote preceded by punctuation",
-        "SINGLE OPEN QUOTE PRECEDED BY PUNCTUATION: ",
-    ),
+    CheckerFilterErrorPrefix("Other single quote errors", "SINGLE OPEN.*"),
 ]
 
 
