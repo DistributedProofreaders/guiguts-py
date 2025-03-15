@@ -76,7 +76,7 @@ from guiguts.tools.bookloupe import bookloupe_check
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
 from guiguts.tools.pptxt import pptxt
-from guiguts.utilities import is_mac, folder_dir_str
+from guiguts.utilities import is_mac, is_windows, is_x11, folder_dir_str
 from guiguts.widgets import themed_style, theme_name_internal_from_user
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
@@ -456,6 +456,14 @@ class Guiguts:
             PrefKey.IMAGE_AUTOFIT_HEIGHT, image_autofit_height_callback
         )
         preferences.set_default(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS, False)
+        # Retain the RTL fix Pref for now, even though it is not in the Prefs dialog
+        # For debugging etc, it can be manually edited in the GGprefs file.
+        if is_windows():
+            preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, "word")
+        elif is_x11():
+            preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, "char")
+        else:
+            preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, "off")
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -562,6 +570,21 @@ class Guiguts:
         edit_menu.add_button(
             "To~ggle Column/Regular Selection",
             maintext().toggle_selection_type,
+        )
+        edit_menu.add_separator()
+        rtl_menu = Menu(edit_menu, "Right-to-left Te~xt")
+        if not is_mac():
+            rtl_menu.add_button(
+                (
+                    "Paste ~Hebrew & spaces only (no punctuation)"
+                    if is_windows()
+                    else "Paste ~Hebrew, Arabic & spaces only (no punctuation)"
+                ),
+                maintext().paste_rtl,
+            )
+        rtl_menu.add_button(
+            "Surround selected text with RLM...LRM markers",
+            maintext().surround_rtl,
         )
         edit_menu.add_separator()
         case_menu = Menu(edit_menu, "C~hange Case")

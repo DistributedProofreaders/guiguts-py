@@ -15,6 +15,7 @@ import regex as re
 from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import (
     is_mac,
+    is_x11,
     IndexRowCol,
     IndexRange,
     TextWrapper,
@@ -40,6 +41,18 @@ REPLACE_END_MARK = "ReplaceEnd"
 SELECTION_MARK_START = "SelectionMarkStart"
 SELECTION_MARK_END = "SelectionMarkEnd"
 PEER_MIN_SIZE = 50
+# Hebrew needs fixing on Linux & Windows
+RTL_HEBREW_RANGES = r"\u0590-\u05FF\uFB1D-\uFB4F"
+# Arabic only needs fixing on Linux
+RTL_ARABIC_RANGES = (
+    r"\u0600-\u06FF\u0750-\u077F\u0870-\u089F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF"
+    if is_x11()
+    else ""
+)
+# A group of Hebrew/Arabic words
+RTL_SCRIPT_REGEX = re.compile(
+    rf"[{RTL_HEBREW_RANGES}{RTL_ARABIC_RANGES}][\.,;:{RTL_HEBREW_RANGES}{RTL_ARABIC_RANGES} ]*[{RTL_HEBREW_RANGES}{RTL_ARABIC_RANGES}]"
+)
 
 
 class FindMatch:
@@ -1395,7 +1408,7 @@ class MainText(tk.Text):
             fname: Name of file to save text to.
         """
         with open(fname, "w", encoding="utf-8") as fh:
-            fh.write(self.get_text())
+            fh.write(maintext().reverse_rtl(self.get_text()))
         if clear_modified_flag:
             self.set_modified(False)
 
@@ -1408,7 +1421,7 @@ class MainText(tk.Text):
         self.delete("1.0", tk.END)
         try:
             with open(fname, "r", encoding="utf-8") as fh:
-                self.insert(tk.END, fh.read())
+                self.insert(tk.END, maintext().reverse_rtl(fh.read()))
         except UnicodeDecodeError:
             with open(fname, "r", encoding="iso-8859-1") as fh:
                 self.insert(tk.END, fh.read())
@@ -1817,6 +1830,37 @@ class MainText(tk.Text):
                 self.insert(start_rowcol.index(), clipline)
         rowcol = self.rowcol(f"{start_rowcol.index()} + {len(clipline)}c")
         self.set_insert_index(rowcol)
+
+    def paste_rtl(self) -> None:
+        """Paste the clipboard text assuming it is RTL text."""
+        # Trap empty clipboard or no STRING representation
+        try:
+            clipboard = self.clipboard_get()
+        except tk.TclError:
+            return
+        clipboard = self.reverse_rtl(clipboard)
+        maintext().insert(tk.INSERT, clipboard)
+
+    def reverse_rtl(self, text: str) -> str:
+        """Reverse sections of RTL text within string."""
+        autofix_rtl = preferences.get(PrefKey.AUTOFIX_RTL_TEXT)
+        if autofix_rtl == "word":
+            return RTL_SCRIPT_REGEX.sub(
+                lambda match: " ".join(reversed(match.group().split(" "))),
+                text,
+            )
+        if autofix_rtl == "char":
+            return RTL_SCRIPT_REGEX.sub(
+                lambda match: match.group()[::-1],
+                text,
+            )
+        return text
+
+    def surround_rtl(self) -> None:
+        """Surround the selected text with RLM...LRM Unicode markers."""
+        for a_range in self.selected_ranges():
+            maintext().insert(a_range.end.index(), "\u200E")
+            maintext().insert(a_range.start.index(), "\u200F")
 
     def clipboard_append(self, string: str, **kw: Any) -> None:
         """Override appending text to clipboard to deal with macOS limitation."""
