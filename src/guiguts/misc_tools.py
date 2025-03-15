@@ -11,7 +11,12 @@ import unicodedata
 
 import regex as re
 
-from guiguts.checkers import CheckerDialog, CheckerEntry
+from guiguts.checkers import (
+    CheckerDialog,
+    CheckerEntry,
+    CheckerFilterErrorPrefix,
+    CheckerViewOptionsDialog,
+)
 from guiguts.data import scannos
 from guiguts.file import the_file
 from guiguts.maintext import maintext
@@ -44,6 +49,19 @@ DEFAULT_SCANNOS_DIR = importlib.resources.files(scannos)
 DEFAULT_REGEX_SCANNOS = "regex.json"
 DEFAULT_STEALTH_SCANNOS = "en-common.json"
 DEFAULT_MISSPELLED_SCANNOS = "misspelled.json"
+
+CURLY_QUOTES_CHECKER_FILTERS = [
+    CheckerFilterErrorPrefix(
+        "Double quote not converted", "DOUBLE QUOTE NOT CONVERTED: "
+    ),
+    CheckerFilterErrorPrefix(
+        "Other double quote errors", "DOUBLE (OPEN|CLOSE|QUOTE NOT CLOSED).*"
+    ),
+    CheckerFilterErrorPrefix(
+        "Single quote not converted", "SINGLE QUOTE NOT CONVERTED: "
+    ),
+    CheckerFilterErrorPrefix("Other single quote errors", "SINGLE OPEN.*"),
+]
 
 
 def tool_save() -> bool:
@@ -1935,6 +1953,12 @@ def convert_to_curly_quotes() -> None:
     check_curly_quotes()
 
 
+class CurlyQuotesViewOptionsDialog(CheckerViewOptionsDialog):
+    """Minimal class to identify dialog type."""
+
+    manual_page = "Tools_Menu#Convert_to_Curly_Quotes"
+
+
 class CurlyQuotesDialog(CheckerDialog):
     """Dialog to handle curly quotes checks."""
 
@@ -2267,5 +2291,7 @@ def check_curly_quotes() -> None:
         process_command=do_fix_quote,
         sort_key_alpha=sort_key_error,
         show_process_buttons=False,
+        view_options_dialog_class=CurlyQuotesViewOptionsDialog,
+        view_options_filters=CURLY_QUOTES_CHECKER_FILTERS,
     )
     _the_curly_quotes_dialog.populate()
