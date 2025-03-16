@@ -4,6 +4,7 @@ import gzip
 from html.parser import HTMLParser
 import logging
 import os.path
+import subprocess
 import tkinter as tk
 from tkinter import ttk, filedialog
 from typing import Optional, Any
@@ -22,8 +23,14 @@ from guiguts.preferences import (
     PrefKey,
     preferences,
 )
-from guiguts.utilities import IndexRange, sound_bell, DiacriticRemover, IndexRowCol
-from guiguts.widgets import ToplevelDialog
+from guiguts.utilities import (
+    IndexRange,
+    sound_bell,
+    DiacriticRemover,
+    IndexRowCol,
+    folder_dir_str,
+)
+from guiguts.widgets import ToplevelDialog, Busy
 
 logger = logging.getLogger(__package__)
 
@@ -1097,3 +1104,176 @@ def do_link_check(checker_dialog: CheckerDialog) -> None:
             checker_dialog.add_entry(f"Anchor not used: {id_name}")
 
     checker_dialog.display_entries()
+
+
+class EbookmakerCheckerDialog(CheckerDialog):
+    """Dialog to show ebookmaker results."""
+
+    manual_page = "HTML_Menu#Ebookmaker"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize ebookmaker dialog."""
+        super().__init__(
+            "Ebookmaker Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select message",
+                    "Right click: Hide message",
+                    "Shift Right click: Hide all matching messages",
+                ]
+            ),
+            **kwargs,
+        )
+
+        def locate_ebookmaker() -> None:
+            """Prompt user to give path to ebookmaker."""
+            if file_name := filedialog.askopenfilename(
+                title="Select Ebookmaker program",
+                parent=self,
+            ):
+                preferences.set(PrefKey.EBOOKMAKER_PATH, file_name)
+
+        ttk.Label(self.custom_frame, text="Ebookmaker Location:").grid(
+            row=0, column=0, sticky="NSW", pady=(5, 0)
+        )
+        ttk.Entry(
+            self.custom_frame,
+            textvariable=PersistentString(PrefKey.EBOOKMAKER_PATH),
+        ).grid(row=0, column=1, sticky="NSEW", padx=5, pady=(5, 0))
+        self.custom_frame.columnconfigure(1, weight=1)
+        ttk.Button(
+            self.custom_frame,
+            text="Browse",
+            command=locate_ebookmaker,
+            takefocus=False,
+        ).grid(row=0, column=2, sticky="NSE", pady=(5, 0))
+
+        ttk.Label(self.custom_frame, text="Epub formats:").grid(
+            row=1, column=0, sticky="NSW"
+        )
+        format_frame = ttk.Frame(self.custom_frame)
+        format_frame.grid(row=1, column=1, sticky="NSW", columnspan=2, pady=5)
+        ttk.Checkbutton(
+            format_frame,
+            text="EPUB 2",
+            variable=PersistentBoolean(PrefKey.EBOOKMAKER_EPUB2),
+            state=tk.DISABLED,
+        ).grid(column=0, row=0, sticky="NSW", padx=5)
+        ttk.Checkbutton(
+            format_frame,
+            text="EPUB 3",
+            variable=PersistentBoolean(PrefKey.EBOOKMAKER_EPUB3),
+        ).grid(column=1, row=0, sticky="NSW", padx=5)
+        ttk.Checkbutton(
+            format_frame,
+            text="Kindle",
+            variable=PersistentBoolean(PrefKey.EBOOKMAKER_KINDLE),
+        ).grid(column=2, row=0, sticky="NSW", padx=5)
+        ttk.Checkbutton(
+            format_frame,
+            text="KF8",
+            variable=PersistentBoolean(PrefKey.EBOOKMAKER_KF8),
+        ).grid(column=3, row=0, sticky="NSW", padx=5)
+
+
+class EbookmakerChecker:
+    """Ebookmaker checker"""
+
+    def __init__(self) -> None:
+        """Initialize ebookmker checker"""
+        self.dialog = EbookmakerCheckerDialog.show_dialog(rerun_command=self.run)
+
+    def run(self) -> None:
+        """Run ebookmaker"""
+        self.dialog.reset()
+        cwd = preferences.get(PrefKey.EBOOKMAKER_PATH)
+        if not cwd:
+            Busy.unbusy()
+            return
+        cwd = os.path.dirname(cwd)
+        if not os.path.isdir(cwd):
+            logger.error(f"{folder_dir_str()} {cwd} does not exist")
+            return
+
+        # Set env variable to suppress pipenv whinge about running in virtual environment
+        # (possibly only relevant to devs?)
+        my_env = os.environ.copy()
+        my_env["PIPENV_VERBOSITY"] = "-1"
+        # Base command
+        command = ["pipenv", "run", "python", "ebookmaker", "--max-depth=3"]
+        # Build options
+        if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
+            command.append("--make=epub.images")
+        if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
+            command.append("--make=epub3.images")
+        # Need Calibre to create kindle versions
+        if "calibre" in my_env["PATH"].lower():
+            if preferences.get(PrefKey.EBOOKMAKER_KINDLE):
+                command.append("--make=kindle.images")
+            if preferences.get(PrefKey.EBOOKMAKER_KF8):
+                command.append("--make=kf8.images")
+        elif preferences.get(PrefKey.EBOOKMAKER_KINDLE) or preferences.get(
+            PrefKey.EBOOKMAKER_KF8
+        ):
+            logger.error(
+                "To create Kindle files, install Calibre and ensure it is on your PATH"
+            )
+            Busy.unbusy()
+            return
+        file_name = the_file().filename
+        proj_dir = os.path.dirname(file_name)
+        command.append(f"--output-dir={proj_dir}")
+        base_name, _ = os.path.splitext(os.path.basename(file_name))
+        command.append(f"--output-file={base_name}")
+        title = self.get_title()
+        command.append(f"--title={title}")
+        command.append(file_name)
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+            env=my_env,
+            check=False,
+        )
+
+        errors = result.stderr.split("\n")
+        output_message = False
+        if any(error.strip() for error in errors):
+            output_message = True
+            self.dialog.add_entry("===== Ebookmaker errors =====")
+            for error in errors:
+                self.dialog.add_entry(error)
+        messages = result.stdout.split("\n")
+        if any(message.strip() for message in messages):
+            output_message = True
+            self.dialog.add_entry("===== Ebookmaker messages =====")
+            for message in messages:
+                self.dialog.add_entry(message)
+        if not output_message:
+            self.dialog.add_entry("Ebookmaker completed with no messages")
+
+        self.dialog.display_entries()
+
+    def get_title(self) -> str:
+        """Get sanitized book title from `<title>` element."""
+        title, nsub = re.subn(
+            r".+?<title>(.+?)</title>.+",
+            r"\1",
+            maintext().get("1.0", "20.0"),
+            flags=re.DOTALL,
+        )
+        if nsub == 0 or not title:
+            title = "No title"
+        title = re.sub(r"\s+", " ", title)
+        title = re.sub(r"\| Project Gutenberg", "", title)
+        title = re.sub(r"^\s+|\s+$", "", title)
+        title = DiacriticRemover.remove_diacritics(title)
+        title = re.sub(r"[^A-za-z0-9 ]+", "_", title)
+        return title
+
+
+def ebookmaker_check() -> None:
+    """Instantiate & run Ebookmaker checker."""
+    EbookmakerChecker().run()
