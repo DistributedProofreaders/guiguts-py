@@ -3,11 +3,14 @@
 
 ## Version 2.0.0-alpha.16
 
-- The user can now configure an external viewer to display scan files, which
-  can be used instead of, or in addition to the internal viewer. If the user
-  does not specify a particular viewer, the default viewer on the computer
-  will be used. Alternatively the user can choose a viewer, such as `XnView`
-  on Windows, `Pixea` on macOS, or `eog -w` on Linux.
+- The user can now use an external viewer to display scan files, instead of,
+  or in addition to, the internal viewer. If the user does not specify a
+  particular viewer, the computer's default viewer for PNG files will be used.
+  Typically, this is the viewer that would open a PNG file when the operating
+  system is asked to "open" or "view" the file, or it is double-clicked when
+  using Windows. Alternatively the user can choose a specific viewer, such as
+  `XnView` on Windows, `Pixea` on macOS, or `eog -w` on Linux, which will then
+  be used instead of the computer's default viewer.
 - Help->About Guiguts now reports version numbers and is easier to copy
   when reporting a bug
 - A High Contrast preference option increases the contrast of the main text
@@ -22,9 +25,11 @@
 - The "Default" theme is now dark or light depending on the current operating
   system setting - the user can still choose Dark or Light explicitly
 - Clicking (and dragging) in the line numbers on the left now selects whole
-  lines of text - although it is not possible to drag beyond the height of
+  lines of text. Although it is not possible to drag beyond the height of
   the window, large sections of text can be selected by clicking to select
-  the first line, scrolling down, then Shift-clicking to select the last line
+  the first line, scrolling down, then Shift-clicking to select the last
+  line. Shift-clicking and dragging extends/reduces the selection in a similar
+  way to the behavior in the main text window.
 - Checker View Options (e.g. Bookloupe) now mean "show" when checked, rather
   than "hide"
 - Checker View Options now have a checkbox to allow the graying out of view
