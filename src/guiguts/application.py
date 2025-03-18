@@ -591,7 +591,7 @@ class Guiguts:
                 maintext().paste_rtl,
             )
         rtl_menu.add_button(
-            "Surround selected text with RLM...LRM markers",
+            "~Surround selected text with RLM...LRM markers",
             maintext().surround_rtl,
         )
         edit_menu.add_separator()
@@ -783,14 +783,14 @@ class Guiguts:
         tools_menu.add_button("C~lean Up Rewrap Markers", self.file.rewrap_cleanup)
         tools_menu.add_separator()
         tools_menu.add_button("Convert to Curly ~Quotes", convert_to_curly_quotes)
-        tools_menu.add_button("Check Curly Q~uotes", check_curly_quotes)
+        tools_menu.add_button("Check Curly Quo~tes", check_curly_quotes)
         unmatched_menu = Menu(tools_menu, "Un~matched")
         unmatched_menu.add_button("Bloc~k Markup", unmatched_block_markup)
         unmatched_menu.add_button("~DP Markup", unmatched_dp_markup)
         unmatched_menu.add_button("~Brackets", unmatched_brackets)
         unmatched_menu.add_button("Curly ~Quotes", unmatched_curly_quotes)
 
-        fraction_menu = Menu(tools_menu, "~Convert Fractions")
+        fraction_menu = Menu(tools_menu, "C~onvert Fractions")
         fraction_menu.add_button(
             "~Unicode Fractions Only",
             lambda: fraction_convert(FractionConvertType.UNICODE),
@@ -867,7 +867,7 @@ class Guiguts:
             "~Auto Image",
             root().auto_image_state,
         )
-        view_menu.add_button("~See Image", self.see_image)
+        view_menu.add_button("S~ee Image", self.see_image)
         view_menu.add_checkbox(
             "~Invert Image",
             root().invert_image_state,
