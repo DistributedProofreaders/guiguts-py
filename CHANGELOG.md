@@ -29,7 +29,8 @@
   the window, large sections of text can be selected by clicking to select
   the first line, scrolling down, then Shift-clicking to select the last
   line. Shift-clicking and dragging extends/reduces the selection in a similar
-  way to the behavior in the main text window.
+  way to the behavior in the main text window. The mouse scroll wheel should
+  also scroll the text window even when the mouse is in the line numbers
 - Checker View Options (e.g. Bookloupe) now mean "show" when checked, rather
   than "hide"
 - Checker View Options now have a checkbox to allow the graying out of view
