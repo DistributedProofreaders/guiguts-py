@@ -20,7 +20,7 @@ from guiguts.preferences import (
     preferences,
 )
 from guiguts.root import root
-from guiguts.utilities import is_mac, is_windows, is_x11, sound_bell
+from guiguts.utilities import is_mac, sound_bell
 from guiguts.widgets import (
     ToplevelDialog,
     ToolTip,
@@ -29,6 +29,8 @@ from guiguts.widgets import (
     mouse_bind,
     Combobox,
     Notebook,
+    bind_mouse_wheel,
+    unbind_mouse_wheel,
 )
 
 COMBO_SEPARATOR = "―" * 20
@@ -889,33 +891,13 @@ class ScrollableFrame(ttk.Frame):
         v_scrollbar.grid(column=1, row=0, sticky="NSEW")
         h_scrollbar.grid(column=0, row=1, sticky="NSEW")
 
-    def on_mouse_wheel(self, event: tk.Event) -> None:
-        """Cross platform scroll wheel event."""
-        if is_windows():
-            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        elif is_mac():
-            self.canvas.yview_scroll(int(-1 * event.delta), "units")
-        else:
-            if event.num == 4:
-                self.canvas.yview_scroll(-1, "units")
-            elif event.num == 5:
-                self.canvas.yview_scroll(1, "units")
-
     def on_enter(self, _event: tk.Event) -> None:
         """Bind wheel events when the cursor enters the control."""
-        if is_x11():
-            self.canvas.bind_all("<Button-4>", self.on_mouse_wheel)
-            self.canvas.bind_all("<Button-5>", self.on_mouse_wheel)
-        else:
-            self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
+        bind_mouse_wheel(self.canvas)
 
     def on_leave(self, _event: tk.Event) -> None:
-        """Unbind wheel events when the cursorl leaves the control."""
-        if is_x11():
-            self.canvas.unbind_all("<Button-4>")
-            self.canvas.unbind_all("<Button-5>")
-        else:
-            self.canvas.unbind_all("<MouseWheel>")
+        """Unbind wheel events when the cursor leaves the control."""
+        unbind_mouse_wheel(self.canvas)
 
     def reset_scroll(self) -> None:
         """Scroll canvas to top left position."""

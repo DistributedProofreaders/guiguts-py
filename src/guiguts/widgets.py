@@ -10,7 +10,7 @@ import regex as re
 
 from guiguts.preferences import preferences, PrefKey
 from guiguts.root import root, RootWindowState
-from guiguts.utilities import is_windows, is_mac, process_accel, cmd_ctrl_string
+from guiguts.utilities import is_windows, is_mac, process_accel, cmd_ctrl_string, is_x11
 
 NUM_HISTORY = 10
 
@@ -688,6 +688,57 @@ def mouse_bind(
         widget.bind(control1, callback)
     else:
         widget.bind(event, callback)
+
+
+def handle_mouse_wheel(widget: tk.Widget, event: tk.Event) -> None:
+    """Cross platform scroll wheel event."""
+    assert isinstance(widget, (tk.Canvas, tk.Text))
+    if is_windows():
+        widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
+    elif is_mac():
+        widget.yview_scroll(int(-1 * event.delta), "units")
+    else:
+        if event.num == 4:
+            widget.yview_scroll(-1, "units")
+        elif event.num == 5:
+            widget.yview_scroll(1, "units")
+
+
+def bind_mouse_wheel(
+    bind_widget: tk.Widget, scroll_widget: Optional[tk.Widget] = None
+) -> None:
+    """Bind wheel events when the cursor enters the control."""
+    if scroll_widget is None:
+        scroll_widget = bind_widget
+    if is_x11():
+        bind_widget.bind(
+            "<Button-4>",
+            lambda evt, sw=scroll_widget: handle_mouse_wheel(  # type:ignore[misc]
+                sw, evt
+            ),
+        )
+        bind_widget.bind(
+            "<Button-5>",
+            lambda evt, sw=scroll_widget: handle_mouse_wheel(  # type:ignore[misc]
+                sw, evt
+            ),
+        )
+    else:
+        bind_widget.bind(
+            "<MouseWheel>",
+            lambda evt, sw=scroll_widget: handle_mouse_wheel(  # type:ignore[misc]
+                sw, evt
+            ),
+        )
+
+
+def unbind_mouse_wheel(bind_widget: tk.Widget) -> None:
+    """Unbind wheel events when the cursor leaves the control."""
+    if is_x11():
+        bind_widget.unbind("<Button-4>")
+        bind_widget.unbind("<Button-5>")
+    else:
+        bind_widget.unbind("<MouseWheel>")
 
 
 # For convenient access, store the single Style instance here,
