@@ -343,7 +343,7 @@ class TextLineNumbers(tk.Canvas):
                     self.textwidget.mark_set(TK_ANCHOR_MARK, ranges[-1].end.index())
                 self.textwidget.event_generate(gen_evt, x=0, y=evt.y)
         # Position insert cursor on clicked line so that clicked line number is highlighted
-        maintext().mark_set(tk.INSERT, cursor_index)
+        self.textwidget.mark_set(tk.INSERT, cursor_index)
         self.redraw()
 
 
