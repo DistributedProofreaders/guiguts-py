@@ -24,6 +24,7 @@ from guiguts.widgets import (
     themed_style,
     register_focus_widget,
     grab_focus,
+    bind_mouse_wheel,
 )
 
 logger = logging.getLogger(__package__)
@@ -230,8 +231,9 @@ class TextLineNumbers(tk.Canvas):
         self.bind("<Button-1>", self.drag_handler_start)
         self.bind("<B1-Motion>", self.drag_handler)
         # Shift-click in line number gutter to extend selection to start of clicked line
-        self.bind("<Shift-Button-1>", self.shift_click_handler)
+        self.bind("<Shift-Button-1>", self.shift_drag_handler_start)
         self.bind("<Shift-B1-Motion>", self.shift_drag_handler)
+        bind_mouse_wheel(self, self.textwidget)
 
     def redraw(self) -> None:
         """Redraw line numbers."""
@@ -284,13 +286,43 @@ class TextLineNumbers(tk.Canvas):
     def drag_handler_start(self, evt: tk.Event) -> None:
         """Handle initial click for drag-select operation."""
         self.textwidget.focus_set()
+        self.textwidget.update()  # So focus is correct for do_select
         self.drag_begin_index = self.cursor_index(evt)
         self.drag_handler(evt)
 
     def drag_handler(self, evt: tk.Event) -> None:
         """Select text based on the current drag-select motion event."""
-        _range = self.drag_range(evt)
-        maintext().do_select(_range)
+        drag_range = self.drag_range(evt)
+        maintext().do_select(drag_range)
+        self.set_insert_index(evt)
+        maintext().linenumbers.redraw()
+        maintext().peer_linenumbers.redraw()
+
+    def shift_drag_handler_start(self, evt: tk.Event) -> None:
+        """Handle initial click for shift-drag-select operation."""
+        cursor_row = self.cursor_index(evt).row
+        self.textwidget.focus_set()
+        self.textwidget.update()  # So focus is correct for selected_ranges
+        ranges = maintext().selected_ranges()
+        if not ranges:
+            self.drag_begin_index = IndexRowCol(
+                self.textwidget.index(f"{tk.INSERT} linestart")
+            )
+            self.shift_drag_handler(evt)
+            return
+        start_row = ranges[0].start.row
+        end_row = ranges[-1].end.row
+        cursor_row = self.cursor_index(evt).row
+        if cursor_row > (start_row + end_row) // 2:
+            self.drag_begin_index = IndexRowCol(start_row, 0)
+        else:
+            self.drag_begin_index = IndexRowCol(end_row - 1, 0)
+        self.shift_drag_handler(evt)
+
+    def shift_drag_handler(self, evt: tk.Event) -> None:
+        """Select text based on the current shift-drag-select motion event."""
+        drag_range = self.drag_range(evt)
+        maintext().do_select(drag_range)
         self.set_insert_index(evt)
         maintext().linenumbers.redraw()
         maintext().peer_linenumbers.redraw()
@@ -314,31 +346,19 @@ class TextLineNumbers(tk.Canvas):
     def set_insert_index(self, evt: tk.Event) -> None:
         """Set the insert index so the line number is highlighted properly."""
         cursor = self.cursor_index(evt)
-        _range = self.drag_range(evt)
+        drag_range = self.drag_range(evt)
         if self.drag_begin_index.row < cursor.row:
             # we were dragging downward
-            self.textwidget.mark_set(tk.INSERT, f"{cursor.index()} +1l linestart")
-            self.textwidget.mark_set(TK_ANCHOR_MARK, _range.start.index())
+            self.textwidget.mark_set(tk.INSERT, f"{cursor.index()} linestart")
+            self.textwidget.mark_set(TK_ANCHOR_MARK, drag_range.start.index())
         elif self.drag_begin_index.row > cursor.row:
             # we were dragging upward
-            self.textwidget.mark_set(tk.INSERT, _range.start.index())
-            self.textwidget.mark_set(TK_ANCHOR_MARK, f"{_range.end.row}.0")
+            self.textwidget.mark_set(tk.INSERT, drag_range.start.index())
+            self.textwidget.mark_set(TK_ANCHOR_MARK, f"{drag_range.end.row}.0")
         else:
             # clicked only a single line
-            self.textwidget.mark_set(tk.INSERT, _range.end.index())
-            self.textwidget.mark_set(TK_ANCHOR_MARK, _range.start.index())
-
-    def shift_click_handler(self, evt: tk.Event) -> None:
-        """Convert shift click in line numbers to shift-click in maintext."""
-        self.textwidget.focus_set()
-        self.textwidget.event_generate("<Shift-Button-1>", x=0, y=evt.y)
-        self.redraw()
-
-    def shift_drag_handler(self, evt: tk.Event) -> None:
-        """Convert shift click in line numbers to shift-click in maintext."""
-        self.textwidget.focus_set()
-        self.textwidget.event_generate("<Shift-B1-Motion>", x=0, y=evt.y)
-        self.redraw()
+            self.textwidget.mark_set(tk.INSERT, f"{drag_range.end.row-1}.0")
+            self.textwidget.mark_set(TK_ANCHOR_MARK, drag_range.start.index())
 
 
 class HighlightTag(StrEnum):
