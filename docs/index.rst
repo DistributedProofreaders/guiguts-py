@@ -8,6 +8,11 @@ Guiguts
 
 .. automodule:: application
  
+ASCII Tables
+============
+    
+.. automodule:: ascii_tables
+ 
 Checkers
 ========
     

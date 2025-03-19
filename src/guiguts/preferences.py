@@ -119,6 +119,12 @@ class PrefKey(StrEnum):
     BACKUPS_ENABLED = auto()
     AUTOSAVE_ENABLED = auto()
     AUTOSAVE_INTERVAL = auto()
+    ASCII_TABLE_HANGING = auto()
+    ASCII_TABLE_INDENT = auto()
+    ASCII_TABLE_REWRAP = auto()
+    ASCII_TABLE_JUSTIFY = auto()
+    ASCII_TABLE_FILL_CHAR = auto()
+    ASCII_TABLE_RIGHT_COL = auto()
 
 
 class Preferences:
