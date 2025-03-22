@@ -618,6 +618,14 @@ class Guiguts:
             lambda: maintext().transform_selection(str.upper),
             "",
         )
+        edit_menu.add_separator()
+        edit_menu.add_button(
+            "Remove End-of-page Blank Lines",
+            lambda: maintext().delete_eop_blank_lines(),
+        )
+        edit_menu.add_button(
+            "Remove End-of-line Spaces", lambda: maintext().delete_eol_whitespace()
+        )
         if not is_mac():
             edit_menu.add_separator()
             edit_menu.add_button("Pre~ferences...", PreferencesDialog.show_dialog)

@@ -1427,6 +1427,9 @@ class MainText(tk.Text):
         Args:
             fname: Name of file to save text to.
         """
+        # Tidy file before saving
+        self.delete_eop_blank_lines()
+        self.delete_eol_whitespace()
         with open(fname, "w", encoding="utf-8") as fh:
             fh.write(maintext().reverse_rtl(self.get_text()))
         if clear_modified_flag:
@@ -3943,6 +3946,32 @@ class MainText(tk.Text):
 
         self._on_change()
         self.after(int(scroll_delay), lambda: self._autoscroll_callback(event))
+
+    def delete_eop_blank_lines(self) -> None:
+        """Remove blank lines immediately preceding a page separator."""
+        self.undo_block_begin()
+        search_range = self.start_to_end()
+        # Check every page separator
+        while match := self.find_match(
+            r"^-----*\s*File:\s?\S+\.(png|jpg)", search_range, regexp=True
+        ):
+            # Delete all blank (or whitespace) lines before page separator
+            line_num = match.rowcol.row - 1
+            while line_num > 0 and re.fullmatch(
+                r"\s*", self.get(f"{line_num}.0", f"{line_num}.end")
+            ):
+                self.delete(f"{line_num}.0", f"{line_num + 1}.0")
+                line_num -= 1
+            search_range = IndexRange(self.index(f"{line_num + 2}.0"), self.end())
+
+    def delete_eol_whitespace(self) -> None:
+        """Remove end-of-line whitespace."""
+        self.undo_block_begin()
+        search_range = self.start_to_end()
+        while match := self.find_match(r"[ \t]+$", search_range, regexp=True):
+            match_index = match.rowcol.index()
+            self.delete(f"{match_index}", f"{match_index} lineend")
+            search_range = IndexRange(match.rowcol, self.end())
 
 
 def img_from_page_mark(mark: str) -> str:
