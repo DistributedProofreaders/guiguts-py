@@ -312,6 +312,11 @@ class PreferencesDialog(ToplevelDialog):
             PrefKey.TEXT_CURSOR_WIDTH,
             "Width of insert cursor in main text window",
         )
+        ttk.Checkbutton(
+            advance_frame,
+            text="Highlight Cursor Line",
+            variable=PersistentBoolean(PrefKey.HIGHLIGHT_CURSOR_LINE),
+        ).grid(column=0, row=2, sticky="NEW", pady=5)
 
         notebook.bind(
             "<<NotebookTabChanged>>",
