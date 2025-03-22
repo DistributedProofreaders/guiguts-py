@@ -429,6 +429,10 @@ class Guiguts:
             PrefKey.HIGHLIGHT_QUOTBRAC, self.highlight_quotbrac_callback
         )
         preferences.set_default(PrefKey.HIGHLIGHT_HTML_TAGS, False)
+        preferences.set_default(PrefKey.HIGHLIGHT_CURSOR_LINE, True)
+        preferences.set_callback(
+            PrefKey.HIGHLIGHT_CURSOR_LINE, lambda _: maintext().highlight_cursor_line()
+        )
         preferences.set_default(PrefKey.COLUMN_NUMBERS, False)
         preferences.set_callback(
             PrefKey.COLUMN_NUMBERS, lambda value: maintext().show_column_numbers(value)

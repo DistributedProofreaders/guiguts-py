@@ -3692,8 +3692,11 @@ class MainText(tk.Text):
         """Add a highlight to entire line cursor is focused on."""
         self.tag_remove(HighlightTag.CURSOR_LINE, "1.0", tk.END)
 
-        # Don't re-highlight if there's currently a selection
-        if not self.selected_ranges():
+        # Don't re-highlight if cursor line highlighting disabled, or if currently a selection
+        if (
+            preferences.get(PrefKey.HIGHLIGHT_CURSOR_LINE)
+            and not self.selected_ranges()
+        ):
             row = self.get_insert_index().row
             self.tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row + 1}.0")
 
