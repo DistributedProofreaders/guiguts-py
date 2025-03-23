@@ -35,7 +35,7 @@ from guiguts.utilities import (
     sound_bell,
     load_dict_from_json,
 )
-from guiguts.widgets import ToplevelDialog, Combobox, insert_in_focus_widget
+from guiguts.widgets import ToplevelDialog, PathnameCombobox, insert_in_focus_widget
 
 logger = logging.getLogger(__package__)
 
@@ -1575,12 +1575,13 @@ class ScannoCheckerDialog(CheckerDialog):
 
         frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
+        self.custom_frame.columnconfigure(0, weight=1)
         frame.columnconfigure(1, weight=1)
 
-        self.file_combo = Combobox(
+        self.file_combo = PathnameCombobox(
             frame,
             PrefKey.SCANNOS_HISTORY,
-            textvariable=PersistentString(PrefKey.SCANNOS_FILENAME),
+            PrefKey.SCANNOS_FILENAME,
         )
         self.file_combo.grid(column=1, row=0, sticky="NSEW", pady=5)
         self.file_combo["state"] = "readonly"
@@ -1601,7 +1602,6 @@ class ScannoCheckerDialog(CheckerDialog):
             frame,
             textvariable=self.scanno_textvariable,
             state="readonly",
-            width=30,
             font=maintext().font,
         )
         search.grid(column=1, row=1, sticky="NSEW", pady=5)
@@ -1618,7 +1618,6 @@ class ScannoCheckerDialog(CheckerDialog):
             frame,
             textvariable=self.replacement_textvariable,
             state="readonly",
-            width=30,
             font=maintext().font,
         )
         replace.grid(column=1, row=2, sticky="NSEW")
