@@ -821,6 +821,11 @@ class Guiguts:
             ComposeSequenceDialog.show_dialog,
             "Cmd/Ctrl+I",
         )
+        tools_menu.add_separator()
+        tools_menu.add_button(
+            "PP Wor~kbench (opens in browser)",
+            lambda: webbrowser.open("https://www.pgdp.net/ppwb/"),
+        )
 
     def init_text_menu(self) -> None:
         """Create the Text menu."""
@@ -843,11 +848,6 @@ class Guiguts:
         html_menu.add_button("~CSS Validator (online)", css_validator_check)
         html_menu.add_separator()
         html_menu.add_button("~Ebookmaker check", ebookmaker_check)
-        html_menu.add_separator()
-        html_menu.add_button(
-            "PP ~Workbench (www)",
-            lambda: webbrowser.open("https://www.pgdp.net/ppwb/"),
-        )
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
@@ -893,10 +893,15 @@ class Guiguts:
         """Create the Help menu."""
         help_menu = Menu(menubar(), "~Help")
         help_menu.add_button(
-            "Guiguts ~Manual (www)", self.show_help_manual, "F1", force_main_only=True
+            "Guiguts ~Manual (opens in browser)",
+            self.show_help_manual,
+            "F1",
+            force_main_only=True,
         )
         help_menu.add_button("About ~Guiguts", HelpAboutDialog.show_dialog)
-        help_menu.add_button("~Regex Quick Reference (www)", self.show_help_regex)
+        help_menu.add_button(
+            "~Regex Quick Reference (opens in browser)", self.show_help_regex
+        )
         help_menu.add_button(
             "List of ~Compose Sequences", ComposeHelpDialog.show_dialog
         )
