@@ -847,7 +847,7 @@ class Guiguts:
         html_menu.add_button("HTML5 ~Validator (online)", html_validator_check)
         html_menu.add_button("~CSS Validator (online)", css_validator_check)
         html_menu.add_separator()
-        html_menu.add_button("~Ebookmaker check", ebookmaker_check)
+        html_menu.add_button("~Ebookmaker generate/check", ebookmaker_check)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
