@@ -2,13 +2,14 @@
 
 import tkinter as tk
 from tkinter import ttk
+from tkinter import font as tk_font
 from typing import Any, Optional, TypeVar, Callable
 import webbrowser
 import darkdetect  # type: ignore[import-untyped]
 
 import regex as re
 
-from guiguts.preferences import preferences, PrefKey
+from guiguts.preferences import preferences, PrefKey, PersistentString
 from guiguts.root import root, RootWindowState
 from guiguts.utilities import is_windows, is_mac, process_accel, cmd_ctrl_string, is_x11
 
@@ -452,6 +453,61 @@ class Combobox(ttk.Combobox):
             self.set("")
 
 
+class PathnameCombobox(Combobox):
+    """A Combobox with better display for pathnames.
+
+    Dropdown menu is wide enough to display all entries.
+    Entry field displays the right-hand end of the pathname.
+    Tooltip displays full contents of entry field.
+    """
+
+    def __init__(
+        self,
+        parent: tk.Widget,
+        history_key: PrefKey,
+        value_key: PrefKey,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize PathnameCombox widget.
+
+        Args:
+            parent: Parent widget.
+            history_key: Key of preference to store history.
+            value_key: Key of preference to store value.
+        """
+        kwargs["textvariable"] = PersistentString(value_key)
+        super().__init__(parent, history_key, *args, **kwargs)
+        self.bind("<ButtonPress>", lambda _e: self.dropdown_width_configure())
+        self.bind("<Configure>", lambda _e: self.dropdown_width_configure())
+        self.tooltip = ToolTip(self, "")
+        # Set up callback whenever value preference is changed
+        preferences.set_callback(value_key, self.update_callback)
+        self.update_callback(preferences.get(value_key))
+
+    def dropdown_width_configure(self) -> None:
+        """Configure width of combo dropdown to be sufficient to
+        display the widest entry, so all entries are visible.
+        And show tail end of file path."""
+        long: str = max(self.cget("values"), key=len)
+
+        font = tk_font.nametofont(str(self.cget("font")))
+        width = max(0, font.measure(long.strip() + "pad") - self.winfo_width())
+
+        ttk.Style().configure("TCombobox", postoffset=(0, 0, width, 0))
+        self.xview_moveto(1.0)
+
+    def update_callback(self, value: str) -> None:
+        """Update dropdown width and tooltip when value is updated."""
+        if self.winfo_exists():
+            self.dropdown_width_configure()
+            try:
+                self.tooltip.destroy()
+            except tk.TclError:
+                pass  # OK if tooltip doesn't exist
+            self.tooltip = ToolTip(self, value)
+
+
 class Notebook(ttk.Notebook):
     """A ttk Notebook with some additional bindings.
 
@@ -570,7 +626,8 @@ class ToolTip:
         self._create_tooltip()
         assert self.tooltip_window is not None
         self.inside = False
-        self.tooltip_window.withdraw()
+        if self.tooltip_window.winfo_exists():
+            self.tooltip_window.withdraw()
 
     def _show(self) -> None:
         """Displays the ToolTip if mouse still inside."""
@@ -610,10 +667,13 @@ class ToolTip:
 
     def destroy(self) -> None:
         """Destroy the ToolTip and unbind all the bindings."""
-        if self.widget.winfo_exists():
-            unbind_from(self.widget, "<Enter>", self.enter_bind)
-            unbind_from(self.widget, "<Leave>", self.leave_bind)
-            unbind_from(self.widget, "<ButtonPress>", self.press_bind)
+        try:
+            if self.widget.winfo_exists():
+                unbind_from(self.widget, "<Enter>", self.enter_bind)
+                unbind_from(self.widget, "<Leave>", self.leave_bind)
+                unbind_from(self.widget, "<ButtonPress>", self.press_bind)
+        except KeyError:
+            pass  # OK if binding hasn't happened yet
         if self.tooltip_window is not None:
             self.tooltip_window.destroy()
 
