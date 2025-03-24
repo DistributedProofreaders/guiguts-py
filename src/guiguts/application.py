@@ -859,8 +859,12 @@ class Guiguts:
             lambda: maintext().hide_peer(),
         )
         view_menu.add_separator()
-        view_menu.add_button("~Show Image Viewer", self.show_image_viewer)
-        view_menu.add_button("~Hide Image Viewer", self.hide_image_viewer)
+        view_menu.add_checkbox(
+            "Image Viewer",
+            PersistentBoolean(PrefKey.IMAGE_VIEWER_INTERNAL),
+            self.show_image_viewer,
+            self.hide_image_viewer,
+        )
         view_menu.add_checkbox(
             "~Dock Image Viewer",
             root().image_window_docked_state,
