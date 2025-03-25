@@ -119,6 +119,7 @@ class File:
         self.page_details = PageDetails()
         self.project_dict = ProjectDict()
         self.mainwindow: Optional[MainWindow] = None
+        self.autosave_id = ""
 
     @property
     def filename(self) -> str:
@@ -276,28 +277,63 @@ class File:
         self.project_dict.load(filename)
         # Load complete, so set filename (including side effects)
         self.filename = filename
+        self.reset_autosave()
         # After loading, may need to show image
         if preferences.get(PrefKey.AUTO_IMAGE):
             self.image_dir_check()
             self.auto_image_check()
 
-    def save_file(self) -> str:
+    def save_file(self, autosave: bool = False) -> str:
         """Save the current file.
 
+        Args:
+            autosave: True if method was called via autosave
+
         Returns:
-            Current filename or None if save is cancelled
+            Current filename or "" if save is cancelled
         """
-        if self.filename:
-            maintext().do_save(self.filename)
-            self.save_bin(self.filename)
-            return self.filename
-        return self.save_as_file()
+        # If there's no filename, need to do Save As, but if called
+        # via autosave, do nothing
+        if not self.filename:
+            return "" if autosave else self.save_as_file()
+        # If we have a filename, then need to do appropriate backups
+
+        def get_backup_names(ext: str) -> tuple[str, str]:
+            """Get backup names for filename and bin file."""
+            return f"{self.filename}{ext}", f"{bin_name(self.filename)}{ext}"
+
+        binfile_name = bin_name(self.filename)
+        if autosave:
+            # Don't autosave if nothing changed - just reschedule
+            if not maintext().is_modified():
+                self.reset_autosave()
+                return ""
+            backup2_file, backup2_bin = get_backup_names(".bk2")
+            backup1_file, backup1_bin = get_backup_names(".bk1")
+            if os.path.exists(backup1_file):
+                os.replace(backup1_file, backup2_file)
+            if os.path.exists(backup1_bin):
+                os.replace(backup1_bin, backup2_bin)
+            if os.path.exists(self.filename):
+                os.replace(self.filename, backup1_file)
+            if os.path.exists(binfile_name):
+                os.replace(binfile_name, backup1_bin)
+        elif preferences.get(PrefKey.BACKUPS_ENABLED):
+            backup_file, backup_bin = get_backup_names(".bak")
+            if os.path.exists(self.filename):
+                os.replace(self.filename, backup_file)
+            if os.path.exists(binfile_name):
+                os.replace(binfile_name, backup_bin)
+        maintext().do_save(self.filename)
+        self.save_bin(self.filename)
+        self.reset_autosave()
+        return self.filename
 
     def save_as_file(self) -> str:
         """Save current text as new file.
 
         Returns:
-            Chosen filename or None if save is cancelled
+            Chosen filename or "" if save is cancelled
         """
         # If no current extension, or ".txt" extension, set extension to ".html"
         # if it's an HTML file. Similarly for text files, otherwise leave alone.
@@ -383,6 +419,18 @@ class File:
         if save and not self.save_file():
             return False
         return True
+
+    def reset_autosave(self) -> None:
+        """Clear any autosave timer, and start a fresh one if the
+        Preference is turned on."""
+        if self.autosave_id:
+            root().after_cancel(self.autosave_id)
+            self.autosave_id = ""
+        if preferences.get(PrefKey.AUTOSAVE_ENABLED):
+            self.autosave_id = root().after(
+                preferences.get(PrefKey.AUTOSAVE_INTERVAL) * 1000 * 60,
+                lambda: self.save_file(autosave=True),
+            )
 
     def load_bin(self, basename: str) -> bool:
         """Load bin file associated with current file.

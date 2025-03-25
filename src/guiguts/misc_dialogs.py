@@ -10,6 +10,7 @@ import unicodedata
 
 import regex as re
 
+from guiguts.file import the_file
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.preferences import (
@@ -304,7 +305,6 @@ class PreferencesDialog(ToplevelDialog):
             PrefKey.TEXT_LINE_SPACING,
             "Additional line spacing in text windows",
         )
-
         add_label_spinbox(
             advance_frame,
             1,
@@ -317,6 +317,33 @@ class PreferencesDialog(ToplevelDialog):
             text="Highlight Cursor Line",
             variable=PersistentBoolean(PrefKey.HIGHLIGHT_CURSOR_LINE),
         ).grid(column=0, row=2, sticky="NEW", pady=5)
+
+        backup_btn = ttk.Checkbutton(
+            advance_frame,
+            text="Keep Backup Before Saving",
+            variable=PersistentBoolean(PrefKey.BACKUPS_ENABLED),
+        )
+        backup_btn.grid(column=0, row=3, sticky="E", pady=(10, 0))
+        ToolTip(backup_btn, "Backup file will have '.bak' extension")
+        ttk.Checkbutton(
+            advance_frame,
+            text="Enable Auto Save Every",
+            variable=PersistentBoolean(PrefKey.AUTOSAVE_ENABLED),
+            command=the_file().reset_autosave,
+        ).grid(column=0, row=4, sticky="E")
+        spinbox = ttk.Spinbox(
+            advance_frame,
+            textvariable=PersistentInt(PrefKey.AUTOSAVE_INTERVAL),
+            from_=1,
+            to=60,
+            width=3,
+        )
+        spinbox.grid(column=1, row=4, sticky="EW", padx=5)
+        ToolTip(
+            spinbox,
+            "Autosave your file (with '.bk1', '.bk2' extensions) after this number of minutes",
+        )
+        ttk.Label(advance_frame, text="Minutes").grid(column=2, row=4, sticky="EW")
 
         notebook.bind(
             "<<NotebookTabChanged>>",

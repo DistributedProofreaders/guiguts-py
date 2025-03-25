@@ -476,6 +476,9 @@ class Guiguts:
         preferences.set_default(PrefKey.EBOOKMAKER_EPUB3, True)
         preferences.set_default(PrefKey.EBOOKMAKER_KINDLE, False)
         preferences.set_default(PrefKey.EBOOKMAKER_KF8, False)
+        preferences.set_default(PrefKey.BACKUPS_ENABLED, True)
+        preferences.set_default(PrefKey.AUTOSAVE_ENABLED, True)
+        preferences.set_default(PrefKey.AUTOSAVE_INTERVAL, 5)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
