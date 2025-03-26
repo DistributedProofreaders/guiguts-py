@@ -379,9 +379,10 @@ class FootnoteChecker:
         return -1
 
     def enable_disable_buttons(self) -> None:
-        """Helper function to enable/disable buttons."""
-
-        # Some buttons are disabled if their operation could corrupt the file.
+        """Helper function to enable/disable buttons. Some buttons are
+        disabled if their operation could corrupt the file."""
+        if not self.checker_dialog.winfo_exists():
+            return
 
         # The following flag is set once and never unset.
         if self.fns_have_been_moved:
@@ -787,13 +788,13 @@ def autoset_chapter_lz() -> None:
             restart_point = maintext().rowcol(f"{start_index} +1l")
         search_range = IndexRange(restart_point, maintext().end())
 
-        # The file has changed so rebuild AN/FN records and refresh dialog.
-        _THE_FOOTNOTE_CHECKER.run_check()
-        # Order below is important. A flag is set in display_footnote_entries()
-        # that will determine which, if any, buttons are disabled when they are
-        # displayed.
-        display_footnote_entries()
-        _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
+    # The file has changed so rebuild AN/FN records and refresh dialog.
+    _THE_FOOTNOTE_CHECKER.run_check()
+    # Order below is important. A flag is set in display_footnote_entries()
+    # that will determine which, if any, buttons are disabled when they are
+    # displayed.
+    display_footnote_entries()
+    _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
 
 
 def move_footnotes_to_paragraphs() -> None:
