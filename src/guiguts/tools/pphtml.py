@@ -96,6 +96,7 @@ class PPhtmlChecker:
         self.misc_checks()
 
         self.dialog.display_entries()
+        # Select first entry (which might not be one with a line number)
         self.dialog.select_entry_by_index(0)
 
     # Image tests
@@ -367,21 +368,43 @@ class PPhtmlChecker:
     def find_targets(self) -> None:
         """Build dictionary of IndexRanges where targets occur, keyed on target name.
         Should be only one for each id."""
-        id_count = 0
-        for line_num, line in enumerate(self.file_lines):
-            if "<meta" in line:
-                continue
-            for match in re.finditer(r"id\s*=\s*[\"'](.*?)[\"']", line):
-                id_count += 1
-                tgt = match[1]
+
+        class IDHTMLParser(HTMLParser):
+            """Parse HTML file to get ID attributes of all elements"""
+
+            def __init__(self) -> None:
+                """Initialize HTML ID parser."""
+                super().__init__()
+                self.ids: dict[str, list[IndexRange]] = {}
+
+            def handle_starttag(
+                self, tag: str, attrs: list[tuple[str, str | None]]
+            ) -> None:
+                if tag == "meta":
+                    return
+                tag_index = self.getpos()
+                tag_start = IndexRowCol(tag_index[0], tag_index[1])
+                id_name = None
+                for attr in attrs:
+                    if attr[0] == "id":
+                        id_name = attr[1]
+                        break
+                if id_name is None:
+                    return
+                tag_text = self.get_starttag_text()
+                assert tag_text is not None  # Can never happen in this method
                 idx_range = IndexRange(
-                    IndexRowCol(line_num + 1, match.start()),
-                    IndexRowCol(line_num + 1, match.end()),
+                    tag_start,
+                    maintext().rowcol(f"{tag_start.index()}+{len(tag_text)}c"),
                 )
-                if tgt in self.targets:
-                    self.targets[tgt].append(idx_range)
-                else:
-                    self.targets[tgt] = [idx_range]
+                try:
+                    self.ids[id_name].append(idx_range)
+                except KeyError:
+                    self.ids[id_name] = [idx_range]
+
+        parser = IDHTMLParser()
+        parser.feed(self.file_text)
+        self.targets = parser.ids
 
         errors: list[tuple[str, Optional[IndexRange]]] = []
         test_passed = True
@@ -768,7 +791,7 @@ class PPhtmlChecker:
         parser.feed(self.file_text)
         self.output_subsection_errors(
             None,
-            f'{parser.h2count} <h2> tags; {parser.cchcount} "class=chapter" attributes',
+            f'{parser.h2count} <h2> tags; {parser.cchcount} class="chapter" attributes',
             [],
         )
 
@@ -871,8 +894,10 @@ class PPhtmlChecker:
             split_content[lnum] = re.sub(r"{[^}]+}", "", split_content[lnum])
             # Remove child combinator ">" div.linegroup > :first-child
             split_content[lnum] = re.sub(r">", "", split_content[lnum])
-            # "hr.pb" -> ".pb"
-            split_content[lnum] = re.sub(r"\w+(\.\w+)", r"\1", split_content[lnum])
+            # Remove element types: "hr.pb" -> ".pb"
+            split_content[lnum] = re.sub(
+                r"(?<![\.\w])\w+(\.\w+)", r"\1", split_content[lnum]
+            )
 
         for line in split_content:
             line = line.replace(".", " .")  # ".poem.apdx" becomes " .poem .apdx"

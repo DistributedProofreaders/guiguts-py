@@ -323,14 +323,14 @@ class PreferencesDialog(ToplevelDialog):
             text="Keep Backup Before Saving",
             variable=PersistentBoolean(PrefKey.BACKUPS_ENABLED),
         )
-        backup_btn.grid(column=0, row=3, sticky="E", pady=(10, 0))
+        backup_btn.grid(column=0, row=3, sticky="EW", pady=(10, 0))
         ToolTip(backup_btn, "Backup file will have '.bak' extension")
         ttk.Checkbutton(
             advance_frame,
             text="Enable Auto Save Every",
             variable=PersistentBoolean(PrefKey.AUTOSAVE_ENABLED),
             command=the_file().reset_autosave,
-        ).grid(column=0, row=4, sticky="E")
+        ).grid(column=0, row=4, sticky="EW")
         spinbox = ttk.Spinbox(
             advance_frame,
             textvariable=PersistentInt(PrefKey.AUTOSAVE_INTERVAL),

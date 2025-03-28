@@ -77,7 +77,8 @@ class CheckerEntry:
             section: Section entry belongs to.
             initial_pos: Position of entry during initial creation.
             entry_type: Type of entry: header, footer, content, etc.
-            error_prefix: Prefix string indicating an error - empty if no error.
+            error_prefix: Prefix string indicating an error - empty or begins with
+                parenthesis if no error, e.g. "(x5)".
         """
         self.text = text
         self.text_range = text_range
@@ -92,7 +93,7 @@ class CheckerEntry:
             if text_range is None
             else (
                 CheckerEntrySeverity.ERROR
-                if error_prefix
+                if error_prefix and error_prefix[0] != "("
                 else CheckerEntrySeverity.INFO
             )
         )
@@ -783,7 +784,8 @@ class CheckerDialog(ToplevelDialog):
             hilite_start: Optional column to begin higlighting entry in dialog.
             hilite_end: Optional column to end higlighting entry in dialog.
             entry_type: Defaults to content
-            error_prefix: Optional string prefix to indicate error
+            error_prefix: Prefix string indicating an error - empty or begins with
+                parenthesis if no error, e.g. "(x5)".
         """
         line = re.sub("\n", "⏎", msg)
         entry = CheckerEntry(
@@ -827,14 +829,7 @@ class CheckerDialog(ToplevelDialog):
         else:
             sort_key = self.rowcol_key
         self.entries.sort(key=sort_key)
-        # By double-clicking button, user can end up with two versions of tool running
-        # and then erroring on this line - trap it here and just return, allowing other
-        # version of tool to run.
-        try:
-            self.text.delete("1.0", tk.END)
-        except tk.TclError:
-            Busy.unbusy()
-            return
+        self.text.delete("1.0", tk.END)
         self.count_linked_entries = 0
         self.count_suspects = 0
 
@@ -887,6 +882,8 @@ class CheckerDialog(ToplevelDialog):
                 self.text.tag_add(
                     ERROR_PREFIX_TAG_NAME, start_rowcol.index(), end_rowcol.index()
                 )
+        # Output "Check complete", so user knows it's done
+        self.text.insert(tk.END, "\nCheck complete\n")
 
         # The default automatic highlighting of previously selected line, or if none
         # the first suitable line, is undesirable when an application immediately

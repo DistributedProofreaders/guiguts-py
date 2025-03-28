@@ -66,9 +66,37 @@ class SpellCheckerDialog(CheckerDialog):
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize Spell Checker dialog."""
+
+        def add_to_global_dict() -> None:
+            """Add current word to global dictionary."""
+            current_index = self.current_entry_index()
+            if current_index is None:
+                return
+            checker_entry = self.entries[current_index]
+            if checker_entry.text_range:
+                word = checker_entry.text.split(maxsplit=1)[0]
+                self.add_global_word_callback(word)
+                checker = get_spell_checker()
+                assert checker is not None
+                checker.dictionary[word] = True
+            self.remove_entry_current(all_matching=True)
+
+        def add_to_project_dict(checker_entry: CheckerEntry) -> None:
+            """Process the spelling error by adding the word to the project dictionary."""
+            if checker_entry.text_range:
+                self.add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
+                self.remove_entry_current(all_matching=True)
+
+        # Complication because callbacks to add to project/global dictionaries
+        # are passed in from outside, but we need "process_command" to call
+        # one of them.
+        assert "add_project_word_callback" in kwargs
+        self.add_project_word_callback = kwargs["add_project_word_callback"]
+        del kwargs["add_project_word_callback"]
         assert "add_global_word_callback" in kwargs
         self.add_global_word_callback = kwargs["add_global_word_callback"]
         del kwargs["add_global_word_callback"]
+        kwargs["process_command"] = add_to_project_dict
         super().__init__(
             "Spelling Check Results",
             tooltip="\n".join(
@@ -104,20 +132,6 @@ class SpellCheckerDialog(CheckerDialog):
             """Invoke a button and return "break" to avoid further callbacks."""
             button.invoke()
             return "break"
-
-        def add_to_global_dict() -> None:
-            """Add current word to global dictionary."""
-            current_index = self.current_entry_index()
-            if current_index is None:
-                return
-            checker_entry = self.entries[current_index]
-            if checker_entry.text_range:
-                word = checker_entry.text.split(maxsplit=1)[0]
-                self.add_global_word_callback(word)
-                checker = get_spell_checker()
-                assert checker is not None
-                checker.dictionary[word] = True
-            self.remove_entry_current(all_matching=True)
 
         lang = maintext().get_language_list()[0]
         global_dict_button = ttk.Button(
@@ -469,21 +483,16 @@ def spell_check(
         return
     bad_spellings = checker.do_spell_check(project_dict)
 
-    def process_spelling(checker_entry: CheckerEntry) -> None:
-        """Process the spelling error by adding the word to the project dictionary."""
-        if checker_entry.text_range:
-            add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
-
     checker_dialog = SpellCheckerDialog.show_dialog(
         rerun_command=lambda: spell_check(
             project_dict,
             add_project_word_callback,
             add_global_word_callback,
         ),
-        process_command=process_spelling,
         show_hide_buttons=False,
         show_process_buttons=False,
         switch_focus_when_clicked=False,
+        add_project_word_callback=add_project_word_callback,
         add_global_word_callback=add_global_word_callback,
     )
 
