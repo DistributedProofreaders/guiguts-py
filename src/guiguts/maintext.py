@@ -384,6 +384,8 @@ class HighlightTag(StrEnum):
     HTML_TAG_SPAN = auto()
     HTML_TAG_P = auto()
     HTML_TAG_A = auto()
+    TABLE_COLUMN = auto()
+    TABLE_BODY = auto()
 
 
 # Dictionary to map HTML tags to HighlightTags
@@ -604,6 +606,14 @@ class HighlightColors:
     HTML_TAG_A = {
         "Light": {"foreground": "gold4"},
         "Dark": {"foreground": "gold2"},
+    }
+    TABLE_BODY = {
+        "Light": {"background": "salmon", "foreground": "black"},
+        "Dark": {"background": "salmon", "foreground": "white"},
+    }
+    TABLE_COLUMN = {
+        "Light": {"background": "lime", "foreground": "black"},
+        "Dark": {"background": "lime", "foreground": "white"},
     }
 
 
@@ -3864,6 +3874,8 @@ class MainText(tk.Text):
             (HighlightTag.HTML_TAG_P, HighlightColors.HTML_TAG_P),
             (HighlightTag.HTML_TAG_A, HighlightColors.HTML_TAG_A),
             (HighlightTag.ALIGNCOL, HighlightColors.ALIGNCOL),
+            (HighlightTag.TABLE_COLUMN, HighlightColors.TABLE_COLUMN),
+            (HighlightTag.TABLE_BODY, HighlightColors.TABLE_BODY),
             (HighlightTag.CURSOR_LINE, HighlightColors.CURSOR_LINE),
         ):
             if colors:
