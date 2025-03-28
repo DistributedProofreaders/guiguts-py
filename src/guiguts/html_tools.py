@@ -562,7 +562,7 @@ def html_validator_check() -> None:
         """Minimal class to identify dialog type so that it can exist
         simultaneously with other checker dialogs."""
 
-        manual_page = "HTML_Menu#HTML_Link_Checker"
+        manual_page = "HTML_Menu#HTML_Validator"
 
         def __init__(self, **kwargs: Any) -> None:
             """Initialize HTML Validator dialog."""
@@ -690,7 +690,7 @@ class CSSValidatorDialog(CheckerDialog):
 
     Uses SOAP/XML interface to CSS validator."""
 
-    manual_page = "HTML_Menu#PPhtml"
+    manual_page = "HTML_Menu#CSS_Validator"
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize CSS Checker dialog."""
