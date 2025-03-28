@@ -70,14 +70,16 @@ class ASCIITable:
             row.cells.extend(
                 [ASCIITableCell() for _ in range(len(row.cells), max_cols)]
             )
-            # Delete any leading empty/whitespace fragments
-            for col, cell in enumerate(row.cells):
-                while cell.fragments and not cell.fragments[0].strip():
-                    del cell.fragments[0]
-            # Delete any trailing empty/whitespace fragments
-            for col, cell in enumerate(row.cells):
-                while cell.fragments and not cell.fragments[-1].strip():
-                    del cell.fragments[-1]
+            # If not spaced, don't want to mess with leading/trailing fragments
+            if self.spaced:
+                # Delete any leading empty/whitespace fragments
+                for col, cell in enumerate(row.cells):
+                    while cell.fragments and not cell.fragments[0].strip():
+                        del cell.fragments[0]
+                # Delete any trailing empty/whitespace fragments
+                for col, cell in enumerate(row.cells):
+                    while cell.fragments and not cell.fragments[-1].strip():
+                        del cell.fragments[-1]
             # Recalculate max number of fragments & add trailing whitespace fragments
             # so all cells on row have same number
             max_frags = max(len(cell.fragments) for cell in row.cells)
@@ -87,20 +89,24 @@ class ASCIITable:
                     for _ in range(len(cell.fragments), max_frags)
                 )
 
-    def add_text(self, row: int, col: int, text: str) -> None:
-        """Add text to cell at given row & column, separating with newlines
-        if cell already has text.
+    def add_text(self, row_num: int, col_num: int, frag_num: int, text: str) -> None:
+        """Add text to cell at given row, column & fragment, padding with
+        empty cells & fragments as necessary.
 
         Args:
-            row: Zero-based row number of cell to add text to.
-            col: Zero-based column number of cell to add text to.
+            row_num: Zero-based row number of cell to add text to.
+            col_num: Zero-based column number of cell to add text to.
+            frag_num: Zero-based fragment number to add
             text: Text to be added to cell.
         """
-        while len(self.rows) <= row:
+        while len(self.rows) <= row_num:
             self.rows.append(ASCIITableRow())
-        while len(self.rows[row].cells) <= col:
-            self.rows[row].cells.append(ASCIITableCell())
-        self.rows[row].cells[col].fragments.append(text)
+        for row in self.rows:
+            while len(row.cells) <= col_num:
+                row.cells.append(ASCIITableCell())
+        while len(self.rows[row_num].cells[col_num].fragments) < frag_num:
+            self.rows[row_num].cells[col_num].fragments.append("")
+        self.rows[row_num].cells[col_num].fragments.append(text)
 
     def get_max_column_widths(self) -> list[int]:
         """Get the max cell widths for each column in given table.
@@ -390,6 +396,8 @@ class ASCIITableDialog(ToplevelDialog):
         Needs to remove the undo_redo callback.
         """
         super().on_destroy()
+        if not maintext().winfo_exists():
+            return
         self.table_deselect()
         self.refresh_table_display()
         maintext().remove_undo_redo_callback(self.__class__.__name__)
@@ -928,11 +936,11 @@ class ASCIITableDialog(ToplevelDialog):
             text_lines = text_row.split("\n")
             if text_lines[-1] == "":  # Trailing empty line.
                 del text_lines[-1]
-            for text_line in text_lines:
+            for frag_num, text_line in enumerate(text_lines):
                 text_line = re.sub(r"^\||\|$", "", text_line.rstrip())
                 # For each cell line in that text line
                 for col, cell_line in enumerate(re.split(split_regex, text_line)):
-                    table.add_text(row, col, cell_line)
+                    table.add_text(row, col, frag_num, cell_line)
         # "Square off" table, making all rows have max_cols columns
         table.square_off()
         return table
