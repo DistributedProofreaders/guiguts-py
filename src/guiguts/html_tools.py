@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 from typing import Optional, Any
 import xml.sax
+import shutil
 
 from PIL import Image, ImageTk, UnidentifiedImageError
 import regex as re
@@ -29,6 +30,7 @@ from guiguts.utilities import (
     DiacriticRemover,
     IndexRowCol,
     folder_dir_str,
+    is_windows,
 )
 from guiguts.widgets import ToplevelDialog, Busy
 
@@ -1126,14 +1128,14 @@ class EbookmakerCheckerDialog(CheckerDialog):
         )
 
         def locate_ebookmaker() -> None:
-            """Prompt user to give path to ebookmaker."""
-            if file_name := filedialog.askopenfilename(
-                title="Select Ebookmaker program",
+            """Prompt user to give path to where ebookmaker was installed using pipenv."""
+            if dir_name := filedialog.askdirectory(
+                title=f"Select the Ebookmaker 'pipenv install' {folder_dir_str()}",
                 parent=self,
             ):
-                preferences.set(PrefKey.EBOOKMAKER_PATH, file_name)
+                preferences.set(PrefKey.EBOOKMAKER_PATH, dir_name)
 
-        ttk.Label(self.custom_frame, text="Ebookmaker Location:").grid(
+        ttk.Label(self.custom_frame, text=f"Ebookmaker {folder_dir_str()}:").grid(
             row=0, column=0, sticky="NSW", pady=(5, 0)
         )
         ttk.Entry(
@@ -1148,11 +1150,11 @@ class EbookmakerCheckerDialog(CheckerDialog):
             takefocus=False,
         ).grid(row=0, column=2, sticky="NSE", pady=(5, 0))
 
-        ttk.Label(self.custom_frame, text="Epub formats:").grid(
+        ttk.Label(self.custom_frame, text="Ebook formats:").grid(
             row=1, column=0, sticky="NSW"
         )
         format_frame = ttk.Frame(self.custom_frame)
-        format_frame.grid(row=1, column=1, sticky="NSW", columnspan=2, pady=5)
+        format_frame.grid(row=1, column=1, sticky="NSW", pady=5)
         ttk.Checkbutton(
             format_frame,
             text="EPUB 2",
@@ -1175,6 +1177,14 @@ class EbookmakerCheckerDialog(CheckerDialog):
             variable=PersistentBoolean(PrefKey.EBOOKMAKER_KF8),
         ).grid(column=3, row=0, sticky="NSW", padx=5)
 
+        verbose_frame = ttk.Frame(self.custom_frame)
+        verbose_frame.grid(row=1, column=2, sticky="NSE", pady=5)
+        ttk.Checkbutton(
+            verbose_frame,
+            text="Verbose output",
+            variable=PersistentBoolean(PrefKey.EBOOKMAKER_VERBOSE_OUTPUT),
+        ).grid(column=0, row=0, sticky="NSE", padx=5)
+
 
 class EbookmakerChecker:
     """Ebookmaker checker"""
@@ -1190,24 +1200,50 @@ class EbookmakerChecker:
         if not cwd:
             Busy.unbusy()
             return
-        cwd = os.path.dirname(cwd)
         if not os.path.isdir(cwd):
             logger.error(f"{folder_dir_str()} {cwd} does not exist")
             return
 
-        # Set env variable to suppress pipenv whinge about running in virtual environment
-        # (possibly only relevant to devs?)
+        # Don't use an existing virtualenv for pipenv; create a new one.
+        # Using an existing one makes testing from an IDE very hard, and
+        # would also be problematic for anyone running Guiguts in their
+        # own virtualenv (a common practice among Python users).
         my_env = os.environ.copy()
-        my_env["PIPENV_VERBOSITY"] = "-1"
+        my_env["PIPENV_IGNORE_VIRTUALENVS"] = "1"
+
+        # Find the proper path to the venv
+        result = subprocess.run(
+            ["pipenv", "--venv"],
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+            env=my_env,
+            check=False,
+        )
+        venv_dir = result.stdout.rstrip()
+        if not os.path.isdir(venv_dir):
+            logger.error(f"{folder_dir_str()} {venv_dir} does not exist")
+            return
+
+        if is_windows():
+            bin_dir = os.path.join(venv_dir, "Scripts")
+        else:
+            bin_dir = os.path.join(venv_dir, "bin")
+        venv_python_path = os.path.join(bin_dir, "python")
+        venv_ebookmaker_path = os.path.join(bin_dir, "ebookmaker")
+
         # Base command
-        command = ["pipenv", "run", "python", "ebookmaker", "--max-depth=3"]
+        command = ["pipenv", "run", venv_python_path, venv_ebookmaker_path, "-v"]
+        if preferences.get(PrefKey.EBOOKMAKER_VERBOSE_OUTPUT):
+            command.append("-v")
+        command.append("--max-depth=3")
         # Build options
         if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
             command.append("--make=epub.images")
         if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
             command.append("--make=epub3.images")
         # Need Calibre to create kindle versions
-        if "calibre" in my_env["PATH"].lower():
+        if shutil.which("ebook-convert"):
             if preferences.get(PrefKey.EBOOKMAKER_KINDLE):
                 command.append("--make=kindle.images")
             if preferences.get(PrefKey.EBOOKMAKER_KF8):
@@ -1216,7 +1252,7 @@ class EbookmakerChecker:
             PrefKey.EBOOKMAKER_KF8
         ):
             logger.error(
-                "To create Kindle files, install Calibre and ensure it is on your PATH"
+                "To create Kindle files, install Calibre and ensure the ebook-convert command is on your PATH"
             )
             Busy.unbusy()
             return
@@ -1231,27 +1267,23 @@ class EbookmakerChecker:
 
         result = subprocess.run(
             command,
-            capture_output=True,
+            capture_output=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
             cwd=cwd,
             env=my_env,
             check=False,
         )
 
-        errors = result.stderr.split("\n")
-        output_message = False
-        if any(error.strip() for error in errors):
-            output_message = True
-            self.dialog.add_entry("===== Ebookmaker errors =====")
-            for error in errors:
-                self.dialog.add_entry(error)
         messages = result.stdout.split("\n")
         if any(message.strip() for message in messages):
-            output_message = True
-            self.dialog.add_entry("===== Ebookmaker messages =====")
             for message in messages:
+                # skip this useless notice...
+                if re.match(r".*Not configured, using .* for FILESDIR", message):
+                    continue
                 self.dialog.add_entry(message)
-        if not output_message:
+        else:
             self.dialog.add_entry("Ebookmaker completed with no messages")
 
         self.dialog.display_entries()
