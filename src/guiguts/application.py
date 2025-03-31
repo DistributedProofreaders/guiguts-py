@@ -47,6 +47,7 @@ from guiguts.misc_dialogs import (
     UnicodeBlockDialog,
     UnicodeSearchDialog,
     HelpAboutDialog,
+    CommandPaletteDialog,
 )
 from guiguts.misc_tools import (
     basic_fixup_check,
@@ -82,7 +83,11 @@ from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.pphtml import pphtml
 from guiguts.utilities import is_mac, is_windows, is_x11, folder_dir_str
-from guiguts.widgets import themed_style, theme_name_internal_from_user
+from guiguts.widgets import (
+    themed_style,
+    theme_name_internal_from_user,
+    menubar_metadata,
+)
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
 logger = logging.getLogger(__package__)
@@ -510,6 +515,11 @@ class Guiguts:
         self.init_help_menu()
         self.init_os_menu()
 
+        # Example orphan command
+        menubar_metadata().add_command(
+            None, "Do not run", lambda: logger.error("Especially with scissors!"), ""
+        )
+
         if is_mac():
             root().createcommand(
                 "tk::mac::ShowPreferences", PreferencesDialog.show_dialog
@@ -544,6 +554,7 @@ class Guiguts:
             self.recent_menu.add_button(
                 f"~{count}: {file}",
                 lambda fn=file: self.open_file(fn),  # type:ignore[misc]
+                add_to_command_palette=False,
             )
 
     def init_file_project_menu(self, parent: Menu) -> None:
@@ -921,6 +932,10 @@ class Guiguts:
         )
         help_menu.add_button(
             "List of ~Compose Sequences", ComposeHelpDialog.show_dialog
+        )
+        help_menu.add_separator()
+        help_menu.add_button(
+            "Command ~Palette", CommandPaletteDialog.show_dialog, "Cmd/Ctrl+Shift+P"
         )
 
     def init_os_menu(self) -> None:

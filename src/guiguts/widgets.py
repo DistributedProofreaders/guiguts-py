@@ -1,12 +1,13 @@
 """Common code/classes relating to Tk widgets."""
 
+from dataclasses import dataclass
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tk_font
 from typing import Any, Optional, TypeVar, Callable
 import webbrowser
-import darkdetect  # type: ignore[import-untyped]
 
+import darkdetect  # type: ignore[import-untyped]
 import regex as re
 
 from guiguts.preferences import preferences, PrefKey, PersistentString
@@ -676,6 +677,174 @@ class ToolTip:
             pass  # OK if binding hasn't happened yet
         if self.tooltip_window is not None:
             self.tooltip_window.destroy()
+
+
+@dataclass
+class CommandInfoMetadata:
+    """Class to store info about a command."""
+
+    label: str
+    menu: str
+    shortcut: str
+    command: Callable
+
+    def __lt__(self, other: "CommandInfoMetadata") -> bool:
+        """Define "<" to support sorting by label."""
+        return self.label < other.label
+
+
+class EntryMetadata:
+    """Store metadata about a menu entry."""
+
+    def __init__(self, label: str) -> None:
+        """Initialize EntryMetadata object."""
+        self.label = label
+
+
+class CommandMetadata(EntryMetadata):
+    """Store metadata about a menu button (command)."""
+
+    def __init__(self, label: str, command: Callable, shortcut: str) -> None:
+        """Initialize ButtonMetadata object.
+
+        Args:
+            label: The text displayed for the button.
+            command: The function to execute when clicked.
+            shortcut: Keyboard shortcut for the command (empty string if none)
+        """
+        super().__init__(label)
+        self.command = command
+        self.shortcut = shortcut
+
+
+class MenuMetadata(EntryMetadata):
+    """Store metadata about a menu item."""
+
+    def __init__(self, label: str, widget: tk.Menu) -> None:
+        """Initialize MenuMetadata object.
+
+        Args:
+            label: Label string for menu button.
+            widget: The menu that is being added.
+        """
+        super().__init__(label)
+        self.entries: list[EntryMetadata] = []
+        self.widget = widget
+
+    def get_submenu_metadata(self, submenu: tk.Menu) -> Optional["MenuMetadata"]:
+        """Return the metadata for the given submenu."""
+        for entry in self.entries:
+            if isinstance(entry, MenuMetadata):
+                if entry.widget == submenu:
+                    return entry  # Found it!
+                # Also recurse into submenus
+                if metadata := entry.get_submenu_metadata(submenu):
+                    return metadata
+        return None
+
+    def add_button(self, label: str, command: Callable, shortcut: str = "") -> None:
+        """Add a command button to this menu."""
+        button = CommandMetadata(label, command, shortcut)
+        self.entries.append(button)
+
+    def get_all_commands(self) -> list[CommandInfoMetadata]:
+        """Recursively collect all command buttons in this menu."""
+        commands = []
+        for entry in self.entries:
+            if isinstance(entry, CommandMetadata):
+                commands.append(
+                    CommandInfoMetadata(
+                        entry.label, self.label, entry.shortcut, entry.command
+                    )
+                )
+            elif isinstance(entry, MenuMetadata):
+                commands.extend(entry.get_all_commands())
+        return commands
+
+
+class MenubarMetadata:
+    """Store metadata about entries in the menu bar."""
+
+    def __init__(self, menubar: tk.Menu) -> None:
+        """Initialize MenubarMetadata object."""
+        self.entries: list[MenuMetadata] = []
+        self.orphans: list[EntryMetadata] = []
+        self.widget = menubar
+
+    def add_menu(self, menu: tk.Menu, parent: tk.Menu, label: str) -> None:
+        """Add a menu to the structure.
+
+        Args:
+            menu: Menu widget to add to the structure.
+            parent: If none, then adding to the menu bar, else to the parent menu
+            label: Label string for menu button.
+        """
+        if parent == self.widget:
+            self.entries.append(MenuMetadata(label, menu))
+        else:
+            parent_metadata = self.get_menu_metadata(parent)
+            assert parent_metadata is not None
+            parent_metadata.entries.append(MenuMetadata(label, menu))
+
+    def get_menu_metadata(self, menu: tk.Menu) -> Optional[MenuMetadata]:
+        """Return the metadata for the given menu."""
+        for entry in self.entries:
+            # May be asking for a top level menu, i.e. child of menubar
+            if entry.widget == menu:
+                return entry
+            # If not, may be a submenu of a top level menu (checked recursively)
+            if metadata := entry.get_submenu_metadata(menu):
+                return metadata
+        return None
+
+    def add_command(
+        self,
+        parent: Optional[tk.Menu],
+        label: str,
+        command: Callable,
+        shortcut: str,
+    ) -> None:
+        """Add a command button to the correct menu (or list of orphans).
+
+        Args:
+            parent: The parent menu widget (None if command not in menus).
+            label: The text displayed for the button.
+            command: The function to execute when clicked.
+            shortcut: Keyboard shortcut for the command (empty string if none).
+        """
+        if parent is None:
+            self.orphans.append(CommandMetadata(label, command, shortcut))
+        else:
+            menu_metadata = self.get_menu_metadata(parent)
+            if menu_metadata is not None:
+                menu_metadata.entries.append(CommandMetadata(label, command, shortcut))
+
+    def get_all_commands(self) -> list[CommandInfoMetadata]:
+        """Collect all command buttons from the entire menu structure."""
+        commands = []
+        for entry in self.entries:
+            commands.extend(entry.get_all_commands())
+        for orphan in self.orphans:
+            if isinstance(orphan, CommandMetadata):
+                commands.append(
+                    CommandInfoMetadata(
+                        orphan.label, "", orphan.shortcut, orphan.command
+                    )
+                )
+        return commands
+
+
+_MENUBAR_METADATA = None
+
+
+def menubar_metadata(menubar: Optional[tk.Menu] = None) -> MenubarMetadata:
+    """Return single instance of menubar metadata."""
+    global _MENUBAR_METADATA
+    if menubar is not None:
+        assert _MENUBAR_METADATA is None
+        _MENUBAR_METADATA = MenubarMetadata(menubar)
+    assert _MENUBAR_METADATA is not None
+    return _MENUBAR_METADATA
 
 
 def unbind_from(widget: tk.Widget, sequence: str, func_id: str) -> None:
