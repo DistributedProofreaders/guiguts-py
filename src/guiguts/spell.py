@@ -512,5 +512,4 @@ def spell_check(
             f"{spelling.word} ({spelling.frequency})" + bad_str,
             IndexRange(spelling.rowcol, end_rowcol),
         )
-    checker_dialog.add_footer("", "End of Spelling Check" + sel_only)
     checker_dialog.display_entries()
