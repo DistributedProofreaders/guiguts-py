@@ -2640,3 +2640,5 @@ def pptxt(project_dict: ProjectDict) -> None:
 
     checker_dialog.add_footer(f"{'-' * 80}")
     checker_dialog.display_entries()
+    # Select first entry (which might not be one with a line number)
+    checker_dialog.select_entry_by_index(0)
