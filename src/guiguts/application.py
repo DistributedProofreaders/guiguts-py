@@ -493,6 +493,7 @@ class Guiguts:
         preferences.set_default(PrefKey.ASCII_TABLE_JUSTIFY, JustifyStyle.LEFT)
         preferences.set_default(PrefKey.ASCII_TABLE_FILL_CHAR, "@")
         preferences.set_default(PrefKey.ASCII_TABLE_RIGHT_COL, 70)
+        preferences.set_default(PrefKey.COMMAND_PALETTE_HISTORY, [])
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -516,8 +517,8 @@ class Guiguts:
         self.init_os_menu()
 
         # Example orphan command
-        menubar_metadata().add_command(
-            None, "Do not run", lambda: logger.error("Especially with scissors!"), ""
+        menubar_metadata().add_button(
+            None, "Do not run", "", lambda: logger.error("Especially with scissors!")
         )
 
         if is_mac():

@@ -133,7 +133,7 @@ class Menu(tk.Menu):
             command_args["underline"] = label_tilde
         self.add_command(command_args)
         if add_to_command_palette:
-            menubar_metadata().add_command(self, label_txt, command, accel)
+            menubar_metadata().add_button(self, label_txt, accel, command)
 
     def add_checkbox(
         self,
@@ -142,6 +142,7 @@ class Menu(tk.Menu):
         handler_on: Optional[Callable[[], None]] = None,
         handler_off: Optional[Callable[[], None]] = None,
         accel: str = "",
+        add_to_command_palette: bool = True,
     ) -> None:
         """Add a button to the menu.
 
@@ -193,6 +194,10 @@ class Menu(tk.Menu):
         if label_tilde >= 0:
             command_args["underline"] = label_tilde
         self.add_checkbutton(command_args)
+        if add_to_command_palette:
+            menubar_metadata().add_checkbox(
+                self, label_txt, accel, bool_var, handler_on, handler_off
+            )
 
     def add_cut_copy_paste(self, read_only: bool = False) -> None:
         """Add cut/copy/paste buttons to this menu"""

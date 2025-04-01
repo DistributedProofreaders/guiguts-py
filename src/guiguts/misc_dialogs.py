@@ -33,6 +33,7 @@ from guiguts.widgets import (
     bind_mouse_wheel,
     unbind_mouse_wheel,
     menubar_metadata,
+    Busy,
 )
 
 COMBO_SEPARATOR = "―" * 20
@@ -893,12 +894,14 @@ class CommandPaletteDialog(ToplevelDialog):
     """Command Palette Dialog."""
 
     manual_page = "Help_Menu#Command_Palette"
+    NUM_HISTORY = 5
 
     def __init__(self) -> None:
         """Initialize the command palette window."""
         super().__init__("Command Palette")
         self.commands = menubar_metadata().get_all_commands()
         self.filtered_commands = self.commands
+        self.history: list[tuple[str, str]]
 
         self.top_frame.grid_rowconfigure(0, weight=0)
         self.top_frame.grid_rowconfigure(1, weight=1)
@@ -963,7 +966,9 @@ class CommandPaletteDialog(ToplevelDialog):
         """Update the command list based on search input."""
         search_text = self.search_var.get().lower().strip()
         self.filtered_commands = sorted(
-            cmd for cmd in self.commands if search_text in cmd.label.lower()
+            cmd
+            for cmd in self.commands
+            if search_text in cmd.label.lower() or search_text in cmd.menu.lower()
         )
 
         self.list.delete(*self.list.get_children())
@@ -978,9 +983,11 @@ class CommandPaletteDialog(ToplevelDialog):
         selection = self.list.selection()
         if selection:
             item = selection[0]
-            command = self.filtered_commands[self.list.index(item)].command
+            command = self.filtered_commands[self.list.index(item)].get_command()
             self.destroy()
+            Busy.busy()  # In case it's a slow command
             command()
+            Busy.unbusy()  # In case it's a slow command
 
     def focus_on_list(self, _: tk.Event) -> None:
         """Move focus to the list and select the first item."""
@@ -1021,6 +1028,22 @@ class CommandPaletteDialog(ToplevelDialog):
         elif event.char:  # If a proper char, add it to the entry
             self.search_var.set(current_text + event.char)
         self.update_list()  # Update the list based on the new search text
+
+    def add_to_history(self, label: str, menu: str) -> None:
+        """Store given entry in history list pref.
+
+        Args:
+            label: Label of entry to add to history.
+            menu: Name of menu for entry to add to history.
+        """
+        self.history = preferences.get(PrefKey.COMMAND_PALETTE_HISTORY)
+        try:
+            self.history.remove((label, menu))
+        except ValueError:
+            pass  # OK if entry wasn't in list
+        self.history.insert(0, (label, menu))
+        del self.history[self.NUM_HISTORY :]
+        preferences.set(PrefKey.COMMAND_PALETTE_HISTORY, self.history)
 
 
 class ScrollableFrame(ttk.Frame):
