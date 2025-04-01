@@ -34,6 +34,7 @@ from guiguts.widgets import (
     unbind_mouse_wheel,
     menubar_metadata,
     Busy,
+    EntryMetadata,
 )
 
 COMBO_SEPARATOR = "―" * 20
@@ -900,7 +901,7 @@ class CommandPaletteDialog(ToplevelDialog):
         """Initialize the command palette window."""
         super().__init__("Command Palette")
         self.commands = menubar_metadata().get_all_commands()
-        self.filtered_commands = self.commands
+        self.filtered_commands: list[EntryMetadata] = self.commands
         self.history: list[tuple[str, str]]
 
         self.top_frame.grid_rowconfigure(0, weight=0)
@@ -945,6 +946,7 @@ class CommandPaletteDialog(ToplevelDialog):
         )
         self.scrollbar.grid(row=1, column=1, sticky="NS")
         self.list.config(yscrollcommand=self.scrollbar.set)
+        self.list.tag_configure("recent", foreground="green")
 
         # Bind events for list and entry
         self.list.bind("<Return>", self.execute_command)
@@ -965,18 +967,30 @@ class CommandPaletteDialog(ToplevelDialog):
     def update_list(self) -> None:
         """Update the command list based on search input."""
         search_text = self.search_var.get().lower().strip()
-        self.filtered_commands = sorted(
-            cmd
-            for cmd in self.commands
-            if search_text in cmd.label.lower()
-            or search_text in cmd.parent_label.lower()
+        self.filtered_commands = []
+        if history := preferences.get(PrefKey.COMMAND_PALETTE_HISTORY):
+            for label, parent_label in history:
+                for cmd in self.commands:
+                    if label == cmd.label and parent_label == cmd.parent_label:
+                        self.filtered_commands.append(cmd)
+                        break
+
+        self.filtered_commands.extend(
+            sorted(
+                cmd
+                for cmd in self.commands
+                if search_text in cmd.label.lower()
+                or search_text in cmd.parent_label.lower()
+            )
         )
 
         self.list.delete(*self.list.get_children())
-        for cmd in self.filtered_commands:
-            self.list.insert(
+        for idx, cmd in enumerate(self.filtered_commands):
+            iid = self.list.insert(
                 "", "end", values=(cmd.label, cmd.shortcut, cmd.parent_label)
             )
+            if idx < len(history):
+                self.list.item(iid, tags="recent")
 
         if self.filtered_commands:
             self.select_and_focus(self.list.get_children()[0])
@@ -986,7 +1000,9 @@ class CommandPaletteDialog(ToplevelDialog):
         selection = self.list.selection()
         if selection:
             item = selection[0]
-            command = self.filtered_commands[self.list.index(item)].get_command()
+            entry = self.filtered_commands[self.list.index(item)]
+            self.add_to_history(entry.label, entry.parent_label)
+            command = entry.get_command()
             self.destroy()
             Busy.busy()  # In case it's a slow command
             command()
@@ -1032,7 +1048,7 @@ class CommandPaletteDialog(ToplevelDialog):
             self.search_var.set(current_text + event.char)
         self.update_list()  # Update the list based on the new search text
 
-    def add_to_history(self, label: str, menu: str) -> None:
+    def add_to_history(self, label: str, parent_label: str) -> None:
         """Store given entry in history list pref.
 
         Args:
@@ -1041,10 +1057,10 @@ class CommandPaletteDialog(ToplevelDialog):
         """
         self.history = preferences.get(PrefKey.COMMAND_PALETTE_HISTORY)
         try:
-            self.history.remove((label, menu))
+            self.history.remove((label, parent_label))
         except ValueError:
             pass  # OK if entry wasn't in list
-        self.history.insert(0, (label, menu))
+        self.history.insert(0, (label, parent_label))
         del self.history[self.NUM_HISTORY :]
         preferences.set(PrefKey.COMMAND_PALETTE_HISTORY, self.history)
 
