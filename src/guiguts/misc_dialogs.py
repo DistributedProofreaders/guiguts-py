@@ -968,12 +968,15 @@ class CommandPaletteDialog(ToplevelDialog):
         self.filtered_commands = sorted(
             cmd
             for cmd in self.commands
-            if search_text in cmd.label.lower() or search_text in cmd.menu.lower()
+            if search_text in cmd.label.lower()
+            or search_text in cmd.parent_label.lower()
         )
 
         self.list.delete(*self.list.get_children())
         for cmd in self.filtered_commands:
-            self.list.insert("", "end", values=(cmd.label, cmd.shortcut, cmd.menu))
+            self.list.insert(
+                "", "end", values=(cmd.label, cmd.shortcut, cmd.parent_label)
+            )
 
         if self.filtered_commands:
             self.select_and_focus(self.list.get_children()[0])

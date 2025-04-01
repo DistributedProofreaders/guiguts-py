@@ -679,15 +679,16 @@ class ToolTip:
             self.tooltip_window.destroy()
 
 
-@dataclass
-class EntryInfoMetadata:
-    """Class to store info about a menu entry."""
+class EntryMetadata:
+    """Store metadata about a menu entry."""
 
-    label: str
-    menu: str
-    shortcut: str
+    def __init__(self, label: str, parent_label: str, shortcut: str) -> None:
+        """Initialize EntryMetadata."""
+        self.label = label
+        self.parent_label = parent_label
+        self.shortcut = shortcut
 
-    def __lt__(self, other: "EntryInfoMetadata") -> bool:
+    def __lt__(self, other: "EntryMetadata") -> bool:
         """Define "<" to support sorting by label."""
         return self.label < other.label
 
@@ -696,11 +697,15 @@ class EntryInfoMetadata:
         raise NotImplementedError()
 
 
-@dataclass
-class ButtonInfoMetadata(EntryInfoMetadata):
-    """Class to store info about a command button."""
+class ButtonMetadata(EntryMetadata):
+    """Store metadata about a menu button."""
 
-    command: Callable
+    def __init__(
+        self, label: str, parent_label: str, shortcut: str, command: Callable
+    ) -> None:
+        """Initialize ButtonMetadata."""
+        super().__init__(label, parent_label, shortcut)
+        self.command = command
 
     def get_command(self) -> Callable:
         """Return command to be executed."""
@@ -708,12 +713,23 @@ class ButtonInfoMetadata(EntryInfoMetadata):
 
 
 @dataclass
-class CheckboxInfoMetadata(EntryInfoMetadata):
-    """Class to store info about a checkbox."""
+class CheckboxMetadata(EntryMetadata):
+    """Store metadata about a menu checkbox."""
 
-    bool_var: tk.BooleanVar
-    command_on: Optional[Callable]
-    command_off: Optional[Callable]
+    def __init__(
+        self,
+        label: str,
+        parent_label: str,
+        shortcut: str,
+        bool_var: tk.BooleanVar,
+        command_on: Optional[Callable],
+        command_off: Optional[Callable],
+    ) -> None:
+        """Initialize ButtonMetadata."""
+        super().__init__(f"Toggle {label}", parent_label, shortcut)
+        self.bool_var = bool_var
+        self.command_on = command_on
+        self.command_off = command_off
 
     def get_command(self) -> Callable:
         """Return command to be executed."""
@@ -732,68 +748,17 @@ class CheckboxInfoMetadata(EntryInfoMetadata):
         return toggle_command
 
 
-class EntryMetadata:
-    """Store metadata about a menu entry."""
-
-    def __init__(self, label: str) -> None:
-        """Initialize EntryMetadata object."""
-        self.label = label
-
-
-class ButtonMetadata(EntryMetadata):
-    """Store metadata about a menu button."""
-
-    def __init__(self, label: str, shortcut: str, command: Callable) -> None:
-        """Initialize ButtonMetadata object.
-
-        Args:
-            label: The text displayed for the button.
-            shortcut: Keyboard shortcut for the command (empty string if none)
-            command: The function to execute when clicked.
-        """
-        super().__init__(label)
-        self.command = command
-        self.shortcut = shortcut
-
-
-class CheckboxMetadata(EntryMetadata):
-    """Store metadata about a menu checkbox (checkbutton)."""
-
-    def __init__(
-        self,
-        label: str,
-        shortcut: str,
-        bool_var: tk.BooleanVar,
-        command_on: Optional[Callable[[], None]],
-        command_off: Optional[Callable[[], None]],
-    ) -> None:
-        """Initialize ButtonMetadata object.
-
-        Args:
-            label: The text displayed for the button.
-            shortcut: Keyboard shortcut for the command (empty string if none).
-            bool_var: Tk variable holding state of checkbox.
-            command_on: The function to execute when checkbox is checked.
-            command_off: The function to execute when checkbox is unchecked.
-        """
-        super().__init__(f"Toggle {label}")
-        self.shortcut = shortcut
-        self.bool_var = bool_var
-        self.command_on = command_on
-        self.command_off = command_off
-
-
 class MenuMetadata(EntryMetadata):
     """Store metadata about a menu item."""
 
-    def __init__(self, label: str, widget: tk.Menu) -> None:
+    def __init__(self, label: str, parent_label: str, widget: tk.Menu) -> None:
         """Initialize MenuMetadata object.
 
         Args:
             label: Label string for menu button.
             widget: The menu that is being added.
         """
-        super().__init__(label)
+        super().__init__(label, parent_label, "")
         self.entries: list[EntryMetadata] = []
         self.widget = widget
 
@@ -808,30 +773,19 @@ class MenuMetadata(EntryMetadata):
                     return metadata
         return None
 
-    def get_all_commands(self) -> list[EntryInfoMetadata]:
+    def get_all_commands(self) -> list[EntryMetadata]:
         """Recursively collect all entries (buttons & checkboxes) in this menu."""
-        commands: list[EntryInfoMetadata] = []
+        commands: list[EntryMetadata] = []
         for entry in self.entries:
-            if isinstance(entry, ButtonMetadata):
-                commands.append(
-                    ButtonInfoMetadata(
-                        entry.label, self.label, entry.shortcut, entry.command
-                    )
-                )
-            elif isinstance(entry, CheckboxMetadata):
-                commands.append(
-                    CheckboxInfoMetadata(
-                        entry.label,
-                        self.label,
-                        entry.shortcut,
-                        entry.bool_var,
-                        entry.command_on,
-                        entry.command_off,
-                    )
-                )
+            if isinstance(entry, (ButtonMetadata, CheckboxMetadata)):
+                commands.append(entry)
             elif isinstance(entry, MenuMetadata):
                 commands.extend(entry.get_all_commands())
         return commands
+
+    def get_command(self) -> Callable:
+        """Return command to be executed - should never be called."""
+        raise NotImplementedError()
 
 
 class MenubarMetadata:
@@ -848,15 +802,17 @@ class MenubarMetadata:
 
         Args:
             menu: Menu widget to add to the structure.
-            parent: If none, then adding to the menu bar, else to the parent menu
+            parent: Parent menu (or menubar)
             label: Label string for menu button.
         """
         if parent == self.widget:
-            self.entries.append(MenuMetadata(label, menu))
+            self.entries.append(MenuMetadata(label, "", menu))
         else:
             parent_metadata = self.get_menu_metadata(parent)
             assert parent_metadata is not None
-            parent_metadata.entries.append(MenuMetadata(label, menu))
+            parent_metadata.entries.append(
+                MenuMetadata(label, parent_metadata.label, menu)
+            )
 
     def get_menu_metadata(self, menu: tk.Menu) -> Optional[MenuMetadata]:
         """Return the metadata for the given menu."""
@@ -885,11 +841,13 @@ class MenubarMetadata:
             command: The function to execute when clicked.
         """
         if parent is None:
-            self.orphans.append(ButtonMetadata(label, shortcut, command))
+            self.orphans.append(ButtonMetadata(label, "", shortcut, command))
         else:
             menu_metadata = self.get_menu_metadata(parent)
             if menu_metadata is not None:
-                menu_metadata.entries.append(ButtonMetadata(label, shortcut, command))
+                menu_metadata.entries.append(
+                    ButtonMetadata(label, menu_metadata.label, shortcut, command)
+                )
 
     def add_checkbox(
         self,
@@ -911,38 +869,28 @@ class MenubarMetadata:
         """
         if parent is None:
             self.orphans.append(
-                CheckboxMetadata(label, shortcut, bool_var, command_on, command_off)
+                CheckboxMetadata(label, "", shortcut, bool_var, command_on, command_off)
             )
         else:
             menu_metadata = self.get_menu_metadata(parent)
             if menu_metadata is not None:
                 menu_metadata.entries.append(
-                    CheckboxMetadata(label, shortcut, bool_var, command_on, command_off)
+                    CheckboxMetadata(
+                        label,
+                        menu_metadata.label,
+                        shortcut,
+                        bool_var,
+                        command_on,
+                        command_off,
+                    )
                 )
 
-    def get_all_commands(self) -> list[EntryInfoMetadata]:
+    def get_all_commands(self) -> list[EntryMetadata]:
         """Collect all command buttons from the entire menu structure."""
-        commands = []
+        commands: list[EntryMetadata] = []
         for entry in self.entries:
             commands.extend(entry.get_all_commands())
-        for orphan in self.orphans:
-            if isinstance(orphan, ButtonMetadata):
-                commands.append(
-                    ButtonInfoMetadata(
-                        orphan.label, "", orphan.shortcut, orphan.command
-                    )
-                )
-            elif isinstance(orphan, CheckboxMetadata):
-                commands.append(
-                    CheckboxInfoMetadata(
-                        orphan.label,
-                        "",
-                        orphan.shortcut,
-                        orphan.bool_var,
-                        orphan.command_on,
-                        orphan.command_off,
-                    )
-                )
+        commands.extend(self.orphans)
         return commands
 
 
