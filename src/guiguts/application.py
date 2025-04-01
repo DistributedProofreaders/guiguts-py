@@ -516,9 +516,22 @@ class Guiguts:
         self.init_help_menu()
         self.init_os_menu()
 
-        # Example orphan command
-        menubar_metadata().add_button(
-            None, "Do not run", "", lambda: logger.error("Especially with scissors!")
+        # Orphan commands to be included in Command Palette
+        menubar_metadata().add_checkbox(
+            None,
+            "Line Numbers",
+            "",
+            PersistentBoolean(PrefKey.LINE_NUMBERS),
+            None,
+            None,
+        )
+        menubar_metadata().add_checkbox(
+            None,
+            "Column Numbers",
+            "",
+            PersistentBoolean(PrefKey.COLUMN_NUMBERS),
+            None,
+            None,
         )
 
         if is_mac():

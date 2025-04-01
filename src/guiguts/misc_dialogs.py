@@ -902,7 +902,6 @@ class CommandPaletteDialog(ToplevelDialog):
         super().__init__("Command Palette")
         self.commands = menubar_metadata().get_all_commands()
         self.filtered_commands: list[EntryMetadata] = self.commands
-        self.history: list[tuple[str, str]]
 
         self.top_frame.grid_rowconfigure(0, weight=0)
         self.top_frame.grid_rowconfigure(1, weight=1)
@@ -968,11 +967,21 @@ class CommandPaletteDialog(ToplevelDialog):
         """Update the command list based on search input."""
         search_text = self.search_var.get().lower().strip()
         self.filtered_commands = []
+        history: list[list[str]] = []
+        recent_count = 0
         if history := preferences.get(PrefKey.COMMAND_PALETTE_HISTORY):
             for label, parent_label in history:
                 for cmd in self.commands:
-                    if label == cmd.label and parent_label == cmd.parent_label:
+                    if (
+                        label == cmd.label
+                        and parent_label == cmd.parent_label
+                        and (
+                            search_text in cmd.label.lower()
+                            or search_text in cmd.parent_label.lower()
+                        )
+                    ):
                         self.filtered_commands.append(cmd)
+                        recent_count += 1
                         break
 
         self.filtered_commands.extend(
@@ -989,7 +998,7 @@ class CommandPaletteDialog(ToplevelDialog):
             iid = self.list.insert(
                 "", "end", values=(cmd.label, cmd.shortcut, cmd.parent_label)
             )
-            if idx < len(history):
+            if idx < recent_count:
                 self.list.item(iid, tags="recent")
 
         if self.filtered_commands:
@@ -1055,14 +1064,13 @@ class CommandPaletteDialog(ToplevelDialog):
             label: Label of entry to add to history.
             menu: Name of menu for entry to add to history.
         """
-        self.history = preferences.get(PrefKey.COMMAND_PALETTE_HISTORY)
+        history: list[list[str]] = preferences.get(PrefKey.COMMAND_PALETTE_HISTORY)
         try:
-            self.history.remove((label, parent_label))
+            history.remove([label, parent_label])
         except ValueError:
             pass  # OK if entry wasn't in list
-        self.history.insert(0, (label, parent_label))
-        del self.history[self.NUM_HISTORY :]
-        preferences.set(PrefKey.COMMAND_PALETTE_HISTORY, self.history)
+        history.insert(0, [label, parent_label])
+        preferences.set(PrefKey.COMMAND_PALETTE_HISTORY, history[: self.NUM_HISTORY])
 
 
 class ScrollableFrame(ttk.Frame):
