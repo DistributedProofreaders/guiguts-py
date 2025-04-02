@@ -689,8 +689,8 @@ class EntryMetadata:
         self.shortcut = shortcut
 
     def __lt__(self, other: "EntryMetadata") -> bool:
-        """Define "<" to support sorting by label."""
-        return self.label < other.label
+        """Define "<" to support case insensitve sorting by label."""
+        return self.label.lower() < other.label.lower()
 
     def get_command(self) -> Callable:
         """Return command to be executed - must be overridden."""

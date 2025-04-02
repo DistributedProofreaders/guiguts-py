@@ -37,13 +37,14 @@ from guiguts.widgets import (
     EntryMetadata,
 )
 
-COMBO_SEPARATOR = "―" * 20
+SEP_CHAR = "―"
 
 
 class PreferencesDialog(ToplevelDialog):
     """A dialog that displays settings/preferences."""
 
     manual_page = "Edit_Menu#Preferences"
+    COMBO_SEPARATOR = SEP_CHAR * 20
 
     def __init__(self) -> None:
         """Initialize preferences dialog."""
@@ -96,7 +97,7 @@ class PreferencesDialog(ToplevelDialog):
             Returns:
                 True, because if invalid, it is fixed in this routine.
             """
-            if new_value == COMBO_SEPARATOR:
+            if new_value == self.COMBO_SEPARATOR:
                 preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier")
                 preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier New")
             return True
@@ -105,7 +106,7 @@ class PreferencesDialog(ToplevelDialog):
         font_frame.grid(column=0, row=3, sticky="NEW", pady=(5, 0))
         ttk.Label(font_frame, text="Font: ").grid(column=0, row=0, sticky="NEW")
         font_list = sorted(font.families(), key=str.lower)
-        font_list.insert(0, COMBO_SEPARATOR)
+        font_list.insert(0, self.COMBO_SEPARATOR)
         for preferred_font in "Courier New", "DejaVu Sans Mono", "DP Sans Mono":
             if preferred_font in font_list:
                 font_list.insert(0, preferred_font)
@@ -896,12 +897,14 @@ class CommandPaletteDialog(ToplevelDialog):
 
     manual_page = "Help_Menu#Command_Palette"
     NUM_HISTORY = 5
+    SEPARATOR_TAG = "separator"
 
     def __init__(self) -> None:
         """Initialize the command palette window."""
         super().__init__("Command Palette")
         self.commands = menubar_metadata().get_all_commands()
         self.filtered_commands: list[EntryMetadata] = self.commands
+        self.num_recent = 0
 
         self.top_frame.grid_rowconfigure(0, weight=0)
         self.top_frame.grid_rowconfigure(1, weight=1)
@@ -922,13 +925,13 @@ class CommandPaletteDialog(ToplevelDialog):
         ).grid(row=0, column=1, sticky="NSE")
 
         columns = ("Command", "Shortcut", "Menu")
-        widths = (150, 120, 100)
+        widths = (250, 120, 100)
         self.list = ttk.Treeview(
             self.top_frame,
             columns=columns,
             show="headings",
             selectmode=tk.BROWSE,
-            height=20,
+            height=10,
         )
         for col, column in enumerate(columns):
             self.list.heading(f"#{col + 1}", text=column)
@@ -945,6 +948,7 @@ class CommandPaletteDialog(ToplevelDialog):
         )
         self.scrollbar.grid(row=1, column=1, sticky="NS")
         self.list.config(yscrollcommand=self.scrollbar.set)
+        self.list.tag_configure(self.SEPARATOR_TAG, foreground="gray")
 
         # Bind events for list and entry
         self.list.bind("<Return>", self.execute_command)
@@ -955,8 +959,10 @@ class CommandPaletteDialog(ToplevelDialog):
         self.list.bind("<Control-p>", lambda _: self.move_in_list(-1))
         self.list.bind("<Key>", self.handle_list_typing)
 
-        self.entry.bind("<Down>", self.focus_on_list)
-        self.entry.bind("<Control-n>", self.focus_on_list)
+        self.entry.bind("<Down>", lambda _: self.focus_on_list(1))
+        self.entry.bind("<Control-n>", lambda _: self.focus_on_list(1))
+        self.entry.bind("<Up>", lambda _: self.focus_on_list(-1))
+        self.entry.bind("<Control-p>", lambda _: self.focus_on_list(-1))
         self.entry.bind("<Return>", self.execute_command)
 
         self.update_list()
@@ -964,9 +970,6 @@ class CommandPaletteDialog(ToplevelDialog):
 
     def update_list(self) -> None:
         """Update the command list based on search input."""
-        self.list.tag_configure(
-            "recent", foreground="green2" if maintext().is_dark_theme() else "green4"
-        )
 
         # Recent commands are those in history that match search filter
         search_text = self.search_var.get().lower().strip()
@@ -983,8 +986,14 @@ class CommandPaletteDialog(ToplevelDialog):
                         recent_commands.append(cmd)
                         break
 
+        self.num_recent = len(recent_commands)
         # Insert recent commands first
         self.filtered_commands = recent_commands[:]
+        # Then separator
+        if self.num_recent:
+            self.filtered_commands.append(
+                EntryMetadata(SEP_CHAR * 150, SEP_CHAR * 30, SEP_CHAR * 30)
+            )
         # Then all matching non-recent commands, sorted
         self.filtered_commands.extend(
             sorted(
@@ -999,8 +1008,8 @@ class CommandPaletteDialog(ToplevelDialog):
             iid = self.list.insert(
                 "", "end", values=(cmd.label, cmd.shortcut, cmd.parent_label)
             )
-            if idx < len(recent_commands):
-                self.list.item(iid, tags="recent")
+            if idx == self.num_recent:
+                self.list.item(iid, tags=self.SEPARATOR_TAG, open=False)
 
         if self.filtered_commands:
             self.select_and_focus(self.list.get_children()[0])
@@ -1010,6 +1019,8 @@ class CommandPaletteDialog(ToplevelDialog):
         selection = self.list.selection()
         if selection:
             item = selection[0]
+            if self.list.tag_has(self.SEPARATOR_TAG, item):
+                return
             entry = self.filtered_commands[self.list.index(item)]
             self.add_to_history(entry.label, entry.parent_label)
             command = entry.get_command()
@@ -1018,11 +1029,15 @@ class CommandPaletteDialog(ToplevelDialog):
             command()
             Busy.unbusy()  # In case it's a slow command
 
-    def focus_on_list(self, _: tk.Event) -> None:
-        """Move focus to the list and select the first item."""
+    def focus_on_list(self, direction: int) -> None:
+        """Move focus to the list and select the next/previous item.
+
+        Args:
+            direction: +1 to move down, -1 to move up.
+        """
         self.list.focus_set()
-        if self.filtered_commands:  # Select the first item in the list
-            self.select_and_focus(self.list.get_children()[0])
+        if self.filtered_commands:  # Select the next item in the list
+            self.move_in_list(direction)
 
     def select_and_focus(self, item: str) -> None:
         """Select and set focus to the given item. See page_details for
@@ -1033,15 +1048,23 @@ class CommandPaletteDialog(ToplevelDialog):
         """
         self.list.selection_set(item)
         self.list.focus(item)
+        self.list.see(item)
 
     def move_in_list(self, direction: int) -> str:
-        """Move the selection in the list."""
+        """Move the selection in the list.
+
+        Args:
+            direction: +1 to move down, -1 to move up.
+        """
         current_selection = self.list.selection()
         if current_selection:
             current_index = self.list.index(current_selection[0])
             new_index = current_index + direction
             if 0 <= new_index < len(self.filtered_commands):
                 next_item = self.list.get_children()[new_index]
+                # Skip over separator
+                if self.list.tag_has(self.SEPARATOR_TAG, next_item):
+                    next_item = self.list.get_children()[new_index + direction]
                 self.select_and_focus(next_item)
             elif new_index < 0:
                 # Moving up from first list element - focus in entry field
