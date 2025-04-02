@@ -896,7 +896,7 @@ class PPhtmlChecker:
             split_content[lnum] = re.sub(r">", "", split_content[lnum])
             # Remove element types: "hr.pb" -> ".pb"
             split_content[lnum] = re.sub(
-                r"(?<![\.\w])\w+(\.\w+)", r"\1", split_content[lnum]
+                r"(?<![-\.\w])\w+(\.\w+)", r"\1", split_content[lnum]
             )
 
         for line in split_content:
