@@ -696,6 +696,20 @@ class EntryMetadata:
         """Return command to be executed - must be overridden."""
         raise NotImplementedError()
 
+    def matches(self, search_str: str) -> bool:
+        """Return whether given search string is in the entry's label
+        or the parent's label (case insensitive).
+
+        Args:
+            search_str: Filter string to search for in labels.
+
+        Returns:
+            True if search_str in label or parent's label, otherwise False."""
+        search_str = search_str.lower()
+        return (
+            search_str in self.label.lower() or search_str in self.parent_label.lower()
+        )
+
 
 class ButtonMetadata(EntryMetadata):
     """Store metadata about a menu button."""

@@ -945,7 +945,6 @@ class CommandPaletteDialog(ToplevelDialog):
         )
         self.scrollbar.grid(row=1, column=1, sticky="NS")
         self.list.config(yscrollcommand=self.scrollbar.set)
-        self.list.tag_configure("recent", foreground="green")
 
         # Bind events for list and entry
         self.list.bind("<Return>", self.execute_command)
@@ -965,31 +964,33 @@ class CommandPaletteDialog(ToplevelDialog):
 
     def update_list(self) -> None:
         """Update the command list based on search input."""
+        self.list.tag_configure(
+            "recent", foreground="green2" if maintext().is_dark_theme() else "green4"
+        )
+
+        # Recent commands are those in history that match search filter
         search_text = self.search_var.get().lower().strip()
-        self.filtered_commands = []
         history: list[list[str]] = []
-        recent_count = 0
+        recent_commands: list[EntryMetadata] = []
         if history := preferences.get(PrefKey.COMMAND_PALETTE_HISTORY):
             for label, parent_label in history:
                 for cmd in self.commands:
                     if (
                         label == cmd.label
                         and parent_label == cmd.parent_label
-                        and (
-                            search_text in cmd.label.lower()
-                            or search_text in cmd.parent_label.lower()
-                        )
+                        and cmd.matches(search_text)
                     ):
-                        self.filtered_commands.append(cmd)
-                        recent_count += 1
+                        recent_commands.append(cmd)
                         break
 
+        # Insert recent commands first
+        self.filtered_commands = recent_commands[:]
+        # Then all matching non-recent commands, sorted
         self.filtered_commands.extend(
             sorted(
                 cmd
                 for cmd in self.commands
-                if search_text in cmd.label.lower()
-                or search_text in cmd.parent_label.lower()
+                if cmd.matches(search_text) and cmd not in recent_commands
             )
         )
 
@@ -998,7 +999,7 @@ class CommandPaletteDialog(ToplevelDialog):
             iid = self.list.insert(
                 "", "end", values=(cmd.label, cmd.shortcut, cmd.parent_label)
             )
-            if idx < recent_count:
+            if idx < len(recent_commands):
                 self.list.item(iid, tags="recent")
 
         if self.filtered_commands:
