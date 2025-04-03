@@ -15,7 +15,7 @@ from guiguts.preferences import (
     PersistentInt,
     PersistentString,
 )
-from guiguts.widgets import ToplevelDialog
+from guiguts.widgets import ToplevelDialog, ToolTip
 from guiguts.utilities import sound_bell, IndexRowCol, is_mac
 
 logger = logging.getLogger(__package__)
@@ -156,70 +156,108 @@ class ASCIITableDialog(ToplevelDialog):
             center_frame.columnconfigure(col, pad=2)
 
         # First row of buttons.
-        ttk.Button(
+        sel_btn = ttk.Button(
             center_frame,
             text="Table Select",
             command=self.table_select,
-        ).grid(row=0, column=0, sticky="NSEW")
-        ttk.Button(
+        )
+        sel_btn.grid(row=0, column=0, sticky="NSEW")
+        ToolTip(sel_btn, "Highlight selected region as table to be worked on")
+        desel_btn = ttk.Button(
             center_frame,
             text="Table Deselect",
             command=self.table_deselect,
-        ).grid(row=0, column=1, sticky="NSEW")
-        ttk.Button(
+        )
+        desel_btn.grid(row=0, column=1, sticky="NSEW")
+        ToolTip(desel_btn, "Unhighlight table region")
+        ins_btn = ttk.Button(
             center_frame,
             text="Insert Vertical Line",
             command=lambda: self.insert_vert_line("i"),
-        ).grid(row=0, column=2, sticky="NSEW")
-        ttk.Button(
+        )
+        ins_btn.grid(row=0, column=2, sticky="NSEW")
+        ToolTip(ins_btn, "Insert column of vertical lines to right of cursor position")
+        add_btn = ttk.Button(
             center_frame,
             text="Add Vertical Line",
             command=lambda: self.insert_vert_line("a"),
-        ).grid(row=0, column=3, sticky="NSEW")
+        )
+        add_btn.grid(row=0, column=3, sticky="NSEW")
+        ToolTip(
+            add_btn,
+            "Replace column of spaces with vertical lines to right of cursor position",
+        )
 
         # Second row of buttons.
-        ttk.Button(
+        space_btn = ttk.Button(
             center_frame,
             text="Space Out Table",
             command=self.space_out_table,
-        ).grid(row=1, column=0, sticky="NSEW")
-        ttk.Button(
+        )
+        space_btn.grid(row=1, column=0, sticky="NSEW")
+        ToolTip(space_btn, "Add blank lines between text lines to mark table rows")
+        compress_btn = ttk.Button(
             center_frame,
             text="Compress Table",
             command=self.compress_table,
-        ).grid(row=1, column=1, sticky="NSEW")
-        ttk.Button(
+        )
+        compress_btn.grid(row=1, column=1, sticky="NSEW")
+        ToolTip(compress_btn, "Remove blank lines between table rows")
+        del_btn = ttk.Button(
             center_frame,
             text="Delete Sel. Line",
             command=self.delete_selected_line,
-        ).grid(row=1, column=2, sticky="NSEW")
-        ttk.Button(
+        )
+        del_btn.grid(row=1, column=2, sticky="NSEW")
+        ToolTip(del_btn, "Delete current highlighted column of vertical lines")
+        rem_btn = ttk.Button(
             center_frame,
             text="Remove Sel. Line",
             command=self.remove_selected_line,
-        ).grid(row=1, column=3, sticky="NSEW")
+        )
+        rem_btn.grid(row=1, column=3, sticky="NSEW")
+        ToolTip(
+            rem_btn, "Replace current highlighted column of vertical lines with spaces"
+        )
 
         # Third row of buttons.
-        ttk.Button(
+        prev_btn = ttk.Button(
             center_frame,
             text="Select Prev. Line",
             command=self.select_prev_line,
-        ).grid(row=2, column=0, sticky="NSEW")
-        ttk.Button(
+        )
+        prev_btn.grid(row=2, column=0, sticky="NSEW")
+        ToolTip(
+            prev_btn,
+            "Select previous column, highlighting the vertical lines to the right of it",
+        )
+        next_btn = ttk.Button(
             center_frame,
             text="Select Next Line",
             command=self.select_next_line,
-        ).grid(row=2, column=1, sticky="NSEW")
-        ttk.Button(
+        )
+        next_btn.grid(row=2, column=1, sticky="NSEW")
+        ToolTip(
+            next_btn,
+            "Select next column, highlighting the vertical lines to the right of it",
+        )
+        desel_btn = ttk.Button(
             center_frame,
             text="Line Deselect",
             command=self.line_deselect,
-        ).grid(row=2, column=2, sticky="NSEW")
-        ttk.Button(
+        )
+        desel_btn.grid(row=2, column=2, sticky="NSEW")
+        ToolTip(desel_btn, "Unhighlight selected column of vertical lines")
+        auto_btn = ttk.Button(
             center_frame,
             text="Auto Columns",
             command=self.auto_columns,
-        ).grid(row=2, column=3, sticky="NSEW")
+        )
+        auto_btn.grid(row=2, column=3, sticky="NSEW")
+        ToolTip(
+            auto_btn,
+            "Add vertical lines where cells are separated by at least 2 spaces",
+        )
 
         # "Adjust Column" LabelFrame.
         self.adjust_col_frame = ttk.LabelFrame(
@@ -242,6 +280,10 @@ class ASCIITableDialog(ToplevelDialog):
             command=self.justify_update,
         )
         rewrap_cols_checkbox.grid(row=0, column=0, padx=(0, 10), pady=2, sticky="NSEW")
+        ToolTip(
+            rewrap_cols_checkbox,
+            "If checked, text within cells will rewrap & justify when vertical lines are moved",
+        )
 
         self.label_justify = ttk.Label(adjust_col_row1_frame, text="Justify")
         self.label_justify.grid(row=0, column=1, padx=(0, 5), pady=2, sticky="NSEW")
@@ -282,6 +324,10 @@ class ASCIITableDialog(ToplevelDialog):
             textvariable=PersistentInt(PrefKey.ASCII_TABLE_INDENT),
         )
         self.indent_value_entry.grid(row=0, column=6, padx=0, pady=2, sticky="NSEW")
+        ToolTip(
+            self.indent_value_entry,
+            "Number of spaces to indent first line when rewrapping",
+        )
 
         self.hanging_checkbox = ttk.Checkbutton(
             adjust_col_row1_frame,
@@ -290,6 +336,10 @@ class ASCIITableDialog(ToplevelDialog):
             takefocus=False,
         )
         self.hanging_checkbox.grid(row=0, column=7, padx=10, pady=2, sticky="NSEW")
+        ToolTip(
+            self.hanging_checkbox,
+            "If checked, use hanging indent instead of standard indent when rewrapping",
+        )
         self.justify_update()
 
         # Populate the second row.
@@ -299,6 +349,10 @@ class ASCIITableDialog(ToplevelDialog):
             command=lambda: self.column_adjust(-1),
         )
         move_left_button.grid(row=0, column=1, sticky="NSEW", padx=5)
+        ToolTip(
+            move_left_button,
+            "Move highlighted vertical line left, reducing column width, and rewrapping if enabled",
+        )
 
         move_right_button = ttk.Button(
             adjust_col_row2_frame,
@@ -306,6 +360,10 @@ class ASCIITableDialog(ToplevelDialog):
             command=lambda: self.column_adjust(1),
         )
         move_right_button.grid(row=0, column=3, sticky="NSEW", padx=5)
+        ToolTip(
+            move_right_button,
+            "Move highlighted vertical line right, increasing column width, and rewrapping if enabled",
+        )
 
         # "Leading/Trailing Spaces" LabelFrame
         spaces_frame = ttk.LabelFrame(
@@ -316,26 +374,35 @@ class ASCIITableDialog(ToplevelDialog):
         center_frame = ttk.Frame(spaces_frame)
         center_frame.grid(row=0, column=0, pady=2)
 
-        ttk.Button(
+        fill_btn = ttk.Button(
             center_frame,
             text="Fill With",
             command=self.fill_spaces,
-        ).grid(row=0, column=0, sticky="NSEW")
+        )
+        fill_btn.grid(row=0, column=0, sticky="NSEW")
+        ToolTip(
+            fill_btn,
+            "Replace leading and trailing spaces in column with following character",
+        )
 
-        tk.Entry(
+        fill_entry = tk.Entry(
             center_frame,
             width=2,
             justify=tk.CENTER,
             textvariable=PersistentInt(PrefKey.ASCII_TABLE_FILL_CHAR),
             validate=tk.ALL,
             validatecommand=(self.register(lambda val: len(val) <= 1), "%P"),
-        ).grid(row=0, column=1, padx=(5, 20), sticky="NSEW")
+        )
+        fill_entry.grid(row=0, column=1, padx=(5, 20), sticky="NSEW")
+        ToolTip(fill_entry, "Character to use when filling leading and trailing spaces")
 
-        ttk.Button(
+        unfill_btn = ttk.Button(
             center_frame,
             text="Restore Spaces",
             command=self.restore_spaces,
-        ).grid(row=0, column=2, sticky="NSEW")
+        )
+        unfill_btn.grid(row=0, column=2, sticky="NSEW")
+        ToolTip(unfill_btn, "Replace fill character with spaces")
 
         # "Grid <==> Step" LabelFrame
         restructure_frame = ttk.LabelFrame(
@@ -348,30 +415,37 @@ class ASCIITableDialog(ToplevelDialog):
         ttk.Label(center_frame, text="Table Right Column").grid(
             row=0, column=0, pady=2, sticky="NSEW"
         )
-        tk.Entry(
+        right_entry = tk.Entry(
             center_frame,
             width=3,
             justify=tk.CENTER,
             textvariable=PersistentInt(PrefKey.ASCII_TABLE_RIGHT_COL),
             validate=tk.ALL,
             validatecommand=(self.register(lambda val: val.isdigit() or not val), "%P"),
-        ).grid(row=0, column=1, padx=(5, 20), sticky="NSEW")
-        ttk.Button(
+        )
+        right_entry.grid(row=0, column=1, padx=(5, 20), sticky="NSEW")
+        ToolTip(right_entry, "Right margin to use when converting grid ⇔ step format")
+        g2s_btn = ttk.Button(
             center_frame,
             text="Convert Grid to Step",
             command=self.grid_to_step,
-        ).grid(row=0, column=2, sticky="NSEW", padx=5)
-        ttk.Button(
+        )
+        g2s_btn.grid(row=0, column=2, sticky="NSEW", padx=5)
+        ToolTip(g2s_btn, "Convert table from grid to step format")
+        s2g_btn = ttk.Button(
             center_frame,
             text="Convert Step to Grid",
             command=self.step_to_grid,
-        ).grid(row=0, column=3, sticky="NSEW", padx=5)
-
-        ttk.Button(
+        )
+        s2g_btn.grid(row=0, column=3, sticky="NSEW", padx=5)
+        ToolTip(s2g_btn, "Convert table from step to grid format")
+        cpl2g_btn = ttk.Button(
             restructure_frame,
             text="Convert Cell-per-line to Grid",
             command=self.cell_per_line_to_grid,
-        ).grid(row=1, column=0, pady=(5, 0))
+        )
+        cpl2g_btn.grid(row=1, column=0, pady=(5, 0))
+        ToolTip(cpl2g_btn, "Convert table from one-cell-per-line to grid format")
 
         # Since focus remains in dialog when buttons are pressed, bind undo/redo
         # keys to dialog so they work when the user wants to undo the previous operation
@@ -937,7 +1011,7 @@ class ASCIITableDialog(ToplevelDialog):
             if text_lines[-1] == "":  # Trailing empty line.
                 del text_lines[-1]
             for frag_num, text_line in enumerate(text_lines):
-                if text_line[0] == "|":
+                if len(text_line) > 0 and text_line[0] == "|":
                     table.leading_vertical_line = True
                 text_line = re.sub(r"^\||\|$", "", text_line.rstrip())
                 # For each cell line in that text line
