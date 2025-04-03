@@ -321,15 +321,14 @@ class ASCIITableDialog(ToplevelDialog):
             command=self.fill_spaces,
         ).grid(row=0, column=0, sticky="NSEW")
 
-        self.indent_value_entry = tk.Entry(
+        tk.Entry(
             center_frame,
             width=2,
             justify=tk.CENTER,
             textvariable=PersistentInt(PrefKey.ASCII_TABLE_FILL_CHAR),
             validate=tk.ALL,
             validatecommand=(self.register(lambda val: len(val) <= 1), "%P"),
-        )
-        self.indent_value_entry.grid(row=0, column=1, padx=(5, 20), sticky="NSEW")
+        ).grid(row=0, column=1, padx=(5, 20), sticky="NSEW")
 
         ttk.Button(
             center_frame,
