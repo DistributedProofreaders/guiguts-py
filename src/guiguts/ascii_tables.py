@@ -51,6 +51,7 @@ class ASCIITable:
     def __init__(self) -> None:
         """Initialize ASCII table structure."""
         self.spaced = False
+        self.leading_vertical_line = False
         self.rows: list[ASCIITableRow] = []
 
     def num_columns(self) -> int:
@@ -936,6 +937,8 @@ class ASCIITableDialog(ToplevelDialog):
             if text_lines[-1] == "":  # Trailing empty line.
                 del text_lines[-1]
             for frag_num, text_line in enumerate(text_lines):
+                if text_line[0] == "|":
+                    table.leading_vertical_line = True
                 text_line = re.sub(r"^\||\|$", "", text_line.rstrip())
                 # For each cell line in that text line
                 for col, cell_line in enumerate(re.split(split_regex, text_line)):
@@ -952,6 +955,7 @@ class ASCIITableDialog(ToplevelDialog):
         """
         text_rows: list[str] = []
         col_widths = table.get_max_column_widths()
+        leading_vertical_line = "|" if table.leading_vertical_line else ""
         for row_num, row in enumerate(table.rows):
             # If necessary, space table with space-replaced previous line
             if table.spaced and row_num > 0:
@@ -965,7 +969,7 @@ class ASCIITableDialog(ToplevelDialog):
                         line_parts.append(cell.fragments[line_num])
                     else:
                         line_parts.append(" " * col_widths[col_num])
-                text_rows.append("|".join(line_parts))
+                text_rows.append(leading_vertical_line + "|".join(line_parts))
         text_table = "|\n".join(text_rows) + "|\n"
         maintext().replace(self.start_mark_name, self.end_mark_name, text_table)
 
@@ -1094,7 +1098,8 @@ class ASCIITableDialog(ToplevelDialog):
         if "|" not in line:
             return -1
         # Ensure result is between 0 & number of cols
-        return line.count("|", 0, rowcol.col) % self.get_table_grid().num_columns()
+        # Ignore any leading vertical bar
+        return line[1:].count("|", 0, rowcol.col) % self.get_table_grid().num_columns()
 
     def table_is_marked(self) -> bool:
         """Returns 'False' if no table has been selected and marked."""
@@ -1120,7 +1125,7 @@ class ASCIITableDialog(ToplevelDialog):
         if end.col == 0:
             end.row -= 1
         for table_row in range(start.row, end.row + 1):
-            pipe_index = f"{table_row}.0 -1c"
+            pipe_index = f"{table_row}.0"
             for _ in range(self.selected_column + 1):
                 pipe_index = maintext().search(
                     "|", f"{pipe_index}+1c", f"{table_row}.end"
