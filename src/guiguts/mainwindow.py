@@ -4,6 +4,8 @@ from enum import Enum, auto
 from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found, import-untyped]
 import logging
 import os.path
+from string import ascii_uppercase
+import shlex
 import subprocess
 import time
 import tkinter as tk
@@ -11,6 +13,7 @@ from tkinter import ttk, messagebox, EventType
 from typing import Any, Callable, Optional
 
 from PIL import Image, ImageTk, ImageChops
+import regex as re
 
 from guiguts.maintext import MainText, maintext
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
@@ -77,6 +80,7 @@ class Menu(tk.Menu):
         label: str,
         handler: str | Callable[[], Any],
         accel: str = "",
+        insert_index: int | str = tk.END,
         force_main_only: bool = False,
         add_to_command_palette: bool = True,
     ) -> None:
@@ -92,6 +96,7 @@ class Menu(tk.Menu):
               on the button, and will be bound to the same action as the menu
               button. "Cmd/Ctrl" means `Cmd` key on Mac; `Ctrl` key on
               Windows/Linux.
+            insert_index: Optional position to insert button.
             force_main_only: True to only bind to the main window, not other dialogs.
             add_to_command_palette: Set False if button should not be in command palette.
         """
@@ -131,7 +136,7 @@ class Menu(tk.Menu):
         }
         if label_tilde >= 0:
             command_args["underline"] = label_tilde
-        self.add_command(command_args)
+        self.insert_command(insert_index, command_args)
         if add_to_command_palette:
             menubar_metadata().add_button(self, label_txt, accel, command)
 
@@ -208,6 +213,368 @@ class Menu(tk.Menu):
             self.add_button("~Paste", "<<Paste>>", "Cmd/Ctrl+V")
         self.add_separator()
         self.add_button("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
+
+
+class CustomMenuDialog(ToplevelDialog):
+    """A dialog to customize the Custom menu."""
+
+    manual_page = "Custom_Menu"
+    filename = ""
+
+    def __init__(self, menu: Menu) -> None:
+        """Initialize the Custom Menu dialog.
+
+        Args:
+            menu: The Custom menu.
+        """
+        super().__init__("Customize Menu")
+        self.menu = menu
+        # Stored in prefs file as list of [label, command] pairs
+        self.menu_entries: list[list[str]] = preferences.get(
+            PrefKey.CUSTOM_MENU_ENTRIES
+        )
+
+        # Treeview Frame with border
+        treeview_frame = ttk.Frame(
+            self.top_frame, padding=5, borderwidth=1, relief=tk.GROOVE
+        )
+        treeview_frame.grid(row=0, column=0, pady=5, padx=5, sticky="NSEW")
+
+        # Treeview setup with scrollbar
+        self.list = ttk.Treeview(
+            treeview_frame,
+            columns=("Label", "Command"),
+            show="headings",
+            selectmode=tk.BROWSE,
+        )
+        self.list.heading("Label", text="Label")
+        self.list.column("Label", minwidth=10, width=200)
+        self.list.heading("Command", text="Command")
+        self.list.column("Command", minwidth=10, width=500)
+        self.list.grid(row=0, column=0, sticky="NSEW")
+
+        scrollbar = ttk.Scrollbar(
+            treeview_frame, orient="vertical", command=self.list.yview
+        )
+        self.list.configure(yscrollcommand=scrollbar.set)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+
+        treeview_frame.grid_columnconfigure(0, weight=1)
+        treeview_frame.grid_rowconfigure(0, weight=1)
+
+        # Move Up and Move Down Buttons
+        move_button_frame = ttk.Frame(self.top_frame)
+        move_button_frame.grid(row=1, column=0, pady=5)
+
+        ttk.Button(
+            move_button_frame,
+            text="Move Up",
+            command=lambda: self.move_up_down(-1),
+            takefocus=False,
+        ).grid(row=0, column=0, padx=2)
+        ttk.Button(
+            move_button_frame,
+            text="Move Down",
+            command=lambda: self.move_up_down(1),
+            takefocus=False,
+        ).grid(row=0, column=1, padx=2)
+
+        # Edit LabelFrame
+        edit_frame = ttk.LabelFrame(self.top_frame, padding=3, text="Edit")
+        edit_frame.grid(row=2, column=0, pady=5, padx=5, sticky="NSEW")
+        edit_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(edit_frame, text="Label:").grid(
+            row=0, column=0, padx=5, pady=2, sticky="NSE"
+        )
+        self.label_entry = ttk.Entry(edit_frame)
+        self.label_entry.grid(row=0, column=1, padx=5, pady=2, sticky="NSEW")
+
+        ttk.Label(edit_frame, text="Command:").grid(
+            row=1, column=0, padx=5, pady=2, sticky="NSE"
+        )
+        self.command_entry = ttk.Entry(edit_frame)
+        self.command_entry.grid(row=1, column=1, padx=5, pady=2, sticky="NSEW")
+
+        # Buttons inside Edit LabelFrame
+        button_frame = ttk.Frame(edit_frame)
+        button_frame.grid(row=2, column=0, columnspan=2, pady=5)
+
+        ttk.Button(
+            button_frame, text="Add Entry", command=self.add_entry, takefocus=False
+        ).grid(row=0, column=0, padx=2)
+        ttk.Button(
+            button_frame,
+            text="Update Entry",
+            command=self.update_entry,
+            takefocus=False,
+        ).grid(row=0, column=1, padx=2)
+        ttk.Button(
+            button_frame,
+            text="Remove Entry",
+            command=self.remove_entry,
+            takefocus=False,
+        ).grid(row=0, column=2, padx=2)
+
+        # Help LabelFrame
+        start_open = "start" if is_windows() else "open"
+        help_frame = ttk.LabelFrame(self.top_frame, padding=3, text="Help")
+        help_frame.grid(row=3, column=0, pady=5, padx=5, sticky="NSEW")
+        help_frame.columnconfigure(0, weight=1)
+        help_label = ttk.Label(
+            help_frame,
+            text=f"""\
+The command for each menu entry may be an app on your computer or the "{start_open}" command. \
+Typically, "{start_open}" will run a given app or use the default app to open the given file type. \
+Alternatively, if a URL is given with no command, it will be displayed using your default \
+browser via "{start_open}". To use a different browser, specify that browser as part of your command. \
+Enclose commands or filenames that may contain spaces in "double quotes".
+
+The following variables are available for use in commands:
+$f: full pathname of the current File
+$l: page number of current image according to page Label
+$n: png Number of current image (e.g. 7 for 007.png)
+$p: Png name of current image (e.g. 007 for 007.png)
+$t: selected Text (only the first line if column selection)
+
+To assist in opening a hi-res scan for the current page, $l and $n can also be given an offset, e.g. $(n+5) would give 12 for 007.png.
+""",
+        )
+        help_label.grid(row=0, column=0, padx=5, pady=2, sticky="NSEW")
+        help_label.bind(
+            "<Configure>",
+            lambda e: help_label.config(wraplength=help_label.winfo_width() - 20),
+        )
+
+        self.list.bind("<<TreeviewSelect>>", self.on_select)
+        self.list.bind("<Down>", lambda _: self.change_selection(1))
+        self.list.bind("<Up>", lambda _: self.change_selection(-1))
+        self.save_and_refresh()
+
+    @classmethod
+    def rewrite_custom_menu(cls, menu: Menu) -> None:
+        """Rewrite the Custom menu, given as an argument.
+        Assumes menu ends with 2 entries that are not to be rewritten:
+        the separator & Customize button."""
+
+        def subst_in_token(token: str) -> str:
+            """Substitute values for "variables" in token.
+            $f: full pathname of file
+            $l: page number of current image according to label
+            $n: png number of current image
+            $p: png name of current image
+            $t: selected text (only first part if column selection)
+
+            Args:
+                token: The token to make substitutions in.
+
+            Returns:
+                Substituted token.
+            """
+
+            def page_offset(base_num: str, plus_minus: str, offset: str) -> str:
+                """Offset given image or page number."""
+                try:
+                    cur_num = int(re.sub(r".*?(\d+)$", r"\1", base_num))  # Get number
+                except ValueError:
+                    # Maybe Roman - not going to bother doing Roman math here, just
+                    # attempt to strip label prefix from "number"
+                    return re.sub(r".* ", "", base_num)
+                cur_num += int(offset) * (1 if plus_minus == "+" else -1)
+                return str(cur_num)
+
+            pg_lbl = statusbar().fields["page label"]["text"]
+            token = re.sub(
+                r"\$\(l(-|\+)(\d+)\)", lambda m: page_offset(pg_lbl, m[1], m[2]), token
+            )
+            token = token.replace("$l", page_offset(pg_lbl, "+", "0"))
+            pg_num = maintext().get_current_image_name()
+            token = re.sub(
+                r"\$\(n(-|\+)(\d+)\)", lambda m: page_offset(pg_num, m[1], m[2]), token
+            )
+            token = token.replace("$n", page_offset(pg_num, "+", "0"))
+            token = token.replace("$p", maintext().get_current_image_name())
+            token = token.replace("$f", cls.filename)
+            token = token.replace("$t", re.sub(r"\s+", " ", maintext().selected_text()))
+            return token
+
+        def run_command(cmd_string: str) -> None:
+            """Run command in subprocess. Copes with command containing
+            quoted strings.
+
+            Args:
+                cmd_string: Command as single string.
+            """
+            cmd = shlex.split(cmd_string)
+            if not cmd:
+                return
+            # Check if tokens require substitutions
+            for itok, token in enumerate(cmd):
+                cmd[itok] = subst_in_token(token)
+
+            # If first token is a URL, insert `open`/`start`
+            if cmd[0].startswith("http"):
+                cmd.insert(0, "start" if is_windows() else "open")
+
+            shell = False
+            run_func: Callable = subprocess.run
+            # Windows needs shell and a dummy arg with `start` command
+            if is_windows() and cmd[0] == "start":
+                cmd.insert(1, "")
+                shell = True
+            # Linux/Windows using app name rather than `open`/`start`
+            # need `Popen` instead of `run` to avoid blocking
+            if not is_mac() and cmd[0] not in ("start", "open"):
+                run_func = subprocess.Popen
+
+            try:
+                run_func(cmd, shell=shell)  # pylint: disable=subprocess-run-check
+            except OSError:
+                logger.error(f"Unable to execute {cmd_string}")
+
+        def add_custom_button(count: int, ins_pos: int, entry: list[str]) -> None:
+            # 1 - 9 have numbers (& Alt-key shorcuts)
+            if count < 10:
+                count_str = f"~{count}: "
+            # 10 - 34 have letters. Omit Z for use in "Customi~ze Menu" button
+            elif count - 10 < len(ascii_uppercase) - 1:
+                count_str = f"~{ascii_uppercase[count-10]}: "
+            else:
+                count_str = ""
+            menu.add_button(
+                f"{count_str}{entry[0]}",
+                lambda: run_command(entry[1]),
+                insert_index=ins_pos,
+            )
+
+        end_of_buttons = menu.index(tk.END)
+        offset = 0
+        if end_of_buttons and end_of_buttons >= 2:
+            if menu.type(0) == "tearoff":
+                offset = 1
+            menu.delete(offset, end_of_buttons - 2)  # Leave 2 entries alone
+        for count, entry in enumerate(
+            preferences.get(PrefKey.CUSTOM_MENU_ENTRIES), start=1
+        ):
+            add_custom_button(count, count + offset - 1, entry)
+
+    @classmethod
+    def store_filename(cls, filename: str) -> None:
+        """Store current filename in class variable."""
+        cls.filename = filename
+
+    def move_up_down(self, direction: int) -> None:
+        """Move the selected entry up/down in the list.
+
+        Args:
+            direction: +1 for down, -1 for up.
+        """
+        selected_item = self.list.selection()
+        if not selected_item:
+            return
+        index = self.list.index(selected_item[0])
+        new_index = index + direction
+        if 0 <= index < len(self.menu_entries) and 0 <= new_index < len(
+            self.menu_entries
+        ):
+            self.menu_entries[index], self.menu_entries[new_index] = (
+                self.menu_entries[new_index],
+                self.menu_entries[index],
+            )
+            self.save_and_refresh()
+            self.select_and_focus(self.list.get_children()[index + direction])
+
+    def save_and_refresh(self) -> None:
+        """Save entries in Prefs, reconfigure the Custom menu, and
+        refresh the dialog view of the custom entries."""
+        try:
+            sel_index = self.list.index(self.list.selection()[0])
+        except IndexError:
+            sel_index = 0
+
+        # Refresh the list
+        self.list.delete(*self.list.get_children())
+        for entry in self.menu_entries:
+            self.list.insert("", tk.END, values=entry)
+        if sel_index >= len(self.menu_entries):
+            sel_index = len(self.menu_entries) - 1
+        if sel_index >= 0:
+            iid = self.list.get_children()[sel_index]
+            self.select_and_focus(iid)
+
+        # Save to prefs file
+        preferences.set(PrefKey.CUSTOM_MENU_ENTRIES, self.menu_entries)
+
+        # Rewrite the menu
+        self.rewrite_custom_menu(self.menu)
+
+    def select_and_focus(self, item: str) -> None:
+        """Select and set focus to the given item. See page_details for
+        description of the need for this.
+
+        Args:
+            item: The item to be selected/focused.
+        """
+        self.list.focus_set()
+        self.list.selection_set(item)
+        self.list.focus(item)
+        self.list.see(item)
+
+    def change_selection(self, direction: int) -> str:
+        """Change which is the selected entry in the list.
+
+        Args:
+            direction: +1 to move down, -1 to move up.
+        """
+        current_selection = self.list.selection()
+        if current_selection:
+            list_len = len(self.list.get_children())
+            current_index = self.list.index(current_selection[0])
+            new_index = current_index + direction
+            if 0 <= new_index < list_len:
+                self.select_and_focus(self.list.get_children()[new_index])
+        return "break"
+
+    def add_entry(self) -> None:
+        """Add an entry to the list."""
+        label: str = self.label_entry.get().strip()
+        command: str = self.command_entry.get().strip()
+        if label and command:
+            self.menu_entries.append([label, command])
+            self.save_and_refresh()
+            iid = self.list.get_children()[-1]
+            self.list.selection_set(iid)
+
+    def update_entry(self) -> None:
+        """Update the current entry in the list."""
+        selected_item = self.list.selection()
+        if not selected_item:
+            return
+        index: int = self.list.index(selected_item[0])
+        self.menu_entries[index] = [
+            self.label_entry.get().strip(),
+            self.command_entry.get().strip(),
+        ]
+        self.save_and_refresh()
+
+    def remove_entry(self) -> None:
+        """Remove the current entry from the list."""
+        selected_item = self.list.selection()
+        if not selected_item:
+            return
+        index: int = self.list.index(selected_item[0])
+        del self.menu_entries[index]
+        self.save_and_refresh()
+
+    def on_select(self, _: tk.Event) -> None:
+        """Display the values for the current entry."""
+        selected_item = self.list.selection()
+        if selected_item:
+            values = self.list.item(selected_item[0], "values")
+            self.label_entry.delete(0, tk.END)
+            self.label_entry.insert(0, values[0])
+            self.command_entry.delete(0, tk.END)
+            self.command_entry.insert(0, values[1])
 
 
 class AutoImageState(Enum):
