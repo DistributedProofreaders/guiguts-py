@@ -11,6 +11,7 @@ import unicodedata
 import webbrowser
 import darkdetect  # type: ignore[import-untyped]
 
+from guiguts.ascii_tables import JustifyStyle
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle
@@ -23,6 +24,8 @@ from guiguts.html_tools import (
     ebookmaker_check,
 )
 from guiguts.illo_sn_fixup import illosn_check
+
+from guiguts.ascii_tables import ASCIITableDialog
 from guiguts.maintext import maintext
 from guiguts.mainwindow import (
     MainWindow,
@@ -479,6 +482,12 @@ class Guiguts:
         preferences.set_default(PrefKey.BACKUPS_ENABLED, True)
         preferences.set_default(PrefKey.AUTOSAVE_ENABLED, False)
         preferences.set_default(PrefKey.AUTOSAVE_INTERVAL, 5)
+        preferences.set_default(PrefKey.ASCII_TABLE_HANGING, True)
+        preferences.set_default(PrefKey.ASCII_TABLE_INDENT, 1)
+        preferences.set_default(PrefKey.ASCII_TABLE_REWRAP, False)
+        preferences.set_default(PrefKey.ASCII_TABLE_JUSTIFY, JustifyStyle.LEFT)
+        preferences.set_default(PrefKey.ASCII_TABLE_FILL_CHAR, "@")
+        preferences.set_default(PrefKey.ASCII_TABLE_RIGHT_COL, 70)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -836,7 +845,8 @@ class Guiguts:
         text_menu.add_button(
             "Convert ~Markup...", TextMarkupConvertorDialog.show_dialog
         )
-        text_menu.add_button("PP~txt", lambda: pptxt(self.file.project_dict))
+        text_menu.add_button("~PPtxt", lambda: pptxt(self.file.project_dict))
+        text_menu.add_button("ASCII ~Table Effects", ASCIITableDialog.show_dialog)
 
     def init_html_menu(self) -> None:
         """Create the HTML menu."""
