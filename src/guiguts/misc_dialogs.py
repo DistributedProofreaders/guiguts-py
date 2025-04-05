@@ -344,6 +344,11 @@ class PreferencesDialog(ToplevelDialog):
             "Autosave your file (with '.bk1', '.bk2' extensions) after this number of minutes",
         )
         ttk.Label(advance_frame, text="Minutes").grid(column=2, row=4, sticky="EW")
+        ttk.Checkbutton(
+            advance_frame,
+            text="Show Tooltips",
+            variable=PersistentBoolean(PrefKey.SHOW_TOOLTIPS),
+        ).grid(column=0, row=5, sticky="NEW", pady=5)
 
         notebook.bind(
             "<<NotebookTabChanged>>",
