@@ -375,6 +375,7 @@ class HighlightTag(StrEnum):
     CURLY_SINGLE_QUOTE = auto()
     ALIGNCOL = auto()
     CURSOR_LINE = auto()
+    CURSOR_LINE_PEER = auto()
     COLUMN_RULER = auto()
     SEARCH = auto()
     PROOFERCOMMENT = auto()
@@ -554,6 +555,11 @@ class HighlightColors:
     }
 
     CURSOR_LINE = {
+        "Light": {"background": "#E8E1DC"},
+        "Dark": {"background": "#122E57"},
+    }
+
+    CURSOR_LINE_PEER = {
         "Light": {"background": "#E8E1DC"},
         "Dark": {"background": "#122E57"},
     }
@@ -3704,14 +3710,18 @@ class MainText(tk.Text):
     def highlight_cursor_line(self) -> None:
         """Add a highlight to entire line cursor is focused on."""
         self.tag_remove(HighlightTag.CURSOR_LINE, "1.0", tk.END)
+        self.tag_remove(HighlightTag.CURSOR_LINE_PEER, "1.0", tk.END)
 
         # Don't re-highlight if cursor line highlighting disabled, or if currently a selection
-        if (
-            preferences.get(PrefKey.HIGHLIGHT_CURSOR_LINE)
-            and not self.selected_ranges()
-        ):
-            row = self.get_insert_index().row
-            self.tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row + 1}.0")
+        if preferences.get(PrefKey.HIGHLIGHT_CURSOR_LINE):
+            if not self.tag_ranges("sel"):
+                row = IndexRowCol(self.index(tk.INSERT)).row
+                self.tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row + 1}.0")
+            if preferences.get(PrefKey.SPLIT_TEXT_WINDOW) and not self.peer.tag_ranges(
+                "sel"
+            ):
+                row = IndexRowCol(self.peer.index(tk.INSERT)).row
+                self.tag_add(HighlightTag.CURSOR_LINE_PEER, f"{row}.0", f"{row + 1}.0")
 
     def highlight_search_in_viewport(self, viewport: Text) -> None:
         """Highlights current search pattern in designated viewport."""
@@ -3877,6 +3887,7 @@ class MainText(tk.Text):
             (HighlightTag.TABLE_COLUMN, HighlightColors.TABLE_COLUMN),
             (HighlightTag.TABLE_BODY, HighlightColors.TABLE_BODY),
             (HighlightTag.CURSOR_LINE, HighlightColors.CURSOR_LINE),
+            (HighlightTag.CURSOR_LINE_PEER, HighlightColors.CURSOR_LINE_PEER),
         ):
             if colors:
                 self._highlight_configure_tag(tag, colors)
