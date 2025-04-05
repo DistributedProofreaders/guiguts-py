@@ -1373,12 +1373,12 @@ def report_multiple_occurrences_on_line(
     error_start = matches[0].start()
     error_end = matches[-1].end()
     # Add record to the dialog with prefix if repeated matches.
+    repeat_str = f"(x{len(matches)}) " if len(matches) > 1 else ""
     checker_dialog.add_entry(
-        line,
+        f"{repeat_str}{line}",
         IndexRange(f"{line_number}.{error_start}", f"{line_number}.{error_end}"),
-        error_start,
-        error_end,
-        error_prefix=f"(x{len(matches)}) " if len(matches) > 1 else "",
+        error_start + len(repeat_str),
+        error_end + len(repeat_str),
     )
 
 

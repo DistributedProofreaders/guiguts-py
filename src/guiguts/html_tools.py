@@ -15,7 +15,7 @@ from PIL import Image, ImageTk, UnidentifiedImageError
 import regex as re
 import requests
 
-from guiguts.checkers import CheckerDialog
+from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerEntrySeverity
 from guiguts.file import the_file
 from guiguts.maintext import maintext
 from guiguts.preferences import (
@@ -1108,6 +1108,32 @@ def do_link_check(checker_dialog: CheckerDialog) -> None:
     checker_dialog.display_entries()
 
 
+def ebookmaker_sort_key_type(
+    entry: CheckerEntry,
+) -> tuple[int, int]:
+    """Sort key function to sort ebookmaker entries by text, putting identical upper
+        and lower case versions together.
+
+    Differs from default alpha sort in using the error prefix as the primary sort key.
+    Then retaining the order within that error type. No need to deal with different
+    entry types, and no entries have a text_range.
+    """
+    match entry.error_prefix:
+        case "CRITICAL":
+            severity = 0
+        case "ERROR":
+            severity = 1
+        case "WARNING":
+            severity = 2
+        case "INFO":
+            severity = 3
+        case "DEBUG":
+            severity = 4
+        case _:
+            severity = 10
+    return (severity, entry.initial_pos)
+
+
 class EbookmakerCheckerDialog(CheckerDialog):
     """Dialog to show ebookmaker results."""
 
@@ -1130,7 +1156,7 @@ class EbookmakerCheckerDialog(CheckerDialog):
         def locate_ebookmaker() -> None:
             """Prompt user to give path to where ebookmaker was installed using pipenv."""
             if dir_name := filedialog.askdirectory(
-                title=f"Select the Ebookmaker 'pipenv install' {folder_dir_str()}",
+                title=f"Select the Ebookmaker 'pipenv install' {folder_dir_str(lowercase=True)}",
                 parent=self,
             ):
                 preferences.set(PrefKey.EBOOKMAKER_PATH, dir_name)
@@ -1181,24 +1207,31 @@ class EbookmakerCheckerDialog(CheckerDialog):
         verbose_frame.grid(row=1, column=2, sticky="NSE", pady=5)
         ttk.Checkbutton(
             verbose_frame,
-            text="Verbose output",
+            text="Verbose",
             variable=PersistentBoolean(PrefKey.EBOOKMAKER_VERBOSE_OUTPUT),
-        ).grid(column=0, row=0, sticky="NSE", padx=5)
+        ).grid(column=0, row=0, sticky="NSE")
 
 
 class EbookmakerChecker:
     """Ebookmaker checker"""
 
     def __init__(self) -> None:
-        """Initialize ebookmker checker"""
-        self.dialog = EbookmakerCheckerDialog.show_dialog(rerun_command=self.run)
+        """Initialize ebookmaker checker"""
+        self.dialog = EbookmakerCheckerDialog.show_dialog(
+            rerun_command=self.run,
+            sort_key_alpha=ebookmaker_sort_key_type,
+            show_suspects_only=True,
+        )
 
     def run(self) -> None:
         """Run ebookmaker"""
         self.dialog.reset()
         cwd = preferences.get(PrefKey.EBOOKMAKER_PATH)
         if not cwd:
-            Busy.unbusy()
+            self.dialog.display_entries()
+            logger.error(
+                f"Use 'Browse' button to select Ebookmaker 'pipenv install' {folder_dir_str(lowercase=True)}"
+            )
             return
         if not os.path.isdir(cwd):
             logger.error(f"{folder_dir_str()} {cwd} does not exist")
@@ -1276,13 +1309,27 @@ class EbookmakerChecker:
             check=False,
         )
 
+        regex = re.compile(r"^(CRITICAL|ERROR|WARNING)(.*)")
         messages = result.stdout.split("\n")
         if any(message.strip() for message in messages):
             for message in messages:
                 # skip this useless notice...
                 if re.match(r".*Not configured, using .* for FILESDIR", message):
                     continue
-                self.dialog.add_entry(message)
+                # If it's an error, move the severity into the error_prefix argument
+                error_prefix, is_error = regex.subn(r"\1", message)
+                if is_error:
+                    message = regex.sub(r"\2", message)
+                    severity = CheckerEntrySeverity.ERROR
+                elif message.startswith(("INFO", "DEBUG")):
+                    error_prefix = ""
+                    severity = CheckerEntrySeverity.INFO
+                else:
+                    error_prefix = ""
+                    severity = None
+                self.dialog.add_entry(
+                    message, error_prefix=error_prefix, severity=severity
+                )
         else:
             self.dialog.add_entry("Ebookmaker completed with no messages")
 
