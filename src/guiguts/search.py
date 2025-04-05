@@ -423,17 +423,20 @@ class SearchDialog(ToplevelDialog):
             return None
         self.search_box.add_to_history(search_string)
 
-        find_range, range_name = get_search_range()
-        if find_range is None:
+        find_ranges, range_name = get_search_ranges()
+        if find_ranges is None:
             self.display_message('No text selected for "In selection" find')
             sound_bell()
             return None
 
-        try:
-            matches = maintext().find_all(find_range, search_string)
-        except re.error as e:
-            self.display_message(message_from_regex_exception(e))
-            return None
+        count = 0
+        matches: list[FindMatch] = []
+        for find_range in find_ranges:
+            try:
+                matches.extend(maintext().find_all(find_range, search_string))
+            except re.error as e:
+                self.display_message(message_from_regex_exception(e))
+                return None
         count = len(matches)
         match_str = sing_plur(count, "match", "matches")
         self.display_message(f"Found: {match_str} {range_name}")
@@ -585,8 +588,8 @@ class SearchDialog(ToplevelDialog):
         replace_string = self.replace_box[box_num].get()
         self.replace_box[box_num].add_to_history(replace_string)
 
-        replace_range, range_name = get_search_range()
-        if replace_range is None:
+        replace_ranges, range_name = get_search_ranges()
+        if replace_ranges is None:
             self.display_message('No text selected for "In selection" replace')
             sound_bell()
             return
@@ -597,37 +600,42 @@ class SearchDialog(ToplevelDialog):
 
         regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
         replace_match = replace_string
+        match_count = 0
 
-        try:
-            matches = maintext().find_all(replace_range, search_string)
-        except re.error as e:
-            self.display_message(message_from_regex_exception(e))
-            return
+        for replace_range in replace_ranges:
+            try:
+                matches = maintext().find_all(replace_range, search_string)
+            except re.error as e:
+                self.display_message(message_from_regex_exception(e))
+                return
 
-        flags = 0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
+            flags = (
+                0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
+            )
 
-        # Work backwards so replacements don't affect future match locations
-        for match in reversed(matches):
-            start_index = match.rowcol.index()
-            end_index = maintext().index(start_index + f"+{match.count}c")
-            match_text = maintext().get(start_index, end_index)
-            if regexp:
-                try:
-                    replace_match = get_regex_replacement(
-                        search_string, replace_string, match_text, flags=flags
-                    )
-                except re.error as e:
-                    self.display_message(f"Regex error: {str(e)}")
-                    sound_bell()
-                    return
-            maintext().replace(start_index, end_index, replace_match)
+            # Work backwards so replacements don't affect future match locations
+            for match in reversed(matches):
+                start_index = match.rowcol.index()
+                end_index = maintext().index(start_index + f"+{match.count}c")
+                match_text = maintext().get(start_index, end_index)
+                if regexp:
+                    try:
+                        replace_match = get_regex_replacement(
+                            search_string, replace_string, match_text, flags=flags
+                        )
+                    except re.error as e:
+                        self.display_message(f"Regex error: {str(e)}")
+                        sound_bell()
+                        return
+                maintext().replace(start_index, end_index, replace_match)
+            match_count += len(matches)
 
         if SearchDialog.selection.get():
             maintext().selection_ranges_restore_from_marks()
         else:
             maintext().clear_selection()
 
-        match_str = sing_plur(len(matches), "match", "matches")
+        match_str = sing_plur(match_count, "match", "matches")
         self.display_message(f"Replaced: {match_str} {range_name}")
 
     def display_message(self, message: str = "") -> None:
@@ -836,31 +844,33 @@ def get_regex_replacement(
     return replace_str
 
 
-def get_search_range() -> Tuple[Optional[IndexRange], str]:
-    """Get range to search over, based on checkbox settings.
+def get_search_ranges() -> Tuple[Optional[list[IndexRange]], str]:
+    """Get ranges to search over, based on checkbox settings.
 
     Returns:
-        Range to search over, and string to describe the range.
+        List of ranges to search over, and string to describe the ranges.
     """
-    replace_range = None
+    replace_ranges = None
     range_name = ""
     if SearchDialog.selection.get():
         range_name = "in selection"
         if sel_ranges := maintext().selected_ranges():
-            replace_range = sel_ranges[0]
+            replace_ranges = sel_ranges
     else:
         if preferences.get(PrefKey.SEARCHDIALOG_WRAP):
             range_name = "in entire file"
-            replace_range = maintext().start_to_end()
+            replace_ranges = [maintext().start_to_end()]
         elif preferences.get(PrefKey.SEARCHDIALOG_REVERSE):
             range_name = "from start of file to current location"
-            replace_range = IndexRange(
-                maintext().start(), maintext().get_insert_index()
-            )
+            replace_ranges = [
+                IndexRange(maintext().start(), maintext().get_insert_index())
+            ]
         else:
             range_name = "from current location to end of file"
-            replace_range = IndexRange(maintext().get_insert_index(), maintext().end())
-    return replace_range, range_name
+            replace_ranges = [
+                IndexRange(maintext().get_insert_index(), maintext().end())
+            ]
+    return replace_ranges, range_name
 
 
 def message_from_regex_exception(exc: re.error) -> str:
