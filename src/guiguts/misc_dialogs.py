@@ -1004,11 +1004,11 @@ class CommandPaletteDialog(ToplevelDialog):
         )
 
         self.list.delete(*self.list.get_children())
-        for idx, cmd in enumerate(self.filtered_commands):
+        for cmd in self.filtered_commands:
             iid = self.list.insert(
                 "", "end", values=(cmd.label, cmd.shortcut, cmd.parent_label)
             )
-            if idx == self.num_recent:
+            if cmd.label.startswith(SEP_CHAR):
                 self.list.item(iid, tags=self.SEPARATOR_TAG, open=False)
 
         if self.filtered_commands:
