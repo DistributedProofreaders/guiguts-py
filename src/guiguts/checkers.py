@@ -40,13 +40,12 @@ class CheckerEntrySeverity(IntEnum):
     IntEnums can be used as integers, and auto() allocates incrementing values,
     so code such as `severity > CheckerEntrySeverity.INFO` is valid.
 
-    If additional severities such as WARNING or CRITICAL are added, they must
-    be inserted in the list below to maintain an order of increasing severity.
+    The list below must be in order of increasing severity.
     """
 
     OTHER = auto()  # Headers, blank lines, etc.
     INFO = auto()  # Messages that do not indicate a problem
-    ERROR = auto()  # Messages that indicate a problem
+    ERROR = auto()  # Messages that do indicate a problem
 
 
 class CheckerEntry:
@@ -65,6 +64,7 @@ class CheckerEntry:
         section: int,
         initial_pos: int,
         entry_type: CheckerEntryType,
+        severity: CheckerEntrySeverity,
         error_prefix: str,
     ) -> None:
         """Initialize CheckerEntry object.
@@ -77,8 +77,7 @@ class CheckerEntry:
             section: Section entry belongs to.
             initial_pos: Position of entry during initial creation.
             entry_type: Type of entry: header, footer, content, etc.
-            error_prefix: Prefix string indicating an error - empty or begins with
-                parenthesis if no error, e.g. "(x5)".
+            error_prefix: Prefix string indicating an error.
         """
         self.text = text
         self.text_range = text_range
@@ -88,15 +87,7 @@ class CheckerEntry:
         self.initial_pos = initial_pos
         self.entry_type = entry_type
         self.error_prefix = error_prefix
-        self.severity = (
-            CheckerEntrySeverity.OTHER
-            if text_range is None
-            else (
-                CheckerEntrySeverity.ERROR
-                if error_prefix and error_prefix[0] != "("
-                else CheckerEntrySeverity.INFO
-            )
-        )
+        self.severity = severity
 
 
 class CheckerSortType(StrEnum):
@@ -636,8 +627,8 @@ class CheckerDialog(ToplevelDialog):
         cls,
         entry: CheckerEntry,
     ) -> tuple[int, str, str, int, int]:
-        """Default sort key function to sort entries by text, putting identical upper
-            and lower case versions together.
+        """Default sort key function to sort entries by error_prefix & text,
+        putting identical upper and lower case versions together.
 
         If text is highlighted, use that, otherwise use whole line of text
         Preserve entries in sections.
@@ -665,9 +656,11 @@ class CheckerDialog(ToplevelDialog):
 
         # Get text for comparison
         if entry.hilite_start is None:
-            text = entry.text
+            text = entry.error_prefix + entry.text
         else:
-            text = entry.text[entry.hilite_start : entry.hilite_end]
+            text = (
+                entry.error_prefix + entry.text[entry.hilite_start : entry.hilite_end]
+            )
         text_low = text.lower()
 
         # Content without row/col comes before identical content with row/col
@@ -772,6 +765,7 @@ class CheckerDialog(ToplevelDialog):
         hilite_end: Optional[int] = None,
         entry_type: CheckerEntryType = CheckerEntryType.CONTENT,
         error_prefix: str = "",
+        severity: Optional[CheckerEntrySeverity] = None,
     ) -> None:
         """Add an entry ready to be displayed in the dialog.
 
@@ -783,10 +777,19 @@ class CheckerDialog(ToplevelDialog):
             text_range: Optional start & end of point of interest in main text widget.
             hilite_start: Optional column to begin higlighting entry in dialog.
             hilite_end: Optional column to end higlighting entry in dialog.
-            entry_type: Defaults to content
-            error_prefix: Prefix string indicating an error - empty or begins with
-                parenthesis if no error, e.g. "(x5)".
+            entry_type: Defaults to content.
+            error_prefix: Prefix string indicating an error.
+            severity: Optional severity of error to override default determination.
         """
+        # Default determination of severity
+        if severity is None:
+            if text_range is None:
+                severity = CheckerEntrySeverity.OTHER
+            elif error_prefix:
+                severity = CheckerEntrySeverity.ERROR
+            else:
+                severity = CheckerEntrySeverity.INFO
+
         line = re.sub("\n", "⏎", msg)
         entry = CheckerEntry(
             line,
@@ -796,6 +799,7 @@ class CheckerDialog(ToplevelDialog):
             self.section_count,
             len(self.entries),
             entry_type,
+            severity,
             error_prefix,
         )
         self.entries.append(entry)
