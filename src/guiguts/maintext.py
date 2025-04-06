@@ -162,7 +162,10 @@ class TextColumnNumbers(tk.Text):
             cur_bg = self.textwidget["selectbackground"]
         else:
             cur_bg = self.textwidget["inactiveselectbackground"]
-        self.tag_configure(HighlightTag.COLUMN_RULER, background=cur_bg)
+        cur_fg = self.textwidget["selectforeground"]
+        self.tag_configure(
+            HighlightTag.COLUMN_RULER, background=cur_bg, foreground=cur_fg
+        )
 
         # Draw the ruler to be the length of the longest line in the viewport.
         # If the longest line is narrower than the viewport, then pad it to be
@@ -246,6 +249,7 @@ class TextLineNumbers(tk.Canvas):
             cur_bg = self.textwidget["selectbackground"]
         else:
             cur_bg = self.textwidget["inactiveselectbackground"]
+        cur_fg = self.textwidget["selectforeground"]
         text_pos = self.winfo_width() - self.x_offset
         line_spacing_adj = int(self.textwidget["spacing1"])
         index = self.textwidget.index("@0,0")
@@ -254,13 +258,14 @@ class TextLineNumbers(tk.Canvas):
             if dline is None:
                 break
             linenum = IndexRowCol(index).row
+            text_color = cur_fg if linenum == cur_line else self.text_color
             text = self.create_text(
                 text_pos,
                 dline[1] + self.y_offset,
                 anchor="ne",
                 font=self.font,
                 text=linenum,
-                fill=self.text_color,
+                fill=text_color,
             )
             # Highlight the line number of the current line
             if linenum == cur_line:
