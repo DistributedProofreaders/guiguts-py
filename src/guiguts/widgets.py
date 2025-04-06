@@ -619,7 +619,8 @@ class ToolTip:
         self._create_tooltip()
         assert self.tooltip_window is not None
         self.inside = True
-        self.tooltip_window.after(int(self.delay * 1000), self._show)
+        if preferences.get(PrefKey.SHOW_TOOLTIPS):
+            self.tooltip_window.after(int(self.delay * 1000), self._show)
 
     def on_leave(self, _event: tk.Event | None = None) -> None:
         """Hides tooltip when mouse leaves, or button pressed."""

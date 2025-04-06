@@ -50,6 +50,7 @@ class PrefKey(StrEnum):
     JEEBIES_PARANOIA_LEVEL = auto()
     LEVENSHTEIN_DISTANCE = auto()
     FOOTNOTE_INDEX_STYLE = auto()
+    SHOW_TOOLTIPS = auto()
     WRAP_LEFT_MARGIN = auto()
     WRAP_RIGHT_MARGIN = auto()
     WRAP_BLOCKQUOTE_INDENT = auto()
