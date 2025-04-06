@@ -939,7 +939,6 @@ class CommandPaletteDialog(ToplevelDialog):
                 f"#{col + 1}",
                 minwidth=10,
                 width=widths[col],
-                stretch=(col == 0),
                 anchor=tk.W if col == 0 else tk.CENTER,
             )
         self.list.grid(row=1, column=0, padx=5, sticky="NSEW")
@@ -1077,9 +1076,10 @@ class CommandPaletteDialog(ToplevelDialog):
         current_text = self.search_var.get()
         if event.keysym in ("Backspace", "Delete"):
             self.search_var.set(current_text[:-1])
+            self.update_list()  # Update the list based on the new search text
         elif event.char:  # If a proper char, add it to the entry
             self.search_var.set(current_text + event.char)
-        self.update_list()  # Update the list based on the new search text
+            self.update_list()  # Update the list based on the new search text
 
     def add_to_history(self, label: str, parent_label: str) -> None:
         """Store given entry in history list pref.
