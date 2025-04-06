@@ -32,15 +32,19 @@ from guiguts.widgets import (
     Notebook,
     bind_mouse_wheel,
     unbind_mouse_wheel,
+    menubar_metadata,
+    Busy,
+    EntryMetadata,
 )
 
-COMBO_SEPARATOR = "―" * 20
+SEP_CHAR = "―"
 
 
 class PreferencesDialog(ToplevelDialog):
     """A dialog that displays settings/preferences."""
 
     manual_page = "Edit_Menu#Preferences"
+    COMBO_SEPARATOR = SEP_CHAR * 20
 
     def __init__(self) -> None:
         """Initialize preferences dialog."""
@@ -93,7 +97,7 @@ class PreferencesDialog(ToplevelDialog):
             Returns:
                 True, because if invalid, it is fixed in this routine.
             """
-            if new_value == COMBO_SEPARATOR:
+            if new_value == self.COMBO_SEPARATOR:
                 preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier")
                 preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier New")
             return True
@@ -102,7 +106,7 @@ class PreferencesDialog(ToplevelDialog):
         font_frame.grid(column=0, row=3, sticky="NEW", pady=(5, 0))
         ttk.Label(font_frame, text="Font: ").grid(column=0, row=0, sticky="NEW")
         font_list = sorted(font.families(), key=str.lower)
-        font_list.insert(0, COMBO_SEPARATOR)
+        font_list.insert(0, self.COMBO_SEPARATOR)
         for preferred_font in "Courier New", "DejaVu Sans Mono", "DP Sans Mono":
             if preferred_font in font_list:
                 font_list.insert(0, preferred_font)
@@ -891,6 +895,211 @@ class ComposeHelpDialog(ToplevelDialog):
         except KeyError:
             return
         insert_in_focus_widget(char)
+
+
+class CommandPaletteDialog(ToplevelDialog):
+    """Command Palette Dialog."""
+
+    manual_page = "Help_Menu#Command_Palette"
+    NUM_HISTORY = 5
+    SEPARATOR_TAG = "separator"
+
+    def __init__(self) -> None:
+        """Initialize the command palette window."""
+        super().__init__("Command Palette")
+        self.commands = menubar_metadata().get_all_commands()
+        self.filtered_commands: list[EntryMetadata] = self.commands
+        self.num_recent = 0
+
+        self.top_frame.grid_rowconfigure(0, weight=0)
+        self.top_frame.grid_rowconfigure(1, weight=1)
+
+        entry_frame = ttk.Frame(self.top_frame)
+        entry_frame.grid(row=0, column=0, sticky="NSEW", columnspan=2)
+        entry_frame.grid_columnconfigure(0, weight=1)
+        self.search_var = tk.StringVar()
+        self.search_var.trace_add("write", lambda _1, _2, _3: self.update_list())
+        self.entry = ttk.Entry(entry_frame, textvariable=self.search_var)
+        self.entry.grid(row=0, column=0, padx=5, pady=5, sticky="NSEW")
+        ToolTip(self.entry, "Type part of a command to filter the list")
+        ttk.Button(
+            entry_frame,
+            text="Run",
+            command=lambda: self.execute_command(tk.Event()),
+            takefocus=False,
+        ).grid(row=0, column=1, sticky="NSE")
+
+        columns = ("Command", "Shortcut", "Menu")
+        widths = (250, 120, 100)
+        self.list = ttk.Treeview(
+            self.top_frame,
+            columns=columns,
+            show="headings",
+            selectmode=tk.BROWSE,
+            height=10,
+        )
+        for col, column in enumerate(columns):
+            self.list.heading(f"#{col + 1}", text=column)
+            self.list.column(
+                f"#{col + 1}",
+                minwidth=10,
+                width=widths[col],
+                anchor=tk.W if col == 0 else tk.CENTER,
+            )
+        self.list.grid(row=1, column=0, padx=5, sticky="NSEW")
+        self.scrollbar = ttk.Scrollbar(
+            self.top_frame, orient="vertical", command=self.list.yview
+        )
+        self.scrollbar.grid(row=1, column=1, sticky="NS")
+        self.list.config(yscrollcommand=self.scrollbar.set)
+        self.list.tag_configure(self.SEPARATOR_TAG, foreground="gray")
+
+        # Bind events for list and entry
+        self.list.bind("<Return>", self.execute_command)
+        self.list.bind("<Double-Button-1>", self.execute_command)
+        self.list.bind("<Down>", lambda _: self.move_in_list(1))
+        self.list.bind("<Control-n>", lambda _: self.move_in_list(1))
+        self.list.bind("<Up>", lambda _: self.move_in_list(-1))
+        self.list.bind("<Control-p>", lambda _: self.move_in_list(-1))
+        self.list.bind("<Key>", self.handle_list_typing)
+
+        self.entry.bind("<Down>", lambda _: self.focus_on_list(1))
+        self.entry.bind("<Control-n>", lambda _: self.focus_on_list(1))
+        self.entry.bind("<Up>", lambda _: self.focus_on_list(-1))
+        self.entry.bind("<Control-p>", lambda _: self.focus_on_list(-1))
+        self.entry.bind("<Return>", self.execute_command)
+
+        self.update_list()
+        self.entry.focus()
+
+    def update_list(self) -> None:
+        """Update the command list based on search input."""
+
+        # Recent commands are those in history that match search filter
+        search_text = self.search_var.get().lower().strip()
+        history: list[list[str]] = []
+        recent_commands: list[EntryMetadata] = []
+        if history := preferences.get(PrefKey.COMMAND_PALETTE_HISTORY):
+            for label, parent_label in history:
+                for cmd in self.commands:
+                    if (
+                        label == cmd.label
+                        and parent_label == cmd.parent_label
+                        and cmd.matches(search_text)
+                    ):
+                        recent_commands.append(cmd)
+                        break
+
+        self.num_recent = len(recent_commands)
+        # Insert recent commands first
+        self.filtered_commands = recent_commands[:]
+        # Then separator
+        if self.num_recent:
+            self.filtered_commands.append(
+                EntryMetadata(SEP_CHAR * 150, SEP_CHAR * 30, SEP_CHAR * 30)
+            )
+        # Then all matching non-recent commands, sorted
+        self.filtered_commands.extend(
+            sorted(
+                cmd
+                for cmd in self.commands
+                if cmd.matches(search_text) and cmd not in recent_commands
+            )
+        )
+
+        self.list.delete(*self.list.get_children())
+        for cmd in self.filtered_commands:
+            iid = self.list.insert(
+                "", "end", values=(cmd.label, cmd.shortcut, cmd.parent_label)
+            )
+            if cmd.label.startswith(SEP_CHAR):
+                self.list.item(iid, tags=self.SEPARATOR_TAG, open=False)
+
+        if self.filtered_commands:
+            self.select_and_focus(self.list.get_children()[0])
+
+    def execute_command(self, _: tk.Event) -> None:
+        """Execute the selected command."""
+        selection = self.list.selection()
+        if selection:
+            item = selection[0]
+            if self.list.tag_has(self.SEPARATOR_TAG, item):
+                return
+            entry = self.filtered_commands[self.list.index(item)]
+            self.add_to_history(entry.label, entry.parent_label)
+            command = entry.get_command()
+            self.destroy()
+            Busy.busy()  # In case it's a slow command
+            command()
+            Busy.unbusy()  # In case it's a slow command
+
+    def focus_on_list(self, direction: int) -> None:
+        """Move focus to the list and select the next/previous item.
+
+        Args:
+            direction: +1 to move down, -1 to move up.
+        """
+        self.list.focus_set()
+        if self.filtered_commands:  # Select the next item in the list
+            self.move_in_list(direction)
+
+    def select_and_focus(self, item: str) -> None:
+        """Select and set focus to the given item. See page_details for
+        description of the need for this.
+
+        Args:
+            item: The item to be selected/focused.
+        """
+        self.list.selection_set(item)
+        self.list.focus(item)
+        self.list.see(item)
+
+    def move_in_list(self, direction: int) -> str:
+        """Move the selection in the list.
+
+        Args:
+            direction: +1 to move down, -1 to move up.
+        """
+        current_selection = self.list.selection()
+        if current_selection:
+            current_index = self.list.index(current_selection[0])
+            new_index = current_index + direction
+            if 0 <= new_index < len(self.filtered_commands):
+                next_item = self.list.get_children()[new_index]
+                # Skip over separator
+                if self.list.tag_has(self.SEPARATOR_TAG, next_item):
+                    next_item = self.list.get_children()[new_index + direction]
+                self.select_and_focus(next_item)
+            elif new_index < 0:
+                # Moving up from first list element - focus in entry field
+                self.entry.focus_set()
+                self.entry.icursor(tk.END)
+        return "break"
+
+    def handle_list_typing(self, event: tk.Event) -> None:
+        """Handle key press in the list to simulate typing in the Entry box."""
+        current_text = self.search_var.get()
+        if event.keysym in ("Backspace", "Delete"):
+            self.search_var.set(current_text[:-1])
+            self.update_list()  # Update the list based on the new search text
+        elif event.char:  # If a proper char, add it to the entry
+            self.search_var.set(current_text + event.char)
+            self.update_list()  # Update the list based on the new search text
+
+    def add_to_history(self, label: str, parent_label: str) -> None:
+        """Store given entry in history list pref.
+
+        Args:
+            label: Label of entry to add to history.
+            menu: Name of menu for entry to add to history.
+        """
+        history: list[list[str]] = preferences.get(PrefKey.COMMAND_PALETTE_HISTORY)
+        try:
+            history.remove([label, parent_label])
+        except ValueError:
+            pass  # OK if entry wasn't in list
+        history.insert(0, [label, parent_label])
+        preferences.set(PrefKey.COMMAND_PALETTE_HISTORY, history[: self.NUM_HISTORY])
 
 
 class ScrollableFrame(ttk.Frame):
