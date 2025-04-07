@@ -445,6 +445,7 @@ To assist in opening a hi-res scan for the current page, $l and $n can also be g
                 f"{count_str}{entry[0]}",
                 lambda: run_command(entry[1]),
                 insert_index=ins_pos,
+                add_to_command_palette=False,
             )
 
         end_of_buttons = menu.index(tk.END)
