@@ -557,134 +557,137 @@ class HTMLImageDialog(ToplevelDialog):
         return "--"
 
 
-def html_validator_check() -> None:
-    """Validate the current HTML file."""
+class HTMLValidatorDialog(CheckerDialog):
+    """Minimal class to identify dialog type so that it can exist
+    simultaneously with other checker dialogs."""
 
-    class HTMLValidatorDialog(CheckerDialog):
-        """Minimal class to identify dialog type so that it can exist
-        simultaneously with other checker dialogs."""
+    manual_page = "HTML_Menu#HTML_Validator"
 
-        manual_page = "HTML_Menu#HTML_Validator"
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize HTML Validator dialog."""
 
-        def __init__(self, **kwargs: Any) -> None:
-            """Initialize HTML Validator dialog."""
+        super().__init__(
+            "HTML Validator Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find validation error",
+                    "Right click: Hide validation error",
+                    "Shift Right click: Also hide all matching validation errors",
+                ]
+            ),
+            **kwargs,
+        )
 
-            super().__init__(
-                "HTML Validator Results",
-                tooltip="\n".join(
-                    [
-                        "Left click: Select & find validation error",
-                        "Right click: Hide validation error",
-                        "Shift Right click: Also hide all matching validation errors",
-                    ]
-                ),
-                **kwargs,
+
+class HTMLValidator:
+    """HTML Validator."""
+
+    def __init__(self) -> None:
+        """Initialize HTML Validator."""
+        self.dialog = HTMLValidatorDialog.show_dialog(rerun_command=self.run)
+
+    def run(self) -> None:
+        """Do the check and add messages to the dialog."""
+
+        validator_url = "https://validator.w3.org/nu/"
+
+        def report_exception(message: str, exc: Exception | str) -> None:
+            """Report exception to user and suggest manual validation.
+            Also call `display_entries to clear "busy" message.
+
+            Args:
+                message: Initial part of message to user.
+                exc: Exception that was thrown, or a string describing the problem
+            """
+            logger.error(f"{message}\nValidate manually online.\nError details:\n{exc}")
+            self.dialog.display_entries()
+
+        try:
+            req = requests.post(
+                validator_url,
+                data=gzip.compress(bytes(maintext().get("1.0", tk.END), "UTF-8")),
+                params={"out": "json"},
+                headers={
+                    "Content-Type": "text/html; charset=UTF-8",
+                    "Content-Encoding": "gzip",
+                    "Accept-Encoding": "gzip",
+                },
+                timeout=15,
             )
-
-    checker_dialog = HTMLValidatorDialog.show_dialog(rerun_command=html_validator_check)
-
-    do_validator_check(checker_dialog)
-
-
-def do_validator_check(checker_dialog: CheckerDialog) -> None:
-    """Do the actual check and add messages to the dialog."""
-
-    validator_url = "https://validator.w3.org/nu/"
-
-    def report_exception(message: str, exc: Exception | str) -> None:
-        """Report exception to user and suggest manual validation.
-        Also call `display_entries to clear "busy" message.
-
-        Args:
-            message: Initial part of message to user.
-            exc: Exception that was thrown, or a string describing the problem
-        """
-        logger.error(f"{message}\nValidate manually online.\nError details:\n{exc}")
-        checker_dialog.display_entries()
-
-    try:
-        req = requests.post(
-            validator_url,
-            data=gzip.compress(bytes(maintext().get("1.0", tk.END), "UTF-8")),
-            params={"out": "json"},
-            headers={
-                "Content-Type": "text/html; charset=UTF-8",
-                "Content-Encoding": "gzip",
-                "Accept-Encoding": "gzip",
-            },
-            timeout=15,
-        )
-    except requests.exceptions.Timeout as exc:
-        report_exception(f"Request to {validator_url} timed out.", exc)
-        return
-    except ConnectionError as exc:
-        report_exception(f"Connection error to {validator_url}.", exc)
-        return
-    # Check if HTTP request was unsuccessful
-    try:
-        req.raise_for_status()
-    except (requests.exceptions.HTTPError, requests.exceptions.TooManyRedirects) as exc:
-        report_exception(f"Request to {validator_url} was unsuccessful.", exc)
-        return
-
-    # Even if there are no errors, there should still be a messages list
-    try:
-        messages = req.json()["messages"]
-    except KeyError:
-        report_exception(
-            f"Invalid data returned from {validator_url}.", 'No "messages" key'
-        )
-        return
-
-    # Add a line to the checker dialog for each message
-    for message in messages:
+        except requests.exceptions.Timeout as exc:
+            report_exception(f"Request to {validator_url} timed out.", exc)
+            return
+        except ConnectionError as exc:
+            report_exception(f"Connection error to {validator_url}.", exc)
+            return
+        # Check if HTTP request was unsuccessful
         try:
-            end = IndexRowCol(int(message["lastLine"]), int(message["lastColumn"]))
-        except KeyError:
-            end = None
-        # Missing start line means it's all on one line, so same as end line
+            req.raise_for_status()
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.TooManyRedirects,
+        ) as exc:
+            report_exception(f"Request to {validator_url} was unsuccessful.", exc)
+            return
+
+        # Even if there are no errors, there should still be a messages list
         try:
-            start_row = int(message["firstLine"])
+            messages = req.json()["messages"]
         except KeyError:
-            if end is None:
-                start_row = None
+            report_exception(
+                f"Invalid data returned from {validator_url}.", 'No "messages" key'
+            )
+            return
+
+        # Add a line to the checker dialog for each message
+        for message in messages:
+            try:
+                end = IndexRowCol(int(message["lastLine"]), int(message["lastColumn"]))
+            except KeyError:
+                end = None
+            # Missing start line means it's all on one line, so same as end line
+            try:
+                start_row = int(message["firstLine"])
+            except KeyError:
+                if end is None:
+                    start_row = None
+                else:
+                    start_row = end.row
+            # Missing start column means it's just one character
+            try:
+                start_col = int(message["firstColumn"]) - 1
+            except KeyError:
+                if end is None:
+                    start_col = None
+                else:
+                    start_col = end.col - 1
+            if start_row is None or start_col is None:
+                start = None
             else:
-                start_row = end.row
-        # Missing start column means it's just one character
-        try:
-            start_col = int(message["firstColumn"]) - 1
-        except KeyError:
-            if end is None:
-                start_col = None
+                # Messages sometimes range from end of previous line,
+                # in which case switch to start of next line
+                if start_col >= maintext().rowcol(f"{start_row}.end").col:
+                    start_col = 0
+                    start_row += 1
+                start = IndexRowCol(start_row, start_col)
+            if start is None or end is None:
+                error_range = None
             else:
-                start_col = end.col - 1
-        if start_row is None or start_col is None:
-            start = None
-        else:
-            # Messages sometimes range from end of previous line,
-            # in which case switch to start of next line
-            if start_col >= maintext().rowcol(f"{start_row}.end").col:
-                start_col = 0
-                start_row += 1
-            start = IndexRowCol(start_row, start_col)
-        if start is None or end is None:
-            error_range = None
-        else:
-            error_range = IndexRange(start, end)
-        try:
-            line = message["message"]
-        except KeyError:
-            line = "Data error - no message found"
-        try:
-            error_type = f'{message["type"].upper()}: '
-        except KeyError:
-            error_type = ""
+                error_range = IndexRange(start, end)
+            try:
+                line = message["message"]
+            except KeyError:
+                line = "Data error - no message found"
+            try:
+                error_type = f'{message["type"].upper()}: '
+            except KeyError:
+                error_type = ""
 
-        checker_dialog.add_entry(line, error_range, error_prefix=error_type)
+            self.dialog.add_entry(line, error_range, error_prefix=error_type)
 
-    if not messages:
-        checker_dialog.add_entry("No errors reported by validator")
-    checker_dialog.display_entries()
+        if not messages:
+            self.dialog.add_entry("No errors reported by validator")
+        self.dialog.display_entries()
 
 
 class CSSValidatorDialog(CheckerDialog):
@@ -729,7 +732,7 @@ class CSSValidator:
     """CSS Validator."""
 
     def __init__(self) -> None:
-        """Initialize CSS Validator"""
+        """Initialize CSS Validator."""
         self.dialog = CSSValidatorDialog.show_dialog(rerun_command=self.run)
 
     def run(self) -> None:
@@ -854,284 +857,262 @@ class CSSValidator:
         self.dialog.display_entries()
 
 
-def css_validator_check() -> None:
-    """Instantiate & run CSS Validator."""
-    CSSValidator().run()
+class HTMLLinkCheckerDialog(CheckerDialog):
+    """HTML Link Checker dialog."""
+
+    manual_page = "HTML_Menu#HTML_Link_Checker"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize HTML Link Checker dialog."""
+
+        super().__init__(
+            "HTML Link Checker Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find issue",
+                    "Right click: Hide issue",
+                    "Shift Right click: Also hide all matching issues",
+                ]
+            ),
+            **kwargs,
+        )
 
 
-def html_link_check() -> None:
-    """Validate the current HTML file."""
+class HTMLLinkChecker:
+    """HTML Link checker."""
 
-    class HTMLLinkCheckerDialog(CheckerDialog):
-        """HTML Link Checker dialog."""
+    def __init__(self) -> None:
+        """Initialize HTML Link checker."""
 
-        manual_page = "HTML_Menu#HTML_Link_Checker"
+        self.dialog = HTMLLinkCheckerDialog.show_dialog(rerun_command=self.run)
 
-        def __init__(self, **kwargs: Any) -> None:
-            """Initialize HTML Link Checker dialog."""
+    def run(self) -> None:
+        """Do the actual check and add messages to the dialog."""
+        self.dialog.reset()
 
-            super().__init__(
-                "HTML Link Checker Results",
-                tooltip="\n".join(
-                    [
-                        "Left click: Select & find issue",
-                        "Right click: Hide issue",
-                        "Shift Right click: Also hide all matching issues",
-                    ]
-                ),
-                **kwargs,
-            )
+        class AttrPos:
+            """Class to store attribute & position in file."""
 
-    checker_dialog = HTMLLinkCheckerDialog.show_dialog(rerun_command=html_link_check)
+            def __init__(
+                self, attr: str, value: str, position: tuple[int, int]
+            ) -> None:
+                """Initialize attribute pos class
 
-    do_link_check(checker_dialog)
+                Args:
+                    attr: Attribute name, e.g. "href".
+                    value: Reference to file or location, e.g. "images/i1.jpg" or "#page1".
+                    position: Line & column number of start of attribute in file.
+                """
+                self.attr = attr
+                self.value = value
+                self.rowcol = IndexRowCol(position[0], position[1])
 
+        class UrlPos:
+            """Class to store url & position in file."""
 
-def do_link_check(checker_dialog: CheckerDialog) -> None:
-    """Do the actual check and add messages to the dialog."""
+            def __init__(
+                self, value: str, position: tuple[int, int], count: int
+            ) -> None:
+                """Initialize url pos class
 
-    class AttrPos:
-        """Class to store attribute & position in file."""
+                Args:
+                    value: File name, e.g. "images/i1.jpg".
+                    position: Line & column number of start of `style` attribute in file.
+                    count: Which url("...") within `style` attribute
+                """
+                self.value = value
+                self.rowcol = IndexRowCol(position[0], position[1])
+                self.count = count
 
-        def __init__(self, attr: str, value: str, position: tuple[int, int]) -> None:
-            """Initialize attribute pos class
+        class IdPos:
+            """Class to store position of id in file and whether used.
+            Name of id is used as key in dict.
+            """
+
+            def __init__(self, position: tuple[int, int]) -> None:
+                """Initialize id pos class.
+
+                Args:
+                    position: Line & column number of start of `id` in file.
+                """
+                self.rowcol = IndexRowCol(position[0], position[1])
+                self.used = False
+
+        links: list[AttrPos] = []
+        ids: dict[str, IdPos] = {}  # Dict for speed of lookup
+        urls: list[UrlPos] = []
+
+        class HTMLParserLink(HTMLParser):
+            """Class to parse HTML."""
+
+            def handle_starttag(
+                self, tag: str, attrs: list[tuple[str, str | None]]
+            ) -> None:
+                """Handle an HTML start tag"""
+                for attr in attrs:
+                    match attr:
+                        case ("href" | "src", value) if value is not None:
+                            links.append(AttrPos(attr[0], value, self.getpos()))
+                        case ("id", value) if value is not None:
+                            ids[value] = IdPos(self.getpos())
+                        case ("style", value) if value is not None:
+                            for num, match in enumerate(
+                                re.finditer(r"""\burl\(['"](.*?)['"]\)""", value)
+                            ):
+                                urls.append(UrlPos(match[1], self.getpos(), num))
+
+        def get_index_range(link: AttrPos) -> IndexRange:
+            """Get relevant index range, given info about tag & attribute.
 
             Args:
-                attr: Attribute name, e.g. "href".
-                value: Reference to file or location, e.g. "images/i1.jpg" or "#page1".
-                position: Line & column number of start of attribute in file.
+                link: Info about tag and attribute.
             """
-            self.attr = attr
-            self.value = value
-            self.rowcol = IndexRowCol(position[0], position[1])
-
-    class UrlPos:
-        """Class to store url & position in file."""
-
-        def __init__(self, value: str, position: tuple[int, int], count: int) -> None:
-            """Initialize url pos class
-
-            Args:
-                value: File name, e.g. "images/i1.jpg".
-                position: Line & column number of start of `style` attribute in file.
-                count: Which url("...") within `style` attribute
-            """
-            self.value = value
-            self.rowcol = IndexRowCol(position[0], position[1])
-            self.count = count
-
-    class IdPos:
-        """Class to store position of id in file and whether used.
-        Name of id is used as key in dict.
-        """
-
-        def __init__(self, position: tuple[int, int]) -> None:
-            """Initialize id pos class.
-
-            Args:
-                position: Line & column number of start of `id` in file.
-            """
-            self.rowcol = IndexRowCol(position[0], position[1])
-            self.used = False
-
-    links: list[AttrPos] = []
-    ids: dict[str, IdPos] = {}  # Dict for speed of lookup
-    urls: list[UrlPos] = []
-
-    class HTMLParserLink(HTMLParser):
-        """Class to parse HTML."""
-
-        def handle_starttag(
-            self, tag: str, attrs: list[tuple[str, str | None]]
-        ) -> None:
-            """Handle an HTML start tag"""
-            for attr in attrs:
-                match attr:
-                    case ("href" | "src", value) if value is not None:
-                        links.append(AttrPos(attr[0], value, self.getpos()))
-                    case ("id", value) if value is not None:
-                        ids[value] = IdPos(self.getpos())
-                    case ("style", value) if value is not None:
-                        for num, match in enumerate(
-                            re.finditer(r"""\burl\(['"](.*?)['"]\)""", value)
-                        ):
-                            urls.append(UrlPos(match[1], self.getpos(), num))
-
-    def get_index_range(link: AttrPos) -> IndexRange:
-        """Get relevant index range, given info about tag & attribute.
-
-        Args:
-            link: Info about tag and attribute.
-        """
-        rgx = rf"""{link.attr} *= *["'][^'"]*["']"""
-        length = tk.IntVar()
-        if attr_start := maintext().search(
-            rgx, link.rowcol.index(), tk.END, regexp=True, count=length
-        ):
-            return IndexRange(
-                attr_start, maintext().index(f"{attr_start}+{length.get()}c")
-            )
-        return IndexRange(link.rowcol, link.rowcol)
-
-    def get_url_range(url: UrlPos) -> IndexRange:
-        """Get relevant index range, given info about tag & attribute.
-
-        Args:
-            url: Info about tag and attribute.
-        """
-        rgx = r"""url\(['"][^'"]*['"]\)"""
-        length = tk.IntVar()
-        count = 0
-        url_start = url.rowcol.index()
-        while url_start := maintext().search(
-            rgx, f"{url_start}+5c", tk.END, regexp=True, count=length
-        ):
-            if count == url.count:
+            rgx = rf"""{link.attr} *= *["'][^'"]*["']"""
+            length = tk.IntVar()
+            if attr_start := maintext().search(
+                rgx, link.rowcol.index(), tk.END, regexp=True, count=length
+            ):
                 return IndexRange(
-                    url_start, maintext().index(f"{url_start}+{length.get()}c")
-                )
-            count += 1
-        return IndexRange(url.rowcol, url.rowcol)
-
-    # Get list of image files to check if they are referenced
-    cur_dir = os.path.dirname(the_file().filename)
-    images_used: dict[str, bool] = {}
-    images_dir = os.path.join(cur_dir, "images")
-    if not os.path.isdir(images_dir):
-        logger.error(f"Directory {images_dir} does not exist")
-        checker_dialog.display_entries()
-        return
-    for fn in os.listdir(images_dir):
-        # Force forward slash (unlike os.join) so it matches attribute value
-        images_used[f"images/{fn}"] = False
-
-    # Parse HTML - tags trigger calls to handle_starttag above
-    parser = HTMLParserLink()
-    parser.feed(maintext().get_text())
-
-    n_externals = 0
-    # Report on any broken links
-    for link in links:
-        if not link.value.strip():
-            checker_dialog.add_entry(f"Empty {link.attr} string", get_index_range(link))
-        elif re.match("https?:", link.value):
-            checker_dialog.add_entry(
-                f"External link: {link.value}", get_index_range(link)
-            )
-            n_externals += 1
-        elif link.value.startswith("#"):
-            if link.value[1:] in ids:
-                ids[link.value[1:]].used = True
-            else:
-                checker_dialog.add_entry(
-                    f"Internal link without anchor: {link.value}",
-                    get_index_range(link),
-                )
-        else:
-            if any(char.isupper() for char in link.value):
-                checker_dialog.add_entry(
-                    f"Filename contains uppercase: {link.value}", get_index_range(link)
-                )
-            if os.path.isfile(os.path.join(cur_dir, link.value)):
-                images_used[link.value] = True
-            else:
-                checker_dialog.add_entry(
-                    f"File not found: {link.value}", get_index_range(link)
-                )
-
-    # Report on any broken urls
-    for url in urls:
-        if not url.value.strip():
-            checker_dialog.add_entry("Empty url string", get_url_range(url))
-        elif re.match("https?:", url.value):
-            checker_dialog.add_entry(
-                f"External url link: {url.value}", get_url_range(url)
-            )
-            n_externals += 1
-        else:
-            if any(char.isupper() for char in url.value):
-                checker_dialog.add_entry(
-                    f"Filename contains uppercase: {url.value}", get_url_range(url)
-                )
-            if os.path.isfile(os.path.join(cur_dir, url.value)):
-                images_used[url.value] = True
-            else:
-                checker_dialog.add_entry(
-                    f"Url not found: {url.value}", get_url_range(url)
-                )
-
-    # Report any unused image files
-    unused_header = False
-    for image, used in images_used.items():
-        if not used:
-            if not unused_header:
-                checker_dialog.add_header("")
-                checker_dialog.add_header("UNUSED IMAGE FILES")
-                unused_header = True
-            checker_dialog.add_entry(f"File not used: {image}")
-
-    # Statistics summary
-    checker_dialog.add_header("")
-    checker_dialog.add_header("LINK STATISTICS")
-    checker_dialog.add_entry(f"{len(ids)} anchors (tags with id attribute)")
-    n_refs = sum(1 for link in links if link.value.startswith("#"))
-    checker_dialog.add_entry(f"{n_refs} internal links (using href)")
-    checker_dialog.add_entry(f"{len(links) - n_refs} file links (using href or src)")
-    checker_dialog.add_entry(f"{len(urls)} url links (using CSS style url)")
-
-    # Report any unused anchors - last because only informational and may be long
-    n_unused = sum(1 for id_pos in ids.values() if not id_pos.used)
-    unused_header = False
-    rgx = r"""id *= *["'][^'"]*["']"""
-    for id_name, id_pos in ids.items():
-        if id_pos.used:
-            continue
-        if not unused_header:
-            checker_dialog.add_header("")
-            checker_dialog.add_header(
-                f"{n_unused} ANCHORS WITHOUT LINKS (INFORMATIONAL)"
-            )
-            unused_header = True
-        length = tk.IntVar()
-        if attr_start := maintext().search(
-            rgx, id_pos.rowcol.index(), tk.END, regexp=True, count=length
-        ):
-            checker_dialog.add_entry(
-                f"Anchor not used: {id_name}",
-                IndexRange(
                     attr_start, maintext().index(f"{attr_start}+{length.get()}c")
-                ),
-            )
-        else:
-            checker_dialog.add_entry(f"Anchor not used: {id_name}")
+                )
+            return IndexRange(link.rowcol, link.rowcol)
 
-    checker_dialog.display_entries()
+        def get_url_range(url: UrlPos) -> IndexRange:
+            """Get relevant index range, given info about tag & attribute.
 
+            Args:
+                url: Info about tag and attribute.
+            """
+            rgx = r"""url\(['"][^'"]*['"]\)"""
+            length = tk.IntVar()
+            count = 0
+            url_start = url.rowcol.index()
+            while url_start := maintext().search(
+                rgx, f"{url_start}+5c", tk.END, regexp=True, count=length
+            ):
+                if count == url.count:
+                    return IndexRange(
+                        url_start, maintext().index(f"{url_start}+{length.get()}c")
+                    )
+                count += 1
+            return IndexRange(url.rowcol, url.rowcol)
 
-def ebookmaker_sort_key_type(
-    entry: CheckerEntry,
-) -> tuple[int, int]:
-    """Sort key function to sort ebookmaker entries by text, putting identical upper
-        and lower case versions together.
+        # Get list of image files to check if they are referenced
+        cur_dir = os.path.dirname(the_file().filename)
+        images_used: dict[str, bool] = {}
+        images_dir = os.path.join(cur_dir, "images")
+        if not os.path.isdir(images_dir):
+            logger.error(f"Directory {images_dir} does not exist")
+            self.dialog.display_entries()
+            return
+        for fn in os.listdir(images_dir):
+            # Force forward slash (unlike os.join) so it matches attribute value
+            images_used[f"images/{fn}"] = False
 
-    Differs from default alpha sort in using the error prefix as the primary sort key.
-    Then retaining the order within that error type. No need to deal with different
-    entry types, and no entries have a text_range.
-    """
-    match entry.error_prefix:
-        case "CRITICAL":
-            severity = 0
-        case "ERROR":
-            severity = 1
-        case "WARNING":
-            severity = 2
-        case "INFO":
-            severity = 3
-        case "DEBUG":
-            severity = 4
-        case _:
-            severity = 10
-    return (severity, entry.initial_pos)
+        # Parse HTML - tags trigger calls to handle_starttag above
+        parser = HTMLParserLink()
+        parser.feed(maintext().get_text())
+
+        n_externals = 0
+        # Report on any broken links
+        for link in links:
+            if not link.value.strip():
+                self.dialog.add_entry(
+                    f"Empty {link.attr} string", get_index_range(link)
+                )
+            elif re.match("https?:", link.value):
+                self.dialog.add_entry(
+                    f"External link: {link.value}", get_index_range(link)
+                )
+                n_externals += 1
+            elif link.value.startswith("#"):
+                if link.value[1:] in ids:
+                    ids[link.value[1:]].used = True
+                else:
+                    self.dialog.add_entry(
+                        f"Internal link without anchor: {link.value}",
+                        get_index_range(link),
+                    )
+            else:
+                if any(char.isupper() for char in link.value):
+                    self.dialog.add_entry(
+                        f"Filename contains uppercase: {link.value}",
+                        get_index_range(link),
+                    )
+                if os.path.isfile(os.path.join(cur_dir, link.value)):
+                    images_used[link.value] = True
+                else:
+                    self.dialog.add_entry(
+                        f"File not found: {link.value}", get_index_range(link)
+                    )
+
+        # Report on any broken urls
+        for url in urls:
+            if not url.value.strip():
+                self.dialog.add_entry("Empty url string", get_url_range(url))
+            elif re.match("https?:", url.value):
+                self.dialog.add_entry(
+                    f"External url link: {url.value}", get_url_range(url)
+                )
+                n_externals += 1
+            else:
+                if any(char.isupper() for char in url.value):
+                    self.dialog.add_entry(
+                        f"Filename contains uppercase: {url.value}", get_url_range(url)
+                    )
+                if os.path.isfile(os.path.join(cur_dir, url.value)):
+                    images_used[url.value] = True
+                else:
+                    self.dialog.add_entry(
+                        f"Url not found: {url.value}", get_url_range(url)
+                    )
+
+        # Report any unused image files
+        unused_header = False
+        for image, used in images_used.items():
+            if not used:
+                if not unused_header:
+                    self.dialog.add_header("")
+                    self.dialog.add_header("UNUSED IMAGE FILES")
+                    unused_header = True
+                self.dialog.add_entry(f"File not used: {image}")
+
+        # Statistics summary
+        self.dialog.add_header("")
+        self.dialog.add_header("LINK STATISTICS")
+        self.dialog.add_entry(f"{len(ids)} anchors (tags with id attribute)")
+        n_refs = sum(1 for link in links if link.value.startswith("#"))
+        self.dialog.add_entry(f"{n_refs} internal links (using href)")
+        self.dialog.add_entry(f"{len(links) - n_refs} file links (using href or src)")
+        self.dialog.add_entry(f"{len(urls)} url links (using CSS style url)")
+
+        # Report any unused anchors - last because only informational and may be long
+        n_unused = sum(1 for id_pos in ids.values() if not id_pos.used)
+        unused_header = False
+        rgx = r"""id *= *["'][^'"]*["']"""
+        for id_name, id_pos in ids.items():
+            if id_pos.used:
+                continue
+            if not unused_header:
+                self.dialog.add_header("")
+                self.dialog.add_header(
+                    f"{n_unused} ANCHORS WITHOUT LINKS (INFORMATIONAL)"
+                )
+                unused_header = True
+            length = tk.IntVar()
+            if attr_start := maintext().search(
+                rgx, id_pos.rowcol.index(), tk.END, regexp=True, count=length
+            ):
+                self.dialog.add_entry(
+                    f"Anchor not used: {id_name}",
+                    IndexRange(
+                        attr_start, maintext().index(f"{attr_start}+{length.get()}c")
+                    ),
+                )
+            else:
+                self.dialog.add_entry(f"Anchor not used: {id_name}")
+
+        self.dialog.display_entries()
 
 
 class EbookmakerCheckerDialog(CheckerDialog):
@@ -1213,10 +1194,21 @@ class EbookmakerCheckerDialog(CheckerDialog):
 
 
 class EbookmakerChecker:
-    """Ebookmaker checker"""
+    """Ebookmaker checker."""
+
+    # Rank error prefixes for sorting purposes
+    severities = {"CRITICAL": 0, "ERROR": 1, "WARNING": 2, "INFO": 3, "DEBUG": 4}
 
     def __init__(self) -> None:
-        """Initialize ebookmaker checker"""
+        """Initialize ebookmaker checker."""
+
+        def ebookmaker_sort_key_type(
+            entry: CheckerEntry,
+        ) -> tuple[int, int]:
+            """Sort key function to sort ebookmaker entries by error prefix, then
+            retaining the order within that error type."""
+            return (self.severities.get(entry.error_prefix, 10), entry.initial_pos)
+
         self.dialog = EbookmakerCheckerDialog.show_dialog(
             rerun_command=self.run,
             sort_key_alpha=ebookmaker_sort_key_type,
@@ -1351,8 +1343,3 @@ class EbookmakerChecker:
         title = DiacriticRemover.remove_diacritics(title)
         title = re.sub(r"[^A-za-z0-9 ]+", "_", title)
         return title
-
-
-def ebookmaker_check() -> None:
-    """Instantiate & run Ebookmaker checker."""
-    EbookmakerChecker().run()

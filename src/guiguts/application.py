@@ -18,10 +18,10 @@ from guiguts.footnotes import footnote_check, FootnoteIndexStyle
 from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
 from guiguts.html_tools import (
     HTMLImageDialog,
-    html_validator_check,
-    html_link_check,
-    css_validator_check,
-    ebookmaker_check,
+    HTMLValidator,
+    HTMLLinkChecker,
+    CSSValidator,
+    EbookmakerChecker,
 )
 from guiguts.illo_sn_fixup import illosn_check
 
@@ -80,7 +80,7 @@ from guiguts.tools.bookloupe import bookloupe_check
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
 from guiguts.tools.pptxt import pptxt
-from guiguts.tools.pphtml import pphtml
+from guiguts.tools.pphtml import PPhtmlChecker
 from guiguts.utilities import is_mac, is_windows, is_x11, folder_dir_str
 from guiguts.widgets import themed_style, theme_name_internal_from_user
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
@@ -857,12 +857,14 @@ class Guiguts:
         html_menu.add_button("Auto-~Illustrations...", HTMLImageDialog.show_dialog)
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
-        html_menu.add_button("HTML ~Link Checker", html_link_check)
-        html_menu.add_button("~PPhtml", pphtml)
-        html_menu.add_button("HTML5 ~Validator (online)", html_validator_check)
-        html_menu.add_button("~CSS Validator (online)", css_validator_check)
+        html_menu.add_button("HTML ~Link Checker", lambda: HTMLLinkChecker().run())
+        html_menu.add_button("~PPhtml", lambda: PPhtmlChecker().run())
+        html_menu.add_button("HTML5 ~Validator (online)", lambda: HTMLValidator().run())
+        html_menu.add_button("~CSS Validator (online)", lambda: CSSValidator().run())
         html_menu.add_separator()
-        html_menu.add_button("~Ebookmaker generate/check", ebookmaker_check)
+        html_menu.add_button(
+            "~Ebookmaker generate/check", lambda: EbookmakerChecker().run()
+        )
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
