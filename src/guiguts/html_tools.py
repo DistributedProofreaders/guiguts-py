@@ -738,13 +738,6 @@ class CSSValidator:
     def run(self) -> None:
         """Validate CSS using SOAP interface."""
         self.dialog.reset()
-        # Only permitted to send the CSS block to the validator.
-        css_start = maintext().search("<style", "1.0")
-        css_end = maintext().search("</style", "1.0")
-        if not css_start or not css_end:
-            logger.error("No CSS style block found")
-            self.dialog.display_entries()
-            return
 
         def report_exception(message: str, exc: Exception | str) -> None:
             """Report exception to user and suggest manual validation.
@@ -759,15 +752,14 @@ class CSSValidator:
 
         # Send the text for validation & get SOAP1.2/XML response
         validator_url = "https://jigsaw.w3.org/css-validator/validator"
-        headers = {"Content-Type": "text/xml; charset=utf-8"}
-        payload = {
+        files = {"file": ("css.html", maintext().get_text(), "text/html")}
+        params = {
             "output": "soap12",
             "profile": preferences.get(PrefKey.CSS_VALIDATION_LEVEL),
-            "text": maintext().get(f"{css_start}+1l linestart", f"{css_end} linestart"),
         }
         try:
-            response = requests.get(
-                validator_url, headers=headers, params=payload, timeout=15
+            response = requests.post(
+                validator_url, data=params, files=files, timeout=15
             )
         except requests.exceptions.Timeout as exc:
             report_exception(f"Request to {validator_url} timed out.", exc)
@@ -847,7 +839,7 @@ class CSSValidator:
                             if message[-1] != ":":
                                 message += ":"
                             message += f" {self.skippedstring}"
-                        line = int(self.line.strip()) + IndexRowCol(css_start).row
+                        line = self.line.strip()
                         location = IndexRange(f"{line}.0", f"{line}.0")
                         self.dialog.add_entry(message, location)
 
