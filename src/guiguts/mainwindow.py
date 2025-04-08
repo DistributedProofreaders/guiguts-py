@@ -321,11 +321,12 @@ class CustomMenuDialog(ToplevelDialog):
         help_frame = ttk.LabelFrame(self.top_frame, padding=3, text="Help")
         help_frame.grid(row=3, column=0, pady=5, padx=5, sticky="NSEW")
         help_frame.columnconfigure(0, weight=1)
+        given_app_str = "" if is_x11() else ", or a given app,"
         help_label = ttk.Label(
             help_frame,
             text=f"""\
-The command for each menu entry may be an app on your computer or the "{start_open}" command. \
-Typically, "{start_open}" will run a given app or use the default app to open the given file type. \
+The command for each menu entry may be an app on your computer, or the "{start_open}" command. \
+Typically, "{start_open}" will use the default app{given_app_str} to open the given file type. \
 Alternatively, if a URL is given with no command, it will be displayed using your default \
 browser via "{start_open}". To use a different browser, specify that browser as part of your command. \
 Enclose commands or filenames that may contain spaces in "double quotes".
