@@ -22,6 +22,7 @@ from guiguts.html_tools import (
     HTMLLinkChecker,
     CSSValidator,
     EbookmakerChecker,
+    HTMLAutoTableDialog,
 )
 from guiguts.illo_sn_fixup import illosn_check
 
@@ -517,6 +518,10 @@ class Guiguts:
         preferences.set_default(PrefKey.ASCII_TABLE_FILL_CHAR, "@")
         preferences.set_default(PrefKey.ASCII_TABLE_RIGHT_COL, 70)
         preferences.set_default(PrefKey.COMMAND_PALETTE_HISTORY, [])
+        preferences.set_default(PrefKey.AUTOTABLE_MULTILINE, False)
+        preferences.set_default(PrefKey.AUTOTABLE_DEFAULT_ALIGNMENT, "left")
+        preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT, "")
+        preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT_HISTORY, [])
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -902,6 +907,7 @@ class Guiguts:
         html_menu = Menu(menubar(), "HT~ML")
         html_menu.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
         html_menu.add_button("Auto-~Illustrations...", HTMLImageDialog.show_dialog)
+        html_menu.add_button("Auto-~Table...", HTMLAutoTableDialog.show_dialog)
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
         html_menu.add_button("HTML ~Link Checker", lambda: HTMLLinkChecker().run())

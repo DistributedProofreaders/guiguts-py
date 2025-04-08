@@ -32,7 +32,7 @@ from guiguts.utilities import (
     folder_dir_str,
     is_windows,
 )
-from guiguts.widgets import ToplevelDialog, Busy
+from guiguts.widgets import ToplevelDialog, Busy, Combobox, ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -1335,3 +1335,175 @@ class EbookmakerChecker:
         title = DiacriticRemover.remove_diacritics(title)
         title = re.sub(r"[^A-za-z0-9 ]+", "_", title)
         return title
+
+
+class HTMLAutoTableDialog(ToplevelDialog):
+    """HTML Auto-Table dialog."""
+
+    manual_page = "HTML_Menu#Auto-Table"
+
+    def __init__(self) -> None:
+        """Initialize HTML Auto-Table dialog."""
+        super().__init__("HTML Auto-Table", resize_x=False, resize_y=False)
+
+        ttk.Checkbutton(
+            self.top_frame,
+            text="Multi-line (rows separated by blank lines)",
+            variable=PersistentBoolean(PrefKey.AUTOTABLE_MULTILINE),
+            takefocus=False,
+        ).grid(row=0, column=0, sticky="NSEW", pady=3)
+
+        align_frame = ttk.LabelFrame(self.top_frame, text="Alignment", padding=3)
+        align_frame.grid(row=1, column=0, sticky="NSEW")
+
+        default_align_frame = ttk.Frame(align_frame)
+        default_align_frame.grid(row=0, column=0, sticky="NSEW", pady=2)
+        ttk.Label(default_align_frame, text="Default: ").grid(
+            row=0, column=0, sticky="NSEW"
+        )
+        default_align_textvariable = PersistentString(
+            PrefKey.AUTOTABLE_DEFAULT_ALIGNMENT
+        )
+        ttk.Radiobutton(
+            default_align_frame,
+            text="Left",
+            variable=default_align_textvariable,
+            value="left",
+            takefocus=False,
+        ).grid(row=0, column=1, sticky="NSEW", padx=(10, 0))
+        ttk.Radiobutton(
+            default_align_frame,
+            text="Center",
+            variable=default_align_textvariable,
+            value="center",
+            takefocus=False,
+        ).grid(row=0, column=2, sticky="NSEW", padx=10)
+        ttk.Radiobutton(
+            default_align_frame,
+            text="Right",
+            variable=default_align_textvariable,
+            value="right",
+            takefocus=False,
+        ).grid(row=0, column=3, sticky="NSEW")
+
+        column_align_frame = ttk.Frame(align_frame)
+        column_align_frame.grid(row=1, column=0, sticky="NSEW", pady=2)
+        column_align_frame.columnconfigure(1, weight=1)
+        ttk.Label(column_align_frame, text="Columns: ").grid(
+            row=0, column=0, sticky="NSEW"
+        )
+        self.column_align_text = Combobox(
+            column_align_frame,
+            PrefKey.AUTOTABLE_COLUMN_ALIGNMENT_HISTORY,
+            textvariable=PersistentString(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT),
+            validate=tk.ALL,
+            validatecommand=(
+                self.register(
+                    lambda value: bool(re.fullmatch(r"[<\|>LlCcRr]*", value))
+                ),
+                "%P",
+            ),
+        )
+        self.column_align_text.grid(row=0, column=1, sticky="NSEW")
+        ToolTip(
+            self.column_align_text,
+            "Specify column alignments using <, L or l for left; |, C or c for center; >, R or r for right",
+        )
+
+        ttk.Button(self.top_frame, text="Convert to HTML", command=self.convert).grid(
+            row=2, column=0, sticky="NS", pady=(5, 2)
+        )
+
+    def convert(self) -> None:
+        """Convert selected text to HTML table."""
+        the_table: list[list[str]] = []
+        sel_ranges = maintext().selected_ranges()
+        if not sel_ranges:
+            return
+        table_text = (
+            maintext()
+            .get(sel_ranges[0].start.index(), sel_ranges[0].end.index())
+            .rstrip()
+        )
+        if not table_text:
+            return
+        multiline = preferences.get(PrefKey.AUTOTABLE_MULTILINE)
+        split_row_regex = r"\n[| ]*\n" if multiline else "\n"
+        split_col_regex = r"\|" if "|" in table_text else r"  +"
+        text_rows: list[str] = re.split(split_row_regex, table_text)
+        # For each row of the table
+        for text_row in text_rows:
+            the_table.append([])
+            # For each text line in this row (only one if not multiline)
+            text_lines = text_row.split("\n")
+            for text_line in text_lines:
+                text_line = re.sub(r"^\||\|$", "", text_line.rstrip())
+                # For each cell line in that text line
+                for col, cell_line in enumerate(re.split(split_col_regex, text_line)):
+                    if col >= len(the_table[-1]):
+                        the_table[-1].append(cell_line.strip())  # Start new cell
+                    else:
+                        the_table[-1][col] += f" {cell_line.strip()}"  # Add to existing
+        # "Square off" table, making all rows have max_cols columns
+        max_cols = max(len(row) for row in the_table)
+        for row in the_table:
+            for _ in range(len(row), max_cols):
+                row.append("")
+
+        maintext().undo_block_begin()
+        # Work backwards through table rows to avoid affecting later indexes into file,
+        # since typically replacement text will consist of more lines than origina.
+        # Also work a row at a time to avoid moving page markers.
+        end_linenum = sel_ranges[0].end.row
+        maintext().insert(f"{end_linenum}.0", "</table>\n")
+        for rev_row_num, text_row in enumerate(reversed(text_rows)):
+            n_lines = text_row.count("\n") + 1  # No. of lines in original table row
+            start_linenum = end_linenum - n_lines
+            html = self.html_row_from_text(the_table[-1 - rev_row_num])
+            maintext().replace(f"{start_linenum}.0", f"{end_linenum-1}.end", html)
+            # Allow for blank line if multiline
+            end_linenum = start_linenum - 1 if multiline else start_linenum
+        maintext().insert(f"{end_linenum}.0", '<table class="autotable">\n')
+        maintext().clear_selection()
+        maintext().set_insert_index(IndexRowCol(end_linenum, 0))
+
+        self.column_align_text.add_to_history(
+            preferences.get(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT)
+        )
+
+    def html_row_from_text(self, row_cells: list[str]) -> str:
+        """Convert list of strings defining row of cells to HTML.
+
+        Args:
+            row_cells: List of strings with contents of a row of cells.
+        """
+        html = ["<tr>"]
+        for col_num, cell in enumerate(row_cells):
+            col_align = self.get_align_class(col_num)
+            html.append(f'<td class="{col_align}">{cell}</td>')
+        html.append("</tr>")
+        return "\n".join(html)
+
+    def get_align_class(self, col_num: int) -> str:
+        """Return alignment class for column.
+
+        Args:
+            col_num: Zero-based number of column that alignment is required for.
+
+        Returns:
+            "tdl", "tdc", or "tdr" for left/center/right alignment.
+        """
+        # Get default l/c/r setting
+        align = preferences.get(PrefKey.AUTOTABLE_DEFAULT_ALIGNMENT)[0]
+        # Check if specific setting for this column
+        col_align = preferences.get(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT)
+        if col_align and col_num < len(col_align):
+            char = col_align[col_num]
+            match char:
+                case "l" | "L" | "<":
+                    align = "l"
+                case "c" | "C" | "|":
+                    align = "c"
+                case "r" | "R" | ">":
+                    align = "r"
+        return f"td{align}"
