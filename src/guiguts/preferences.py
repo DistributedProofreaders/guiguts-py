@@ -5,6 +5,7 @@ from enum import StrEnum, auto
 import json
 import logging
 import os
+import time
 import tkinter as tk
 from typing import Any, Callable
 
@@ -296,6 +297,26 @@ class Preferences:
         except OSError:
             logger.error(f"Unable to create {self.prefsdir}")
             return
+
+        # Backup to "day" and "week" files if they are not too new.
+        root, ext = os.path.splitext(self.prefsfile)
+        day_backup = root + "_day" + ext
+        week_backup = root + "_week" + ext
+
+        def is_older_than(file: str, seconds: int) -> bool:
+            """Return True if file is more than `seconds` old"""
+            return (
+                not os.path.exists(file)
+                or (time.time() - os.path.getmtime(file)) > seconds
+            )
+
+        if is_older_than(week_backup, 7 * 86400):  # 7 days
+            if os.path.exists(day_backup):
+                os.replace(day_backup, week_backup)
+
+        if is_older_than(day_backup, 86400):  # 1 day
+            if os.path.exists(self.prefsfile):
+                os.replace(self.prefsfile, day_backup)
 
         try:
             with open(self.prefsfile, "w", encoding="utf-8") as fp:
