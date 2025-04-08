@@ -379,7 +379,8 @@ class HighlightTag(StrEnum):
     STRAIGHT_SINGLE_QUOTE = auto()
     CURLY_SINGLE_QUOTE = auto()
     ALIGNCOL = auto()
-    CURSOR_LINE = auto()
+    CURSOR_LINE_ACTIVE = auto()
+    CURSOR_LINE_INACTIVE = auto()
     COLUMN_RULER = auto()
     SEARCH = auto()
     PROOFERCOMMENT = auto()
@@ -558,9 +559,14 @@ class HighlightColors:
         "Dark": {"background": "green", "foreground": "white"},
     }
 
-    CURSOR_LINE = {
+    CURSOR_LINE_ACTIVE = {
         "Light": {"background": "#E8E1DC"},
         "Dark": {"background": "#122E57"},
+    }
+
+    CURSOR_LINE_INACTIVE = {
+        "Light": {"background": "#E8E8E8"},
+        "Dark": {"background": "#122232"},
     }
 
     COLUMN_RULER = {
@@ -3707,16 +3713,26 @@ class MainText(tk.Text):
             self.remove_highlights_aligncol()
 
     def highlight_cursor_line(self) -> None:
-        """Add a highlight to entire line cursor is focused on."""
-        self.tag_remove(HighlightTag.CURSOR_LINE, "1.0", tk.END)
+        """Handle redraw of cursor line highlights."""
+        self.tag_remove(HighlightTag.CURSOR_LINE_ACTIVE, "1.0", tk.END)
+        self.tag_remove(HighlightTag.CURSOR_LINE_INACTIVE, "1.0", tk.END)
 
-        # Don't re-highlight if cursor line highlighting disabled, or if currently a selection
-        if (
-            preferences.get(PrefKey.HIGHLIGHT_CURSOR_LINE)
-            and not self.selected_ranges()
-        ):
-            row = self.get_insert_index().row
-            self.tag_add(HighlightTag.CURSOR_LINE, f"{row}.0", f"{row + 1}.0")
+        if preferences.get(PrefKey.HIGHLIGHT_CURSOR_LINE):
+            self.highlight_cursor_line_in_viewport(self)
+            if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+                self.highlight_cursor_line_in_viewport(self.peer)
+
+    def highlight_cursor_line_in_viewport(self, viewport: Text) -> None:
+        """Highlight entire line cursor is focused on, in this viewport."""
+
+        if maintext().focus_widget() == viewport:
+            hilite = HighlightTag.CURSOR_LINE_ACTIVE
+        else:
+            hilite = HighlightTag.CURSOR_LINE_INACTIVE
+
+        if not viewport.tag_ranges("sel"):
+            row = IndexRowCol(viewport.index(tk.INSERT)).row
+            viewport.tag_add(hilite, f"{row}.0", f"{row + 1}.0")
 
     def highlight_search_in_viewport(self, viewport: Text) -> None:
         """Highlights current search pattern in designated viewport."""
@@ -3881,7 +3897,8 @@ class MainText(tk.Text):
             (HighlightTag.ALIGNCOL, HighlightColors.ALIGNCOL),
             (HighlightTag.TABLE_COLUMN, HighlightColors.TABLE_COLUMN),
             (HighlightTag.TABLE_BODY, HighlightColors.TABLE_BODY),
-            (HighlightTag.CURSOR_LINE, HighlightColors.CURSOR_LINE),
+            (HighlightTag.CURSOR_LINE_ACTIVE, HighlightColors.CURSOR_LINE_ACTIVE),
+            (HighlightTag.CURSOR_LINE_INACTIVE, HighlightColors.CURSOR_LINE_INACTIVE),
         ):
             if colors:
                 self._highlight_configure_tag(tag, colors)
