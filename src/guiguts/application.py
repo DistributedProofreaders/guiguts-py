@@ -39,6 +39,7 @@ from guiguts.mainwindow import (
     AutoImageState,
     image_autofit_width_callback,
     image_autofit_height_callback,
+    CustomMenuDialog,
 )
 from guiguts.misc_dialogs import (
     PreferencesDialog,
@@ -126,6 +127,8 @@ class Guiguts:
 
         # Recent menu is saved to allow deletion & re-creation when files loaded/saved
         self.recent_menu: Optional[Menu] = None
+        # Similarly for custom menu when it is customized
+        self.custom_menu: Optional[Menu] = None
         self.init_menus()
 
         self.init_statusbar(statusbar())
@@ -230,6 +233,7 @@ class Guiguts:
         """Handle side effects needed when filename changes."""
         self.populate_recent_menu()  # Recreate menu to reflect recent files
         self.update_title()
+        CustomMenuDialog.store_filename(self.file.filename)
         maintext().after_idle(maintext().focus_set)
 
     def languages_changed(self) -> None:
@@ -480,6 +484,22 @@ class Guiguts:
             preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, "char")
         else:
             preferences.set_default(PrefKey.AUTOFIX_RTL_TEXT, "off")
+        preferences.set_default(
+            PrefKey.CUSTOM_MENU_ENTRIES,
+            [
+                ["View HTML in browser", 'start "$f"' if is_windows() else 'open "$f"'],
+                ["Onelook.com (several dictionaries)", "https://www.onelook.com/?w=$t"],
+                [
+                    "Google Books Ngram Viewer",
+                    "https://books.google.com/ngrams/graph?content=$t",
+                ],
+                [
+                    "Shape Catcher (Unicode character finder)",
+                    "https://shapecatcher.com",
+                ],
+                ["Ebookmaker online", "https://ebookmaker.pglaf.org"],
+            ],
+        )
         preferences.set_default(PrefKey.EBOOKMAKER_PATH, "")
         preferences.set_default(PrefKey.EBOOKMAKER_EPUB2, True)
         preferences.set_default(PrefKey.EBOOKMAKER_EPUB3, True)
@@ -515,6 +535,7 @@ class Guiguts:
         self.init_text_menu()
         self.init_html_menu()
         self.init_view_menu()
+        self.init_custom_menu()
         self.init_help_menu()
         self.init_os_menu()
 
@@ -934,6 +955,16 @@ class Guiguts:
                 lambda: root().wm_attributes("-fullscreen", True),
                 lambda: root().wm_attributes("-fullscreen", False),
             )
+
+    def init_custom_menu(self) -> None:
+        """Create the Custom menu."""
+        self.custom_menu = Menu(menubar(), "~Custom")
+        self.custom_menu.add_separator()
+        self.custom_menu.add_button(
+            "Customi~ze Menu",
+            lambda: CustomMenuDialog.show_dialog(menu=self.custom_menu),
+        )
+        CustomMenuDialog.rewrite_custom_menu(self.custom_menu)
 
     def init_help_menu(self) -> None:
         """Create the Help menu."""

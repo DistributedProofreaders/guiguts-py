@@ -113,6 +113,7 @@ class PrefKey(StrEnum):
     IMAGE_AUTOFIT_HEIGHT = auto()
     CHECKER_GRAY_UNUSED_OPTIONS = auto()
     AUTOFIX_RTL_TEXT = auto()
+    CUSTOM_MENU_ENTRIES = auto()
     EBOOKMAKER_PATH = auto()
     EBOOKMAKER_EPUB2 = auto()
     EBOOKMAKER_EPUB3 = auto()
@@ -205,7 +206,9 @@ class Preferences:
         """
         if self.get(key) == value:
             return
-        self.dict[key] = value
+        # Deepcopy so that lists (of lists, etc) don't appear to be
+        # unchanged in the test above, even though their contents have changed
+        self.dict[key] = copy.deepcopy(value)
         self.save()
         if key in self.callbacks:
             self.callbacks[key](value)
