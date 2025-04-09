@@ -333,13 +333,12 @@ Enclose commands or filenames that may contain spaces in "double quotes".
 
 The following variables are available for use in commands:
 $f: full pathname of the current File
-$l: page number of current image according to page Label
-$n: png Number of current image (e.g. 7 for 007.png)
-$p: Png name of current image (e.g. 007 for 007.png)
-$s: Sequence number of current page (e.g. 7 for 7th png, regardless of numbering)
+$p: Png name of current image, e.g. 007 for 007.png
+$s: Sequence number of current page, e.g. 7 for 7th png, regardless of numbering
 $t: selected Text (only the first line if column selection)
 
-To assist in opening a hi-res scan for the current page, $l, $n, and $s can also be given an offset, e.g. $(n+5) would give 12 for 007.png.
+To assist in opening a hi-res scan for the current page, $s can also be given an offset, \
+e.g. $(s+5) would give 12 for the 5th png.
 """,
         )
         help_label.grid(row=0, column=0, padx=5, pady=2, sticky="NSEW")
@@ -362,8 +361,6 @@ To assist in opening a hi-res scan for the current page, $l, $n, and $s can also
         def subst_in_token(token: str) -> str:
             """Substitute values for "variables" in token.
             $f: full pathname of file
-            $l: page number of current image according to label
-            $n: png number of current image
             $p: png name of current image
             $s: sequence number of current page from start of file
             $t: selected text (only first part if column selection)
@@ -375,20 +372,6 @@ To assist in opening a hi-res scan for the current page, $l, $n, and $s can also
                 Substituted token.
             """
 
-            pg_lbl = statusbar().fields["page label"]["text"]
-            # Offset page label
-            token = re.sub(
-                r"\$\(l(-|\+)(\d+)\)", lambda m: page_offset(pg_lbl, m[1], m[2]), token
-            )
-            # Non-offset page label
-            token = token.replace("$l", page_offset(pg_lbl, "+", "0"))
-            pg_num = maintext().get_current_image_name()
-            # Offset png number
-            token = re.sub(
-                r"\$\(n(-|\+)(\d+)\)", lambda m: page_offset(pg_num, m[1], m[2]), token
-            )
-            # Non-offset png number
-            token = token.replace("$n", page_offset(pg_num, "+", "0"))
             # Png file name
             token = token.replace("$p", maintext().get_current_image_name())
             # Text/HTML file name
@@ -396,27 +379,18 @@ To assist in opening a hi-res scan for the current page, $l, $n, and $s can also
             # Offset png sequence number
             token = re.sub(
                 r"\$\(s(-|\+)(\d+)\)",
-                lambda m: page_offset(sequence_number(), m[1], m[2]),
+                lambda m: str(
+                    sequence_number() + (int(m[2]) if m[1] == "+" else -int(m[2]))
+                ),
                 token,
             )
-            # Png sequence number
-            token = token.replace("$s", sequence_number())
+            # Non-offset png sequence number
+            token = token.replace("$s", str(sequence_number()))
             # Selected text
             token = token.replace("$t", re.sub(r"\s+", " ", maintext().selected_text()))
             return token
 
-        def page_offset(base_num: str, plus_minus: str, offset: str) -> str:
-            """Offset given image or page number."""
-            try:
-                cur_num = int(re.sub(r".*?(\d+)$", r"\1", base_num))  # Get number
-            except ValueError:
-                # Maybe Roman - not going to bother doing Roman math here, just
-                # attempt to strip label prefix from "number"
-                return re.sub(r".* ", "", base_num)
-            cur_num += int(offset) * (1 if plus_minus == "+" else -1)
-            return str(cur_num)
-
-        def sequence_number() -> str:
+        def sequence_number() -> int:
             """Return sequence number of current page."""
             sequence_number = 0
             cur_pos = maintext().get_insert_index().index()
@@ -425,7 +399,7 @@ To assist in opening a hi-res scan for the current page, $l, $n, and $s can also
                 if maintext().compare(mark, ">", cur_pos):
                     break
                 sequence_number += 1
-            return str(max(1, sequence_number))
+            return max(1, sequence_number)
 
         def run_command(cmd_string: str) -> None:
             """Run command in subprocess. Copes with command containing
