@@ -281,29 +281,6 @@ class FootnoteChecker:
             labels_dict[fn_label] = fn_label
         return True
 
-    def get_anchor_hilite_columns_from_marks(self, an_record: AnchorRecord) -> tuple:
-        """Get hilite start/end columns of an anchor from its start/end mark positions.
-
-        The first thing the reindex() function does is set marks at the hilite start/end
-        column positions of each anchor. When there is more than one anchor on a line
-        the AN record hilite start/end column positions of a second or subsequent anchor
-        on the same line cannot be relied on because the label of a previous anchor on
-        that line might have expanded. Example:
-
-        'B' -> 'AA' if the FN and its AN represented by label 'B' is the 53rd AN/FN
-        and the anchor of the 54th FN is on the same line.
-
-        On termination of the reindex() function these marks are unset.
-
-        Returns:
-            a tuple containing integer column hilite start/end positions of anchor.
-        """
-        an_cur_start = self.checker_dialog.mark_from_rowcol(an_record.start)
-        an_cur_end = self.checker_dialog.mark_from_rowcol(an_record.end)
-        hilite_start = re.sub(r"^.+?\.(.+$)", r"\1", an_cur_start)
-        hilite_end = re.sub(r"^.+?\.(.+$)", r"\1", an_cur_end)
-        return int(hilite_start), int(hilite_end)
-
     def alpha(self, label: int) -> str:
         """Converts given footnote number to alphabetic form:
         A,B,...Z,AA,AB,...AZ,BA,BB,...ZZ,AAA,AAB,...ZZZ
@@ -685,17 +662,14 @@ def reindex() -> None:
         else:
             label = str(index)
         an_record = an_records[index - 1]
-        an_line_text = maintext().get(
-            f"{an_record.start.index()} linestart",
-            f"{an_record.start.index()} lineend",
+
+        an_start = maintext().index(
+            _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(an_record.start)
         )
-        hl_start, hl_end = _THE_FOOTNOTE_CHECKER.get_anchor_hilite_columns_from_marks(
-            an_record
+        an_end = maintext().index(
+            _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(an_record.end)
         )
-        replacement_text = f"{an_line_text[0:hl_start]}[{label}]{an_line_text[hl_end:]}"
-        an_start = f"{an_record.start.index()} linestart"
-        maintext().delete(f"{an_start}", f"{an_start} lineend")
-        maintext().insert(f"{an_start}", replacement_text)
+        maintext().replace(an_start, an_end, f"[{label}]")
         #
         fn_record = fn_records[index - 1]
         fn_line_text = fn_record.text
