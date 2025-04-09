@@ -487,8 +487,8 @@ class Guiguts:
         preferences.set_default(
             PrefKey.CUSTOM_MENU_ENTRIES,
             [
-                ["View in browser", 'start "$f"' if is_windows() else 'open "$f"'],
-                ["Onelook.com (several dictionaries)", "http://www.onelook.com/?w=$t"],
+                ["View HTML in browser", 'start "$f"' if is_windows() else 'open "$f"'],
+                ["Onelook.com (several dictionaries)", "https://www.onelook.com/?w=$t"],
                 [
                     "Google Books Ngram Viewer",
                     "https://books.google.com/ngrams/graph?content=$t",
