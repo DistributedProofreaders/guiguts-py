@@ -324,11 +324,10 @@ class ToplevelDialog(tk.Toplevel):
     @classmethod
     def show_manual_page(cls) -> None:
         """Show the manual page for the dialog."""
-        if cls.context_help:
-            url = f"https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual{cls.context_help}"
-        else:
-            url = "https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual"
-        webbrowser.open(url)
+        sub_page = f"/{cls.context_help}" if cls.context_help else ""
+        webbrowser.open(
+            f"https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual{sub_page}"
+        )
 
 
 class OkApplyCancelDialog(ToplevelDialog):
