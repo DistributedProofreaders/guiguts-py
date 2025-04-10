@@ -34,6 +34,10 @@ class ToplevelDialog(tk.Toplevel):
     # Used to ensure only one instance of any dialog is created.
     _toplevel_dialogs: dict[str, "ToplevelDialog"] = {}
 
+    # Location of manual page for most recently focused dialog
+    context_help = ""
+    manual_page: Optional[str] = None
+
     def __init__(
         self,
         title: str,
@@ -71,9 +75,8 @@ class ToplevelDialog(tk.Toplevel):
         self.save_config = False
         self.bind("<Configure>", self._handle_config)
 
-        # Bind help key to open obligatory manual page
-        assert hasattr(self, "manual_page")
-        self.bind("<F1>", lambda event: self.show_manual_page())
+        # Ensure manual page has been initialized in subclasses
+        assert self.manual_page is not None
 
         self.wm_withdraw()
         self.wm_attributes("-fullscreen", False)
@@ -94,6 +97,9 @@ class ToplevelDialog(tk.Toplevel):
         # function will be called for every child of dialog due to their
         # "top level" bind tag
         self.top_frame.bind("<Destroy>", lambda _: self.on_destroy())
+
+        # Keep a track of which dialog had focus last for help purposes
+        self.bind("<FocusIn>", lambda _: self.got_focus())
 
         grab_focus(self)
 
@@ -148,6 +154,11 @@ class ToplevelDialog(tk.Toplevel):
         with another dialog.
         """
         return cls.__name__.removesuffix("Dialog")
+
+    def got_focus(self) -> None:
+        """Called when dialog gets focus."""
+        assert self.manual_page is not None
+        ToplevelDialog.context_help = self.manual_page
 
     def register_tooltip(self, tooltip: "ToolTip") -> None:
         """Register a tooltip as being attached to a widget in this
@@ -310,14 +321,13 @@ class ToplevelDialog(tk.Toplevel):
         except KeyError:
             return None
 
-    def show_manual_page(self) -> None:
+    @classmethod
+    def show_manual_page(cls) -> None:
         """Show the manual page for the dialog."""
-        try:
-            suffix = type(self).manual_page  # type:ignore[attr-defined]
-        except AttributeError:
-            return
-        prefix = "https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/"
-        webbrowser.open(prefix + suffix)
+        sub_page = f"/{cls.context_help}" if cls.context_help else ""
+        webbrowser.open(
+            f"https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual{sub_page}"
+        )
 
 
 class OkApplyCancelDialog(ToplevelDialog):

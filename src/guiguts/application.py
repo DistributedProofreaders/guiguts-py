@@ -88,6 +88,7 @@ from guiguts.widgets import (
     themed_style,
     theme_name_internal_from_user,
     menubar_metadata,
+    ToplevelDialog,
 )
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
@@ -970,10 +971,13 @@ class Guiguts:
         """Create the Help menu."""
         help_menu = Menu(menubar(), "~Help")
         help_menu.add_button(
-            "Guiguts ~Manual (opens in browser)",
+            "Guiguts ~Manual Contents (opens in browser)",
             self.show_help_manual,
+        )
+        help_menu.add_button(
+            "~Dialog Manual Page (opens in browser)",
+            ToplevelDialog.show_manual_page,
             "F1",
-            force_main_only=True,
         )
         help_menu.add_button("About ~Guiguts", HelpAboutDialog.show_dialog)
         help_menu.add_button(
