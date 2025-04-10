@@ -1366,6 +1366,11 @@ class UnicodeSearchDialog(ToplevelDialog):
         self.scrollbar.grid(row=1, column=1, sticky=tk.NS)
         mouse_bind(self.list, "1", self.item_clicked)
 
+        if char := maintext().current_character():
+            self.search.delete(0, tk.END)
+            self.search.insert(0, char)
+            search_btn.invoke()
+
     def find_matches(self, string: str) -> None:
         """Find & display Unicode characters that match all criteria (words) in the given string.
 
