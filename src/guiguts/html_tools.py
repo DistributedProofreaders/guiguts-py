@@ -1423,13 +1423,13 @@ class HTMLAutoTableDialog(ToplevelDialog):
         table_text = (
             maintext()
             .get(sel_ranges[0].start.index(), sel_ranges[0].end.index())
-            .rstrip()
+            .rstrip(" ")
         )
         if not table_text:
             return
         multiline = preferences.get(PrefKey.AUTOTABLE_MULTILINE)
-        split_row_regex = r"\n[| ]*\n" if multiline else "\n"
-        split_col_regex = r"\|" if "|" in table_text else r"  +"
+        split_row_regex = r"\n[| \u00a0]*\n" if multiline else "\n"
+        split_col_regex = r"\|" if "|" in table_text else r"[ \u00a0][ \u00a0]+"
         text_rows: list[str] = re.split(split_row_regex, table_text)
         # For each row of the table
         for text_row in text_rows:
@@ -1437,13 +1437,14 @@ class HTMLAutoTableDialog(ToplevelDialog):
             # For each text line in this row (only one if not multiline)
             text_lines = text_row.split("\n")
             for text_line in text_lines:
-                text_line = re.sub(r"^\||\|$", "", text_line.rstrip())
+                text_line = re.sub(r"^\||\|$", "", text_line.rstrip(" "))
                 # For each cell line in that text line
                 for col, cell_line in enumerate(re.split(split_col_regex, text_line)):
+                    strip_line = cell_line.strip(" ")
                     if col >= len(the_table[-1]):
-                        the_table[-1].append(cell_line.strip())  # Start new cell
+                        the_table[-1].append(strip_line)  # Start new cell
                     else:
-                        the_table[-1][col] += f" {cell_line.strip()}"  # Add to existing
+                        the_table[-1][col] += f" {strip_line}"  # Add to existing
         # "Square off" table, making all rows have max_cols columns
         max_cols = max(len(row) for row in the_table)
         for row in the_table:
@@ -1460,9 +1461,18 @@ class HTMLAutoTableDialog(ToplevelDialog):
             n_lines = text_row.count("\n") + 1  # No. of lines in original table row
             start_linenum = end_linenum - n_lines
             html = self.html_row_from_text(the_table[-1 - rev_row_num])
+            # If multiline, and not the top row of the table, allow for blank line or "|  |" line above
+            if (
+                multiline
+                and rev_row_num < len(text_rows) - 1
+                and re.fullmatch(
+                    r"[| \u00a0]*",
+                    maintext().get(f"{start_linenum}.0 -1l", f"{end_linenum-2}.end"),
+                )
+            ):
+                start_linenum -= 1
             maintext().replace(f"{start_linenum}.0", f"{end_linenum-1}.end", html)
-            # Allow for blank line if multiline
-            end_linenum = start_linenum - 1 if multiline else start_linenum
+            end_linenum = start_linenum
         maintext().insert(f"{end_linenum}.0", '<table class="autotable">\n')
         maintext().clear_selection()
         maintext().set_insert_index(IndexRowCol(end_linenum, 0))
