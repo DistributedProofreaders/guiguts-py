@@ -8,6 +8,7 @@ from tkinter import ttk, font, filedialog
 from typing import Any, Literal
 import unicodedata
 
+from rapidfuzz import process
 import regex as re
 
 from guiguts.file import the_file
@@ -897,6 +898,20 @@ class ComposeHelpDialog(ToplevelDialog):
         insert_in_focus_widget(char)
 
 
+class RecentPlusEntry:
+    """Class to store recent-ness plus a command structure."""
+
+    NONRECENT = 10000
+    SEPARATOR = 1000  # Between NONRECENT and valid recentnesses
+    PREFIXMATCH = 100
+    SUBSTRMATCH = 90
+    MENUMATCH = 80
+
+    def __init__(self, recentness: int, entry: EntryMetadata) -> None:
+        self.recentness = recentness
+        self.entry = entry
+
+
 class CommandPaletteDialog(ToplevelDialog):
     """Command Palette Dialog."""
 
@@ -908,7 +923,7 @@ class CommandPaletteDialog(ToplevelDialog):
         """Initialize the command palette window."""
         super().__init__("Command Palette")
         self.commands = menubar_metadata().get_all_commands()
-        self.filtered_commands: list[EntryMetadata] = self.commands
+        self.filtered_entries: list[RecentPlusEntry] = []
         self.num_recent = 0
 
         self.top_frame.grid_rowconfigure(0, weight=0)
@@ -977,45 +992,87 @@ class CommandPaletteDialog(ToplevelDialog):
 
         # Recent commands are those in history that match search filter
         search_text = self.search_var.get().lower().strip()
-        history: list[list[str]] = []
-        recent_commands: list[EntryMetadata] = []
-        if history := preferences.get(PrefKey.COMMAND_PALETTE_HISTORY):
-            for label, parent_label in history:
-                for cmd in self.commands:
-                    if (
-                        label == cmd.label
-                        and parent_label == cmd.parent_label
-                        and cmd.matches(search_text)
-                    ):
-                        recent_commands.append(cmd)
-                        break
 
-        self.num_recent = len(recent_commands)
-        # Insert recent commands first
-        self.filtered_commands = recent_commands[:]
-        # Then separator
-        if self.num_recent:
-            self.filtered_commands.append(
-                EntryMetadata(SEP_CHAR * 150, SEP_CHAR * 30, SEP_CHAR * 30)
-            )
-        # Then all matching non-recent commands, sorted
-        self.filtered_commands.extend(
-            sorted(
-                cmd
-                for cmd in self.commands
-                if cmd.matches(search_text) and cmd not in recent_commands
-            )
-        )
+        def score_command(cmd: EntryMetadata) -> int:
+            """Return how well search text matches this command."""
+            label_lower = cmd.label.lower()
+            menu_lower = cmd.parent_label.lower()
+            if label_lower.startswith(search_text):
+                score = RecentPlusEntry.PREFIXMATCH  # strong prefix match
+            elif search_text in label_lower:
+                score = RecentPlusEntry.SUBSTRMATCH  # weaker substring match
+            elif menu_lower.startswith(search_text):
+                score = RecentPlusEntry.MENUMATCH  # strong menu prefix
+            else:  # fallback to fuzzy match
+                score = int(
+                    process.extractOne(search_text, [f"{menu_lower} {label_lower}"])[1]
+                )
+            return score
 
+        def recent_key(recent_plus_entry: RecentPlusEntry) -> tuple[int, int, int, str]:
+            """Sort based on recent/not, match score, recentness, then alphabetic."""
+            score = score_command(recent_plus_entry.entry)
+            # If recent, but not a direct match, pretend it's not recent
+            if recent_plus_entry.recentness < RecentPlusEntry.SEPARATOR:
+                recent_band = 0 if score >= RecentPlusEntry.MENUMATCH else 2
+            elif recent_plus_entry.recentness == RecentPlusEntry.SEPARATOR:
+                recent_band = 1
+            else:
+                recent_band = 2
+            return (
+                recent_band,
+                -score,
+                recent_plus_entry.recentness,
+                recent_plus_entry.entry.label,
+            )
+
+        # Filtered commands have an int to store recentness (-10 for non-recent)
+        self.filtered_entries = []
+
+        recent_commands = preferences.get(PrefKey.COMMAND_PALETTE_HISTORY)
+
+        # Add separator (recentness = -1)
+        if recent_commands:
+            self.filtered_entries.append(
+                RecentPlusEntry(
+                    RecentPlusEntry.SEPARATOR,
+                    EntryMetadata(SEP_CHAR * 150, SEP_CHAR * 30, SEP_CHAR * 30),
+                )
+            )
+
+        for cmd in self.commands:
+            self.filtered_entries.append(
+                RecentPlusEntry(RecentPlusEntry.NONRECENT, cmd)
+            )
+
+        # Set recentness for recent commands
+        for recentness, (label, menu) in enumerate(recent_commands):
+            for recent_plus_entry in self.filtered_entries:
+                if (
+                    recent_plus_entry.entry.label == label
+                    and recent_plus_entry.entry.parent_label == menu
+                ):
+                    recent_plus_entry.recentness = recentness
+                    break
+
+        # Now sort commands by recentness, match score, and alphabetically
+        self.filtered_entries.sort(key=recent_key)
+
+        # Construct dialog list
         self.list.delete(*self.list.get_children())
-        for cmd in self.filtered_commands:
+
+        for idx, recent_plus_entry in enumerate(self.filtered_entries):
+            entry = recent_plus_entry.entry
+            sep = recent_plus_entry.recentness == RecentPlusEntry.SEPARATOR
+            if sep and idx == 0:
+                continue  # Don't put separator at top of list
             iid = self.list.insert(
-                "", "end", values=(cmd.label, cmd.shortcut, cmd.parent_label)
+                "", "end", values=(entry.label, entry.shortcut, entry.parent_label)
             )
-            if cmd.label.startswith(SEP_CHAR):
+            if sep:
                 self.list.item(iid, tags=self.SEPARATOR_TAG, open=False)
 
-        if self.filtered_commands:
+        if self.filtered_entries:
             self.select_and_focus(self.list.get_children()[0])
 
     def execute_command(self, _: tk.Event) -> None:
@@ -1025,7 +1082,7 @@ class CommandPaletteDialog(ToplevelDialog):
             item = selection[0]
             if self.list.tag_has(self.SEPARATOR_TAG, item):
                 return
-            entry = self.filtered_commands[self.list.index(item)]
+            entry = self.filtered_entries[self.list.index(item)].entry
             self.add_to_history(entry.label, entry.parent_label)
             command = entry.get_command()
             self.destroy()
@@ -1040,7 +1097,7 @@ class CommandPaletteDialog(ToplevelDialog):
             direction: +1 to move down, -1 to move up.
         """
         self.list.focus_set()
-        if self.filtered_commands:  # Select the next item in the list
+        if self.filtered_entries:  # Select the next item in the list
             self.move_in_list(direction)
 
     def select_and_focus(self, item: str) -> None:
@@ -1064,7 +1121,7 @@ class CommandPaletteDialog(ToplevelDialog):
         if current_selection:
             current_index = self.list.index(current_selection[0])
             new_index = current_index + direction
-            if 0 <= new_index < len(self.filtered_commands):
+            if 0 <= new_index < len(self.filtered_entries):
                 next_item = self.list.get_children()[new_index]
                 # Skip over separator
                 if self.list.tag_has(self.SEPARATOR_TAG, next_item):
