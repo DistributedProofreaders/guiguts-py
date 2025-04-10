@@ -121,6 +121,8 @@ class WFWordLists:
                 word = re.sub(r"(?<!\-)\*", "", word)  # * not preceded by hyphen
                 word = re.sub(r"^\*$", "", word)  # just *
                 word = strip_punc(word)
+                if re.fullmatch(r"[a-z0-9_]+\.(jpg|png)", word):
+                    continue  # Don't want p027.png or i_002.jpg
                 # Tally single word
                 tally_word(self.all_words, word)
 
@@ -649,21 +651,19 @@ class WordFrequencyDialog(ToplevelDialog):
         if preferences.get(
             PrefKey.WFDIALOG_DISPLAY_TYPE
         ) == WFDisplayType.MARKEDUP and not word.startswith("<"):
-            regexp = True
-            match_word = r"(^|[^>\w])" + re.escape(newline_word) + r"($|[^<\w])"
+            match_word = r"(?<![>\w])" + re.escape(newline_word) + r"(?![<\w])"
+            wholeword = False
         elif (
             preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.CHAR_COUNTS
         ):
-            regexp = False
-            match_word = newline_word
+            wholeword = False
+            match_word = re.escape(newline_word)
         elif self.whole_word_search(word):
-            regexp = True
-            match_word = (
-                rf"\y{re.escape(newline_word)}\y"  # Tcl regex: \y is word boundary
-            )
+            wholeword = True
+            match_word = re.escape(newline_word)
         else:  # Word begins/ends with non-word char - do manual whole-word
-            regexp = True
-            match_word = r"(^|\W)" + re.escape(newline_word) + r"($|\W)"
+            wholeword = False
+            match_word = r"(?<=\w)" + re.escape(newline_word) + r"(?=\w)"
 
         # If hyphen matching and there's one (escaped) space in the word, let that match
         # any amount of whitespace
@@ -671,30 +671,20 @@ class WordFrequencyDialog(ToplevelDialog):
             preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.HYPHENS
             and r"\ " in match_word
         ):
-            regexp = True
             match_word = match_word.replace(r"\ ", r"[\n ]+")
 
-        match = maintext().find_match(
+        match = maintext().find_match_user(
             match_word,
-            IndexRange(start, maintext().end()),
+            start,
             nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
-            regexp=regexp,
+            wholeword=wholeword,
+            regexp=True,
             backwards=False,
+            wrap=False,
         )
         if match is None:
             sound_bell()
         else:
-            # If searched with regex, it may have matched up to 1 extra character each side,
-            # so adjust match length (count) and start column to match the actual word.
-            if regexp:
-                match_str = maintext().get_match_text(match)
-                match.count = len(newline_word)
-                if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE):
-                    if match_str[1 : match.count + 1].lower() == newline_word.lower():
-                        match.rowcol.col += 1
-                else:
-                    if match_str[1 : match.count + 1] == newline_word:
-                        match.rowcol.col += 1
             maintext().set_insert_index(match.rowcol, focus=False)
             maintext().remove_spotlights()
             start_index = match.rowcol.index()
