@@ -1126,22 +1126,15 @@ class Guiguts:
         def ordinal_str() -> str:
             """Format ordinal of single selected char, or char at current insert
             index for statusbar."""
-            # Get character - display nothing if more than one char selected
-            sel_ranges = maintext().selected_ranges()
-            if len(sel_ranges) == 0:
-                char = maintext().get(maintext().get_insert_index().index())
-            elif len(sel_ranges) == 1:
-                char = maintext().selected_text()
-                if len(char) != 1:
-                    return ""
-            else:
-                return ""
+            char = maintext().current_character()
+            if not char:
+                return "    "
             # unicodedata.name fails to return name for "control" characters
             # but the only one we care about is line feed
             if preferences.get(PrefKey.ORDINAL_NAMES):
                 try:
                     name = f": {unicodedata.name(char)}"
-                except ValueError:
+                except (ValueError, TypeError):
                     name = ": LINE FEED" if char == "\n" else ""
             else:
                 name = ""

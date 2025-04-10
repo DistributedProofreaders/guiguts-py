@@ -1790,6 +1790,18 @@ class MainText(tk.Text):
                 self.focus_widget().tag_add("sel", start_mark, mark)
             next_mark = self.mark_next(mark)
 
+    def current_character(self) -> str:
+        """Return "current" character, i.e. the selected char if just one
+        is selected; the character after the insert cursor if none is
+        selected; empty string otherwise."""
+        sel_ranges = self.selected_ranges()
+        if len(sel_ranges) == 0:
+            return self.get(self.get_insert_index().index())
+        if len(sel_ranges) == 1:
+            char = self.selected_text()
+            return char if len(char) == 1 else ""
+        return ""
+
     def column_delete(self) -> None:
         """Delete the selected column text."""
         if not (ranges := self.selected_ranges()):
