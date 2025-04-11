@@ -10,7 +10,12 @@ import webbrowser
 import darkdetect  # type: ignore[import-untyped]
 import regex as re
 
-from guiguts.preferences import preferences, PrefKey, PersistentString
+from guiguts.preferences import (
+    preferences,
+    PrefKey,
+    PersistentString,
+    PersistentBoolean,
+)
 from guiguts.root import root, RootWindowState
 from guiguts.utilities import is_windows, is_mac, process_accel, cmd_ctrl_string, is_x11
 
@@ -746,13 +751,13 @@ class CheckboxMetadata(EntryMetadata):
         label: str,
         parent_label: str,
         shortcut: str,
-        bool_var: tk.BooleanVar,
+        pref_key: PrefKey,
         command_on: Optional[Callable],
         command_off: Optional[Callable],
     ) -> None:
         """Initialize ButtonMetadata."""
-        super().__init__(f"Toggle {label}", parent_label, shortcut)
-        self.bool_var = bool_var
+        super().__init__(f"{label} (toggle)", parent_label, shortcut)
+        self.pref_key = pref_key
         self.command_on = command_on
         self.command_off = command_off
 
@@ -761,12 +766,12 @@ class CheckboxMetadata(EntryMetadata):
 
         def toggle_command() -> None:
             """Function that will toggle boolean and call command."""
-            if self.bool_var.get():
-                self.bool_var.set(False)
+            if preferences.get(self.pref_key):
+                preferences.set(self.pref_key, False)
                 if self.command_off is not None:
                     self.command_off()
             else:
-                self.bool_var.set(True)
+                preferences.set(self.pref_key, True)
                 if self.command_on is not None:
                     self.command_on()
 
@@ -852,63 +857,86 @@ class MenubarMetadata:
 
     def add_button(
         self,
-        parent: Optional[tk.Menu],
+        parent: tk.Menu,
         label: str,
         shortcut: str,
         command: Callable,
     ) -> None:
-        """Add a command button to the correct menu (or list of orphans).
+        """Add a command button to the correct menu.
 
         Args:
-            parent: The parent menu widget (None if command not in menus).
+            parent: The parent menu widget.
             label: The text displayed for the button.
             shortcut: Keyboard shortcut for the command (empty string if none).
             command: The function to execute when clicked.
         """
-        if parent is None:
-            self.orphans.append(ButtonMetadata(label, "", shortcut, command))
-        else:
-            menu_metadata = self.get_menu_metadata(parent)
-            if menu_metadata is not None:
-                menu_metadata.entries.append(
-                    ButtonMetadata(label, menu_metadata.label, shortcut, command)
-                )
+        if menu_metadata := self.get_menu_metadata(parent):
+            menu_metadata.entries.append(
+                ButtonMetadata(label, menu_metadata.label, shortcut, command)
+            )
+
+    def add_button_orphan(
+        self,
+        label: str,
+        command: Callable,
+    ) -> None:
+        """Add a command button to the list of orphans.
+
+        Args:
+            label: The text displayed for the button.
+            command: The function to execute when clicked.
+        """
+        self.orphans.append(ButtonMetadata(label, "", "", command))
 
     def add_checkbox(
         self,
-        parent: Optional[tk.Menu],
+        parent: tk.Menu,
         label: str,
         shortcut: str,
-        bool_var: tk.BooleanVar,
+        bool_var: PersistentBoolean,
         command_on: Optional[Callable],
         command_off: Optional[Callable],
     ) -> None:
-        """Add a command button to the correct menu (or list of orphans).
+        """Add a checkbutton to the correct menu.
 
         Args:
-            parent: The parent menu widget (None if command not in menus).
+            parent: The parent menu widget.
             label: The text displayed for the button.
             shortcut: Keyboard shortcut for the command (empty string if none).
+            bool_var: Persistent variable to hold setting.
             command_on: The function to execute when checkbox turned on.
             command_off: The function to execute when checkbox turned off.
         """
-        if parent is None:
-            self.orphans.append(
-                CheckboxMetadata(label, "", shortcut, bool_var, command_on, command_off)
-            )
-        else:
-            menu_metadata = self.get_menu_metadata(parent)
-            if menu_metadata is not None:
-                menu_metadata.entries.append(
-                    CheckboxMetadata(
-                        label,
-                        menu_metadata.label,
-                        shortcut,
-                        bool_var,
-                        command_on,
-                        command_off,
-                    )
+
+        if menu_metadata := self.get_menu_metadata(parent):
+            menu_metadata.entries.append(
+                CheckboxMetadata(
+                    label,
+                    menu_metadata.label,
+                    shortcut,
+                    bool_var.pref_key,
+                    command_on,
+                    command_off,
                 )
+            )
+
+    def add_checkbox_orphan(
+        self,
+        label: str,
+        pref_key: PrefKey,
+        command_on: Optional[Callable] = None,
+        command_off: Optional[Callable] = None,
+    ) -> None:
+        """Add a command button to the list of orphans.
+
+        Args:
+            label: The text displayed for the button.
+            command_on: Optional function to execute when checkbox turned on.
+            command_off: Optional function to execute when checkbox turned off.
+        """
+        self.orphans.append(
+            CheckboxMetadata(label, "", "", pref_key, command_on, command_off)
+        )
 
     def get_all_commands(self) -> list[EntryMetadata]:
         """Collect all command buttons from the entire menu structure."""

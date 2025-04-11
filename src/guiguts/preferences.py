@@ -47,6 +47,7 @@ class PrefKey(StrEnum):
     DIALOG_GEOMETRY = auto()
     ROOT_GEOMETRY = auto()
     ROOT_GEOMETRY_STATE = auto()
+    ROOT_GEOMETRY_FULL_SCREEN = auto()
     DEFAULT_LANGUAGES = auto()
     JEEBIES_PARANOIA_LEVEL = auto()
     LEVENSHTEIN_DISTANCE = auto()
@@ -106,6 +107,7 @@ class PrefKey(StrEnum):
     HTML_IMAGE_UNIT = auto()
     HTML_IMAGE_OVERRIDE_EPUB = auto()
     HTML_IMAGE_ALIGNMENT = auto()
+    ALIGN_COL_ACTIVE = auto()
     PPHTML_VERBOSE = auto()
     CSS_VALIDATION_LEVEL = auto()
     HIGHLIGHT_PROOFERCOMMENT = auto()
@@ -363,15 +365,16 @@ class PersistentBoolean(tk.BooleanVar):
     `initialize_preferences`
     """
 
-    def __init__(self, prefs_key: PrefKey) -> None:
+    def __init__(self, pref_key: PrefKey) -> None:
         """Initialize persistent boolean.
 
         Args:
             prefs_key: Preferences key associated with the variable.
         """
-        super().__init__(value=preferences.get(prefs_key))
-        self.trace_add("write", lambda *_args: preferences.set(prefs_key, self.get()))
-        preferences.link_persistent_var(prefs_key, self)
+        super().__init__(value=preferences.get(pref_key))
+        self.pref_key = pref_key
+        self.trace_add("write", lambda *_args: preferences.set(pref_key, self.get()))
+        preferences.link_persistent_var(pref_key, self)
 
 
 class PersistentInt(tk.IntVar):
