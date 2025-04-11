@@ -1061,16 +1061,21 @@ class CommandPaletteDialog(ToplevelDialog):
         # Construct dialog list
         self.list.delete(*self.list.get_children())
 
+        separator_hidden = False
         for idx, recent_plus_entry in enumerate(self.filtered_entries):
             entry = recent_plus_entry.entry
             sep = recent_plus_entry.recentness == RecentPlusEntry.SEPARATOR
             if sep and idx == 0:
+                separator_hidden = True
                 continue  # Don't put separator at top of list
             iid = self.list.insert(
                 "", "end", values=(entry.label, entry.shortcut, entry.parent_label)
             )
             if sep:
                 self.list.item(iid, tags=self.SEPARATOR_TAG, open=False)
+        # If separator at top of list was suppressed, update filtered_entries to match
+        if separator_hidden:
+            del self.filtered_entries[0]
 
         if self.filtered_entries:
             self.select_and_focus(self.list.get_children()[0])
