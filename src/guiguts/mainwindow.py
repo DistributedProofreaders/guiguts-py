@@ -143,25 +143,26 @@ class Menu(tk.Menu):
     def add_checkbox(
         self,
         label: str,
-        bool_var: tk.BooleanVar,
+        bool_var: PersistentBoolean,
         handler_on: Optional[Callable[[], None]] = None,
         handler_off: Optional[Callable[[], None]] = None,
         accel: str = "",
         add_to_command_palette: bool = True,
     ) -> None:
-        """Add a button to the menu.
+        """Add a checkbox to the menu.
 
         Args:
             label: Label string for button, including tilde for keyboard
               navigation, e.g. "~Save".
+            bool_var: Tk variable to keep track of state or set it from elsewhere
             handler_on: Callback function for when checkbox gets checked
             handler_off: Callback function for when checkbox gets checked
-            bool_var: Tk variable to keep track of state or set it from elsewhere
             accel: String describing optional accelerator key, used when a
               callback function is passed in as ``handler``. Will be displayed
               on the button, and will be bound to the same action as the menu
               button. "Cmd/Ctrl" means `Cmd` key on Mac; `Ctrl` key on
               Windows/Linux.
+            add_to_command_palette: Set False if not required in Command Palette.
         """
         (label_tilde, label_txt) = process_label(label)
         (accel, key_event) = process_accel(accel)
@@ -804,6 +805,15 @@ class MainImage(tk.Frame):
         self.height = 0
         # May want to pause auto image if user clicks prev/next file buttons
         self._auto_image_state = AutoImageState.NORMAL
+
+    def add_orphan_commands(self) -> None:
+        """Add orphan (i.e. not in menu) commands to command palette."""
+        menubar_metadata().add_checkbox_orphan(
+            "Image Fit ←→", PrefKey.IMAGE_AUTOFIT_WIDTH
+        )
+        menubar_metadata().add_checkbox_orphan(
+            "Image Fit ↑↓", PrefKey.IMAGE_AUTOFIT_HEIGHT
+        )
 
     def scroll_y(self, *args: Any, **kwargs: Any) -> None:
         """Scroll canvas vertically and redraw the image"""

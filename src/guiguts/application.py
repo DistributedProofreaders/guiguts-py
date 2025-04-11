@@ -347,6 +347,7 @@ class Guiguts:
         preferences.set_default(PrefKey.DIALOG_GEOMETRY, {})
         preferences.set_default(PrefKey.ROOT_GEOMETRY, "800x400")
         preferences.set_default(PrefKey.ROOT_GEOMETRY_STATE, "normal")
+        preferences.set_default(PrefKey.ROOT_GEOMETRY_FULL_SCREEN, False)
         preferences.set_default(PrefKey.DEFAULT_LANGUAGES, "en")
         preferences.set_default(PrefKey.WFDIALOG_SUSPECTS_ONLY, False)
         preferences.set_default(PrefKey.WFDIALOG_IGNORE_CASE, False)
@@ -462,6 +463,7 @@ class Guiguts:
         preferences.set_default(PrefKey.HTML_IMAGE_UNIT, "%")
         preferences.set_default(PrefKey.HTML_IMAGE_OVERRIDE_EPUB, True)
         preferences.set_default(PrefKey.HTML_IMAGE_ALIGNMENT, "center")
+        preferences.set_default(PrefKey.ALIGN_COL_ACTIVE, False)
         preferences.set_default(PrefKey.CSS_VALIDATION_LEVEL, "css3")
         preferences.set_default(PrefKey.PPHTML_VERBOSE, False)
         preferences.set_default(PrefKey.HIGHLIGHT_PROOFERCOMMENT, True)
@@ -541,22 +543,7 @@ class Guiguts:
         self.init_os_menu()
 
         # Orphan commands to be included in Command Palette
-        menubar_metadata().add_checkbox(
-            None,
-            "Line Numbers",
-            "",
-            PersistentBoolean(PrefKey.LINE_NUMBERS),
-            None,
-            None,
-        )
-        menubar_metadata().add_checkbox(
-            None,
-            "Column Numbers",
-            "",
-            PersistentBoolean(PrefKey.COLUMN_NUMBERS),
-            None,
-            None,
-        )
+        self.init_command_palette_orphans()
 
         if is_mac():
             root().createcommand(
@@ -999,6 +986,11 @@ class Guiguts:
         if is_mac():
             # Window menu
             Menu(menubar(), "Window", name="window")
+
+    def init_command_palette_orphans(self) -> None:
+        """Add "shadow" commands to command palette."""
+        PreferencesDialog.add_orphan_commands()
+        mainimage().add_orphan_commands()
 
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
         """Add labels to initialize the statusbar.
