@@ -130,6 +130,10 @@ class PrefKey(StrEnum):
     ASCII_TABLE_FILL_CHAR = auto()
     ASCII_TABLE_RIGHT_COL = auto()
     COMMAND_PALETTE_HISTORY = auto()
+    AUTOTABLE_MULTILINE = auto()
+    AUTOTABLE_DEFAULT_ALIGNMENT = auto()
+    AUTOTABLE_COLUMN_ALIGNMENT = auto()
+    AUTOTABLE_COLUMN_ALIGNMENT_HISTORY = auto()
 
 
 class Preferences:
