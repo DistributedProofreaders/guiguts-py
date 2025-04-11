@@ -336,6 +336,7 @@ $f: full pathname of the current File
 $p: Png name of current image, e.g. 007 for 007.png
 $s: Sequence number of current page, e.g. 7 for 7th png, regardless of numbering
 $t: selected Text (only the first line if column selection)
+$u: Unicode codepoint of current character from status bar, e.g. "0041" for capital A.
 
 To assist in opening a hi-res scan for the current page, $s can also be given an offset, \
 e.g. $(s+5) would give 12 for the 5th png.
@@ -364,6 +365,7 @@ e.g. $(s+5) would give 12 for the 5th png.
             $p: png name of current image
             $s: sequence number of current page from start of file
             $t: selected text (only first part if column selection)
+            $u: unicode codepoint of current char
 
             Args:
                 token: The token to make substitutions in.
@@ -388,6 +390,9 @@ e.g. $(s+5) would give 12 for the 5th png.
             token = token.replace("$s", str(sequence_number()))
             # Selected text
             token = token.replace("$t", re.sub(r"\s+", " ", maintext().selected_text()))
+            # Unicode codepoint of current char (single selected char, or char following cursor)
+            cur = maintext().current_character()
+            token = token.replace("$u", f"{ord(cur):04x}" if cur else "")
             return token
 
         def sequence_number() -> int:
