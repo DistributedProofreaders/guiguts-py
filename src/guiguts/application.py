@@ -62,7 +62,7 @@ from guiguts.misc_tools import (
     FractionConvertType,
     fraction_convert,
     unicode_normalize,
-    proofer_comment_check,
+    ProoferCommentChecker,
     asterisk_check,
     TextMarkupConvertorDialog,
     stealth_scannos,
@@ -710,7 +710,7 @@ class Guiguts:
         search_menu.add_separator()
         search_menu.add_button(
             "Find Proofer ~Comments",
-            proofer_comment_check,
+            lambda: ProoferCommentChecker().run(),
         )
         search_menu.add_button(
             "Find ~Asterisks w/o Slash",
