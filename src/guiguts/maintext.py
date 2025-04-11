@@ -12,7 +12,7 @@ import darkdetect  # type: ignore[import-untyped]
 
 import regex as re
 
-from guiguts.preferences import preferences, PrefKey
+from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.utilities import (
     is_mac,
     is_x11,
@@ -704,7 +704,8 @@ class MainText(tk.Text):
 
         # alignment column
         self.aligncol = -1
-        self.aligncol_active = tk.BooleanVar()
+        preferences.set(PrefKey.ALIGN_COL_ACTIVE, False)
+        self.aligncol_active = PersistentBoolean(PrefKey.ALIGN_COL_ACTIVE)
 
         # whether search highlights should be active
         self.search_highlight_active = tk.BooleanVar()
