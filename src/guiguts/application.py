@@ -87,7 +87,6 @@ from guiguts.utilities import is_mac, is_windows, is_x11, folder_dir_str
 from guiguts.widgets import (
     themed_style,
     theme_name_internal_from_user,
-    menubar_metadata,
     ToplevelDialog,
 )
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
