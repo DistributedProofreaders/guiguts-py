@@ -947,6 +947,7 @@ class MainImage(tk.Frame):
         self.canvas["background"] = themed_style().lookup("TButton", "background")
         image = self.image
         self.image_scale = max(self.image_scale, 50 / image.width, 50 / image.height)
+        preferences.set(PrefKey.IMAGE_SCALE_FACTOR, self.image_scale)
         scaled_width = int(self.image_scale * image.width + 1)
         scaled_height = int(self.image_scale * image.height + 1)
         if preferences.get(PrefKey.IMAGE_INVERT):
