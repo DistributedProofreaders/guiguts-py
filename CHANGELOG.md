@@ -1,6 +1,13 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.18
+
+### Bug fixes
+
+- Cmd/Ctrl-clicking a spell check error remove 2 errors instead of one
+
+
 ## Version 2.0.0-alpha.17
 
 - ASCII Table Effects dialog, similar to GG1, has been added

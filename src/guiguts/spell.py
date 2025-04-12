@@ -20,7 +20,7 @@ from guiguts.utilities import (
     cmd_ctrl_string,
     process_accel,
 )
-from guiguts.widgets import ToolTip
+from guiguts.widgets import ToolTip, mouse_bind
 
 logger = logging.getLogger(__package__)
 
@@ -85,7 +85,6 @@ class SpellCheckerDialog(CheckerDialog):
             """Process the spelling error by adding the word to the project dictionary."""
             if checker_entry.text_range:
                 self.add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
-                self.remove_entry_current(all_matching=True)
 
         # Complication because callbacks to add to project/global dictionaries
         # are passed in from outside, but we need "process_command" to call
@@ -185,6 +184,15 @@ class SpellCheckerDialog(CheckerDialog):
         ToolTip(
             skip_all_button,
             f"{cmd_ctrl_string()}+I or Shift+right-click message",
+        )
+
+        # When we add to project dict using Cmd/Ctrl click, we also want to
+        # remove the entry(ies) from the list, so need to override bindings
+        mouse_bind(self.text, "Cmd/Ctrl+1", self.process_remove_entry_by_click)
+        mouse_bind(
+            self.text,
+            "Shift+Cmd/Ctrl+1",
+            lambda event: self.process_remove_entry_by_click(event, all_matching=True),
         )
 
 
