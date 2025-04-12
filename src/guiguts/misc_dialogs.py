@@ -1023,7 +1023,7 @@ class CommandPaletteDialog(ToplevelDialog):
                 recent_band,
                 -score,
                 recent_plus_entry.recentness,
-                recent_plus_entry.entry.label,
+                recent_plus_entry.entry.label.lower(),
             )
 
         # Filtered commands have an int to store recentness (-10 for non-recent)
