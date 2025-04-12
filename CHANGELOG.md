@@ -1,6 +1,79 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.17
+
+- ASCII Table Effects dialog, similar to GG1, has been added
+- HTML Auto-table dialog, similar to section of GG1's HTML Markup dialog,
+  has been added
+- Backup file now saved when user saves file, with extension `.bak`. Can be
+  disabled in Prefs dialog
+- Autosave can now be enabled in Prefs dialog, which saves the current file
+  every 5 minutes (configurable in Prefs dialog) 
+- The Prefs file (where settings are saved) is now backed up so that a "day-"
+  and "week-old" version should be retained in the same directory, which can
+  be restored if the original becomes corrupted. Now that many settings,
+  including Custom menu entries, are saved in the Prefs file, it would be
+  more disruptive if Pref file's contents were lost. Procedure: quit Guiguts;
+  rename `GGprefs.json` to `GGprefs_corrupt.json`; rename `GGprefs_day.json`
+  to `GGprefs.json`; restart Guiguts; if problem not resolved, repeat the
+  above, but restoring `GGprefs_week.json`
+- Custom Menu added, similar to GG1, but read help in dialog or manual page
+  for more details, including how to link to source scans at IA or Hathi Trust
+- IMPORTANT note for users upgrading from earlier alpha versions: the location
+  of the ebookmaker directory/folder must be re-selected - it is now where
+  the `pipenv install ebookmaker` command was run, rather than the ebookmaker
+  script in the virtual environment.
+- If ebookmaker is installed on user's computer, it can be run from within
+  GG on all platforms. Normally runs in verbose mode, but "Verbose" checkbox
+  enables further verbosity (mostly for debugging)
+- Ebookmaker messages can be sorted by severity; "Suspects only" can be used
+  to filter out debug/information messages.
+- Command Palette has been added, accessible via the Help menu, or using
+  Cmd/Ctrl+Shift+P: it lists all the commands available, and user can type
+  part of the command to filter the list, then run the command with the "Run"
+  button, or the "Enter/Return" key or double clicking the command. In addition
+  to being a feature in its own right, it is intended to use this work to
+  support the addition of user-defined shortcut keys in a future release
+- Proofer comments can now be deleted, via button or Cmd/Ctrl-clicking in
+  Proofer Comments dialog
+- Highlighting of current cursor line can be disabled via Prefs dialog
+- Display of tooltips can be disabled via Prefs dialog
+- End-of-page blank lines, and end-of-line spaces are deleted automatically
+  when file is saved
+- Pathnames, e.g. scannos filename, are displayed right-aligned in comboboxes
+  so the filename is more visible, and a tooltip displays the full pathname
+- Link to PPWB is not in Tools menu, and a few button labels have been changed
+- Show/Hide Image Viewer menu buttons replaced with Image Viewer checkbox
+- All checker dialogs now output "Check complete" at the bottom of the list
+- Dialog Manual in the Help menu performs the same task as the F1 key, i.e.
+  displays the manual page for the dialog that was most recently used
+- When Unicode Search dialog is popped, if there is a character displayed in
+  the status bar (i.e. single character selected, or character after cursor)
+  the information on that character is displayed
+
+### Bug fixes
+
+- Autoset Chap LZ in Footnote Fixup caused an infinite refreshing loop
+- A few PPtxt false positives have been fixed
+- PPhtml failed to detect `id="my_id"` when split across a line break
+- PPhtml sometimes output a leading comma in the list of defined classes
+- PPhtml split classnames containing hyphens into two classes
+- HTML & CSS validator dialogs did not link to their manual pages
+- Cmd/Ctrl-clicking a spelling error didn't remove it from the list
+- Search-->Count, Find All & Replace All with "In selection" checked did not
+  work correctly in column selections.
+- Line number and column number highlighting foreground color could be wrong
+- The CSS validator failed with CSS blocks over 400 lines long
+- The current cursor line displayed oddly in combination with split window -
+  a known issue is that the cursor line from the other half of the split
+  will be displayed (faintly) in the split window
+- Footnote reindexing could give incorrect output where multiple footnote
+  anchors were on the same line of text
+- WF treated underscores as word characters in an inconsistent manner
+- Very small image viewer scale factors could cause a traceback
+
+
 ## Version 2.0.0-alpha.16
 
 - The user can now use an external viewer to display scan files, instead of,
