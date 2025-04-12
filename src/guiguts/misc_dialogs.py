@@ -74,7 +74,7 @@ class PreferencesDialog(ToplevelDialog):
         cb["state"] = "readonly"
         ttk.Checkbutton(
             appearance_frame,
-            text="High Contrast",
+            text="",
             variable=PersistentBoolean(PrefKey.HIGH_CONTRAST),
         ).grid(column=0, row=1, sticky="NEW", pady=5)
         tearoff_check = ttk.Checkbutton(
@@ -364,6 +364,47 @@ class PreferencesDialog(ToplevelDialog):
         tab = preferences.get(PrefKey.PREF_TAB_CURRENT)
         if 0 <= tab < notebook.index(tk.END):
             notebook.select(tab)
+
+    @classmethod
+    def add_orphan_commands(cls) -> None:
+        """Add orphan commands to command palette."""
+        menubar_metadata().add_button_orphan(
+            "Dark Theme", lambda: preferences.set(PrefKey.THEME_NAME, "Dark")
+        )
+        menubar_metadata().add_button_orphan(
+            "Light Theme", lambda: preferences.set(PrefKey.THEME_NAME, "Light")
+        )
+        menubar_metadata().add_button_orphan(
+            "Default Theme", lambda: preferences.set(PrefKey.THEME_NAME, "Default")
+        )
+        menubar_metadata().add_checkbox_orphan("High Contrast", PrefKey.HIGH_CONTRAST)
+        if not is_mac():
+            menubar_metadata().add_checkbox_orphan(
+                "Tear-Off Menus", PrefKey.TEAROFF_MENUS
+            )
+        menubar_metadata().add_checkbox_orphan("Line Numbers", PrefKey.LINE_NUMBERS)
+        menubar_metadata().add_checkbox_orphan("Column Numbers", PrefKey.COLUMN_NUMBERS)
+        menubar_metadata().add_checkbox_orphan(
+            "Character Names in Status Bar", PrefKey.ORDINAL_NAMES
+        )
+        menubar_metadata().add_checkbox_orphan("Audible Bell", PrefKey.BELL_AUDIBLE)
+        menubar_metadata().add_checkbox_orphan("Visual Bell", PrefKey.BELL_VISUAL)
+        menubar_metadata().add_checkbox_orphan(
+            "Auto Img Reload Alert", PrefKey.IMAGE_VIEWER_ALERT
+        )
+        menubar_metadata().add_checkbox_orphan(
+            "Use External Viewer", PrefKey.IMAGE_VIEWER_EXTERNAL
+        )
+        menubar_metadata().add_checkbox_orphan(
+            "Highlight Cursor Line", PrefKey.HIGHLIGHT_CURSOR_LINE
+        )
+        menubar_metadata().add_checkbox_orphan(
+            "Keep Backup Before Saving", PrefKey.BACKUPS_ENABLED
+        )
+        menubar_metadata().add_checkbox_orphan(
+            "Enable Auto Save", PrefKey.AUTOSAVE_ENABLED
+        )
+        menubar_metadata().add_checkbox_orphan("Tooltips", PrefKey.SHOW_TOOLTIPS)
 
 
 class HelpAboutDialog(ToplevelDialog):

@@ -35,10 +35,11 @@ class Root(tk.Tk):
         super().__init__(**kwargs)
         self.geometry(preferences.get(PrefKey.ROOT_GEOMETRY))
 
-        self.full_screen_var = tk.BooleanVar(
-            value=preferences.get(PrefKey.ROOT_GEOMETRY_STATE)
-            == RootWindowState.FULLSCREEN
+        preferences.set(
+            PrefKey.ROOT_GEOMETRY_FULL_SCREEN,
+            preferences.get(PrefKey.ROOT_GEOMETRY_STATE) == RootWindowState.FULLSCREEN,
         )
+        self.full_screen_var = PersistentBoolean(PrefKey.ROOT_GEOMETRY_FULL_SCREEN)
         self.image_window_show = PersistentBoolean(PrefKey.IMAGE_WINDOW_SHOW)
         self.image_window_docked_state = PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED)
         self.auto_image_state = PersistentBoolean(PrefKey.AUTO_IMAGE)
