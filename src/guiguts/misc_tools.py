@@ -35,7 +35,12 @@ from guiguts.utilities import (
     sound_bell,
     load_dict_from_json,
 )
-from guiguts.widgets import ToplevelDialog, PathnameCombobox, insert_in_focus_widget
+from guiguts.widgets import (
+    ToplevelDialog,
+    PathnameCombobox,
+    insert_in_focus_widget,
+    ToolTip,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -1329,50 +1334,118 @@ def unicode_normalize() -> None:
                 maintext().replace(start_idx, end_idx, normalized_text)
 
 
-def proofer_comment_check() -> None:
-    """Find all proofer comments."""
+class ProoferCommentCheckerDialog(CheckerDialog):
+    """Proofer Comment Checker dialog."""
 
-    matches = maintext().find_matches(
-        r"\[\*\*([^]]|\n)*]",
-        maintext().start_to_end(),
-        nocase=False,
-        regexp=True,
-    )
+    manual_page = "Navigation#Find_Proofer_Comments_(_[**notes]_)"
 
-    class ProoferCommentCheckerDialog(CheckerDialog):
-        """Proofer Comment Checker dialog."""
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Proofer Comment dialog."""
+        super().__init__(
+            "Proofer Comments",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find comment",
+                    "Right click: Hide comment",
+                    "Shift Right click: Also hide all matching comments",
+                    f"With {cmd_ctrl_string()} key: Also delete the commment(s)",
+                ]
+            ),
+            **kwargs,
+        )
 
-        manual_page = "Navigation#Find_Proofer_Comments_(_[**notes]_)"
 
-        def __init__(self, **kwargs: Any) -> None:
-            """Initialize Proofer Comment dialog."""
-            super().__init__(
-                "Proofer Comments",
-                tooltip="\n".join(
-                    [
-                        "Left click: Select & find comment",
-                        "Right click: Hide comment",
-                        "Right click: Also hide all matching comments",
-                    ]
-                ),
-                **kwargs,
+class ProoferCommentChecker:
+    """Proofer Comment checker."""
+
+    def __init__(self) -> None:
+        """Initialize Proofer Comment checker."""
+
+        self.dialog = ProoferCommentCheckerDialog.show_dialog(
+            rerun_command=self.run,
+            process_command=self.delete_comment,
+            match_on_highlight=True,
+            show_process_buttons=False,
+        )
+        # Taken from CheckerDialog
+        fix_btn = ttk.Button(
+            self.dialog.message_controls_frame,
+            text="Delete",
+            command=lambda: self.dialog.process_entry_current(all_matching=False),
+        )
+        fix_btn.grid(row=0, column=2, sticky="NSEW")
+        ToolTip(fix_btn, f"Delete selected comment ({cmd_ctrl_string()} left-click)")
+        fixall_btn = ttk.Button(
+            self.dialog.message_controls_frame,
+            text="Delete Matching",
+            command=lambda: self.dialog.process_entry_current(all_matching=True),
+        )
+        fixall_btn.grid(row=0, column=3, sticky="NSEW")
+        ToolTip(
+            fixall_btn,
+            f"Delete all identical comments matching selected one (Shift {cmd_ctrl_string()} left-click)",
+        )
+        fixrem_btn = ttk.Button(
+            self.dialog.message_controls_frame,
+            text="Delete&Hide",
+            command=lambda: self.dialog.process_remove_entry_current(
+                all_matching=False
+            ),
+        )
+        fixrem_btn.grid(row=0, column=4, sticky="NSEW")
+        ToolTip(
+            fixrem_btn,
+            f"Delete selected comment & hide message ({cmd_ctrl_string()} right-click)",
+        )
+        fixremall_btn = ttk.Button(
+            self.dialog.message_controls_frame,
+            text="Delete&Hide Matching",
+            command=lambda: self.dialog.process_remove_entry_current(all_matching=True),
+        )
+        fixremall_btn.grid(row=0, column=5, sticky="NSEW")
+        ToolTip(
+            fixremall_btn,
+            f"Delete and hide all identical comments matching selected one (Shift {cmd_ctrl_string()} right-click)",
+        )
+
+    def run(self) -> None:
+        """Do the actual check and add messages to the dialog."""
+        self.dialog.reset()
+
+        matches = maintext().find_matches(
+            r"\[\*\*([^]]|\n)*]",
+            maintext().start_to_end(),
+            nocase=False,
+            regexp=True,
+        )
+
+        for match in matches:
+            line = maintext().get(
+                f"{match.rowcol.index()} linestart",
+                f"{match.rowcol.index()}+{match.count}c lineend",
             )
+            end_rowcol = IndexRowCol(
+                maintext().index(match.rowcol.index() + f"+{match.count}c")
+            )
+            self.dialog.add_entry(
+                line,
+                IndexRange(match.rowcol, end_rowcol),
+                match.rowcol.col,
+                end_rowcol.col,
+            )
+        self.dialog.display_entries()
 
-    checker_dialog = ProoferCommentCheckerDialog.show_dialog(
-        rerun_command=proofer_comment_check,
-    )
-    for match in matches:
-        line = maintext().get(
-            f"{match.rowcol.index()} linestart",
-            f"{match.rowcol.index()}+{match.count}c lineend",
+    def delete_comment(self, checker_entry: CheckerEntry) -> None:
+        """Delete the given proofer comment."""
+        if checker_entry.text_range is None:
+            return
+        start_mark = ProoferCommentCheckerDialog.mark_from_rowcol(
+            checker_entry.text_range.start
         )
-        end_rowcol = IndexRowCol(
-            maintext().index(match.rowcol.index() + f"+{match.count}c")
+        end_mark = ProoferCommentCheckerDialog.mark_from_rowcol(
+            checker_entry.text_range.end
         )
-        checker_dialog.add_entry(
-            line, IndexRange(match.rowcol, end_rowcol), match.rowcol.col, end_rowcol.col
-        )
-    checker_dialog.display_entries()
+        maintext().delete(start_mark, end_mark)
 
 
 def asterisk_check() -> None:
@@ -1399,7 +1472,7 @@ def asterisk_check() -> None:
                     [
                         "Left click: Select & find occurrence of asterisk",
                         "Right click: Hide message",
-                        "Shfit Right click: Also hide all matching message",
+                        "Shift Right click: Also hide all matching message",
                     ]
                 ),
                 **kwargs,
