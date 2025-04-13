@@ -11,6 +11,7 @@ import time
 import tkinter as tk
 from tkinter import ttk, messagebox, EventType
 from typing import Any, Callable, Optional
+from pathlib import Path
 
 from PIL import Image, ImageTk, ImageChops
 import regex as re
@@ -639,6 +640,7 @@ class MainImage(tk.Frame):
         self.float_func = float_func
         self.dock_func = dock_func
         self.allow_geometry_storage = False
+        self.short_name_label = tk.StringVar(self, "<no image>")
 
         # Introduce an apparently superfluous Frame to contain everything.
         # This is because when MainImage is undocked, Tk converts it to a
@@ -679,6 +681,10 @@ class MainImage(tk.Frame):
         self.next_img_button.grid(row=0, column=1, sticky="NSEW")
         ToolTip(self.next_img_button, use_pointer_pos=True, msg="Next image")
 
+        ttk.Label(control_frame, textvariable=self.short_name_label).grid(
+            row=0, column=2, sticky="NSEW", padx=5
+        )
+
         self.zoom_in_btn = ttk.Button(
             control_frame,
             text="+",
@@ -686,7 +692,7 @@ class MainImage(tk.Frame):
             takefocus=False,
             command=lambda: self.image_zoom(zoom_in=True),
         )
-        self.zoom_in_btn.grid(row=0, column=2, sticky="NSEW", padx=(10, 0))
+        self.zoom_in_btn.grid(row=0, column=3, sticky="NSEW", padx=(10, 0))
         ToolTip(self.zoom_in_btn, use_pointer_pos=True, msg="Zoom in")
 
         self.zoom_out_btn = ttk.Button(
@@ -696,7 +702,7 @@ class MainImage(tk.Frame):
             takefocus=False,
             command=lambda: self.image_zoom(zoom_in=False),
         )
-        self.zoom_out_btn.grid(row=0, column=3, sticky="NSEW")
+        self.zoom_out_btn.grid(row=0, column=4, sticky="NSEW")
         ToolTip(self.zoom_out_btn, use_pointer_pos=True, msg="Zoom out")
 
         self.ftw_btn = ttk.Checkbutton(
@@ -705,7 +711,7 @@ class MainImage(tk.Frame):
             takefocus=False,
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_WIDTH),
         )
-        self.ftw_btn.grid(row=0, column=4, sticky="NSEW", padx=(10, 0))
+        self.ftw_btn.grid(row=0, column=5, sticky="NSEW", padx=(10, 0))
         ToolTip(self.ftw_btn, use_pointer_pos=True, msg="Fit image to viewer width")
 
         self.fth_btn = ttk.Checkbutton(
@@ -714,7 +720,7 @@ class MainImage(tk.Frame):
             takefocus=False,
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_HEIGHT),
         )
-        self.fth_btn.grid(row=0, column=5, sticky="NSEW", padx=(10, 0))
+        self.fth_btn.grid(row=0, column=6, sticky="NSEW", padx=(10, 0))
         ToolTip(self.fth_btn, use_pointer_pos=True, msg="Fit image to viewer height")
 
         self.invert_btn = ttk.Checkbutton(
@@ -724,7 +730,7 @@ class MainImage(tk.Frame):
             command=self.show_image,
             variable=PersistentBoolean(PrefKey.IMAGE_INVERT),
         )
-        self.invert_btn.grid(row=0, column=6, sticky="NSEW", padx=(10, 0))
+        self.invert_btn.grid(row=0, column=7, sticky="NSEW", padx=(10, 0))
         ToolTip(self.invert_btn, use_pointer_pos=True, msg="Invert image colors")
 
         self.dock_btn = ttk.Checkbutton(
@@ -734,7 +740,7 @@ class MainImage(tk.Frame):
             command=self.set_image_docking,
             variable=root().image_window_docked_state,
         )
-        self.dock_btn.grid(row=0, column=7, sticky="NSEW", padx=(10, 0))
+        self.dock_btn.grid(row=0, column=8, sticky="NSEW", padx=(10, 0))
         ToolTip(
             self.dock_btn,
             use_pointer_pos=True,
@@ -1031,6 +1037,7 @@ class MainImage(tk.Frame):
             self.canvas.yview_moveto(0)
             self.canvas.xview_moveto(0)
             self.show_image()
+            self.set_short_name()
             if preferences.get(PrefKey.IMAGE_AUTOFIT_WIDTH):
                 mainimage().image_zoom_to_width()
             elif preferences.get(PrefKey.IMAGE_AUTOFIT_HEIGHT):
@@ -1046,6 +1053,7 @@ class MainImage(tk.Frame):
         if self.imageid:
             self.canvas.delete(self.imageid)
         self.imageid = 0
+        self.set_short_name()
 
     def set_image_docking(self) -> None:
         """Float/dock image depending on flag."""
@@ -1152,6 +1160,15 @@ class MainImage(tk.Frame):
 
         # Reached end of dir listing without finding next file
         sound_bell()
+
+    def set_short_name(self) -> None:
+        """Extract a short name from the full image path to use as a label
+        in the image viewer. When no image is loaded, returns a placeholder
+        '<no image>'."""
+        if self.filename:
+            self.short_name_label.set(Path(self.filename).stem)
+        else:
+            self.short_name_label.set("<no image>")
 
 
 class StatusBar(ttk.Frame):
