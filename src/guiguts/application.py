@@ -22,6 +22,7 @@ from guiguts.html_tools import (
     HTMLLinkChecker,
     CSSValidator,
     EbookmakerChecker,
+    EbookmakerCheckerAPI,
     HTMLAutoTableDialog,
 )
 from guiguts.illo_sn_fixup import illosn_check
@@ -901,7 +902,10 @@ class Guiguts:
         html_menu.add_button("~CSS Validator (online)", lambda: CSSValidator().run())
         html_menu.add_separator()
         html_menu.add_button(
-            "~Ebookmaker generate/check", lambda: EbookmakerChecker().run()
+            "~Ebookmaker (local installation)", lambda: EbookmakerChecker().run()
+        )
+        html_menu.add_button(
+            "Ebookmaker (online using ~API)", lambda: EbookmakerCheckerAPI().run()
         )
 
     def init_view_menu(self) -> None:
