@@ -303,29 +303,50 @@ class File:
             return f"{self.filename}{ext}", f"{bin_name(self.filename)}{ext}"
 
         binfile_name = bin_name(self.filename)
-        if autosave:
-            # Don't autosave if nothing changed - just reschedule
-            if not maintext().is_modified():
-                self.reset_autosave()
-                return ""
-            backup2_file, backup2_bin = get_backup_names(".bk2")
-            backup1_file, backup1_bin = get_backup_names(".bk1")
-            if os.path.exists(backup1_file):
-                os.replace(backup1_file, backup2_file)
-            if os.path.exists(backup1_bin):
-                os.replace(backup1_bin, backup2_bin)
-            if os.path.exists(self.filename):
-                os.replace(self.filename, backup1_file)
-            if os.path.exists(binfile_name):
-                os.replace(binfile_name, backup1_bin)
-        elif preferences.get(PrefKey.BACKUPS_ENABLED):
-            backup_file, backup_bin = get_backup_names(".bak")
-            if os.path.exists(self.filename):
-                os.replace(self.filename, backup_file)
-            if os.path.exists(binfile_name):
-                os.replace(binfile_name, backup_bin)
-        maintext().do_save(self.filename)
-        self.save_bin(self.filename)
+        try:
+            if autosave:
+                # Don't autosave if nothing changed - just reschedule
+                if not maintext().is_modified():
+                    self.reset_autosave()
+                    return ""
+                backup2_file, backup2_bin = get_backup_names(".bk2")
+                backup1_file, backup1_bin = get_backup_names(".bk1")
+                if os.path.exists(backup1_file):
+                    os.replace(backup1_file, backup2_file)
+                if os.path.exists(backup1_bin):
+                    os.replace(backup1_bin, backup2_bin)
+                if os.path.exists(self.filename):
+                    os.replace(self.filename, backup1_file)
+                if os.path.exists(binfile_name):
+                    os.replace(binfile_name, backup1_bin)
+            elif preferences.get(PrefKey.BACKUPS_ENABLED):
+                backup_file, backup_bin = get_backup_names(".bak")
+                if os.path.exists(self.filename):
+                    os.replace(self.filename, backup_file)
+                if os.path.exists(binfile_name):
+                    os.replace(binfile_name, backup_bin)
+        except OSError as exc:
+            logger.error(
+                f"Unable to save backup file.\n"
+                f"If problem persists, try saving as a different name or in a different {folder_dir_str(lowercase=True)}.\n"
+                f"Error details:\n{str(exc)}"
+            )
+        try:
+            maintext().do_save(self.filename)
+        except OSError as exc:
+            logger.error(
+                f"Unable to save file.\n"
+                f"If problem persists, try saving as a different name or in a different {folder_dir_str(lowercase=True)}.\n"
+                f"Error details:\n{str(exc)}"
+            )
+        try:
+            self.save_bin(self.filename)
+        except OSError as exc:
+            logger.error(
+                f"Unable to save project json file.\n"
+                f"If problem persists, try saving as a different name or in a different {folder_dir_str(lowercase=True)}.\n"
+                f"Error details:\n{str(exc)}"
+            )
         self.reset_autosave()
         return self.filename
 
