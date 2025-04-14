@@ -74,7 +74,7 @@ class PreferencesDialog(ToplevelDialog):
         cb["state"] = "readonly"
         ttk.Checkbutton(
             appearance_frame,
-            text="",
+            text="High Contrast",
             variable=PersistentBoolean(PrefKey.HIGH_CONTRAST),
         ).grid(column=0, row=1, sticky="NEW", pady=5)
         tearoff_check = ttk.Checkbutton(
