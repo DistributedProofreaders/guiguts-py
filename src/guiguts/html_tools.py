@@ -1121,7 +1121,7 @@ class EbookmakerCheckerDialog(CheckerDialog):
             api: Set to True if API is to be used.
         """
         super().__init__(
-            "Ebookmaker Results",
+            f"Ebookmaker {'(online)' if api else '(local)'} Results",
             tooltip="\n".join(
                 [
                     "Left click: Select message",
@@ -1257,8 +1257,7 @@ class EbookmakerChecker:
             command.append("-v")
         command.append("--max-depth=3")
         # Build options
-        if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
-            command.append("--make=epub.images")
+        command.append("--make=epub.images")  # Epub2 is always turned on
         if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
             command.append("--make=epub3.images")
         # Need Calibre to create kindle versions
@@ -1295,29 +1294,7 @@ class EbookmakerChecker:
             check=False,
         )
 
-        regex = re.compile(r"^(CRITICAL|ERROR|WARNING)(.*)")
-        messages = result.stdout.split("\n")
-        if any(message.strip() for message in messages):
-            for message in messages:
-                # skip this useless notice...
-                if re.match(r".*Not configured, using .* for FILESDIR", message):
-                    continue
-                # If it's an error, move the severity into the error_prefix argument
-                error_prefix, is_error = regex.subn(r"\1", message)
-                if is_error:
-                    message = regex.sub(r"\2", message)
-                    severity = CheckerEntrySeverity.ERROR
-                elif message.startswith(("INFO", "DEBUG")):
-                    error_prefix = ""
-                    severity = CheckerEntrySeverity.INFO
-                else:
-                    error_prefix = ""
-                    severity = None
-                self.dialog.add_entry(
-                    message, error_prefix=error_prefix, severity=severity
-                )
-        else:
-            self.dialog.add_entry("Ebookmaker completed with no messages")
+        process_ebookmaker_messages(result.stdout, self.dialog)
 
         self.dialog.display_entries()
 
@@ -1368,9 +1345,7 @@ class EbookmakerCheckerAPI:
         timeout = 300
 
         # Create list of formats to build
-        build = []
-        if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
-            build.append("epub")
+        build = ["epub"]  # Epub2 is always on
         if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
             build.append("epub3")
         if preferences.get(PrefKey.EBOOKMAKER_KINDLE):
@@ -1422,12 +1397,12 @@ class EbookmakerCheckerAPI:
         try:
             response = requests.post(
                 url,
-                files={"upfile1": ("{file_base}.zip", fileobj)},
+                files={"file": ("{file_base}.zip", fileobj)},
                 data={
                     "out": "json",
                     "make_formats": ",".join(build),
-                    "myebook": ebooknum,
-                    "mytitle": get_title(),
+                    "ebook_number": ebooknum,
+                    "title": get_title(),
                 },
                 timeout=timeout,
             )
@@ -1471,60 +1446,71 @@ class EbookmakerCheckerAPI:
             return
 
         # Process output.txt into messages in dialog
-        regex = re.compile(r"^(CRITICAL|ERROR|WARNING)(.*)")
-        messages = response.text.split("\n")
-        if any(message.strip() for message in messages):
-            for message in messages:
-                # skip this useless notice...
-                if re.match(r".*Not configured, using .* for FILESDIR", message):
-                    continue
-                # If it's an error, move the severity into the error_prefix argument
-                error_prefix, is_error = regex.subn(r"\1", message)
-                if is_error:
-                    message = regex.sub(r"\2", message)
-                    severity = CheckerEntrySeverity.ERROR
-                elif message.startswith(("INFO", "DEBUG")):
-                    error_prefix = ""
-                    severity = CheckerEntrySeverity.INFO
-                else:
-                    error_prefix = ""
-                    severity = None
-                self.dialog.add_entry(
-                    message, error_prefix=error_prefix, severity=severity
-                )
-        else:
-            self.dialog.add_entry("Ebookmaker completed with no messages")
+        process_ebookmaker_messages(response.text, self.dialog)
 
-        # Get each generated file (e.g. 10001-epub.epub) & save in project folder (e.g. myfile-epub.epub)
+        # Get each generated file (e.g. 99999-epub.epub) & save in project folder (e.g. myfile-epub.epub)
         for key, ftype in ftypes.items():
-            if preferences.get(key):  # Only if user requested it
-                get_name = f"{ebooknum}-{ftype}"
-                put_name = f"{file_base}-{ftype}"
+            if not preferences.get(key):  # Only get if user requested it
+                continue
 
-                try:
-                    response = requests.get(f"{output_dir}/{get_name}", timeout=timeout)
-                except requests.exceptions.Timeout as exc:
-                    report_exception(f"Download request for {put_name} timed out.", exc)
-                    break
-                except ConnectionError as exc:
-                    report_exception(f"Connection error getting {put_name}.", exc)
-                    break
-                # Check if HTTP request was unsuccessful
-                try:
-                    response.raise_for_status()
-                except (
-                    requests.exceptions.HTTPError,
-                    requests.exceptions.TooManyRedirects,
-                ) as exc:
-                    report_exception(
-                        f"Download request for {put_name} was unsuccessful.", exc
-                    )
-                    break
+            get_name = f"{ebooknum}-{ftype}"
+            put_name = f"{file_base}-{ftype}"
+            try:
+                response = requests.get(f"{output_dir}/{get_name}", timeout=timeout)
+            except requests.exceptions.Timeout as exc:
+                report_exception(f"Download request for {put_name} timed out.", exc)
+                break
+            except ConnectionError as exc:
+                report_exception(f"Connection error getting {put_name}.", exc)
+                break
+            # Check if HTTP request was unsuccessful
+            try:
+                response.raise_for_status()
+            except (
+                requests.exceptions.HTTPError,
+                requests.exceptions.TooManyRedirects,
+            ) as exc:
+                report_exception(
+                    f"Download request for {put_name} was unsuccessful.", exc
+                )
+                break
 
-                with open(os.path.join(proj_dir, put_name), mode="wb") as wfile:
-                    wfile.write(response.content)
+            with open(os.path.join(proj_dir, put_name), mode="wb") as wfile:
+                wfile.write(response.content)
 
         self.dialog.display_entries()
+
+
+def process_ebookmaker_messages(
+    ebm_output: str, dialog: EbookmakerCheckerDialog
+) -> None:
+    """Process output from ebookmaker and display in dialog.
+
+    Args:
+        ebm_output:
+
+    """
+    regex = re.compile(r"^(CRITICAL|ERROR|WARNING)(.*)")
+    messages = ebm_output.split("\n")
+    if any(message.strip() for message in messages):
+        for message in messages:
+            # skip this useless notice...
+            if re.match(r".*Not configured, using .* for FILESDIR", message):
+                continue
+            # If it's an error, move the severity into the error_prefix argument
+            error_prefix, is_error = regex.subn(r"\1", message)
+            if is_error:
+                message = regex.sub(r"\2", message)
+                severity = CheckerEntrySeverity.ERROR
+            elif message.startswith(("INFO", "DEBUG")):
+                error_prefix = ""
+                severity = CheckerEntrySeverity.INFO
+            else:
+                error_prefix = ""
+                severity = None
+            dialog.add_entry(message, error_prefix=error_prefix, severity=severity)
+    else:
+        dialog.add_entry("Ebookmaker completed with no messages")
 
 
 def get_title() -> str:
