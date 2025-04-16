@@ -866,12 +866,13 @@ def wf_populate_hyphens(wf_dialog: WordFrequencyDialog) -> None:
     # Replace single newline or multiple spaces with single space
     # (Multiple newlines is probably deliberate rather than error)
     whole_text = re.sub(r"(\n| +)", " ", maintext().get_text())
+    re_flags = re.IGNORECASE if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE) else 0
     for word in all_words:
         if "-" in word:
             pair = word.replace("-", " ")
             # Find word pair not preceded/followed by a letter - this is so
             # that space or punctuation surrounding the pair doesn't break things.
-            count = len(re.findall(rf"(?<!\w){pair}(?!\w)", whole_text))
+            count = len(re.findall(rf"(?<!\w){pair}(?!\w)", whole_text, flags=re_flags))
             if count:
                 word_pairs[pair] = count
 
