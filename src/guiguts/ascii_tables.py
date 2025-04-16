@@ -950,7 +950,9 @@ class ASCIITableDialog(ToplevelDialog):
             ) or maintext().compare(insert_rowcol.index(), ">=", self.end_mark_name):
                 self.selected_column = 0
             else:
-                self.selected_column = self.get_selected_column_from_rowcol(insert_rowcol)- (1 if idir < 0 else 0)
+                self.selected_column = self.get_selected_column_from_rowcol(
+                    insert_rowcol
+                ) - (1 if idir < 0 else 0)
         # Ensure selected column is between 0 & number of columns
         self.selected_column %= self.get_table_grid().num_columns()
         self.refresh_table_display()
