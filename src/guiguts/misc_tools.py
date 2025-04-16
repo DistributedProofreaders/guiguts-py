@@ -1445,6 +1445,7 @@ class ProoferCommentChecker:
         end_mark = ProoferCommentCheckerDialog.mark_from_rowcol(
             checker_entry.text_range.end
         )
+        maintext().undo_block_begin()
         maintext().delete(start_mark, end_mark)
 
 
