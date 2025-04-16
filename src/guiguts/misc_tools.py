@@ -418,9 +418,16 @@ class PageSeparatorDialog(ToplevelDialog):
         if (sep_range := self.find()) is None:
             return
 
+        # Don't try to join if page ends with "]" or "]*" because that probably means
+        # there's a possible mid-para footnote/sidenote/illo at the page end
+        start_index = sep_range.start.index()
+        mid_para_check = maintext().get(f"{start_index}-2l", f"{start_index}-1c")
+        if mid_para_check.endswith("]") or mid_para_check.endswith("]*"):
+            return
+
         sep_range = self.fix_pagebreak_markup(sep_range)
-        maintext().delete(sep_range.start.index(), sep_range.end.index())
-        prev_eol = f"{sep_range.start.index()} -1l lineend"
+        maintext().delete(start_index, sep_range.end.index())
+        prev_eol = f"{start_index} -1l lineend"
         maybe_hyphen = maintext().get(f"{prev_eol}-1c", prev_eol)
         # If "*" at end of line, check previous character for "-"
         if maybe_hyphen == "*":
@@ -654,8 +661,11 @@ class PageSeparatorDialog(ToplevelDialog):
             elif not (
                 re.search(r"^\*?-(?!-)", line_next)
                 or re.search(r"(?<!-)-\*?$", line_prev)
+                or line_prev.endswith("]")
+                or line_prev.endswith("]*")
             ):
-                # No hyphen before/after page break, so OK to join
+                # No hyphen before/after page break and no mid-para
+                # footnote, sidenote or illo, so OK to join
                 self.do_join(False)
             else:
                 break
