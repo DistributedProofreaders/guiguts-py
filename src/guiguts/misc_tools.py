@@ -1676,7 +1676,7 @@ class ScannoCheckerDialog(CheckerDialog):
 
         self.prev_btn = ttk.Button(
             frame,
-            text="Prev",
+            text="Prev. Scanno",
             command=lambda: self.prev_next_scanno(prev=True),
             takefocus=False,
         )
@@ -1691,7 +1691,7 @@ class ScannoCheckerDialog(CheckerDialog):
         search.grid(column=1, row=1, sticky="NSEW", pady=5)
         self.next_btn = ttk.Button(
             frame,
-            text="Next",
+            text="Next Scanno",
             command=lambda: self.prev_next_scanno(prev=False),
             takefocus=False,
         )
@@ -1738,12 +1738,10 @@ class ScannoCheckerDialog(CheckerDialog):
             self.focus()
             preferences.set(PrefKey.SCANNOS_FILENAME, filename)
             self.load_scannos()
-            self.list_scannos()
 
     def select_file(self) -> None:
         """Handle selection of a scannos file."""
         self.load_scannos()
-        self.list_scannos()
 
     def load_scannos(self) -> None:
         """Load a scannos file."""
@@ -1782,21 +1780,27 @@ class ScannoCheckerDialog(CheckerDialog):
                 scanno[Scanno.HINT] = ""
 
         self.scanno_number = 0
+        self.prev_next_scanno(None)
 
-    def prev_next_scanno(self, prev: bool) -> None:
+    def prev_next_scanno(self, prev: Optional[bool]) -> None:
         """Display previous/next scanno & list of results.
 
         Auto-advances until it finds a scanno that has some results.
 
         Args:
-            prev: True for Previous, False for Next.
+            prev: True for Previous, False for Next, None for neither, i.e. display current scanno
         """
         slurp_text = maintext().get_text()
         find_range = IndexRange(maintext().start().index(), maintext().end().index())
         while (prev and self.scanno_number > 0) or (
             not prev and self.scanno_number < len(self.scanno_list) - 1
         ):
-            self.scanno_number += -1 if prev else 1
+            # First time through, "None" means use current scanno,
+            # but after that behave like "Next"
+            if prev is None:
+                prev = False
+            else:
+                self.scanno_number += -1 if prev else 1
             if self.any_matches(slurp_text, find_range):
                 self.list_scannos()
                 return
@@ -1829,7 +1833,7 @@ class ScannoCheckerDialog(CheckerDialog):
         """Display current scanno and list of results."""
         self.reset()
         if not self.scanno_list:
-            self.display_entries()
+            self.display_entries(complete_msg=False)
             return
         scanno = self.scanno_list[self.scanno_number]
         self.scanno_textvariable.set(scanno[Scanno.MATCH])
@@ -1892,7 +1896,9 @@ class ScannoCheckerDialog(CheckerDialog):
             else tk.NORMAL
         )
 
-        self.display_entries()
+        self.display_entries(
+            complete_msg=(self.scanno_number >= len(self.scanno_list) - 1)
+        )
 
     def replace_scanno(self) -> None:
         """Replace current match using replacement"""
@@ -1934,7 +1940,6 @@ def stealth_scannos() -> None:
         rerun_command=stealth_scannos,
         process_command=do_replace_scanno,
     )
-    _the_stealth_scannos_dialog.list_scannos()
 
 
 DQUOTES = "“”"

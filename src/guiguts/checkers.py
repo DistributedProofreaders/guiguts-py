@@ -834,13 +834,16 @@ class CheckerDialog(ToplevelDialog):
                 self.mark_from_rowcol(text_range.end), text_range.end, gravity=tk.RIGHT
             )
 
-    def display_entries(self, auto_select_line: bool = True) -> None:
+    def display_entries(
+        self, auto_select_line: bool = True, complete_msg: bool = True
+    ) -> None:
         """Display all the stored entries in the dialog according to
         the sort setting.
 
         Args:
             auto_select_line: Default True. Set to False if calling routine takes
             responsibility for selecting a line in the dialog.
+            complete_msg: Set to False if "Check complete" message not wanted.
         """
 
         Busy.busy()
@@ -907,7 +910,8 @@ class CheckerDialog(ToplevelDialog):
                     ERROR_PREFIX_TAG_NAME, start_rowcol.index(), end_rowcol.index()
                 )
         # Output "Check complete", so user knows it's done
-        self.text.insert(tk.END, "\nCheck complete\n")
+        if complete_msg:
+            self.text.insert(tk.END, "\nCheck complete\n")
 
         # The default automatic highlighting of previously selected line, or if none
         # the first suitable line, is undesirable when an application immediately
