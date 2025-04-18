@@ -439,6 +439,7 @@ class Guiguts:
                 str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_MISSPELLED_SCANNOS)),
             ],
         )
+        preferences.set_default(PrefKey.SCANNOS_AUTO_ADVANCE, True)
         preferences.set_default(PrefKey.HIGHLIGHT_QUOTBRAC, False)
         preferences.set_callback(
             PrefKey.HIGHLIGHT_QUOTBRAC, self.highlight_quotbrac_callback
