@@ -484,10 +484,15 @@ class WordFrequencyDialog(ToplevelDialog):
         """Display all the stored entries in the dialog according to
         the sort setting."""
 
+        def remove_diacritics_and_hyphens(word: str) -> str:
+            """Remove diacritics, and also convert hyphen to space so that
+            "a-b" and "a b" sort adjacently in hyphen check."""
+            return DiacriticRemover.remove_diacritics(word).replace("-", " ")
+
         def sort_key_alpha(
             entry: WordFrequencyEntry,
         ) -> tuple[str, ...]:
-            no_dia = DiacriticRemover.remove_diacritics(entry.word)
+            no_dia = remove_diacritics_and_hyphens(entry.word)
             return (no_dia.lower(), no_dia, entry.word)
 
         def sort_key_alpha_no_markup(
@@ -495,8 +500,8 @@ class WordFrequencyDialog(ToplevelDialog):
         ) -> tuple[str, ...]:
             unmarked = re.sub(rf"^<({MARKUP_TYPES})>", "", entry.word)
             unmarked = re.sub(rf"</({MARKUP_TYPES})>$", "", unmarked)
-            unmarked_no_dia = DiacriticRemover.remove_diacritics(unmarked)
-            no_dia = DiacriticRemover.remove_diacritics(entry.word)
+            unmarked_no_dia = remove_diacritics_and_hyphens(unmarked)
+            no_dia = remove_diacritics_and_hyphens(entry.word)
             return (
                 unmarked_no_dia.lower(),
                 unmarked_no_dia,
@@ -506,11 +511,11 @@ class WordFrequencyDialog(ToplevelDialog):
             )
 
         def sort_key_freq(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
-            no_dia = DiacriticRemover.remove_diacritics(entry.word)
+            no_dia = remove_diacritics_and_hyphens(entry.word)
             return (-entry.frequency,) + (no_dia.lower(), no_dia, entry.word)
 
         def sort_key_len(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
-            no_dia = DiacriticRemover.remove_diacritics(entry.word)
+            no_dia = remove_diacritics_and_hyphens(entry.word)
             return (-len(entry.word), no_dia.lower(), no_dia, entry.word)
 
         key: Callable[[WordFrequencyEntry], tuple]
@@ -866,12 +871,13 @@ def wf_populate_hyphens(wf_dialog: WordFrequencyDialog) -> None:
     # Replace single newline or multiple spaces with single space
     # (Multiple newlines is probably deliberate rather than error)
     whole_text = re.sub(r"(\n| +)", " ", maintext().get_text())
+    re_flags = re.IGNORECASE if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE) else 0
     for word in all_words:
         if "-" in word:
             pair = word.replace("-", " ")
             # Find word pair not preceded/followed by a letter - this is so
             # that space or punctuation surrounding the pair doesn't break things.
-            count = len(re.findall(rf"(?<!\w){pair}(?!\w)", whole_text))
+            count = len(re.findall(rf"(?<!\w){pair}(?!\w)", whole_text, flags=re_flags))
             if count:
                 word_pairs[pair] = count
 
