@@ -634,8 +634,9 @@ class BookloupeChecker:
             step: Line number being checked.
             line: Text of line being checked.
         """
-        # Consider hyphenated words (but not numbers, e.g. 1-3/4) as two separate words
-        line = re.sub(r"(?<!\d)-(?!\d)", " ", line)
+        # Consider hyphenated (or emdashed) words as two separate words
+        # but exclude DP-style fractions, e.g. 1-3/4)
+        line = re.sub(r"(?<!\d)[-—](?!\d)", " ", line)
         # Split at spaces, ignoring leading/trailing non-word characters on words
         for match in re.finditer(
             r"(?<![^ ])[^\p{Letter}\p{Number}'’{}]*(.+?)[^\p{Letter}\p{Number}'’{}]*(?![^ ])",
