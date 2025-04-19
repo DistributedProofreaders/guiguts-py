@@ -1217,4 +1217,4 @@ class ASCIITableDialog(ToplevelDialog):
                     break
                 pipe_index = f"{pipe_index}+1c"
             if pipe_index:
-                maintext().tag_add(HighlightTag.TABLE_COLUMN, pipe_index)
+                maintext().tag_add(HighlightTag.TABLE_COLUMN, f"{pipe_index}-1c")
