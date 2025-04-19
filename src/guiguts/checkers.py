@@ -270,7 +270,8 @@ class CheckerDialog(ToplevelDialog):
         switch_focus_when_clicked: Optional[bool] = None,
         show_hide_buttons: bool = True,
         show_process_buttons: bool = True,
-        match_on_highlight: bool = False,
+        show_all_buttons: bool = True,
+        match_on_highlight: Optional[bool] = False,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -290,7 +291,10 @@ class CheckerDialog(ToplevelDialog):
                 `None` gives default behavior, i.e. False on macOS, True elsewhere.
             show_remove_buttons: Set to False to hide generic Hide/Hide All buttons.
             show_process_buttons: Set to False to hide all generic Fix buttons.
-            match_on_highlight: Set to True to base matching messages only on highlighted part of message
+            show_all_buttons: Set to False to hide generic buttons that hide/fix "All".
+                Subordinate to `show_remove_buttons` and `show_process_buttons`.
+            match_on_highlight: Set to True to base matching messages only on highlighted part of message.
+                Set to None to match all messages in list regardlesss of message text.
         """
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
@@ -369,24 +373,27 @@ class CheckerDialog(ToplevelDialog):
         for col in range(6):
             self.message_controls_frame.columnconfigure(col, weight=1)
 
+        column = 0
         if show_hide_buttons:
             rem_btn = ttk.Button(
                 self.message_controls_frame,
                 text="Hide",
                 command=lambda: self.remove_entry_current(all_matching=False),
             )
-            rem_btn.grid(row=0, column=0, sticky="NSEW")
+            rem_btn.grid(row=0, column=column, sticky="NSEW")
             ToolTip(rem_btn, "Hide selected message (right-click)")
-            remall_btn = ttk.Button(
-                self.message_controls_frame,
-                text="Hide All",
-                command=lambda: self.remove_entry_current(all_matching=True),
-            )
-            remall_btn.grid(row=0, column=1, sticky="NSEW")
-            ToolTip(
-                remall_btn,
-                "Hide all messages matching selected one (Shift right-click)",
-            )
+            if show_all_buttons:
+                remall_btn = ttk.Button(
+                    self.message_controls_frame,
+                    text="Hide All",
+                    command=lambda: self.remove_entry_current(all_matching=True),
+                )
+                column += 1
+                remall_btn.grid(row=0, column=column, sticky="NSEW")
+                ToolTip(
+                    remall_btn,
+                    "Hide all messages matching selected one (Shift right-click)",
+                )
         if show_process_buttons:
             if process_command is not None:
                 fix_btn = ttk.Button(
@@ -394,20 +401,23 @@ class CheckerDialog(ToplevelDialog):
                     text="Fix",
                     command=lambda: self.process_entry_current(all_matching=False),
                 )
-                fix_btn.grid(row=0, column=2, sticky="NSEW")
+                column += 1
+                fix_btn.grid(row=0, column=column, sticky="NSEW")
                 ToolTip(
                     fix_btn, f"Fix selected problem ({cmd_ctrl_string()} left-click)"
                 )
-                fixall_btn = ttk.Button(
-                    self.message_controls_frame,
-                    text="Fix All",
-                    command=lambda: self.process_entry_current(all_matching=True),
-                )
-                fixall_btn.grid(row=0, column=3, sticky="NSEW")
-                ToolTip(
-                    fixall_btn,
-                    f"Fix all problems matching selected message (Shift {cmd_ctrl_string()} left-click)",
-                )
+                if show_all_buttons:
+                    fixall_btn = ttk.Button(
+                        self.message_controls_frame,
+                        text="Fix All",
+                        command=lambda: self.process_entry_current(all_matching=True),
+                    )
+                    column += 1
+                    fixall_btn.grid(row=0, column=column, sticky="NSEW")
+                    ToolTip(
+                        fixall_btn,
+                        f"Fix all problems matching selected message (Shift {cmd_ctrl_string()} left-click)",
+                    )
                 fixrem_btn = ttk.Button(
                     self.message_controls_frame,
                     text="Fix&Hide",
@@ -415,23 +425,26 @@ class CheckerDialog(ToplevelDialog):
                         all_matching=False
                     ),
                 )
-                fixrem_btn.grid(row=0, column=4, sticky="NSEW")
+                column += 1
+                fixrem_btn.grid(row=0, column=column, sticky="NSEW")
                 ToolTip(
                     fixrem_btn,
                     f"Fix selected problem & hide message ({cmd_ctrl_string()} right-click)",
                 )
-                fixremall_btn = ttk.Button(
-                    self.message_controls_frame,
-                    text="Fix&Hide All",
-                    command=lambda: self.process_remove_entry_current(
-                        all_matching=True
-                    ),
-                )
-                fixremall_btn.grid(row=0, column=5, sticky="NSEW")
-                ToolTip(
-                    fixremall_btn,
-                    f"Fix and hide all problems matching selected message (Shift {cmd_ctrl_string()} right-click)",
-                )
+                if show_all_buttons:
+                    fixremall_btn = ttk.Button(
+                        self.message_controls_frame,
+                        text="Fix&Hide All",
+                        command=lambda: self.process_remove_entry_current(
+                            all_matching=True
+                        ),
+                    )
+                    column += 1
+                    fixremall_btn.grid(row=0, column=column, sticky="NSEW")
+                    ToolTip(
+                        fixremall_btn,
+                        f"Fix and hide all problems matching selected message (Shift {cmd_ctrl_string()} right-click)",
+                    )
 
         sort_frame = ttk.Frame(self.message_controls_frame)
         sort_frame.grid(row=0, column=6, sticky="NSE", pady=5)
@@ -834,13 +847,16 @@ class CheckerDialog(ToplevelDialog):
                 self.mark_from_rowcol(text_range.end), text_range.end, gravity=tk.RIGHT
             )
 
-    def display_entries(self, auto_select_line: bool = True) -> None:
+    def display_entries(
+        self, auto_select_line: bool = True, complete_msg: bool = True
+    ) -> None:
         """Display all the stored entries in the dialog according to
         the sort setting.
 
         Args:
             auto_select_line: Default True. Set to False if calling routine takes
             responsibility for selecting a line in the dialog.
+            complete_msg: Set to False if "Check complete" message not wanted.
         """
 
         Busy.busy()
@@ -907,7 +923,8 @@ class CheckerDialog(ToplevelDialog):
                     ERROR_PREFIX_TAG_NAME, start_rowcol.index(), end_rowcol.index()
                 )
         # Output "Check complete", so user knows it's done
-        self.text.insert(tk.END, "\nCheck complete\n")
+        if complete_msg:
+            self.text.insert(tk.END, "\nCheck complete\n")
 
         # The default automatic highlighting of previously selected line, or if none
         # the first suitable line, is undesirable when an application immediately
@@ -1175,6 +1192,7 @@ class CheckerDialog(ToplevelDialog):
             all_matching: If True, repeat for all entries that have the same
                 message as the current entry (e.g. same spelling error).
         """
+        maintext().undo_block_begin()
         entry_index = self.current_entry_index()
         if entry_index is None:
             return
@@ -1183,14 +1201,22 @@ class CheckerDialog(ToplevelDialog):
             return
         # Mark before starting so location can be selected later
         self.text.mark_set(MARK_ENTRY_TO_SELECT, f"{linenum}.0")
-        match_text = self.entries[entry_index].get_match_text(self.match_on_highlight)
+        match_text = (
+            ""
+            if self.match_on_highlight is None
+            else self.entries[entry_index].get_match_text(self.match_on_highlight)
+        )
         if all_matching:
             # Work in reverse since may be deleting from list while iterating
             indices = range(len(self.entries) - 1, -1, -1)
         else:
             indices = range(entry_index, entry_index + 1)
         for ii in indices:
-            if self.entries[ii].get_match_text(self.match_on_highlight) == match_text:
+            if (
+                self.match_on_highlight is None
+                or self.entries[ii].get_match_text(self.match_on_highlight)
+                == match_text
+            ):
                 if process and self.process_command:
                     self.process_command(self.entries[ii])
                 if remove:

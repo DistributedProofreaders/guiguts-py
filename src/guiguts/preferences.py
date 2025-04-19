@@ -94,6 +94,7 @@ class PrefKey(StrEnum):
     IMAGE_VIEWER_INTERNAL = auto()
     SCANNOS_FILENAME = auto()
     SCANNOS_HISTORY = auto()
+    SCANNOS_AUTO_ADVANCE = auto()
     HIGHLIGHT_QUOTBRAC = auto()
     HIGHLIGHT_HTML_TAGS = auto()
     HIGHLIGHT_CURSOR_LINE = auto()

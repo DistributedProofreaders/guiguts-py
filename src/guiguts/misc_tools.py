@@ -26,7 +26,7 @@ from guiguts.preferences import (
     preferences,
     PersistentBoolean,
 )
-from guiguts.search import get_regex_replacement
+from guiguts.search import get_regex_replacement, message_from_regex_exception
 from guiguts.utilities import (
     IndexRowCol,
     IndexRange,
@@ -1650,81 +1650,102 @@ class ScannoCheckerDialog(CheckerDialog):
                 [
                     "Left click: Select & find occurrence of scanno",
                     "Right click: Hide occurrence of scanno in list",
-                    f"With {cmd_ctrl_string()} key: Also fix this occurrence",
-                    "With Shift key: Also hide/fix matching occurrences",
+                    f"{cmd_ctrl_string()} left click: Fix this occurrence of scanno",
+                    f"{cmd_ctrl_string()} right click: Fix this occurrence and remove from list",
                 ]
             ),
             **kwargs,
         )
 
-        frame = ttk.Frame(self.custom_frame)
+        frame = ttk.Frame(self.custom_frame, padding=2)
         frame.grid(column=0, row=1, sticky="NSEW")
         self.custom_frame.columnconfigure(0, weight=1)
         frame.columnconfigure(1, weight=1)
+        for row in range(4):
+            frame.rowconfigure(row, uniform="equal height")
 
+        self.auto_checkbtn = ttk.Checkbutton(
+            frame,
+            text="Auto Adv.",
+            variable=PersistentBoolean(PrefKey.SCANNOS_AUTO_ADVANCE),
+            takefocus=False,
+        )
+        self.auto_checkbtn.grid(column=0, row=0, sticky="NSEW", pady=2)
         self.file_combo = PathnameCombobox(
             frame,
             PrefKey.SCANNOS_HISTORY,
             PrefKey.SCANNOS_FILENAME,
         )
-        self.file_combo.grid(column=1, row=0, sticky="NSEW", pady=5)
+        self.file_combo.grid(column=1, row=0, sticky="NSEW", pady=2)
         self.file_combo["state"] = "readonly"
         self.file_combo.bind("<<ComboboxSelected>>", lambda _e: self.select_file())
         ttk.Button(
             frame, text="Load File", command=self.choose_file, takefocus=False
-        ).grid(column=2, row=0, sticky="NSEW", padx=(5, 0), pady=5)
+        ).grid(column=2, row=0, sticky="NSEW", padx=(5, 0), pady=2)
 
         self.prev_btn = ttk.Button(
             frame,
-            text="Prev",
+            text="Prev. Scanno",
             command=lambda: self.prev_next_scanno(prev=True),
             takefocus=False,
         )
-        self.prev_btn.grid(column=0, row=1, sticky="NSEW", padx=(0, 5), pady=5)
+        self.prev_btn.grid(column=0, row=1, sticky="NSEW", padx=(0, 5), pady=2)
         self.scanno_textvariable = tk.StringVar(self, "")
         search = ttk.Entry(
             frame,
             textvariable=self.scanno_textvariable,
-            state="readonly",
             font=maintext().font,
         )
-        search.grid(column=1, row=1, sticky="NSEW", pady=5)
+        search.grid(column=1, row=1, sticky="NSEW", pady=2)
+        search.bind("<Return>", lambda _: self.list_scannos(update_fields=False))
         self.next_btn = ttk.Button(
             frame,
-            text="Next",
+            text="Next Scanno",
             command=lambda: self.prev_next_scanno(prev=False),
             takefocus=False,
         )
-        self.next_btn.grid(column=2, row=1, sticky="NSEW", padx=(5, 0), pady=5)
+        self.next_btn.grid(column=2, row=1, sticky="NSEW", padx=(5, 0), pady=2)
 
+        ttk.Button(
+            frame,
+            text="Swap Terms",
+            command=self.swap_terms,
+            takefocus=False,
+        ).grid(column=0, row=2, sticky="NSEW", padx=(0, 5), pady=2)
         self.replacement_textvariable = tk.StringVar(self, "")
         replace = ttk.Entry(
             frame,
             textvariable=self.replacement_textvariable,
-            state="readonly",
             font=maintext().font,
         )
-        replace.grid(column=1, row=2, sticky="NSEW")
+        replace.grid(column=1, row=2, sticky="NSEW", pady=2)
+        replace.bind("<Return>", lambda _: self.list_scannos(update_fields=False))
         ttk.Button(
-            frame, text="Replace", command=self.replace_scanno, takefocus=False
-        ).grid(column=2, row=2, sticky="NSEW", padx=(5, 0))
+            frame,
+            text="Replace",
+            command=lambda: self.process_entry_current(all_matching=False),
+            takefocus=False,
+        ).grid(column=2, row=2, sticky="NSEW", padx=(5, 0), pady=2)
 
+        self.count_textvariable = tk.StringVar(self, "")
         ttk.Label(
             frame,
-            text="Hint: ",
-        ).grid(column=0, row=3, sticky="NSE", pady=5)
-        self.hint_textvariable = tk.StringVar(self, "")
-        self.hint = ttk.Entry(
-            frame,
-            textvariable=self.hint_textvariable,
-            state="readonly",
+            textvariable=self.count_textvariable,
+        ).grid(column=0, row=3, sticky="NS", padx=(0, 5), pady=2)
+        self.hint_textvariable = tk.StringVar(self, "Hint: ")
+        ttk.Entry(frame, textvariable=self.hint_textvariable, state="readonly").grid(
+            column=1, row=3, sticky="NSEW", pady=2
         )
-        self.hint.grid(column=1, row=3, sticky="NSEW", pady=5)
+        ttk.Button(
+            frame,
+            text="Replace All",
+            command=lambda: self.process_entry_current(all_matching=True),
+            takefocus=False,
+        ).grid(column=2, row=3, sticky="NSEW", padx=(5, 0), pady=2)
 
         self.scanno_list: list[Scanno] = []
         self.whole_word = False
         self.scanno_number = 0
-        self.load_scannos()
 
     def choose_file(self) -> None:
         """Choose & load a scannos file."""
@@ -1738,12 +1759,10 @@ class ScannoCheckerDialog(CheckerDialog):
             self.focus()
             preferences.set(PrefKey.SCANNOS_FILENAME, filename)
             self.load_scannos()
-            self.list_scannos()
 
     def select_file(self) -> None:
         """Handle selection of a scannos file."""
         self.load_scannos()
-        self.list_scannos()
 
     def load_scannos(self) -> None:
         """Load a scannos file."""
@@ -1782,22 +1801,30 @@ class ScannoCheckerDialog(CheckerDialog):
                 scanno[Scanno.HINT] = ""
 
         self.scanno_number = 0
+        self.prev_next_scanno(None)
 
-    def prev_next_scanno(self, prev: bool) -> None:
+    def prev_next_scanno(self, prev: Optional[bool]) -> None:
         """Display previous/next scanno & list of results.
 
         Auto-advances until it finds a scanno that has some results.
 
         Args:
-            prev: True for Previous, False for Next.
+            prev: True for Previous, False for Next, None for neither, i.e. display current scanno
         """
         slurp_text = maintext().get_text()
         find_range = IndexRange(maintext().start().index(), maintext().end().index())
         while (prev and self.scanno_number > 0) or (
             not prev and self.scanno_number < len(self.scanno_list) - 1
         ):
-            self.scanno_number += -1 if prev else 1
-            if self.any_matches(slurp_text, find_range):
+            # First time through, "None" means use current scanno,
+            # but after that behave like "Next"
+            if prev is None:
+                prev = False
+            else:
+                self.scanno_number += -1 if prev else 1
+            if self.any_matches(slurp_text, find_range) or not preferences.get(
+                PrefKey.SCANNOS_AUTO_ADVANCE
+            ):
                 self.list_scannos()
                 return
         # No matches found, so display first/last scanno
@@ -1825,31 +1852,48 @@ class ScannoCheckerDialog(CheckerDialog):
         )
         return bool(match)
 
-    def list_scannos(self) -> None:
-        """Display current scanno and list of results."""
+    def list_scannos(self, update_fields: bool = True) -> None:
+        """Display current scanno and list of results.
+
+        Args:
+            update_fields: Set to False if fields should not be updated.
+        """
         self.reset()
         if not self.scanno_list:
-            self.display_entries()
+            self.display_entries(complete_msg=False)
             return
-        scanno = self.scanno_list[self.scanno_number]
-        self.scanno_textvariable.set(scanno[Scanno.MATCH])
-        self.replacement_textvariable.set(scanno[Scanno.REPLACEMENT])
-        self.hint_textvariable.set(scanno[Scanno.HINT])
+        if update_fields:
+            scanno = self.scanno_list[self.scanno_number]
+            self.scanno_textvariable.set(scanno[Scanno.MATCH])
+            self.replacement_textvariable.set(scanno[Scanno.REPLACEMENT])
+            self.hint_textvariable.set(f"Hint: {scanno[Scanno.HINT]}")
+            self.count_textvariable.set(
+                f"{self.scanno_number + 1} / {len(self.scanno_list)}"
+            )
 
         find_range = IndexRange(maintext().start().index(), maintext().end().index())
         slurp_text = maintext().get_text()
         slice_start = 0
 
         while True:
-            match, match_start = maintext().find_match_in_range(
-                scanno[Scanno.MATCH],
-                slurp_text[slice_start:],
-                find_range,
-                nocase=False,
-                regexp=True,
-                wholeword=self.whole_word,
-                backwards=False,
-            )
+            try:
+                match, match_start = maintext().find_match_in_range(
+                    self.scanno_textvariable.get(),
+                    slurp_text[slice_start:],
+                    find_range,
+                    nocase=False,
+                    regexp=True,
+                    wholeword=self.whole_word,
+                    backwards=False,
+                )
+            except re.error as e:
+                logger.error(
+                    f"Scanno regex {self.scanno_number + 1} has an error:\n{message_from_regex_exception(e)}"
+                )
+                self.display_entries(complete_msg=False)
+                self.lift()
+                return
+
             if match is None:
                 break
             line = maintext().get(
@@ -1892,14 +1936,16 @@ class ScannoCheckerDialog(CheckerDialog):
             else tk.NORMAL
         )
 
-        self.display_entries()
+        self.display_entries(
+            complete_msg=(self.scanno_number >= len(self.scanno_list) - 1)
+        )
 
-    def replace_scanno(self) -> None:
-        """Replace current match using replacement"""
-        current_index = self.current_entry_index()
-        if current_index is None:
-            return
-        do_replace_scanno(self.entries[current_index])
+    def swap_terms(self) -> None:
+        """Swap search & replace terms in dialog."""
+        tempstr = self.scanno_textvariable.get()
+        self.scanno_textvariable.set(self.replacement_textvariable.get())
+        self.replacement_textvariable.set(tempstr)
+        self.list_scannos(update_fields=False)
 
 
 _the_stealth_scannos_dialog: Optional[ScannoCheckerDialog] = None
@@ -1919,7 +1965,6 @@ def do_replace_scanno(checker_entry: CheckerEntry) -> None:
         replacement = get_regex_replacement(
             search_string, replace_string, match_text, flags=0
         )
-        maintext().undo_block_begin()
         maintext().replace(start, end, replacement)
 
 
@@ -1933,8 +1978,10 @@ def stealth_scannos() -> None:
     _the_stealth_scannos_dialog = ScannoCheckerDialog.show_dialog(
         rerun_command=stealth_scannos,
         process_command=do_replace_scanno,
+        show_all_buttons=False,
+        match_on_highlight=None,
     )
-    _the_stealth_scannos_dialog.list_scannos()
+    _the_stealth_scannos_dialog.load_scannos()
 
 
 DQUOTES = "“”"
