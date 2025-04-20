@@ -1210,12 +1210,11 @@ class ASCIITableDialog(ToplevelDialog):
         if end.col == 0:
             end.row -= 1
         for table_row in range(start.row, end.row + 1):
-            pipe_index = f"{table_row}.0 -1l lineend"
+            pipe_index = f"{table_row}.0"
             for _ in range(self.selected_column + 1):
-                pipe_index = maintext().search(
-                    "|", f"{pipe_index}+1c", f"{table_row}.end"
-                )
+                pipe_index = maintext().search("|", f"{pipe_index}", f"{table_row}.end")
                 if not pipe_index:
                     break
+                pipe_index = f"{pipe_index}+1c"
             if pipe_index:
-                maintext().tag_add(HighlightTag.TABLE_COLUMN, pipe_index)
+                maintext().tag_add(HighlightTag.TABLE_COLUMN, f"{pipe_index}-1c")
