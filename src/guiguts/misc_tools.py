@@ -47,7 +47,6 @@ logger = logging.getLogger(__package__)
 BLOCK_TYPES = "[$*XxFf]"
 POEM_TYPES = "[Pp]"
 ALL_BLOCKS_REG = f"[{re.escape('#$*FILPXCR')}]"
-QUOTE_APOS_REG = "[[:alpha:]]’[[:alpha:]]"
 NEVER_MATCH_REG = "NEVER"
 ALWAYS_MATCH_REG = "ALWAYS"
 DEFAULT_SCANNOS_DIR = importlib.resources.files(scannos)
@@ -65,7 +64,10 @@ CURLY_QUOTES_CHECKER_FILTERS = [
     CheckerFilterErrorPrefix(
         "Single quote not converted", "SINGLE QUOTE NOT CONVERTED: "
     ),
-    CheckerFilterErrorPrefix("Other single quote errors", "SINGLE OPEN.*"),
+    CheckerFilterErrorPrefix("Other single open quote errors", "SINGLE OPEN.*"),
+    CheckerFilterErrorPrefix(
+        "Other single close quote errors (may be apostrophes)", "SINGLE CLOSE.*"
+    ),
 ]
 
 
@@ -774,86 +776,6 @@ def unmatched_brackets() -> None:
         match_reg="[][}{)(]",
         match_pair_func=toggle_bracket,
     )
-
-
-def unmatched_curly_quotes() -> None:
-    """Check for unmatched curly quotes."""
-
-    def toggle_quote(quote_in: str) -> tuple[str, bool]:
-        """Get regex that matches open and close quote.
-
-        Args:
-            quote_in: Quote - must be one of ‘ ’ “ ”
-
-        Returns:
-            Tuple with regex, True if bracket_in was close quote.
-        """
-        match quote_in:
-            case "“":
-                return "[“”]", False
-            case "”":
-                return "[“”]", True
-            case "‘":
-                return "[‘’]", False
-            case "’":
-                return "[‘’]", True
-        assert False, f"'{quote_in}' is not a curly quote"
-
-    def unmatched_single_quotes(dialog: UnmatchedCheckerDialog) -> None:
-        """Add warnings about unmatched single quotes to given dialog.
-
-        Args:
-            dialog: UnmatchedCheckerDialog to receive error messages.
-        """
-        nestable = preferences.get(PrefKey.UNMATCHED_NESTABLE)
-        prefix = "Unmatched: "
-        search_range = maintext().start_to_end()
-        # Find open & close single quotes
-        while match := maintext().find_match("[‘’]", search_range, regexp=True):
-            quote_type = maintext().get_match_text(match)
-            match_pair_reg, reverse = toggle_quote(quote_type)
-            match_index = match.rowcol.index()
-            after_match = maintext().index(f"{match_index}+1c")
-            search_range = IndexRange(after_match, maintext().end())
-            # If close quote surrounded by alphabetic characters, assume it's an apostrophe
-            context = maintext().get(f"{match_index}-1c", f"{match_index}+2c")
-            if re.fullmatch(QUOTE_APOS_REG, context):
-                continue
-            # Search for the matching pair to this markup
-            if not find_match_pair(
-                match_index,
-                quote_type,
-                match_pair_reg,
-                reverse,
-                nestable,
-                ignore_func=ignore_apostrophes,
-            ):
-                dialog.add_entry(
-                    f"{prefix}{quote_type}",
-                    IndexRange(match_index, after_match),
-                    len(prefix),
-                    len(prefix) + 1,
-                )
-
-    unmatched_markup_check(
-        UnmatchedCurlyQuoteDialog,
-        rerun_command=unmatched_curly_quotes,
-        match_reg="[“”]",
-        match_pair_func=toggle_quote,
-        additional_check_command=unmatched_single_quotes,
-    )
-
-
-def ignore_apostrophes(match_index: str) -> bool:
-    """Return whether to ignore match because context implies
-    it's an apostrophe rather than a close-quote, i.e. it's surrounded
-    by alphabetic characters.
-
-    Args:
-        match_index: Index to location of match.
-    """
-    context = maintext().get(f"{match_index}-1c", f"{match_index}+2c")
-    return bool(re.fullmatch(QUOTE_APOS_REG, context))
 
 
 def unmatched_dp_markup() -> None:
@@ -2169,9 +2091,11 @@ class CurlyQuotesDialog(CheckerDialog):
         """Populate list with suspect curly quotes."""
         self.reset()
         dqtype = 0
+        sqtype = 0
         search_start = maintext().start()
         search_end = maintext().index(tk.END)
         last_open_double_idx = ""
+        last_open_single_idx = ""
         punctuation = ".,;:!?"
         while match := maintext().find_match(
             rf"^$|[{DQUOTES}{SQUOTES}\"']",
@@ -2244,7 +2168,11 @@ class CurlyQuotesDialog(CheckerDialog):
                 context = maintext().get(
                     f"{match.rowcol.index()}-1c", f"{match.rowcol.index()}+2c"
                 )
-                if len(context) > 2 and context[2] == "\n":
+                if len(context) < 3:
+                    continue
+                if sqtype == 1:
+                    add_quote_entry("SINGLE OPEN QUOTE UNEXPECTED: ")
+                elif len(context) > 2 and context[2] == "\n":
                     add_quote_entry("SINGLE OPEN QUOTE AT END OF LINE: ")
                 elif len(context) > 2 and context[2] == " ":
                     add_quote_entry("SINGLE OPEN QUOTE FOLLOWED BY SPACE: ")
@@ -2252,8 +2180,28 @@ class CurlyQuotesDialog(CheckerDialog):
                     add_quote_entry("SINGLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ")
                 elif context[0] in punctuation:
                     add_quote_entry("SINGLE OPEN QUOTE PRECEDED BY PUNCTUATION: ")
+                sqtype = 1
+                last_open_single_idx = match.rowcol.index()
             elif match_text == SQUOTES[1]:  # Close single
-                pass  # Close singles/apostrophes can go almost anywhere
+                context = maintext().get(
+                    f"{match.rowcol.index()}-2c", f"{match.rowcol.index()}+3c"
+                )
+                # If letters both sides, it's an apostrophe, so ignore
+                if len(context) < 5 or context[1].isalpha() and context[3].isalpha():
+                    continue
+                if sqtype == 0:
+                    add_quote_entry("SINGLE CLOSE QUOTE UNEXPECTED (or APOSTROPHE): ")
+                elif context[1] == "\n":
+                    add_quote_entry(
+                        "SINGLE CLOSE QUOTE AT START OF LINE (or APOSTROPHE): "
+                    )
+                elif context[1] == " ":
+                    add_quote_entry(
+                        "SINGLE CLOSE QUOTE PRECEDED BY SPACE (or APOSTROPHE): "
+                    )
+                elif context[3].isalnum():
+                    add_quote_entry("SINGLE QUOTE FOLLOWED BY LETTER (or APOSTROPHE): ")
+                sqtype = 0
             elif match_text == '"':  # Straight double
                 add_quote_entry("DOUBLE QUOTE NOT CONVERTED: ")
             elif match_text == "'":  # Straight single
@@ -2275,7 +2223,24 @@ class CurlyQuotesDialog(CheckerDialog):
                         hilite_end=hilite_start + 1,
                         error_prefix="DOUBLE QUOTE NOT CLOSED: ",
                     )
-                dqtype = 0  # Reset double quotes at paragraph break
+                dqtype = 0
+                # Expect sqtype == 0 unless next line starts with open single quote
+                if sqtype == 1 and maintext().get(f"{linebeg} +1l") != SQUOTES[0]:
+                    hilite_start = IndexRowCol(last_open_single_idx).col
+                    self.add_entry(
+                        maintext().get(
+                            f"{last_open_single_idx} linestart",
+                            f"{last_open_single_idx} lineend",
+                        ),
+                        IndexRange(
+                            last_open_single_idx,
+                            maintext().rowcol(f"{last_open_single_idx}+1c"),
+                        ),
+                        hilite_start=hilite_start,
+                        hilite_end=hilite_start + 1,
+                        error_prefix="SINGLE QUOTE NOT CLOSED: ",
+                    )
+                sqtype = 0
         self.display_entries()
 
     def swap_open_close(self) -> None:

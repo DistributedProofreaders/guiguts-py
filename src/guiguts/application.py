@@ -58,7 +58,6 @@ from guiguts.misc_tools import (
     unmatched_dp_markup,
     unmatched_html_markup,
     unmatched_brackets,
-    unmatched_curly_quotes,
     unmatched_block_markup,
     FractionConvertType,
     fraction_convert,
@@ -845,7 +844,6 @@ class Guiguts:
         unmatched_menu.add_button("Bloc~k Markup", unmatched_block_markup)
         unmatched_menu.add_button("~DP Markup", unmatched_dp_markup)
         unmatched_menu.add_button("~Brackets", unmatched_brackets)
-        unmatched_menu.add_button("Curly ~Quotes", unmatched_curly_quotes)
 
         fraction_menu = Menu(tools_menu, "C~onvert Fractions")
         fraction_menu.add_button(
