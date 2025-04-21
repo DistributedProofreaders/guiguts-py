@@ -4,7 +4,7 @@ from html.parser import HTMLParser
 import logging
 import subprocess
 import tkinter as tk
-from tkinter import ttk, Text
+from tkinter import ttk, Text, messagebox
 from tkinter import font as tk_font
 from typing import Any, Callable, Optional, Literal, Generator, cast
 from enum import auto, StrEnum
@@ -19,6 +19,8 @@ from guiguts.utilities import (
     IndexRowCol,
     IndexRange,
     TextWrapper,
+    process_accel,
+    process_label,
 )
 from guiguts.widgets import (
     themed_style,
@@ -1043,19 +1045,6 @@ class MainText(tk.Text):
                 bind_peer=True,
             )
 
-        # Defang some potentially destructive editing keys
-        for _key in ("D", "H", "K", "T"):
-            self.key_bind(
-                f"<Control-{_key}>", lambda _event: self.do_nothing(), bind_all=False
-            )
-        if is_mac():
-            for _key in ("I", "O"):
-                self.key_bind(
-                    f"<Control-{_key}>",
-                    lambda _event: self.do_nothing(),
-                    bind_all=False,
-                )
-
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
         self.bind_event(
@@ -1092,6 +1081,16 @@ class MainText(tk.Text):
                 "<B1-Motion>", self._autoscroll_callback, add=True, bind_peer=True
             )
 
+        # get the current bind tags
+        bindtags = list(self.bindtags())
+
+        # add our custom bind tag before the Canvas bind tag
+        index = bindtags.index("Text")
+        bindtags.insert(index, "MainText")
+
+        # save the bind tags back to the widget
+        self.bindtags(tuple(bindtags))
+
         # Also used for column selection, not just above bug fix, so needed on all platforms
         self._autoscroll_active = False
 
@@ -1110,10 +1109,6 @@ class MainText(tk.Text):
 
         # Initialize highlighting tags
         self.after_idle(lambda: self.highlight_configure_tags(first_run=True))
-
-    def do_nothing(self) -> None:
-        """The only winning move is not to play."""
-        return
 
     def theme_set_tk_widget_colors(self, widget: tk.Text) -> None:
         """Set bg & fg colors of a Text (non-themed) widget to match
@@ -4068,3 +4063,418 @@ def maintext(text_widget: Optional[MainText] = None) -> MainText:
         _THE_MAINTEXT = text_widget
     assert _THE_MAINTEXT is not None
     return _THE_MAINTEXT
+
+
+class KeyboardShortcutsDict(dict):
+    """Dictionary of keyboard shortcuts, keyed by "Label|Menu"."""
+
+    DIVIDER = "|"
+
+    def __init__(self) -> None:
+        """Initialize by loading from Prefs."""
+        super().__init__()
+        for key, value in preferences.get(PrefKey.KEYBOARD_SHORTCUTS_DICT).items():
+            self[key] = value
+
+    def save_to_prefs(self) -> None:
+        """Save shortcuts dictionary to Prefs."""
+        preferences.set(PrefKey.KEYBOARD_SHORTCUTS_DICT, self)
+
+    def set_shortcut(self, label: str, parent_label: str, shortcut: str) -> None:
+        """Set the shortcut for the given label|menu combination."""
+        parent_label = process_label(parent_label)[1] if parent_label else ""
+        self[f"{process_label(label)[1]}{self.DIVIDER}{parent_label}"] = shortcut
+
+    def labels_from_key(self, key: str) -> tuple[str, str]:
+        """Return label and parent/menu label, given dictionary key."""
+        label, parent_label = key.split(self.DIVIDER, maxsplit=1)
+        return (label, parent_label)
+
+    def reset(self) -> None:
+        """Reset shortcuts, by clearing dictionary and saving to Prefs."""
+        if not messagebox.askyesno(
+            title="Reset Shortcuts to Default?",
+            message="This will reset all keyboard shortcuts to their default values.\n"
+            "Any custom shortcuts you’ve set will be lost.\n"
+            "Guiguts must be restarted after resetting shortcuts.",
+            detail="Are you sure you want to continue?",
+            default=messagebox.NO,
+            icon=messagebox.WARNING,
+        ):
+            return
+        self.clear()
+        self.save_to_prefs()
+
+
+class EntryMetadata:
+    """Store metadata about a menu entry."""
+
+    def __init__(self, label: str, parent_label: str, shortcut: str) -> None:
+        """Initialize EntryMetadata."""
+        self.label = label
+        self.parent_label = parent_label
+        self.shortcut = shortcut
+
+    def display_label(self) -> str:
+        """Return label, processed for display, i.e. tilde removed."""
+        return process_label(self.label)[1]
+
+    def display_parent_label(self) -> str:
+        """Return parent label, processed for display, i.e. tilde removed."""
+        return process_label(self.parent_label)[1]
+
+    def display_shortcut(self) -> str:
+        """Return shortcut, processed for display."""
+        return process_accel(self.shortcut)[0]
+
+    def __lt__(self, other: "EntryMetadata") -> bool:
+        """Define "<" to support case insensitve sorting by label."""
+        return self.label.lower() < other.label.lower()
+
+    def get_command(self) -> Callable:
+        """Return command to be executed - must be overridden."""
+        raise NotImplementedError()
+
+    def matches(self, search_str: str) -> bool:
+        """Return whether given search string is in the entry's label
+        or the parent's label (case insensitive).
+
+        Args:
+            search_str: Filter string to search for in labels.
+
+        Returns:
+            True if search_str in label or parent's label, otherwise False."""
+        search_str = search_str.lower()
+        return (
+            search_str in self.label.lower() or search_str in self.parent_label.lower()
+        )
+
+
+class SeparatorMetadata(EntryMetadata):
+    """Store metadata about a menu separator - just a placeholder."""
+
+    def __init__(
+        self,
+    ) -> None:
+        """Initialize SeparatorMetadata."""
+        super().__init__("", "", "")
+
+    def get_command(self) -> Callable:
+        """No command to be exectuted for a separator."""
+        raise NotImplementedError()
+
+
+class ButtonMetadata(EntryMetadata):
+    """Store metadata about a menu button."""
+
+    def __init__(
+        self,
+        label: str,
+        parent_label: str,
+        shortcut: str,
+        command: Callable,
+        bind_all: bool,
+        add_to_command_palette: bool,
+    ) -> None:
+        """Initialize ButtonMetadata."""
+        super().__init__(label, parent_label, shortcut)
+        self.command = command
+        self.bind_all = bind_all
+        self.add_to_command_palette = add_to_command_palette
+
+    def get_command(self) -> Callable:
+        """Return command to be executed."""
+        return self.command
+
+
+class CheckbuttonMetadata(EntryMetadata):
+    """Store metadata about a menu checkbox."""
+
+    def __init__(
+        self,
+        label: str,
+        parent_label: str,
+        shortcut: str,
+        pref_key: PrefKey,
+        command_on: Optional[Callable],
+        command_off: Optional[Callable],
+    ) -> None:
+        """Initialize CheckboxMetadata."""
+        super().__init__(f"{label} (toggle)", parent_label, shortcut)
+        self.pref_key = pref_key
+        self.command_on = command_on
+        self.command_off = command_off
+        self.bind_all = True  # Checkbox bindings are always to "all" widgets
+        self.add_to_command_palette = True  # Also always in command palette
+
+    def get_command(self) -> Callable:
+        """Return command to be executed."""
+
+        def toggle_command() -> None:
+            """Function that will toggle boolean and call command."""
+            if preferences.get(self.pref_key):
+                preferences.set(self.pref_key, False)
+                if self.command_off is not None:
+                    self.command_off()
+            else:
+                preferences.set(self.pref_key, True)
+                if self.command_on is not None:
+                    self.command_on()
+
+        return toggle_command
+
+
+class MenuMetadata(EntryMetadata):
+    """Store metadata about a menu item."""
+
+    def __init__(self, label: str, parent_label: str) -> None:
+        """Initialize MenuMetadata object.
+
+        Args:
+            label: Label string for menu button.
+            widget: The menu that is being added.
+        """
+        super().__init__(label, parent_label, "")
+        self.entries: list[EntryMetadata] = []
+        # Not easy to navigate actual tk menu structure, so store tk Menu here
+        self.tk_menu: Optional[tk.Menu] = None
+
+    def add_submenu(self, label: str) -> "MenuMetadata":
+        """Add a submenu to this menu & return it.
+
+        Args:
+            label: Label string for menu button.
+
+        Returns:
+            MenuMetadata object representing added menu
+        """
+        menu = MenuMetadata(label, self.label)
+        self.entries.append(menu)
+        return menu
+
+    def add_button(
+        self,
+        label: str,
+        callback: Callable[[], Any],
+        accel: str = "",
+        bind_all: bool = True,
+        add_to_command_palette: bool = True,
+    ) -> None:
+        """Add a button to this menu.
+
+        Args:
+            label: Label string for button, including tilde for keyboard
+              navigation, e.g. "~Save".
+            accel: String describing optional shortcut key.
+            callback: Callback function.
+            bind_all: Set False if binding should only apply to maintext
+            add_to_command_palette: Set False if button should not be in command palette.
+        """
+        button = ButtonMetadata(
+            label, self.label, accel, callback, bind_all, add_to_command_palette
+        )
+        self.entries.append(button)
+
+    def add_button_virtual_event(
+        self, label: str, virtual_event: str, accel: str = ""
+    ) -> None:
+        """Add a button to this menu to call virtual event."""
+
+        def command() -> None:
+            widget = maintext().winfo_toplevel().focus_get()
+            if widget is None:
+                widget = maintext().focus_widget()
+            widget.event_generate(virtual_event)
+
+        self.add_button(label, command, accel, bind_all=False)
+
+    def add_checkbutton(
+        self,
+        label: str,
+        pref_key: PrefKey,
+        callback_on: Optional[Callable[[], None]] = None,
+        callback_off: Optional[Callable[[], None]] = None,
+        accel: str = "",
+    ) -> None:
+        """Add a checkbutton to this menu.
+
+        Args:
+            label: The text displayed for the button.
+            accel: String describing optional accelerator key.
+            pref_key: Boolean preference key.
+            callback_on: The function to execute when checkbox turned on.
+            callback_off: The function to execute when checkbox turned off.
+        """
+
+        checkbutton = CheckbuttonMetadata(
+            label,
+            self.label,
+            accel,
+            pref_key,
+            callback_on,
+            callback_off,
+        )
+        self.entries.append(checkbutton)
+
+    def add_separator(self) -> None:
+        """Add a separator to this menu."""
+        self.entries.append(SeparatorMetadata())
+
+    def get_all_palette_commands(self) -> list[EntryMetadata]:
+        """Recursively collect entries (buttons & checkboxes) in this menu.
+        Only include if command would show in command palette."""
+        commands: list[EntryMetadata] = []
+        for entry in self.entries:
+            if isinstance(entry, (ButtonMetadata, CheckbuttonMetadata)):
+                if entry.add_to_command_palette:
+                    commands.append(entry)
+            elif isinstance(entry, MenuMetadata):
+                commands.extend(entry.get_all_palette_commands())
+        return commands
+
+    def get_command(self) -> Callable:
+        """Return command to be executed - should never be called."""
+        raise NotImplementedError()
+
+
+class MenubarMetadata:
+    """Store metadata about entries in the menu bar."""
+
+    def __init__(self) -> None:
+        """Initialize MenubarMetadata object."""
+        self.entries: list[MenuMetadata] = []
+        self.orphans: list[EntryMetadata] = []
+        self.stored_shortcuts: dict[str, bool] = {}  # Keyevents
+
+    def add_menu(self, label: str) -> MenuMetadata:
+        """Add a menu to the menubar structure & return it.
+
+        Args:
+            parent: Parent menu, or None if menu is a top level child of menubar
+            label: Label string for menu button.
+
+        Returns:
+            MenuMetadata object representing added menu
+        """
+        menu = MenuMetadata(label, "")
+        self.entries.append(menu)
+        return menu
+
+    def add_button_orphan(
+        self,
+        label: str,
+        command: Callable,
+    ) -> None:
+        """Add a command button to the list of orphans.
+
+        Args:
+            label: The text displayed for the button.
+            command: The function to execute when clicked.
+        """
+        self.orphans.append(ButtonMetadata(label, "", "", command, True, True))
+
+    def add_checkbutton_orphan(
+        self,
+        label: str,
+        pref_key: PrefKey,
+        command_on: Optional[Callable] = None,
+        command_off: Optional[Callable] = None,
+    ) -> None:
+        """Add a command button to the list of orphans.
+
+        Args:
+            label: The text displayed for the button.
+            pref_key: Boolean preference key.
+            command_on: Optional function to execute when checkbox turned on.
+            command_off: Optional function to execute when checkbox turned off.
+        """
+        self.orphans.append(
+            CheckbuttonMetadata(label, "", "", pref_key, command_on, command_off)
+        )
+
+    def get_all_palette_commands(self) -> list[EntryMetadata]:
+        """Collect command buttons from the entire menu structure.
+        Only include if command would show in command palette."""
+        commands: list[EntryMetadata] = []
+        for entry in self.entries:
+            commands.extend(entry.get_all_palette_commands())
+        commands.extend(self.orphans)
+        return commands
+
+    def store_shortcut(self, accel: str, bind_all: bool) -> None:
+        """Store a shortcut so it can be unbound later."""
+        if not accel:
+            return
+        _, key_event = process_accel(accel)
+        self.stored_shortcuts[key_event] = bind_all
+
+    def unbind_shortcuts(self) -> None:
+        """Unbind all shortcuts and reset list."""
+        for shortcut, bind_all in self.stored_shortcuts.items():
+            lk = re.sub("(?<=[^A-Za-z])[A-Z]>$", lambda m: m.group(0).lower(), shortcut)
+            uk = re.sub("(?<=[^A-Za-z])[a-z]>$", lambda m: m.group(0).upper(), shortcut)
+            if bind_all:
+                maintext().unbind(lk)
+                maintext().unbind(uk)
+                maintext().unbind_all(lk)
+                maintext().unbind_all(uk)
+            else:
+                maintext().unbind(lk)
+                maintext().unbind(uk)
+        self.stored_shortcuts = {}
+
+        # Also defang some potentially destructive editing keys
+        def do_nothing() -> None:
+            """The only winning move is not to play."""
+
+        for _key in ("D", "H", "K", "T"):
+            maintext().key_bind(
+                f"<Control-{_key}>", lambda _event: do_nothing(), bind_all=False
+            )
+        if is_mac():
+            for _key in ("I", "O"):
+                maintext().key_bind(
+                    f"<Control-{_key}>",
+                    lambda _event: do_nothing(),
+                    bind_all=False,
+                )
+
+    def set_shortcuts_from_prefs(self) -> None:
+        """Set the shortcuts for label|menu combination stored in Prefs."""
+        shortcuts_dict = KeyboardShortcutsDict()
+        all_commands = self.get_all_palette_commands()
+        for key, shortcut in shortcuts_dict.items():
+            label, parent_label = shortcuts_dict.labels_from_key(key)
+            for command in all_commands:
+
+                if (
+                    command.display_label() == label
+                    and command.display_parent_label() == parent_label
+                ):
+                    command.shortcut = shortcut
+                    break
+
+    def metadata_from_shortcut(self, shortcut: str) -> Optional[EntryMetadata]:
+        """Return metadata that has given shortcut assigned (or None).
+        Copes with "Key-" being present/absent."""
+        if not shortcut:
+            return None
+        shortcut = shortcut.replace("Key-", "")
+        all_commands = self.get_all_palette_commands()
+        for command in all_commands:
+            cmd_shortcut = process_accel(command.shortcut)[0]
+            if cmd_shortcut == shortcut:
+                return command
+        return None
+
+
+_MENUBAR_METADATA = None
+
+
+def menubar_metadata() -> MenubarMetadata:
+    """Return single instance of menubar metadata."""
+    global _MENUBAR_METADATA
+    if _MENUBAR_METADATA is None:
+        _MENUBAR_METADATA = MenubarMetadata()
+    assert _MENUBAR_METADATA is not None
+    return _MENUBAR_METADATA
