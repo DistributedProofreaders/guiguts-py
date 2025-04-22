@@ -1357,7 +1357,7 @@ class EbookmakerCheckerAPI:
         proj_dir, file_base = os.path.split(file_name)
         file_base, _ = os.path.splitext(file_base)
 
-        url = "https://ebookmaker.pglaf.org/dev/"
+        url = "https://ebookmaker.pglaf.org/"
         ebooknum = 99999
         ftypes = {
             PrefKey.EBOOKMAKER_EPUB2: "images-epub.epub",
