@@ -1053,7 +1053,7 @@ class Guiguts:
                 menubar_metadata().store_shortcut(entry.shortcut, entry.bind_all)
             elif isinstance(entry, CheckbuttonMetadata):
                 tk_menu.add_checkbox(  # type:ignore[attr-defined]
-                    entry.label,
+                    entry.label.removesuffix(" (toggle)"),
                     PersistentBoolean(entry.pref_key),
                     entry.command_on,
                     entry.command_off,

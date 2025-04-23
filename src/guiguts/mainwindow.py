@@ -144,6 +144,7 @@ class Menu(tk.Menu):
         Menu.bind_checkbox(bool_var, handler_on, handler_off, accel)
 
         label_tilde, label_txt = process_label(label)
+        accel = process_accel(accel)[0]
         command_args = {
             "label": label_txt,
             "command": lambda: Menu.checkbox_clicked(bool_var, handler_on, handler_off),
