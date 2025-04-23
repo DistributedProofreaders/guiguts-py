@@ -2,14 +2,16 @@
 
 import gzip
 from html.parser import HTMLParser
+import io
 import logging
-import os.path
+import os
 import subprocess
 import tkinter as tk
 from tkinter import ttk, filedialog
 from typing import Optional, Any
 import xml.sax
 import shutil
+import zipfile
 
 from PIL import Image, ImageTk, UnidentifiedImageError
 import regex as re
@@ -1112,10 +1114,14 @@ class EbookmakerCheckerDialog(CheckerDialog):
 
     manual_page = "HTML_Menu#Ebookmaker"
 
-    def __init__(self, **kwargs: Any) -> None:
-        """Initialize ebookmaker dialog."""
+    def __init__(self, api: bool = False, **kwargs: Any) -> None:
+        """Initialize ebookmaker dialog.
+
+        Args:
+            api: Set to True if API is to be used.
+        """
         super().__init__(
-            "Ebookmaker Results",
+            f"Ebookmaker {'(online)' if api else '(local)'} Results",
             tooltip="\n".join(
                 [
                     "Left click: Select message",
@@ -1126,28 +1132,30 @@ class EbookmakerCheckerDialog(CheckerDialog):
             **kwargs,
         )
 
-        def locate_ebookmaker() -> None:
-            """Prompt user to give path to where ebookmaker was installed using pipenv."""
-            if dir_name := filedialog.askdirectory(
-                title=f"Select the Ebookmaker 'pipenv install' {folder_dir_str(lowercase=True)}",
-                parent=self,
-            ):
-                preferences.set(PrefKey.EBOOKMAKER_PATH, dir_name)
+        if not api:
 
-        ttk.Label(self.custom_frame, text=f"Ebookmaker {folder_dir_str()}:").grid(
-            row=0, column=0, sticky="NSW", pady=(5, 0)
-        )
-        ttk.Entry(
-            self.custom_frame,
-            textvariable=PersistentString(PrefKey.EBOOKMAKER_PATH),
-        ).grid(row=0, column=1, sticky="NSEW", padx=5, pady=(5, 0))
-        self.custom_frame.columnconfigure(1, weight=1)
-        ttk.Button(
-            self.custom_frame,
-            text="Browse",
-            command=locate_ebookmaker,
-            takefocus=False,
-        ).grid(row=0, column=2, sticky="NSE", pady=(5, 0))
+            def locate_ebookmaker() -> None:
+                """Prompt user to give path to where ebookmaker was installed using pipenv."""
+                if dir_name := filedialog.askdirectory(
+                    title=f"Select the Ebookmaker 'pipenv install' {folder_dir_str(lowercase=True)}",
+                    parent=self,
+                ):
+                    preferences.set(PrefKey.EBOOKMAKER_PATH, dir_name)
+
+            ttk.Label(self.custom_frame, text=f"Ebookmaker {folder_dir_str()}:").grid(
+                row=0, column=0, sticky="NSW", pady=(5, 0)
+            )
+            ttk.Entry(
+                self.custom_frame,
+                textvariable=PersistentString(PrefKey.EBOOKMAKER_PATH),
+            ).grid(row=0, column=1, sticky="NSEW", padx=5, pady=(5, 0))
+            self.custom_frame.columnconfigure(1, weight=1)
+            ttk.Button(
+                self.custom_frame,
+                text="Browse",
+                command=locate_ebookmaker,
+                takefocus=False,
+            ).grid(row=0, column=2, sticky="NSE", pady=(5, 0))
 
         ttk.Label(self.custom_frame, text="Ebook formats:").grid(
             row=1, column=0, sticky="NSW"
@@ -1176,13 +1184,14 @@ class EbookmakerCheckerDialog(CheckerDialog):
             variable=PersistentBoolean(PrefKey.EBOOKMAKER_KF8),
         ).grid(column=3, row=0, sticky="NSW", padx=5)
 
-        verbose_frame = ttk.Frame(self.custom_frame)
-        verbose_frame.grid(row=1, column=2, sticky="NSE", pady=5)
-        ttk.Checkbutton(
-            verbose_frame,
-            text="Verbose",
-            variable=PersistentBoolean(PrefKey.EBOOKMAKER_VERBOSE_OUTPUT),
-        ).grid(column=0, row=0, sticky="NSE")
+        if not api:
+            verbose_frame = ttk.Frame(self.custom_frame)
+            verbose_frame.grid(row=1, column=2, sticky="NSE", pady=5)
+            ttk.Checkbutton(
+                verbose_frame,
+                text="Verbose",
+                variable=PersistentBoolean(PrefKey.EBOOKMAKER_VERBOSE_OUTPUT),
+            ).grid(column=0, row=0, sticky="NSE")
 
 
 class EbookmakerChecker:
@@ -1193,13 +1202,6 @@ class EbookmakerChecker:
 
     def __init__(self) -> None:
         """Initialize ebookmaker checker."""
-
-        def ebookmaker_sort_key_type(
-            entry: CheckerEntry,
-        ) -> tuple[int, int]:
-            """Sort key function to sort ebookmaker entries by error prefix, then
-            retaining the order within that error type."""
-            return (self.severities.get(entry.error_prefix, 10), entry.initial_pos)
 
         self.dialog = EbookmakerCheckerDialog.show_dialog(
             rerun_command=self.run,
@@ -1255,8 +1257,7 @@ class EbookmakerChecker:
             command.append("-v")
         command.append("--max-depth=3")
         # Build options
-        if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
-            command.append("--make=epub.images")
+        command.append("--make=epub.images")  # Epub2 is always turned on
         if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
             command.append("--make=epub3.images")
         # Need Calibre to create kindle versions
@@ -1278,7 +1279,7 @@ class EbookmakerChecker:
         command.append(f"--output-dir={proj_dir}")
         base_name, _ = os.path.splitext(os.path.basename(file_name))
         command.append(f"--output-file={base_name}")
-        title = self.get_title()
+        title = get_title()
         command.append(f"--title={title}")
         command.append(file_name)
 
@@ -1293,48 +1294,249 @@ class EbookmakerChecker:
             check=False,
         )
 
-        regex = re.compile(r"^(CRITICAL|ERROR|WARNING)(.*)")
-        messages = result.stdout.split("\n")
-        if any(message.strip() for message in messages):
-            for message in messages:
-                # skip this useless notice...
-                if re.match(r".*Not configured, using .* for FILESDIR", message):
-                    continue
-                # If it's an error, move the severity into the error_prefix argument
-                error_prefix, is_error = regex.subn(r"\1", message)
-                if is_error:
-                    message = regex.sub(r"\2", message)
-                    severity = CheckerEntrySeverity.ERROR
-                elif message.startswith(("INFO", "DEBUG")):
-                    error_prefix = ""
-                    severity = CheckerEntrySeverity.INFO
-                else:
-                    error_prefix = ""
-                    severity = None
-                self.dialog.add_entry(
-                    message, error_prefix=error_prefix, severity=severity
-                )
-        else:
-            self.dialog.add_entry("Ebookmaker completed with no messages")
+        process_ebookmaker_messages(result.stdout, self.dialog)
 
         self.dialog.display_entries()
 
-    def get_title(self) -> str:
-        """Get sanitized book title from `<title>` element."""
-        title, nsub = re.subn(
-            r".+?<title>(.+?)</title>.+",
-            r"\1",
-            maintext().get("1.0", "20.0"),
-            flags=re.DOTALL,
+
+class EbookmakerCheckerAPIDialog(EbookmakerCheckerDialog):
+    """Dialog to show ebookmaker results using API."""
+
+    manual_page = "HTML_Menu#Ebookmaker"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize ebookmaker dialog."""
+        super().__init__(
+            api=True,
+            **kwargs,
         )
-        if nsub == 0 or not title:
-            title = "No title"
-        title = re.sub(r"\s+", " ", title)
-        title = re.sub(r"\| Project Gutenberg", "", title)
-        title = re.sub(r"^\s+|\s+$", "", title)
-        title = DiacriticRemover.remove_diacritics(title)
-        title = re.sub(r"[^A-za-z0-9 ]+", "_", title)
-        return title
+
+
+class EbookmakerCheckerAPI:
+    """Ebookmaker checker using API."""
+
+    def __init__(self) -> None:
+        """Initialize ebookmaker checker."""
+
+        self.dialog = EbookmakerCheckerAPIDialog.show_dialog(
+            rerun_command=self.run,
+            sort_key_alpha=ebookmaker_sort_key_type,
+            show_suspects_only=True,
+        )
+
+    def run(self) -> None:
+        """Run ebookmaker using API."""
+        self.dialog.reset()
+
+        def report_exception(message: str, exc: Exception | str) -> None:
+            """Report exception to user and suggest manual conversion.
+            Also call `display_entries to clear "busy" message.
+
+            Args:
+                message: Initial part of message to user.
+                exc: Exception that was thrown, or a string describing the problem
+            """
+            logger.error(
+                f"{message}\nConvert manually online at ebookmaker.pglaf.org\nError details:\n{exc}"
+            )
+            self.dialog.display_entries()
+            self.dialog.lift()
+
+        timeout = 300
+
+        # Create list of formats to build
+        build = ["epub"]  # Epub2 is always on
+        if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
+            build.append("epub3")
+        if preferences.get(PrefKey.EBOOKMAKER_KINDLE):
+            build.append("kindle")
+        if preferences.get(PrefKey.EBOOKMAKER_KF8):
+            build.append("kf8")
+
+        file_name = the_file().filename
+        proj_dir, file_base = os.path.split(file_name)
+        file_base, _ = os.path.splitext(file_base)
+
+        url = "https://ebookmaker.pglaf.org/"
+        ebooknum = 99999
+        ftypes = {
+            PrefKey.EBOOKMAKER_EPUB2: "images-epub.epub",
+            PrefKey.EBOOKMAKER_EPUB3: "images-epub3.epub",
+            PrefKey.EBOOKMAKER_KINDLE: "images-kindle.mobi",
+            PrefKey.EBOOKMAKER_KF8: "kf8-kindle.mobi",
+        }
+
+        def zip_html_and_images(
+            html_file_path: str, images_folder_path: str
+        ) -> io.BytesIO:
+            """Zip current file plus images folder into bytes buffer."""
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+                # Add the text from the HTML file at the top level of the zip
+                zipf.writestr(os.path.basename(html_file_path), maintext().get_text())
+                # zipf.write(html_file_path, os.path.basename(html_file_path))
+
+                # Ensure the images folder itself is present, even if empty
+                root_arcname = os.path.basename(images_folder_path.rstrip(os.sep)) + "/"
+                zipf.writestr(root_arcname, "")  # Add empty directory entry
+
+                # Add all files inside the images folder, preserving folder structure
+                for root, _, files in os.walk(images_folder_path):
+                    for f in files:
+                        full_path = os.path.join(root, f)
+                        arcname = os.path.relpath(
+                            full_path, start=os.path.dirname(images_folder_path)
+                        )
+                        zipf.write(full_path, arcname)
+
+            buffer.seek(0)
+            return buffer
+
+        # Post zip file to ebookmaker
+        fileobj = zip_html_and_images(file_name, os.path.join(proj_dir, "images"))
+        try:
+            response = requests.post(
+                url,
+                files={"file": ("{file_base}.zip", fileobj)},
+                data={
+                    "out": "json",
+                    "make_formats": ",".join(build),
+                    "ebook_number": ebooknum,
+                    "title": get_title(),
+                },
+                timeout=timeout,
+            )
+        except requests.exceptions.Timeout as exc:
+            report_exception(f"Initial request to {url} timed out.", exc)
+            return
+        except ConnectionError as exc:
+            report_exception(f"Initial connection error to {url}.", exc)
+            return
+        # Check if HTTP request was unsuccessful
+        try:
+            response.raise_for_status()
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.TooManyRedirects,
+        ) as exc:
+            report_exception(f"Initial request to {url} was unsuccessful.", exc)
+            return
+
+        result = response.json()
+        output_txt_url = result["output_log"]
+        output_dir = result["output_dir"]
+
+        # Get output.txt
+        try:
+            response = requests.get(output_txt_url, timeout=timeout)
+        except requests.exceptions.Timeout as exc:
+            report_exception("Download request for output.txt timed out.", exc)
+            return
+        except ConnectionError as exc:
+            report_exception("Connection error getting output.txt.", exc)
+            return
+        # Check if HTTP request was unsuccessful
+        try:
+            response.raise_for_status()
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.TooManyRedirects,
+        ) as exc:
+            report_exception("Download request for output.txt was unsuccessful.", exc)
+            return
+
+        # Process output.txt into messages in dialog
+        process_ebookmaker_messages(response.text, self.dialog)
+
+        # Get each generated file (e.g. 99999-epub.epub) & save in project folder (e.g. myfile-epub.epub)
+        for key, ftype in ftypes.items():
+            if not preferences.get(key):  # Only get if user requested it
+                continue
+
+            get_name = f"{ebooknum}-{ftype}"
+            put_name = f"{file_base}-{ftype}"
+            try:
+                response = requests.get(f"{output_dir}/{get_name}", timeout=timeout)
+            except requests.exceptions.Timeout as exc:
+                report_exception(f"Download request for {put_name} timed out.", exc)
+                break
+            except ConnectionError as exc:
+                report_exception(f"Connection error getting {put_name}.", exc)
+                break
+            # Check if HTTP request was unsuccessful
+            try:
+                response.raise_for_status()
+            except (
+                requests.exceptions.HTTPError,
+                requests.exceptions.TooManyRedirects,
+            ) as exc:
+                report_exception(
+                    f"Download request for {put_name} was unsuccessful.", exc
+                )
+                break
+
+            with open(os.path.join(proj_dir, put_name), mode="wb") as wfile:
+                wfile.write(response.content)
+
+        self.dialog.display_entries()
+
+
+def process_ebookmaker_messages(
+    ebm_output: str, dialog: EbookmakerCheckerDialog
+) -> None:
+    """Process output from ebookmaker and display in dialog.
+
+    Args:
+        ebm_output:
+
+    """
+    regex = re.compile(r"^(CRITICAL|ERROR|WARNING)(.*)")
+    messages = ebm_output.split("\n")
+    if any(message.strip() for message in messages):
+        for message in messages:
+            # skip this useless notice...
+            if re.match(r".*Not configured, using .* for FILESDIR", message):
+                continue
+            # If it's an error, move the severity into the error_prefix argument
+            error_prefix, is_error = regex.subn(r"\1", message)
+            if is_error:
+                message = regex.sub(r"\2", message)
+                severity = CheckerEntrySeverity.ERROR
+            elif message.startswith(("INFO", "DEBUG")):
+                error_prefix = ""
+                severity = CheckerEntrySeverity.INFO
+            else:
+                error_prefix = ""
+                severity = None
+            dialog.add_entry(message, error_prefix=error_prefix, severity=severity)
+    else:
+        dialog.add_entry("Ebookmaker completed with no messages")
+
+
+def get_title() -> str:
+    """Get sanitized book title from `<title>` element."""
+    title, nsub = re.subn(
+        r".+?<title>(.+?)</title>.+",
+        r"\1",
+        maintext().get("1.0", "20.0"),
+        flags=re.DOTALL,
+    )
+    if nsub == 0 or not title:
+        title = "No title"
+    title = re.sub(r"\s+", " ", title)
+    title = re.sub(r"\| Project Gutenberg", "", title)
+    title = re.sub(r"^\s+|\s+$", "", title)
+    title = DiacriticRemover.remove_diacritics(title)
+    title = re.sub(r"[^A-za-z0-9 ]+", "_", title)
+    return title
+
+
+def ebookmaker_sort_key_type(
+    entry: CheckerEntry,
+) -> tuple[int, int]:
+    """Sort key function to sort ebookmaker entries by error prefix, then
+    retaining the order within that error type."""
+    return (EbookmakerChecker.severities.get(entry.error_prefix, 10), entry.initial_pos)
 
 
 class HTMLAutoTableDialog(ToplevelDialog):
