@@ -812,7 +812,7 @@ class Guiguts:
                 # Add tilde before one of the letters in "okmar"
                 "Set Bo" + "okmar"[: bm - 1] + "~" + "okmar"[bm - 1 :] + f"k ~{bm}",
                 lambda num=bm: self.file.set_bookmark(num),  # type:ignore[misc]
-                f"Ctrl+Shift+Key-{keys[kbd]}",
+                f"Ctrl+Key-{keys[kbd]}",
             )
 
         for bm in range(1, 6):
