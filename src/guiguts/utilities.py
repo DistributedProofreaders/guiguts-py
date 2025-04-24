@@ -1,11 +1,13 @@
 """Handy utility functions"""
 
+import ctypes
 import importlib.resources
 import json
 import platform
 import logging
 from pathlib import Path
 import os.path
+import subprocess
 from tkinter import _tkinter  # type: ignore[attr-defined]
 from typing import Any, Optional, Callable, Mapping
 from unicodedata import combining, normalize
@@ -270,6 +272,10 @@ def process_accel(accel: str) -> tuple[str, str]:
     else:
         keyevent = keyevent.replace("Alt+", "Alt-")
     accel = accel.replace("Key-", "")
+    # More friendly names for display
+    accel = accel.replace("sterling", "£")
+    accel = accel.replace("Prior", "PgUp")
+    accel = accel.replace("Next", "PgDn")
     return (accel, f"<{keyevent}>")
 
 
@@ -286,6 +292,42 @@ def folder_dir_str(lowercase: bool = False) -> str:
 def cmd_ctrl_string() -> str:
     """Return "Command" or "Control" depending on platform."""
     return "Command" if is_mac() else "Control"
+
+
+def get_keyboard_layout() -> int:
+    """Return keyboard layout: 1 for UK, 0 for all others."""
+    layout = "00000409"  # Default to US
+    if is_windows():
+        buf = ctypes.create_unicode_buffer(9)
+        ctypes.windll.user32.GetKeyboardLayoutNameW(buf)  # type: ignore[attr-defined]
+        layout = buf.value  # e.g. "00000409" for US or "00000809" for UK
+    elif is_mac():
+        try:
+            result = subprocess.run(
+                [
+                    "osascript",
+                    "-e",
+                    'tell application "System Events" to get name of current keyboard layout',
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            layout = result.stdout.strip()  # e.g. "British" or "U.S."
+        except subprocess.SubprocessError:
+            pass
+    else:
+        try:
+            result = subprocess.run(
+                ["setxkbmap", "-query"], capture_output=True, text=True, check=False
+            )
+            for line in result.stdout.splitlines():
+                if line.startswith("layout:"):
+                    layout = line.split()[1]  # e.g. "us" or "gb"
+                    break
+        except subprocess.SubprocessError:
+            pass
+    return 1 if layout in ("00000809", "gb", "British") else 0
 
 
 class DiacriticRemover:

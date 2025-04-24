@@ -1,18 +1,25 @@
 """Miscellaneous dialogs."""
 
 from importlib.metadata import version
+import logging
 import platform
 import sys
 import tkinter as tk
-from tkinter import ttk, font, filedialog
-from typing import Any, Literal
+from tkinter import ttk, font, filedialog, messagebox
+from typing import Any, Literal, Optional, Callable
 import unicodedata
 
 from rapidfuzz import process
 import regex as re
 
 from guiguts.file import the_file
-from guiguts.maintext import maintext
+from guiguts.maintext import (
+    maintext,
+    menubar_metadata,
+    EntryMetadata,
+    KeyboardShortcutsDict,
+)
+
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.preferences import (
     PrefKey,
@@ -22,7 +29,7 @@ from guiguts.preferences import (
     preferences,
 )
 from guiguts.root import root
-from guiguts.utilities import is_mac, sound_bell
+from guiguts.utilities import is_mac, sound_bell, process_accel
 from guiguts.widgets import (
     ToplevelDialog,
     ToolTip,
@@ -33,10 +40,10 @@ from guiguts.widgets import (
     Notebook,
     bind_mouse_wheel,
     unbind_mouse_wheel,
-    menubar_metadata,
     Busy,
-    EntryMetadata,
 )
+
+logger = logging.getLogger(__package__)
 
 SEP_CHAR = "―"
 
@@ -354,6 +361,12 @@ class PreferencesDialog(ToplevelDialog):
             text="Show Tooltips",
             variable=PersistentBoolean(PrefKey.SHOW_TOOLTIPS),
         ).grid(column=0, row=5, sticky="NEW", pady=5)
+        ttk.Button(
+            advance_frame,
+            text="Reset shortcuts to default (change requires restart)",
+            command=lambda: KeyboardShortcutsDict().reset(),
+            takefocus=False,
+        ).grid(column=0, row=6, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",
@@ -377,34 +390,38 @@ class PreferencesDialog(ToplevelDialog):
         menubar_metadata().add_button_orphan(
             "Default Theme", lambda: preferences.set(PrefKey.THEME_NAME, "Default")
         )
-        menubar_metadata().add_checkbox_orphan("High Contrast", PrefKey.HIGH_CONTRAST)
+        menubar_metadata().add_checkbutton_orphan(
+            "High Contrast", PrefKey.HIGH_CONTRAST
+        )
         if not is_mac():
-            menubar_metadata().add_checkbox_orphan(
+            menubar_metadata().add_checkbutton_orphan(
                 "Tear-Off Menus", PrefKey.TEAROFF_MENUS
             )
-        menubar_metadata().add_checkbox_orphan("Line Numbers", PrefKey.LINE_NUMBERS)
-        menubar_metadata().add_checkbox_orphan("Column Numbers", PrefKey.COLUMN_NUMBERS)
-        menubar_metadata().add_checkbox_orphan(
+        menubar_metadata().add_checkbutton_orphan("Line Numbers", PrefKey.LINE_NUMBERS)
+        menubar_metadata().add_checkbutton_orphan(
+            "Column Numbers", PrefKey.COLUMN_NUMBERS
+        )
+        menubar_metadata().add_checkbutton_orphan(
             "Character Names in Status Bar", PrefKey.ORDINAL_NAMES
         )
-        menubar_metadata().add_checkbox_orphan("Audible Bell", PrefKey.BELL_AUDIBLE)
-        menubar_metadata().add_checkbox_orphan("Visual Bell", PrefKey.BELL_VISUAL)
-        menubar_metadata().add_checkbox_orphan(
+        menubar_metadata().add_checkbutton_orphan("Audible Bell", PrefKey.BELL_AUDIBLE)
+        menubar_metadata().add_checkbutton_orphan("Visual Bell", PrefKey.BELL_VISUAL)
+        menubar_metadata().add_checkbutton_orphan(
             "Auto Img Reload Alert", PrefKey.IMAGE_VIEWER_ALERT
         )
-        menubar_metadata().add_checkbox_orphan(
+        menubar_metadata().add_checkbutton_orphan(
             "Use External Viewer", PrefKey.IMAGE_VIEWER_EXTERNAL
         )
-        menubar_metadata().add_checkbox_orphan(
+        menubar_metadata().add_checkbutton_orphan(
             "Highlight Cursor Line", PrefKey.HIGHLIGHT_CURSOR_LINE
         )
-        menubar_metadata().add_checkbox_orphan(
+        menubar_metadata().add_checkbutton_orphan(
             "Keep Backup Before Saving", PrefKey.BACKUPS_ENABLED
         )
-        menubar_metadata().add_checkbox_orphan(
+        menubar_metadata().add_checkbutton_orphan(
             "Enable Auto Save", PrefKey.AUTOSAVE_ENABLED
         )
-        menubar_metadata().add_checkbox_orphan("Tooltips", PrefKey.SHOW_TOOLTIPS)
+        menubar_metadata().add_checkbutton_orphan("Tooltips", PrefKey.SHOW_TOOLTIPS)
 
 
 class HelpAboutDialog(ToplevelDialog):
@@ -953,26 +970,247 @@ class RecentPlusEntry:
         self.entry = entry
 
 
+class CommandEditDialog(OkApplyCancelDialog):
+    """Command Edit Dialog."""
+
+    manual_page = "Help_Menu#User-defined_Keyboard_Shortcuts"
+    supported_keys = (
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
+        "F11",
+        "F12",
+        "Left",
+        "Right",
+        "Up",
+        "Down",
+        "Home",
+        "End",
+        "Prior",
+        "Next",
+        "Insert",
+        "sterling",
+    )
+
+    def __init__(self, command_dlg: "CommandPaletteDialog") -> None:
+        """Initialize the command edit window."""
+        super().__init__("Command Edit", resize_x=False, resize_y=False)
+
+        self.cmd_dlg = command_dlg
+        ttk.Label(self.top_frame, text="Label:").grid(
+            row=0, column=0, sticky="NSEW", pady=2
+        )
+        self.label_variable = tk.StringVar()
+        ttk.Entry(
+            self.top_frame, textvariable=self.label_variable, state="readonly", width=40
+        ).grid(row=0, column=1, sticky="NSEW", pady=2)
+        ttk.Label(self.top_frame, text="Menu:").grid(
+            row=1, column=0, sticky="NSEW", pady=2
+        )
+        self.menu_variable = tk.StringVar()
+        ttk.Entry(
+            self.top_frame, textvariable=self.menu_variable, state="readonly", width=40
+        ).grid(row=1, column=1, sticky="NSEW", pady=2)
+        shortcut_frame = ttk.LabelFrame(self.top_frame, text="Shortcut:", padding=5)
+        shortcut_frame.grid(row=2, column=0, sticky="NSEW", columnspan=2)
+        for col in range(3):
+            shortcut_frame.columnconfigure(col, weight=1)
+        self.shift_variable = tk.BooleanVar()
+        ttk.Checkbutton(
+            shortcut_frame,
+            text="Shift ⇧" if is_mac() else "Shift",
+            variable=self.shift_variable,
+            takefocus=False,
+            command=self.settings_to_shortcut,
+        ).grid(row=0, column=0, stick="NSEW")
+        self.control_variable = tk.BooleanVar()
+        ttk.Checkbutton(
+            shortcut_frame,
+            text="Ctrl ⌃" if is_mac() else "Ctrl",
+            variable=self.control_variable,
+            takefocus=False,
+            command=self.settings_to_shortcut,
+        ).grid(row=0, column=1, stick="NSEW")
+        self.alt_command_variable = tk.BooleanVar()
+        ttk.Checkbutton(
+            shortcut_frame,
+            text="Command ⌘" if is_mac() else "Alt",
+            variable=self.alt_command_variable,
+            takefocus=False,
+            command=self.settings_to_shortcut,
+        ).grid(row=0, column=2, stick="NSEW")
+        self._shortcut = ""
+        self.shortcut_variable = tk.StringVar()  # For display only
+        shortcut_entry = ttk.Entry(
+            shortcut_frame,
+            textvariable=self.shortcut_variable,
+            state="readonly",
+        )
+        shortcut_entry.grid(row=1, column=0, sticky="NSEW", columnspan=3)
+        alt_cmd_text = "Command" if is_mac() else "Alt"
+        ToolTip(
+            shortcut_entry,
+            f"Set Shift/Ctrl/{alt_cmd_text} and press keyboard key to use for shortcut.",
+        )
+        self.bind("<Key>", self.do_key)
+        self.cmd = EntryMetadata("", "", "")
+        self.key = ""
+
+    @property
+    def shortcut(self) -> str:
+        """Current shortcut. When assigned to, updates shortcut display variable."""
+        return self._shortcut
+
+    @shortcut.setter
+    def shortcut(self, value: str) -> None:
+        self._shortcut = value
+        self.shortcut_variable.set(process_accel(value)[0])
+
+    def load(self, cmd: EntryMetadata) -> None:
+        """Load dialog with values from given command."""
+        self.cmd = cmd
+        self.label_variable.set(self.cmd.display_label())
+        self.menu_variable.set(self.cmd.display_parent_label())
+        self.shortcut = self.cmd.shortcut
+        self.shortcut_to_settings()
+
+    def apply_changes(self) -> bool:
+        """Save shortcut from dialog into current cmd.
+
+        Returns:
+            True if successful.
+        """
+        new_shortcut = self.shortcut
+        single_char_keyname = len(re.sub(r".*\+", "", new_shortcut)) == 1
+        if single_char_keyname and not (
+            self.control_variable.get() or self.alt_command_variable.get()
+        ):
+            logger.error(
+                f"Shortcut must include Ctrl or {'Command' if is_mac() else 'Alt'}"
+            )
+            return False
+        if new_shortcut == "F1":
+            logger.error(
+                f"F1 without Shift, Ctrl or {'Command' if is_mac() else 'Alt'} is reserved for Help"
+            )
+            return False
+
+        shortcuts_dict = KeyboardShortcutsDict()
+
+        menu = self.menu_variable.get()
+        label = self.label_variable.get()
+        new_assign = f"{menu}|{label}" if menu else label
+        # Add "Key-" so that digits work correctly ("<Control-1>" means Control+Button-1)
+        if single_char_keyname:
+            new_shortcut = f"{new_shortcut[:-1]}Key-{new_shortcut[-1]}"
+
+        # If shortcut is already assigned, check whether user wants to continue
+        command = menubar_metadata().metadata_from_shortcut(new_shortcut)
+        if command is not None:
+            menu = command.display_parent_label()
+            label = command.display_label()
+            cur_assign = f"{menu}|{label}" if menu else label
+            if cur_assign != new_assign:
+                if not messagebox.askyesno(
+                    title="Shortcut Already Assigned",
+                    message=f'"{self.shortcut_variable.get()}" is currently assigned to\n"{cur_assign}".',
+                    detail=f'Reassign it to "{new_assign}" instead?',
+                    default=messagebox.NO,
+                    icon=messagebox.WARNING,
+                ):
+                    return False
+                # Reset current shortcut assignment to avoid duplicates
+                command.shortcut = ""
+                # Also set in shortcuts_dict which is saved to prefs below
+                shortcuts_dict.set_shortcut(
+                    command.label, command.parent_label, command.shortcut
+                )
+
+        # Update prefs
+        shortcuts_dict.set_shortcut(self.cmd.label, self.cmd.parent_label, new_shortcut)
+        shortcuts_dict.save_to_prefs()
+        # Update metadata
+        self.cmd.shortcut = new_shortcut
+        # Refresh command palette
+        if self.cmd_dlg.winfo_exists():
+            self.cmd_dlg.update_list()
+        # Refresh menus
+        assert CommandPaletteDialog.recreate_menus_callback is not None
+        CommandPaletteDialog.recreate_menus_callback()  # pylint: disable=not-callable
+        return True
+
+    def do_key(self, event: tk.Event) -> None:
+        """Handle keystroke in dialog."""
+        if event.keysym in ("BackSpace", "Delete"):
+            self.key = ""
+        elif event.keysym in CommandEditDialog.supported_keys:
+            self.key = event.keysym
+        elif (
+            event.char
+            and event.char.isascii()
+            and event.char.isprintable()
+            and not event.char.isspace()
+        ):
+            self.key = event.char.upper()
+        self.settings_to_shortcut()
+
+    def shortcut_to_settings(self) -> None:
+        """Update dialog settings based on self.shortcut."""
+        shortcut = self.shortcut_variable.get()
+        self.shift_variable.set("Shift" in shortcut)
+        self.control_variable.set("Ctrl" in shortcut)
+        self.alt_command_variable.set("Alt" in shortcut or "Cmd" in shortcut)
+        # Key needs to use original shortcut, not shortcut_variable
+        # which has been processed for display, e.g. "sterling"=>"£"
+        self.key = re.sub(r".*\+", "", self.shortcut)
+
+    def settings_to_shortcut(self) -> None:
+        """Set self.shortcut based on checkbutton settings."""
+        if not self.key:
+            self.shortcut = ""
+            return
+        shortcut = ""
+        if self.control_variable.get():
+            shortcut += "Ctrl+"
+        if self.shift_variable.get():
+            shortcut += "Shift+"
+        if self.alt_command_variable.get():
+            shortcut += "Cmd+" if is_mac() else "Alt+"
+        shortcut += self.key
+        self.shortcut = shortcut
+
+
 class CommandPaletteDialog(ToplevelDialog):
     """Command Palette Dialog."""
 
     manual_page = "Help_Menu#Command_Palette"
     NUM_HISTORY = 5
     SEPARATOR_TAG = "separator"
+    recreate_menus_callback: Optional[Callable] = None
 
     def __init__(self) -> None:
         """Initialize the command palette window."""
         super().__init__("Command Palette")
-        self.commands = menubar_metadata().get_all_commands()
+        self.commands = menubar_metadata().get_all_palette_commands()
         self.filtered_entries: list[RecentPlusEntry] = []
         self.num_recent = 0
+        self.edit_dialog: Optional[CommandEditDialog] = None
 
         self.top_frame.grid_rowconfigure(0, weight=0)
         self.top_frame.grid_rowconfigure(1, weight=1)
 
         entry_frame = ttk.Frame(self.top_frame)
         entry_frame.grid(row=0, column=0, sticky="NSEW", columnspan=2)
-        entry_frame.grid_columnconfigure(0, weight=1)
+        entry_frame.columnconfigure(0, weight=1)
+        entry_frame.columnconfigure(1, uniform="same")
+        entry_frame.columnconfigure(2, uniform="same")
         self.search_var = tk.StringVar()
         self.search_var.trace_add("write", lambda _1, _2, _3: self.update_list())
         self.entry = ttk.Entry(entry_frame, textvariable=self.search_var)
@@ -983,7 +1221,13 @@ class CommandPaletteDialog(ToplevelDialog):
             text="Run",
             command=lambda: self.execute_command(tk.Event()),
             takefocus=False,
-        ).grid(row=0, column=1, sticky="NSE")
+        ).grid(row=0, column=1, sticky="NSEW", padx=(0, 2))
+        ttk.Button(
+            entry_frame,
+            text="Edit Shortcut",
+            command=self.edit_command,
+            takefocus=False,
+        ).grid(row=0, column=2, sticky="NSEW", padx=(2, 0))
 
         columns = ("Command", "Shortcut", "Menu")
         widths = (250, 120, 100)
@@ -1028,16 +1272,34 @@ class CommandPaletteDialog(ToplevelDialog):
         self.update_list()
         self.entry.focus()
 
+    @classmethod
+    def add_orphan_commands(cls) -> None:
+        """Add orphan commands to command palette."""
+
+        def edit_shortcut() -> None:
+            dlg = cls.get_dialog()
+            if dlg is None:
+                return
+            dlg.edit_command()
+
+        menubar_metadata().add_button_orphan(
+            "Command Palette, Edit Shortcut", edit_shortcut
+        )
+
+    @classmethod
+    def store_recreate_menus_callback(cls, callback: Callable) -> None:
+        """Store function to be called to recreate menus."""
+        cls.recreate_menus_callback = callback
+
     def update_list(self) -> None:
         """Update the command list based on search input."""
 
-        # Recent commands are those in history that match search filter
         search_text = self.search_var.get().lower().strip()
 
         def score_command(cmd: EntryMetadata) -> int:
             """Return how well search text matches this command."""
-            label_lower = cmd.label.lower()
-            menu_lower = cmd.parent_label.lower()
+            label_lower = cmd.display_label().lower()
+            menu_lower = cmd.display_parent_label().lower()
             if label_lower.startswith(search_text):
                 score = RecentPlusEntry.PREFIXMATCH  # strong prefix match
             elif search_text in label_lower:
@@ -1064,7 +1326,7 @@ class CommandPaletteDialog(ToplevelDialog):
                 recent_band,
                 -score,
                 recent_plus_entry.recentness,
-                recent_plus_entry.entry.label.lower(),
+                recent_plus_entry.entry.display_label().lower(),
             )
 
         # Filtered commands have an int to store recentness (-10 for non-recent)
@@ -1110,7 +1372,13 @@ class CommandPaletteDialog(ToplevelDialog):
                 separator_hidden = True
                 continue  # Don't put separator at top of list
             iid = self.list.insert(
-                "", "end", values=(entry.label, entry.shortcut, entry.parent_label)
+                "",
+                "end",
+                values=(
+                    entry.display_label(),
+                    entry.display_shortcut(),
+                    entry.display_parent_label(),
+                ),
             )
             if sep:
                 self.list.item(iid, tags=self.SEPARATOR_TAG, open=False)
@@ -1121,20 +1389,36 @@ class CommandPaletteDialog(ToplevelDialog):
         if self.filtered_entries:
             self.select_and_focus(self.list.get_children()[0])
 
+    def edit_command(self) -> None:
+        """Edit the selected command."""
+        entry = self.get_selected_entry()
+        if entry is None:
+            return
+        self.add_to_history(entry.label, entry.parent_label)
+        self.edit_dialog = CommandEditDialog.show_dialog(command_dlg=self)
+        self.edit_dialog.load(entry)
+
     def execute_command(self, _: tk.Event) -> None:
         """Execute the selected command."""
+        entry = self.get_selected_entry()
+        if entry is None:
+            return
+        self.add_to_history(entry.label, entry.parent_label)
+        command = entry.get_command()
+        self.destroy()
+        Busy.busy()  # In case it's a slow command
+        command()
+        Busy.unbusy()  # In case it's a slow command
+
+    def get_selected_entry(self) -> Optional[EntryMetadata]:
+        """Return EntryMetadata associated with selected entry in list (or None)."""
         selection = self.list.selection()
-        if selection:
-            item = selection[0]
-            if self.list.tag_has(self.SEPARATOR_TAG, item):
-                return
-            entry = self.filtered_entries[self.list.index(item)].entry
-            self.add_to_history(entry.label, entry.parent_label)
-            command = entry.get_command()
-            self.destroy()
-            Busy.busy()  # In case it's a slow command
-            command()
-            Busy.unbusy()  # In case it's a slow command
+        if not selection:
+            return None
+        item = selection[0]
+        if self.list.tag_has(self.SEPARATOR_TAG, item):
+            return None
+        return self.filtered_entries[self.list.index(item)].entry
 
     def focus_on_list(self, direction: int) -> None:
         """Move focus to the list and select the next/previous item.
@@ -1182,10 +1466,12 @@ class CommandPaletteDialog(ToplevelDialog):
     def handle_list_typing(self, event: tk.Event) -> None:
         """Handle key press in the list to simulate typing in the Entry box."""
         current_text = self.search_var.get()
-        if event.keysym in ("Backspace", "Delete"):
+        if event.keysym in ("BackSpace", "Delete"):
             self.search_var.set(current_text[:-1])
             self.update_list()  # Update the list based on the new search text
-        elif event.char:  # If a proper char, add it to the entry
+        elif (
+            event.char and event.char.isprintable()
+        ):  # If a proper char, add it to the entry
             self.search_var.set(current_text + event.char)
             self.update_list()  # Update the list based on the new search text
 
@@ -1203,6 +1489,13 @@ class CommandPaletteDialog(ToplevelDialog):
             pass  # OK if entry wasn't in list
         history.insert(0, [label, parent_label])
         preferences.set(PrefKey.COMMAND_PALETTE_HISTORY, history[: self.NUM_HISTORY])
+        self.update_list()  # Update the list based on the new search text
+
+    def on_destroy(self) -> None:
+        if self.edit_dialog is not None and self.edit_dialog.winfo_exists():
+            self.edit_dialog.destroy()
+            self.edit_dialog = None
+        return super().on_destroy()
 
 
 class ScrollableFrame(ttk.Frame):

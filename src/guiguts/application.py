@@ -6,6 +6,7 @@ import argparse
 import logging
 import importlib.resources
 from importlib.metadata import version
+import tkinter as tk
 from typing import Optional
 import unicodedata
 import webbrowser
@@ -28,7 +29,14 @@ from guiguts.html_tools import (
 from guiguts.illo_sn_fixup import illosn_check
 
 from guiguts.ascii_tables import ASCIITableDialog
-from guiguts.maintext import maintext
+from guiguts.maintext import (
+    maintext,
+    menubar_metadata,
+    MenuMetadata,
+    SeparatorMetadata,
+    ButtonMetadata,
+    CheckbuttonMetadata,
+)
 from guiguts.mainwindow import (
     MainWindow,
     Menu,
@@ -36,7 +44,6 @@ from guiguts.mainwindow import (
     StatusBar,
     statusbar,
     ErrorHandler,
-    process_accel,
     mainimage,
     AutoImageState,
     image_autofit_width_callback,
@@ -84,7 +91,13 @@ from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.pphtml import PPhtmlChecker
-from guiguts.utilities import is_mac, is_windows, is_x11, folder_dir_str
+from guiguts.utilities import (
+    is_mac,
+    is_windows,
+    is_x11,
+    folder_dir_str,
+    get_keyboard_layout,
+)
 from guiguts.widgets import (
     themed_style,
     theme_name_internal_from_user,
@@ -127,9 +140,9 @@ class Guiguts:
         root().tk.call("package", "require", "awlight")
 
         # Recent menu is saved to allow deletion & re-creation when files loaded/saved
-        self.recent_menu: Optional[Menu] = None
+        self.recent_menu: Optional[MenuMetadata] = None
         # Similarly for custom menu when it is customized
-        self.custom_menu: Optional[Menu] = None
+        self.custom_menu: Optional[MenuMetadata] = None
         self.init_menus()
 
         self.init_statusbar(statusbar())
@@ -232,7 +245,9 @@ class Guiguts:
 
     def filename_changed(self) -> None:
         """Handle side effects needed when filename changes."""
-        self.populate_recent_menu()  # Recreate menu to reflect recent files
+        # Recreate menu to reflect recent files
+        self.populate_recent_menu()
+        self.recreate_menus()
         self.update_title()
         CustomMenuDialog.store_filename(self.file.filename)
         maintext().after_idle(maintext().focus_set)
@@ -520,6 +535,7 @@ class Guiguts:
         preferences.set_default(PrefKey.ASCII_TABLE_FILL_CHAR, "@")
         preferences.set_default(PrefKey.ASCII_TABLE_RIGHT_COL, 70)
         preferences.set_default(PrefKey.COMMAND_PALETTE_HISTORY, [])
+        preferences.set_default(PrefKey.KEYBOARD_SHORTCUTS_DICT, {})
         preferences.set_default(PrefKey.AUTOTABLE_MULTILINE, False)
         preferences.set_default(PrefKey.AUTOTABLE_DEFAULT_ALIGNMENT, "left")
         preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT, "")
@@ -535,7 +551,7 @@ class Guiguts:
 
     # Lay out menus
     def init_menus(self) -> None:
-        """Create all the menus."""
+        """Create the menu structure."""
         self.init_file_menu()
         self.init_edit_menu()
         self.init_search_menu()
@@ -557,9 +573,12 @@ class Guiguts:
             root().createcommand("tk::mac::OpenDocument", self.open_document)
             root().createcommand("tk::mac::Quit", self.quit_program)
 
+        menubar_metadata().set_shortcuts_from_prefs()
+        self.recreate_menus()
+
     def init_file_menu(self) -> None:
-        """(Re-)create the File menu."""
-        file_menu = Menu(menubar(), "~File")
+        """Create the File menu."""
+        file_menu = self.top_level_menu("~File")
         file_menu.add_button("~Open...", self.open_file, "Cmd/Ctrl+O")
         self.init_file_recent_menu(file_menu)
         file_menu.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
@@ -571,15 +590,15 @@ class Guiguts:
             file_menu.add_separator()
             file_menu.add_button("E~xit", self.quit_program, "")
 
-    def init_file_recent_menu(self, parent: Menu) -> None:
+    def init_file_recent_menu(self, parent: MenuMetadata) -> None:
         """Create the Recent Documents menu."""
-        self.recent_menu = Menu(parent, "Recent Doc~uments")
+        self.recent_menu = parent.add_submenu("Recent Doc~uments")
         self.populate_recent_menu()
 
     def populate_recent_menu(self) -> None:
         """Populate recent menu with recent filenames"""
         assert self.recent_menu is not None
-        self.recent_menu.delete(0, "end")
+        self.recent_menu.entries = []
         for count, file in enumerate(preferences.get(PrefKey.RECENT_FILES), start=1):
             self.recent_menu.add_button(
                 f"~{count}: {file}",
@@ -587,9 +606,9 @@ class Guiguts:
                 add_to_command_palette=False,
             )
 
-    def init_file_project_menu(self, parent: Menu) -> None:
+    def init_file_project_menu(self, parent: MenuMetadata) -> None:
         """Create the File->Project menu."""
-        project_menu = Menu(parent, "~Project")
+        project_menu = parent.add_submenu("~Project")
         project_menu.add_button(
             "Add ~Good/Bad Words to Project Dictionary",
             self.file.add_good_and_bad_words,
@@ -611,13 +630,17 @@ class Guiguts:
 
     def init_edit_menu(self) -> None:
         """Create the Edit menu."""
-        edit_menu = Menu(menubar(), "~Edit")
-        edit_menu.add_button("~Undo", "<<Undo>>", "Cmd/Ctrl+Z")
-        edit_menu.add_button(
+        edit_menu = self.top_level_menu("~Edit")
+        edit_menu.add_button_virtual_event("~Undo", "<<Undo>>", "Cmd/Ctrl+Z")
+        edit_menu.add_button_virtual_event(
             "~Redo", "<<Redo>>", "Cmd+Shift+Z" if is_mac() else "Ctrl+Y"
         )
         edit_menu.add_separator()
-        edit_menu.add_cut_copy_paste()
+        edit_menu.add_button_virtual_event("Cu~t", "<<Cut>>", "Cmd/Ctrl+X")
+        edit_menu.add_button_virtual_event("~Copy", "<<Copy>>", "Cmd/Ctrl+C")
+        edit_menu.add_button_virtual_event("~Paste", "<<Paste>>", "Cmd/Ctrl+V")
+        edit_menu.add_separator()
+        edit_menu.add_button_virtual_event("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
         edit_menu.add_button(
             "R~estore Selection",
             maintext().restore_selection_ranges,
@@ -637,7 +660,7 @@ class Guiguts:
             maintext().toggle_selection_type,
         )
         edit_menu.add_separator()
-        rtl_menu = Menu(edit_menu, "Right-to-left Te~xt")
+        rtl_menu = edit_menu.add_submenu("Right-to-left Te~xt")
         if not is_mac():
             rtl_menu.add_button(
                 (
@@ -652,7 +675,7 @@ class Guiguts:
             maintext().surround_rtl,
         )
         edit_menu.add_separator()
-        case_menu = Menu(edit_menu, "C~hange Case")
+        case_menu = edit_menu.add_submenu("C~hange Case")
         case_menu.add_button(
             "~lowercase selection",
             lambda: maintext().transform_selection(str.lower),
@@ -681,7 +704,7 @@ class Guiguts:
 
     def init_search_menu(self) -> None:
         """Create the Search menu."""
-        search_menu = Menu(menubar(), "~Search")
+        search_menu = self.top_level_menu("~Search")
         search_menu.add_button(
             "~Search & Replace...",
             show_search_dialog,
@@ -722,32 +745,32 @@ class Guiguts:
             maintext().remove_highlights,
         )
         search_menu.add_separator()
-        search_menu.add_checkbox(
+        search_menu.add_checkbutton(
             "Highlight S~urrounding Quotes & Brackets",
-            root().highlight_quotbrac,
+            root().highlight_quotbrac.pref_key,
         )
-        search_menu.add_checkbox(
+        search_menu.add_checkbutton(
             "Highlight Al~ignment Column",
-            maintext().aligncol_active,
+            maintext().aligncol_active.pref_key,
             lambda: maintext().highlight_aligncol_callback(True),
             lambda: maintext().highlight_aligncol_callback(False),
         )
-        search_menu.add_checkbox(
+        search_menu.add_checkbutton(
             "Highlight ~Proofer Comments",
-            root().highlight_proofercomment,
+            root().highlight_proofercomment.pref_key,
         )
-        search_menu.add_checkbox(
+        search_menu.add_checkbutton(
             "Highlight ~HTML tags",
-            PersistentBoolean(PrefKey.HIGHLIGHT_HTML_TAGS),
+            PrefKey.HIGHLIGHT_HTML_TAGS,
             lambda: maintext().highlight_html_tags_callback(True),
             lambda: maintext().highlight_html_tags_callback(False),
         )
         search_menu.add_separator()
         self.init_bookmark_menu(search_menu)
 
-    def init_search_goto_menu(self, parent: Menu) -> None:
+    def init_search_goto_menu(self, parent: MenuMetadata) -> None:
         """Create the Search->Goto menu."""
-        goto_menu = Menu(parent, "~Goto")
+        goto_menu = parent.add_submenu("~Goto")
         goto_menu.add_button(
             "~Line Number...",
             self.file.goto_line,
@@ -769,48 +792,39 @@ class Guiguts:
             self.file.next_page,
         )
 
-    def init_bookmark_menu(self, parent: Menu) -> None:
+    def init_bookmark_menu(self, parent: MenuMetadata) -> None:
         """Create the Bookmarks menu."""
-        bookmark_menu = Menu(parent, "~Bookmarks")
+        bookmark_menu = parent.add_submenu("~Bookmarks")
         # Because keyboard layouts are different, need to bind to several keys for some bookmarks
+        kbd = get_keyboard_layout()
         shortcuts = [
-            ("exclam",),
-            ("at", "quotedbl"),
-            ("numbersign", "sterling", "section", "periodcentered"),
-            ("dollar", "currency"),
-            ("percent",),
+            ("!", "!"),
+            ("@", '"'),
+            ("#", "sterling"),
+            ("$", "$"),
+            ("%", "%"),
         ]
         # Shift+Cmd+number no good for Mac due to clash with screen capture shortcuts
         # Ctrl+number could also clash on Mac with virtual desktop switching, but
         # the best option we have that works at the moment.
-        modifier = "Shift"
         for bm, keys in enumerate(shortcuts, start=1):
             bookmark_menu.add_button(
-                f"Set Bookmark {bm}",
+                # Add tilde before one of the letters in "okmar"
+                "Set Bo" + "okmar"[: bm - 1] + "~" + "okmar"[bm - 1 :] + f"k ~{bm}",
                 lambda num=bm: self.file.set_bookmark(num),  # type:ignore[misc]
-                f"{modifier}+Ctrl+Key-{bm}",
+                f"Ctrl+Key-{keys[kbd]}",
             )
-            # Add extra shortcuts to cope with keyboard layout differences
-            for key in keys:
-                (_, key_event) = process_accel(f"{modifier}+Ctrl+{key}")
-                maintext().key_bind(
-                    key_event,
-                    lambda _event, num=bm: self.file.set_bookmark(  # type:ignore[misc]
-                        num
-                    ),
-                    bind_all=True,
-                )
 
         for bm in range(1, 6):
             bookmark_menu.add_button(
-                f"Go To Bookmark {bm}",
+                f"Go To Bookmark ~{bm}",
                 lambda num=bm: self.file.goto_bookmark(num),  # type:ignore[misc]
                 f"Ctrl+Key-{bm}",
             )
 
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
-        tools_menu = Menu(menubar(), "~Tools")
+        tools_menu = self.top_level_menu("~Tools")
         tools_menu.add_button("Basic Fi~xup", basic_fixup_check)
         tools_menu.add_button("~Word Frequency", word_frequency)
         tools_menu.add_button("~Bookloupe", bookloupe_check)
@@ -841,12 +855,13 @@ class Guiguts:
         tools_menu.add_separator()
         tools_menu.add_button("Convert to Curly ~Quotes", convert_to_curly_quotes)
         tools_menu.add_button("Check Curly Quo~tes", check_curly_quotes)
-        unmatched_menu = Menu(tools_menu, "Un~matched")
+
+        unmatched_menu = tools_menu.add_submenu("Un~matched")
         unmatched_menu.add_button("Bloc~k Markup", unmatched_block_markup)
         unmatched_menu.add_button("~DP Markup", unmatched_dp_markup)
         unmatched_menu.add_button("~Brackets", unmatched_brackets)
 
-        fraction_menu = Menu(tools_menu, "C~onvert Fractions")
+        fraction_menu = tools_menu.add_submenu("C~onvert Fractions")
         fraction_menu.add_button(
             "~Unicode Fractions Only",
             lambda: fraction_convert(FractionConvertType.UNICODE),
@@ -859,7 +874,7 @@ class Guiguts:
             "All to ~Super/Subscript",
             lambda: fraction_convert(FractionConvertType.SUPSUB),
         )
-        unicode_menu = Menu(tools_menu, "~Unicode")
+        unicode_menu = tools_menu.add_submenu("~Unicode")
         unicode_menu.add_button(
             "Unicode ~Search/Entry", UnicodeSearchDialog.show_dialog
         )
@@ -881,7 +896,7 @@ class Guiguts:
 
     def init_text_menu(self) -> None:
         """Create the Text menu."""
-        text_menu = Menu(menubar(), "Te~xt")
+        text_menu = self.top_level_menu("Te~xt")
         text_menu.add_button(
             "Convert ~Markup...", TextMarkupConvertorDialog.show_dialog
         )
@@ -890,7 +905,7 @@ class Guiguts:
 
     def init_html_menu(self) -> None:
         """Create the HTML menu."""
-        html_menu = Menu(menubar(), "HT~ML")
+        html_menu = self.top_level_menu("HT~ML")
         html_menu.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
         html_menu.add_button("Auto-~Illustrations...", HTMLImageDialog.show_dialog)
         html_menu.add_button("Auto-~Table...", HTMLAutoTableDialog.show_dialog)
@@ -910,34 +925,35 @@ class Guiguts:
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
-        view_menu = Menu(menubar(), "~View")
-        view_menu.add_checkbox(
+        view_menu = self.top_level_menu("~View")
+        view_menu.add_checkbutton(
             "Split ~Text Window",
-            root().split_text_window,
+            root().split_text_window.pref_key,
             lambda: maintext().show_peer(),
             lambda: maintext().hide_peer(),
+            "Cmd/Ctrl+Shift+T",
         )
         view_menu.add_separator()
-        view_menu.add_checkbox(
+        view_menu.add_checkbutton(
             "Image Viewer",
-            PersistentBoolean(PrefKey.IMAGE_VIEWER_INTERNAL),
+            PrefKey.IMAGE_VIEWER_INTERNAL,
             self.show_image_viewer,
             self.hide_image_viewer,
         )
-        view_menu.add_checkbox(
+        view_menu.add_checkbutton(
             "~Dock Image Viewer",
-            root().image_window_docked_state,
+            root().image_window_docked_state.pref_key,
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
         )
-        view_menu.add_checkbox(
+        view_menu.add_checkbutton(
             "~Auto Image",
-            root().auto_image_state,
+            root().auto_image_state.pref_key,
         )
         view_menu.add_button("S~ee Image", self.see_image)
-        view_menu.add_checkbox(
+        view_menu.add_checkbutton(
             "~Invert Image",
-            root().invert_image_state,
+            root().invert_image_state.pref_key,
             mainimage().show_image,
             mainimage().show_image,
         )
@@ -945,26 +961,22 @@ class Guiguts:
         view_menu.add_button("~Message Log", self.mainwindow.messagelog.show)
         view_menu.add_separator()
         if not is_mac():  # Full Screen behaves oddly on Macs
-            view_menu.add_checkbox(
+            view_menu.add_checkbutton(
                 "~Full Screen",
-                root().full_screen_var,
+                root().full_screen_var.pref_key,
                 lambda: root().wm_attributes("-fullscreen", True),
                 lambda: root().wm_attributes("-fullscreen", False),
             )
 
     def init_custom_menu(self) -> None:
         """Create the Custom menu."""
-        self.custom_menu = Menu(menubar(), "~Custom")
-        self.custom_menu.add_separator()
-        self.custom_menu.add_button(
-            "Customi~ze Menu",
-            lambda: CustomMenuDialog.show_dialog(menu=self.custom_menu),
-        )
+        self.custom_menu = self.top_level_menu("~Custom")
+        CustomMenuDialog.store_recreate_menus_callback(self.recreate_menus)
         CustomMenuDialog.rewrite_custom_menu(self.custom_menu)
 
     def init_help_menu(self) -> None:
         """Create the Help menu."""
-        help_menu = Menu(menubar(), "~Help")
+        help_menu = self.top_level_menu("~Help")
         help_menu.add_button(
             "Guiguts ~Manual Contents (opens in browser)",
             self.show_help_manual,
@@ -982,6 +994,7 @@ class Guiguts:
             "List of ~Compose Sequences", ComposeHelpDialog.show_dialog
         )
         help_menu.add_separator()
+        CommandPaletteDialog.store_recreate_menus_callback(self.recreate_menus)
         help_menu.add_button(
             "Command ~Palette", CommandPaletteDialog.show_dialog, "Cmd/Ctrl+Shift+P"
         )
@@ -995,9 +1008,86 @@ class Guiguts:
             # Window menu
             Menu(menubar(), "Window", name="window")
 
+    def recreate_menus(self) -> None:
+        """Remove the contents of all the top-level menus and re-create them from the metadata."""
+        # Remove all tk submenus, buttons, checkbuttons and separators
+        for top_level in menubar_metadata().entries:
+            assert isinstance(top_level, MenuMetadata)
+            self.remove_entries(top_level)
+
+        # Now remove all shortcuts that were previously set up.
+        # New shortcuts will be created below.
+        menubar_metadata().unbind_shortcuts()
+
+        # Create all tk submenus, buttons, checkbuttons and separators.
+        for top_level in menubar_metadata().entries:
+            assert isinstance(top_level, MenuMetadata)
+            self.add_entries(top_level)
+        # Also add orphan shortcuts since they won't be covered by the above calls
+        self.add_orphan_shortcuts()
+
+    def remove_entries(self, menu_metadata: MenuMetadata) -> None:
+        """Recursively delete all entries in tk Menu corresponding to given menu_metadata."""
+        tk_menu = menu_metadata.tk_menu
+        if tk_menu is None:
+            return
+        for submenu_metadata in menu_metadata.entries:
+            if isinstance(submenu_metadata, MenuMetadata):
+                self.remove_entries(submenu_metadata)
+                submenu_metadata.tk_menu = None
+        tk_menu.delete(0, tk_menu.index(tk.END))
+
+    def add_entries(self, menu_metadata: MenuMetadata) -> None:
+        """Recursively add all entries to tk Menu corresponding to given menu_metadata."""
+        tk_menu = menu_metadata.tk_menu
+        assert tk_menu is not None
+        for entry in menu_metadata.entries:
+            if isinstance(entry, MenuMetadata):
+                assert entry.tk_menu is None
+                entry.tk_menu = Menu(tk_menu, entry.label)  # Create the tk menu
+                self.add_entries(entry)  # Add its entries
+            elif isinstance(entry, ButtonMetadata):
+                tk_menu.add_button(  # type:ignore[attr-defined]
+                    entry.label, entry.command, entry.shortcut, bind_all=entry.bind_all
+                )
+                menubar_metadata().store_shortcut(entry.shortcut, entry.bind_all)
+            elif isinstance(entry, CheckbuttonMetadata):
+                tk_menu.add_checkbox(  # type:ignore[attr-defined]
+                    entry.label.removesuffix(" (toggle)"),
+                    PersistentBoolean(entry.pref_key),
+                    entry.command_on,
+                    entry.command_off,
+                    entry.shortcut,
+                )
+                menubar_metadata().store_shortcut(entry.shortcut, entry.bind_all)
+            elif isinstance(entry, SeparatorMetadata):
+                tk_menu.add_separator()
+
+    def add_orphan_shortcuts(self) -> None:
+        """Add all orphan shortcuts."""
+        for entry in menubar_metadata().orphans:
+            if isinstance(entry, ButtonMetadata):
+                Menu.bind_button(entry.command, entry.shortcut, entry.bind_all)
+                menubar_metadata().store_shortcut(entry.shortcut, entry.bind_all)
+            elif isinstance(entry, CheckbuttonMetadata):
+                Menu.bind_checkbox(
+                    PersistentBoolean(entry.pref_key),
+                    entry.command_on,
+                    entry.command_off,
+                    entry.shortcut,
+                )
+                menubar_metadata().store_shortcut(entry.shortcut, entry.bind_all)
+
+    def top_level_menu(self, label: str) -> MenuMetadata:
+        """Create a top-level tk.Menu and return the MenuMetadata object."""
+        menu_metadata = menubar_metadata().add_menu(label)
+        menu_metadata.tk_menu = Menu(menubar(), label)
+        return menu_metadata
+
     def init_command_palette_orphans(self) -> None:
         """Add "shadow" commands to command palette."""
         PreferencesDialog.add_orphan_commands()
+        CommandPaletteDialog.add_orphan_commands()
         mainimage().add_orphan_commands()
 
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
