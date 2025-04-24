@@ -110,8 +110,8 @@ class WFWordLists:
             # Build a list of emdash words, i.e. "word1--word2"
             words = re.split(r"\s+", line)
             for word in words:
+                word = strip_punc(word)
                 if re.search(r"[^-](--|—)[^-]", word) and "---" not in word:
-                    word = strip_punc(word)
                     tally_word(self.emdash_words, word)
 
             line = re.sub(r"(--|—)", " ", line)  # double-hyphen/emdash
