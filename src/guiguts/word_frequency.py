@@ -658,8 +658,9 @@ class WordFrequencyDialog(ToplevelDialog):
         ) == WFDisplayType.MARKEDUP and not word.startswith("<"):
             match_word = r"(?<![>\w])" + re.escape(newline_word) + r"(?![<\w])"
             wholeword = False
-        elif (
-            preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.CHAR_COUNTS
+        elif preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) in (
+            WFDisplayType.CHAR_COUNTS,
+            WFDisplayType.MARKEDUP,
         ):
             wholeword = False
             match_word = re.escape(newline_word)
