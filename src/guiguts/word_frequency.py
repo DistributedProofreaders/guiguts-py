@@ -101,7 +101,7 @@ class WFWordLists:
                 line = line.lower()
             line = re.sub(r"<\/?[a-z]*>", " ", line)  # throw away DP tags
             # get rid of nonalphanumeric (retaining combining characters)
-            line = re.sub(r"[^'’\.,\p{Alnum}\p{Mark}*_-]", " ", line)
+            line = re.sub(r"[^'’\.,\p{Alnum}\p{Mark}*_\-—]", " ", line)
 
             def strip_punc(word: str) -> str:
                 """Strip relevant leading/trailing punctuation from word."""
@@ -110,8 +110,8 @@ class WFWordLists:
             # Build a list of emdash words, i.e. "word1--word2"
             words = re.split(r"\s+", line)
             for word in words:
+                word = strip_punc(word)
                 if re.search(r"[^-](--|—)[^-]", word) and "---" not in word:
-                    word = strip_punc(word)
                     tally_word(self.emdash_words, word)
 
             line = re.sub(r"(--|—)", " ", line)  # double-hyphen/emdash
@@ -658,8 +658,9 @@ class WordFrequencyDialog(ToplevelDialog):
         ) == WFDisplayType.MARKEDUP and not word.startswith("<"):
             match_word = r"(?<![>\w])" + re.escape(newline_word) + r"(?![<\w])"
             wholeword = False
-        elif (
-            preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.CHAR_COUNTS
+        elif preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) in (
+            WFDisplayType.CHAR_COUNTS,
+            WFDisplayType.MARKEDUP,
         ):
             wholeword = False
             match_word = re.escape(newline_word)
