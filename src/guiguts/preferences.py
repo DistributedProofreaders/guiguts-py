@@ -159,9 +159,9 @@ class Preferences:
           called after all prefs have been loaded and UI is ready. Also called
           each time pref is changed.
         persistent_vars: dictionary of Persistent variables (inherit from Tk.Variable),
-          stored here so the variable can be set whenever the pref is set. The Persistent
-          classes below handle the reverse, i.e. they set the pref whenever the variable
-          is set.
+          stored here so the variable(s) can be set whenever the pref is set. The Persistent
+          classes below handle the reverse, i.e. they set the pref whenever a variable
+          based on that pref is set.
         prefsdir: directory containing user prefs & data files
     """
 
@@ -170,7 +170,7 @@ class Preferences:
         self.dict: dict[PrefKey, Any] = {}
         self.defaults: dict[PrefKey, Any] = {}
         self.callbacks: dict[PrefKey, Callable[[Any], None]] = {}
-        self.persistent_vars: dict[PrefKey, tk.Variable] = {}
+        self.persistent_vars: dict[PrefKey, list[tk.Variable]] = {}
         if is_x11():
             self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
         elif is_windows():
@@ -221,7 +221,8 @@ class Preferences:
         if key in self.callbacks:
             self.callbacks[key](value)
         if key in self.persistent_vars:
-            self.persistent_vars[key].set(value)
+            for var in self.persistent_vars[key]:
+                var.set(value)
 
     def toggle(self, key: PrefKey) -> None:
         """Toggle the value of a boolean preference.
@@ -272,13 +273,17 @@ class Preferences:
 
     def link_persistent_var(self, key: PrefKey, var: tk.Variable) -> None:
         """Link a persistent variable to a preference. Variable will be set
-        whenever the preference gets set.
+        whenever the preference gets set. More than one variable may be
+        linked to a preference.
 
         Args:
             key: Name of preference.
             var: Persistent variable to link to preference.
         """
-        self.persistent_vars[key] = var
+        try:
+            self.persistent_vars[key].append(var)
+        except KeyError:
+            self.persistent_vars[key] = [var]
 
     def keys(self) -> list[PrefKey]:
         """Return list of preferences keys.
