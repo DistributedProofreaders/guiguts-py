@@ -367,15 +367,21 @@ def get_keyboard_layout() -> int:
         try:
             result = subprocess.run(
                 [
-                    "osascript",
-                    "-e",
-                    'tell application "System Events" to get name of current keyboard layout',
+                    "defaults",
+                    "read",
+                    "~/Library/Preferences/com.apple.HIToolbox.plist",
+                    "AppleSelectedInputSources",
                 ],
                 capture_output=True,
                 text=True,
                 check=False,
             )
-            layout = result.stdout.strip()  # e.g. "British" or "U.S."
+            for line in result.stdout.splitlines():
+                if "KeyboardLayout Name" in line:
+                    layout = re.sub(r'.*"([^"]+)";$', r"\1", line)
+                    break
+            # e.g. "British" or "U.S."
+            print(f"Keyboard layout: {layout}")
         except subprocess.SubprocessError:
             pass
     else:
