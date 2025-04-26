@@ -1071,7 +1071,7 @@ class Guiguts:
                 menubar_metadata().store_shortcut(entry.shortcut, entry.bind_all)
             elif isinstance(entry, CheckbuttonMetadata):
                 Menu.bind_checkbox(
-                    PersistentBoolean(entry.pref_key),
+                    entry.pref_key,
                     entry.command_on,
                     entry.command_off,
                     entry.shortcut,

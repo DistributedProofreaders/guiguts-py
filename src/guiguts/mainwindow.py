@@ -141,13 +141,15 @@ class Menu(tk.Menu):
               button. "Cmd/Ctrl" means `Cmd` key on Mac; `Ctrl` key on
               Windows/Linux.
         """
-        Menu.bind_checkbox(bool_var, handler_on, handler_off, accel)
+        Menu.bind_checkbox(bool_var.pref_key, handler_on, handler_off, accel)
 
         label_tilde, label_txt = process_label(label)
         accel = process_accel(accel)[0]
         command_args = {
             "label": label_txt,
-            "command": lambda: Menu.checkbox_clicked(bool_var, handler_on, handler_off),
+            "command": lambda: Menu.checkbox_clicked(
+                bool_var.pref_key, handler_on, handler_off
+            ),
             "variable": bool_var,
             "accelerator": accel,
         }
@@ -158,14 +160,14 @@ class Menu(tk.Menu):
     @classmethod
     def checkbox_clicked(
         cls,
-        bool_var: PersistentBoolean,
+        pref_key: PrefKey,
         handler_on: Optional[Callable[[], None]] = None,
         handler_off: Optional[Callable[[], None]] = None,
     ) -> None:
         """Callback when checkbox is clicked.
 
         Call appropriate handler depending on setting."""
-        if bool_var.get():
+        if preferences.get(pref_key):
             if handler_on is not None:
                 handler_on()
         else:
@@ -175,7 +177,7 @@ class Menu(tk.Menu):
     @classmethod
     def bind_checkbox(
         cls,
-        bool_var: PersistentBoolean,
+        pref_key: PrefKey,
         handler_on: Optional[Callable[[], None]] = None,
         handler_off: Optional[Callable[[], None]] = None,
         accel: str = "",
@@ -188,8 +190,8 @@ class Menu(tk.Menu):
 
             Because key hasn't been clicked, variable hasn't been toggled.
             """
-            bool_var.set(not bool_var.get())
-            Menu.checkbox_clicked(bool_var, handler_on, handler_off)
+            preferences.set(pref_key, not preferences.get(pref_key))
+            Menu.checkbox_clicked(pref_key, handler_on, handler_off)
 
         if accel:
             maintext().key_bind(key_event, accel_command, bind_all=True)
