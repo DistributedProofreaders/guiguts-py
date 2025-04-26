@@ -4455,15 +4455,12 @@ class MenubarMetadata:
                     break
 
     def metadata_from_shortcut(self, shortcut: str) -> Optional[EntryMetadata]:
-        """Return metadata that has given shortcut assigned (or None).
-        Copes with "Key-" being present/absent."""
+        """Return metadata that has given shortcut assigned (or None)."""
         if not shortcut:
             return None
-        shortcut = shortcut.replace("Key-", "")
         all_commands = self.get_all_palette_commands()
         for command in all_commands:
-            cmd_shortcut = process_accel(command.shortcut)[0]
-            if cmd_shortcut == shortcut:
+            if command.shortcut == shortcut:
                 return command
         return None
 
