@@ -336,38 +336,44 @@ class ToplevelDialog(tk.Toplevel):
 class OkApplyCancelDialog(ToplevelDialog):
     """A ToplevelDialog with OK, Apply & Cancel buttons."""
 
-    def __init__(self, title: str, **kwargs: Any) -> None:
-        """Initialize the dialog."""
+    def __init__(self, title: str, display_apply: bool = True, **kwargs: Any) -> None:
+        """Initialize the dialog.
+
+        Args:
+            title: Title for dialog.
+            display_apply: Set to False if Apply button not required.
+        """
         super().__init__(title, **kwargs)
-        button_frame = ttk.Frame(self, padding=5)
-        button_frame.grid(row=1, column=0, sticky="NSEW")
-        button_frame.columnconfigure(0, weight=1)
-        ok_button = ttk.Button(
+        outer_button_frame = ttk.Frame(self, padding=5)
+        outer_button_frame.grid(row=1, column=0, sticky="NSEW")
+        outer_button_frame.columnconfigure(0, weight=1)
+        button_frame = ttk.Frame(outer_button_frame)
+        button_frame.grid(row=1, column=0)
+        column = 0
+        ttk.Button(
             button_frame,
             text="OK",
             default="active",
             command=self.ok_pressed,
             takefocus=False,
-        )
-        ok_button.grid(row=0, column=0)
-        button_frame.columnconfigure(1, weight=1)
-        apply_button = ttk.Button(
-            button_frame,
-            text="Apply",
-            default="normal",
-            command=self.apply_changes,
-            takefocus=False,
-        )
-        apply_button.grid(row=0, column=1)
-        button_frame.columnconfigure(2, weight=1)
-        cancel_button = ttk.Button(
+        ).grid(row=0, column=column, padx=5)
+        if display_apply:
+            column += 1
+            ttk.Button(
+                button_frame,
+                text="Apply",
+                default="normal",
+                command=self.apply_changes,
+                takefocus=False,
+            ).grid(row=0, column=column, padx=5)
+        column += 1
+        ttk.Button(
             button_frame,
             text="Cancel",
             default="normal",
             command=self.cancel_pressed,
             takefocus=False,
-        )
-        cancel_button.grid(row=0, column=2)
+        ).grid(row=0, column=column, padx=5)
         self.bind("<Return>", lambda event: self.ok_pressed())
         self.bind("<Escape>", lambda event: self.cancel_pressed())
 
@@ -390,6 +396,19 @@ class OkApplyCancelDialog(ToplevelDialog):
     def cancel_pressed(self) -> None:
         """Destroy dialog."""
         self.destroy()
+
+
+class OkCancelDialog(OkApplyCancelDialog):
+    """A ToplevelDialog with OK & Cancel buttons."""
+
+    def __init__(self, title: str, **kwargs: Any) -> None:
+        """Initialize the dialog.
+
+        Args:
+            title: Title for dialog.
+        """
+        kwargs["display_apply"] = False
+        super().__init__(title, **kwargs)
 
 
 class Combobox(ttk.Combobox):

@@ -35,6 +35,7 @@ from guiguts.widgets import (
     ToolTip,
     insert_in_focus_widget,
     OkApplyCancelDialog,
+    OkCancelDialog,
     mouse_bind,
     Combobox,
     Notebook,
@@ -970,7 +971,7 @@ class RecentPlusEntry:
         self.entry = entry
 
 
-class CommandEditDialog(OkApplyCancelDialog):
+class CommandEditDialog(OkCancelDialog):
     """Command Edit Dialog."""
 
     manual_page = "Help_Menu#User-defined_Keyboard_Shortcuts"
@@ -991,7 +992,9 @@ class CommandEditDialog(OkApplyCancelDialog):
 
     def __init__(self, command_dlg: "CommandPaletteDialog") -> None:
         """Initialize the command edit window."""
-        super().__init__("Command Edit", resize_x=False, resize_y=False)
+        super().__init__(
+            "Command Edit", display_apply=False, resize_x=False, resize_y=False
+        )
 
         self.cmd_dlg = command_dlg
         ttk.Label(self.top_frame, text="Label:").grid(
