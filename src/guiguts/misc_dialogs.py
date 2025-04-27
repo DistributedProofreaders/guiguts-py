@@ -1023,10 +1023,17 @@ class CommandEditDialog(OkApplyCancelDialog):
             shortcut_entry,
             "Press required modifiers and keyboard key to use for shortcut",
         )
+
+        # Just used for test binding
+        self.dummy_widget = ttk.Label(self.top_frame, takefocus=False)
+
         # Track which modifier keys are currently pressed
         self.pressed_modifiers: set[str] = set()
         self.bind("<KeyPress>", self.key_press)
         self.bind("<KeyRelease>", self.key_release)
+        # Clear modifiers if dialog loses focus, particularly via Alt-tab on Windows
+        self.bind("<FocusOut>", lambda _: self.pressed_modifiers.clear())
+
         self.cmd = EntryMetadata("", "", "")
 
     @property
@@ -1059,6 +1066,20 @@ class CommandEditDialog(OkApplyCancelDialog):
             logger.error(
                 f"Shortcut must include Ctrl or {'Cmd' if is_mac() else 'Alt'}"
             )
+            self.lift()
+            self.focus()
+            return False
+
+        # Bind do_nothing to dummy widget, to test if the bind sequence is legal
+        def do_nothing(_: tk.Event) -> None:
+            """Do nothing."""
+
+        try:
+            test_key = process_accel(new_shortcut)[1]
+            self.dummy_widget.bind(test_key, do_nothing)
+            self.dummy_widget.unbind(test_key)
+        except tk.TclError:
+            logger.error(f"Key combination {test_key} is not supported as a shortcut.")
             self.lift()
             self.focus()
             return False
