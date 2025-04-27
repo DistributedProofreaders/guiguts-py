@@ -378,10 +378,9 @@ def get_keyboard_layout() -> int:
             )
             for line in result.stdout.splitlines():
                 if "KeyboardLayout Name" in line:
+                    # May begin with "British" or "U.S." or "US"
                     layout = re.sub(r'.*"([^"]+)";$', r"\1", line)
                     break
-            # e.g. "British" or "U.S."
-            print(f"Keyboard layout: {layout}")
         except subprocess.SubprocessError:
             pass
     else:
@@ -395,7 +394,7 @@ def get_keyboard_layout() -> int:
                     break
         except subprocess.SubprocessError:
             pass
-    return 1 if layout in ("00000809", "gb", "British") else 0
+    return 1 if layout.startswith(("00000809", "gb", "British")) else 0
 
 
 class DiacriticRemover:
