@@ -2899,7 +2899,7 @@ class MainText(tk.Text):
 
                     # Find matching close markup within section being wrapped
                     if close_index := self.search(
-                        rf"^{PAGEMARK_PIN}*{re.escape(block_type)}/\s*$",
+                        rf"^{PAGEMARK_PIN}*{re.escape(block_type)}{PAGEMARK_PIN}*/[{PAGEMARK_PIN}\s]*$",
                         line_start,
                         stopindex=WRAP_END_MARK,
                         nocase=True,
