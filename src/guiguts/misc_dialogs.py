@@ -1054,24 +1054,10 @@ class CommandEditDialog(OkApplyCancelDialog):
             True if successful.
         """
         new_shortcut = self.shortcut
-        single_char_keyname = (
-            len(re.sub(r".*\+", "", self.shortcut_variable.get())) == 1
-        )
-        if single_char_keyname and not (
-            "Ctrl" in new_shortcut
-            or "Cmd" in new_shortcut
-            or "Alt" in new_shortcut
-            or "Option" in new_shortcut
-        ):
+        # Don't allow shortcuts that don't use Ctrl/Cmd/Alt
+        if not any(m in new_shortcut for m in ["Ctrl", "Cmd", "Alt"]):
             logger.error(
                 f"Shortcut must include Ctrl or {'Cmd' if is_mac() else 'Alt'}"
-            )
-            self.lift()
-            self.focus()
-            return False
-        if new_shortcut == "F1":
-            logger.error(
-                f"F1 without Shift, Ctrl or {'Cmd' if is_mac() else 'Alt'} is reserved for Help"
             )
             self.lift()
             self.focus()
