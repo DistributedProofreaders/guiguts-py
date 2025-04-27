@@ -1070,6 +1070,13 @@ class CommandEditDialog(OkApplyCancelDialog):
             self.focus()
             return False
 
+        # Don't allow shortcuts that use Option
+        if "Option" in new_shortcut:
+            logger.error("Option key may not be used for shortcuts")
+            self.lift()
+            self.focus()
+            return False
+
         # Bind do_nothing to dummy widget, to test if the bind sequence is legal
         def do_nothing(_: tk.Event) -> None:
             """Do nothing."""
