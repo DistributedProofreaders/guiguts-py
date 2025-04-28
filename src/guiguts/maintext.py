@@ -4460,7 +4460,7 @@ class MenubarMetadata:
             return None
         all_commands = self.get_all_palette_commands()
         for command in all_commands:
-            if command.shortcut == shortcut:
+            if process_accel(command.shortcut)[0] == shortcut:
                 return command
         return None
 

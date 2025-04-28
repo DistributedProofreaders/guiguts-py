@@ -993,7 +993,7 @@ class CommandEditDialog(OkCancelDialog):
     def __init__(self, command_dlg: "CommandPaletteDialog") -> None:
         """Initialize the command edit window."""
         super().__init__(
-            "Command Edit", display_apply=False, resize_x=False, resize_y=False
+            "Shortcut Edit", display_apply=False, resize_x=False, resize_y=False
         )
 
         self.cmd_dlg = command_dlg
@@ -1101,7 +1101,9 @@ class CommandEditDialog(OkCancelDialog):
         new_assign = f"{menu}|{label}" if menu else label
 
         # If shortcut is already assigned, check whether user wants to continue
-        command = menubar_metadata().metadata_from_shortcut(new_shortcut)
+        command = menubar_metadata().metadata_from_shortcut(
+            process_accel(new_shortcut)[0]
+        )
         if command is not None:
             menu = command.display_parent_label()
             label = command.display_label()
