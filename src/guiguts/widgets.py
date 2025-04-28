@@ -129,8 +129,12 @@ class ToplevelDialog(tk.Toplevel):
         if dlg := cls.get_dialog():
             dlg.deiconify()
             dlg.reset()
+            # On Linux, Window Managers stop dialogs being brought to the front by deiconify,
+            # or anything else. Destroying the dialog and recreating it gets round that.
+            if is_x11():
+                dlg.destroy()
         # Or do we need to create it?
-        else:
+        if not cls.get_dialog():
             dlg = cls(**kwargs)
         ToplevelDialog._toplevel_dialogs[dlg_name] = dlg
         return dlg

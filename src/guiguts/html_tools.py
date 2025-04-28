@@ -590,6 +590,7 @@ class HTMLValidator:
 
     def run(self) -> None:
         """Do the check and add messages to the dialog."""
+        self.dialog.reset()
 
         validator_url = "https://validator.w3.org/nu/"
 
