@@ -914,7 +914,6 @@ class File:
             # Subsequent pages are same style as first, page numbers increment
             style = STYLE_DITTO
             number = NUMBER_INCREMENT
-        maintext().set_modified(True)
         return True
 
     def add_good_and_bad_words(self) -> None:
