@@ -1474,10 +1474,11 @@ class CommandPaletteDialog(ToplevelDialog):
         state = int(event.state)
         if event.keysym in ("BackSpace", "Delete"):
             self.search_var.set(current_text[:-1])
+            self.update_list()  # Update the list based on the new search text
         elif event.char and event.char.isprintable() and not state & bad_modifiers:
             # If a proper char, add it to the entry
             self.search_var.set(current_text + event.char)
-        self.update_list()  # Update the list based on the new search text
+            self.update_list()  # Update the list based on the new search text
 
     def add_to_history(self, label: str, parent_label: str) -> None:
         """Store given entry in history list pref.
