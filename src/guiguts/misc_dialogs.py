@@ -1091,6 +1091,13 @@ class CommandEditDialog(OkCancelDialog):
             self.focus()
             return False
 
+        # Cmd+? is reserved for Help too
+        if new_shortcut == "Cmd+Shift+?":
+            logger.error("Cmd+Shift+? is reserved for Help")
+            self.lift()
+            self.focus()
+            return False
+
         # Other reserved shortcuts
         ctrl_cmd = "Cmd" if is_mac() else "Ctrl"
         display_shortcut = process_accel(new_shortcut)[0]
@@ -1165,6 +1172,10 @@ class CommandEditDialog(OkCancelDialog):
         keysym = event.keysym
         if keysym in self.MODIFIER_KEYS:
             self.pressed_modifiers.add(keysym)
+        elif (
+            event.keysym in ("BackSpace", "Delete") and len(self.pressed_modifiers) == 0
+        ):
+            self.shortcut = ""
         else:
             # Combine the current modifiers with the key
             mods = sorted(set(self.MODIFIER_KEYS[kk] for kk in self.pressed_modifiers))
