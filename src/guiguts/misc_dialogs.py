@@ -1264,6 +1264,11 @@ class CommandPaletteDialog(ToplevelDialog):
         """Store function to be called to recreate menus."""
         cls.recreate_menus_callback = callback
 
+    def grab_focus(self) -> None:
+        """Override grabbing focus to set focus to Entry field."""
+        super().grab_focus()
+        self.entry.focus()
+
     def update_list(self) -> None:
         """Update the command list based on search input."""
 
