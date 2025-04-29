@@ -1470,12 +1470,11 @@ class CommandPaletteDialog(ToplevelDialog):
         # If (some) modifier keys pressed with character when typing in list,
         # don't add the char to the entry field:
         # Shift, Caps Lock, etc. are OK, but not Ctrl, Cmd, Alt (platform-specific)
-        BAD_MODIFIERS = 0x0004 | 0x0008 | 0x0080 | 0x20000
+        bad_modifiers = 0x0004 | 0x0008 | 0x0080 | 0x20000
+        state = int(event.state)
         if event.keysym in ("BackSpace", "Delete"):
             self.search_var.set(current_text[:-1])
-        elif (
-            event.char and event.char.isprintable() and not event.state & BAD_MODIFIERS
-        ):
+        elif event.char and event.char.isprintable() and not state & bad_modifiers:
             # If a proper char, add it to the entry
             self.search_var.set(current_text + event.char)
         self.update_list()  # Update the list based on the new search text
