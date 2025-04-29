@@ -1066,9 +1066,11 @@ class CommandEditDialog(OkCancelDialog):
         new_shortcut = self.shortcut
         display_shortcut = process_accel(new_shortcut)[0]
         # Don't allow shortcuts that don't use Ctrl/Cmd/Alt except for F keys
-        if not any(
-            m in display_shortcut for m in ["Ctrl", "Cmd", "Alt"]
-        ) and not re.search(r"F\d+$", display_shortcut):
+        if (
+            display_shortcut
+            and not any(m in display_shortcut for m in ["Ctrl", "Cmd", "Alt"])
+            and not re.search(r"F\d+$", display_shortcut)
+        ):
             logger.error(
                 f"Shortcut must include Ctrl or {'Cmd' if is_mac() else 'Alt'}"
             )
@@ -1114,15 +1116,18 @@ class CommandEditDialog(OkCancelDialog):
         def do_nothing(_: tk.Event) -> None:
             """Do nothing."""
 
-        try:
-            test_key = process_accel(new_shortcut)[1]
-            self.dummy_widget.bind(test_key, do_nothing)
-            self.dummy_widget.unbind(test_key)
-        except tk.TclError:
-            logger.error(f"Key combination {test_key} is not supported as a shortcut.")
-            self.lift()
-            self.focus()
-            return False
+        if new_shortcut:
+            try:
+                test_key = process_accel(new_shortcut)[1]
+                self.dummy_widget.bind(test_key, do_nothing)
+                self.dummy_widget.unbind(test_key)
+            except tk.TclError:
+                logger.error(
+                    f"Key combination {test_key} is not supported as a shortcut."
+                )
+                self.lift()
+                self.focus()
+                return False
 
         shortcuts_dict = KeyboardShortcutsDict()
 
