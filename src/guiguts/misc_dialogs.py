@@ -1467,14 +1467,18 @@ class CommandPaletteDialog(ToplevelDialog):
     def handle_list_typing(self, event: tk.Event) -> None:
         """Handle key press in the list to simulate typing in the Entry box."""
         current_text = self.search_var.get()
+        # If (some) modifier keys pressed with character when typing in list,
+        # don't add the char to the entry field:
+        # Shift, Caps Lock, etc. are OK, but not Ctrl, Cmd, Alt (platform-specific)
+        BAD_MODIFIERS = 0x0004 | 0x0008 | 0x0080 | 0x20000
         if event.keysym in ("BackSpace", "Delete"):
             self.search_var.set(current_text[:-1])
-            self.update_list()  # Update the list based on the new search text
         elif (
-            event.char and event.char.isprintable()
-        ):  # If a proper char, add it to the entry
+            event.char and event.char.isprintable() and not event.state & BAD_MODIFIERS
+        ):
+            # If a proper char, add it to the entry
             self.search_var.set(current_text + event.char)
-            self.update_list()  # Update the list based on the new search text
+        self.update_list()  # Update the list based on the new search text
 
     def add_to_history(self, label: str, parent_label: str) -> None:
         """Store given entry in history list pref.
