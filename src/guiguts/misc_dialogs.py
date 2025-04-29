@@ -1064,8 +1064,10 @@ class CommandEditDialog(OkCancelDialog):
             True if successful.
         """
         new_shortcut = self.shortcut
-        # Don't allow shortcuts that don't use Ctrl/Cmd/Alt
-        if not any(m in new_shortcut for m in ["Ctrl", "Cmd", "Alt"]):
+        # Don't allow shortcuts that don't use Ctrl/Cmd/Alt except for F keys
+        if not any(m in new_shortcut for m in ["Ctrl", "Cmd", "Alt"]) and not re.search(
+            r"F\d+$", new_shortcut
+        ):
             logger.error(
                 f"Shortcut must include Ctrl or {'Cmd' if is_mac() else 'Alt'}"
             )
@@ -1076,6 +1078,15 @@ class CommandEditDialog(OkCancelDialog):
         # Don't allow shortcuts that use Option
         if "Option" in new_shortcut:
             logger.error("Option key may not be used for shortcuts")
+            self.lift()
+            self.focus()
+            return False
+
+        # Plain F1 is reserved
+        if new_shortcut == "F1":
+            logger.error(
+                f"F1 without Shift, Ctrl or {'Cmd' if is_mac() else 'Alt'} is reserved for Help"
+            )
             self.lift()
             self.focus()
             return False
