@@ -1091,6 +1091,18 @@ class CommandEditDialog(OkCancelDialog):
             self.focus()
             return False
 
+        # Other reserved shortcuts
+        ctrl_cmd = "Cmd" if is_mac() else "Ctrl"
+        display_shortcut = process_accel(new_shortcut)[0]
+        for res_key in ("A", "C", "V", "X"):
+            if display_shortcut == f"{ctrl_cmd}+{res_key}":
+                logger.error(
+                    f"{display_shortcut} is a reserved shortcut and may not be reassigned"
+                )
+                self.lift()
+                self.focus()
+                return False
+
         # Bind do_nothing to dummy widget, to test if the bind sequence is legal
         def do_nothing(_: tk.Event) -> None:
             """Do nothing."""
