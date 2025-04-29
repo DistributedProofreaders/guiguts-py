@@ -1064,10 +1064,11 @@ class CommandEditDialog(OkCancelDialog):
             True if successful.
         """
         new_shortcut = self.shortcut
+        display_shortcut = process_accel(new_shortcut)[0]
         # Don't allow shortcuts that don't use Ctrl/Cmd/Alt except for F keys
-        if not any(m in new_shortcut for m in ["Ctrl", "Cmd", "Alt"]) and not re.search(
-            r"F\d+$", new_shortcut
-        ):
+        if not any(
+            m in display_shortcut for m in ["Ctrl", "Cmd", "Alt"]
+        ) and not re.search(r"F\d+$", display_shortcut):
             logger.error(
                 f"Shortcut must include Ctrl or {'Cmd' if is_mac() else 'Alt'}"
             )
@@ -1076,14 +1077,14 @@ class CommandEditDialog(OkCancelDialog):
             return False
 
         # Don't allow shortcuts that use Option
-        if "Option" in new_shortcut:
+        if "Option" in display_shortcut:
             logger.error("Option key may not be used for shortcuts")
             self.lift()
             self.focus()
             return False
 
         # Plain F1 is reserved
-        if new_shortcut == "F1":
+        if display_shortcut == "F1":
             logger.error(
                 f"F1 without Shift, Ctrl or {'Cmd' if is_mac() else 'Alt'} is reserved for Help"
             )
@@ -1091,8 +1092,8 @@ class CommandEditDialog(OkCancelDialog):
             self.focus()
             return False
 
-        # Cmd+? is reserved for Help too
-        if new_shortcut == "Cmd+Shift+?":
+        # Cmd+Shift+? is reserved for Help too
+        if display_shortcut == "Cmd+Shift+?":
             logger.error("Cmd+Shift+? is reserved for Help")
             self.lift()
             self.focus()
@@ -1100,7 +1101,6 @@ class CommandEditDialog(OkCancelDialog):
 
         # Other reserved shortcuts
         ctrl_cmd = "Cmd" if is_mac() else "Ctrl"
-        display_shortcut = process_accel(new_shortcut)[0]
         for res_key in ("A", "C", "V", "X"):
             if display_shortcut == f"{ctrl_cmd}+{res_key}":
                 logger.error(
