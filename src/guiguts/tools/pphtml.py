@@ -243,10 +243,21 @@ class PPhtmlChecker:
         for fname, filedata in self.filedata.items():
             wd = filedata.width
             ht = filedata.height
-            if fname == "cover.jpg" and (wd < 1600 or ht < 2560):
+            if fname == "cover.jpg" and ht < wd:
+                errors.insert(
+                    0,
+                    f"  INFO: {fname} is landscape format: {wd}x{ht}",
+                )
+            if fname == "cover.jpg" and ht >= wd and (wd < 1600 or ht < 2560):
                 errors.insert(
                     0,
                     f"  WARNING: {fname} too small (actual: {wd}x{ht}; recommended >= 1600x2560)",
+                )
+                test_passed = False
+            elif fname == "cover.jpg" and ht < wd and (wd < 2560 or ht < 1600):
+                errors.insert(
+                    0,
+                    f"  WARNING: {fname} too small (actual: {wd}x{ht}; recommended >= 2560x1600)",
                 )
                 test_passed = False
             elif wd > 5000 or ht > 5000:
