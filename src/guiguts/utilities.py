@@ -22,6 +22,69 @@ TraversablePath = importlib.resources.abc.Traversable | Path
 # See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
 CALLED_FROM_TEST = False
 
+# Event keysym names as keys, display names as values
+SUPPORTED_SHORTCUT_KEYS = {
+    "F1": "F1",
+    "F2": "F2",
+    "F3": "F3",
+    "F4": "F4",
+    "F5": "F5",
+    "F6": "F6",
+    "F7": "F7",
+    "F8": "F8",
+    "F9": "F9",
+    "F10": "F10",
+    "F11": "F11",
+    "F12": "F12",
+    "Left": "Left",
+    "Right": "Right",
+    "Up": "Up",
+    "Down": "Down",
+    "Home": "Home",
+    "End": "End",
+    "Prior": "PgUp",
+    "Next": "PgDn",
+    "Insert": "Insert",
+    "exclam": "!",
+    "quotedbl": '"',
+    "numbersign": "#",
+    "dollar": "$",
+    "percent": "%",
+    "ampersand": "&",
+    "quoteright": "'",
+    "parenleft": "(",
+    "parenright": ")",
+    "asterisk": "*",
+    "plus": "+",
+    "comma": ",",
+    "minus": "-",
+    "period": ".",
+    "slash": "/",
+    "colon": ":",
+    "semicolon": ";",
+    "less": "<",
+    "equal": "=",
+    "greater": ">",
+    "question": "?",
+    "at": "@",
+    "bracketleft": "[",
+    "backslash": "\\",
+    "bracketright": "]",
+    "asciicircum": "^",
+    "underscore": "_",
+    "quoteleft": "`",
+    "braceleft": "{",
+    "bar": "|",
+    "braceright": "}",
+    "asciitilde": "~",
+    "sterling": "£",
+    "notsign": "¬",
+    "grave": "`",
+    "apostrophe": "'",
+    "plusminus": "±",
+    "section": "§",
+}
+
 
 #
 # Functions to check which OS is being used
@@ -273,9 +336,8 @@ def process_accel(accel: str) -> tuple[str, str]:
         keyevent = keyevent.replace("Alt+", "Alt-")
     accel = accel.replace("Key-", "")
     # More friendly names for display
-    accel = accel.replace("sterling", "£")
-    accel = accel.replace("Prior", "PgUp")
-    accel = accel.replace("Next", "PgDn")
+    for key, display in SUPPORTED_SHORTCUT_KEYS.items():
+        accel = accel.replace(key, display)
     return (accel, f"<{keyevent}>")
 
 
@@ -305,15 +367,20 @@ def get_keyboard_layout() -> int:
         try:
             result = subprocess.run(
                 [
-                    "osascript",
-                    "-e",
-                    'tell application "System Events" to get name of current keyboard layout',
+                    "defaults",
+                    "read",
+                    "~/Library/Preferences/com.apple.HIToolbox.plist",
+                    "AppleSelectedInputSources",
                 ],
                 capture_output=True,
                 text=True,
                 check=False,
             )
-            layout = result.stdout.strip()  # e.g. "British" or "U.S."
+            for line in result.stdout.splitlines():
+                if "KeyboardLayout Name" in line:
+                    # May begin with "British" or "U.S." or "US"
+                    layout = re.sub(r'.*"([^"]+)";$', r"\1", line)
+                    break
         except subprocess.SubprocessError:
             pass
     else:
@@ -327,7 +394,7 @@ def get_keyboard_layout() -> int:
                     break
         except subprocess.SubprocessError:
             pass
-    return 1 if layout in ("00000809", "gb", "British") else 0
+    return 1 if layout.startswith(("00000809", "gb", "British")) else 0
 
 
 class DiacriticRemover:

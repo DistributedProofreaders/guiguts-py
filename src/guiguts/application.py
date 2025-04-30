@@ -798,11 +798,11 @@ class Guiguts:
         # Because keyboard layouts are different, need to bind to several keys for some bookmarks
         kbd = get_keyboard_layout()
         shortcuts = [
-            ("!", "!"),
-            ("@", '"'),
-            ("#", "sterling"),
-            ("$", "$"),
-            ("%", "%"),
+            ("exclam", "exclam"),
+            ("at", "quotedbl"),
+            ("numbersign", "sterling"),
+            ("dollar", "dollar"),
+            ("percent", "percent"),
         ]
         # Shift+Cmd+number no good for Mac due to clash with screen capture shortcuts
         # Ctrl+number could also clash on Mac with virtual desktop switching, but
@@ -812,7 +812,7 @@ class Guiguts:
                 # Add tilde before one of the letters in "okmar"
                 "Set Bo" + "okmar"[: bm - 1] + "~" + "okmar"[bm - 1 :] + f"k ~{bm}",
                 lambda num=bm: self.file.set_bookmark(num),  # type:ignore[misc]
-                f"Ctrl+Key-{keys[kbd]}",
+                f"Ctrl+Shift+Key-{keys[kbd]}",
             )
 
         for bm in range(1, 6):

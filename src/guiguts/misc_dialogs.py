@@ -35,6 +35,7 @@ from guiguts.widgets import (
     ToolTip,
     insert_in_focus_widget,
     OkApplyCancelDialog,
+    OkCancelDialog,
     mouse_bind,
     Combobox,
     Notebook,
@@ -970,38 +971,30 @@ class RecentPlusEntry:
         self.entry = entry
 
 
-class CommandEditDialog(OkApplyCancelDialog):
+class CommandEditDialog(OkCancelDialog):
     """Command Edit Dialog."""
 
     manual_page = "Help_Menu#User-defined_Keyboard_Shortcuts"
-    supported_keys = (
-        "F1",
-        "F2",
-        "F3",
-        "F4",
-        "F5",
-        "F6",
-        "F7",
-        "F8",
-        "F9",
-        "F10",
-        "F11",
-        "F12",
-        "Left",
-        "Right",
-        "Up",
-        "Down",
-        "Home",
-        "End",
-        "Prior",
-        "Next",
-        "Insert",
-        "sterling",
-    )
+
+    # Define which keys count as modifiers
+    MODIFIER_KEYS = {
+        "Shift_L": "Shift",
+        "Shift_R": "Shift",
+        "Control_L": "Ctrl",
+        "Control_R": "Ctrl",
+        "Alt_L": "Option" if is_mac() else "Alt",
+        "Alt_R": "Option" if is_mac() else "Alt",
+        "Meta_L": "Cmd",
+        "Meta_R": "Cmd",
+        "Option_L": "Option",
+        "Option_R": "Option",
+    }
 
     def __init__(self, command_dlg: "CommandPaletteDialog") -> None:
         """Initialize the command edit window."""
-        super().__init__("Command Edit", resize_x=False, resize_y=False)
+        super().__init__(
+            "Shortcut Edit", display_apply=False, resize_x=False, resize_y=False
+        )
 
         self.cmd_dlg = command_dlg
         ttk.Label(self.top_frame, text="Label:").grid(
@@ -1018,50 +1011,33 @@ class CommandEditDialog(OkApplyCancelDialog):
         ttk.Entry(
             self.top_frame, textvariable=self.menu_variable, state="readonly", width=40
         ).grid(row=1, column=1, sticky="NSEW", pady=2)
-        shortcut_frame = ttk.LabelFrame(self.top_frame, text="Shortcut:", padding=5)
-        shortcut_frame.grid(row=2, column=0, sticky="NSEW", columnspan=2)
-        for col in range(3):
-            shortcut_frame.columnconfigure(col, weight=1)
-        self.shift_variable = tk.BooleanVar()
-        ttk.Checkbutton(
-            shortcut_frame,
-            text="Shift ⇧" if is_mac() else "Shift",
-            variable=self.shift_variable,
-            takefocus=False,
-            command=self.settings_to_shortcut,
-        ).grid(row=0, column=0, stick="NSEW")
-        self.control_variable = tk.BooleanVar()
-        ttk.Checkbutton(
-            shortcut_frame,
-            text="Ctrl ⌃" if is_mac() else "Ctrl",
-            variable=self.control_variable,
-            takefocus=False,
-            command=self.settings_to_shortcut,
-        ).grid(row=0, column=1, stick="NSEW")
-        self.alt_command_variable = tk.BooleanVar()
-        ttk.Checkbutton(
-            shortcut_frame,
-            text="Command ⌘" if is_mac() else "Alt",
-            variable=self.alt_command_variable,
-            takefocus=False,
-            command=self.settings_to_shortcut,
-        ).grid(row=0, column=2, stick="NSEW")
+        ttk.Label(self.top_frame, text="Shortcut:").grid(
+            row=2, column=0, sticky="NSEW", pady=2
+        )
         self._shortcut = ""
         self.shortcut_variable = tk.StringVar()  # For display only
         shortcut_entry = ttk.Entry(
-            shortcut_frame,
+            self.top_frame,
             textvariable=self.shortcut_variable,
             state="readonly",
         )
-        shortcut_entry.grid(row=1, column=0, sticky="NSEW", columnspan=3)
-        alt_cmd_text = "Command" if is_mac() else "Alt"
+        shortcut_entry.grid(row=2, column=1, sticky="NSEW", pady=2)
         ToolTip(
             shortcut_entry,
-            f"Set Shift/Ctrl/{alt_cmd_text} and press keyboard key to use for shortcut.",
+            "Press required modifiers and keyboard key to use for shortcut",
         )
-        self.bind("<Key>", self.do_key)
+
+        # Just used for test binding
+        self.dummy_widget = ttk.Label(self.top_frame, takefocus=False)
+
+        # Track which modifier keys are currently pressed
+        self.pressed_modifiers: set[str] = set()
+        self.bind("<KeyPress>", self.key_press)
+        self.bind("<KeyRelease>", self.key_release)
+        # Clear modifiers if dialog loses focus, particularly via Alt-tab on Windows
+        self.bind("<FocusOut>", lambda _: self.pressed_modifiers.clear())
+
         self.cmd = EntryMetadata("", "", "")
-        self.key = ""
 
     @property
     def shortcut(self) -> str:
@@ -1071,7 +1047,8 @@ class CommandEditDialog(OkApplyCancelDialog):
     @shortcut.setter
     def shortcut(self, value: str) -> None:
         self._shortcut = value
-        self.shortcut_variable.set(process_accel(value)[0])
+        display_shortcut = process_accel(value)[0]
+        self.shortcut_variable.set(display_shortcut)
 
     def load(self, cmd: EntryMetadata) -> None:
         """Load dialog with values from given command."""
@@ -1079,7 +1056,6 @@ class CommandEditDialog(OkApplyCancelDialog):
         self.label_variable.set(self.cmd.display_label())
         self.menu_variable.set(self.cmd.display_parent_label())
         self.shortcut = self.cmd.shortcut
-        self.shortcut_to_settings()
 
     def apply_changes(self) -> bool:
         """Save shortcut from dialog into current cmd.
@@ -1088,31 +1064,81 @@ class CommandEditDialog(OkApplyCancelDialog):
             True if successful.
         """
         new_shortcut = self.shortcut
-        single_char_keyname = len(re.sub(r".*\+", "", new_shortcut)) == 1
-        if single_char_keyname and not (
-            self.control_variable.get() or self.alt_command_variable.get()
+        display_shortcut = process_accel(new_shortcut)[0]
+        # Don't allow shortcuts that don't use Ctrl/Cmd/Alt except for F keys
+        if (
+            display_shortcut
+            and not any(m in display_shortcut for m in ["Ctrl", "Cmd", "Alt"])
+            and not re.search(r"F\d+$", display_shortcut)
         ):
             logger.error(
-                f"Shortcut must include Ctrl or {'Command' if is_mac() else 'Alt'}"
+                f"Shortcut must include Ctrl or {'Cmd' if is_mac() else 'Alt'}"
             )
+            self.lift()
+            self.focus()
             return False
-        if new_shortcut == "F1":
+
+        # Don't allow shortcuts that use Option
+        if "Option" in display_shortcut:
+            logger.error("Option key may not be used for shortcuts")
+            self.lift()
+            self.focus()
+            return False
+
+        # Plain F1 is reserved
+        if display_shortcut == "F1":
             logger.error(
-                f"F1 without Shift, Ctrl or {'Command' if is_mac() else 'Alt'} is reserved for Help"
+                f"F1 without Shift, Ctrl or {'Cmd' if is_mac() else 'Alt'} is reserved for Help"
             )
+            self.lift()
+            self.focus()
             return False
+
+        # Cmd+Shift+? is reserved for Help too
+        if display_shortcut == "Cmd+Shift+?":
+            logger.error("Cmd+Shift+? is reserved for Help")
+            self.lift()
+            self.focus()
+            return False
+
+        # Other reserved shortcuts
+        ctrl_cmd = "Cmd" if is_mac() else "Ctrl"
+        for res_key in ("A", "C", "V", "X"):
+            if display_shortcut == f"{ctrl_cmd}+{res_key}":
+                logger.error(
+                    f"{display_shortcut} is a reserved shortcut and may not be reassigned"
+                )
+                self.lift()
+                self.focus()
+                return False
+
+        # Bind do_nothing to dummy widget, to test if the bind sequence is legal
+        def do_nothing(_: tk.Event) -> None:
+            """Do nothing."""
+
+        if new_shortcut:
+            try:
+                test_key = process_accel(new_shortcut)[1]
+                self.dummy_widget.bind(test_key, do_nothing)
+                self.dummy_widget.unbind(test_key)
+            except tk.TclError:
+                logger.error(
+                    f"Key combination {test_key} is not supported as a shortcut."
+                )
+                self.lift()
+                self.focus()
+                return False
 
         shortcuts_dict = KeyboardShortcutsDict()
 
         menu = self.menu_variable.get()
         label = self.label_variable.get()
         new_assign = f"{menu}|{label}" if menu else label
-        # Add "Key-" so that digits work correctly ("<Control-1>" means Control+Button-1)
-        if single_char_keyname:
-            new_shortcut = f"{new_shortcut[:-1]}Key-{new_shortcut[-1]}"
 
         # If shortcut is already assigned, check whether user wants to continue
-        command = menubar_metadata().metadata_from_shortcut(new_shortcut)
+        command = menubar_metadata().metadata_from_shortcut(
+            process_accel(new_shortcut)[0]
+        )
         if command is not None:
             menu = command.display_parent_label()
             label = command.display_label()
@@ -1146,45 +1172,31 @@ class CommandEditDialog(OkApplyCancelDialog):
         CommandPaletteDialog.recreate_menus_callback()  # pylint: disable=not-callable
         return True
 
-    def do_key(self, event: tk.Event) -> None:
+    def key_press(self, event: tk.Event) -> str:
         """Handle keystroke in dialog."""
-        if event.keysym in ("BackSpace", "Delete"):
-            self.key = ""
-        elif event.keysym in CommandEditDialog.supported_keys:
-            self.key = event.keysym
+        keysym = event.keysym
+        if keysym in self.MODIFIER_KEYS:
+            self.pressed_modifiers.add(keysym)
         elif (
-            event.char
-            and event.char.isascii()
-            and event.char.isprintable()
-            and not event.char.isspace()
+            event.keysym in ("BackSpace", "Delete") and len(self.pressed_modifiers) == 0
         ):
-            self.key = event.char.upper()
-        self.settings_to_shortcut()
-
-    def shortcut_to_settings(self) -> None:
-        """Update dialog settings based on self.shortcut."""
-        shortcut = self.shortcut_variable.get()
-        self.shift_variable.set("Shift" in shortcut)
-        self.control_variable.set("Ctrl" in shortcut)
-        self.alt_command_variable.set("Alt" in shortcut or "Cmd" in shortcut)
-        # Key needs to use original shortcut, not shortcut_variable
-        # which has been processed for display, e.g. "sterling"=>"£"
-        self.key = re.sub(r".*\+", "", self.shortcut)
-
-    def settings_to_shortcut(self) -> None:
-        """Set self.shortcut based on checkbutton settings."""
-        if not self.key:
             self.shortcut = ""
-            return
-        shortcut = ""
-        if self.control_variable.get():
-            shortcut += "Ctrl+"
-        if self.shift_variable.get():
-            shortcut += "Shift+"
-        if self.alt_command_variable.get():
-            shortcut += "Cmd+" if is_mac() else "Alt+"
-        shortcut += self.key
-        self.shortcut = shortcut
+        else:
+            # Combine the current modifiers with the key
+            mods = sorted(set(self.MODIFIER_KEYS[kk] for kk in self.pressed_modifiers))
+            # Regular character key
+            if len(keysym) == 1:
+                keysym = f"Key-{keysym.upper()}"
+            # Combine modifiers & key to create shortcut
+            self.shortcut = "+".join(mods + [keysym])
+        return "break"
+
+    def key_release(self, event: tk.Event) -> str:
+        """Handle key release in dialog."""
+        key = event.keysym
+        if key in self.MODIFIER_KEYS:
+            self.pressed_modifiers.discard(key)
+        return "break"
 
 
 class CommandPaletteDialog(ToplevelDialog):
@@ -1290,6 +1302,11 @@ class CommandPaletteDialog(ToplevelDialog):
     def store_recreate_menus_callback(cls, callback: Callable) -> None:
         """Store function to be called to recreate menus."""
         cls.recreate_menus_callback = callback
+
+    def grab_focus(self) -> None:
+        """Override grabbing focus to set focus to Entry field."""
+        super().grab_focus()
+        self.entry.focus()
 
     def update_list(self) -> None:
         """Update the command list based on search input."""
@@ -1466,12 +1483,16 @@ class CommandPaletteDialog(ToplevelDialog):
     def handle_list_typing(self, event: tk.Event) -> None:
         """Handle key press in the list to simulate typing in the Entry box."""
         current_text = self.search_var.get()
+        # If (some) modifier keys pressed with character when typing in list,
+        # don't add the char to the entry field:
+        # Shift, Caps Lock, etc. are OK, but not Ctrl, Cmd, Alt (platform-specific)
+        bad_modifiers = 0x0004 | 0x0008 | 0x0080 | 0x20000
+        state = int(event.state)
         if event.keysym in ("BackSpace", "Delete"):
             self.search_var.set(current_text[:-1])
             self.update_list()  # Update the list based on the new search text
-        elif (
-            event.char and event.char.isprintable()
-        ):  # If a proper char, add it to the entry
+        elif event.char and event.char.isprintable() and not state & bad_modifiers:
+            # If a proper char, add it to the entry
             self.search_var.set(current_text + event.char)
             self.update_list()  # Update the list based on the new search text
 
