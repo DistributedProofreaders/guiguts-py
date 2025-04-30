@@ -84,7 +84,7 @@ from guiguts.misc_tools import (
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.root import root
-from guiguts.search import show_search_dialog, find_next
+from guiguts.search import show_search_dialog, find_next, SearchDialog
 from guiguts.spell import spell_check
 from guiguts.tools.bookloupe import bookloupe_check
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
@@ -1088,7 +1088,11 @@ class Guiguts:
         """Add "shadow" commands to command palette."""
         PreferencesDialog.add_orphan_commands()
         CommandPaletteDialog.add_orphan_commands()
+        SearchDialog.add_orphan_commands()
         mainimage().add_orphan_commands()
+        menubar_metadata().add_button_orphan(
+            "Quit Without Saving File", lambda: root().quit()
+        )
 
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
         """Add labels to initialize the statusbar.

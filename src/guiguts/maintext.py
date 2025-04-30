@@ -4364,6 +4364,7 @@ class MenubarMetadata:
         self,
         label: str,
         command: Callable,
+        shortcut: str = "",
     ) -> None:
         """Add a command button to the list of orphans.
 
@@ -4371,7 +4372,7 @@ class MenubarMetadata:
             label: The text displayed for the button.
             command: The function to execute when clicked.
         """
-        self.orphans.append(ButtonMetadata(label, "", "", command, True, True))
+        self.orphans.append(ButtonMetadata(label, "", shortcut, command, True, True))
 
     def add_checkbutton_orphan(
         self,
@@ -4379,6 +4380,7 @@ class MenubarMetadata:
         pref_key: PrefKey,
         command_on: Optional[Callable] = None,
         command_off: Optional[Callable] = None,
+        shortcut: str = "",
     ) -> None:
         """Add a command button to the list of orphans.
 
@@ -4389,7 +4391,7 @@ class MenubarMetadata:
             command_off: Optional function to execute when checkbox turned off.
         """
         self.orphans.append(
-            CheckbuttonMetadata(label, "", "", pref_key, command_on, command_off)
+            CheckbuttonMetadata(label, "", shortcut, pref_key, command_on, command_off)
         )
 
     def get_all_palette_commands(self) -> list[EntryMetadata]:

@@ -1034,6 +1034,8 @@ class CommandEditDialog(OkCancelDialog):
         self.pressed_modifiers: set[str] = set()
         self.bind("<KeyPress>", self.key_press)
         self.bind("<KeyRelease>", self.key_release)
+        # Explicitly unbind Return, so it is treated like other keypresses
+        self.unbind("<Return>")
         # Clear modifiers if dialog loses focus, particularly via Alt-tab on Windows
         self.bind("<FocusOut>", lambda _: self.pressed_modifiers.clear())
 
@@ -1175,12 +1177,16 @@ class CommandEditDialog(OkCancelDialog):
     def key_press(self, event: tk.Event) -> str:
         """Handle keystroke in dialog."""
         keysym = event.keysym
+        # Just flag modifier keys as pressed
         if keysym in self.MODIFIER_KEYS:
             self.pressed_modifiers.add(keysym)
-        elif (
-            event.keysym in ("BackSpace", "Delete") and len(self.pressed_modifiers) == 0
-        ):
+        # Plain Backspace & Delete remove the shortcut
+        elif keysym in ("BackSpace", "Delete") and len(self.pressed_modifiers) == 0:
             self.shortcut = ""
+        # Plain Return performs OK action
+        elif keysym == "Return" and len(self.pressed_modifiers) == 0:
+            self.ok_pressed()
+        # All other keys potentially OK for shortcut
         else:
             # Combine the current modifiers with the key
             mods = sorted(set(self.MODIFIER_KEYS[kk] for kk in self.pressed_modifiers))

@@ -338,6 +338,25 @@ class ToplevelDialog(tk.Toplevel):
             f"https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual{sub_page}"
         )
 
+    @classmethod
+    def orphan_wrapper(cls, method_name: str, *args: Any, **kwargs: Any) -> Callable:
+        """Return a wrapper to simplify calls to add_button_orphan.
+
+        Args:
+            method_name: Name of method to be called when command is executed.
+            args: Positional args for `method_name` method.
+            kwargs: Named args for `method_name` method.
+        """
+
+        def wrapper() -> None:
+            if dlg := cls.get_dialog():
+                getattr(dlg, method_name)(*args, **kwargs)
+
+        assert hasattr(
+            cls, method_name
+        ), f"{cls.__name__} does not have method '{method_name}'"
+        return wrapper
+
 
 class OkApplyCancelDialog(ToplevelDialog):
     """A ToplevelDialog with OK, Apply & Cancel buttons."""
