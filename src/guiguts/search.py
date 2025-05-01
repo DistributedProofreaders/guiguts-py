@@ -12,7 +12,13 @@ import regex as re
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError, FindMatch, menubar_metadata
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey
-from guiguts.utilities import sound_bell, IndexRowCol, IndexRange, sing_plur
+from guiguts.utilities import (
+    sound_bell,
+    IndexRowCol,
+    IndexRange,
+    sing_plur,
+    process_accel,
+)
 from guiguts.widgets import (
     ToplevelDialog,
     Combobox,
@@ -134,6 +140,10 @@ class SearchDialog(ToplevelDialog):
             search_button,
             "Shift+1",
             lambda *args: self.search_clicked(opposite_dir=True),
+        )
+        self.bind("<Return>", lambda *args: self.search_clicked())
+        self.bind(
+            "<Shift-Return>", lambda *args: self.search_clicked(opposite_dir=True)
         )
 
         # First/Last button - find first/last occurrence in file
@@ -268,7 +278,13 @@ class SearchDialog(ToplevelDialog):
                 row=rep_num + 3, column=4, padx=PADX, pady=PADY, sticky="NSEW"
             )
             self.repl_all_btn.append(repl_all_btn)
-
+        _, key_event = process_accel("Cmd/Ctrl+Return")
+        self.bind(key_event, lambda *args: self.replace_clicked(0, search_again=True))
+        _, key_event = process_accel("Cmd/Ctrl+Shift+Return")
+        self.bind(
+            key_event,
+            lambda *args: self.replace_clicked(0, opposite_dir=True, search_again=True),
+        )
         # Message (e.g. count)
         message_frame.columnconfigure(0, weight=1)
         self.message = ttk.Label(
@@ -289,12 +305,21 @@ class SearchDialog(ToplevelDialog):
         """Add orphan commands for Search dialog to command palette."""
 
         menubar_metadata().add_button_orphan(
-            "S/R, Search", cls.orphan_wrapper("search_clicked"), "Return"
+            "S/R, Search", cls.orphan_wrapper("search_clicked")
         )
         menubar_metadata().add_button_orphan(
             "S/R, Search (reverse)",
             cls.orphan_wrapper("search_clicked", opposite_dir=True),
-            "Shift+Return",
+        )
+        menubar_metadata().add_button_orphan(
+            "S/R, Search (first/last)",
+            cls.orphan_wrapper("search_clicked", first_last=True),
+        )
+        menubar_metadata().add_button_orphan(
+            "S/R, Count", cls.orphan_wrapper("count_clicked")
+        )
+        menubar_metadata().add_button_orphan(
+            "S/R, Find All", cls.orphan_wrapper("findall_clicked")
         )
         menubar_metadata().add_button_orphan(
             "S/R, Replace", cls.orphan_wrapper("replace_clicked", 0)
@@ -305,14 +330,12 @@ class SearchDialog(ToplevelDialog):
         menubar_metadata().add_button_orphan(
             "S/R, Replace & Search",
             cls.orphan_wrapper("replace_clicked", 0, search_again=True),
-            "Cmd/Ctrl+Return",
         )
         menubar_metadata().add_button_orphan(
             "S/R, Replace & Search (reverse)",
             cls.orphan_wrapper(
                 "replace_clicked", 0, opposite_dir=True, search_again=True
             ),
-            "Cmd/Ctrl+Shift+Return",
         )
 
     def reset(self) -> None:
