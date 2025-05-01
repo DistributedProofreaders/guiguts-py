@@ -1276,15 +1276,11 @@ class CommandPaletteDialog(ToplevelDialog):
         self.list.bind("<Return>", self.execute_command)
         self.list.bind("<Double-Button-1>", self.execute_command)
         self.list.bind("<Down>", lambda _: self.move_in_list(1))
-        self.list.bind("<Control-n>", lambda _: self.move_in_list(1))
         self.list.bind("<Up>", lambda _: self.move_in_list(-1))
-        self.list.bind("<Control-p>", lambda _: self.move_in_list(-1))
         self.list.bind("<Key>", self.handle_list_typing)
 
-        self.entry.bind("<Down>", lambda _: self.focus_on_list(1))
-        self.entry.bind("<Control-n>", lambda _: self.focus_on_list(1))
-        self.entry.bind("<Up>", lambda _: self.focus_on_list(-1))
-        self.entry.bind("<Control-p>", lambda _: self.focus_on_list(-1))
+        self.entry.bind("<Down>", lambda _: self.move_in_list(1))
+        self.entry.bind("<Up>", lambda _: self.move_in_list(-1))
         self.entry.bind("<Return>", self.execute_command)
 
         self.update_list()
@@ -1294,14 +1290,14 @@ class CommandPaletteDialog(ToplevelDialog):
     def add_orphan_commands(cls) -> None:
         """Add orphan commands to command palette."""
 
-        def edit_shortcut() -> None:
-            dlg = cls.get_dialog()
-            if dlg is None:
-                return
-            dlg.edit_command()
-
         menubar_metadata().add_button_orphan(
-            "Command Palette, Edit Shortcut", edit_shortcut
+            "Command Palette, Edit Shortcut", cls.orphan_wrapper("edit_command")
+        )
+        menubar_metadata().add_button_orphan(
+            "Command Palette, Select Next", cls.orphan_wrapper("move_in_list", 1)
+        )
+        menubar_metadata().add_button_orphan(
+            "Command Palette, Select Previous", cls.orphan_wrapper("move_in_list", -1)
         )
 
     @classmethod
