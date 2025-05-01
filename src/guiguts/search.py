@@ -95,22 +95,6 @@ class SearchDialog(ToplevelDialog):
         new_col = "#ff8080" if maintext().is_dark_theme() else "#e60000"
         style.configure("BadRegex.TCombobox", foreground=new_col)
 
-        def is_valid_regex(new_value: str) -> bool:
-            """Validation routine for Search Combobox - check value is a valid regex.
-
-            Note that it always returns True because we want user to be able to type
-            the character. It just alerts the user by switching to the BadRegex style.
-            """
-            if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
-                try:
-                    re.compile(new_value)
-                    self.search_box["style"] = ""
-                except re.error:
-                    self.search_box["style"] = "BadRegex.TCombobox"
-            else:
-                self.search_box["style"] = ""
-            return True
-
         self.font = tk_font.Font(
             family=maintext().font.cget("family"),
             size=maintext().font.cget("size"),
@@ -121,7 +105,7 @@ class SearchDialog(ToplevelDialog):
             width=30,
             font=self.font,
             validate=tk.ALL,
-            validatecommand=(self.register(is_valid_regex), "%P"),
+            validatecommand=(self.register(self.is_valid_regex), "%P"),
         )
         self.search_box.grid(row=2, column=0, padx=PADX, pady=PADY, sticky="NSEW")
         # Register search box to have its focus tracked for inserting special characters
@@ -147,13 +131,13 @@ class SearchDialog(ToplevelDialog):
         )
 
         # First/Last button - find first/last occurrence in file
-        first_button = ttk.Button(
+        self.first_button = ttk.Button(
             self.top_frame,
             text="Last" if preferences.get(PrefKey.SEARCHDIALOG_REVERSE) else "First",
             takefocus=False,
             command=lambda *args: self.search_clicked(first_last=True),
         )
-        first_button.grid(row=2, column=2, padx=PADX, pady=PADY, sticky="NSEW")
+        self.first_button.grid(row=2, column=2, padx=PADX, pady=PADY, sticky="NSEW")
 
         # Count & Find All
         self.count_btn = ttk.Button(
@@ -170,18 +154,12 @@ class SearchDialog(ToplevelDialog):
             command=self.findall_clicked,
         ).grid(row=2, column=4, padx=PADX, pady=PADY, sticky="NSEW")
 
-        def set_first_last() -> None:
-            """Set text in First/Last button depending on direction."""
-            first_button["text"] = (
-                "Last" if preferences.get(PrefKey.SEARCHDIALOG_REVERSE) else "First",
-            )
-
         # Options
         ttk.Checkbutton(
             options_frame,
             text="Reverse",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REVERSE),
-            command=set_first_last,
+            command=self.set_first_last,
             takefocus=False,
         ).grid(row=0, column=0, padx=2, sticky="NSEW")
         ttk.Checkbutton(
@@ -195,7 +173,7 @@ class SearchDialog(ToplevelDialog):
             text="Regex",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX),
             takefocus=False,
-            command=lambda: is_valid_regex(self.search_box.get()),
+            command=lambda: self.is_valid_regex(self.search_box.get()),
         ).grid(row=0, column=2, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             options_frame,
@@ -214,9 +192,7 @@ class SearchDialog(ToplevelDialog):
             text="Multi-replace",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MULTI_REPLACE),
             takefocus=False,
-            command=lambda: self.show_multi_replace(
-                preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE)
-            ),
+            command=self.show_multi_replace,
         ).grid(row=1, column=2, padx=2, sticky="NSEW")
         ttk.Checkbutton(
             self.top_frame,
@@ -292,9 +268,7 @@ class SearchDialog(ToplevelDialog):
         )
         self.message.grid(row=0, column=0, sticky="NSEW")
 
-        self.show_multi_replace(
-            preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE), resize=False
-        )
+        self.show_multi_replace(resize=False)
 
         # Now dialog geometry is set up, set width to user pref, leaving height as it is
         self.config_width()
@@ -337,19 +311,46 @@ class SearchDialog(ToplevelDialog):
                 "replace_clicked", 0, opposite_dir=True, search_again=True
             ),
         )
+        menubar_metadata().add_checkbutton_orphan(
+            "S/R, Reverse",
+            PrefKey.SEARCHDIALOG_REVERSE,
+            cls.orphan_wrapper("set_first_last"),
+            cls.orphan_wrapper("set_first_last"),
+        )
+        menubar_metadata().add_checkbutton_orphan(
+            "S/R, Match Case", PrefKey.SEARCHDIALOG_MATCH_CASE
+        )
+        menubar_metadata().add_checkbutton_orphan(
+            "S/R, Regex",
+            PrefKey.SEARCHDIALOG_REGEX,
+            cls.orphan_wrapper("is_valid_regex"),
+            cls.orphan_wrapper("is_valid_regex"),
+        )
+        menubar_metadata().add_checkbutton_orphan(
+            "S/R, Whole Word", PrefKey.SEARCHDIALOG_WHOLE_WORD
+        )
+        menubar_metadata().add_checkbutton_orphan(
+            "S/R, Wrap Around", PrefKey.SEARCHDIALOG_WRAP
+        )
+        menubar_metadata().add_checkbutton_orphan(
+            "S/R, Multi-replace",
+            PrefKey.SEARCHDIALOG_MULTI_REPLACE,
+            cls.orphan_wrapper("show_multi_replace"),
+            cls.orphan_wrapper("show_multi_replace"),
+        )
 
     def reset(self) -> None:
         """Called when dialog is reset/destroyed - remove search highlights."""
         maintext().highlight_search_deactivate()
 
-    def show_multi_replace(self, show: bool, resize: bool = True) -> None:
-        """Show or hide the multi-replace buttons.
+    def show_multi_replace(self, resize: bool = True) -> None:
+        """Show or hide the multi-replace buttons, based on Pref
 
         Args:
-            show: True to show the extra replace buttons.
             resize: True (default) to grow/shrink dialog to take account of show/hide
                 When dialog first created, its size is stored in prefs, so won't need resize
         """
+        show = preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE)
         for w_list in (
             self.replace_box,
             self.replace_btn,
@@ -373,6 +374,33 @@ class SearchDialog(ToplevelDialog):
         height += offset if show else -offset
         geometry = re.sub(r"(\d+x)\d+(.+)", rf"\g<1>{height}\g<2>", geometry)
         self.geometry(geometry)
+
+    def is_valid_regex(self, new_value: Optional[str] = None) -> bool:
+        """Validation routine for Search Combobox - check value is a valid regex.
+
+        Note that it always returns True because we want user to be able to type
+        the character. It just alerts the user by switching to the BadRegex style.
+
+        Args:
+            new_value: Value to be checked. If None, use value in search entry field.
+        """
+        if new_value is None:
+            new_value = self.search_box.get()
+        if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
+            try:
+                re.compile(new_value)
+                self.search_box["style"] = ""
+            except re.error:
+                self.search_box["style"] = "BadRegex.TCombobox"
+        else:
+            self.search_box["style"] = ""
+        return True
+
+    def set_first_last(self) -> None:
+        """Set text in First/Last button depending on direction."""
+        self.first_button["text"] = (
+            "Last" if preferences.get(PrefKey.SEARCHDIALOG_REVERSE) else "First",
+        )
 
     def search_box_set(self, search_string: str) -> None:
         """Set string in search box.
