@@ -963,10 +963,12 @@ class File:
         if ranges[0].end.col > 0:
             ranges[0].end.col = 0
             ranges[0].end.row += 1
+        maintext().undo_block_begin()
         self.rewrap_section(ranges[0])
 
     def rewrap_all(self) -> None:
         """Wrap whole text."""
+        maintext().undo_block_begin()
         self.rewrap_section(IndexRange("1.0", maintext().index(tk.END)))
 
     def rewrap_section(self, section_range: IndexRange) -> None:
@@ -976,7 +978,6 @@ class File:
             section_range: Range of text to be wrapped.
         """
         maintext().selection_ranges_store_with_marks()
-        maintext().undo_block_begin()
 
         # Dummy insert & delete, so that if user undoes the wrap, the insert
         # cursor returns to its previous point, not the first pin page mark position.
