@@ -1417,8 +1417,12 @@ class CommandPaletteDialog(ToplevelDialog):
         self.edit_dialog = CommandEditDialog.show_dialog(command_dlg=self)
         self.edit_dialog.load(entry)
 
-    def execute_command(self, _: tk.Event) -> None:
+    def execute_command(self, event: tk.Event) -> None:
         """Execute the selected command."""
+        # Ignore if modifier key used: Shift, Ctrl, Cmd, Alt (platform-specific)
+        bad_modifiers = 0x0001 | 0x0004 | 0x0008 | 0x0080 | 0x20000
+        if int(event.state) & bad_modifiers:
+            return
         entry = self.get_selected_entry()
         if entry is None:
             return
