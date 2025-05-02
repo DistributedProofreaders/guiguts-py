@@ -1034,6 +1034,8 @@ class CommandEditDialog(OkCancelDialog):
         self.pressed_modifiers: set[str] = set()
         self.bind("<KeyPress>", self.key_press)
         self.bind("<KeyRelease>", self.key_release)
+        # Explicitly unbind Return, so it is treated like other keypresses
+        self.unbind("<Return>")
         # Clear modifiers if dialog loses focus, particularly via Alt-tab on Windows
         self.bind("<FocusOut>", lambda _: self.pressed_modifiers.clear())
 
@@ -1175,12 +1177,16 @@ class CommandEditDialog(OkCancelDialog):
     def key_press(self, event: tk.Event) -> str:
         """Handle keystroke in dialog."""
         keysym = event.keysym
+        # Just flag modifier keys as pressed
         if keysym in self.MODIFIER_KEYS:
             self.pressed_modifiers.add(keysym)
-        elif (
-            event.keysym in ("BackSpace", "Delete") and len(self.pressed_modifiers) == 0
-        ):
+        # Plain Backspace & Delete remove the shortcut
+        elif keysym in ("BackSpace", "Delete") and len(self.pressed_modifiers) == 0:
             self.shortcut = ""
+        # Plain Return performs OK action
+        elif keysym == "Return" and len(self.pressed_modifiers) == 0:
+            self.ok_pressed()
+        # All other keys potentially OK for shortcut
         else:
             # Combine the current modifiers with the key
             mods = sorted(set(self.MODIFIER_KEYS[kk] for kk in self.pressed_modifiers))
@@ -1270,15 +1276,11 @@ class CommandPaletteDialog(ToplevelDialog):
         self.list.bind("<Return>", self.execute_command)
         self.list.bind("<Double-Button-1>", self.execute_command)
         self.list.bind("<Down>", lambda _: self.move_in_list(1))
-        self.list.bind("<Control-n>", lambda _: self.move_in_list(1))
         self.list.bind("<Up>", lambda _: self.move_in_list(-1))
-        self.list.bind("<Control-p>", lambda _: self.move_in_list(-1))
         self.list.bind("<Key>", self.handle_list_typing)
 
-        self.entry.bind("<Down>", lambda _: self.focus_on_list(1))
-        self.entry.bind("<Control-n>", lambda _: self.focus_on_list(1))
-        self.entry.bind("<Up>", lambda _: self.focus_on_list(-1))
-        self.entry.bind("<Control-p>", lambda _: self.focus_on_list(-1))
+        self.entry.bind("<Down>", lambda _: self.move_in_list(1))
+        self.entry.bind("<Up>", lambda _: self.move_in_list(-1))
         self.entry.bind("<Return>", self.execute_command)
 
         self.update_list()
@@ -1288,14 +1290,14 @@ class CommandPaletteDialog(ToplevelDialog):
     def add_orphan_commands(cls) -> None:
         """Add orphan commands to command palette."""
 
-        def edit_shortcut() -> None:
-            dlg = cls.get_dialog()
-            if dlg is None:
-                return
-            dlg.edit_command()
-
         menubar_metadata().add_button_orphan(
-            "Command Palette, Edit Shortcut", edit_shortcut
+            "Command Palette, Edit Shortcut", cls.orphan_wrapper("edit_command")
+        )
+        menubar_metadata().add_button_orphan(
+            "Command Palette, Select Next", cls.orphan_wrapper("move_in_list", 1)
+        )
+        menubar_metadata().add_button_orphan(
+            "Command Palette, Select Previous", cls.orphan_wrapper("move_in_list", -1)
         )
 
     @classmethod
@@ -1415,8 +1417,12 @@ class CommandPaletteDialog(ToplevelDialog):
         self.edit_dialog = CommandEditDialog.show_dialog(command_dlg=self)
         self.edit_dialog.load(entry)
 
-    def execute_command(self, _: tk.Event) -> None:
+    def execute_command(self, event: tk.Event) -> None:
         """Execute the selected command."""
+        # Ignore if modifier key used: Shift, Ctrl, Cmd, Alt (platform-specific)
+        bad_modifiers = 0x0001 | 0x0004 | 0x0008 | 0x0080 | 0x20000
+        if int(event.state) & bad_modifiers:
+            return
         entry = self.get_selected_entry()
         if entry is None:
             return
