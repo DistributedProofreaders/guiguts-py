@@ -8,7 +8,7 @@ import tkinter as tk
 from types import TracebackType
 from typing import Any
 
-from guiguts.preferences import preferences, PrefKey, PersistentBoolean
+from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_x11
 
 logger = logging.getLogger(__package__)
@@ -39,18 +39,7 @@ class Root(tk.Tk):
             PrefKey.ROOT_GEOMETRY_FULL_SCREEN,
             preferences.get(PrefKey.ROOT_GEOMETRY_STATE) == RootWindowState.FULLSCREEN,
         )
-        self.full_screen_var = PersistentBoolean(PrefKey.ROOT_GEOMETRY_FULL_SCREEN)
-        self.image_window_show = PersistentBoolean(PrefKey.IMAGE_WINDOW_SHOW)
-        self.image_window_docked_state = PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED)
-        self.auto_image_state = PersistentBoolean(PrefKey.AUTO_IMAGE)
-        self.invert_image_state = PersistentBoolean(PrefKey.IMAGE_INVERT)
-        self.ordinal_names_state = PersistentBoolean(PrefKey.ORDINAL_NAMES)
         self.allow_config_saves = False
-        self.split_text_window = PersistentBoolean(PrefKey.SPLIT_TEXT_WINDOW)
-        self.highlight_quotbrac = PersistentBoolean(PrefKey.HIGHLIGHT_QUOTBRAC)
-        self.highlight_proofercomment = PersistentBoolean(
-            PrefKey.HIGHLIGHT_PROOFERCOMMENT
-        )
 
         self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
         self.rowconfigure(0, weight=1)
@@ -107,7 +96,6 @@ class Root(tk.Tk):
             )
             state = RootWindowState.ZOOMED if zoomed else RootWindowState.NORMAL
             fullscreen = root().wm_attributes("-fullscreen")
-            self.full_screen_var.set(fullscreen)
             if fullscreen:
                 state = RootWindowState.FULLSCREEN
             # Only save geometry if "normal". Then de-maximize should restore correct size and top-left.

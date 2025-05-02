@@ -155,7 +155,7 @@ class PreferencesDialog(ToplevelDialog):
         ttk.Checkbutton(
             appearance_frame,
             text="Show Character Names in Status Bar",
-            variable=root().ordinal_names_state,
+            variable=PersistentBoolean(PrefKey.ORDINAL_NAMES),
         ).grid(column=0, row=6, sticky="NEW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
         bell_frame.grid(column=0, row=7, sticky="NEW", pady=(5, 0))
