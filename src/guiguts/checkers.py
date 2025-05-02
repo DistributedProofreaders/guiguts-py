@@ -595,7 +595,7 @@ class CheckerDialog(ToplevelDialog):
             )
 
         if switch_focus_when_clicked is None:
-            switch_focus_when_clicked = not is_mac()
+            switch_focus_when_clicked = False
         self.switch_focus_when_clicked = switch_focus_when_clicked
 
         self.match_on_highlight = match_on_highlight
