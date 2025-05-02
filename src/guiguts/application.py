@@ -438,7 +438,6 @@ class Guiguts:
         preferences.set_default(PrefKey.IMAGE_VIEWER_ALERT, True)
         preferences.set_default(PrefKey.HIGH_CONTRAST, False)
         preferences.set_callback(PrefKey.HIGH_CONTRAST, self.high_contrast_callback)
-        preferences.set_default(PrefKey.IMAGE_WINDOW_SHOW, False)
         preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL, False)
         preferences.set_default(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH, "")
         preferences.set_default(PrefKey.IMAGE_VIEWER_INTERNAL, False)
@@ -747,17 +746,17 @@ class Guiguts:
         search_menu.add_separator()
         search_menu.add_checkbutton(
             "Highlight S~urrounding Quotes & Brackets",
-            root().highlight_quotbrac.pref_key,
+            PrefKey.HIGHLIGHT_QUOTBRAC,
         )
         search_menu.add_checkbutton(
             "Highlight Al~ignment Column",
-            maintext().aligncol_active.pref_key,
+            PrefKey.ALIGN_COL_ACTIVE,
             lambda: maintext().highlight_aligncol_callback(True),
             lambda: maintext().highlight_aligncol_callback(False),
         )
         search_menu.add_checkbutton(
             "Highlight ~Proofer Comments",
-            root().highlight_proofercomment.pref_key,
+            PrefKey.HIGHLIGHT_PROOFERCOMMENT,
         )
         search_menu.add_checkbutton(
             "Highlight ~HTML tags",
@@ -928,7 +927,7 @@ class Guiguts:
         view_menu = self.top_level_menu("~View")
         view_menu.add_checkbutton(
             "Split ~Text Window",
-            root().split_text_window.pref_key,
+            PrefKey.SPLIT_TEXT_WINDOW,
             lambda: maintext().show_peer(),
             lambda: maintext().hide_peer(),
             "Cmd/Ctrl+Shift+T",
@@ -942,18 +941,18 @@ class Guiguts:
         )
         view_menu.add_checkbutton(
             "~Dock Image Viewer",
-            root().image_window_docked_state.pref_key,
+            PrefKey.IMAGE_WINDOW_DOCKED,
             self.mainwindow.dock_image,
             self.mainwindow.float_image,
         )
         view_menu.add_checkbutton(
             "~Auto Image",
-            root().auto_image_state.pref_key,
+            PrefKey.AUTO_IMAGE,
         )
         view_menu.add_button("S~ee Image", self.see_image)
         view_menu.add_checkbutton(
             "~Invert Image",
-            root().invert_image_state.pref_key,
+            PrefKey.IMAGE_INVERT,
             mainimage().show_image,
             mainimage().show_image,
         )
@@ -963,7 +962,7 @@ class Guiguts:
         if not is_mac():  # Full Screen behaves oddly on Macs
             view_menu.add_checkbutton(
                 "~Full Screen",
-                root().full_screen_var.pref_key,
+                PrefKey.ROOT_GEOMETRY_FULL_SCREEN,
                 lambda: root().wm_attributes("-fullscreen", True),
                 lambda: root().wm_attributes("-fullscreen", False),
             )

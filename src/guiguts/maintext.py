@@ -12,7 +12,7 @@ import darkdetect  # type: ignore[import-untyped]
 
 import regex as re
 
-from guiguts.preferences import preferences, PrefKey, PersistentBoolean
+from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import (
     is_mac,
     is_x11,
@@ -707,7 +707,6 @@ class MainText(tk.Text):
         # alignment column
         self.aligncol = -1
         preferences.set(PrefKey.ALIGN_COL_ACTIVE, False)
-        self.aligncol_active = PersistentBoolean(PrefKey.ALIGN_COL_ACTIVE)
 
         # whether search highlights should be active
         self.search_highlight_active = tk.BooleanVar()
@@ -3690,7 +3689,7 @@ class MainText(tk.Text):
         # Check that alignment column is 0 or higher; there are no negative
         # columns in a textview. Since the column is decremented when align
         # highlight is turned on, it's possible that this value is set to -1.
-        if self.aligncol_active.get() and self.aligncol >= 0:
+        if preferences.get(PrefKey.ALIGN_COL_ACTIVE) and self.aligncol >= 0:
             self.tag_remove(HighlightTag.ALIGNCOL, "1.0", tk.END)
 
             self.highlight_aligncol_in_viewport(self)
@@ -3709,7 +3708,7 @@ class MainText(tk.Text):
                 logger.error(
                     "Can't create an alignment column at column 0. Choose another column."
                 )
-                self.aligncol_active.set(False)
+                preferences.set(PrefKey.ALIGN_COL_ACTIVE, False)
                 return
 
             # Highlight column immediately preceding cursor for consistency with ruler.

@@ -746,7 +746,7 @@ class MainImage(tk.Frame):
             text="Dock",
             takefocus=False,
             command=self.set_image_docking,
-            variable=root().image_window_docked_state,
+            variable=PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED),
         )
         self.dock_btn.grid(row=0, column=8, sticky="NSEW", padx=(10, 0))
         ToolTip(
