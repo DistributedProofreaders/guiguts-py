@@ -9,6 +9,7 @@ import regex as re
 import roman  # type: ignore[import-untyped]
 
 from guiguts.checkers import CheckerDialog, CheckerEntry
+from guiguts.file import the_file
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
 from guiguts.preferences import (
@@ -1144,8 +1145,10 @@ def tidy_footnotes() -> None:
             f"{fn_cur_start} +10c", f"{fn_cur_end} -1c"
         )
         fn_label_and_text_part = re.sub(r"(^.+?):", r"[\1]", fn_label_and_text_part)
-        maintext().delete(fn_cur_start, fn_cur_end)
-        maintext().insert(fn_cur_start, fn_label_and_text_part)
+        maintext().replace(fn_cur_start, fn_cur_end, fn_label_and_text_part)
+        the_file().rewrap_section(
+            IndexRange(maintext().rowcol(fn_cur_start), maintext().rowcol(fn_cur_end))
+        )
     # As there are no longer any '[Footnote ...' style records in the file
     # the effect of invoking run_check() here will be to clear the dialog
     # as there are no footnotes to report.
