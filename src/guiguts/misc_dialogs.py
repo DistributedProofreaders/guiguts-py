@@ -29,7 +29,7 @@ from guiguts.preferences import (
     preferences,
 )
 from guiguts.root import root
-from guiguts.utilities import is_mac, sound_bell, process_accel
+from guiguts.utilities import is_mac, sound_bell, process_accel, IndexRange
 from guiguts.widgets import (
     ToplevelDialog,
     ToolTip,
@@ -1523,6 +1523,89 @@ class CommandPaletteDialog(ToplevelDialog):
             self.edit_dialog.destroy()
             self.edit_dialog = None
         return super().on_destroy()
+
+
+class SurroundWithDialog(OkApplyCancelDialog):
+    """Dialog for surrounding selection with strings."""
+
+    manual_page = "Edit_Menu#Surround_Selection_With"
+
+    def __init__(self) -> None:
+        """Initialize Surround With dialog."""
+        super().__init__("Surround With", resize_x=False, resize_y=False)
+
+        ttk.Label(
+            self.top_frame,
+            text="Before",
+        ).grid(row=0, column=0)
+        ttk.Label(
+            self.top_frame,
+            text="After",
+        ).grid(row=0, column=2)
+
+        self.before_entry = Combobox(
+            self.top_frame,
+            PrefKey.SURROUND_WITH_BEFORE_HISTORY,
+            textvariable=PersistentString(PrefKey.SURROUND_WITH_BEFORE),
+        )
+        self.before_entry.grid(row=1, column=0)
+        ToolTip(self.before_entry, r'Use "\n" for newline')
+        autofill_btn = ttk.Button(
+            self.top_frame,
+            text="⟹",
+            takefocus=False,
+            command=self.autofill_after,
+        )
+        autofill_btn.grid(row=1, column=1, padx=5)
+        ToolTip(autofill_btn, 'Autofill "After" entry field, e.g. <i lang="fr"> ⟹ </i>')
+        self.after_entry = Combobox(
+            self.top_frame,
+            PrefKey.SURROUND_WITH_AFTER_HISTORY,
+            textvariable=PersistentString(PrefKey.SURROUND_WITH_AFTER),
+        )
+        self.after_entry.grid(row=1, column=2)
+        ToolTip(self.after_entry, r'Use "\n" for newline')
+
+    def apply_changes(self) -> bool:
+        """Overridden method to apply surrounding text."""
+        maintext().undo_block_begin()
+        ranges = maintext().selected_ranges()
+        if not ranges:
+            ranges = [
+                IndexRange(maintext().get_insert_index(), maintext().get_insert_index())
+            ]
+        before = preferences.get(PrefKey.SURROUND_WITH_BEFORE).replace(r"\n", "\n")
+        after = preferences.get(PrefKey.SURROUND_WITH_AFTER).replace(r"\n", "\n")
+        for a_range in reversed(ranges):
+            maintext().insert(a_range.end.index(), after)
+            maintext().insert(a_range.start.index(), before)
+        self.before_entry.add_to_history(preferences.get(PrefKey.SURROUND_WITH_BEFORE))
+        self.after_entry.add_to_history(preferences.get(PrefKey.SURROUND_WITH_AFTER))
+
+        return True
+
+    def autofill_after(self) -> None:
+        """Autofill the "after" entry field with a sensible guess."""
+        pairs = {
+            "<": ">",
+            "<<": ">>",
+            "[": "]",
+            "{": "}",
+            "(": ")",
+            '"': '"',
+            "'": "'",
+            "“": "”",
+            "‘": "’",
+        }
+
+        before = preferences.get(PrefKey.SURROUND_WITH_BEFORE)
+
+        # Tag with attributes, e.g. <tag attr="value"> => </tag>
+        if m := re.match(r"<(\w+).*>$", before):
+            after = f"</{m.group(1)}>"
+        else:
+            after = pairs.get(before, before)
+        preferences.set(PrefKey.SURROUND_WITH_AFTER, after)
 
 
 class ScrollableFrame(ttk.Frame):
