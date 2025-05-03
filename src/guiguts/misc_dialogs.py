@@ -1574,15 +1574,19 @@ class SurroundWithDialog(OkApplyCancelDialog):
             ranges = [
                 IndexRange(maintext().get_insert_index(), maintext().get_insert_index())
             ]
+        end_mark = self.get_mark_prefix() + "endpoint"
+        maintext().mark_set(end_mark, ranges[-1].end.index())
         before = preferences.get(PrefKey.SURROUND_WITH_BEFORE).replace(r"\n", "\n")
         after = preferences.get(PrefKey.SURROUND_WITH_AFTER).replace(r"\n", "\n")
+        # Reversed so earlier change doesn't affect later indexes
         for a_range in reversed(ranges):
             maintext().insert(a_range.end.index(), after)
             maintext().insert(a_range.start.index(), before)
         self.before_entry.add_to_history(preferences.get(PrefKey.SURROUND_WITH_BEFORE))
         self.after_entry.add_to_history(preferences.get(PrefKey.SURROUND_WITH_AFTER))
-
-        return True
+        # Position cursor at end of last selection so user can do Find Next to find the next match
+        maintext().set_insert_index(maintext().rowcol(end_mark), focus=False)
+        return True  # Always successful
 
     def autofill_after(self) -> None:
         """Autofill the "after" entry field with a sensible guess."""
