@@ -648,7 +648,9 @@ class MainImage(tk.Frame):
         self.float_func = float_func
         self.dock_func = dock_func
         self.allow_geometry_storage = False
+        self.short_name = ""
         self.short_name_label = tk.StringVar(self, "<no image>")
+        self.rotation_details: dict[str, int] = {}
 
         # Introduce an apparently superfluous Frame to contain everything.
         # This is because when MainImage is undocked, Tk converts it to a
@@ -665,7 +667,7 @@ class MainImage(tk.Frame):
         self.columnconfigure(0, weight=1)
         control_frame = ttk.Frame(top_frame)
         control_frame.grid(row=0, column=0, columnspan=2, sticky="NSEW")
-        control_frame.columnconfigure(8, weight=1)
+        control_frame.columnconfigure(9, weight=1)
 
         min_button_width = 1 if is_mac() else 2
 
@@ -713,13 +715,25 @@ class MainImage(tk.Frame):
         self.zoom_out_btn.grid(row=0, column=4, sticky="NSEW")
         ToolTip(self.zoom_out_btn, use_pointer_pos=True, msg="Zoom out")
 
+        self.rotate_btn = ttk.Button(
+            control_frame,
+            text="↺",
+            width=min_button_width + 1 if is_mac() else min_button_width,
+            takefocus=False,
+            command=self.rotate,
+        )
+        self.rotate_btn.grid(row=0, column=5, sticky="NSEW", padx=(10, 0))
+        ToolTip(
+            self.rotate_btn, use_pointer_pos=True, msg="Rotate 90º counter-clockwise"
+        )
+
         self.ftw_btn = ttk.Checkbutton(
             control_frame,
             text="Fit ←→",
             takefocus=False,
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_WIDTH),
         )
-        self.ftw_btn.grid(row=0, column=5, sticky="NSEW", padx=(10, 0))
+        self.ftw_btn.grid(row=0, column=6, sticky="NSEW", padx=(10, 0))
         ToolTip(self.ftw_btn, use_pointer_pos=True, msg="Fit image to viewer width")
 
         self.fth_btn = ttk.Checkbutton(
@@ -728,7 +742,7 @@ class MainImage(tk.Frame):
             takefocus=False,
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_HEIGHT),
         )
-        self.fth_btn.grid(row=0, column=6, sticky="NSEW", padx=(10, 0))
+        self.fth_btn.grid(row=0, column=7, sticky="NSEW", padx=(10, 0))
         ToolTip(self.fth_btn, use_pointer_pos=True, msg="Fit image to viewer height")
 
         self.invert_btn = ttk.Checkbutton(
@@ -738,7 +752,7 @@ class MainImage(tk.Frame):
             command=self.show_image,
             variable=PersistentBoolean(PrefKey.IMAGE_INVERT),
         )
-        self.invert_btn.grid(row=0, column=7, sticky="NSEW", padx=(10, 0))
+        self.invert_btn.grid(row=0, column=8, sticky="NSEW", padx=(10, 0))
         ToolTip(self.invert_btn, use_pointer_pos=True, msg="Invert image colors")
 
         self.dock_btn = ttk.Checkbutton(
@@ -748,7 +762,7 @@ class MainImage(tk.Frame):
             command=self.set_image_docking,
             variable=PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED),
         )
-        self.dock_btn.grid(row=0, column=8, sticky="NSEW", padx=(10, 0))
+        self.dock_btn.grid(row=0, column=9, sticky="NSEW", padx=(10, 0))
         ToolTip(
             self.dock_btn,
             use_pointer_pos=True,
@@ -762,7 +776,7 @@ class MainImage(tk.Frame):
             takefocus=False,
             command=self.hide_func,
         )
-        self.close_btn.grid(row=0, column=8, sticky="NSE")
+        self.close_btn.grid(row=0, column=10, sticky="NSE")
         ToolTip(self.close_btn, use_pointer_pos=True, msg="Hide image viewer")
 
         # Separate bindings needed for docked (root) and floated (self) states
@@ -1044,8 +1058,13 @@ class MainImage(tk.Frame):
             self.width, self.height = self.image.size
             self.canvas.yview_moveto(0)
             self.canvas.xview_moveto(0)
-            self.show_image()
             self.set_short_name()
+            if self.short_name in self.rotation_details:
+                if self.rotation_details[self.short_name] != 0:
+                    self.image = self.image.rotate(
+                        self.rotation_details[self.short_name], expand=True
+                    )
+            self.show_image()
             if preferences.get(PrefKey.IMAGE_AUTOFIT_WIDTH):
                 mainimage().image_zoom_to_width()
             elif preferences.get(PrefKey.IMAGE_AUTOFIT_HEIGHT):
@@ -1174,9 +1193,45 @@ class MainImage(tk.Frame):
         in the image viewer. When no image is loaded, returns a placeholder
         '<no image>'."""
         if self.filename:
-            self.short_name_label.set(Path(self.filename).stem)
+            self.short_name = Path(self.filename).stem
+            self.short_name_label.set(self.short_name)
         else:
+            self.short_name = ""
             self.short_name_label.set("<no image>")
+
+    def rotate(self) -> None:
+        """Rotate the current image counter-clockwise."""
+        if self.image:
+            current_rotation = self.get_current_rotation()
+            if current_rotation == 270:
+                self.rotation_details[self.short_name] = 0
+            else:
+                if self.short_name in self.rotation_details:
+                    self.rotation_details[self.short_name] += 90
+                else:
+                    self.rotation_details[self.short_name] = 90
+
+            self.image = self.image.rotate(90, expand=True)
+            maintext().set_modified(True)
+            self.show_image()
+
+            if preferences.get(PrefKey.IMAGE_AUTOFIT_WIDTH):
+                mainimage().image_zoom_to_width()
+            elif preferences.get(PrefKey.IMAGE_AUTOFIT_HEIGHT):
+                mainimage().image_zoom_to_height()
+
+    def get_current_rotation(self) -> int:
+        """Return the current rotation for one image"""
+        if self.image:
+            if self.short_name in self.rotation_details:
+                return self.rotation_details[self.short_name]
+
+        # Default rotation is 0; return even if there's not an image loaded
+        return 0
+
+    def reset_rotation_details(self) -> None:
+        """Reset rotation state for the mainimage widget"""
+        self.rotation_details = {}
 
 
 class StatusBar(ttk.Frame):
