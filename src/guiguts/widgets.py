@@ -463,7 +463,10 @@ class Combobox(ttk.Combobox):
         #   grab (create a new one or get existing) popdown
         popdown = self.tk.eval(f"ttk::combobox::PopdownWindow {self}")
         #   configure popdown font
-        self.tk.call(f"{popdown}.f.l", "configure", "-font", self["font"])
+        try:  # Tk8 structure
+            self.tk.call(f"{popdown}.f.l", "configure", "-font", self["font"])
+        except tk.TclError:  # Tk9 structure
+            self.tk.call(f"{popdown}.menu", "configure", "-font", self["font"])
 
     def configure(  # type:ignore[override] # pylint: disable=signature-differs
         self, cnf: dict[str, Any], **kw: dict[str, Any]

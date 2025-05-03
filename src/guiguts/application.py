@@ -1295,7 +1295,11 @@ class Guiguts:
         updating application theme if necessary."""
         if preferences.get(PrefKey.THEME_NAME) == "Default":
             os_mode = darkdetect.theme()
-            tk_theme = themed_style().theme_use()
+            # Calling themed_style.theme_use() with no args fails on Tk9
+            # Fix below from comment in ttk.py:
+            # | Starting on Tk 8.6, checking this global is no longer needed
+            # | since it allows doing self.tk.call(self._name, "theme", "use")
+            tk_theme = themed_style().tk.call(themed_style()._name, "theme", "use")  # type: ignore[attr-defined] # pylint: disable=protected-access
 
             if os_mode == "Light" and tk_theme != "awlight":
                 themed_style().theme_use("awlight")
