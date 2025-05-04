@@ -58,6 +58,7 @@ from guiguts.misc_dialogs import (
     UnicodeSearchDialog,
     HelpAboutDialog,
     CommandPaletteDialog,
+    SurroundWithDialog,
 )
 from guiguts.misc_tools import (
     basic_fixup_check,
@@ -539,6 +540,10 @@ class Guiguts:
         preferences.set_default(PrefKey.AUTOTABLE_DEFAULT_ALIGNMENT, "left")
         preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT, "")
         preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT_HISTORY, [])
+        preferences.set_default(PrefKey.SURROUND_WITH_BEFORE, "")
+        preferences.set_default(PrefKey.SURROUND_WITH_BEFORE_HISTORY, [])
+        preferences.set_default(PrefKey.SURROUND_WITH_AFTER, "")
+        preferences.set_default(PrefKey.SURROUND_WITH_AFTER_HISTORY, [])
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -659,6 +664,29 @@ class Guiguts:
             maintext().toggle_selection_type,
         )
         edit_menu.add_separator()
+        case_menu = edit_menu.add_submenu("C~hange Case")
+        case_menu.add_button(
+            "~lowercase selection",
+            lambda: maintext().transform_selection(str.lower),
+        )
+        case_menu.add_button(
+            "~Sentence case selection",
+            lambda: maintext().transform_selection(
+                maintext().sentence_case_transformer
+            ),
+        )
+        case_menu.add_button(
+            "~Title Case Selection",
+            lambda: maintext().transform_selection(maintext().title_case_transformer),
+        )
+        case_menu.add_button(
+            "~UPPERCASE SELECTION",
+            lambda: maintext().transform_selection(str.upper),
+        )
+        edit_menu.add_button(
+            "Surround Selection ~With...", SurroundWithDialog.show_dialog
+        )
+        edit_menu.add_separator()
         rtl_menu = edit_menu.add_submenu("Right-to-left Te~xt")
         if not is_mac():
             rtl_menu.add_button(
@@ -672,30 +700,6 @@ class Guiguts:
         rtl_menu.add_button(
             "~Surround selected text with RLM...LRM markers",
             maintext().surround_rtl,
-        )
-        edit_menu.add_separator()
-        case_menu = edit_menu.add_submenu("C~hange Case")
-        case_menu.add_button(
-            "~lowercase selection",
-            lambda: maintext().transform_selection(str.lower),
-            "",
-        )
-        case_menu.add_button(
-            "~Sentence case selection",
-            lambda: maintext().transform_selection(
-                maintext().sentence_case_transformer
-            ),
-            "",
-        )
-        case_menu.add_button(
-            "~Title Case Selection",
-            lambda: maintext().transform_selection(maintext().title_case_transformer),
-            "",
-        )
-        case_menu.add_button(
-            "~UPPERCASE SELECTION",
-            lambda: maintext().transform_selection(str.upper),
-            "",
         )
         if not is_mac():
             edit_menu.add_separator()
