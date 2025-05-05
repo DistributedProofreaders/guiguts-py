@@ -1072,6 +1072,7 @@ class File:
             f"{BOOKMARK_BASE}{bm_num}", maintext().get_insert_index()
         )
         self.highlight_bookmark(bm_num)
+        maintext().set_modified(True)
 
     def goto_bookmark(self, bm_num: int) -> None:
         """Set the insert position to the location of the given bookmark.
