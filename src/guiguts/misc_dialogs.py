@@ -362,12 +362,20 @@ class PreferencesDialog(ToplevelDialog):
             text="Show Tooltips",
             variable=PersistentBoolean(PrefKey.SHOW_TOOLTIPS),
         ).grid(column=0, row=5, sticky="NEW", pady=5)
+        add_label_spinbox(
+            advance_frame,
+            6,
+            "Regex timeout (seconds):",
+            PrefKey.REGEX_TIMEOUT,
+            "Longest time a regex search is allowed to take.\n"
+            "This can be increased, or the regex changed, if it keeps timing out.",
+        )
         ttk.Button(
             advance_frame,
             text="Reset shortcuts to default (change requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
             takefocus=False,
-        ).grid(column=0, row=6, sticky="NSW", pady=5, columnspan=3)
+        ).grid(column=0, row=7, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",

@@ -544,6 +544,7 @@ class Guiguts:
         preferences.set_default(PrefKey.SURROUND_WITH_BEFORE_HISTORY, [])
         preferences.set_default(PrefKey.SURROUND_WITH_AFTER, "")
         preferences.set_default(PrefKey.SURROUND_WITH_AFTER_HISTORY, [])
+        preferences.set_default(PrefKey.REGEX_TIMEOUT, 5)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
