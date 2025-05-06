@@ -54,6 +54,7 @@ BINFILE_KEY_IMAGEDIR: Final = "imagedir"
 BINFILE_KEY_PROJECTID: Final = "projectid"
 BINFILE_KEY_LANGUAGES: Final = "languages"
 BINFILE_KEY_BOOKMARKS: Final = "bookmarks"
+BINFILE_KEY_IMAGEROTATE: Final = "imagerotate"
 
 PAGE_FLAGS_NONE = 0
 PAGE_FLAGS_SOME = 1
@@ -87,6 +88,7 @@ class BinDict(TypedDict):
     projectid: str
     languages: str
     bookmarks: dict[str, str]
+    imagerotate: dict[str, int]
 
 
 class File:
@@ -247,6 +249,7 @@ class File:
             return
         maintext().set_insert_index(IndexRowCol(1, 0))
         self.languages = preferences.get(PrefKey.DEFAULT_LANGUAGES)
+        mainimage().reset_rotation_details()
         bin_matches_file = self.load_bin(filename)
         self.mark_page_boundaries()
         flags_found = (
@@ -508,6 +511,9 @@ class File:
         if bookmarks := bin_dict.get(BINFILE_KEY_BOOKMARKS):
             for key, value in bookmarks.items():
                 self.set_bookmark_index(key, value)
+        image_rotations: Optional[dict[str, int]]
+        if image_rotations := bin_dict.get(BINFILE_KEY_IMAGEROTATE):
+            mainimage().rotation_details = image_rotations
 
         md5checksum = bin_dict.get(BINFILE_KEY_MD5CHECKSUM)
         return not md5checksum or md5checksum == self.get_md5_checksum()
@@ -529,6 +535,7 @@ class File:
             BINFILE_KEY_PROJECTID: self.project_id,
             BINFILE_KEY_LANGUAGES: self.languages,
             BINFILE_KEY_BOOKMARKS: self.get_bookmarks(),
+            BINFILE_KEY_IMAGEROTATE: mainimage().rotation_details,
         }
         return bin_dict
 
