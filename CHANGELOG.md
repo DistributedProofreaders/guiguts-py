@@ -1,11 +1,55 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.19
+
+- User can define keyboard shortcuts for any menu command as well as several
+  other commands that are not in menus. Use Help-->Command Palette, then 
+  Edit Shortcut. 
+- Ebookmaker can now be run via API without installing it on local computer,
+  thus always running latest version installed at PG
+- Scan images can now be rotated in the image viewer, with the rotation saved
+  permanently
+- Several improvements to Stealth Scannos: auto-starts immediately; 
+  auto-advance checkbox added; search/replace fields are editable; button
+  to swap search/replace terms; bad regexes are trapped and reported;
+  current and total scanno number displayed; Replace All button fixes all
+  issues in the list
+- "Surround Selection With" feature added to Edit menu, including autofill
+  for closing markup
+- Current image name is now displayed in the internal image viewer
+- Error messages triggered during file saving are more helpful
+- Unmatched Curly Quotes removed due to duplication of features, with its
+  unique features added to the Curly Quotes Check
+- WF emdash check now includes Unicode emdash characters as well as double
+  hyphens, and now ignores intervening punctuation correctly
+- PPhtml no longer reports landscape covers with warnings
+- Checker dialog no longer forces focus to main window on Windows/Linux
+
+### Bug fixes
+
+- High Contrast label was missing from Preferences dialog
+- Page Separator Fixup attempted to join pages with trailing footnotes, but
+  failed to do it correctly
+- It was not possible to select a leading vertical table line in column 0
+- Proofer comment undo also undid user's edits
+- WF Hyphen check didn't respect the "case" flag
+- Bookloupe wasn't splitting words joined by emdash correctly
+- ASCII tables didn't highlight correctly if at top of file
+- Closing block markup was sometimes not detected at page breaks
+- Superfluous `<br>` and `<p></p>` were sometimes output by HTML generator
+- PPgen files were marked as edited when loaded, due to page number commands
+- Footnotes were not wrapped when tidied
+- Bugs relating to Tk version 9 have been fixed
+- When a bookmark was set/changed, the file was not flagged as needing saving
+- Some complex regexes can take a very long time - a timeout now warns the user
+- Extending a column selection as the first operation caused an exception
+
 ## Version 2.0.0-alpha.18
 
 ### Bug fixes
 
-- Cmd/Ctrl-clicking a spell check error remove 2 errors instead of one
+- Cmd/Ctrl-clicking a spell check error removed 2 errors instead of one
 
 
 ## Version 2.0.0-alpha.17
