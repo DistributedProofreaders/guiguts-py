@@ -141,6 +141,7 @@ class PrefKey(StrEnum):
     SURROUND_WITH_BEFORE_HISTORY = auto()
     SURROUND_WITH_AFTER = auto()
     SURROUND_WITH_AFTER_HISTORY = auto()
+    REGEX_TIMEOUT = auto()
 
 
 class Preferences:

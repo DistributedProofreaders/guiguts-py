@@ -2643,7 +2643,21 @@ class MainText(tk.Text):
         if nocase:
             flags |= re.IGNORECASE
 
-        match = re.search(search_string, slurp_text, flags=flags)
+        try:
+            match = re.search(
+                search_string,
+                slurp_text,
+                flags=flags,
+                timeout=preferences.get(PrefKey.REGEX_TIMEOUT),
+            )
+        except TimeoutError:
+            logger.error(
+                "Regex timed out. Try changing the regex or flags;\n"
+                "or increase the timeout in the Preferences dialog, Advanced tab.\n\n"
+                "Search highlighting turned off temporarily."
+            )
+            self.highlight_search_deactivate()
+            return None, 0
         if match is None:
             return None, 0
 
