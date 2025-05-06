@@ -2016,8 +2016,14 @@ class MainText(tk.Text):
         Args:
             event: Event containing mouse coordinates.
         """
-        anchor_rowcol = self.rowcol(TK_ANCHOR_MARK)
         cur_rowcol = self.rowcol(f"@{event.x},{event.y}")
+        # In case we get here without ever having clicked (can happen if user tries
+        # to extend column selection as first action this run of the program)
+        try:
+            anchor_rowcol = self.rowcol(TK_ANCHOR_MARK)
+        except tk.TclError:
+            anchor_rowcol = cur_rowcol
+            self.mark_set(TK_ANCHOR_MARK, cur_rowcol.index())  # Reasonable fallback
         # Find longest visible line between start of selection and current mouse location
         minrow = min(anchor_rowcol.row, cur_rowcol.row)
         # No point starting before first line of screen
