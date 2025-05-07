@@ -106,27 +106,27 @@
 "hint": "Find repeated words or word sequences and remove one"
 },
 {
-"match": "\\bhl",
+"match": "\\bhl(?=\\w)",
 "replacement": "bl",
 "hint": "Find a string that starts with hl and change it to bl"
 },
 {
-"match": "\\bhr",
+"match": "\\bhr(?=\\w)",
 "replacement": "br",
 "hint": "Find a string that starts with hr and change it to br"
 },
 {
-"match": "\\brn",
+"match": "\\brn(?=\\w)",
 "replacement": "m",
 "hint": "Find a string that starts with rn and change it to m"
 },
 {
-"match": "\\btb",
+"match": "\\btb(?=\\w)",
 "replacement": "th",
 "hint": "Find a string that starts with tb and change it to th"
 },
 {
-"match": "\\btli",
+"match": "\\btli(?=\\w)",
 "replacement": "th",
 "hint": "Find a string that starts with tli and change it to th"
 },
