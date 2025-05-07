@@ -842,6 +842,22 @@ class MainImage(tk.Frame):
         menubar_metadata().add_checkbutton_orphan(
             "Image Fit ↑↓", PrefKey.IMAGE_AUTOFIT_HEIGHT
         )
+        menubar_metadata().add_button_orphan(
+            "Scroll Image ↑",
+            lambda: self.canvas.yview_scroll(1, "units"),
+        )
+        menubar_metadata().add_button_orphan(
+            "Scroll Image ↓",
+            lambda: self.canvas.yview_scroll(-1, "units"),
+        )
+        menubar_metadata().add_button_orphan(
+            "Scroll Image ←",
+            lambda: self.canvas.xview_scroll(1, "units"),
+        )
+        menubar_metadata().add_button_orphan(
+            "Scroll Image →",
+            lambda: self.canvas.xview_scroll(-1, "units"),
+        )
 
     def scroll_y(self, *args: Any, **kwargs: Any) -> None:
         """Scroll canvas vertically and redraw the image"""
