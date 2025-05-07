@@ -1,6 +1,12 @@
 # Changelog
 
 
+## Version 2.0.0-alpha.20
+
+### Bug fixes
+
+- Command Palette Edit button gave an exception error message
+
 ## Version 2.0.0-alpha.19
 
 - User can define keyboard shortcuts for any menu command as well as several
