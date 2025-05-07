@@ -1245,7 +1245,7 @@ class CommandPaletteDialog(ToplevelDialog):
         ttk.Button(
             entry_frame,
             text="Run",
-            command=lambda: self.execute_command(tk.Event()),
+            command=self.execute_command,
             takefocus=False,
         ).grid(row=0, column=1, sticky="NSEW", padx=(0, 2))
         ttk.Button(
@@ -1425,11 +1425,11 @@ class CommandPaletteDialog(ToplevelDialog):
         self.edit_dialog = CommandEditDialog.show_dialog(command_dlg=self)
         self.edit_dialog.load(entry)
 
-    def execute_command(self, event: tk.Event) -> None:
+    def execute_command(self, event: Optional[tk.Event] = None) -> None:
         """Execute the selected command."""
         # Ignore if modifier key used: Shift, Ctrl, Cmd, Alt (platform-specific)
         bad_modifiers = 0x0001 | 0x0004 | 0x0008 | 0x0080 | 0x20000
-        if int(event.state) & bad_modifiers:
+        if event is not None and int(event.state) & bad_modifiers:
             return
         entry = self.get_selected_entry()
         if entry is None:
