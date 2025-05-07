@@ -9,7 +9,7 @@
 - Ebookmaker can now be run via API without installing it on local computer,
   thus always running latest version installed at PG
 - Scan images can now be rotated in the image viewer, with the rotation saved
-  permanently
+  permanently per image rotated
 - Several improvements to Stealth Scannos: auto-starts immediately; 
   auto-advance checkbox added; search/replace fields are editable; button
   to swap search/replace terms; bad regexes are trapped and reported;
@@ -40,7 +40,7 @@
 - Superfluous `<br>` and `<p></p>` were sometimes output by HTML generator
 - PPgen files were marked as edited when loaded, due to page number commands
 - Footnotes were not wrapped when tidied
-- Bugs relating to Tk version 9 have been fixed
+- Known bugs relating to Tk version 9 have been fixed
 - When a bookmark was set/changed, the file was not flagged as needing saving
 - Some complex regexes can take a very long time - a timeout now warns the user
 - Extending a column selection as the first operation caused an exception
