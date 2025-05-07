@@ -171,7 +171,7 @@ class ToplevelDialog(tk.Toplevel):
 
     def register_tooltip(self, tooltip: "ToolTip") -> None:
         """Register a tooltip as being attached to a widget in this
-        TopleveDialog so it can be destroyed when the dialog is destroyed.
+        ToplevelDialog so it can be destroyed when the dialog is destroyed.
 
         Args:
             tooltip - the ToolTip widget to register"""
