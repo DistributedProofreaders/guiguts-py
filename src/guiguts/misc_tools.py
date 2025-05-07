@@ -1574,6 +1574,8 @@ class ScannoCheckerDialog(CheckerDialog):
                     "Right click: Hide occurrence of scanno in list",
                     f"{cmd_ctrl_string()} left click: Fix this occurrence of scanno",
                     f"{cmd_ctrl_string()} right click: Fix this occurrence and remove from list",
+                    f"Shift {cmd_ctrl_string()} left click: Fix all occurrences of scanno",
+                    f"Shift {cmd_ctrl_string()} right click: Fix all occurrences and remove from list",
                 ]
             ),
             **kwargs,
