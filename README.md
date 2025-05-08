@@ -82,6 +82,10 @@ python you installed above.
      ```bash
      poetry config virtualenvs.prefer-active-python true
      ```
+     You may also need to tell poetry explicitly which python to use
+     ```bash
+     poetry env use 3.13.2
+     ```
 
 ## macOS Development Setup
 

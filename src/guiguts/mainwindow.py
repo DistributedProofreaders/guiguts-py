@@ -455,7 +455,7 @@ e.g. $(s+5) would give 12 for the 5th png.
                 count_str = f"~{count}: "
             # 10 - 34 have letters. Omit Z for use in "Customi~ze Menu" button
             elif count - 10 < len(ascii_uppercase) - 1:
-                count_str = f"~{ascii_uppercase[count-10]}: "
+                count_str = f"~{ascii_uppercase[count - 10]}: "
             else:
                 count_str = ""
             menu.add_button(
@@ -1660,7 +1660,7 @@ def do_sound_bell() -> None:
         # Set temporary style's disabled bg to red
         style.map("W.TButton", foreground=[("disabled", "red")])
         # Save current disabled bg default for buttons
-        save_bg = style.lookup("TButton", "background", state=[("disabled")])
+        save_bg = style.lookup("TButton", "background", state=["disabled"])
         # Save style currently used by button
         cur_style = bell_button["style"]
         # Set button to use temporary style

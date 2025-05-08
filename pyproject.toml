@@ -8,26 +8,25 @@ packages = [{include = "guiguts", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-Pillow = "^10.1"
-pywin32 = {version = "^306", platform = "win32"}
-roman = "^4.1"
-regex = "^2024.5"
-levenshtein = "^0.26.1"
+Pillow = "^11.2"
+pywin32 = {version = "^310", platform = "win32"}
+roman = "^5.0"
+regex = "^2024.11.6"
+levenshtein = "^0.27.1"
 requests = "^2.32.3"
 darkdetect = "^0.8.0"
 rapidfuzz = "^3.13.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.4"
-flake8 = "^7.0"
-Sphinx = "^7.2"
+black = "^25.1"
+flake8 = "^7.2"
+Sphinx = "^8.2.3"
 pytest = "^8.3"
-mypy = "^1.8"
-pylint = "^3.0.3"
-types-Pillow = "^10.1"
-types-regex = "^2024.5"
-types-requests = "^2.32.0"
-build = "^1.0.3"
+mypy = "^1.15"
+pylint = "^3.3.7"
+types-regex = "^2024.11.6"
+types-requests = "^2.32"
+build = "^1.2.2"
 
 [tool.poetry.scripts]
 guiguts = "guiguts.application:main"

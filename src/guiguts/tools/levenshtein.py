@@ -424,14 +424,6 @@ def run_levenshtein_check_on_file(project_dict: ProjectDict) -> None:
         """
         assert _the_spell_checker is not None
 
-        # The following must already exist (see enclosing function) before they are
-        # used here. They are the lists and dictionaries into which the results of
-        # this function are 'returned'.
-        nonlocal good_words
-        nonlocal suspect_words
-        nonlocal word_to_lines_map, all_words_counts
-        nonlocal all_words_case_map
-
         # Do spelling checks below using SpellChecker methods from spell.py
 
         # The main loop from spell.py with some minor adaptions. It splits each
@@ -591,8 +583,6 @@ def run_levenshtein_check_on_file(project_dict: ProjectDict) -> None:
         entries then the number of pairs of suspect<->good words to consider will approach
         10 million. Processing that number of pairs is very demanding of CPU time.
         """
-
-        nonlocal distance_check_results
 
         # As a word may appear many times in a text, and in many case forms, for example
         # 'ANOTHER', 'Another', 'another, each of the two lists is kept as short as
