@@ -822,6 +822,13 @@ class MainImage(tk.Frame):
             _, cm = process_accel("Cmd/Ctrl+MouseWheel")
             self.canvas.bind(cm, self.wheel_zoom)
             self.canvas.bind("<MouseWheel>", self.wheel_scroll)
+            try:
+                self.canvas.bind(
+                    "<TouchpadScroll>",
+                    lambda e: print(f"Touchpad: {e.delta}", flush=True),
+                )
+            except tk.TclError:
+                print("Failed to bind TouchpadScroll", flush=True)
 
         self.image_scale = float(preferences.get(PrefKey.IMAGE_SCALE_FACTOR))
         self.scale_delta = 1.1
@@ -1044,6 +1051,7 @@ class MainImage(tk.Frame):
 
     def wheel_scroll(self, evt: tk.Event) -> None:
         """Scroll image up/down using mouse wheel"""
+        print(f"delta: {evt.delta}", flush=True)
         if evt.state == 0:
             if is_mac():
                 self.canvas.yview_scroll(int(-1 * evt.delta), "units")
