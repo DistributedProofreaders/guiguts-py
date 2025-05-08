@@ -81,6 +81,7 @@ from guiguts.misc_tools import (
     DEFAULT_MISSPELLED_SCANNOS,
     convert_to_curly_quotes,
     check_curly_quotes,
+    indent_selection,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
@@ -906,6 +907,10 @@ class Guiguts:
         )
         text_menu.add_button("~PPtxt", lambda: pptxt(self.file.project_dict))
         text_menu.add_button("ASCII ~Table Effects", ASCIITableDialog.show_dialog)
+        text_menu.add_separator()
+        text_menu.add_button("Indent ~1 space", lambda: indent_selection(1))
+        text_menu.add_button("Indent ~4 spaces", lambda: indent_selection(4))
+        text_menu.add_button("~Unindent 1 space", lambda: indent_selection(-1))
 
     def init_html_menu(self) -> None:
         """Create the HTML menu."""

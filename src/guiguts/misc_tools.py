@@ -2390,3 +2390,38 @@ def check_curly_quotes() -> None:
         view_options_filters=CURLY_QUOTES_CHECKER_FILTERS,
     )
     _the_curly_quotes_dialog.populate()
+
+
+def indent_selection(indent: int) -> None:
+    """Indent selected lines of text.
+
+    Args:
+        indent: How many spaces to indent.
+    """
+
+    def do_indent(line: int, indent: int) -> None:
+        """Indent given line by adding/removing `indent` space(s)."""
+        text = maintext().get(f"{line}.0", f"{line}.end")
+        if indent < 0:
+            # Don't try to remove more leading spaces than exist
+            n_space = min(-indent, len(text) - len(text.lstrip()))
+            maintext().delete(f"{line}.0", f"{line}.{n_space}")
+        elif indent > 0:
+            maintext().insert(f"{line}.0", " " * indent)
+
+    maintext().undo_block_begin()
+
+    ranges = maintext().selected_ranges()
+    if ranges:
+        for sel_range in ranges:
+            start = sel_range.start.row
+            # End point is end of prev line if sel range ends at line start
+            end = maintext().rowcol(f"{sel_range.end.index()}-1c").row
+            for line in range(start, end + 1):
+                do_indent(line, indent)
+        # When normal selection, first inserted spaces go before the
+        # start of the sel tag and don't appear selected, so re-select
+        if len(ranges) == 1 and ranges[0].start.col == 0:
+            maintext().do_select(ranges[0])
+    else:
+        do_indent(maintext().get_insert_index().row, indent)
