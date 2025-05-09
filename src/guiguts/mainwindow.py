@@ -823,10 +823,7 @@ class MainImage(tk.Frame):
             self.canvas.bind(cm, self.wheel_zoom)
             self.canvas.bind("<MouseWheel>", self.wheel_scroll)
             try:
-                self.canvas.bind(
-                    "<TouchpadScroll>",
-                    lambda e: print(f"Touchpad: {e.delta}", flush=True),
-                )
+                self.canvas.bind("<TouchpadScroll>", self.touchpad_scroll)
             except tk.TclError:
                 print("Failed to bind TouchpadScroll", flush=True)
 
@@ -1050,19 +1047,27 @@ class MainImage(tk.Frame):
             self.after(10, lambda: self.regrab_focus(focus_widget, remaining_period))
 
     def wheel_scroll(self, evt: tk.Event) -> None:
-        """Scroll image up/down using mouse wheel"""
+        """Scroll image up/down using mouse wheel."""
         print(f"delta: {evt.delta}", flush=True)
         if evt.state == 0:
-            if is_mac():
+            if is_mac() and tk.TkVersion < 3.7:
                 self.canvas.yview_scroll(int(-1 * evt.delta), "units")
             else:
                 self.canvas.yview_scroll(int(-1 * (evt.delta / 120)), "units")
         if evt.state == 1:
-            if is_mac():
+            if is_mac() and tk.TkVersion < 3.7:
                 self.canvas.xview_scroll(int(-1 * evt.delta), "units")
             else:
                 self.canvas.xview_scroll(int(-1 * (evt.delta / 120)), "units")
         self.show_image()
+
+    def touchpad_scroll(self, evt: tk.Event) -> None:
+        """Scroll image using touchpad."""
+        xscr = (evt.delta >> 16) & 0xFFFF
+        yscr = evt.delta & 0xFFFF
+        print(f"Touchpad X:{xscr} Y:{yscr}", flush=True)
+        self.canvas.xview_scroll(-xscr, "units")
+        self.canvas.yview_scroll(-yscr, "units")
 
     def load_image(self, filename: Optional[str] = None) -> bool:
         """Load or clear the given image file.
