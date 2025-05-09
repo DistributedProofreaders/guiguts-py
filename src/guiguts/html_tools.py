@@ -82,7 +82,6 @@ class HTMLImageDialog(ToplevelDialog):
             file_name_frame,
             text="Browse...",
             command=self.choose_file,
-            takefocus=False,
         ).grid(row=0, column=1, sticky="NSEW")
 
         # Buttons to see prev/next file
@@ -92,13 +91,11 @@ class HTMLImageDialog(ToplevelDialog):
             file_btn_frame,
             text="Prev File",
             command=lambda: self.next_file(reverse=True),
-            takefocus=False,
         ).grid(row=0, column=0, padx=2)
         ttk.Button(
             file_btn_frame,
             text="Next File",
             command=lambda: self.next_file(reverse=False),
-            takefocus=False,
         ).grid(row=0, column=1, padx=2)
 
         # Label to display thumbnail of image - allocate a
@@ -174,7 +171,6 @@ class HTMLImageDialog(ToplevelDialog):
             text="%",
             variable=unit_textvariable,
             value="%",
-            takefocus=False,
             command=self.update_geometry_fields,
         ).grid(row=0, column=4, sticky="NSEW", padx=10)
         ttk.Radiobutton(
@@ -182,7 +178,6 @@ class HTMLImageDialog(ToplevelDialog):
             text="em",
             variable=unit_textvariable,
             value="em",
-            takefocus=False,
             command=self.update_geometry_fields,
         ).grid(row=0, column=5, sticky="NSEW", padx=10)
         ttk.Radiobutton(
@@ -190,7 +185,6 @@ class HTMLImageDialog(ToplevelDialog):
             text="px",
             variable=unit_textvariable,
             value="px",
-            takefocus=False,
             command=self.update_geometry_fields,
         ).grid(row=0, column=6, sticky="NSEW", padx=10)
 
@@ -206,7 +200,6 @@ class HTMLImageDialog(ToplevelDialog):
             geom_frame,
             text="Override % with 100% in epub",
             variable=PersistentBoolean(PrefKey.HTML_IMAGE_OVERRIDE_EPUB),
-            takefocus=False,
         )
         self.override_checkbutton.grid(row=4, column=0, sticky="NS")
         # Dummy placeholder label for when above checkbutton is ungridded
@@ -226,21 +219,18 @@ class HTMLImageDialog(ToplevelDialog):
             text="Left",
             variable=align_textvariable,
             value="left",
-            takefocus=False,
         ).grid(row=0, column=0, sticky="NSW", padx=10)
         ttk.Radiobutton(
             align_frame,
             text="Center",
             variable=align_textvariable,
             value="center",
-            takefocus=False,
         ).grid(row=0, column=1, sticky="NSW", padx=10)
         ttk.Radiobutton(
             align_frame,
             text="Right",
             variable=align_textvariable,
             value="right",
-            takefocus=False,
         ).grid(row=0, column=2, sticky="NSW", padx=10)
 
         # Buttons to Find illos and Convert to HTML
@@ -250,14 +240,12 @@ class HTMLImageDialog(ToplevelDialog):
             btn_frame,
             text="Convert to HTML",
             command=self.convert_to_html,
-            takefocus=False,
             width=18,
         ).grid(row=0, column=0, sticky="NSEW", padx=2)
         ttk.Button(
             btn_frame,
             text="Find [Illustration]",
             command=self.find_illo_markup,
-            takefocus=False,
             width=18,
         ).grid(row=0, column=1, sticky="NSEW", padx=2)
 
@@ -720,14 +708,12 @@ class CSSValidatorDialog(CheckerDialog):
             text="CSS level 2.1",
             variable=css_level,
             value="css21",
-            takefocus=False,
         ).grid(row=0, column=0, sticky="NSEW", padx=(0, 10))
         ttk.Radiobutton(
             frame,
             text="CSS level 3",
             variable=css_level,
             value="css3",
-            takefocus=False,
         ).grid(row=0, column=1, sticky="NSEW")
 
 
@@ -1155,7 +1141,6 @@ class EbookmakerCheckerDialog(CheckerDialog):
                 self.custom_frame,
                 text="Browse",
                 command=locate_ebookmaker,
-                takefocus=False,
             ).grid(row=0, column=2, sticky="NSE", pady=(5, 0))
 
         ttk.Label(self.custom_frame, text="Ebook formats:").grid(
@@ -1553,7 +1538,6 @@ class HTMLAutoTableDialog(ToplevelDialog):
             self.top_frame,
             text="Multi-line (rows separated by blank lines)",
             variable=PersistentBoolean(PrefKey.AUTOTABLE_MULTILINE),
-            takefocus=False,
         ).grid(row=0, column=0, sticky="NSEW", pady=3)
 
         align_frame = ttk.LabelFrame(self.top_frame, text="Alignment", padding=3)
@@ -1572,21 +1556,18 @@ class HTMLAutoTableDialog(ToplevelDialog):
             text="Left",
             variable=default_align_textvariable,
             value="left",
-            takefocus=False,
         ).grid(row=0, column=1, sticky="NSEW", padx=(10, 0))
         ttk.Radiobutton(
             default_align_frame,
             text="Center",
             variable=default_align_textvariable,
             value="center",
-            takefocus=False,
         ).grid(row=0, column=2, sticky="NSEW", padx=10)
         ttk.Radiobutton(
             default_align_frame,
             text="Right",
             variable=default_align_textvariable,
             value="right",
-            takefocus=False,
         ).grid(row=0, column=3, sticky="NSEW")
 
         column_align_frame = ttk.Frame(align_frame)

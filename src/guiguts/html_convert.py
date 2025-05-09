@@ -78,7 +78,6 @@ class HTMLGeneratorDialog(ToplevelDialog):
             self.top_frame,
             text="Show Page Numbers in HTML",
             variable=PersistentBoolean(PrefKey.HTML_SHOW_PAGE_NUMBERS),
-            takefocus=False,
         )
         self.display_page_numbers.grid(row=1, column=0, sticky="NSEW", pady=5)
 
@@ -112,14 +111,12 @@ class HTMLGeneratorDialog(ToplevelDialog):
                     text="",
                     variable=type_var,
                     value=value,
-                    takefocus=False,
                 ).grid(row=row, column=col, padx=(7, 0))
 
         ttk.Button(
             self.top_frame,
             text="Auto-generate HTML",
             command=html_autogenerate,
-            takefocus=False,
         ).grid(row=3, column=0, pady=2)
 
 

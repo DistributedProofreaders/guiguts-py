@@ -90,6 +90,55 @@ class SearchDialog(ToplevelDialog):
         self.separator = ttk.Separator(self.top_frame, orient=tk.VERTICAL)
         self.separator.grid(row=0, column=3, rowspan=6, padx=2, sticky="NSEW")
 
+        # Options
+        ttk.Checkbutton(
+            options_frame,
+            text="Reverse",
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REVERSE),
+            command=self.set_first_last,
+        ).grid(row=0, column=0, padx=2, sticky="NSEW")
+        ttk.Checkbutton(
+            options_frame,
+            text="Match case",
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MATCH_CASE),
+        ).grid(row=0, column=1, padx=2, sticky="NSEW")
+        ttk.Checkbutton(
+            options_frame,
+            text="Regex",
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX),
+            command=lambda: self.is_valid_regex(self.search_box.get()),
+        ).grid(row=0, column=2, padx=2, sticky="NSEW")
+
+        ttk.Checkbutton(
+            self.top_frame,
+            text="In selection",
+            variable=SearchDialog.selection,
+        ).grid(row=0, column=4, sticky="NSE")
+
+        ttk.Checkbutton(
+            options_frame,
+            text="Whole word",
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WHOLE_WORD),
+        ).grid(row=1, column=0, padx=2, sticky="NSEW")
+        ttk.Checkbutton(
+            options_frame,
+            text="Wrap around",
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WRAP),
+        ).grid(row=1, column=1, padx=2, sticky="NSEW")
+        ttk.Checkbutton(
+            options_frame,
+            text="Multi-replace",
+            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MULTI_REPLACE),
+            command=self.show_multi_replace,
+        ).grid(row=1, column=2, padx=2, sticky="NSEW")
+
+        self.count_btn = ttk.Button(
+            self.top_frame,
+            text="Count",
+            command=self.count_clicked,
+        )
+        self.count_btn.grid(row=1, column=4, padx=PADX, pady=PADY, sticky="NSEW")
+
         # Search
         style = ttk.Style()
         new_col = "#ff8080" if maintext().is_dark_theme() else "#e60000"
@@ -116,7 +165,6 @@ class SearchDialog(ToplevelDialog):
             self.top_frame,
             text="Search",
             default="active",
-            takefocus=False,
             command=self.search_clicked,
         )
         search_button.grid(row=2, column=1, padx=PADX, pady=PADY, sticky="NSEW")
@@ -134,72 +182,15 @@ class SearchDialog(ToplevelDialog):
         self.first_button = ttk.Button(
             self.top_frame,
             text="Last" if preferences.get(PrefKey.SEARCHDIALOG_REVERSE) else "First",
-            takefocus=False,
             command=lambda *args: self.search_clicked(first_last=True),
         )
         self.first_button.grid(row=2, column=2, padx=PADX, pady=PADY, sticky="NSEW")
 
-        # Count & Find All
-        self.count_btn = ttk.Button(
-            self.top_frame,
-            text="Count",
-            takefocus=False,
-            command=self.count_clicked,
-        )
-        self.count_btn.grid(row=1, column=4, padx=PADX, pady=PADY, sticky="NSEW")
         ttk.Button(
             self.top_frame,
             text="Find All",
-            takefocus=False,
             command=self.findall_clicked,
         ).grid(row=2, column=4, padx=PADX, pady=PADY, sticky="NSEW")
-
-        # Options
-        ttk.Checkbutton(
-            options_frame,
-            text="Reverse",
-            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REVERSE),
-            command=self.set_first_last,
-            takefocus=False,
-        ).grid(row=0, column=0, padx=2, sticky="NSEW")
-        ttk.Checkbutton(
-            options_frame,
-            text="Match case",
-            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MATCH_CASE),
-            takefocus=False,
-        ).grid(row=0, column=1, padx=2, sticky="NSEW")
-        ttk.Checkbutton(
-            options_frame,
-            text="Regex",
-            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX),
-            takefocus=False,
-            command=lambda: self.is_valid_regex(self.search_box.get()),
-        ).grid(row=0, column=2, padx=2, sticky="NSEW")
-        ttk.Checkbutton(
-            options_frame,
-            text="Whole word",
-            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WHOLE_WORD),
-            takefocus=False,
-        ).grid(row=1, column=0, padx=2, sticky="NSEW")
-        ttk.Checkbutton(
-            options_frame,
-            text="Wrap around",
-            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WRAP),
-            takefocus=False,
-        ).grid(row=1, column=1, padx=2, sticky="NSEW")
-        ttk.Checkbutton(
-            options_frame,
-            text="Multi-replace",
-            variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MULTI_REPLACE),
-            takefocus=False,
-            command=self.show_multi_replace,
-        ).grid(row=1, column=2, padx=2, sticky="NSEW")
-        ttk.Checkbutton(
-            self.top_frame,
-            text="In selection",
-            variable=SearchDialog.selection,
-            takefocus=False,
-        ).grid(row=0, column=4, sticky="NSE")
 
         # Replace
         self.replace_box: list[Combobox] = []
@@ -218,7 +209,6 @@ class SearchDialog(ToplevelDialog):
             r_btn = ttk.Button(
                 self.top_frame,
                 text="Replace",
-                takefocus=False,
                 command=lambda idx=rep_num: self.replace_clicked(idx),  # type: ignore[misc]
             )
             r_btn.grid(row=rep_num + 3, column=1, padx=PADX, pady=PADY, sticky="NSEW")
@@ -227,7 +217,6 @@ class SearchDialog(ToplevelDialog):
             rands_button = ttk.Button(
                 self.top_frame,
                 text="R & S",
-                takefocus=False,
                 command=lambda idx=rep_num: self.replace_clicked(  # type: ignore[misc]
                     idx, search_again=True
                 ),
@@ -247,7 +236,6 @@ class SearchDialog(ToplevelDialog):
             repl_all_btn = ttk.Button(
                 self.top_frame,
                 text="Replace All",
-                takefocus=False,
                 command=lambda idx=rep_num: self.replaceall_clicked(idx),  # type: ignore[misc]
             )
             repl_all_btn.grid(

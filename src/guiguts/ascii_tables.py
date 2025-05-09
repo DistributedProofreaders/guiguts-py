@@ -275,7 +275,6 @@ class ASCIITableDialog(ToplevelDialog):
             adjust_col_row1_frame,
             text="Rewrap Cols",
             variable=PersistentBoolean(PrefKey.ASCII_TABLE_REWRAP),
-            takefocus=False,
             command=self.justify_update,
         )
         rewrap_cols_checkbox.grid(row=0, column=0, padx=(0, 10), pady=2, sticky="NSEW")
@@ -293,7 +292,6 @@ class ASCIITableDialog(ToplevelDialog):
             text="L",
             variable=justify_style,
             value=JustifyStyle.LEFT,
-            takefocus=False,
         )
         self.justify_left.grid(row=0, column=2, pady=2, sticky="NSEW")
 
@@ -302,7 +300,6 @@ class ASCIITableDialog(ToplevelDialog):
             text="C",
             variable=justify_style,
             value=JustifyStyle.CENTER,
-            takefocus=False,
         )
         self.justify_center.grid(row=0, column=3, pady=2, sticky="NSEW")
 
@@ -311,7 +308,6 @@ class ASCIITableDialog(ToplevelDialog):
             text="R",
             variable=justify_style,
             value=JustifyStyle.RIGHT,
-            takefocus=False,
         )
         self.justify_right.grid(row=0, column=4, padx=(0, 15), pady=2, sticky="NSEW")
 
@@ -332,7 +328,6 @@ class ASCIITableDialog(ToplevelDialog):
             adjust_col_row1_frame,
             text="Hanging",
             variable=PersistentBoolean(PrefKey.ASCII_TABLE_HANGING),
-            takefocus=False,
         )
         self.hanging_checkbox.grid(row=0, column=7, padx=10, pady=2, sticky="NSEW")
         ToolTip(

@@ -331,7 +331,6 @@ class CheckerDialog(ToplevelDialog):
                 text="Suspects Only",
                 variable=suspects_only_var,
                 command=suspects_only_changed,
-                takefocus=False,
             )
             self.suspects_only_btn.grid(row=0, column=1, sticky="NSW", padx=(10, 0))
         else:
@@ -471,7 +470,6 @@ class CheckerDialog(ToplevelDialog):
             command=sort_type_changed,
             variable=sort_type,
             value=CheckerSortType.ROWCOL,
-            takefocus=False,
         ).grid(row=0, column=1, sticky="NS", padx=2)
         ttk.Radiobutton(
             sort_frame,
@@ -479,7 +477,6 @@ class CheckerDialog(ToplevelDialog):
             command=sort_type_changed,
             variable=sort_type,
             value=CheckerSortType.ALPHABETIC,
-            takefocus=False,
         ).grid(row=0, column=2, sticky="NS", padx=2)
 
         self.view_options_dialog: Optional[CheckerViewOptionsDialog] = None

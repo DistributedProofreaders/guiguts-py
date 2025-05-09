@@ -380,7 +380,6 @@ class OkApplyCancelDialog(ToplevelDialog):
             text="OK",
             default="active",
             command=self.ok_pressed,
-            takefocus=False,
         ).grid(row=0, column=column, padx=5)
         if display_apply:
             column += 1
@@ -389,7 +388,6 @@ class OkApplyCancelDialog(ToplevelDialog):
                 text="Apply",
                 default="normal",
                 command=self.apply_changes,
-                takefocus=False,
             ).grid(row=0, column=column, padx=5)
         column += 1
         ttk.Button(
@@ -397,7 +395,6 @@ class OkApplyCancelDialog(ToplevelDialog):
             text="Cancel",
             default="normal",
             command=self.cancel_pressed,
-            takefocus=False,
         ).grid(row=0, column=column, padx=5)
         self.bind("<Return>", lambda event: self.ok_pressed())
         self.bind("<Escape>", lambda event: self.cancel_pressed())

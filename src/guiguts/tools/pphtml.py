@@ -40,7 +40,6 @@ class PPhtmlCheckerDialog(CheckerDialog):
             self.custom_frame,
             text="Verbose",
             variable=PersistentBoolean(PrefKey.PPHTML_VERBOSE),
-            takefocus=False,
         ).grid(row=0, column=0, sticky="NSEW")
 
 
