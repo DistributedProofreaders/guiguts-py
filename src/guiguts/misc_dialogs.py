@@ -1681,21 +1681,21 @@ class UnicodeBlockDialog(ToplevelDialog):
 
         super().__init__("Unicode Block")
 
-        cb = ttk.Combobox(
+        self.combobox = ttk.Combobox(
             self.top_frame,
-            textvariable=PersistentString(PrefKey.UNICODE_BLOCK),
             width=50,
         )
-        cb.grid(column=0, row=0, sticky="NSW", padx=5, pady=(5, 0))
+        self.combobox.set(preferences.get(PrefKey.UNICODE_BLOCK))
+        self.combobox.grid(column=0, row=0, sticky="NSW", padx=5, pady=(5, 0))
         block_list = []
         for name, (beg, end, show) in _unicode_blocks.items():
             if show:
                 block_list.append(f"{name}   ({beg:04X}–{end:04X})")
         block_list.sort()
         block_list.insert(0, UnicodeBlockDialog.commonly_used_characters_name)
-        cb["values"] = block_list
-        cb["state"] = "readonly"
-        cb.bind("<<ComboboxSelected>>", lambda _e: self.block_selected())
+        self.combobox["values"] = block_list
+        self.combobox["state"] = "readonly"
+        self.combobox.bind("<<ComboboxSelected>>", lambda _e: self.block_selected())
         self.top_frame.rowconfigure(0, weight=0)
         self.top_frame.rowconfigure(1, weight=1)
         self.chars_frame = ScrollableFrame(self.top_frame)
@@ -1704,10 +1704,28 @@ class UnicodeBlockDialog(ToplevelDialog):
         self.button_list: list[ttk.Label] = []
         style = ttk.Style()
         style.configure("unicodedialog.TLabel", font=maintext().font)
-        self.block_selected()
+        self.block_selected(update_pref=False)
 
-    def block_selected(self) -> None:
-        """Called when a Unicode block is selected."""
+    @classmethod
+    def show_unicode_dialog(cls) -> None:
+        """Show dialog in Unicode block mode."""
+        dlg = UnicodeBlockDialog.show_dialog()
+        dlg.combobox.set(preferences.get(PrefKey.UNICODE_BLOCK))
+        dlg.block_selected(update_pref=False)
+
+    @classmethod
+    def show_common_dialog(cls) -> None:
+        """Show dialog in Commonly Used Characters mode."""
+        dlg = UnicodeBlockDialog.show_dialog()
+        dlg.combobox.set(UnicodeBlockDialog.commonly_used_characters_name)
+        dlg.block_selected(update_pref=False)
+
+    def block_selected(self, update_pref: bool = True) -> None:
+        """Called when a Unicode block is selected.
+
+        Args:
+            update_pref: Set False if pref should not be updated.
+        """
         for btn in self.button_list:
             if btn.winfo_exists():
                 btn.destroy()
@@ -1753,7 +1771,9 @@ class UnicodeBlockDialog(ToplevelDialog):
             btn.grid(column=count % 16, row=int(count / 16), sticky="NSEW")
             self.button_list.append(btn)
 
-        block_name = re.sub(r" *\(.*", "", preferences.get(PrefKey.UNICODE_BLOCK))
+        if update_pref:
+            preferences.set(PrefKey.UNICODE_BLOCK, self.combobox.get())
+        block_name = re.sub(r" *\(.*", "", self.combobox.get())
         if block_name == UnicodeBlockDialog.commonly_used_characters_name:
             for count, char in enumerate(_common_characters):
                 add_button(count, char)

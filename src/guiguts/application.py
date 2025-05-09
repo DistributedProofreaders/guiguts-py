@@ -883,7 +883,13 @@ class Guiguts:
         unicode_menu.add_button(
             "Unicode ~Search/Entry", UnicodeSearchDialog.show_dialog
         )
-        unicode_menu.add_button("Unicode ~Blocks", UnicodeBlockDialog.show_dialog)
+        unicode_menu.add_button(
+            "Unicode ~Blocks", UnicodeBlockDialog.show_unicode_dialog
+        )
+        unicode_menu.add_button(
+            "C~ommonly Used Characters",
+            UnicodeBlockDialog.show_common_dialog,
+        )
         unicode_menu.add_button(
             "~Normalize Selected Characters",
             unicode_normalize,
@@ -1245,10 +1251,18 @@ class Guiguts:
 
         the_statusbar.add(
             "ordinal",
-            tooltip="Character after the cursor\nClick to toggle name display",
+            tooltip="Character after the cursor\nClick to toggle name display\n"
+            "Shift left click to show Commonly Used Characters dialog\n"
+            "Shift right click to show Unicode Blocks dialog",
             update=ordinal_str,
         )
         the_statusbar.add_binding("ordinal", "ButtonRelease-1", ordinal_name_display)
+        the_statusbar.add_binding(
+            "ordinal", "Shift-ButtonRelease-1", UnicodeBlockDialog.show_common_dialog
+        )
+        the_statusbar.add_binding(
+            "ordinal", "Shift-ButtonRelease-3", UnicodeBlockDialog.show_unicode_dialog
+        )
 
     def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""

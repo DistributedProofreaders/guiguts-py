@@ -1308,7 +1308,7 @@ class StatusBar(ttk.Frame):
                 self.set(key, func())
         self.after(200, self._update)
 
-    def add_binding(self, key: str, event: str, callback: Callable[[], None]) -> None:
+    def add_binding(self, key: str, event: str, callback: Callable[[], Any]) -> None:
         """Add an action to be executed when the given event occurs
 
         Args:
