@@ -646,12 +646,12 @@ class ASCIITableDialog(ToplevelDialog):
         while line_num < maintext().rowcol(self.end_mark_name).row:
             if line := maintext().get(f"{line_num}.0", f"{line_num}.end").strip():
                 # Check if first cell on line
-                if maintext().rowcol(f"{line_num-1}.end").col == 0:
+                if maintext().rowcol(f"{line_num - 1}.end").col == 0:
                     maintext().replace(f"{line_num}.0", f"{line_num}.end", line)
                 else:
                     # Because we're removing a newline char, skip incrementing line_num
                     maintext().replace(
-                        f"{line_num-1}.end", f"{line_num}.end", f"  {line}"
+                        f"{line_num - 1}.end", f"{line_num}.end", f"  {line}"
                     )
                     continue
             line_num += 1
@@ -672,7 +672,7 @@ class ASCIITableDialog(ToplevelDialog):
             column_width_text = maintext().get(f"{start_row}.0", f"{start_row}.end")
             cells = column_width_text.split("|")
             if self.selected_column < len(cells):
-                width_text = f" {self.selected_column+1} (width {len(cells[self.selected_column])})"
+                width_text = f" {self.selected_column + 1} (width {len(cells[self.selected_column])})"
         if self.adjust_col_frame.winfo_exists():
             self.adjust_col_frame["text"] = f"Adjust Column{width_text}"
 

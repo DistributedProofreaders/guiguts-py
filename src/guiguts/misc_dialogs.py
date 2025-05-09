@@ -699,16 +699,16 @@ def init_compose_dict() -> None:
     # Combining characters
     init_combining("\u0300", "\u0316", "\\", "`")  # grave
     init_combining("\u0301", "\u0317", "/", "'")  # acute
-    init_combining("\u0302", "\u032D", "^")  # circumflex
+    init_combining("\u0302", "\u032d", "^")  # circumflex
     init_combining("\u0303", "\u0330", "~")  # tilde
     init_combining("\u0304", "\u0331", "-", "=")  # macron
-    init_combining("\u0306", "\u032E", ")")  # breve
-    init_combining("\u0311", "\u032F", "(")  # inverted breve
+    init_combining("\u0306", "\u032e", ")")  # breve
+    init_combining("\u0311", "\u032f", "(")  # inverted breve
     init_combining("\u0307", "\u0323", ".")  # dot
     init_combining("\u0308", "\u0324", ":", '"')  # diaresis
     init_combining("\u0309", "", "?")  # hook above
-    init_combining("\u030A", "\u0325", "*")  # ring
-    init_combining("\u030C", "\u032C", "v")  # caron
+    init_combining("\u030a", "\u0325", "*")  # ring
+    init_combining("\u030c", "\u032c", "v")  # caron
     init_combining("", "\u0327", ",")  # cedilla
     init_combining("", "\u0328", ";")  # ogonek
 

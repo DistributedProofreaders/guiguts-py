@@ -232,7 +232,7 @@ class PPhtmlChecker:
                 severity = "WARNING: "
             else:
                 severity = ""
-            errors.append(f"  {severity}{fname} ({int(fsize/1024)}K)")
+            errors.append(f"  {severity}{fname} ({int(fsize / 1024)}K)")
         self.output_subsection_errors(test_passed, "Image File Sizes", errors)
 
     def image_dimensions(self) -> None:

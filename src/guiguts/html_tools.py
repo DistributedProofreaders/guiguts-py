@@ -1670,11 +1670,11 @@ class HTMLAutoTableDialog(ToplevelDialog):
                 and rev_row_num < len(text_rows) - 1
                 and re.fullmatch(
                     r"[| \u00a0]*",
-                    maintext().get(f"{start_linenum}.0 -1l", f"{end_linenum-2}.end"),
+                    maintext().get(f"{start_linenum}.0 -1l", f"{end_linenum - 2}.end"),
                 )
             ):
                 start_linenum -= 1
-            maintext().replace(f"{start_linenum}.0", f"{end_linenum-1}.end", html)
+            maintext().replace(f"{start_linenum}.0", f"{end_linenum - 1}.end", html)
             end_linenum = start_linenum
         maintext().insert(f"{end_linenum}.0", '<table class="autotable">\n')
         maintext().clear_selection()

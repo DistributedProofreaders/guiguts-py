@@ -536,8 +536,7 @@ class TextWrapper:
             within given margins and suggested optimum width.
             """
 
-            nonlocal optimum, maximum, wordcount, penaltylimit
-            nonlocal word_len, space_len, linkbreak
+            nonlocal linkbreak
 
             totalpenalty = [0] * wordcount
             best = penaltylimit * 21
@@ -629,15 +628,13 @@ class TextWrapper:
         def print_lines(lines: list[str]) -> None:
             """Trim EOL spaces and store the lines in the output buffer."""
 
-            nonlocal to_lines
-
             for line in lines:
                 to_lines.append(re.sub(r"[ \t]+\n", r"\n", line))
 
         def reflow_penalties() -> None:
             """Initialise global word- and space-length lists"""
 
-            nonlocal wordcount, words, word_len, space_len
+            nonlocal wordcount, word_len, space_len
 
             wordcount = len(words)
             # Add paragraph indentation to first word if there is one.
@@ -660,7 +657,7 @@ class TextWrapper:
             """Compute global 'output' list from 'wordcount', 'words' list,
             lastbreak and linkbreak"""
 
-            nonlocal output, words, wordcount, lastbreak, linkbreak
+            nonlocal output, lastbreak
 
             output = []
             terminus = wordcount - 1
@@ -681,7 +678,7 @@ class TextWrapper:
             """Rewrap pragraph"""
 
             nonlocal words
-            nonlocal lastbreak, linkbreak, wordcount, output
+            nonlocal lastbreak, output
 
             if len(words) == 0:
                 return
@@ -701,7 +698,6 @@ class TextWrapper:
             """Process a line by appending each word to global 'words' list.
             If the line is blank, reflow the paragraph of words in 'words'.
             """
-            nonlocal words
 
             # Protect " . . ." ellipses by replacing space with unused byte \x9f.
             line = re.sub(r" \. \. \.", r"\x9f.\x9f.\x9f.", line)

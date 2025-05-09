@@ -364,7 +364,7 @@ class TextLineNumbers(tk.Canvas):
             self.textwidget.mark_set(TK_ANCHOR_MARK, f"{drag_range.end.row}.0")
         else:
             # clicked only a single line
-            self.textwidget.mark_set(tk.INSERT, f"{drag_range.end.row-1}.0")
+            self.textwidget.mark_set(tk.INSERT, f"{drag_range.end.row - 1}.0")
             self.textwidget.mark_set(TK_ANCHOR_MARK, drag_range.start.index())
 
 
@@ -1557,7 +1557,7 @@ class MainText(tk.Text):
         # by using the midpoint of the match to help with offscreen long lines
         if see_end_rowcol is not None and insert_pos.row == see_end_rowcol.row:
             focus_widget.see(
-                f"{insert_pos.row}.{int((insert_pos.col+see_end_rowcol.col)/2)}"
+                f"{insert_pos.row}.{int((insert_pos.col + see_end_rowcol.col) / 2)}"
             )
         if focus:
             focus_widget.focus_set()
@@ -1910,8 +1910,8 @@ class MainText(tk.Text):
     def surround_rtl(self) -> None:
         """Surround the selected text with RLM...LRM Unicode markers."""
         for a_range in self.selected_ranges():
-            maintext().insert(a_range.end.index(), "\u200E")
-            maintext().insert(a_range.start.index(), "\u200F")
+            maintext().insert(a_range.end.index(), "\u200e")
+            maintext().insert(a_range.start.index(), "\u200f")
 
     def clipboard_append(self, string: str, **kw: Any) -> None:
         """Override appending text to clipboard to deal with macOS limitation."""
@@ -4311,8 +4311,8 @@ class MenuMetadata(EntryMetadata):
         self,
         label: str,
         pref_key: PrefKey,
-        callback_on: Optional[Callable[[], None]] = None,
-        callback_off: Optional[Callable[[], None]] = None,
+        callback_on: Optional[Callable] = None,
+        callback_off: Optional[Callable] = None,
         accel: str = "",
     ) -> None:
         """Add a checkbutton to this menu.
