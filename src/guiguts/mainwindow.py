@@ -276,13 +276,11 @@ class CustomMenuDialog(ToplevelDialog):
             move_button_frame,
             text="Move Up",
             command=lambda: self.move_up_down(-1),
-            takefocus=False,
         ).grid(row=0, column=0, padx=2)
         ttk.Button(
             move_button_frame,
             text="Move Down",
             command=lambda: self.move_up_down(1),
-            takefocus=False,
         ).grid(row=0, column=1, padx=2)
 
         # Edit LabelFrame
@@ -313,13 +311,11 @@ class CustomMenuDialog(ToplevelDialog):
             button_frame,
             text="Update Entry",
             command=self.update_entry,
-            takefocus=False,
         ).grid(row=0, column=1, padx=2)
         ttk.Button(
             button_frame,
             text="Remove Entry",
             command=self.remove_entry,
-            takefocus=False,
         ).grid(row=0, column=2, padx=2)
 
         # Help LabelFrame
@@ -675,7 +671,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="<",
             width=min_button_width,
-            takefocus=False,
             command=lambda: self.next_image(reverse=True),
         )
         self.prev_img_button.grid(row=0, column=0, sticky="NSEW")
@@ -685,7 +680,6 @@ class MainImage(tk.Frame):
             control_frame,
             text=">",
             width=min_button_width,
-            takefocus=False,
             command=self.next_image,
         )
         self.next_img_button.grid(row=0, column=1, sticky="NSEW")
@@ -699,7 +693,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="+",
             width=min_button_width,
-            takefocus=False,
             command=lambda: self.image_zoom(zoom_in=True),
         )
         self.zoom_in_btn.grid(row=0, column=3, sticky="NSEW", padx=(10, 0))
@@ -709,7 +702,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="-",
             width=min_button_width,
-            takefocus=False,
             command=lambda: self.image_zoom(zoom_in=False),
         )
         self.zoom_out_btn.grid(row=0, column=4, sticky="NSEW")
@@ -719,7 +711,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="↺",
             width=min_button_width + 1 if is_mac() else min_button_width,
-            takefocus=False,
             command=self.rotate,
         )
         self.rotate_btn.grid(row=0, column=5, sticky="NSEW", padx=(10, 0))
@@ -730,7 +721,6 @@ class MainImage(tk.Frame):
         self.ftw_btn = ttk.Checkbutton(
             control_frame,
             text="Fit ←→",
-            takefocus=False,
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_WIDTH),
         )
         self.ftw_btn.grid(row=0, column=6, sticky="NSEW", padx=(10, 0))
@@ -739,7 +729,6 @@ class MainImage(tk.Frame):
         self.fth_btn = ttk.Checkbutton(
             control_frame,
             text="Fit ↑↓",
-            takefocus=False,
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_HEIGHT),
         )
         self.fth_btn.grid(row=0, column=7, sticky="NSEW", padx=(10, 0))
@@ -748,7 +737,6 @@ class MainImage(tk.Frame):
         self.invert_btn = ttk.Checkbutton(
             control_frame,
             text="Invert",
-            takefocus=False,
             command=self.show_image,
             variable=PersistentBoolean(PrefKey.IMAGE_INVERT),
         )
@@ -758,7 +746,6 @@ class MainImage(tk.Frame):
         self.dock_btn = ttk.Checkbutton(
             control_frame,
             text="Dock",
-            takefocus=False,
             command=self.set_image_docking,
             variable=PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED),
         )
@@ -773,7 +760,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="×",
             width=min_button_width,
-            takefocus=False,
             command=self.hide_func,
         )
         self.close_btn.grid(row=0, column=10, sticky="NSE")

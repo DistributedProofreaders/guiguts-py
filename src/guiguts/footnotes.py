@@ -1222,7 +1222,6 @@ class FootnoteCheckerDialog(CheckerDialog):
             text="All to Number",
             variable=fn_index_style,
             value=FootnoteIndexStyle.NUMBER,
-            takefocus=False,
         )
         self.all_to_num.grid(column=0, row=1, pady=2, sticky="NSEW")
         # --
@@ -1231,7 +1230,6 @@ class FootnoteCheckerDialog(CheckerDialog):
             text="All to Letter",
             variable=fn_index_style,
             value=FootnoteIndexStyle.LETTER,
-            takefocus=False,
         )
         self.all_to_let.grid(column=1, row=1, pady=2, sticky="NSEW")
         # --
@@ -1240,7 +1238,6 @@ class FootnoteCheckerDialog(CheckerDialog):
             text="All to Roman",
             variable=fn_index_style,
             value=FootnoteIndexStyle.ROMAN,
-            takefocus=False,
         )
         self.all_to_rom.grid(column=2, row=1, pady=2, sticky="NSEW")
         # --
