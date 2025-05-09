@@ -78,21 +78,18 @@ class JeebiesCheckerDialog(CheckerDialog):
             text="Paranoid",
             variable=self.paranoia_level,
             value=JeebiesParanoiaLevel.PARANOID,
-            takefocus=False,
         ).grid(row=0, column=2, sticky="NSE", padx=2)
         ttk.Radiobutton(
             frame,
             text="Normal",
             variable=self.paranoia_level,
             value=JeebiesParanoiaLevel.NORMAL,
-            takefocus=False,
         ).grid(row=0, column=3, sticky="NSE", padx=2)
         ttk.Radiobutton(
             frame,
             text="Tolerant",
             variable=self.paranoia_level,
             value=JeebiesParanoiaLevel.TOLERANT,
-            takefocus=False,
         ).grid(row=0, column=4, sticky="NSE", padx=2)
 
 
