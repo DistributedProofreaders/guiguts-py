@@ -100,6 +100,11 @@ specific version in the commands below for consistency with other developers.
 brew install python@3.11 python-tk@3.11
 ```
 
+Note that if you want to install python 3.12 or later, Homebrew installs
+Tk version 9 rather than 8.6. Tk 9 has some incompatibilities with current
+versions of GG. If you want to avoid these, do not use Homebrew to install
+python 3.12 or later; install from [python.org](https://www.python.org/) instead.
+
 ### Install Poetry
 
 We also install poetry using Homebrew.
@@ -263,11 +268,15 @@ previous version of GG2).
 
 ### macOS
 
-1. Install python 3.11 or 3.12 and python-tk using Homebrew if you don't already have it.
-For example:
+1. Install Python 3.11 and python-tk using Homebrew if you don't already have it:
 ```bash
 brew install python@3.11 python-tk@3.11
 ```
+Alternatively, if you want to install Python 3.12 or later, you should install
+by download from [python.org](https://www.python.org/), not using Homebrew.
+This is because Homebrew installs Tk version 9 with Python 3.12, whereas Guiguts
+is currently configured to work best with Tk 8.6. So ensure that you either
+install Python 3.11, or non-Homebrew Python 3.12.
 2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
 previous version of GG2).
 3. Type `guiguts` to run GG2.
