@@ -201,7 +201,7 @@
 "hint": "Find a word that contains rnb, rnm or rnp and change it to mb, mm or mp, respectively"
 },
 {
-"match": "tb",
+"match": "(?<=\\w)tb|tb(?=\\w)",
 "replacement": "th",
 "hint": "Find a word that contains tb and change it to th"
 },
