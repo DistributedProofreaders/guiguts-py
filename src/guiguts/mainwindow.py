@@ -1063,8 +1063,12 @@ class MainImage(tk.Frame):
 
     def touchpad_scroll(self, evt: tk.Event) -> None:
         """Scroll image using touchpad."""
-        xscr = (evt.delta >> 16) & 0xFFFF
-        yscr = evt.delta & 0xFFFF
+
+        def to_signed_16(n: int) -> int:
+            return n if n < 0x8000 else n - 0x10000
+
+        xscr = to_signed_16((evt.delta >> 16) & 0xFFFF)
+        yscr = to_signed_16(evt.delta & 0xFFFF)
         print(f"Touchpad X:{xscr} Y:{yscr}", flush=True)
         self.canvas.xview_scroll(-xscr, "units")
         self.canvas.yview_scroll(-yscr, "units")
