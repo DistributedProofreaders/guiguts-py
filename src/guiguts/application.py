@@ -82,6 +82,7 @@ from guiguts.misc_tools import (
     convert_to_curly_quotes,
     check_curly_quotes,
     indent_selection,
+    ScannoCheckerDialog,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
@@ -1104,6 +1105,7 @@ class Guiguts:
         PreferencesDialog.add_orphan_commands()
         CommandPaletteDialog.add_orphan_commands()
         SearchDialog.add_orphan_commands()
+        ScannoCheckerDialog.add_orphan_commands()
         mainimage().add_orphan_commands()
         menubar_metadata().add_button_orphan(
             "Quit Without Saving File", lambda: root().quit()
