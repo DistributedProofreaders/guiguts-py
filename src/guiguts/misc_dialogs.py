@@ -1686,7 +1686,9 @@ class UnicodeBlockDialog(ToplevelDialog):
             width=50,
         )
         self.combobox.set(preferences.get(PrefKey.UNICODE_BLOCK))
-        self.combobox.grid(column=0, row=0, sticky="NSW", padx=5, pady=(5, 0))
+        self.combobox.grid(
+            column=0, row=0, sticky="NSW", padx=5, pady=(5, 0), columnspan=2
+        )
         block_list = []
         for name, (beg, end, show) in _unicode_blocks.items():
             if show:
@@ -1699,7 +1701,28 @@ class UnicodeBlockDialog(ToplevelDialog):
         self.top_frame.rowconfigure(0, weight=0)
         self.top_frame.rowconfigure(1, weight=1)
         self.chars_frame = ScrollableFrame(self.top_frame)
-        self.chars_frame.grid(column=0, row=1, sticky="NSEW", padx=5, pady=5)
+        self.chars_frame.grid(
+            column=0, row=1, sticky="NSEW", padx=5, pady=5, columnspan=2
+        )
+        big_frame = ttk.Frame(self.top_frame, borderwidth=3, relief=tk.SUNKEN)
+        big_frame.grid(row=2, column=0, sticky="NSW", padx=5, pady=5)
+        self.bigchar_var = tk.StringVar()
+        big_font = font.nametofont(maintext().cget("font"))
+        big_font = big_font.copy()
+        big_font.configure(size=24)
+        ttk.Label(
+            big_frame,
+            textvariable=self.bigchar_var,
+            font=big_font,
+            width=2,
+            anchor=tk.CENTER,
+        ).grid(row=0, column=0, sticky="NSEW", padx=(2, 0), pady=(0, 2))
+        self.top_frame.columnconfigure(0, weight=0)
+        self.top_frame.columnconfigure(1, weight=1)
+        self.charname_var = tk.StringVar()
+        ttk.Label(self.top_frame, textvariable=self.charname_var).grid(
+            row=2, column=1, sticky="NSW", padx=5, pady=5
+        )
 
         self.button_list: list[ttk.Label] = []
         style = ttk.Style()
@@ -1756,13 +1779,28 @@ class UnicodeBlockDialog(ToplevelDialog):
                 event.widget["relief"] = tk.RAISED
                 insert_in_focus_widget(char)
 
+            def show_name(wgt: tk.Label) -> None:
+                char = str(wgt["text"])
+                name, new = unicode_char_to_name(char)
+                if name:
+                    name = ": " + name
+                warning_flag = "⚠\ufe0f" if new else ""
+                self.charname_var.set(f"{warning_flag}U+{ord(char):04x}{name}")
+                self.bigchar_var.set(char)
+
+            def clear_name() -> None:
+                self.charname_var.set("")
+                self.bigchar_var.set("")
+
             def enter(event: tk.Event) -> None:
                 event.widget["relief"] = tk.RAISED
+                show_name(event.widget)
 
             def leave(event: tk.Event) -> None:
                 relief = str(event.widget["relief"])
                 if relief == tk.RAISED:
                     event.widget["relief"] = tk.SOLID
+                clear_name()
 
             btn.bind("<ButtonPress-1>", press)
             btn.bind("<ButtonRelease-1>", lambda e: release(e, char))
@@ -1781,14 +1819,6 @@ class UnicodeBlockDialog(ToplevelDialog):
             block_range = _unicode_blocks[block_name]
             for count, c_ord in enumerate(range(block_range[0], block_range[1] + 1)):
                 add_button(count, chr(c_ord))
-        # Add tooltips
-        for btn in self.button_list:
-            char = str(btn["text"])
-            name, new = unicode_char_to_name(char)
-            if name:
-                name = ": " + name
-            warning_flag = "⚠\ufe0f" if new else ""
-            ToolTip(btn, f"{warning_flag}U+{ord(char):04x}{name}")
 
 
 class UnicodeSearchDialog(ToplevelDialog):
@@ -2021,8 +2051,8 @@ class UnicodeSearchDialog(ToplevelDialog):
             block = row[UnicodeSearchDialog.BLOCK_COL_HEAD]
             if not block:
                 return
-            preferences.set(PrefKey.UNICODE_BLOCK, block)
             dlg = UnicodeBlockDialog.show_dialog()
+            dlg.combobox.set(block)
             dlg.block_selected()
 
 
