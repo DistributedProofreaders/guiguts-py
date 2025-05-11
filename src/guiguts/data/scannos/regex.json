@@ -31,9 +31,9 @@
 "hint": "Find character strings that end with j and change the j to a semicolon"
 },
 {
-"match": "([^gG])uess",
+"match": "([^gGq])uess",
 "replacement": "\\1ness",
-"hint": "Find the string 'uess' not preceded by a g and change it to 'ness'"
+"hint": "Find the string 'uess' not preceded by a g or q and change it to 'ness'"
 },
 {
 "match": "([abimou])hl([ie])",
@@ -49,6 +49,11 @@
 "match": "(\\b[A-Z])\\. ([A-Z])\\.",
 "replacement": "\\1.\\2.",
 "hint": "Find initials with a space between them and remove the space"
+},
+{
+"match": "(\\b[A-Z])\\.([A-Z])\\.",
+"replacement": "\\1. \\2.",
+"hint": "Find initials without a space between them and add the space"
 },
 {
 "match": ",(\"?\\n *\"?\\p{Upper})",
@@ -86,14 +91,14 @@
 "hint": "Find a period with the following word starting with a lower case character and change the period to a comma"
 },
 {
-"match": "\\.( \\p{IsLower})",
+"match": "(?<!\\.\\.)\\.( \\p{IsLower})",
 "replacement": ",\\1",
 "hint": "Find a period followed by a space and a lower-case letter and replace it with a comma"
 },
 {
-"match": "\\Bii",
+"match": "(?<=[aeou])ii",
 "replacement": "ll",
-"hint": "Find the string ii not at the beginning of a word and change it to ll"
+"hint": "Find the string ii preceded by a vowel and change it to ll"
 },
 {
 "match": "\\b([csw])li([aeiou])",
@@ -106,27 +111,27 @@
 "hint": "Find repeated words or word sequences and remove one"
 },
 {
-"match": "\\bhl",
+"match": "\\bhl(?=\\w)",
 "replacement": "bl",
 "hint": "Find a string that starts with hl and change it to bl"
 },
 {
-"match": "\\bhr",
+"match": "\\bhr(?=\\w)",
 "replacement": "br",
 "hint": "Find a string that starts with hr and change it to br"
 },
 {
-"match": "\\brn",
+"match": "\\brn(?=\\w)",
 "replacement": "m",
 "hint": "Find a string that starts with rn and change it to m"
 },
 {
-"match": "\\btb",
+"match": "\\btb(?=\\w)",
 "replacement": "th",
 "hint": "Find a string that starts with tb and change it to th"
 },
 {
-"match": "\\btli",
+"match": "\\btli(?=\\w)",
 "replacement": "th",
 "hint": "Find a string that starts with tli and change it to th"
 },
@@ -161,7 +166,7 @@
 "hint": "Find long lines in the text"
 },
 {
-"match": "^[!;:,.?]",
+"match": "^(?!\\.\\.\\.)[!;:,.?]",
 "replacement": "",
 "hint": "Find a line that starts with punctuation and remove the punctuation"
 },
@@ -196,7 +201,7 @@
 "hint": "Find a word that contains rnb, rnm or rnp and change it to mb, mm or mp, respectively"
 },
 {
-"match": "tb",
+"match": "(?<=\\w)tb|tb(?=\\w)",
 "replacement": "th",
 "hint": "Find a word that contains tb and change it to th"
 },
@@ -209,11 +214,6 @@
 "match": "tli",
 "replacement": "th",
 "hint": "Find a word that contains tli and change it to th"
-},
-{
-"match": "uess\\b",
-"replacement": "ness",
-"hint": "Find a word that ends with uess and change it to ness"
 },
 {
 "match": "v(?<!\\p{Alpha})",

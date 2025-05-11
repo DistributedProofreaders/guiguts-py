@@ -19,7 +19,7 @@ from guiguts.checkers import (
 )
 from guiguts.data import scannos
 from guiguts.file import the_file
-from guiguts.maintext import maintext
+from guiguts.maintext import maintext, menubar_metadata
 from guiguts.preferences import (
     PrefKey,
     PersistentString,
@@ -1574,6 +1574,8 @@ class ScannoCheckerDialog(CheckerDialog):
                     "Right click: Hide occurrence of scanno in list",
                     f"{cmd_ctrl_string()} left click: Fix this occurrence of scanno",
                     f"{cmd_ctrl_string()} right click: Fix this occurrence and remove from list",
+                    f"Shift {cmd_ctrl_string()} left click: Fix all occurrences of scanno",
+                    f"Shift {cmd_ctrl_string()} right click: Fix all occurrences and remove from list",
                 ]
             ),
             **kwargs,
@@ -1668,6 +1670,33 @@ class ScannoCheckerDialog(CheckerDialog):
         self.scanno_list: list[Scanno] = []
         self.whole_word = False
         self.scanno_number = 0
+
+    @classmethod
+    def add_orphan_commands(cls) -> None:
+        """Add orphan commands to command palette."""
+
+        menubar_metadata().add_checkbutton_orphan(
+            "Stealth Scannos, Auto Advance", PrefKey.SCANNOS_AUTO_ADVANCE
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Previous Scanno",
+            cls.orphan_wrapper("prev_next_scanno", prev=True),
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Next Scanno",
+            cls.orphan_wrapper("prev_next_scanno", prev=False),
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Swap Terms", cls.orphan_wrapper("swap_terms")
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Replace",
+            cls.orphan_wrapper("process_entry_current", all_matching=False),
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Replace All",
+            cls.orphan_wrapper("process_entry_current", all_matching=True),
+        )
 
     def choose_file(self) -> None:
         """Choose & load a scannos file."""
