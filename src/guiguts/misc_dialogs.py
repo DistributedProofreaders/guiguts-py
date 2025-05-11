@@ -1686,7 +1686,9 @@ class UnicodeBlockDialog(ToplevelDialog):
             width=50,
         )
         self.combobox.set(preferences.get(PrefKey.UNICODE_BLOCK))
-        self.combobox.grid(column=0, row=0, sticky="NSW", padx=5, pady=(5, 0))
+        self.combobox.grid(
+            column=0, row=0, sticky="NSW", padx=5, pady=(5, 0), columnspan=2
+        )
         block_list = []
         for name, (beg, end, show) in _unicode_blocks.items():
             if show:
@@ -1699,10 +1701,23 @@ class UnicodeBlockDialog(ToplevelDialog):
         self.top_frame.rowconfigure(0, weight=0)
         self.top_frame.rowconfigure(1, weight=1)
         self.chars_frame = ScrollableFrame(self.top_frame)
-        self.chars_frame.grid(column=0, row=1, sticky="NSEW", padx=5, pady=5)
-        self.label_var = tk.StringVar()
-        ttk.Label(self.top_frame, textvariable=self.label_var).grid(
-            row=2, column=0, sticky="NSEW", padx=5, pady=5
+        self.chars_frame.grid(
+            column=0, row=1, sticky="NSEW", padx=5, pady=5, columnspan=2
+        )
+        big_frame = ttk.Frame(self.top_frame, borderwidth=3, relief=tk.GROOVE)
+        big_frame.grid(row=2, column=0, sticky="NSW", padx=5, pady=5)
+        self.bigchar_var = tk.StringVar()
+        big_font = font.nametofont(maintext().cget("font"))
+        big_font = big_font.copy()
+        big_font.configure(size=24)
+        ttk.Label(
+            big_frame, textvariable=self.bigchar_var, font=big_font, width=1
+        ).grid(row=0, column=0, sticky="NSEW", padx=(2, 0), pady=(0,2))
+        self.top_frame.columnconfigure(0, weight=0)
+        self.top_frame.columnconfigure(1, weight=1)
+        self.charname_var = tk.StringVar()
+        ttk.Label(self.top_frame, textvariable=self.charname_var).grid(
+            row=2, column=1, sticky="NSW", padx=5, pady=5
         )
 
         self.button_list: list[ttk.Label] = []
@@ -1766,10 +1781,12 @@ class UnicodeBlockDialog(ToplevelDialog):
                 if name:
                     name = ": " + name
                 warning_flag = "⚠\ufe0f" if new else ""
-                self.label_var.set(f"{warning_flag}U+{ord(char):04x}{name}")
+                self.charname_var.set(f"{warning_flag}U+{ord(char):04x}{name}")
+                self.bigchar_var.set(char)
 
             def clear_name() -> None:
-                self.label_var.set("")
+                self.charname_var.set("")
+                self.bigchar_var.set("")
 
             def enter(event: tk.Event) -> None:
                 event.widget["relief"] = tk.RAISED
