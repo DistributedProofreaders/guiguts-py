@@ -568,18 +568,6 @@ class CheckerDialog(ToplevelDialog):
                 lambda _e: self.select_entry_by_index(len(self.entries) - 1),
             )
 
-        # By default Tab is accepted by text widget, but we want it to move
-        def focus_next_widget(event: tk.Event) -> str:
-            event.widget.tk_focusNext().focus_set()
-            return "break"
-
-        def focus_prev_widget(event: tk.Event) -> str:
-            event.widget.tk_focusPrev().focus_set()
-            return "break"
-
-        self.text.bind("<Tab>", focus_next_widget)
-        self.text.bind("<Shift-Tab>", focus_prev_widget)
-
         self.process_command = process_command
         self.rowcol_key = sort_key_rowcol or CheckerDialog.sort_key_rowcol
         self.alpha_key = sort_key_alpha or CheckerDialog.sort_key_alpha

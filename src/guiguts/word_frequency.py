@@ -202,9 +202,9 @@ class WordFrequencyDialog(ToplevelDialog):
         # Re-run buttons
         rerun_frame = ttk.Frame(header_frame, borderwidth=1, relief=tk.GROOVE)
         rerun_frame.grid(row=0, column=1, rowspan=2, padx=(0, 15))
-        ttk.Button(
-            rerun_frame, text="Re-run", command=word_frequency, takefocus=False
-        ).grid(row=0, column=0, sticky="NSEW", padx=5, pady=2)
+        ttk.Button(rerun_frame, text="Re-run", command=word_frequency).grid(
+            row=0, column=0, sticky="NSEW", padx=5, pady=2
+        )
 
         def change_ignore_case() -> None:
             """Handle changing of ignore case flag - enable/disable buttons & re-run tool."""

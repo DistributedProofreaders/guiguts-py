@@ -1359,6 +1359,18 @@ class ScrolledReadOnlyText(tk.Text):
         # Also on creation, so it's correct for the current theme
         maintext().theme_set_tk_widget_colors(self)
 
+        # By default Tab is accepted by text widget, but we want it to move focus
+        def focus_next_widget(event: tk.Event) -> str:
+            event.widget.tk_focusNext().focus_set()
+            return "break"
+
+        def focus_prev_widget(event: tk.Event) -> str:
+            event.widget.tk_focusPrev().focus_set()
+            return "break"
+
+        self.bind("<Tab>", focus_next_widget)
+        self.bind("<Shift-Tab>", focus_prev_widget)
+
         # Redirect attempts to undo & redo to main text window
         # Keystrokes match those in Undo/Redo menu buttons, with case handled manually here
         _, key_event = process_accel("Cmd/Ctrl+Z")
