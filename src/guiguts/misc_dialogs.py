@@ -1711,7 +1711,7 @@ class UnicodeBlockDialog(ToplevelDialog):
         big_font = big_font.copy()
         big_font.configure(size=24)
         ttk.Label(
-            big_frame, textvariable=self.bigchar_var, font=big_font, width=1
+            big_frame, textvariable=self.bigchar_var, font=big_font, width=2, anchor=tk.CENTER
         ).grid(row=0, column=0, sticky="NSEW", padx=(2, 0), pady=(0, 2))
         self.top_frame.columnconfigure(0, weight=0)
         self.top_frame.columnconfigure(1, weight=1)
