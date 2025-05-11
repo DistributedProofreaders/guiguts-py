@@ -272,13 +272,17 @@ previous version of GG2).
 ```bash
 brew install python@3.11 python-tk@3.11
 ```
-Alternatively, if you want to install Python 3.12 or later, you should install
-by download from [python.org](https://www.python.org/), not using Homebrew.
-This is because Homebrew installs Tk version 9 with Python 3.12, whereas Guiguts
-is currently configured to work best with Tk 8.6. So ensure that you either
-install Python 3.11, or non-Homebrew Python 3.12.
+
+\-\-***OR***\-\-
+
+Install Python 3.11 or 3.12 from [python.org](https://www.python.org/).
+
+This is because Homebrew installs Tk version 9 with Python versions
+later than 3.11, and Guiguts is currently optimized for Tk 8.6.
+
 2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
 previous version of GG2).
+
 3. Type `guiguts` to run GG2.
 
 ### Linux
