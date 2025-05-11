@@ -1069,9 +1069,16 @@ class MainImage(tk.Frame):
 
         xscr = to_signed_16((evt.delta >> 16) & 0xFFFF)
         yscr = to_signed_16(evt.delta & 0xFFFF)
-        print(f"Touchpad X:{xscr} Y:{yscr}", flush=True)
-        self.canvas.xview_scroll(-xscr, "units")
-        self.canvas.yview_scroll(-yscr, "units")
+        print(f"Touchpad X:{xscr} Y:{yscr} Serial:{evt.serial}", flush=True)
+        # Only act on the given fraction of events
+        scroll_rate_numerator = 1
+        scroll_rate_denominator = 2
+        if evt.serial % scroll_rate_denominator >= scroll_rate_numerator:
+            return
+        if evt.state == 1:
+            self.canvas.xview_scroll(-xscr, "units")
+        else:
+            self.canvas.yview_scroll(-yscr, "units")
 
     def load_image(self, filename: Optional[str] = None) -> bool:
         """Load or clear the given image file.
