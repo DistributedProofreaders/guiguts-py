@@ -1704,7 +1704,7 @@ class UnicodeBlockDialog(ToplevelDialog):
         self.chars_frame.grid(
             column=0, row=1, sticky="NSEW", padx=5, pady=5, columnspan=2
         )
-        big_frame = ttk.Frame(self.top_frame, borderwidth=3, relief=tk.GROOVE)
+        big_frame = ttk.Frame(self.top_frame, borderwidth=3, relief=tk.SUNKEN)
         big_frame.grid(row=2, column=0, sticky="NSW", padx=5, pady=5)
         self.bigchar_var = tk.StringVar()
         big_font = font.nametofont(maintext().cget("font"))
@@ -1712,7 +1712,7 @@ class UnicodeBlockDialog(ToplevelDialog):
         big_font.configure(size=24)
         ttk.Label(
             big_frame, textvariable=self.bigchar_var, font=big_font, width=1
-        ).grid(row=0, column=0, sticky="NSEW", padx=(2, 0), pady=(0,2))
+        ).grid(row=0, column=0, sticky="NSEW", padx=(2, 0), pady=(0, 2))
         self.top_frame.columnconfigure(0, weight=0)
         self.top_frame.columnconfigure(1, weight=1)
         self.charname_var = tk.StringVar()
