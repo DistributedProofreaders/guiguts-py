@@ -167,22 +167,30 @@ class CheckerViewOptionsDialog(ToplevelDialog):
         check_frame = ttk.Frame(self.top_frame)
         check_frame.grid(row=0, column=0)
         max_height = 15  # Don't want too many checkbuttons per column
+
+        def btn_clicked(
+            idx: int,
+            var: tk.BooleanVar,
+            wgt: ttk.Checkbutton,
+        ) -> None:
+            """Called when filter setting is changed."""
+            self.checker_dialog.view_options_filters[idx].on = var.get()
+            self.checker_dialog.display_entries()
+            wgt.focus()
+
         for row, option_filter in enumerate(self.checker_dialog.view_options_filters):
 
             check_var = tk.BooleanVar(value=option_filter.on)
 
-            def btn_clicked(row: int = row, var: tk.BooleanVar = check_var) -> None:
-                """Called when filter setting is changed."""
-                self.checker_dialog.view_options_filters[row].on = var.get()
-                self.checker_dialog.display_entries()
-
             btn = ttk.Checkbutton(
                 check_frame,
                 text=f"{option_filter.label} (0)",
-                command=btn_clicked,
                 variable=check_var,
             )
+            btn["command"] = lambda r=row, v=check_var, b=btn: btn_clicked(r, v, b)
             btn.grid(row=row % max_height, column=row // max_height, sticky="NSW")
+            if row == 0:
+                btn.focus()
             self.flags.append(check_var)
             self.checkbuttons.append(btn)
 
@@ -559,6 +567,18 @@ class CheckerDialog(ToplevelDialog):
                 "<Shift-Command-Down>",
                 lambda _e: self.select_entry_by_index(len(self.entries) - 1),
             )
+
+        # By default Tab is accepted by text widget, but we want it to move
+        def focus_next_widget(event: tk.Event) -> str:
+            event.widget.tk_focusNext().focus_set()
+            return "break"
+
+        def focus_prev_widget(event: tk.Event) -> str:
+            event.widget.tk_focusPrev().focus_set()
+            return "break"
+
+        self.text.bind("<Tab>", focus_next_widget)
+        self.text.bind("<Shift-Tab>", focus_prev_widget)
 
         self.process_command = process_command
         self.rowcol_key = sort_key_rowcol or CheckerDialog.sort_key_rowcol
