@@ -114,7 +114,7 @@ checker_filters = [
     CheckerFilterText("Long line", "Long line .*"),
     CheckerFilterText("Mismatched curly brackets", "Mismatched curly brackets.*"),
     CheckerFilterText("Mismatched double quotes", "Mismatched double quotes.*"),
-    CheckerFilterText("Mismatched round brackets", "Mismatched round brackets.*"),
+    CheckerFilterText("Mismatched parentheses", "Mismatched parentheses.*"),
     CheckerFilterText("Mismatched single quotes", "Mismatched single quotes.*"),
     CheckerFilterText("Mismatched square brackets", "Mismatched square brackets.*"),
     CheckerFilterText("Mismatched underscores", "Mismatched underscores.*"),
@@ -362,7 +362,7 @@ class BookloupeChecker:
         # Brackets - should be equal number of open & close
         if para_text.count("(") != para_text.count(")"):
             self.dialog.add_entry(
-                "Mismatched round brackets",
+                "Mismatched parentheses",
                 para_range,
             )
         if para_text.count("[") != para_text.count("]"):
@@ -660,7 +660,11 @@ class BookloupeChecker:
                 suffix = re.sub(r"^[\p{Number},]+", "", word_lower)
                 # If "L/l" followed by number, it's OK (English pounds)
                 prefix = re.sub(r"[\p{Number},]+$", "", word_lower)
-                if suffix not in _alnum_suffixes and prefix != "l":
+                if (
+                    suffix not in _alnum_suffixes
+                    and prefix != "l"
+                    and re.search(r"\.(png|jpg)$", word) is None
+                ):
                     self.add_match_entry(step, match, f"Digit in {word}")
                     continue
             # if not Latin script, then checks below are pointless
