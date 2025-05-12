@@ -1599,9 +1599,9 @@ class ScannoCheckerDialog(CheckerDialog):
         self.file_combo.grid(column=1, row=0, sticky="NSEW", pady=2)
         self.file_combo["state"] = "readonly"
         self.file_combo.bind("<<ComboboxSelected>>", lambda _e: self.select_file())
-        ttk.Button(
-            frame, text="Load File", command=self.choose_file, takefocus=False
-        ).grid(column=2, row=0, sticky="NSEW", padx=(5, 0), pady=2)
+        ttk.Button(frame, text="Load File", command=self.choose_file).grid(
+            column=2, row=0, sticky="NSEW", padx=(5, 0), pady=2
+        )
 
         self.prev_btn = ttk.Button(
             frame,

@@ -27,6 +27,8 @@ from guiguts.widgets import (
     register_focus_widget,
     grab_focus,
     bind_mouse_wheel,
+    focus_next_widget,
+    focus_prev_widget,
 )
 
 logger = logging.getLogger(__package__)
@@ -855,15 +857,9 @@ class MainText(tk.Text):
 
         self.paned_text_window.add(maintext().frame, minsize=PEER_MIN_SIZE)
 
-        # Bindings that both peer and maintext need
-        def switch_text_peer(event: tk.Event) -> None:
-            """Switch focus between main text and peer widget"""
-            if event.widget == self and preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
-                self.peer.focus()
-            else:
-                self.focus()
-
-        self.bind_event("<Tab>", switch_text_peer, bind_peer=True)
+        # By default Tab is accepted by text widget, but we want it to move focus
+        self.bind_event("<Tab>", focus_next_widget, bind_peer=True)
+        self.bind_event("<Shift-Tab>", focus_prev_widget, bind_peer=True)
 
         # Column selection uses Alt key on Windows/Linux, Option key on macOS
         # Key Release is reported as Alt_L on all platforms

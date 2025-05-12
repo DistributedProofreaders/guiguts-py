@@ -35,6 +35,8 @@ from guiguts.widgets import (
     ToolTip,
     themed_style,
     Busy,
+    focus_next_widget,
+    focus_prev_widget,
 )
 
 logger = logging.getLogger(__package__)
@@ -304,9 +306,9 @@ class CustomMenuDialog(ToplevelDialog):
         button_frame = ttk.Frame(edit_frame)
         button_frame.grid(row=2, column=0, columnspan=2, pady=5)
 
-        ttk.Button(
-            button_frame, text="Add Entry", command=self.add_entry, takefocus=False
-        ).grid(row=0, column=0, padx=2)
+        ttk.Button(button_frame, text="Add Entry", command=self.add_entry).grid(
+            row=0, column=0, padx=2
+        )
         ttk.Button(
             button_frame,
             text="Update Entry",
@@ -1242,6 +1244,11 @@ class StatusBar(ttk.Frame):
     Fields in statusbar can be automatically or manually updated.
     """
 
+    BTN_1 = "ButtonRelease-1"
+    BTN_3 = "ButtonRelease-3"
+    SHIFT_BTN_1 = "Shift-ButtonRelease-1"
+    SHIFT_BTN_3 = "Shift-ButtonRelease-3"
+
     def __init__(self, parent: ttk.Frame) -> None:
         """Initialize statusbar within given frame.
 
@@ -1269,7 +1276,7 @@ class StatusBar(ttk.Frame):
               the string returned by ``update()``. If argument not given,
               application is responsible for updating, using ``set(key)``.
         """
-        self.fields[key] = ttk.Button(self, takefocus=0, **kwargs)
+        self.fields[key] = ttk.Button(self, **kwargs)
         self.callbacks[key] = update
         self.fields[key].grid(column=len(self.fields), row=0)
         if tooltip:
@@ -1302,10 +1309,25 @@ class StatusBar(ttk.Frame):
             callback: Function to be called when event occurs.
             event: Event to trigger action. Use button release to avoid
               clash with button activate appearance behavior.
+              Also bind Space to do same as button 1;
+              Cmd/Ctrl+button 1 and Cmd/Ctrl+space as button 3,
+              all with optional Shift key modifier
         """
-        # Tk passes event object to callback which is never used. To avoid all
-        # callbacks having to ignore it, the lambda below absorbs & discards it.
-        mouse_bind(self.fields[key], event, lambda _event: callback())
+        mouse_bind(self.fields[key], event, lambda _: callback())
+        if event == StatusBar.BTN_1:
+            mouse_bind(self.fields[key], "space", lambda _: callback())
+        elif event == StatusBar.SHIFT_BTN_1:
+            mouse_bind(self.fields[key], "Shift+space", lambda _: callback())
+        if event == StatusBar.BTN_3:
+            mouse_bind(
+                self.fields[key], "Cmd/Ctrl+ButtonRelease-1", lambda _: callback()
+            )
+            mouse_bind(self.fields[key], "Cmd/Ctrl+space", lambda _: callback())
+        elif event == StatusBar.SHIFT_BTN_3:
+            mouse_bind(
+                self.fields[key], "Shift+Cmd/Ctrl+ButtonRelease-1", lambda _: callback()
+            )
+            mouse_bind(self.fields[key], "Shift+Cmd/Ctrl+space", lambda _: callback())
 
 
 class ScrolledReadOnlyText(tk.Text):
@@ -1360,14 +1382,6 @@ class ScrolledReadOnlyText(tk.Text):
         maintext().theme_set_tk_widget_colors(self)
 
         # By default Tab is accepted by text widget, but we want it to move focus
-        def focus_next_widget(event: tk.Event) -> str:
-            event.widget.tk_focusNext().focus_set()
-            return "break"
-
-        def focus_prev_widget(event: tk.Event) -> str:
-            event.widget.tk_focusPrev().focus_set()
-            return "break"
-
         self.bind("<Tab>", focus_next_widget)
         self.bind("<Shift-Tab>", focus_prev_widget)
 

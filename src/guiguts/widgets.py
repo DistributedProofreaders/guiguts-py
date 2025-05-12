@@ -969,6 +969,18 @@ def insert_in_focus_widget(string: str) -> None:
     _text_focus_widget.insert(tk.INSERT, string)
 
 
+def focus_next_widget(event: tk.Event) -> str:
+    """Focus on next widget, as a <Tab> keystroke would."""
+    event.widget.tk_focusNext().focus_set()
+    return "break"
+
+
+def focus_prev_widget(event: tk.Event) -> str:
+    """Focus on previous widget, as a <Shift-Tab> keystroke would."""
+    event.widget.tk_focusPrev().focus_set()
+    return "break"
+
+
 class Busy:
     """Class to allow program to indicate to user that it is busy.
 

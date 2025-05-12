@@ -61,7 +61,7 @@ class PreferencesDialog(ToplevelDialog):
         self.minsize(250, 10)
 
         # Set up tab notebook
-        notebook = Notebook(self.top_frame, takefocus=False)
+        notebook = Notebook(self.top_frame)
         notebook.grid(column=0, row=0, sticky="NSEW")
         notebook.enable_traversal()
 
@@ -1033,7 +1033,7 @@ class CommandEditDialog(OkCancelDialog):
         )
 
         # Just used for test binding
-        self.dummy_widget = ttk.Label(self.top_frame, takefocus=False)
+        self.dummy_widget = ttk.Label(self.top_frame)
 
         # Track which modifier keys are currently pressed
         self.pressed_modifiers: set[str] = set()

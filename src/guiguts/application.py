@@ -1128,15 +1128,16 @@ class Guiguts:
             tooltip="Click: Go to line\nShift click: Toggle line numbers\nShift right-click: Toggle column numbers",
             update=rowcol_str,
         )
-        the_statusbar.add_binding("rowcol", "ButtonRelease-1", self.file.goto_line)
+
+        the_statusbar.add_binding("rowcol", StatusBar.BTN_1, self.file.goto_line)
         the_statusbar.add_binding(
             "rowcol",
-            "Shift-ButtonRelease-1",
+            StatusBar.SHIFT_BTN_1,
             lambda: preferences.toggle(PrefKey.LINE_NUMBERS),
         )
         the_statusbar.add_binding(
             "rowcol",
-            "Shift-ButtonRelease-3",
+            StatusBar.SHIFT_BTN_3,
             lambda: preferences.toggle(PrefKey.COLUMN_NUMBERS),
         )
 
@@ -1145,12 +1146,12 @@ class Guiguts:
             tooltip="Click: Go to image",
             update=lambda: "Img: " + maintext().get_current_image_name(),
         )
-        the_statusbar.add_binding("img", "ButtonRelease-1", self.file.goto_image)
+        the_statusbar.add_binding("img", StatusBar.BTN_1, self.file.goto_image)
 
         the_statusbar.add(
             "prev img", tooltip="Click: Go to previous image", text="<", width=1
         )
-        the_statusbar.add_binding("prev img", "ButtonRelease-1", self.file.prev_page)
+        the_statusbar.add_binding("prev img", StatusBar.BTN_1, self.file.prev_page)
 
         the_statusbar.add(
             "see img",
@@ -1160,19 +1161,19 @@ class Guiguts:
         )
         the_statusbar.add_binding(
             "see img",
-            "ButtonRelease-1",
+            StatusBar.BTN_1,
             self.see_image,
         )
         the_statusbar.add_binding(
             "see img",
-            "Shift-ButtonRelease-1",
+            StatusBar.SHIFT_BTN_1,
             lambda: preferences.toggle(PrefKey.AUTO_IMAGE),
         )
 
         the_statusbar.add(
             "next img", tooltip="Click: Go to next image", text=">", width=1
         )
-        the_statusbar.add_binding("next img", "ButtonRelease-1", self.file.next_page)
+        the_statusbar.add_binding("next img", StatusBar.BTN_1, self.file.next_page)
 
         the_statusbar.add(
             "page label",
@@ -1180,9 +1181,9 @@ class Guiguts:
             text="Lbl: ",
             update=lambda: "Lbl: " + self.file.get_current_page_label(),
         )
-        the_statusbar.add_binding("page label", "ButtonRelease-1", self.file.goto_page)
+        the_statusbar.add_binding("page label", StatusBar.BTN_1, self.file.goto_page)
         the_statusbar.add_binding(
-            "page label", "Shift-ButtonRelease-1", self.show_page_details_dialog
+            "page label", StatusBar.SHIFT_BTN_1, self.show_page_details_dialog
         )
 
         def selection_str() -> str:
@@ -1209,10 +1210,10 @@ class Guiguts:
             width=16,
         )
         the_statusbar.add_binding(
-            "selection", "ButtonRelease-1", maintext().restore_selection_ranges
+            "selection", StatusBar.BTN_1, maintext().restore_selection_ranges
         )
         the_statusbar.add_binding(
-            "selection", "Shift-ButtonRelease-1", maintext().toggle_selection_type
+            "selection", StatusBar.SHIFT_BTN_1, maintext().toggle_selection_type
         )
 
         the_statusbar.add(
@@ -1221,7 +1222,7 @@ class Guiguts:
             text="Lang: ",
         )
         the_statusbar.add_binding(
-            "languages label", "ButtonRelease-1", self.file.set_languages
+            "languages label", StatusBar.BTN_1, self.file.set_languages
         )
 
         def ordinal_name_display(force: Optional[bool] = None) -> None:
@@ -1258,12 +1259,12 @@ class Guiguts:
             "Shift right click to show Unicode Blocks dialog",
             update=ordinal_str,
         )
-        the_statusbar.add_binding("ordinal", "ButtonRelease-1", ordinal_name_display)
+        the_statusbar.add_binding("ordinal", StatusBar.BTN_1, ordinal_name_display)
         the_statusbar.add_binding(
-            "ordinal", "Shift-ButtonRelease-1", UnicodeBlockDialog.show_common_dialog
+            "ordinal", StatusBar.SHIFT_BTN_1, UnicodeBlockDialog.show_common_dialog
         )
         the_statusbar.add_binding(
-            "ordinal", "Shift-ButtonRelease-3", UnicodeBlockDialog.show_unicode_dialog
+            "ordinal", StatusBar.SHIFT_BTN_3, UnicodeBlockDialog.show_unicode_dialog
         )
 
     def logging_init(self) -> None:
