@@ -4369,7 +4369,6 @@ class MenubarMetadata:
         """Add a menu to the menubar structure & return it.
 
         Args:
-            parent: Parent menu, or None if menu is a top level child of menubar
             label: Label string for menu button.
 
         Returns:
