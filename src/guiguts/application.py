@@ -195,6 +195,11 @@ class Guiguts:
             help="Number of 'Recent File' to be loaded: 1 is most recent",
         )
         parser.add_argument(
+            "-p",
+            "--prefsfile",
+            help="Basename of prefs file (default `GGprefs`)",
+        )
+        parser.add_argument(
             "-d",
             "--debug",
             action="store_true",
@@ -554,7 +559,7 @@ class Guiguts:
 
         # If `--nohome` argument given, Prefs are not loaded & saved in Prefs file
         preferences.set_permanent(not self.args.nohome)
-        preferences.load()
+        preferences.load(self.args.prefsfile)
 
     # Lay out menus
     def init_menus(self) -> None:

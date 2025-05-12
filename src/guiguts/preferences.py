@@ -7,7 +7,7 @@ import logging
 import os
 import time
 import tkinter as tk
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from guiguts.utilities import is_x11, is_windows, CALLED_FROM_TEST, load_dict_from_json
 
@@ -170,30 +170,14 @@ class Preferences:
     """
 
     def __init__(self) -> None:
-        """Initialize by loading from JSON file."""
+        """Initialize preferences class."""
         self.dict: dict[PrefKey, Any] = {}
         self.defaults: dict[PrefKey, Any] = {}
         self.callbacks: dict[PrefKey, Callable[[Any], None]] = {}
         self.persistent_vars: dict[PrefKey, list[tk.Variable]] = {}
-        if is_x11():
-            self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
-        elif is_windows():
-            self.prefsdir = os.path.join(
-                shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, 0, 0), "GGprefs"
-            )
-        else:
-            self.prefsdir = os.path.join(
-                os.path.expanduser("~"), "Documents", "GGprefs"
-            )
-        # If testing, use a test prefs file so tests and normal running do not interact
-        if CALLED_FROM_TEST:
-            prefs_name = "GGprefs_test.json"
-        else:
-            prefs_name = "GGprefs.json"
-        self.prefsfile = os.path.join(self.prefsdir, prefs_name)
-
-        self._remove_test_prefs_file()
         self.permanent = False
+        self.prefsdir = ""
+        self.prefsfile = ""
 
     def get(self, key: PrefKey) -> Any:
         """Get preference value using key.
@@ -344,14 +328,33 @@ class Preferences:
         except OSError:
             logger.error(f"Unable to save preferences to {self.prefsfile}")
 
-    def load(self) -> None:
+    def load(self, prefs_basefile: Optional[str]) -> None:
         """Load dictionary from JSON file, and use PrefKeys
         to store values in preferences dictionary."""
+        if is_x11():
+            self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
+        elif is_windows():
+            self.prefsdir = os.path.join(
+                shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, 0, 0), "GGprefs"
+            )
+        else:
+            self.prefsdir = os.path.join(
+                os.path.expanduser("~"), "Documents", "GGprefs"
+            )
+        # If testing, use a test prefs file so tests and normal running do not interact
+        if CALLED_FROM_TEST:
+            prefs_name = "GGprefs_test.json"
+        elif prefs_basefile is None:
+            prefs_name = "GGprefs.json"
+        else:
+            prefs_name = f"{prefs_basefile}.json"
+        self.prefsfile = os.path.join(self.prefsdir, prefs_name)
+
+        self._remove_test_prefs_file()
 
         if not self.permanent:
             return
 
-        self.dict = {}
         if loaded_dict := load_dict_from_json(self.prefsfile):
             for key, value in loaded_dict.items():
                 try:
