@@ -114,7 +114,7 @@ checker_filters = [
     CheckerFilterText("Long line", "Long line .*"),
     CheckerFilterText("Mismatched curly brackets", "Mismatched curly brackets.*"),
     CheckerFilterText("Mismatched double quotes", "Mismatched double quotes.*"),
-    CheckerFilterText("Mismatched round brackets", "Mismatched round brackets.*"),
+    CheckerFilterText("Mismatched parentheses", "Mismatched parentheses.*"),
     CheckerFilterText("Mismatched single quotes", "Mismatched single quotes.*"),
     CheckerFilterText("Mismatched square brackets", "Mismatched square brackets.*"),
     CheckerFilterText("Mismatched underscores", "Mismatched underscores.*"),
@@ -362,7 +362,7 @@ class BookloupeChecker:
         # Brackets - should be equal number of open & close
         if para_text.count("(") != para_text.count(")"):
             self.dialog.add_entry(
-                "Mismatched round brackets",
+                "Mismatched parentheses",
                 para_range,
             )
         if para_text.count("[") != para_text.count("]"):
