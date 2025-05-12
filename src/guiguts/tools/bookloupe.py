@@ -660,7 +660,11 @@ class BookloupeChecker:
                 suffix = re.sub(r"^[\p{Number},]+", "", word_lower)
                 # If "L/l" followed by number, it's OK (English pounds)
                 prefix = re.sub(r"[\p{Number},]+$", "", word_lower)
-                if suffix not in _alnum_suffixes and prefix != "l":
+                if (
+                    suffix not in _alnum_suffixes
+                    and prefix != "l"
+                    and re.search(r"\.(png|jpg)$", word) is None
+                ):
                     self.add_match_entry(step, match, f"Digit in {word}")
                     continue
             # if not Latin script, then checks below are pointless
