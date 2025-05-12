@@ -1319,15 +1319,13 @@ class StatusBar(ttk.Frame):
         elif event == StatusBar.SHIFT_BTN_1:
             mouse_bind(self.fields[key], "Shift+space", lambda _: callback())
         if event == StatusBar.BTN_3:
-            mouse_bind(
-                self.fields[key], "Cmd/Ctrl+ButtonRelease-1", lambda _: callback()
-            )
-            mouse_bind(self.fields[key], "Cmd/Ctrl+space", lambda _: callback())
+            mouse_bind(self.fields[key], "Ctrl+ButtonRelease-1", lambda _: callback())
+            mouse_bind(self.fields[key], "Ctrl+space", lambda _: callback())
         elif event == StatusBar.SHIFT_BTN_3:
             mouse_bind(
-                self.fields[key], "Shift+Cmd/Ctrl+ButtonRelease-1", lambda _: callback()
+                self.fields[key], "Shift+Ctrl+ButtonRelease-1", lambda _: callback()
             )
-            mouse_bind(self.fields[key], "Shift+Cmd/Ctrl+space", lambda _: callback())
+            mouse_bind(self.fields[key], "Shift+Ctrl+space", lambda _: callback())
 
 
 class ScrolledReadOnlyText(tk.Text):
