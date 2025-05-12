@@ -1149,7 +1149,10 @@ class CommandEditDialog(OkCancelDialog):
         command = menubar_metadata().metadata_from_shortcut(
             process_accel(new_shortcut)[0]
         )
-        if command is not None:
+        if command is None:
+            shortcut_used = False
+        else:
+            shortcut_used = True
             menu = command.display_parent_label()
             label = command.display_label()
             cur_assign = f"{menu}|{label}" if menu else label
@@ -1168,6 +1171,18 @@ class CommandEditDialog(OkCancelDialog):
                 shortcuts_dict.set_shortcut(
                     command.label, command.parent_label, command.shortcut
                 )
+        if not is_mac() and not shortcut_used:
+            if match := re.fullmatch(r"Alt\+(.)", process_accel(new_shortcut)[0]):
+                for top_menu in menubar_metadata().entries:
+                    if f"~{match[1]}" in top_menu.label:
+                        if not messagebox.askyesno(
+                            title="Shortcut Already Assigned",
+                            message=f'"{self.shortcut_variable.get()}" currently opens the {top_menu.label.replace("~","")} menu.',
+                            detail=f'Reassign it to "{new_assign}" instead?',
+                            default=messagebox.NO,
+                            icon=messagebox.WARNING,
+                        ):
+                            return False
 
         # Update prefs
         shortcuts_dict.set_shortcut(self.cmd.label, self.cmd.parent_label, new_shortcut)
