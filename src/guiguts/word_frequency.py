@@ -987,15 +987,23 @@ def wf_populate_allcaps(wf_dialog: WordFrequencyDialog) -> None:
 def wf_populate_mixedcase(wf_dialog: WordFrequencyDialog) -> None:
     """Populate the WF dialog with the list of all MiXeD CasE words.
 
+    Allow "Joseph-Marie" or "post-Roman", i.e. parts of words may either
+    be properly capitalized or all lowercase, with parts separated by
+    hyphens or apostrophes.
+
     Args:
         wf_dialog: The word frequency dialog.
     """
+    word_chunk_regex = r"\p{Upper}?[\p{Lower}\p{Mark}\d'’*-]*"
     wf_populate_by_match(
         wf_dialog,
         "MiXeD CasE",
-        lambda word: re.search(r"\p{IsUpper}", word)
-        and re.search(r"\p{IsLower}", word)
-        and not re.fullmatch(r"\p{Upper}[\p{IsLower}\p{Mark}\d'’*-]+", word),
+        lambda word: re.search(r"\p{Upper}", word)
+        and re.search(r"\p{Lower}", word)
+        and not re.fullmatch(
+            rf"{word_chunk_regex}([-'’]{word_chunk_regex})*",
+            word,
+        ),
     )
 
 
