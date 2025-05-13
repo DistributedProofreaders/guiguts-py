@@ -989,7 +989,7 @@ def wf_populate_mixedcase(wf_dialog: WordFrequencyDialog) -> None:
 
     Allow "Joseph-Marie" or "post-Roman", i.e. parts of words may either
     be properly capitalized or all lowercase, with parts separated by
-    hyphens or apostrophes.
+    hyphens or apostrophes or periods ("D.Sc").
 
     Args:
         wf_dialog: The word frequency dialog.
@@ -1001,9 +1001,10 @@ def wf_populate_mixedcase(wf_dialog: WordFrequencyDialog) -> None:
         lambda word: re.search(r"\p{Upper}", word)
         and re.search(r"\p{Lower}", word)
         and not re.fullmatch(
-            rf"{word_chunk_regex}([-'’]{word_chunk_regex})*",
+            rf"{word_chunk_regex}([-'’\.]{word_chunk_regex})*",
             word,
-        ),
+        )
+        and not re.match(r"Ma?c\p{Upper}", word),
     )
 
 
