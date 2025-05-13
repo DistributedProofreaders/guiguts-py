@@ -663,7 +663,9 @@ class WordFrequencyDialog(ToplevelDialog):
             match_word = re.escape(newline_word)
         else:  # Word begins/ends with non-word char - do manual whole-word
             wholeword = False
-            match_word = r"(?<=\w)" + re.escape(newline_word) + r"(?=\w)"
+            left_boundary = r"(?<!\w)" if newline_word[0].isalnum() else r"(?<![^\w\s])"
+            right_boundary = r"(?!\w)" if newline_word[-1].isalnum() else r"(?![^\w\s])"
+            match_word = rf"{left_boundary}{re.escape(newline_word)}{right_boundary}"
 
         # If hyphen matching and there's one (escaped) space in the word, let that match
         # any amount of whitespace
