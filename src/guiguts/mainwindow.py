@@ -678,6 +678,15 @@ class MainImage(tk.Frame):
         self.prev_img_button.grid(row=0, column=0, sticky="NSEW")
         ToolTip(self.prev_img_button, use_pointer_pos=True, msg="Previous image")
 
+        def focus_prev(evt: tk.Event) -> str:
+            if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
+                statusbar().set_focus("ordinal")
+            else:
+                focus_prev_widget(evt)
+            return "break"
+
+        self.prev_img_button.bind("<Shift-Tab>", focus_prev)
+
         self.next_img_button = ttk.Button(
             control_frame,
             text=">",
@@ -766,6 +775,44 @@ class MainImage(tk.Frame):
         )
         self.close_btn.grid(row=0, column=10, sticky="NSE")
         ToolTip(self.close_btn, use_pointer_pos=True, msg="Hide image viewer")
+
+        def close_tab(evt: tk.Event) -> str:
+            if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
+                maintext().focus()
+            else:
+                focus_next_widget(evt)
+            return "break"
+
+        self.close_btn.bind("<Tab>", close_tab)
+        self.close_btn.bind("<Shift-Tab>", focus_prev_widget)
+
+        # By default Tab is accepted by text widget, but we want it to move focus
+        def text_reverse_tab(_: tk.Event) -> str:
+            if preferences.get(PrefKey.IMAGE_VIEWER_INTERNAL) and preferences.get(
+                PrefKey.IMAGE_WINDOW_DOCKED
+            ):
+                self.close_btn.focus()
+            else:
+                statusbar().set_focus("ordinal")
+            return "break"
+
+        def text_tab(_: tk.Event) -> str:
+            """Switch focus from main text to peer widget."""
+            if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+                maintext().peer.focus()
+            else:
+                statusbar().set_focus("rowcol")
+            return "break"
+
+        def peer_reverse_tab(_: tk.Event) -> str:
+            """Switch focus from peer widget to main text."""
+            maintext().focus()
+            return "break"
+
+        maintext().bind("<Tab>", text_tab)
+        maintext().bind("<Shift-Tab>", text_reverse_tab)
+        maintext().peer.bind("<Tab>", focus_next_widget)
+        maintext().peer.bind("<Shift-Tab>", peer_reverse_tab)
 
         # Separate bindings needed for docked (root) and floated (self) states
         for widget in (root(), self):
@@ -1326,6 +1373,47 @@ class StatusBar(ttk.Frame):
                 self.fields[key], "Shift+Ctrl+ButtonRelease-1", lambda _: callback()
             )
             mouse_bind(self.fields[key], "Shift+Ctrl+space", lambda _: callback())
+
+    def set_last_tab_behavior(self, key: str, wgt: tk.Widget) -> None:
+        """Set up tab bindings for last status bar button.
+
+        Args:
+            key: Key of button to bind to.
+            wgt: Widget to focus on when Tab is pressed.
+        """
+
+        def focus_next(_: tk.Event) -> str:
+            if preferences.get(PrefKey.IMAGE_VIEWER_INTERNAL) and preferences.get(
+                PrefKey.IMAGE_WINDOW_DOCKED
+            ):
+                wgt.focus()
+            else:
+                maintext().focus()
+            return "break"
+
+        self.fields[key].bind("<Tab>", focus_next)
+        self.fields[key].bind("<Shift-Tab>", focus_prev_widget)
+
+    def set_first_tab_behavior(self, key: str) -> None:
+        """Set up tab bindings for first status bar button.
+
+        Args:
+            key: Key of button to bind to.
+        """
+
+        def focus_prev(_: tk.Event) -> str:
+            if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+                maintext().peer.focus()
+            else:
+                maintext().focus()
+            return "break"
+
+        self.fields[key].bind("<Tab>", focus_next_widget)
+        self.fields[key].bind("<Shift-Tab>", focus_prev)
+
+    def set_focus(self, key: str) -> None:
+        """Set focus to given statusbar button."""
+        self.fields[key].focus()
 
 
 class ScrolledReadOnlyText(tk.Text):

@@ -956,7 +956,7 @@ class Guiguts:
         )
         view_menu.add_separator()
         view_menu.add_checkbutton(
-            "Image Viewer",
+            "Image ~Viewer",
             PrefKey.IMAGE_VIEWER_INTERNAL,
             self.show_image_viewer,
             self.hide_image_viewer,
@@ -1145,6 +1145,7 @@ class Guiguts:
             StatusBar.SHIFT_BTN_3,
             lambda: preferences.toggle(PrefKey.COLUMN_NUMBERS),
         )
+        the_statusbar.set_first_tab_behavior("rowcol")
 
         the_statusbar.add(
             "img",
@@ -1270,6 +1271,9 @@ class Guiguts:
         )
         the_statusbar.add_binding(
             "ordinal", StatusBar.SHIFT_BTN_3, UnicodeBlockDialog.show_unicode_dialog
+        )
+        the_statusbar.set_last_tab_behavior(
+            "ordinal", self.mainwindow.mainimage.prev_img_button
         )
 
     def logging_init(self) -> None:
