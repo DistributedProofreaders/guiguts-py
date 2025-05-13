@@ -61,7 +61,7 @@ class PreferencesDialog(ToplevelDialog):
         self.minsize(250, 10)
 
         # Set up tab notebook
-        notebook = Notebook(self.top_frame, takefocus=False)
+        notebook = Notebook(self.top_frame)
         notebook.grid(column=0, row=0, sticky="NSEW")
         notebook.enable_traversal()
 
@@ -214,7 +214,6 @@ class PreferencesDialog(ToplevelDialog):
             file_name_frame,
             text="Browse...",
             command=choose_external_viewer,
-            takefocus=False,
         ).grid(row=0, column=1, sticky="NSEW")
 
         def add_label_spinbox(
@@ -374,7 +373,6 @@ class PreferencesDialog(ToplevelDialog):
             advance_frame,
             text="Reset shortcuts to default (change requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
-            takefocus=False,
         ).grid(column=0, row=7, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
@@ -461,7 +459,6 @@ class HelpAboutDialog(ToplevelDialog):
             self.top_frame,
             text="Copy Version Information to Clipboard",
             command=copy_to_clipboard,
-            takefocus=False,
         )
         copy_button.grid(row=0, column=0, pady=(5, 5))
         self.text = ScrolledReadOnlyText(
@@ -1036,7 +1033,7 @@ class CommandEditDialog(OkCancelDialog):
         )
 
         # Just used for test binding
-        self.dummy_widget = ttk.Label(self.top_frame, takefocus=False)
+        self.dummy_widget = ttk.Label(self.top_frame)
 
         # Track which modifier keys are currently pressed
         self.pressed_modifiers: set[str] = set()
@@ -1261,13 +1258,11 @@ class CommandPaletteDialog(ToplevelDialog):
             entry_frame,
             text="Run",
             command=self.execute_command,
-            takefocus=False,
         ).grid(row=0, column=1, sticky="NSEW", padx=(0, 2))
         ttk.Button(
             entry_frame,
             text="Edit Shortcut",
             command=self.edit_command,
-            takefocus=False,
         ).grid(row=0, column=2, sticky="NSEW", padx=(2, 0))
 
         columns = ("Command", "Shortcut", "Menu")
@@ -1576,7 +1571,6 @@ class SurroundWithDialog(OkApplyCancelDialog):
         autofill_btn = ttk.Button(
             self.top_frame,
             text="⟹",
-            takefocus=False,
             command=self.autofill_after,
         )
         autofill_btn.grid(row=1, column=1, padx=5)
@@ -1887,7 +1881,6 @@ class UnicodeSearchDialog(ToplevelDialog):
             search_frame,
             text="Search",
             default="active",
-            takefocus=False,
             command=lambda: self.find_matches(self.search.get()),
         )
         search_btn.grid(column=1, row=0, sticky="NSEW")

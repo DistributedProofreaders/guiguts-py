@@ -380,7 +380,6 @@ class OkApplyCancelDialog(ToplevelDialog):
             text="OK",
             default="active",
             command=self.ok_pressed,
-            takefocus=False,
         ).grid(row=0, column=column, padx=5)
         if display_apply:
             column += 1
@@ -389,7 +388,6 @@ class OkApplyCancelDialog(ToplevelDialog):
                 text="Apply",
                 default="normal",
                 command=self.apply_changes,
-                takefocus=False,
             ).grid(row=0, column=column, padx=5)
         column += 1
         ttk.Button(
@@ -397,7 +395,6 @@ class OkApplyCancelDialog(ToplevelDialog):
             text="Cancel",
             default="normal",
             command=self.cancel_pressed,
-            takefocus=False,
         ).grid(row=0, column=column, padx=5)
         self.bind("<Return>", lambda event: self.ok_pressed())
         self.bind("<Escape>", lambda event: self.cancel_pressed())
@@ -970,6 +967,18 @@ def insert_in_focus_widget(string: str) -> None:
         if _text_focus_widget.selection_present():
             _text_focus_widget.delete("sel.first", "sel.last")
     _text_focus_widget.insert(tk.INSERT, string)
+
+
+def focus_next_widget(event: tk.Event) -> str:
+    """Focus on next widget, as a <Tab> keystroke would."""
+    event.widget.tk_focusNext().focus_set()
+    return "break"
+
+
+def focus_prev_widget(event: tk.Event) -> str:
+    """Focus on previous widget, as a <Shift-Tab> keystroke would."""
+    event.widget.tk_focusPrev().focus_set()
+    return "break"
 
 
 class Busy:

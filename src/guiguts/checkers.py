@@ -167,22 +167,30 @@ class CheckerViewOptionsDialog(ToplevelDialog):
         check_frame = ttk.Frame(self.top_frame)
         check_frame.grid(row=0, column=0)
         max_height = 15  # Don't want too many checkbuttons per column
+
+        def btn_clicked(
+            idx: int,
+            var: tk.BooleanVar,
+            wgt: ttk.Checkbutton,
+        ) -> None:
+            """Called when filter setting is changed."""
+            self.checker_dialog.view_options_filters[idx].on = var.get()
+            self.checker_dialog.display_entries()
+            wgt.focus()
+
         for row, option_filter in enumerate(self.checker_dialog.view_options_filters):
 
             check_var = tk.BooleanVar(value=option_filter.on)
 
-            def btn_clicked(row: int = row, var: tk.BooleanVar = check_var) -> None:
-                """Called when filter setting is changed."""
-                self.checker_dialog.view_options_filters[row].on = var.get()
-                self.checker_dialog.display_entries()
-
             btn = ttk.Checkbutton(
                 check_frame,
                 text=f"{option_filter.label} (0)",
-                command=btn_clicked,
                 variable=check_var,
             )
+            btn["command"] = lambda r=row, v=check_var, b=btn: btn_clicked(r, v, b)
             btn.grid(row=row % max_height, column=row // max_height, sticky="NSW")
+            if row == 0:
+                btn.focus()
             self.flags.append(check_var)
             self.checkbuttons.append(btn)
 
@@ -331,7 +339,6 @@ class CheckerDialog(ToplevelDialog):
                 text="Suspects Only",
                 variable=suspects_only_var,
                 command=suspects_only_changed,
-                takefocus=False,
             )
             self.suspects_only_btn.grid(row=0, column=1, sticky="NSW", padx=(10, 0))
         else:
@@ -471,7 +478,6 @@ class CheckerDialog(ToplevelDialog):
             command=sort_type_changed,
             variable=sort_type,
             value=CheckerSortType.ROWCOL,
-            takefocus=False,
         ).grid(row=0, column=1, sticky="NS", padx=2)
         ttk.Radiobutton(
             sort_frame,
@@ -479,7 +485,6 @@ class CheckerDialog(ToplevelDialog):
             command=sort_type_changed,
             variable=sort_type,
             value=CheckerSortType.ALPHABETIC,
-            takefocus=False,
         ).grid(row=0, column=2, sticky="NS", padx=2)
 
         self.view_options_dialog: Optional[CheckerViewOptionsDialog] = None

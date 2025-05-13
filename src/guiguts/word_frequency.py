@@ -202,9 +202,9 @@ class WordFrequencyDialog(ToplevelDialog):
         # Re-run buttons
         rerun_frame = ttk.Frame(header_frame, borderwidth=1, relief=tk.GROOVE)
         rerun_frame.grid(row=0, column=1, rowspan=2, padx=(0, 15))
-        ttk.Button(
-            rerun_frame, text="Re-run", command=word_frequency, takefocus=False
-        ).grid(row=0, column=0, sticky="NSEW", padx=5, pady=2)
+        ttk.Button(rerun_frame, text="Re-run", command=word_frequency).grid(
+            row=0, column=0, sticky="NSEW", padx=5, pady=2
+        )
 
         def change_ignore_case() -> None:
             """Handle changing of ignore case flag - enable/disable buttons & re-run tool."""
@@ -216,7 +216,6 @@ class WordFrequencyDialog(ToplevelDialog):
             text="Ignore Case",
             command=change_ignore_case,
             variable=PersistentBoolean(PrefKey.WFDIALOG_IGNORE_CASE),
-            takefocus=False,
         ).grid(row=1, column=0, sticky="NSEW", padx=5, pady=2)
 
         # Options
@@ -230,7 +229,6 @@ class WordFrequencyDialog(ToplevelDialog):
             text="Suspects Only",
             variable=PersistentBoolean(PrefKey.WFDIALOG_SUSPECTS_ONLY),
             command=lambda: wf_populate(self),
-            takefocus=False,
         )
         self.suspects_btn.grid(row=0, column=0, sticky="NSW", padx=5)
 
@@ -255,7 +253,6 @@ class WordFrequencyDialog(ToplevelDialog):
             command=lambda: wf_populate(self),
             variable=sort_type,
             value=WFSortType.ALPHABETIC,
-            takefocus=False,
         ).grid(row=0, column=3, sticky="NSE", padx=2)
         ttk.Radiobutton(
             options_frame,
@@ -263,7 +260,6 @@ class WordFrequencyDialog(ToplevelDialog):
             command=lambda: wf_populate(self),
             variable=sort_type,
             value=WFSortType.FREQUENCY,
-            takefocus=False,
         ).grid(row=0, column=4, sticky="NSE", padx=2)
         ttk.Radiobutton(
             options_frame,
@@ -271,7 +267,6 @@ class WordFrequencyDialog(ToplevelDialog):
             command=lambda: wf_populate(self),
             variable=sort_type,
             value=WFSortType.LENGTH,
-            takefocus=False,
         ).grid(row=0, column=5, sticky="NSE", padx=(2, 5))
 
         # Display type radio buttons
@@ -305,7 +300,6 @@ class WordFrequencyDialog(ToplevelDialog):
                 command=lambda: wf_populate(self),
                 variable=display_type,
                 value=value,
-                takefocus=False,
             )
             button.grid(row=row, column=column, sticky="NSW", padx=5)
             return button

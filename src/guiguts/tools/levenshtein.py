@@ -78,14 +78,12 @@ class LevenshteinCheckerDialog(CheckerDialog):
             text="1",
             variable=self.edit_distance,
             value=LevenshteinEditDistance.ONE,
-            takefocus=False,
         ).grid(row=0, column=2, sticky="NSE", padx=2)
         ttk.Radiobutton(
             frame,
             text="2",
             variable=self.edit_distance,
             value=LevenshteinEditDistance.TWO,
-            takefocus=False,
         ).grid(row=0, column=3, sticky="NSE", padx=2)
 
 

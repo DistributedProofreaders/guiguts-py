@@ -353,7 +353,6 @@ class PageSeparatorDialog(ToplevelDialog):
             command=self.view,
             variable=auto_type,
             value=PageSepAutoType.NO_AUTO,
-            takefocus=False,
         ).grid(column=0, row=1, sticky="NSEW", padx=(20, 2), pady=2)
         ttk.Radiobutton(
             self.top_frame,
@@ -361,7 +360,6 @@ class PageSeparatorDialog(ToplevelDialog):
             command=self.view,
             variable=auto_type,
             value=PageSepAutoType.AUTO_ADVANCE,
-            takefocus=False,
         ).grid(column=1, row=1, sticky="NSEW", padx=2, pady=2)
         ttk.Radiobutton(
             self.top_frame,
@@ -369,7 +367,6 @@ class PageSeparatorDialog(ToplevelDialog):
             command=self.view,
             variable=auto_type,
             value=PageSepAutoType.AUTO_FIX,
-            takefocus=False,
         ).grid(column=2, row=1, sticky="NSEW", padx=2, pady=2)
 
         end_frame = ttk.Frame(
@@ -1592,7 +1589,6 @@ class ScannoCheckerDialog(CheckerDialog):
             frame,
             text="Auto Adv.",
             variable=PersistentBoolean(PrefKey.SCANNOS_AUTO_ADVANCE),
-            takefocus=False,
         )
         self.auto_checkbtn.grid(column=0, row=0, sticky="NSEW", pady=2)
         self.file_combo = PathnameCombobox(
@@ -1603,15 +1599,14 @@ class ScannoCheckerDialog(CheckerDialog):
         self.file_combo.grid(column=1, row=0, sticky="NSEW", pady=2)
         self.file_combo["state"] = "readonly"
         self.file_combo.bind("<<ComboboxSelected>>", lambda _e: self.select_file())
-        ttk.Button(
-            frame, text="Load File", command=self.choose_file, takefocus=False
-        ).grid(column=2, row=0, sticky="NSEW", padx=(5, 0), pady=2)
+        ttk.Button(frame, text="Load File", command=self.choose_file).grid(
+            column=2, row=0, sticky="NSEW", padx=(5, 0), pady=2
+        )
 
         self.prev_btn = ttk.Button(
             frame,
             text="Prev. Scanno",
             command=lambda: self.prev_next_scanno(prev=True),
-            takefocus=False,
         )
         self.prev_btn.grid(column=0, row=1, sticky="NSEW", padx=(0, 5), pady=2)
         self.scanno_textvariable = tk.StringVar(self, "")
@@ -1626,7 +1621,6 @@ class ScannoCheckerDialog(CheckerDialog):
             frame,
             text="Next Scanno",
             command=lambda: self.prev_next_scanno(prev=False),
-            takefocus=False,
         )
         self.next_btn.grid(column=2, row=1, sticky="NSEW", padx=(5, 0), pady=2)
 
@@ -1634,7 +1628,6 @@ class ScannoCheckerDialog(CheckerDialog):
             frame,
             text="Swap Terms",
             command=self.swap_terms,
-            takefocus=False,
         ).grid(column=0, row=2, sticky="NSEW", padx=(0, 5), pady=2)
         self.replacement_textvariable = tk.StringVar(self, "")
         replace = ttk.Entry(
@@ -1648,7 +1641,6 @@ class ScannoCheckerDialog(CheckerDialog):
             frame,
             text="Replace",
             command=lambda: self.process_entry_current(all_matching=False),
-            takefocus=False,
         ).grid(column=2, row=2, sticky="NSEW", padx=(5, 0), pady=2)
 
         self.count_textvariable = tk.StringVar(self, "")
@@ -1664,7 +1656,6 @@ class ScannoCheckerDialog(CheckerDialog):
             frame,
             text="Replace All",
             command=lambda: self.process_entry_current(all_matching=True),
-            takefocus=False,
         ).grid(column=2, row=3, sticky="NSEW", padx=(5, 0), pady=2)
 
         self.scanno_list: list[Scanno] = []
@@ -2067,25 +2058,21 @@ class CurlyQuotesDialog(CheckerDialog):
             frame,
             text="Open⇔Close",
             command=self.swap_open_close,
-            takefocus=False,
         ).grid(column=0, row=0, sticky="NSW")
         ttk.Button(
             frame,
             text="Straight⇔Curly",
             command=self.swap_straight_curly,
-            takefocus=False,
         ).grid(column=1, row=0, sticky="NSW")
         ttk.Button(
             frame,
             text="Swap Quote/Space",
             command=self.swap_quote_space,
-            takefocus=False,
         ).grid(column=2, row=0, sticky="NSW")
         ttk.Button(
             frame,
             text="Delete Space",
             command=lambda: self.swap_quote_space(delete=True),
-            takefocus=False,
         ).grid(column=3, row=0, sticky="NSW")
         ttk.Label(
             frame,
@@ -2095,25 +2082,21 @@ class CurlyQuotesDialog(CheckerDialog):
             frame,
             text=DQUOTES[0],
             command=lambda: insert_in_focus_widget(DQUOTES[0]),
-            takefocus=False,
         ).grid(column=5, row=0, sticky="NSE")
         ttk.Button(
             frame,
             text=DQUOTES[1],
             command=lambda: insert_in_focus_widget(DQUOTES[1]),
-            takefocus=False,
         ).grid(column=6, row=0, sticky="NSE")
         ttk.Button(
             frame,
             text=SQUOTES[0],
             command=lambda: insert_in_focus_widget(SQUOTES[0]),
-            takefocus=False,
         ).grid(column=7, row=0, sticky="NSE")
         ttk.Button(
             frame,
             text=SQUOTES[1],
             command=lambda: insert_in_focus_widget(SQUOTES[1]),
-            takefocus=False,
         ).grid(column=8, row=0, sticky="NSE")
 
     def populate(self) -> None:

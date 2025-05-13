@@ -35,6 +35,8 @@ from guiguts.widgets import (
     ToolTip,
     themed_style,
     Busy,
+    focus_next_widget,
+    focus_prev_widget,
 )
 
 logger = logging.getLogger(__package__)
@@ -276,13 +278,11 @@ class CustomMenuDialog(ToplevelDialog):
             move_button_frame,
             text="Move Up",
             command=lambda: self.move_up_down(-1),
-            takefocus=False,
         ).grid(row=0, column=0, padx=2)
         ttk.Button(
             move_button_frame,
             text="Move Down",
             command=lambda: self.move_up_down(1),
-            takefocus=False,
         ).grid(row=0, column=1, padx=2)
 
         # Edit LabelFrame
@@ -306,20 +306,18 @@ class CustomMenuDialog(ToplevelDialog):
         button_frame = ttk.Frame(edit_frame)
         button_frame.grid(row=2, column=0, columnspan=2, pady=5)
 
-        ttk.Button(
-            button_frame, text="Add Entry", command=self.add_entry, takefocus=False
-        ).grid(row=0, column=0, padx=2)
+        ttk.Button(button_frame, text="Add Entry", command=self.add_entry).grid(
+            row=0, column=0, padx=2
+        )
         ttk.Button(
             button_frame,
             text="Update Entry",
             command=self.update_entry,
-            takefocus=False,
         ).grid(row=0, column=1, padx=2)
         ttk.Button(
             button_frame,
             text="Remove Entry",
             command=self.remove_entry,
-            takefocus=False,
         ).grid(row=0, column=2, padx=2)
 
         # Help LabelFrame
@@ -675,7 +673,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="<",
             width=min_button_width,
-            takefocus=False,
             command=lambda: self.next_image(reverse=True),
         )
         self.prev_img_button.grid(row=0, column=0, sticky="NSEW")
@@ -685,7 +682,6 @@ class MainImage(tk.Frame):
             control_frame,
             text=">",
             width=min_button_width,
-            takefocus=False,
             command=self.next_image,
         )
         self.next_img_button.grid(row=0, column=1, sticky="NSEW")
@@ -699,7 +695,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="+",
             width=min_button_width,
-            takefocus=False,
             command=lambda: self.image_zoom(zoom_in=True),
         )
         self.zoom_in_btn.grid(row=0, column=3, sticky="NSEW", padx=(10, 0))
@@ -709,7 +704,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="-",
             width=min_button_width,
-            takefocus=False,
             command=lambda: self.image_zoom(zoom_in=False),
         )
         self.zoom_out_btn.grid(row=0, column=4, sticky="NSEW")
@@ -719,7 +713,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="↺",
             width=min_button_width + 1 if is_mac() else min_button_width,
-            takefocus=False,
             command=self.rotate,
         )
         self.rotate_btn.grid(row=0, column=5, sticky="NSEW", padx=(10, 0))
@@ -730,7 +723,6 @@ class MainImage(tk.Frame):
         self.ftw_btn = ttk.Checkbutton(
             control_frame,
             text="Fit ←→",
-            takefocus=False,
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_WIDTH),
         )
         self.ftw_btn.grid(row=0, column=6, sticky="NSEW", padx=(10, 0))
@@ -739,7 +731,6 @@ class MainImage(tk.Frame):
         self.fth_btn = ttk.Checkbutton(
             control_frame,
             text="Fit ↑↓",
-            takefocus=False,
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_HEIGHT),
         )
         self.fth_btn.grid(row=0, column=7, sticky="NSEW", padx=(10, 0))
@@ -748,7 +739,6 @@ class MainImage(tk.Frame):
         self.invert_btn = ttk.Checkbutton(
             control_frame,
             text="Invert",
-            takefocus=False,
             command=self.show_image,
             variable=PersistentBoolean(PrefKey.IMAGE_INVERT),
         )
@@ -758,7 +748,6 @@ class MainImage(tk.Frame):
         self.dock_btn = ttk.Checkbutton(
             control_frame,
             text="Dock",
-            takefocus=False,
             command=self.set_image_docking,
             variable=PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED),
         )
@@ -773,7 +762,6 @@ class MainImage(tk.Frame):
             control_frame,
             text="×",
             width=min_button_width,
-            takefocus=False,
             command=self.hide_func,
         )
         self.close_btn.grid(row=0, column=10, sticky="NSE")
@@ -1256,6 +1244,11 @@ class StatusBar(ttk.Frame):
     Fields in statusbar can be automatically or manually updated.
     """
 
+    BTN_1 = "ButtonRelease-1"
+    BTN_3 = "ButtonRelease-3"
+    SHIFT_BTN_1 = "Shift-ButtonRelease-1"
+    SHIFT_BTN_3 = "Shift-ButtonRelease-3"
+
     def __init__(self, parent: ttk.Frame) -> None:
         """Initialize statusbar within given frame.
 
@@ -1283,7 +1276,7 @@ class StatusBar(ttk.Frame):
               the string returned by ``update()``. If argument not given,
               application is responsible for updating, using ``set(key)``.
         """
-        self.fields[key] = ttk.Button(self, takefocus=0, **kwargs)
+        self.fields[key] = ttk.Button(self, **kwargs)
         self.callbacks[key] = update
         self.fields[key].grid(column=len(self.fields), row=0)
         if tooltip:
@@ -1316,10 +1309,23 @@ class StatusBar(ttk.Frame):
             callback: Function to be called when event occurs.
             event: Event to trigger action. Use button release to avoid
               clash with button activate appearance behavior.
+              Also bind Space to do same as button 1;
+              Cmd/Ctrl+button 1 and Cmd/Ctrl+space as button 3,
+              all with optional Shift key modifier
         """
-        # Tk passes event object to callback which is never used. To avoid all
-        # callbacks having to ignore it, the lambda below absorbs & discards it.
-        mouse_bind(self.fields[key], event, lambda _event: callback())
+        mouse_bind(self.fields[key], event, lambda _: callback())
+        if event == StatusBar.BTN_1:
+            mouse_bind(self.fields[key], "space", lambda _: callback())
+        elif event == StatusBar.SHIFT_BTN_1:
+            mouse_bind(self.fields[key], "Shift+space", lambda _: callback())
+        if event == StatusBar.BTN_3:
+            mouse_bind(self.fields[key], "Ctrl+ButtonRelease-1", lambda _: callback())
+            mouse_bind(self.fields[key], "Ctrl+space", lambda _: callback())
+        elif event == StatusBar.SHIFT_BTN_3:
+            mouse_bind(
+                self.fields[key], "Shift+Ctrl+ButtonRelease-1", lambda _: callback()
+            )
+            mouse_bind(self.fields[key], "Shift+Ctrl+space", lambda _: callback())
 
 
 class ScrolledReadOnlyText(tk.Text):
@@ -1372,6 +1378,10 @@ class ScrolledReadOnlyText(tk.Text):
         )
         # Also on creation, so it's correct for the current theme
         maintext().theme_set_tk_widget_colors(self)
+
+        # By default Tab is accepted by text widget, but we want it to move focus
+        self.bind("<Tab>", focus_next_widget)
+        self.bind("<Shift-Tab>", focus_prev_widget)
 
         # Redirect attempts to undo & redo to main text window
         # Keystrokes match those in Undo/Redo menu buttons, with case handled manually here
