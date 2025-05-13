@@ -663,7 +663,9 @@ class WordFrequencyDialog(ToplevelDialog):
             match_word = re.escape(newline_word)
         else:  # Word begins/ends with non-word char - do manual whole-word
             wholeword = False
-            match_word = r"(?<=\w)" + re.escape(newline_word) + r"(?=\w)"
+            left_boundary = r"(?<!\w)" if newline_word[0].isalnum() else r"(?<![^\w\s])"
+            right_boundary = r"(?!\w)" if newline_word[-1].isalnum() else r"(?![^\w\s])"
+            match_word = rf"{left_boundary}{re.escape(newline_word)}{right_boundary}"
 
         # If hyphen matching and there's one (escaped) space in the word, let that match
         # any amount of whitespace
@@ -985,15 +987,24 @@ def wf_populate_allcaps(wf_dialog: WordFrequencyDialog) -> None:
 def wf_populate_mixedcase(wf_dialog: WordFrequencyDialog) -> None:
     """Populate the WF dialog with the list of all MiXeD CasE words.
 
+    Allow "Joseph-Marie" or "post-Roman", i.e. parts of words may either
+    be properly capitalized or all lowercase, with parts separated by
+    hyphens or apostrophes or periods ("D.Sc").
+
     Args:
         wf_dialog: The word frequency dialog.
     """
+    word_chunk_regex = r"\p{Upper}?[\p{Lower}\p{Mark}\d'’*-]*"
     wf_populate_by_match(
         wf_dialog,
         "MiXeD CasE",
-        lambda word: re.search(r"\p{IsUpper}", word)
-        and re.search(r"\p{IsLower}", word)
-        and not re.fullmatch(r"\p{Upper}[\p{IsLower}\p{Mark}\d'’*-]+", word),
+        lambda word: re.search(r"\p{Upper}", word)
+        and re.search(r"\p{Lower}", word)
+        and not re.fullmatch(
+            rf"{word_chunk_regex}([-'’\.]{word_chunk_regex})*",
+            word,
+        )
+        and not re.match(r"Ma?c\p{Upper}", word),
     )
 
 
