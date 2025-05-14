@@ -27,8 +27,6 @@ from guiguts.widgets import (
     register_focus_widget,
     grab_focus,
     bind_mouse_wheel,
-    focus_next_widget,
-    focus_prev_widget,
 )
 
 logger = logging.getLogger(__package__)
@@ -856,10 +854,6 @@ class MainText(tk.Text):
         register_focus_widget(self.peer)
 
         self.paned_text_window.add(maintext().frame, minsize=PEER_MIN_SIZE)
-
-        # By default Tab is accepted by text widget, but we want it to move focus
-        self.bind_event("<Tab>", focus_next_widget, bind_peer=True)
-        self.bind_event("<Shift-Tab>", focus_prev_widget, bind_peer=True)
 
         # Column selection uses Alt key on Windows/Linux, Option key on macOS
         # Key Release is reported as Alt_L on all platforms
