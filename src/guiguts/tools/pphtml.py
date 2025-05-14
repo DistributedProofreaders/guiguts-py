@@ -601,7 +601,7 @@ class PPhtmlChecker:
 
     def charset_check(self) -> None:
         """Character set should be UTF-8."""
-        if match := re.search("charset *= *['\"](.*?)['\"]", self.file_text):
+        if match := re.search("charset *= *['\"]?([^'\"]+)['\"]?", self.file_text):
             charset = match.group(1)
             test_passed = charset.lower() == "utf-8"
             msg = f"Charset is {charset}"
