@@ -825,7 +825,7 @@ class MainImage(tk.Frame):
             try:
                 self.canvas.bind("<TouchpadScroll>", self.touchpad_scroll)
             except tk.TclError:
-                print("Failed to bind TouchpadScroll", flush=True)
+                pass  # OK if TouchpadScroll not supported (Tk <= 8.6)
 
         self.image_scale = float(preferences.get(PrefKey.IMAGE_SCALE_FACTOR))
         self.scale_delta = 1.1
@@ -1048,7 +1048,6 @@ class MainImage(tk.Frame):
 
     def wheel_scroll(self, evt: tk.Event) -> None:
         """Scroll image up/down using mouse wheel."""
-        print(f"delta: {evt.delta}", flush=True)
         if evt.state == 0:
             if is_mac() and tk.TkVersion < 3.7:
                 self.canvas.yview_scroll(int(-1 * evt.delta), "units")
@@ -1069,16 +1068,29 @@ class MainImage(tk.Frame):
 
         xscr = to_signed_16((evt.delta >> 16) & 0xFFFF)
         yscr = to_signed_16(evt.delta & 0xFFFF)
-        print(f"Touchpad X:{xscr} Y:{yscr} Serial:{evt.serial}", flush=True)
         # Only act on the given fraction of events
         scroll_rate_numerator = 1
-        scroll_rate_denominator = 2
-        if evt.serial % scroll_rate_denominator >= scroll_rate_numerator:
+        scroll_rate_denominator = 3
+        if abs(evt.serial % scroll_rate_denominator) >= scroll_rate_numerator:
             return
-        if evt.state == 1:
+        absy = abs(yscr)
+        absx = abs(xscr)
+        wiggle_tolerance = 1
+        # To try to avoid slight wiggling while attempting unidirectional scroll,
+        # only scroll bidirectionally if lesser change is more than wiggle_tolerance.
+        # Also scroll bidirectionally if x & y change equal
+        if (
+            (absy > absx > wiggle_tolerance)
+            or (absx > absy > wiggle_tolerance)
+            or absx == absy
+        ):
             self.canvas.xview_scroll(-xscr, "units")
-        else:
             self.canvas.yview_scroll(-yscr, "units")
+        # Lesser change is within wiggle_tolerance, so suppress it
+        elif absy > absx:
+            self.canvas.yview_scroll(-yscr, "units")
+        elif absx > absy:
+            self.canvas.xview_scroll(-xscr, "units")
 
     def load_image(self, filename: Optional[str] = None) -> bool:
         """Load or clear the given image file.
