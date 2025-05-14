@@ -1075,7 +1075,7 @@ class MainImage(tk.Frame):
             return
         absy = abs(yscr)
         absx = abs(xscr)
-        wiggle_tolerance = 1
+        wiggle_tolerance = 2
         # To try to avoid slight wiggling while attempting unidirectional scroll,
         # only scroll bidirectionally if lesser change is more than wiggle_tolerance.
         # Also scroll bidirectionally if x & y change equal
