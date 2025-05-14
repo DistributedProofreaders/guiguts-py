@@ -857,6 +857,10 @@ class MainImage(tk.Frame):
             _, cm = process_accel("Cmd/Ctrl+MouseWheel")
             self.canvas.bind(cm, self.wheel_zoom)
             self.canvas.bind("<MouseWheel>", self.wheel_scroll)
+            try:
+                self.canvas.bind("<TouchpadScroll>", self.touchpad_scroll)
+            except tk.TclError:
+                pass  # OK if TouchpadScroll not supported (Tk <= 8.6)
 
         self.image_scale = float(preferences.get(PrefKey.IMAGE_SCALE_FACTOR))
         self.scale_delta = 1.1
@@ -1078,18 +1082,50 @@ class MainImage(tk.Frame):
             self.after(10, lambda: self.regrab_focus(focus_widget, remaining_period))
 
     def wheel_scroll(self, evt: tk.Event) -> None:
-        """Scroll image up/down using mouse wheel"""
+        """Scroll image up/down using mouse wheel."""
         if evt.state == 0:
-            if is_mac():
+            if is_mac() and tk.TkVersion < 3.7:
                 self.canvas.yview_scroll(int(-1 * evt.delta), "units")
             else:
                 self.canvas.yview_scroll(int(-1 * (evt.delta / 120)), "units")
         if evt.state == 1:
-            if is_mac():
+            if is_mac() and tk.TkVersion < 3.7:
                 self.canvas.xview_scroll(int(-1 * evt.delta), "units")
             else:
                 self.canvas.xview_scroll(int(-1 * (evt.delta / 120)), "units")
         self.show_image()
+
+    def touchpad_scroll(self, evt: tk.Event) -> None:
+        """Scroll image using touchpad."""
+
+        def to_signed_16(n: int) -> int:
+            return n if n < 0x8000 else n - 0x10000
+
+        xscr = to_signed_16((evt.delta >> 16) & 0xFFFF)
+        yscr = to_signed_16(evt.delta & 0xFFFF)
+        # Only act on the given fraction of events
+        scroll_rate_numerator = 1
+        scroll_rate_denominator = 3
+        if abs(evt.serial % scroll_rate_denominator) >= scroll_rate_numerator:
+            return
+        absy = abs(yscr)
+        absx = abs(xscr)
+        wiggle_tolerance = 2
+        # To try to avoid slight wiggling while attempting unidirectional scroll,
+        # only scroll bidirectionally if lesser change is more than wiggle_tolerance.
+        # Also scroll bidirectionally if x & y change equal
+        if (
+            (absy > absx > wiggle_tolerance)
+            or (absx > absy > wiggle_tolerance)
+            or absx == absy
+        ):
+            self.canvas.xview_scroll(-xscr, "units")
+            self.canvas.yview_scroll(-yscr, "units")
+        # Lesser change is within wiggle_tolerance, so suppress it
+        elif absy > absx:
+            self.canvas.yview_scroll(-yscr, "units")
+        elif absx > absy:
+            self.canvas.xview_scroll(-xscr, "units")
 
     def load_image(self, filename: Optional[str] = None) -> bool:
         """Load or clear the given image file.
