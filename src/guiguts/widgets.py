@@ -870,7 +870,30 @@ _THEME_DEFAULT_TEXT_FG = ""
 _THEME_DEFAULT_TEXT_IBG = ""
 
 
-def themed_style(style: Optional[ttk.Style] = None) -> ttk.Style:
+class ThemedStyle(ttk.Style):
+    """Tk9-safe version of ttk.Style."""
+
+    def theme_use(self, themename: Optional[str] = None) -> Optional[str]:  # type: ignore[override]
+        """Overridden, to avoid crash with Tk9.
+
+        If themename is None, returns the theme in use, otherwise, set
+        the current theme to themename, refreshes all widgets and emits
+        a <<ThemeChanged>> event."""
+        if themename is None:
+            # OLD CODE
+            # # Starting on Tk 8.6, checking this global is no longer needed
+            # # since it allows doing self.tk.call(self._name, "theme", "use")
+            # return self.tk.eval("return $ttk::currentTheme")
+
+            # NEW CODE
+            # Above line fails with Tk9, since $ttk::currentTheme doesn't exist,
+            # so replaced with line below as suggested in above comment.
+            return self.tk.call(self._name, "theme", "use")  # type:ignore[attr-defined]
+        super().theme_use(themename)
+        return None
+
+
+def themed_style(style: Optional[ThemedStyle] = None) -> ThemedStyle:
     """Store and return the single Style object"""
     global _SINGLE_STYLE
     if style is not None:
