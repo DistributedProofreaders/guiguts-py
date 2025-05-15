@@ -129,7 +129,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
                 [
                     "Click in style column (or press Return) to cycle Arabic/Roman/Ditto",
                     f"Click in number column (or press {cmd_ctrl_string()}+Return) to cycle +1/No Count/Set Number",
-                    f"Press Shift with above actions to cycle in reverse order",
+                    "Press Shift with above actions to cycle in reverse order",
                 ]
             ),
             use_pointer_pos=True,
