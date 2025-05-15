@@ -7,8 +7,8 @@ from typing import Optional, Any
 import roman  # type: ignore[import-untyped]
 
 from guiguts.maintext import maintext, page_mark_from_img
-from guiguts.utilities import is_mac
-from guiguts.widgets import OkApplyCancelDialog, mouse_bind, ToolTip
+from guiguts.utilities import cmd_ctrl_string, process_accel
+from guiguts.widgets import OkApplyCancelDialog, mouse_bind, ToolTip, TreeviewList
 
 STYLE_COLUMN = "#2"
 STYLE_ARABIC = "Arabic"
@@ -119,20 +119,17 @@ class PageDetailsDialog(OkApplyCancelDialog):
 
         columns = (COL_HEAD_IMG, COL_HEAD_STYLE, COL_HEAD_NUMBER, COL_HEAD_LABEL)
         widths = (50, 80, 80, 120)
-        self.list = ttk.Treeview(
+        self.list = TreeviewList(
             self.top_frame,
             columns=columns,
-            show="headings",
-            height=10,
-            selectmode=tk.BROWSE,
         )
         ToolTip(
             self.list,
             "\n".join(
                 [
-                    "Click in style column to cycle Arabic/Roman/Ditto",
-                    "Click in number column to cycle +1/No Count/Set Number",
-                    "Shift click to cycle in reverse order",
+                    "Click in style column (or press Return) to cycle Arabic/Roman/Ditto",
+                    f"Click in number column (or press {cmd_ctrl_string()}+Return) to cycle +1/No Count/Set Number",
+                    f"Press Shift with above actions to cycle in reverse order",
                 ]
             ),
             use_pointer_pos=True,
@@ -153,6 +150,20 @@ class PageDetailsDialog(OkApplyCancelDialog):
         mouse_bind(
             self.list, "Shift+1", lambda event: self.item_clicked(event, reverse=True)
         )
+        self.list.bind(
+            "<Return>", lambda _: self.item_clicked(STYLE_COLUMN, reverse=False)
+        )
+        self.list.bind(
+            "<Shift-Return>", lambda _: self.item_clicked(STYLE_COLUMN, reverse=True)
+        )
+        self.list.bind(
+            process_accel("Cmd/Ctrl+Return")[1],
+            lambda _: self.item_clicked(NUMBER_COLUMN, reverse=False),
+        )
+        self.list.bind(
+            process_accel("Cmd/Ctrl+Shift+Return")[1],
+            lambda _: self.item_clicked(NUMBER_COLUMN, reverse=True),
+        )
 
         def display_page(_event: Optional[tk.Event] = None) -> None:
             """Display the page for the selected row."""
@@ -162,25 +173,6 @@ class PageDetailsDialog(OkApplyCancelDialog):
                 return
             index = maintext().rowcol(page_mark_from_img(png))
             maintext().set_insert_index(index, focus=False)
-
-        def select_by_index(idx: int) -> None:
-            """Select the item with the given index (-1 for last one)."""
-            try:
-                child = self.list.get_children()[idx]
-            except IndexError:
-                return
-            self.select_and_focus(child)  # S
-            self.list.see(child)
-            display_page()
-
-        self.bind("<Home>", lambda _e: select_by_index(0))
-        self.bind("<End>", lambda _e: select_by_index(-1))
-        if is_mac():
-            self.bind("<Command-Up>", lambda _e: select_by_index(0))
-            self.bind(
-                "<Command-Down>",
-                lambda _e: select_by_index(-1),
-            )
 
         self.list.bind("<<TreeviewSelect>>", display_page)
         self.list.grid(row=0, column=0, sticky=tk.NSEW)
@@ -196,32 +188,13 @@ class PageDetailsDialog(OkApplyCancelDialog):
         # Position list at current page
         if cur_img := maintext().get_current_image_name():
             children = self.list.get_children()
-            for idx, child in enumerate(children):
+            for child in children:
                 png = self.list.set(child)[COL_HEAD_IMG]
                 if png == cur_img:
-                    self.select_and_focus(child)
-                    # "see" puts item at top, so see the position a few earlier
-                    self.list.see(children[max(0, idx - 3)])
+                    self.list.select_and_focus_by_child(child)
                     break
 
         self.list.focus_set()
-
-    def select_and_focus(self, item: str) -> None:
-        """Select and set focus to the given item.
-
-        Although for the "browse" select mode used in this TreeView, there is
-        only one selected item, there can be several items selected in other
-        TreeViews, and one item can have focus. Since user can use mouse & arrow
-        keys to change selection, and we also change it programmatically to
-        support use of Home/End keys, it's necessary to ensure the selection and
-        the focus always point to the same item. Otherwise using Home to go to
-        top of list then arrow key to move to second item will not work.
-
-        Args:
-            item: The item to be selected/focused.
-        """
-        self.list.selection_set(item)
-        self.list.focus(item)
 
     def populate_list(self, details: PageDetails, see_index: int = 0) -> None:
         """Populate the page details list from the given details.
@@ -230,39 +203,38 @@ class PageDetailsDialog(OkApplyCancelDialog):
             details: PageDetails to be displayed in dialog.
             see_index: Index of item in list that should be made visible.
         """
-        children = self.list.get_children()
-        for child in children:
-            self.list.delete(child)
+        self.list.clear()
 
         for png, detail in sorted(details.items()):
             entry = (png, detail["style"], detail["number"], detail["label"])
             self.list.insert("", tk.END, values=entry)
 
-        children = self.list.get_children()
-        if children:
-            self.select_and_focus(children[see_index])
-            self.list.see(children[see_index])
+        self.list.select_and_focus_by_index(see_index)
 
-    def item_clicked(self, event: tk.Event, reverse: bool) -> None:
+    def item_clicked(self, which: tk.Event | str, reverse: bool) -> str:
         """Called when page detail item is clicked.
 
         If click is in style or number column, then advance style/number
         setting to the next value. Refresh the list to show new labels.
 
         Args:
-            event: Event containing location of mouse click
+            which: Event containing location of mouse click, or column to cycle
             reverse: True to "advance" in reverse!
         """
-        row_id = self.list.identify_row(event.y)
+        if isinstance(which, str):
+            row_id = self.list.focus()
+            if not row_id:
+                return "break"
+            col_id = which
+        else:
+            row_id, col_id = self.list.identify_rowcol(which)
         row = self.list.set(row_id)
-
-        col_id = self.list.identify_column(event.x)
         if col_id not in (STYLE_COLUMN, NUMBER_COLUMN):
-            return
+            return "break"
 
         if col_id == STYLE_COLUMN:
             if COL_HEAD_STYLE not in row:
-                return
+                return "break"
             # Click in style column advances/retreats style
             style_index = STYLES.index(row[COL_HEAD_STYLE])
             if reverse:
@@ -272,7 +244,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
             self.details[row[COL_HEAD_IMG]]["style"] = STYLES[style_index]
         elif col_id == NUMBER_COLUMN:
             if COL_HEAD_NUMBER not in row:
-                return
+                return "break"
             # Click in number column advances/retreats number type.
             # May need to prompt user for page number.
             value = row[COL_HEAD_NUMBER]
@@ -298,7 +270,9 @@ class PageDetailsDialog(OkApplyCancelDialog):
         # Refresh the list
         self.details.recalculate()
         self.populate_list(self.details, self.list.index(row_id))
+        self.list.focus_force()
         self.changed = True
+        return "break"
 
     def apply_changes(self) -> bool:
         """Overridden to update page label settings from the dialog."""

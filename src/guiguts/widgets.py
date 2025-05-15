@@ -618,6 +618,74 @@ class Notebook(ttk.Notebook):
         return "break"
 
 
+class TreeviewList(ttk.Treeview):
+    """Treeview to be used as a single-selection list."""
+
+    def __init__(self, parent: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        """Initialize TreeviewList - standard ttk.Treeview in "browse" mode with extra bindings."""
+        if "show" not in kwargs:
+            kwargs["show"] = "headings"
+        if "height" not in kwargs:
+            kwargs["height"] = 10
+        kwargs["selectmode"] = tk.BROWSE
+        super().__init__(parent, *args, **kwargs)
+        self.bind("<Home>", lambda _e: self.select_and_focus_by_index(0))
+        self.bind("<End>", lambda _e: self.select_and_focus_by_index(-1))
+        if is_mac():
+            self.bind("<Command-Up>", lambda _e: self.select_and_focus_by_index(0))
+            self.bind("<Command-Down>", lambda _e: self.select_and_focus_by_index(-1))
+
+    def select_and_focus_by_child(self, item: str) -> None:
+        """Select and set focus to the given item.
+
+        Although for the "browse" select mode used in this TreeView, there is
+        only one selected item, there can be several items selected in other
+        TreeViews, and one item can have focus. Since user can use mouse & arrow
+        keys to change selection, and we also change it programmatically to
+        support use of Home/End keys, it's necessary to ensure the selection and
+        the focus always point to the same item. Otherwise using Home to go to
+        top of list then arrow key to move to second item will not work.
+
+        Args:
+            item: The item to be selected/focused.
+        """
+        children = self.get_children()
+        if not children:
+            return
+        self.selection_set(item)
+        self.focus(item)
+        iid = self.index(item)
+        self.see(item)
+        # "see" puts item at top, so alsosee the position a few earlier
+        self.see(children[max(0, iid - 3)])
+
+    def select_and_focus_by_index(self, idx: int) -> None:
+        """Select and set focus to the given index.
+
+        Args:
+            idx: The index of the item to be selected/focused.
+        """
+        children = self.get_children()
+        if abs(idx) >= len(children):
+            return
+        self.select_and_focus_by_child(children[idx])
+
+    def clear(self) -> None:
+        """Clear list of all children."""
+        children = self.get_children()
+        for child in children:
+            self.delete(child)
+
+    def identify_rowcol(self, event: tk.Event) -> tuple[str, str]:
+        """Get row and column from mouse click event x & y.
+
+        Returns:
+            Tuple of row and column IDs."""
+        row_id = self.identify_row(event.y)
+        col_id = self.identify_column(event.x)
+        return row_id, col_id
+
+
 class ToolTip:
     """Create a tooltip for a widget.
 

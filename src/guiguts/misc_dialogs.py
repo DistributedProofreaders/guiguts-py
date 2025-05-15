@@ -42,6 +42,7 @@ from guiguts.widgets import (
     bind_mouse_wheel,
     unbind_mouse_wheel,
     Busy,
+    TreeviewList,
 )
 
 logger = logging.getLogger(__package__)
@@ -880,16 +881,13 @@ class ComposeHelpDialog(ToplevelDialog):
 
         self.column_headings = ("Character", "Sequence", "Name")
         widths = (70, 70, 600)
-        self.help = ttk.Treeview(
+        self.help = TreeviewList(
             self.top_frame,
             columns=self.column_headings,
-            show="headings",
-            height=10,
-            selectmode=tk.NONE,
         )
         ToolTip(
             self.help,
-            "Click to insert character",
+            "Click (or press Return) to insert character",
             use_pointer_pos=True,
         )
         for col, column in enumerate(self.column_headings):
@@ -914,6 +912,8 @@ class ComposeHelpDialog(ToplevelDialog):
         self.scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
         mouse_bind(self.help, "1", self.insert_char)
+        self.bind("<Return>", lambda _: self.insert_char(None))
+        self.help.focus_force()
 
         init_compose_dict()
 
@@ -945,15 +945,21 @@ class ComposeHelpDialog(ToplevelDialog):
 
         children = self.help.get_children()
         if children:
+            self.help.select_and_focus_by_index(0)
             self.help.see(children[0])
 
-    def insert_char(self, event: tk.Event) -> None:
+    def insert_char(self, event: Optional[tk.Event]) -> None:
         """Insert character corresponding to row clicked.
 
         Args:
-            event: Event containing location of mouse click
+            event: Event containing location of mouse click. If None, use focused row.
         """
-        row_id = self.help.identify_row(event.y)
+        if event is None:
+            row_id = self.help.focus()
+            if not row_id:
+                return
+        else:
+            row_id, _ = self.help.identify_rowcol(event)
         row = self.help.set(row_id)
         try:
             char = row[self.column_headings[0]]
@@ -1267,12 +1273,14 @@ class CommandPaletteDialog(ToplevelDialog):
 
         columns = ("Command", "Shortcut", "Menu")
         widths = (250, 120, 100)
-        self.list = ttk.Treeview(
+        self.list = TreeviewList(
             self.top_frame,
             columns=columns,
-            show="headings",
-            selectmode=tk.BROWSE,
-            height=10,
+        )
+        ToolTip(
+            self.list,
+            "Type part of a command to filter the list\n"
+            "Double click (or press Return) to execute command.",
         )
         for col, column in enumerate(columns):
             self.list.heading(f"#{col + 1}", text=column)
@@ -1424,7 +1432,7 @@ class CommandPaletteDialog(ToplevelDialog):
             del self.filtered_entries[0]
 
         if self.filtered_entries:
-            self.select_and_focus(self.list.get_children()[0])
+            self.list.select_and_focus_by_index(0)
 
     def edit_command(self) -> None:
         """Edit the selected command."""
@@ -1471,17 +1479,6 @@ class CommandPaletteDialog(ToplevelDialog):
         if self.filtered_entries:  # Select the next item in the list
             self.move_in_list(direction)
 
-    def select_and_focus(self, item: str) -> None:
-        """Select and set focus to the given item. See page_details for
-        description of the need for this.
-
-        Args:
-            item: The item to be selected/focused.
-        """
-        self.list.selection_set(item)
-        self.list.focus(item)
-        self.list.see(item)
-
     def move_in_list(self, direction: int) -> str:
         """Move the selection in the list.
 
@@ -1497,7 +1494,7 @@ class CommandPaletteDialog(ToplevelDialog):
                 # Skip over separator
                 if self.list.tag_has(self.SEPARATOR_TAG, next_item):
                     next_item = self.list.get_children()[new_index + direction]
-                self.select_and_focus(next_item)
+                self.list.select_and_focus_by_child(next_item)
             elif new_index < 0:
                 # Moving up from first list element - focus in entry field
                 self.entry.focus_set()
@@ -1902,19 +1899,17 @@ class UnicodeSearchDialog(ToplevelDialog):
             UnicodeSearchDialog.NAME_COL_WIDTH,
             UnicodeSearchDialog.BLOCK_COL_WIDTH,
         )
-        self.list = ttk.Treeview(
+        self.list = TreeviewList(
             self.top_frame,
             columns=columns,
-            show="headings",
             height=15,
-            selectmode=tk.BROWSE,
         )
         ToolTip(
             self.list,
             "\n".join(
                 [
-                    f"Click in {UnicodeSearchDialog.CHAR_COL_HEAD},  {UnicodeSearchDialog.CODEPOINT_COL_HEAD} or {UnicodeSearchDialog.NAME_COL_HEAD} column to insert character",
-                    f"Click in {UnicodeSearchDialog.BLOCK_COL_HEAD} column to open Unicode Block dialog",
+                    f"Click in {UnicodeSearchDialog.CHAR_COL_HEAD},  {UnicodeSearchDialog.CODEPOINT_COL_HEAD} or {UnicodeSearchDialog.NAME_COL_HEAD} column (or press Return) to insert character",
+                    f"Click in {UnicodeSearchDialog.BLOCK_COL_HEAD} column (or press Shift+Return) to open Unicode Block dialog",
                     "(⚠\ufe0f before a character's name means it was added more recently - use with caution)",
                 ]
             ),
@@ -1941,8 +1936,11 @@ class UnicodeSearchDialog(ToplevelDialog):
         self.list.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.grid(row=1, column=1, sticky=tk.NS)
         mouse_bind(self.list, "1", self.item_clicked)
+        self.list.bind("<Return>", self.insert_character)
+        self.list.bind("<Shift-Return>", self.open_block)
 
-        if char := maintext().current_character():
+        char = maintext().selected_text()
+        if len(char) == 1 and not char.isspace():
             self.search.delete(0, tk.END)
             self.search.insert(0, char)
             search_btn.invoke()
@@ -2006,7 +2004,9 @@ class UnicodeSearchDialog(ToplevelDialog):
                     self.add_row(string, new)
                     found = True
 
-        if not found:
+        if found:
+            self.list.select_and_focus_by_index(0)
+        else:
             sound_bell()
 
     def add_row(self, char: str, new: bool) -> None:
@@ -2043,11 +2043,10 @@ class UnicodeSearchDialog(ToplevelDialog):
         Args:
             event: Event containing location of mouse click
         """
-        row_id = self.list.identify_row(event.y)
+        row_id, col_id = self.list.identify_rowcol(event)
         row = self.list.set(row_id)
         if not row:  # Heading clicked
             return
-        col_id = self.list.identify_column(event.x)
 
         if col_id in (
             UnicodeSearchDialog.CHAR_COL_ID,
@@ -2062,6 +2061,27 @@ class UnicodeSearchDialog(ToplevelDialog):
             dlg = UnicodeBlockDialog.show_dialog()
             dlg.combobox.set(block)
             dlg.block_selected()
+
+    def insert_character(self, _: tk.Event) -> None:
+        """Insert character when Return pressed in list."""
+        row_id = self.list.focus()
+        if not row_id:
+            return
+        row = self.list.set(row_id)
+        insert_in_focus_widget(row[UnicodeSearchDialog.CHAR_COL_HEAD])
+
+    def open_block(self, _: tk.Event) -> None:
+        """Open Unicode block when Shift-Return pressed in list."""
+        row_id = self.list.focus()
+        if not row_id:
+            return
+        row = self.list.set(row_id)
+        block = row[UnicodeSearchDialog.BLOCK_COL_HEAD]
+        if not block:
+            return
+        dlg = UnicodeBlockDialog.show_dialog()
+        dlg.combobox.set(block)
+        dlg.block_selected()
 
 
 def unicode_char_to_name(char: str) -> tuple[str, bool]:
