@@ -40,6 +40,7 @@ _THE_WORD_LISTS = None
 
 RETURN_ARROW = "⏎"
 MARKUP_TYPES = "i|b|sc|f|g|u|cite|em|strong"
+PPGEN_IGNORE_REGEX = r"\.pn |\.bn |//"  # page number, binfile, comment
 
 
 class WFDisplayType(StrEnum):
@@ -95,7 +96,9 @@ class WFWordLists:
         if self.all_words:
             return
         for line, _ in maintext().get_lines():
-            if re.search(PAGE_SEPARATOR_REGEX, line):
+            if re.search(PAGE_SEPARATOR_REGEX, line) or re.match(
+                PPGEN_IGNORE_REGEX, line
+            ):
                 continue
             if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE):
                 line = line.lower()
