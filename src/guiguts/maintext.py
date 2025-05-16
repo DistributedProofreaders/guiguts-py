@@ -1094,7 +1094,7 @@ class MainText(tk.Text):
         self.after_idle(lambda: grab_focus(self.root, self, True))
 
         # Whether we were on dark theme the last time we looked (bool)
-        self.dark_theme = self.is_dark_theme()
+        self.dark_theme = themed_style().is_dark_theme()
 
         # Initialize highlighting tags
         self.after_idle(lambda: self.highlight_configure_tags(first_run=True))
@@ -3339,12 +3339,6 @@ class MainText(tk.Text):
         if ontime != current:
             self.focus_widget().configure(insertontime=ontime)
 
-    def is_dark_theme(self) -> bool:
-        """Returns True if theme is set to awdark."""
-        if themed_style().theme_use() == "awdark":
-            return True
-        return False
-
     def _highlight_configure_tag(
         self, tag_name: str, tag_colors: dict[str, dict[str, str]]
     ) -> None:
@@ -3873,7 +3867,7 @@ class MainText(tk.Text):
         """
         colors_need_update = False
         order_needs_update = False
-        dark_theme = self.is_dark_theme()
+        dark_theme = themed_style().is_dark_theme()
 
         if first_run:
             colors_need_update = True

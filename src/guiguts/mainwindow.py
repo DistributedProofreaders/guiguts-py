@@ -38,6 +38,7 @@ from guiguts.widgets import (
     focus_next_widget,
     focus_prev_widget,
     ThemedStyle,
+    TreeviewList,
 )
 
 logger = logging.getLogger(__package__)
@@ -250,11 +251,9 @@ class CustomMenuDialog(ToplevelDialog):
         treeview_frame.grid(row=0, column=0, pady=5, padx=5, sticky="NSEW")
 
         # Treeview setup with scrollbar
-        self.list = ttk.Treeview(
+        self.list = TreeviewList(
             treeview_frame,
             columns=("Label", "Command"),
-            show="headings",
-            selectmode=tk.BROWSE,
         )
         self.list.heading("Label", text="Label")
         self.list.column("Label", minwidth=10, width=200)
@@ -357,6 +356,7 @@ e.g. $(s+5) would give 12 for the 5th png.
         self.list.bind("<Down>", lambda _: self.change_selection(1))
         self.list.bind("<Up>", lambda _: self.change_selection(-1))
         self.save_and_refresh()
+        self.list.focus_force()
 
     @classmethod
     def rewrite_custom_menu(cls, menu: MenuMetadata) -> None:
@@ -503,7 +503,7 @@ e.g. $(s+5) would give 12 for the 5th png.
                 self.menu_entries[index],
             )
             self.save_and_refresh()
-            self.select_and_focus(self.list.get_children()[index + direction])
+            self.list.select_and_focus_by_index(index + direction)
 
     def save_and_refresh(self) -> None:
         """Save entries in Prefs, reconfigure the Custom menu, and
@@ -520,8 +520,7 @@ e.g. $(s+5) would give 12 for the 5th png.
         if sel_index >= len(self.menu_entries):
             sel_index = len(self.menu_entries) - 1
         if sel_index >= 0:
-            iid = self.list.get_children()[sel_index]
-            self.select_and_focus(iid)
+            self.list.select_and_focus_by_index(sel_index)
 
         # Save to prefs file
         preferences.set(PrefKey.CUSTOM_MENU_ENTRIES, self.menu_entries)
@@ -530,18 +529,6 @@ e.g. $(s+5) would give 12 for the 5th png.
         self.rewrite_custom_menu(self.menu)
         assert CustomMenuDialog.recreate_menus_callback is not None
         CustomMenuDialog.recreate_menus_callback()  # pylint: disable=not-callable
-
-    def select_and_focus(self, item: str) -> None:
-        """Select and set focus to the given item. See page_details for
-        description of the need for this.
-
-        Args:
-            item: The item to be selected/focused.
-        """
-        self.list.focus_set()
-        self.list.selection_set(item)
-        self.list.focus(item)
-        self.list.see(item)
 
     def change_selection(self, direction: int) -> str:
         """Change which is the selected entry in the list.
@@ -555,7 +542,7 @@ e.g. $(s+5) would give 12 for the 5th png.
             current_index = self.list.index(current_selection[0])
             new_index = current_index + direction
             if 0 <= new_index < list_len:
-                self.select_and_focus(self.list.get_children()[new_index])
+                self.list.select_and_focus_by_index(new_index)
         return "break"
 
     def add_entry(self) -> None:
@@ -1052,7 +1039,7 @@ class MainImage(tk.Frame):
             size=(scaled_width, scaled_height), resample=Image.Resampling.LANCZOS
         )
         if not preferences.get(PrefKey.HIGH_CONTRAST):
-            alpha_value = 180 if maintext().is_dark_theme() else 200
+            alpha_value = 180 if themed_style().is_dark_theme() else 200
             image.putalpha(alpha_value)  # Adjust contrast using transparency
         self.imagetk = ImageTk.PhotoImage(image)
         if self.imageid:
