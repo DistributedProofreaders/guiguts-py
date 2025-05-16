@@ -1039,7 +1039,7 @@ class MainImage(tk.Frame):
             size=(scaled_width, scaled_height), resample=Image.Resampling.LANCZOS
         )
         if not preferences.get(PrefKey.HIGH_CONTRAST):
-            alpha_value = 180 if maintext().is_dark_theme() else 200
+            alpha_value = 180 if themed_style().is_dark_theme() else 200
             image.putalpha(alpha_value)  # Adjust contrast using transparency
         self.imagetk = ImageTk.PhotoImage(image)
         if self.imageid:

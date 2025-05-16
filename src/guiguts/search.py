@@ -25,6 +25,7 @@ from guiguts.widgets import (
     mouse_bind,
     register_focus_widget,
     Busy,
+    themed_style,
 )
 
 logger = logging.getLogger(__package__)
@@ -141,7 +142,7 @@ class SearchDialog(ToplevelDialog):
 
         # Search
         style = ttk.Style()
-        new_col = "#ff8080" if maintext().is_dark_theme() else "#e60000"
+        new_col = "#ff8080" if themed_style().is_dark_theme() else "#e60000"
         style.configure("BadRegex.TCombobox", foreground=new_col)
 
         self.font = tk_font.Font(

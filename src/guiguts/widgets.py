@@ -628,7 +628,22 @@ class TreeviewList(ttk.Treeview):
         if "height" not in kwargs:
             kwargs["height"] = 10
         kwargs["selectmode"] = tk.BROWSE
-        super().__init__(parent, *args, **kwargs)
+
+        # Use background color of selected row as the focus border color
+        bg_color = themed_style().lookup(
+            "Treeview", "background", ("selected", "focus")
+        )
+        # Fallback blues in case the above fails with some themes
+        # Fallbacks are based on awdark/light selected row background colors
+        if not bg_color:
+            bg_color = "#215d9c" if themed_style().is_dark_theme() else "#1a497c"
+        themed_style().map(
+            "Custom.Treeview",
+            bordercolor=[("focus", bg_color)],
+            relief=[("focus", "solid")],
+        )
+
+        super().__init__(parent, style="Custom.Treeview", *args, **kwargs)
         self.bind("<Home>", lambda _e: self.select_and_focus_by_index(0))
         self.bind("<End>", lambda _e: self.select_and_focus_by_index(-1))
         if is_mac():
@@ -959,6 +974,12 @@ class ThemedStyle(ttk.Style):
             return self.tk.call(self._name, "theme", "use")  # type:ignore[attr-defined]
         super().theme_use(themename)
         return None
+
+    def is_dark_theme(self) -> bool:
+        """Returns True if theme is set to awdark."""
+        if self.theme_use() == "awdark":
+            return True
+        return False
 
 
 def themed_style(style: Optional[ThemedStyle] = None) -> ThemedStyle:
