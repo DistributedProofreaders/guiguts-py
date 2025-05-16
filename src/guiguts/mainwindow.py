@@ -37,6 +37,7 @@ from guiguts.widgets import (
     Busy,
     focus_next_widget,
     focus_prev_widget,
+    ThemedStyle,
 )
 
 logger = logging.getLogger(__package__)
@@ -1637,7 +1638,7 @@ class MainWindow:
     def __init__(self) -> None:
         Root()
         # Themes
-        themed_style(ttk.Style())
+        themed_style(ThemedStyle())
 
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()
