@@ -1001,6 +1001,9 @@ class CommandEditDialog(OkCancelDialog):
         "Option_R": "Option",
     }
 
+    # On macOS, "Cmd+-" or "Cmd+Key--" causes problems, so use name
+    KEY_NAMES = {"-": "minus"}
+
     def __init__(self, command_dlg: "CommandPaletteDialog") -> None:
         """Initialize the command edit window."""
         super().__init__(
@@ -1221,6 +1224,8 @@ class CommandEditDialog(OkCancelDialog):
         else:
             # Combine the current modifiers with the key
             mods = sorted(set(self.MODIFIER_KEYS[kk] for kk in self.pressed_modifiers))
+            # Substitute any keys that cause problems if just the key character is used
+            keysym = CommandEditDialog.KEY_NAMES.get(keysym, keysym)
             # Regular character key
             if len(keysym) == 1:
                 keysym = f"Key-{keysym.upper()}"

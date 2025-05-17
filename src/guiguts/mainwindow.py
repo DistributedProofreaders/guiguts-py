@@ -879,6 +879,9 @@ class MainImage(tk.Frame):
             "Image Zoom In", lambda: self.image_zoom(zoom_in=True), "Cmd/Ctrl+plus"
         )
         menubar_metadata().add_button_orphan(
+            "Image Zoom In ", lambda: self.image_zoom(zoom_in=True), "Cmd/Ctrl+equal"
+        )
+        menubar_metadata().add_button_orphan(
             "Image Zoom Out", lambda: self.image_zoom(zoom_in=False), "Cmd/Ctrl+minus"
         )
         menubar_metadata().add_button_orphan(
