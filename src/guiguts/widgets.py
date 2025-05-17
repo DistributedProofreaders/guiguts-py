@@ -381,6 +381,7 @@ class OkApplyCancelDialog(ToplevelDialog):
             default="active",
             command=self.ok_pressed,
         ).grid(row=0, column=column, padx=5)
+        self.bind("<Return>", lambda event: self.ok_pressed())
         if display_apply:
             column += 1
             ttk.Button(
@@ -389,6 +390,7 @@ class OkApplyCancelDialog(ToplevelDialog):
                 default="normal",
                 command=self.apply_changes,
             ).grid(row=0, column=column, padx=5)
+            self.bind("<Shift-Return>", lambda event: self.apply_changes())
         column += 1
         ttk.Button(
             button_frame,
@@ -396,7 +398,6 @@ class OkApplyCancelDialog(ToplevelDialog):
             default="normal",
             command=self.cancel_pressed,
         ).grid(row=0, column=column, padx=5)
-        self.bind("<Return>", lambda event: self.ok_pressed())
         self.bind("<Escape>", lambda event: self.cancel_pressed())
 
     def apply_changes(self) -> bool:

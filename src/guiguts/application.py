@@ -1111,6 +1111,7 @@ class Guiguts:
         CommandPaletteDialog.add_orphan_commands()
         SearchDialog.add_orphan_commands()
         ScannoCheckerDialog.add_orphan_commands()
+        SurroundWithDialog.add_orphan_commands()
         mainimage().add_orphan_commands()
         menubar_metadata().add_button_orphan(
             "Quit Without Saving File", lambda: root().quit()
