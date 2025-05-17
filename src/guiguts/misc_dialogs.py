@@ -1037,6 +1037,7 @@ class CommandEditDialog(OkCancelDialog):
             shortcut_entry,
             "Press required modifiers and keyboard key to use for shortcut",
         )
+        shortcut_entry.focus()
 
         # Just used for test binding
         self.dummy_widget = ttk.Label(self.top_frame)
@@ -1091,12 +1092,13 @@ class CommandEditDialog(OkCancelDialog):
             self.focus()
             return False
 
-        # Don't allow shortcuts that use Option
-        if "Option" in display_shortcut:
-            logger.error("Option key may not be used for shortcuts")
-            self.lift()
-            self.focus()
-            return False
+        # Don't allow shortcuts that use Option or Tab
+        for key in ("Option", "Tab"):
+            if key.lower() in display_shortcut.lower():
+                logger.error(f"{key} key may not be used for shortcuts")
+                self.lift()
+                self.focus()
+                return False
 
         # Plain F1 is reserved
         if display_shortcut == "F1":
@@ -1212,6 +1214,9 @@ class CommandEditDialog(OkCancelDialog):
         # Plain Return performs OK action
         elif keysym == "Return" and len(self.pressed_modifiers) == 0:
             self.ok_pressed()
+        # Allow tab keystrokes to perform focus-next/prev action by returning ""
+        elif keysym == "Tab":
+            return ""
         # All other keys potentially OK for shortcut
         else:
             # Combine the current modifiers with the key
