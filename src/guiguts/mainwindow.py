@@ -802,17 +802,6 @@ class MainImage(tk.Frame):
         maintext().peer.bind("<Tab>", focus_next_widget)
         maintext().peer.bind("<Shift-Tab>", peer_reverse_tab)
 
-        # Separate bindings needed for docked (root) and floated (self) states
-        for widget in (root(), self):
-            _, cp = process_accel("Cmd/Ctrl+plus")
-            _, ce = process_accel("Cmd/Ctrl+equal")
-            _, cm = process_accel("Cmd/Ctrl+minus")
-            _, c0 = process_accel("Cmd/Ctrl+0")
-            widget.bind(cp, lambda _: self.image_zoom(zoom_in=True))
-            widget.bind(ce, lambda _: self.image_zoom(zoom_in=True))
-            widget.bind(cm, lambda _: self.image_zoom(zoom_in=False))
-            widget.bind(c0, lambda _: self.image_zoom_to_height(disable_autofit=True))
-
         self.hbar = ttk.Scrollbar(top_frame, orient=tk.HORIZONTAL)
         self.hbar.grid(row=3, column=0, sticky="EW")
         self.hbar.configure(command=self.scroll_x)
@@ -864,26 +853,41 @@ class MainImage(tk.Frame):
     def add_orphan_commands(self) -> None:
         """Add orphan (i.e. not in menu) commands to command palette."""
         menubar_metadata().add_checkbutton_orphan(
-            "Image Fit ←→", PrefKey.IMAGE_AUTOFIT_WIDTH
+            "Image AutoFit ←→", PrefKey.IMAGE_AUTOFIT_WIDTH
         )
         menubar_metadata().add_checkbutton_orphan(
-            "Image Fit ↑↓", PrefKey.IMAGE_AUTOFIT_HEIGHT
+            "Image AutoFit ↑↓",
+            PrefKey.IMAGE_AUTOFIT_HEIGHT,
         )
         menubar_metadata().add_button_orphan(
-            "Scroll Image ↑",
+            "Image Scroll ↑",
             lambda: self.canvas.yview_scroll(1, "units"),
         )
         menubar_metadata().add_button_orphan(
-            "Scroll Image ↓",
+            "Image Scroll ↓",
             lambda: self.canvas.yview_scroll(-1, "units"),
         )
         menubar_metadata().add_button_orphan(
-            "Scroll Image ←",
+            "Image Scroll ←",
             lambda: self.canvas.xview_scroll(1, "units"),
         )
         menubar_metadata().add_button_orphan(
-            "Scroll Image →",
+            "Image Scroll →",
             lambda: self.canvas.xview_scroll(-1, "units"),
+        )
+        menubar_metadata().add_button_orphan(
+            "Image Zoom In", lambda: self.image_zoom(zoom_in=True), "Cmd/Ctrl+plus"
+        )
+        menubar_metadata().add_button_orphan(
+            "Image Zoom In ", lambda: self.image_zoom(zoom_in=True), "Cmd/Ctrl+equal"
+        )
+        menubar_metadata().add_button_orphan(
+            "Image Zoom Out", lambda: self.image_zoom(zoom_in=False), "Cmd/Ctrl+minus"
+        )
+        menubar_metadata().add_button_orphan(
+            "Image Fit ↑↓",
+            lambda: self.image_zoom_to_height(disable_autofit=True),
+            "Cmd/Ctrl+0",
         )
 
     def scroll_y(self, *args: Any, **kwargs: Any) -> None:
