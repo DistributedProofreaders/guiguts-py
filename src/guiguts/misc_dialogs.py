@@ -1590,6 +1590,15 @@ class SurroundWithDialog(OkApplyCancelDialog):
         self.after_entry.grid(row=1, column=2)
         ToolTip(self.after_entry, r'Use "\n" for newline')
 
+    @classmethod
+    def add_orphan_commands(cls) -> None:
+        """Add orphan commands to surround with dialog."""
+
+        menubar_metadata().add_button_orphan(
+            "Surround Selection With, Apply",
+            cls.orphan_wrapper("apply_changes"),
+        )
+
     def apply_changes(self) -> bool:
         """Overridden method to apply surrounding text."""
         maintext().undo_block_begin()
