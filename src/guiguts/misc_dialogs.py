@@ -1627,6 +1627,8 @@ class SurroundWithDialog(OkApplyCancelDialog):
         pairs = {
             "<": ">",
             "<<": ">>",
+            "[**": "]",
+            "[** ": "]",
             "[": "]",
             "{": "}",
             "(": ")",
