@@ -887,7 +887,7 @@ class ComposeHelpDialog(ToplevelDialog):
         )
         ToolTip(
             self.help,
-            "Click (or press Return) to insert character",
+            "Click (or press Space or Return) to insert character",
             use_pointer_pos=True,
         )
         for col, column in enumerate(self.column_headings):
@@ -913,6 +913,7 @@ class ComposeHelpDialog(ToplevelDialog):
 
         mouse_bind(self.help, "1", self.insert_char)
         self.bind("<Return>", lambda _: self.insert_char(None))
+        self.bind("<space>", lambda _: self.insert_char(None))
         self.help.focus_force()
 
         init_compose_dict()
@@ -1927,8 +1928,8 @@ class UnicodeSearchDialog(ToplevelDialog):
             self.list,
             "\n".join(
                 [
-                    f"Click in {UnicodeSearchDialog.CHAR_COL_HEAD},  {UnicodeSearchDialog.CODEPOINT_COL_HEAD} or {UnicodeSearchDialog.NAME_COL_HEAD} column (or press Return) to insert character",
-                    f"Click in {UnicodeSearchDialog.BLOCK_COL_HEAD} column (or press Shift+Return) to open Unicode Block dialog",
+                    f"Click in {UnicodeSearchDialog.CHAR_COL_HEAD},  {UnicodeSearchDialog.CODEPOINT_COL_HEAD} or {UnicodeSearchDialog.NAME_COL_HEAD} column (or press Space or Return) to insert character",
+                    f"Click in {UnicodeSearchDialog.BLOCK_COL_HEAD} column (or press Shift+Space or Shift+Return) to open Unicode Block dialog",
                     "(⚠\ufe0f before a character's name means it was added more recently - use with caution)",
                 ]
             ),
@@ -1956,7 +1957,9 @@ class UnicodeSearchDialog(ToplevelDialog):
         self.scrollbar.grid(row=1, column=1, sticky=tk.NS)
         mouse_bind(self.list, "1", self.item_clicked)
         self.list.bind("<Return>", self.insert_character)
+        self.list.bind("<space>", self.insert_character)
         self.list.bind("<Shift-Return>", self.open_block)
+        self.list.bind("<Shift-space>", self.open_block)
 
         char = maintext().selected_text()
         if len(char) == 1 and not char.isspace():
