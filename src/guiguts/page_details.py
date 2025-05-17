@@ -195,6 +195,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
                     break
 
         self.list.focus_set()
+        self.enable_ok_apply(False)
 
     def populate_list(self, details: PageDetails, see_index: int = 0) -> None:
         """Populate the page details list from the given details.
@@ -272,6 +273,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
         self.populate_list(self.details, self.list.index(row_id))
         self.list.focus_force()
         self.changed = True
+        self.enable_ok_apply(True)
         return "break"
 
     def apply_changes(self) -> bool:
@@ -279,4 +281,5 @@ class PageDetailsDialog(OkApplyCancelDialog):
         if self.changed:
             self.master_details.copy_details_from(self.details)
             maintext().set_modified(True)
+            self.enable_ok_apply(False)
         return True
