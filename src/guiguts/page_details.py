@@ -127,8 +127,8 @@ class PageDetailsDialog(OkApplyCancelDialog):
             self.list,
             "\n".join(
                 [
-                    "Click in style column (or press Return) to cycle Arabic/Roman/Ditto",
-                    f"Click in number column (or press {cmd_ctrl_string()}+Return) to cycle +1/No Count/Set Number",
+                    "Click in style column (or press Space) to cycle Arabic/Roman/Ditto",
+                    f"Click in number column (or press {cmd_ctrl_string()}+Space) to cycle +1/No Count/Set Number",
                     "Press Shift with above actions to cycle in reverse order",
                 ]
             ),
@@ -151,17 +151,17 @@ class PageDetailsDialog(OkApplyCancelDialog):
             self.list, "Shift+1", lambda event: self.item_clicked(event, reverse=True)
         )
         self.list.bind(
-            "<Return>", lambda _: self.item_clicked(STYLE_COLUMN, reverse=False)
+            "<space>", lambda _: self.item_clicked(STYLE_COLUMN, reverse=False)
         )
         self.list.bind(
-            "<Shift-Return>", lambda _: self.item_clicked(STYLE_COLUMN, reverse=True)
+            "<Shift-space>", lambda _: self.item_clicked(STYLE_COLUMN, reverse=True)
         )
         self.list.bind(
-            process_accel("Cmd/Ctrl+Return")[1],
+            process_accel("Cmd/Ctrl+space")[1],
             lambda _: self.item_clicked(NUMBER_COLUMN, reverse=False),
         )
         self.list.bind(
-            process_accel("Cmd/Ctrl+Shift+Return")[1],
+            process_accel("Cmd/Ctrl+Shift+space")[1],
             lambda _: self.item_clicked(NUMBER_COLUMN, reverse=True),
         )
 
@@ -195,6 +195,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
                     break
 
         self.list.focus_set()
+        self.enable_ok_apply(False)
 
     def populate_list(self, details: PageDetails, see_index: int = 0) -> None:
         """Populate the page details list from the given details.
@@ -272,6 +273,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
         self.populate_list(self.details, self.list.index(row_id))
         self.list.focus_force()
         self.changed = True
+        self.enable_ok_apply(True)
         return "break"
 
     def apply_changes(self) -> bool:
@@ -279,4 +281,5 @@ class PageDetailsDialog(OkApplyCancelDialog):
         if self.changed:
             self.master_details.copy_details_from(self.details)
             maintext().set_modified(True)
+            self.enable_ok_apply(False)
         return True

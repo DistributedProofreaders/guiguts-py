@@ -369,27 +369,30 @@ class OkApplyCancelDialog(ToplevelDialog):
             display_apply: Set to False if Apply button not required.
         """
         super().__init__(title, **kwargs)
+        self.display_apply = display_apply
         outer_button_frame = ttk.Frame(self, padding=5)
         outer_button_frame.grid(row=1, column=0, sticky="NSEW")
         outer_button_frame.columnconfigure(0, weight=1)
         button_frame = ttk.Frame(outer_button_frame)
         button_frame.grid(row=1, column=0)
         column = 0
-        ttk.Button(
+        self.ok_btn = ttk.Button(
             button_frame,
             text="OK",
             default="active",
             command=self.ok_pressed,
-        ).grid(row=0, column=column, padx=5)
+        )
+        self.ok_btn.grid(row=0, column=column, padx=5)
         self.bind("<Return>", lambda event: self.ok_pressed())
-        if display_apply:
+        if self.display_apply:
             column += 1
-            ttk.Button(
+            self.apply_btn = ttk.Button(
                 button_frame,
                 text="Apply",
                 default="normal",
                 command=self.apply_changes,
-            ).grid(row=0, column=column, padx=5)
+            )
+            self.apply_btn.grid(row=0, column=column, padx=5)
             self.bind("<Shift-Return>", lambda event: self.apply_changes())
         column += 1
         ttk.Button(
@@ -399,6 +402,12 @@ class OkApplyCancelDialog(ToplevelDialog):
             command=self.cancel_pressed,
         ).grid(row=0, column=column, padx=5)
         self.bind("<Escape>", lambda event: self.cancel_pressed())
+
+    def enable_ok_apply(self, enable: bool) -> None:
+        """Enable/disable the OK/Apply buttons."""
+        state = "normal" if enable else "disable"
+        self.ok_btn["state"] = state
+        self.apply_btn["state"] = state
 
     def apply_changes(self) -> bool:
         """Complete processing needed when Apply/OK are pressed, e.g. storing
