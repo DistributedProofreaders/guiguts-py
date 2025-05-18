@@ -379,24 +379,27 @@ class PageSeparatorDialog(ToplevelDialog):
         undo_button = ttk.Button(
             end_frame,
             text="Undo",
-            command=self.undo,
+            command=lambda: maintext().event_generate("<<Undo>>"),
             underline=0,
             width=self.BTN_WIDTH,
         )
         undo_button.grid(column=0, row=0, sticky="NSEW")
-        self.key_bind("u", undo_button.invoke)
-        self.key_bind("Cmd/Ctrl+Z", undo_button.invoke)
+        self.key_bind("u", lambda: maintext().event_generate("<<Undo>>"))
+        self.key_bind("Cmd/Ctrl+Z", lambda: maintext().event_generate("<<Undo>>"))
 
         redo_button = ttk.Button(
             end_frame,
             text="Redo",
-            command=self.redo,
+            command=lambda: maintext().event_generate("<<Redo>>"),
             underline=1,
             width=self.BTN_WIDTH,
         )
         redo_button.grid(column=1, row=0, sticky="NSEW")
-        self.key_bind("e", redo_button.invoke)
-        self.key_bind("Cmd+Shift+Z" if is_mac() else "Ctrl+Y", redo_button.invoke)
+        self.key_bind("e", lambda: maintext().event_generate("<<Redo>>"))
+        self.key_bind(
+            "Cmd+Shift+Z" if is_mac() else "Ctrl+Y",
+            lambda: maintext().event_generate("<<Redo>>"),
+        )
 
         refresh_button = ttk.Button(
             end_frame,
@@ -407,6 +410,14 @@ class PageSeparatorDialog(ToplevelDialog):
         )
         refresh_button.grid(column=2, row=0, sticky="NSEW")
         self.key_bind("r", refresh_button.invoke)
+
+        # If user does undo/redo, we want to re-view the active page separator
+        maintext().add_undo_redo_callback(self.get_dlg_name(), self.view)
+
+    def on_destroy(self) -> None:
+        """Tidy up when the dialog is destroyed - remove undo/redo callback."""
+        maintext().remove_undo_redo_callback(self.get_dlg_name())
+        super().on_destroy()
 
     def do_join(self, keep_hyphen: bool) -> None:
         """Join 2 lines if hyphenated, otherwise just remove separator line(s).
@@ -523,18 +534,6 @@ class PageSeparatorDialog(ToplevelDialog):
         maintext().undo_block_begin()
         self.do_blank(num_lines)
         self.do_auto()
-
-    def undo(self) -> None:
-        """Handle click on Undo button, by undoing latest changes and re-viewing
-        the first available page separator."""
-        maintext().event_generate("<<Undo>>")
-        self.view()
-
-    def redo(self) -> None:
-        """Handle click on Redo button, by re-doing latest undo and re-viewing
-        the first available page separator."""
-        maintext().event_generate("<<Redo>>")
-        self.view()
 
     def view(self) -> None:
         """Show the first available separator line to be processed."""
