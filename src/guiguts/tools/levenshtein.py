@@ -15,7 +15,7 @@ from guiguts.data import dictionaries
 from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
-from guiguts.preferences import PersistentInt, PrefKey, preferences
+from guiguts.preferences import PersistentInt, PrefKey, preferences, PersistentBoolean
 from guiguts.spell import get_spell_checker
 from guiguts.utilities import IndexRowCol, IndexRange
 
@@ -67,24 +67,28 @@ class LevenshteinCheckerDialog(CheckerDialog):
 
         self.edit_distance = PersistentInt(PrefKey.LEVENSHTEIN_DISTANCE)
 
-        frame = ttk.Frame(self.custom_frame)
-        frame.grid(column=0, row=1, sticky="NSEW")
         ttk.Label(
-            frame,
+            self.custom_frame,
             text="Edit Distance:",
-        ).grid(row=0, column=1, sticky="NSE", padx=(0, 5))
+        ).grid(row=0, column=0, sticky="NSE", padx=(0, 5))
         ttk.Radiobutton(
-            frame,
+            self.custom_frame,
             text="1",
             variable=self.edit_distance,
             value=LevenshteinEditDistance.ONE,
-        ).grid(row=0, column=2, sticky="NSE", padx=2)
+        ).grid(row=0, column=1, sticky="NSE", padx=2)
         ttk.Radiobutton(
-            frame,
+            self.custom_frame,
             text="2",
             variable=self.edit_distance,
             value=LevenshteinEditDistance.TWO,
-        ).grid(row=0, column=3, sticky="NSE", padx=2)
+        ).grid(row=0, column=2, sticky="NSE", padx=2)
+
+        ttk.Checkbutton(
+            self.custom_frame,
+            text="Include words containing digits",
+            variable=PersistentBoolean(PrefKey.LEVENSHTEIN_DIGITS),
+        ).grid(row=0, column=3, sticky="NSE", padx=(20, 0))
 
 
 def run_levenshtein_check_on_file(project_dict: ProjectDict) -> None:
@@ -122,6 +126,7 @@ def run_levenshtein_check_on_file(project_dict: ProjectDict) -> None:
     # of different case versions of the key that appear in the text.
     # E.g. 'another': ['Another', 'another', 'ANOTHER']
     all_words_case_map: dict[str, list[str]] = {}
+    reject_digits = not preferences.get(PrefKey.LEVENSHTEIN_DIGITS)
 
     def build_header_line(result_tuple: tuple) -> str:
         """Function to build a header line for display
@@ -381,8 +386,11 @@ def run_levenshtein_check_on_file(project_dict: ProjectDict) -> None:
         # Reject single-letter 'words' as they generate spurious report lines
         if len(word) == 1:
             return True
+        # Maybe reject if word contains digits
+        if reject_digits and re.search(r"\d", word):
+            return True
         # Reject if word contains Greek letters; e.g. 5μ, 3π, etc.
-        if re.search(r"\p{Greek}+", word):
+        if re.search(r"\p{Greek}", word):
             return True
         # Reject word if a valid Roman numeral
         worduc = word.upper()
