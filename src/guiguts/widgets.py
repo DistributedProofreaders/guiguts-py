@@ -109,7 +109,7 @@ class ToplevelDialog(tk.Toplevel):
     def __new__(cls, *args: Any, **kwargs: Any) -> "ToplevelDialog":
         """Ensure ToplevelDialogs are not instantiated directly."""
         if cls is ToplevelDialog:
-            raise TypeError(f"only children of '{cls.__name__}' may be instantiated")
+            raise NotImplementedError
         return object.__new__(cls)
 
     @classmethod
@@ -124,7 +124,7 @@ class ToplevelDialog(tk.Toplevel):
             kwargs: Optional kwargs to pass to dialog constructor.
         """
         # If dialog already exists, deiconify it
-        dlg_name = cls.__name__
+        dlg_name = cls.get_dlg_name()
         # Can we just deiconify dialog & reset it?
         if dlg := cls.get_dialog():
             dlg.deiconify()
@@ -143,7 +143,7 @@ class ToplevelDialog(tk.Toplevel):
         Returns:
             The one instance of this dialog type, or None if it's not currently shown.
         """
-        dlg_name = cls.__name__
+        dlg_name = cls.get_dlg_name()
         if (
             dlg_name in ToplevelDialog._toplevel_dialogs
             and ToplevelDialog._toplevel_dialogs[dlg_name].winfo_exists()
@@ -152,10 +152,9 @@ class ToplevelDialog(tk.Toplevel):
         return None
 
     @classmethod
-    def get_mark_prefix(cls) -> str:
-        """Use reduced dialog name for common part of mark names.
-        This ensures each dialog uses unique mark names and does not clash
-        with another dialog.
+    def get_dlg_name(cls) -> str:
+        """Get reduced dialog name where a unique identifier for a dialog type is needed,
+        such as prefix for mark names, keys in dictionaries, etc.
         """
         return cls.__name__.removesuffix("Dialog")
 
@@ -309,7 +308,7 @@ class ToplevelDialog(tk.Toplevel):
             value: New value for preference.
         """
         config_dict = preferences.get(key)
-        config_dict[self.__class__.__name__] = value
+        config_dict[self.get_dlg_name()] = value
         preferences.set(key, config_dict)
 
     def get_dialog_pref(self, key: PrefKey) -> Any:
@@ -326,7 +325,7 @@ class ToplevelDialog(tk.Toplevel):
         """
         config_dict = preferences.get(key)
         try:
-            return config_dict[self.__class__.__name__]
+            return config_dict[self.get_dlg_name()]
         except KeyError:
             return None
 
@@ -352,9 +351,7 @@ class ToplevelDialog(tk.Toplevel):
             if dlg := cls.get_dialog():
                 getattr(dlg, method_name)(*args, **kwargs)
 
-        assert hasattr(
-            cls, method_name
-        ), f"{cls.__name__} does not have method '{method_name}'"
+        assert hasattr(cls, method_name)
         return wrapper
 
 

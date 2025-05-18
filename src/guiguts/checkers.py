@@ -355,7 +355,7 @@ class CheckerDialog(ToplevelDialog):
         copy_button.grid(row=0, column=2, sticky="NSE")
 
         def rerunner() -> None:
-            self.selection_on_clear[self.__class__.__name__] = None
+            self.selection_on_clear[self.get_dlg_name()] = None
             self.rerun_command()
             self.refresh_view_options()
 
@@ -580,9 +580,7 @@ class CheckerDialog(ToplevelDialog):
 
         def do_clear_on_undo_redo() -> None:
             """If undo/redo operation should trigger user to Re-run tool, clear dialog."""
-            self.selection_on_clear[self.__class__.__name__] = (
-                self.current_entry_index()
-            )
+            self.selection_on_clear[self.get_dlg_name()] = self.current_entry_index()
             self.reset()
             self.text.insert(tk.END, REFRESH_MESSAGE)
             self.update_count_label()
@@ -591,12 +589,12 @@ class CheckerDialog(ToplevelDialog):
         # Only if not there already, because we don't want to overwrite it
         # if this is a new instance of a previously existing dialog, with the old
         # one destroyed and this one created due to a refresh/re-run.
-        if self.__class__.__name__ not in self.selection_on_clear:
-            self.selection_on_clear[self.__class__.__name__] = None
+        if self.get_dlg_name() not in self.selection_on_clear:
+            self.selection_on_clear[self.get_dlg_name()] = None
         # If this dialog should be cleared on undo/redo, add callback to maintext
         if clear_on_undo_redo:
             maintext().add_undo_redo_callback(
-                self.__class__.__name__, do_clear_on_undo_redo
+                self.get_dlg_name(), do_clear_on_undo_redo
             )
 
         if switch_focus_when_clicked is None:
@@ -615,7 +613,7 @@ class CheckerDialog(ToplevelDialog):
     def __new__(cls, *args: Any, **kwargs: Any) -> "CheckerDialog":
         """Ensure CheckerDialogs are not instantiated directly."""
         if cls is CheckerDialog:
-            raise TypeError(f"only children of '{cls.__name__}' may be instantiated")
+            raise NotImplementedError
         return object.__new__(cls)
 
     @classmethod
@@ -726,12 +724,12 @@ class CheckerDialog(ToplevelDialog):
             self.text.delete("1.0", tk.END)
             self.update()
         if maintext().winfo_exists():
-            maintext().clear_marks(self.get_mark_prefix())
+            maintext().clear_marks(self.get_dlg_name())
             maintext().remove_spotlights()
 
     def select_entry_after_undo_redo(self) -> None:
         """Select the saved entry, if any, after a re-run following undo/redo."""
-        entry_index = self.selection_on_clear[self.__class__.__name__]
+        entry_index = self.selection_on_clear[self.get_dlg_name()]
         if entry_index is not None:
             self.select_entry_by_index(entry_index)
 
@@ -742,7 +740,7 @@ class CheckerDialog(ToplevelDialog):
         Also the View Options dialog if it is popped.
         """
         super().on_destroy()
-        maintext().remove_undo_redo_callback(self.__class__.__name__)
+        maintext().remove_undo_redo_callback(self.get_dlg_name())
         if (
             self.view_options_dialog is not None
             and self.view_options_dialog.winfo_exists()
@@ -1131,7 +1129,7 @@ class CheckerDialog(ToplevelDialog):
         # was actually requesting a refresh
         if linenum == 1 and self.text.get("1.0", "1.end") == REFRESH_MESSAGE:
             self.rerun_command()
-            self.selection_on_clear[self.__class__.__name__] = None
+            self.selection_on_clear[self.get_dlg_name()] = None
             raise IndexError  # No valid index selected
 
         return self.entry_index_from_linenum(linenum)
@@ -1339,4 +1337,4 @@ class CheckerDialog(ToplevelDialog):
         Returns:
             Name for mark, e.g. "Checker123.45"
         """
-        return f"{cls.get_mark_prefix()}{rowcol.index()}"
+        return f"{cls.get_dlg_name()}{rowcol.index()}"

@@ -139,8 +139,8 @@ class ASCIITableDialog(ToplevelDialog):
         """Initialize ASCII Table dialog."""
         super().__init__("ASCII Table Special Effects", resize_x=False, resize_y=False)
 
-        self.start_mark_name = ASCIITableDialog.get_mark_prefix() + "Start"
-        self.end_mark_name = ASCIITableDialog.get_mark_prefix() + "End"
+        self.start_mark_name = ASCIITableDialog.get_dlg_name() + "Start"
+        self.end_mark_name = ASCIITableDialog.get_dlg_name() + "End"
 
         self.selected_column = -1
 
@@ -450,7 +450,7 @@ class ASCIITableDialog(ToplevelDialog):
         )
         # Also, if user does undo/redo, we want to refresh the table display
         maintext().add_undo_redo_callback(
-            self.__class__.__name__, self.refresh_table_display
+            self.get_dlg_name(), self.refresh_table_display
         )
 
         self.selected_col_width_label = ttk.Label(adjust_col_row2_frame)
@@ -468,7 +468,7 @@ class ASCIITableDialog(ToplevelDialog):
             return
         self.table_deselect()
         self.refresh_table_display()
-        maintext().remove_undo_redo_callback(self.__class__.__name__)
+        maintext().remove_undo_redo_callback(self.get_dlg_name())
 
     def justify_update(self) -> None:
         """Update controls to be active/disabled depending on whether justify is on."""

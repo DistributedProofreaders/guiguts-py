@@ -167,7 +167,7 @@ class FootnoteChecker:
         The mark will now be positioned before the blank line we just
         added.
         """
-        mark_prefix = self.checker_dialog.get_mark_prefix()
+        mark_prefix = self.checker_dialog.get_dlg_name()
         # Note the index of current end of file.
         old_end_of_file = maintext().end().index()
         blank_line_inserted = False
@@ -191,7 +191,7 @@ class FootnoteChecker:
 
     def change_gravity_right_to_left(self) -> None:
         """Change gravity of a FN-end Checker mark to tk.LEFT."""
-        mark_prefix = self.checker_dialog.get_mark_prefix()
+        mark_prefix = self.checker_dialog.get_dlg_name()
         fn_records = self.get_fn_records()
         for fn_record in fn_records:
             fn_cur_end = fn_record.end.index()
@@ -210,7 +210,7 @@ class FootnoteChecker:
 
     def change_gravity_left_to_right(self) -> None:
         """Change gravity of a FN-end Checker mark to tk.RIGHT."""
-        mark_prefix = self.checker_dialog.get_mark_prefix()
+        mark_prefix = self.checker_dialog.get_dlg_name()
         fn_records = self.get_fn_records()
         for fn_record in fn_records:
             fn_cur_end = fn_record.end.index()
@@ -829,7 +829,7 @@ def move_footnotes_to_paragraphs() -> None:
     # at the start of the Page Marker. Those two locations are the same.
 
     mark_prefix = (
-        _THE_FOOTNOTE_CHECKER.checker_dialog.get_mark_prefix() + INSERTION_MARK_PREFIX
+        _THE_FOOTNOTE_CHECKER.checker_dialog.get_dlg_name() + INSERTION_MARK_PREFIX
     )
     file_end = maintext().end().index()
     match_regex = r"^$"
