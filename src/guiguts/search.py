@@ -86,10 +86,8 @@ class SearchDialog(ToplevelDialog):
         options_frame.columnconfigure(2, weight=1)
         options_frame.rowconfigure(0, weight=1)
         options_frame.rowconfigure(1, weight=1)
-        message_frame = ttk.Frame(self.top_frame, padding=1)
-        message_frame.grid(row=6, column=0, columnspan=5, sticky="NSEW", pady=(5, 0))
         self.separator = ttk.Separator(self.top_frame, orient=tk.VERTICAL)
-        self.separator.grid(row=0, column=3, rowspan=6, padx=2, sticky="NSEW")
+        self.separator.grid(row=0, column=3, rowspan=7, padx=2, sticky="NSEW")
 
         # Options
         ttk.Checkbutton(
@@ -251,11 +249,22 @@ class SearchDialog(ToplevelDialog):
             lambda *args: self.replace_clicked(0, opposite_dir=True, search_again=True),
         )
         # Message (e.g. count)
-        message_frame.columnconfigure(0, weight=1)
         self.message = ttk.Label(
-            message_frame, borderwidth=1, relief="sunken", padding=5
+            self.top_frame, borderwidth=1, relief="sunken", padding=5
         )
-        self.message.grid(row=0, column=0, sticky="NSEW")
+        self.message.grid(
+            row=6, column=0, columnspan=3, sticky="NSEW", padx=1, pady=(4, 2)
+        )
+
+        self.highlight_all_btn = ttk.Button(
+            self.top_frame,
+            text="Highlight All",
+            command=self.highlightall_clicked,
+        )
+        self.highlight_all_btn.grid(
+            row=6, column=4, padx=PADX, pady=PADY, sticky="NSEW"
+        )
+        self.highlight_mark_prefix = self.get_mark_prefix() + "Highlight"
 
         self.show_multi_replace(resize=False)
 
@@ -299,6 +308,9 @@ class SearchDialog(ToplevelDialog):
             cls.orphan_wrapper(
                 "replace_clicked", 0, opposite_dir=True, search_again=True
             ),
+        )
+        menubar_metadata().add_button_orphan(
+            "S/R, Highlight All", cls.orphan_wrapper("highlightall_clicked")
         )
         menubar_metadata().add_checkbutton_orphan(
             "S/R, Reverse",
@@ -351,7 +363,6 @@ class SearchDialog(ToplevelDialog):
                     widget.grid()
                 else:
                     widget.grid_remove()
-        self.separator.grid(rowspan=6 if show else 4)
 
         if not resize:
             return
@@ -435,7 +446,7 @@ class SearchDialog(ToplevelDialog):
 
         try:
             maintext().search_pattern = self.search_box.get()
-            maintext().search_highlight_active.set(True)
+            maintext().search_highlight_active = True
 
             # Now that "background" matches are highlighted, find the next match
             # and jump there as the "active" match. Uses the "sel" highlight.
@@ -696,6 +707,34 @@ class SearchDialog(ToplevelDialog):
 
         match_str = sing_plur(match_count, "match", "matches")
         self.display_message(f"Replaced: {match_str} {range_name}")
+
+    def highlightall_clicked(self) -> None:
+        """Highlight all occurrences  of the string in the search box."""
+        search_string = self.search_box.get()
+        if not search_string:
+            return
+        self.search_box.add_to_history(search_string)
+
+        highlight_ranges, _ = get_search_ranges()
+        if highlight_ranges is None:
+            self.display_message('No text selected for "In selection" highlighting')
+            sound_bell()
+            return
+
+        maintext().regex_start_mark = self.highlight_mark_prefix + "Start"
+        maintext().mark_set(
+            maintext().regex_start_mark, highlight_ranges[0].start.index()
+        )
+        maintext().regex_end_mark = self.highlight_mark_prefix + "End"
+        maintext().mark_set(maintext().regex_end_mark, highlight_ranges[-1].end.index())
+
+        maintext().regex_pattern = search_string
+        maintext().regex_regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
+        maintext().regex_wholeword = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
+        maintext().regex_nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
+        maintext().regex_highlight_active = True
+        maintext().highlight_regex()
+        self.display_message("")
 
     def display_message(self, message: str = "") -> None:
         """Display message in Search dialog.
