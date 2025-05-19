@@ -389,6 +389,9 @@ class WordFrequencyDialog(ToplevelDialog):
         )
         self.text.grid(row=1, column=0, sticky="NSEW")
         mouse_bind(self.text, "1", self.goto_word_by_click)
+        mouse_bind(
+            self.text, "Shift-1", lambda e: self.goto_word_by_click(e, reverse=True)
+        )
         _, event = process_accel("Cmd/Ctrl+1")
         self.text.bind(event, self.search_word)
         self.text.bind("<Key>", self.goto_word_by_letter)
@@ -400,26 +403,38 @@ class WordFrequencyDialog(ToplevelDialog):
         self.text.bind(event, lambda _e: self.text.event_generate("<<Copy>>"))
         _, event = process_accel("Cmd/Ctrl+C")
         self.text.bind(event, lambda _e: self.text.event_generate("<<Copy>>"))
-        self.text.bind("<Home>", lambda _e: self.goto_word(0))
-        self.text.bind("<Shift-Home>", lambda _e: self.goto_word(0))
-        self.text.bind("<End>", lambda _e: self.goto_word(len(self.entries) - 1))
-        self.text.bind("<Shift-End>", lambda _e: self.goto_word(len(self.entries) - 1))
+        self.text.bind("<Home>", lambda _e: self.goto_word(0, force_first=True))
+        self.text.bind("<Shift-Home>", lambda _e: self.goto_word(0, force_first=True))
+        self.text.bind(
+            "<End>", lambda _e: self.goto_word(len(self.entries) - 1, force_first=True)
+        )
+        self.text.bind(
+            "<Shift-End>",
+            lambda _e: self.goto_word(len(self.entries) - 1, force_first=True),
+        )
         # Bind same keys as main window uses for top/bottom on Mac.
         # Above bindings work already for Windows
         if is_mac():
-            self.text.bind("<Command-Up>", lambda _e: self.goto_word(0))
-            self.text.bind("<Shift-Command-Up>", lambda _e: self.goto_word(0))
             self.text.bind(
-                "<Command-Down>", lambda _e: self.goto_word(len(self.entries) - 1)
+                "<Command-Up>", lambda _e: self.goto_word(0, force_first=True)
             )
             self.text.bind(
-                "<Shift-Command-Down>", lambda _e: self.goto_word(len(self.entries) - 1)
+                "<Shift-Command-Up>", lambda _e: self.goto_word(0, force_first=True)
+            )
+            self.text.bind(
+                "<Command-Down>",
+                lambda _e: self.goto_word(len(self.entries) - 1, force_first=True),
+            )
+            self.text.bind(
+                "<Shift-Command-Down>",
+                lambda _e: self.goto_word(len(self.entries) - 1, force_first=True),
             )
         ToolTip(
             self.text,
             "\n".join(
                 [
-                    "Left click: Find first match, click again for other matches",
+                    "Left click: Find first match; click again for next match",
+                    "Shift Left click: Find last match; click again for previous match"
                     f"{cmd_ctrl_string()}-left click: Find using Search dialog",
                 ]
             ),
@@ -565,14 +580,15 @@ class WordFrequencyDialog(ToplevelDialog):
             or re.search(r"^\W|\W$", word)
         )
 
-    def goto_word_by_click(self, event: tk.Event) -> str:
+    def goto_word_by_click(self, event: tk.Event, reverse: bool = False) -> str:
         """Go to first/next occurrence of word selected by `event`.
 
-        If a different word to last click, then start search from beginning
-        of file, otherwise just continue from current location.
+        If a different word to last click, then start search from beginning/end
+        of file, otherwise just continue forward/backward from current location.
 
         Args:
             event: Event containing mouse click coordinates.
+            reverse: Search in reverse direction.
 
         Returns:
             "break" to stop further processing of event
@@ -581,7 +597,7 @@ class WordFrequencyDialog(ToplevelDialog):
             entry_index = self.entry_index_from_click(event)
         except IndexError:
             return "break"
-        self.goto_word(entry_index)
+        self.goto_word(entry_index, reverse=reverse)
         return "break"
 
     def goto_word_by_letter(self, event: tk.Event) -> str:
@@ -618,10 +634,12 @@ class WordFrequencyDialog(ToplevelDialog):
             or entry_index + increment >= len(self.entries)
         ):
             return "break"
-        self.goto_word(entry_index + increment)
+        self.goto_word(entry_index + increment, force_first=True)
         return "break"
 
-    def goto_word(self, entry_index: int, force_first: bool = False) -> None:
+    def goto_word(
+        self, entry_index: int, force_first: bool = False, reverse: bool = False
+    ) -> None:
         """Go to first/next occurrence of word listed at `entry_index`.
 
         If a different word to last click, then start search from beginning
@@ -630,6 +648,7 @@ class WordFrequencyDialog(ToplevelDialog):
         Args:
             entry_index: Index into `self.entries` indicating which to select.
             force_first: True to force first occurrence, False for next occurrence.
+            reverse: True to search backward.
         """
         if entry_index >= len(self.entries):
             return
@@ -639,10 +658,11 @@ class WordFrequencyDialog(ToplevelDialog):
         self.text.focus()
         word = self.entries[entry_index].word
         if word == self.previous_word and not force_first:
-            start = maintext().get_insert_index()
-            start.col += 1
+            start = maintext().rowcol(
+                f"{maintext().get_insert_index().index()}{'-' if reverse else '+'}1c"
+            )
         else:
-            start = maintext().start()
+            start = maintext().end() if reverse else maintext().start()
         # Special handling for newline characters (displayed as RETURN_ARROW)
         newline_word = (
             re.sub(RETURN_ARROW, "\n", word) if RETURN_ARROW in word else word
@@ -684,11 +704,14 @@ class WordFrequencyDialog(ToplevelDialog):
             nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
             wholeword=wholeword,
             regexp=True,
-            backwards=False,
+            backwards=reverse,
             wrap=False,
         )
         if match is None:
             sound_bell()
+            maintext().set_insert_index(
+                maintext().end() if reverse else maintext().start(), focus=False
+            )
         else:
             maintext().set_insert_index(match.rowcol, focus=False)
             maintext().remove_spotlights()
@@ -800,7 +823,7 @@ def wf_populate(wf_dialog: WordFrequencyDialog) -> None:
             wf_populate_regexps(wf_dialog)
         case _ as bad_value:
             assert False, f"Invalid WFDisplayType: {bad_value}"
-    wf_dialog.goto_word(0)
+    wf_dialog.goto_word(0, force_first=True)
     Busy.unbusy()
 
 
