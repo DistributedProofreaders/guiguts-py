@@ -371,6 +371,7 @@ class TextLineNumbers(tk.Canvas):
 class HighlightTag(StrEnum):
     """Global highlight tag settings."""
 
+    CHAR_STR_REGEX = auto()
     QUOTEMARK = auto()
     SPOTLIGHT = auto()
     PAREN = auto()
@@ -501,16 +502,12 @@ class BaseColors:
 class HighlightColors:
     """Global highlight color settings."""
 
-    # Possible future enhancement:
-    #
-    # GG1 allowed you to set three colors:
-    # - Background color (text areas, text inputs, main editor textarea)
-    # - Button highlight color (hover on buttons, checkboxes, radio selects)
-    # - Scanno/quote highlight color (which would apply here)
-    #
-    # Unclear what we should/will do in GG2 with themes & dark mode support.
-
     # Must be a definition for each available theme
+    CHAR_STR_REGEX = {
+        "Light": {"background": "#a08dfc", "foreground": "black"},
+        "Dark": {"background": "darkmagenta", "foreground": "white"},
+    }
+
     QUOTEMARK = {
         "Light": {"background": "#a08dfc", "foreground": "black"},
         "Dark": {"background": "darkmagenta", "foreground": "white"},
@@ -709,8 +706,15 @@ class MainText(tk.Text):
         preferences.set(PrefKey.ALIGN_COL_ACTIVE, False)
 
         # whether search highlights should be active
-        self.search_highlight_active = tk.BooleanVar()
+        self.search_highlight_active = False
         self.search_pattern = ""
+        self.regex_highlight_active = False
+        self.regex_pattern = ""
+        self.regex_regexp = False
+        self.regex_wholeword = False
+        self.regex_nocase = False
+        self.regex_start_mark = ""
+        self.regex_end_mark = ""
 
         # Create Line Numbers widget
         self.linenumbers = TextLineNumbers(self.frame, self)
@@ -1291,6 +1295,7 @@ class MainText(tk.Text):
             self.root.after_idle(self.highlight_aligncol)
             self.root.after_idle(self.highlight_cursor_line)
             self.root.after_idle(self.highlight_search)
+            self.root.after_idle(self.highlight_regex)
             self.root.after_idle(self.highlight_proofercomment)
             self.root.after_idle(self.highlight_html_tags)
             self.numbers_need_updating = True
@@ -2668,15 +2673,32 @@ class MainText(tk.Text):
             match.start() - slurp_newline_adjustment,
         )
 
-    def find_all(self, find_range: IndexRange, search_string: str) -> list[FindMatch]:
+    def find_all(
+        self,
+        find_range: IndexRange,
+        search_string: str,
+        regexp: Optional[bool] = None,
+        wholeword: Optional[bool] = None,
+        nocase: Optional[bool] = None,
+    ) -> list[FindMatch]:
         """Find all matches in given range.
+
+        Args:
+            find_range: Range to find all in.
+            search_string: String or regex to search for.
+            regexp: Whether to regex search - defaults to search dialog setting.
+            wholeword: Whether to wholeword search - defaults to search dialog setting.
+            nocase: Whether to nocase search - defaults to search dialog setting.
 
         Returns:
             List of FindMatch objects.
         """
-        regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
-        wholeword = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
-        nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
+        if regexp is None:
+            regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
+        if wholeword is None:
+            wholeword = preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD)
+        if nocase is None:
+            nocase = not preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE)
 
         slurp_text = self.get(find_range.start.index(), find_range.end.index())
         slice_start = 0
@@ -3385,7 +3407,9 @@ class MainText(tk.Text):
     def remove_highlights(self) -> None:
         """Remove active highlights."""
         self.highlight_search_deactivate()
+        self.highlight_regex_deactivate()
         self.tag_remove(HighlightTag.QUOTEMARK, "1.0", tk.END)
+        self.tag_remove(HighlightTag.CHAR_STR_REGEX, "1.0", tk.END)
 
     def highlight_quotemarks(self, pat: str) -> None:
         """Highlight quote marks in current selection which match a pattern."""
@@ -3761,7 +3785,7 @@ class MainText(tk.Text):
     def highlight_search(self) -> None:
         """Highlight search matches during redraw."""
         self.remove_highlights_search()
-        if self.search_highlight_active.get():
+        if self.search_highlight_active:
             self.highlight_search_in_viewport(self)
             if PrefKey.SPLIT_TEXT_WINDOW:
                 self.highlight_search_in_viewport(self.peer)
@@ -3773,8 +3797,54 @@ class MainText(tk.Text):
 
     def highlight_search_deactivate(self) -> None:
         """Turn off the highlight-matches mode."""
-        self.search_highlight_active.set(False)
+        self.search_highlight_active = False
         self.remove_highlights_search()
+
+    def highlight_regex_in_viewport(self, viewport: Text) -> None:
+        """Highlights current char/str/regex pattern in designated viewport."""
+        if not self.regex_pattern:
+            return
+        # Restrict search range to intersection of visible screen and marked area
+        index_range = self.get_screen_window_coordinates(viewport, 80)
+        idx_start = maintext().index(self.regex_start_mark)
+        if maintext().compare(index_range.start.index(), "<", idx_start):
+            index_range.start = IndexRowCol(idx_start)
+        idx_end = maintext().index(self.regex_end_mark)
+        if maintext().compare(index_range.end.index(), ">", idx_end):
+            index_range.end = IndexRowCol(idx_end)
+        # No overlap between marked region and viewport range
+        if maintext().compare(index_range.start.index(), ">", index_range.end.index()):
+            return
+        for _match in self.find_all(
+            index_range,
+            self.regex_pattern,
+            regexp=self.regex_regexp,
+            wholeword=self.regex_wholeword,
+            nocase=self.regex_nocase,
+        ):
+            viewport.tag_add(
+                HighlightTag.CHAR_STR_REGEX,
+                _match.rowcol.index(),
+                f"{_match.rowcol.index()}+{_match.count}c",
+            )
+
+    def highlight_regex(self) -> None:
+        """Highlight char/str/regex matches."""
+        self.remove_highlights_regex()
+        if self.regex_highlight_active:
+            self.highlight_regex_in_viewport(self)
+            if PrefKey.SPLIT_TEXT_WINDOW:
+                self.highlight_regex_in_viewport(self.peer)
+
+    def remove_highlights_regex(self) -> None:
+        """Remove highlights for char/str/regex highlighting."""
+        if self.winfo_exists():
+            self.tag_remove(HighlightTag.CHAR_STR_REGEX, "1.0", tk.END)
+
+    def highlight_regex_deactivate(self) -> None:
+        """Turn off the highlight char/str/regex mode."""
+        self.regex_highlight_active = False
+        self.remove_highlights_regex()
 
     def highlight_proofercomment(self) -> None:
         """Highlight [** proofer comments] for attention."""
@@ -3888,6 +3958,7 @@ class MainText(tk.Text):
         # ** THE ORDER MATTERS HERE **
         #
         for tag, colors in (
+            (HighlightTag.CHAR_STR_REGEX, HighlightColors.CHAR_STR_REGEX),
             (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
             (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
             (HighlightTag.PROOFERCOMMENT, HighlightColors.PROOFERCOMMENT),
