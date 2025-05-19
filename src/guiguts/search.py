@@ -264,7 +264,7 @@ class SearchDialog(ToplevelDialog):
         self.highlight_all_btn.grid(
             row=6, column=4, padx=PADX, pady=PADY, sticky="NSEW"
         )
-        self.highlight_mark_prefix = self.get_mark_prefix() + "Highlight"
+        self.highlight_mark_prefix = self.get_dlg_name() + "Highlight"
 
         self.show_multi_replace(resize=False)
 
