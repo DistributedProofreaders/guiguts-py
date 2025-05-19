@@ -1608,7 +1608,7 @@ class SurroundWithDialog(OkApplyCancelDialog):
             ranges = [
                 IndexRange(maintext().get_insert_index(), maintext().get_insert_index())
             ]
-        end_mark = self.get_mark_prefix() + "endpoint"
+        end_mark = self.get_dlg_name() + "endpoint"
         maintext().mark_set(end_mark, ranges[-1].end.index())
         before = preferences.get(PrefKey.SURROUND_WITH_BEFORE).replace(r"\n", "\n")
         after = preferences.get(PrefKey.SURROUND_WITH_AFTER).replace(r"\n", "\n")
