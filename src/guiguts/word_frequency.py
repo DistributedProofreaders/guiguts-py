@@ -308,8 +308,8 @@ class WordFrequencyDialog(ToplevelDialog):
             return button
 
         display_radio(0, 0, "All Words", WFDisplayType.ALL_WORDS)
-        display_radio(0, 1, "Emdashes", WFDisplayType.EMDASHES)
-        display_radio(0, 2, "Hyphens", WFDisplayType.HYPHENS)
+        display_radio(0, 1, "Accents", WFDisplayType.ACCENTS)
+        display_radio(0, 2, "Ligatures", WFDisplayType.LIGATURES)
         self.all_caps_btn = display_radio(1, 0, "ALL CAPITALS", WFDisplayType.ALL_CAPS)
         self.mixed_case_btn = display_radio(
             1, 1, "MiXeD CasE", WFDisplayType.MIXED_CASE
@@ -317,10 +317,29 @@ class WordFrequencyDialog(ToplevelDialog):
         self.initial_caps_btn = display_radio(
             1, 2, "Initial Capitals", WFDisplayType.INITIAL_CAPS
         )
-        display_radio(2, 0, "Alpha/Num", WFDisplayType.ALPHANUM)
-        display_radio(2, 1, "Accents", WFDisplayType.ACCENTS)
-        display_radio(2, 2, "Ligatures", WFDisplayType.LIGATURES)
-        display_radio(3, 0, "Character Cnts", WFDisplayType.CHAR_COUNTS)
+        display_radio(2, 0, "Emdashes", WFDisplayType.EMDASHES)
+        hyphen_frame = ttk.Frame(display_frame)
+        hyphen_frame.grid(row=2, column=1, columnspan=2, sticky="NSEW")
+        hyphen_frame.columnconfigure(index=3, weight=1)
+        ttk.Radiobutton(
+            hyphen_frame,
+            text='Hyphens  -  Including "two word" Matches?',
+            command=lambda: wf_populate(self),
+            variable=display_type,
+            value=WFDisplayType.HYPHENS,
+        ).grid(row=0, column=0, sticky="NSW", padx=(5, 0))
+
+        def hyphen_two_word_cmd() -> None:
+            """Set type to Hyphens and re-populate."""
+            preferences.set(PrefKey.WFDIALOG_DISPLAY_TYPE, WFDisplayType.HYPHENS)
+            wf_populate(self)
+
+        ttk.Checkbutton(
+            hyphen_frame,
+            command=hyphen_two_word_cmd,
+            variable=PersistentBoolean(PrefKey.WFDIALOG_HYPHEN_TWO_WORDS),
+        ).grid(row=0, column=2, sticky="NSW")
+        display_radio(3, 0, "Alpha/Num", WFDisplayType.ALPHANUM)
         italic_frame = ttk.Frame(display_frame)
         italic_frame.grid(row=3, column=1, columnspan=2, sticky="NSEW")
         italic_frame.columnconfigure(index=1, weight=1)
@@ -362,9 +381,13 @@ class WordFrequencyDialog(ToplevelDialog):
         self.threshold_box.bind("<Return>", display_markedup)
         self.threshold_box.bind("<<ComboboxSelected>>", display_markedup)
 
-        display_radio(4, 0, "Regular Expression", WFDisplayType.REGEXP)
-        self.regex_box = Combobox(display_frame, PrefKey.WFDIALOG_REGEX)
-        self.regex_box.grid(row=4, column=1, columnspan=2, sticky="NSEW", padx=(0, 5))
+        display_radio(4, 0, "Character Cnts", WFDisplayType.CHAR_COUNTS)
+        regex_frame = ttk.Frame(display_frame)
+        regex_frame.grid(row=4, column=1, columnspan=2, sticky="NSEW")
+        regex_frame.columnconfigure(index=1, weight=1)
+        display_radio(0, 0, "Regular Expression", WFDisplayType.REGEXP, regex_frame)
+        self.regex_box = Combobox(regex_frame, PrefKey.WFDIALOG_REGEX)
+        self.regex_box.grid(row=0, column=1, columnspan=2, sticky="NSEW", padx=(0, 5))
         ToolTip(self.regex_box, "Only show words matching this regular expression")
         # Override default behavior for combobox up/down arrow
         self.regex_box.bind("<Up>", lambda _e: self.goto_word_by_arrow(-1))
@@ -891,18 +914,21 @@ def wf_populate_hyphens(wf_dialog: WordFrequencyDialog) -> None:
 
     # See if word pair suspects exist, e.g. "flash light" for "flash-light"
     word_pairs: WFDict = WFDict()
-    # Replace single newline or multiple spaces with single space
-    # (Multiple newlines is probably deliberate rather than error)
-    whole_text = re.sub(r"(\n| +)", " ", maintext().get_text())
-    re_flags = re.IGNORECASE if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE) else 0
-    for word in all_words:
-        if "-" in word:
-            pair = word.replace("-", " ")
-            # Find word pair not preceded/followed by a letter - this is so
-            # that space or punctuation surrounding the pair doesn't break things.
-            count = len(re.findall(rf"(?<!\w){pair}(?!\w)", whole_text, flags=re_flags))
-            if count:
-                word_pairs[pair] = count
+    if preferences.get(PrefKey.WFDIALOG_HYPHEN_TWO_WORDS):
+        # Replace single newline or multiple spaces with single space
+        # (Multiple newlines is probably deliberate rather than error)
+        whole_text = re.sub(r"(\n| +)", " ", maintext().get_text())
+        re_flags = re.IGNORECASE if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE) else 0
+        for word in all_words:
+            if "-" in word:
+                pair = word.replace("-", " ")
+                # Find word pair not preceded/followed by a letter - this is so
+                # that space or punctuation surrounding the pair doesn't break things.
+                count = len(
+                    re.findall(rf"(?<!\w){pair}(?!\w)", whole_text, flags=re_flags)
+                )
+                if count:
+                    word_pairs[pair] = count
 
     suspect_cnt = 0
     total_cnt = 0

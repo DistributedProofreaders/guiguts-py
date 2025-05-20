@@ -42,6 +42,7 @@ class PrefKey(StrEnum):
     WFDIALOG_SORT_TYPE = auto()
     WFDIALOG_ITALIC_THRESHOLD = auto()
     WFDIALOG_REGEX = auto()
+    WFDIALOG_HYPHEN_TWO_WORDS = auto()
     CHECKERDIALOG_SORT_TYPE_DICT = auto()
     CHECKERDIALOG_SUSPECTS_ONLY_DICT = auto()
     DIALOG_GEOMETRY = auto()
