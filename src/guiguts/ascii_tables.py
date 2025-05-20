@@ -528,7 +528,14 @@ class ASCIITableDialog(ToplevelDialog):
             subsequent_indent=sub_ind,
             break_long_words=False,
         )
-        if preferences.get(PrefKey.ASCII_TABLE_REWRAP):
+        # Don't wrap if whole column is just whitespace
+        all_spaces = True
+        for row in tbl.rows:
+            test_cell = "".join(row.cells[self.selected_column].fragments)
+            if re.search("[^ ]", test_cell):
+                all_spaces = False
+                break
+        if preferences.get(PrefKey.ASCII_TABLE_REWRAP) and not all_spaces:
             for row in tbl.rows:
                 cell_fragments = row.cells[self.selected_column].fragments
                 cell_text = re.sub("  +", " ", " ".join(cell_fragments)).strip()
@@ -732,7 +739,8 @@ class ASCIITableDialog(ToplevelDialog):
         maintext().undo_block_begin()
         made_a_dividing_line = False
         # Get column position of insert cursor.
-        cursor_column = maintext().get_insert_index().col
+        cursor_pos = maintext().get_insert_index()
+        cursor_column = cursor_pos.col
         # Set start and end row/col of table from marks for "|" insert loop.
         start_row = maintext().rowcol(self.start_mark_name).row
         end_row = maintext().rowcol(self.end_mark_name).row
@@ -797,6 +805,7 @@ class ASCIITableDialog(ToplevelDialog):
             self.selected_column = self.get_selected_column_from_rowcol(
                 IndexRowCol(table_row, cursor_column)
             )
+        maintext().set_insert_index(cursor_pos)  # Restore cursor position
         self.refresh_table_display()
 
     def space_out_table(self) -> None:
