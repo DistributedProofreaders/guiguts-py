@@ -751,3 +751,8 @@ class TextWrapper:
         if paragraph[-1] != "\n":
             rewrapped_para = rewrapped_para.rstrip("\n")
         return rewrapped_para
+
+
+def is_debug() -> bool:
+    """Return whether in debug mode, specifically if error logging level is debug."""
+    return logger.getEffectiveLevel() == logging.DEBUG
