@@ -469,6 +469,7 @@ def repeated_words_check() -> None:
                 )
             else:
                 # "Duplicate" message - amend build message to cover whole relevant range
+                assert build_msg is not None
                 build_msg.text_range.end = msg_info.text_range.end
                 build_msg.hilite_end = msg_info.hilite_end
             prev_msg_info = msg_info
