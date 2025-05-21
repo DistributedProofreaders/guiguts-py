@@ -34,6 +34,7 @@ from guiguts.utilities import (
     is_mac,
     sound_bell,
     load_dict_from_json,
+    is_debug,
 )
 from guiguts.widgets import (
     ToplevelDialog,
@@ -78,7 +79,7 @@ def tool_save() -> bool:
     Returns:
         True if OK to continue with intended operation.
     """
-    if the_file().filename:
+    if the_file().filename or is_debug():
         return True
 
     save = messagebox.askokcancel(
