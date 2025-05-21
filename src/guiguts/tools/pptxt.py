@@ -318,6 +318,10 @@ def repeated_words_check() -> None:
     # in that case are not counted as repeated words. The regex search on that line
     # will determine whether such repeats are counted as 'repeated words' or not.
 
+    # NOTE: This could potentially be simplified/improved using `findall` to get all
+    # non-overlapping matches of "word word" on the line after adding the first word
+    # of the next line. Or maybe slurp whole file, then search for "word \1".
+
     @dataclass
     class MsgInfo:
         """Class to store info for potential message."""
