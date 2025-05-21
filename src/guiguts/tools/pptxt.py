@@ -1,5 +1,6 @@
 """PPtxt tool"""
 
+from dataclasses import dataclass
 from typing import Dict, Sequence, List, Any
 import regex as re
 
@@ -317,9 +318,18 @@ def repeated_words_check() -> None:
     # in that case are not counted as repeated words. The regex search on that line
     # will determine whether such repeats are counted as 'repeated words' or not.
 
-    none_found = True
-    for rec_num in range(len(book) - 1):
-        book_line = book[rec_num]
+    @dataclass
+    class MsgInfo:
+        """Class to store info for potential message."""
+
+        msg: str
+        text_range: IndexRange
+        hilite_start: int
+        hilite_end: int
+
+    repeat_msg: list[MsgInfo] = []
+
+    for rec_num, book_line in enumerate(book):
         words_on_line = word_list_map_words[rec_num]
         # Run through words found on a line looking for possible repeats. This quick
         # and cheap check eliminates most lines from being 'possibles'. Numbers are
@@ -351,7 +361,6 @@ def repeated_words_check() -> None:
                 # Build a regex.
                 regx = f"(\\b{word}\\b +\\b{word}\\b)"
                 if res := re.search(regx, book_line):
-                    none_found = False
                     repl = " " * len(word)
                     # Obsfucate the first occurence of 'word' on the line so
                     # next re.search can't find it. It's replaced by blanks
@@ -372,16 +381,18 @@ def repeated_words_check() -> None:
                     hilite_start = res.start(0)
                     hilite_end = res.end(0)
                     # Add message to dialog.
-                    checker_dialog.add_entry(
-                        record,
-                        IndexRange(start_rowcol, end_rowcol),
-                        hilite_start,
-                        hilite_end,
+                    repeat_msg.append(
+                        MsgInfo(
+                            record,
+                            IndexRange(start_rowcol, end_rowcol),
+                            hilite_start,
+                            hilite_end,
+                        )
                     )
 
         # We may get here also if current line is a blank line.
 
-        if len(no_numbers_words_on_line) > 0:
+        if len(no_numbers_words_on_line) > 0 and rec_num < len(book) - 1:
             # Completed determinative search of line for possible repeated words.
             # Now look at last word on the line and the first word of the next.
             word = no_numbers_words_on_line[-1]
@@ -392,7 +403,6 @@ def repeated_words_check() -> None:
             if (res1 := re.search(regx1, book[rec_num])) and (
                 res2 := re.search(regx2, book[rec_num + 1])
             ):
-                none_found = False
                 # Get start/end of the repeated words in file.
                 error_start = str(rec_num + 1) + "." + str(res1.start(0))
                 error_end = str(rec_num + 2) + "." + str(res2.end(0))
@@ -410,56 +420,67 @@ def repeated_words_check() -> None:
                 # to end of current line.
                 hilite_end = len(record)
                 # Add message to dialog.
-                checker_dialog.add_entry(
-                    record,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
+                repeat_msg.append(
+                    MsgInfo(
+                        record,
+                        IndexRange(start_rowcol, end_rowcol),
+                        hilite_start,
+                        hilite_end,
+                    )
                 )
 
-    # At this point all lines but the last have been searched for repeated words.
-    # Do this now for the last line of the book.
-
-    if len(book) > 0:
-        last_line = book[-1]
-        words_on_line = word_list_map_words[-1]
-        for word in words_on_line:
-            # Ignore word if it is a number.
-            if re.match(r"^[\p{Nd}]+$", word):
-                continue
-            # Build a regex.
-            regx = f"(\\b{word}\\b +\\b{word}\\b)"
-            if res := re.search(regx, last_line):
-                none_found = False
-                repl = " " * len(word)
-                # Obsfucate the first occurence of 'word' on the line so
-                # next re.search can't find it. It's replaced by blanks
-                # to the same length as 'word'.
-                last_line = re.sub(word, repl, last_line, count=1)
-                # Get start/end of the repeated words in file.
-                last_line_number = len(book)
-                error_start = str(last_line_number) + "." + str(res.start(0))
-                error_end = str(last_line_number) + "." + str(res.end(0))
-                # Store in structure for file row/col positions & range.
-                start_rowcol = IndexRowCol(error_start)
-                end_rowcol = IndexRowCol(error_end)
-                # Get whole of file line.
-                line = maintext().get(
-                    error_start + " linestart", error_end + " lineend"
+    # Only output the message if it's on a different line or a different word to the previous
+    if repeat_msg:
+        prev_msg_info = None
+        build_msg = None
+        for msg_info in repeat_msg:
+            # If this message doesn't match previous message, ignoring multiple spaces...
+            if (
+                prev_msg_info is None
+                or msg_info.text_range.start.row != prev_msg_info.text_range.start.row
+                or msg_info.msg != prev_msg_info.msg
+                or re.sub(
+                    "  +",
+                    " ",
+                    msg_info.msg[msg_info.hilite_start : msg_info.hilite_end],
                 )
-                record = line
-                # Calculate start/end of repeated words in dialog message.
-                hilite_start = res.start(0)
-                hilite_end = res.end(0)
-                # Add message to dialog.
-                checker_dialog.add_entry(
-                    record,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
+                != re.sub(
+                    "  +",
+                    " ",
+                    prev_msg_info.msg[
+                        prev_msg_info.hilite_start : prev_msg_info.hilite_end
+                    ],
                 )
-
-    if none_found:
+            ):
+                # Output any combined message we've previously built up
+                if build_msg is not None:
+                    checker_dialog.add_entry(
+                        build_msg.msg,
+                        build_msg.text_range,
+                        build_msg.hilite_start,
+                        build_msg.hilite_end,
+                    )
+                # Start a new build message
+                build_msg = MsgInfo(
+                    msg_info.msg,
+                    msg_info.text_range,
+                    msg_info.hilite_start,
+                    msg_info.hilite_end,
+                )
+            else:
+                # "Duplicate" message - amend build message to cover whole relevant range
+                build_msg.text_range.end = msg_info.text_range.end
+                build_msg.hilite_end = msg_info.hilite_end
+            prev_msg_info = msg_info
+        # Output last message
+        if build_msg is not None:
+            checker_dialog.add_entry(
+                build_msg.msg,
+                build_msg.text_range,
+                build_msg.hilite_start,
+                build_msg.hilite_end,
+            )
+    else:
         checker_dialog.add_footer("", "    No repeated words found.")
 
     # Add line spacer at end of this checker section.
