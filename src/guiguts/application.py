@@ -380,6 +380,7 @@ class Guiguts:
         preferences.set_default(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT, {})
         preferences.set_default(PrefKey.WFDIALOG_ITALIC_THRESHOLD, ["4"])
         preferences.set_default(PrefKey.WFDIALOG_REGEX, [])
+        preferences.set_default(PrefKey.WFDIALOG_HYPHEN_TWO_WORDS, False)
         preferences.set_default(
             PrefKey.JEEBIES_PARANOIA_LEVEL, JeebiesParanoiaLevel.NORMAL
         )
