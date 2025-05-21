@@ -362,10 +362,10 @@ def repeated_words_check() -> None:
                 regx = f"(\\b{word}\\b +\\b{word}\\b)"
                 if res := re.search(regx, book_line):
                     repl = " " * len(word)
-                    # Obsfucate the first occurence of 'word' on the line so
+                    # Obsfucate the first occurence of 'word' in the match so
                     # next re.search can't find it. It's replaced by blanks
                     # to the same length as 'word'.
-                    book_line = re.sub(word, repl, book_line, count=1)
+                    book_line = re.sub(word, repl, book_line, pos=res.start(0), count=1)
                     # Get start/end of the repeated words in file.
                     error_start = str(rec_num + 1) + "." + str(res.start(0))
                     error_end = str(rec_num + 1) + "." + str(res.end(0))
@@ -433,6 +433,7 @@ def repeated_words_check() -> None:
     if repeat_msg:
         prev_msg_info = None
         build_msg = None
+        n_matches = 0
         for msg_info in repeat_msg:
             # If this message doesn't match previous message, ignoring multiple spaces...
             if (
@@ -454,11 +455,12 @@ def repeated_words_check() -> None:
             ):
                 # Output any combined message we've previously built up
                 if build_msg is not None:
+                    repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
                     checker_dialog.add_entry(
-                        build_msg.msg,
+                        f"{repeat_str}{build_msg.msg}",
                         build_msg.text_range,
-                        build_msg.hilite_start,
-                        build_msg.hilite_end,
+                        build_msg.hilite_start + len(repeat_str),
+                        build_msg.hilite_end + len(repeat_str),
                     )
                 # Start a new build message
                 build_msg = MsgInfo(
@@ -467,19 +469,22 @@ def repeated_words_check() -> None:
                     msg_info.hilite_start,
                     msg_info.hilite_end,
                 )
+                n_matches = 1
             else:
                 # "Duplicate" message - amend build message to cover whole relevant range
                 assert build_msg is not None
                 build_msg.text_range.end = msg_info.text_range.end
                 build_msg.hilite_end = msg_info.hilite_end
+                n_matches += 1
             prev_msg_info = msg_info
         # Output last message
         if build_msg is not None:
+            repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
             checker_dialog.add_entry(
-                build_msg.msg,
+                f"{repeat_str}{build_msg.msg}",
                 build_msg.text_range,
-                build_msg.hilite_start,
-                build_msg.hilite_end,
+                build_msg.hilite_start + len(repeat_str),
+                build_msg.hilite_end + len(repeat_str),
             )
     else:
         checker_dialog.add_footer("", "    No repeated words found.")
@@ -1531,21 +1536,21 @@ def curly_quote_check() -> None:
             if first_match:
                 first_match = False
                 checker_dialog.add_header("floating quote (single or double)")
-            report_all_occurrences_on_line(pattern, line, line_number)
+            report_multiple_occurrences_on_line(pattern, line, line_number)
             no_suspect_curly_quote_found = False
         pattern = r"^[“”\‘\’](?= )"
         if re.search(pattern, line):
             if first_match:
                 first_match = False
                 checker_dialog.add_header("floating quote (single or double)")
-            report_all_occurrences_on_line(pattern, line, line_number)
+            report_multiple_occurrences_on_line(pattern, line, line_number)
             no_suspect_curly_quote_found = False
         pattern = r"(?<= )[“”\‘\’]$"
         if re.search(pattern, line):
             if first_match:
                 first_match = False
                 checker_dialog.add_header("floating quote (single or double)")
-            report_all_occurrences_on_line(pattern, line, line_number)
+            report_multiple_occurrences_on_line(pattern, line, line_number)
             no_suspect_curly_quote_found = False
 
         line_number += 1
