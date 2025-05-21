@@ -398,8 +398,8 @@ def repeated_words_check() -> None:
             word = no_numbers_words_on_line[-1]
             # If last word on current line is same as first word on next line then
             # this is also an instance of repeated words.
-            regx1 = f"(\\b{word}$)"
-            regx2 = f"(^{word}\\b)"
+            regx1 = f"(\\b{word} *$)"
+            regx2 = f"(^ *{word}\\b)"
             if (res1 := re.search(regx1, book[rec_num])) and (
                 res2 := re.search(regx2, book[rec_num + 1])
             ):
