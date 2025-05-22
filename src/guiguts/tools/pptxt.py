@@ -1387,7 +1387,7 @@ def double_dash_replace(matchobj: re.Match) -> str:
 
 
 def report_multiple_occurrences_on_line(
-    pattern: str, line: str, line_number: int
+    pattern: str, line: str, line_number: int, flags: int = 0
 ) -> None:
     """Report multiple occurrences in one message for this line.
 
@@ -1397,7 +1397,7 @@ def report_multiple_occurrences_on_line(
         line_number: The line number of the line in the file.
     """
 
-    matches = list(re.finditer(pattern, line))
+    matches = list(re.finditer(pattern, line, flags=flags))
     if not matches:
         return
     # Get start/end of first/last error on line.
@@ -1532,31 +1532,28 @@ def curly_quote_check() -> None:
 
     first_match = True
     no_suspect_curly_quote_found = True
+    pattern = r"""
+    # === Case A: Match “ ‘ ’ when spaced — always wrong ===
+    (?<=\ )[“‘’](?=\ )         |  # space on both sides
+    ^[“‘’](?=\ )               |  # start of line, space after
+    (?<=\ )[“‘’]$              |  # space before, end of line
+    # === Case B: Match ” unless ditto-style (2+ spaces or line start/end on BOTH sides) ===
+    (?<= (?<!\s)\s )”(?=\s+)   |  # Exactly one space before, 1+ spaces after
+    (?<=\s+)”(?= \s(?!\s) )    |  # 1+ spaces before, exactly one space after
+    ^”(?= \s(?!\s) )           |  # start of line, exactly one space after
+    (?<= (?<!\s)\s )”$            # exactly one space before, end of line    (
+    """
 
     line_number = 1
     for line in book:
-        pattern = r"(?<= )[“”\‘\’](?= )"
-        if re.search(pattern, line):
+        if re.search(pattern, line, flags=re.VERBOSE):
             if first_match:
                 first_match = False
                 checker_dialog.add_header("floating quote (single or double)")
-            report_multiple_occurrences_on_line(pattern, line, line_number)
+            report_multiple_occurrences_on_line(
+                pattern, line, line_number, flags=re.VERBOSE
+            )
             no_suspect_curly_quote_found = False
-        pattern = r"^[“”\‘\’](?= )"
-        if re.search(pattern, line):
-            if first_match:
-                first_match = False
-                checker_dialog.add_header("floating quote (single or double)")
-            report_multiple_occurrences_on_line(pattern, line, line_number)
-            no_suspect_curly_quote_found = False
-        pattern = r"(?<= )[“”\‘\’]$"
-        if re.search(pattern, line):
-            if first_match:
-                first_match = False
-                checker_dialog.add_header("floating quote (single or double)")
-            report_multiple_occurrences_on_line(pattern, line, line_number)
-            no_suspect_curly_quote_found = False
-
         line_number += 1
 
     # Report 'wrong direction' quotes
