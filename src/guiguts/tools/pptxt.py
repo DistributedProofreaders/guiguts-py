@@ -54,6 +54,17 @@ cdq: int
 ########################################################
 
 
+@dataclass
+class MsgInfo:
+    """Class to store info for potential message.
+    Stores message when found so can later be processed to avoid near duplicates."""
+
+    msg: str
+    text_range: IndexRange
+    hilite_start: int
+    hilite_end: int
+
+
 def get_words_on_line(line: str) -> list[str]:
     """Extract all the words on one line."""
     global found_long_doctype_declaration
@@ -322,15 +333,6 @@ def repeated_words_check() -> None:
     # non-overlapping matches of "word word" on the line after adding the first word
     # of the next line. Or maybe slurp whole file, then search for "word \1".
 
-    @dataclass
-    class MsgInfo:
-        """Class to store info for potential message."""
-
-        msg: str
-        text_range: IndexRange
-        hilite_start: int
-        hilite_end: int
-
     repeat_msg: list[MsgInfo] = []
 
     for rec_num, book_line in enumerate(book):
@@ -435,66 +437,71 @@ def repeated_words_check() -> None:
 
     # Only output the message if it's on a different line or a different word to the previous
     if repeat_msg:
-        prev_msg_info = None
-        build_msg = None
-        n_matches = 0
-        for msg_info in repeat_msg:
-            # If this message doesn't match previous message, ignoring multiple spaces...
-            if (
-                prev_msg_info is None
-                or msg_info.text_range.start.row != prev_msg_info.text_range.start.row
-                or msg_info.msg != prev_msg_info.msg
-                or re.sub(
-                    "  +",
-                    " ",
-                    msg_info.msg[msg_info.hilite_start : msg_info.hilite_end],
-                )
-                != re.sub(
-                    "  +",
-                    " ",
-                    prev_msg_info.msg[
-                        prev_msg_info.hilite_start : prev_msg_info.hilite_end
-                    ],
-                )
-            ):
-                # Output any combined message we've previously built up
-                if build_msg is not None:
-                    repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
-                    checker_dialog.add_entry(
-                        f"{repeat_str}{build_msg.msg}",
-                        build_msg.text_range,
-                        build_msg.hilite_start + len(repeat_str),
-                        build_msg.hilite_end + len(repeat_str),
-                    )
-                # Start a new build message
-                build_msg = MsgInfo(
-                    msg_info.msg,
-                    msg_info.text_range,
-                    msg_info.hilite_start,
-                    msg_info.hilite_end,
-                )
-                n_matches = 1
-            else:
-                # "Duplicate" message - amend build message to cover whole relevant range
-                assert build_msg is not None
-                build_msg.text_range.end = msg_info.text_range.end
-                build_msg.hilite_end = msg_info.hilite_end
-                n_matches += 1
-            prev_msg_info = msg_info
-        # Output last message
-        if build_msg is not None:
-            repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
-            checker_dialog.add_entry(
-                f"{repeat_str}{build_msg.msg}",
-                build_msg.text_range,
-                build_msg.hilite_start + len(repeat_str),
-                build_msg.hilite_end + len(repeat_str),
-            )
+        consolidate_messages(repeat_msg)
     else:
         checker_dialog.add_footer("", "    No repeated words found.")
 
     # Add line spacer at end of this checker section.
     checker_dialog.add_footer("")
+
+
+def consolidate_messages(repeat_msg: list[MsgInfo]) -> None:
+    """Consolidate messages"""
+    prev_msg_info = None
+    build_msg = None
+    n_matches = 0
+    for msg_info in repeat_msg:
+        # If this message doesn't match previous message, ignoring multiple spaces...
+        if (
+            prev_msg_info is None
+            or msg_info.text_range.start.row != prev_msg_info.text_range.start.row
+            or msg_info.msg != prev_msg_info.msg
+            or re.sub(
+                "  +",
+                " ",
+                msg_info.msg[msg_info.hilite_start : msg_info.hilite_end],
+            )
+            != re.sub(
+                "  +",
+                " ",
+                prev_msg_info.msg[
+                    prev_msg_info.hilite_start : prev_msg_info.hilite_end
+                ],
+            )
+        ):
+            # Output any combined message we've previously built up
+            if build_msg is not None:
+                repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
+                checker_dialog.add_entry(
+                    f"{repeat_str}{build_msg.msg}",
+                    build_msg.text_range,
+                    build_msg.hilite_start + len(repeat_str),
+                    build_msg.hilite_end + len(repeat_str),
+                )
+            # Start a new build message
+            build_msg = MsgInfo(
+                msg_info.msg,
+                msg_info.text_range,
+                msg_info.hilite_start,
+                msg_info.hilite_end,
+            )
+            n_matches = 1
+        else:
+            # "Duplicate" message - amend build message to cover whole relevant range
+            assert build_msg is not None
+            build_msg.text_range.end = msg_info.text_range.end
+            build_msg.hilite_end = msg_info.hilite_end
+            n_matches += 1
+        prev_msg_info = msg_info
+    # Output last message
+    if build_msg is not None:
+        repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
+        checker_dialog.add_entry(
+            f"{repeat_str}{build_msg.msg}",
+            build_msg.text_range,
+            build_msg.hilite_start + len(repeat_str),
+            build_msg.hilite_end + len(repeat_str),
+        )
 
 
 ######################################################################
@@ -780,14 +787,13 @@ def specials_check(project_dict: ProjectDict) -> None:
             # Highlight occurrence of word in the line.
             hilite_start = match_obj.start(0)
             hilite_end = match_obj.end(0)
-            if heading in specials_report:
-                specials_report[heading].append(
-                    (line, error_start, error_end, hilite_start, hilite_end)
+            if heading not in specials_report:
+                specials_report[heading] = []
+            specials_report[heading].append(
+                MsgInfo(
+                    line, IndexRange(error_start, error_end), hilite_start, hilite_end
                 )
-            else:
-                specials_report[heading] = [
-                    (line, error_start, error_end, hilite_start, hilite_end)
-                ]
+            )
 
     def process_word(word: str, exceptions: Sequence[str], line: str) -> None:
         """Helper function for abstraction of processing logic.
@@ -818,16 +824,18 @@ def specials_check(project_dict: ProjectDict) -> None:
                 # Highlight occurrence of word in the line.
                 hilite_start = match_obj.start(0)
                 hilite_end = match_obj.end(0)
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        (line, error_start, error_end, hilite_start, hilite_end)
+                if heading not in specials_report:
+                    specials_report[heading] = []
+                specials_report[heading].append(
+                    MsgInfo(
+                        line,
+                        IndexRange(error_start, error_end),
+                        hilite_start,
+                        hilite_end,
                     )
-                else:
-                    specials_report[heading] = [
-                        (line, error_start, error_end, hilite_start, hilite_end)
-                    ]
+                )
 
-    specials_report: Dict[str, list[tuple]] = {}
+    specials_report: Dict[str, list[MsgInfo]] = {}
 
     ####
     # The following series of checks operate on text of each line.
@@ -913,6 +921,8 @@ def specials_check(project_dict: ProjectDict) -> None:
         heading = "Spaced punctuation."
         # Exclude sequences of " ... ", etc.
         exceptions.append(r"(?<=\s|^)\.\.\.(?=\s|$)")
+        # " .14567" is permitted, i.e. followed by digit
+        exceptions.append(r"(?<=\s|^)\.(?=\d)")
         process_line_with_pattern(r"\s[\?!:;\.]", exceptions, line)
 
         # Clear out the exceptions for the previous check.
@@ -944,6 +954,10 @@ def specials_check(project_dict: ProjectDict) -> None:
             exceptions = []
             # standalone 0 allowed after dollar/pound sign; E.g. $0 25.
             exceptions.append(r"(?<=[\$£])(0)(?=$|\P{Nd})")
+            # 0.123 or 29.0 or 0°
+            exceptions.append(r"\b(0)(?=\.)")
+            exceptions.append(r"(?<=\.)(0)\b")
+            exceptions.append(r"\b(0)(?=°)")
             # Generate dialog tuples only if not an exception.
             heading = "Standalone 0 (excluding exceptions)."
             process_line_with_pattern(pattern, exceptions, line)
@@ -969,8 +983,10 @@ def specials_check(project_dict: ProjectDict) -> None:
             exceptions.append(r"(?<=^|\P{Nd})(1)(?=[-‑‒–—―]\p{Nd})")
             # standalone 1 allowed after num+dash.
             exceptions.append(r"(?<=\p{Nd}[-‑‒–—―])(1)(?=$|\P{Nd})")
-            # standalone 1 allowed as "1." (e.g. a numbered list).
-            exceptions.append(r"(?<=^|\P{Nd})(1)(?=\.(?!$))")
+            # 1.nnn or nnn.1 or 1°
+            exceptions.append(r"\b(1)(?=\.)")
+            exceptions.append(r"(?<=\.)(1)\b")
+            exceptions.append(r"\b(1)(?=°)")
             # standalone 1 allowed as "1st".
             exceptions.append(r"(?<=^|\P{Nd})(1)st")
             # standalone 1 allowed as a footnote anchors
@@ -1157,11 +1173,11 @@ def specials_check(project_dict: ProjectDict) -> None:
 
     # Done with specials checks. Report what, if anything, we've found.
 
-    # Produce dialog lines from the dialog tuples generated by
+    # Produce dialog lines from the dialog MsgInfos generated by
     # the checks above. The specials_report dictionary may be
     # empty in which case there will be no dialog messages.
     first_header = True
-    for header_line, tuples_list in specials_report.items():
+    for header_line, msg_list in specials_report.items():
         none_found = False
         # Insert a blank line before each header except the first one.
         if first_header:
@@ -1170,22 +1186,7 @@ def specials_check(project_dict: ProjectDict) -> None:
             checker_dialog.add_header("")
         # Add header record to dialog.
         checker_dialog.add_header(header_line)
-        # Generate the dialog messages
-        for tple in tuples_list:
-            line = tple[0]
-            # Get start/end of error in file.
-            error_start = tple[1]
-            error_end = tple[2]
-            # Store in structure for file row/col positions & ranges.
-            start_rowcol = IndexRowCol(error_start)
-            end_rowcol = IndexRowCol(error_end)
-            # Highlight occurrence of word in the line.
-            hilite_start = tple[3]
-            hilite_end = tple[4]
-            # Add record to the dialog.
-            checker_dialog.add_entry(
-                line, IndexRange(start_rowcol, end_rowcol), hilite_start, hilite_end
-            )
+        consolidate_messages(msg_list)
 
     if none_found:
         checker_dialog.add_footer("")
