@@ -1812,6 +1812,7 @@ def dash_review() -> None:
     # FINAL PASS: flag what remains.
 
     a_h2 = []
+    a_h4 = []
     a_hh = []
     a_hm = []
     a_hy = []
@@ -1824,6 +1825,7 @@ def dash_review() -> None:
     dash_suspects_found = False
     line_index = 0
     counth2 = 0
+    counth4 = 0
 
     while line_index < len(dbuf):
         line = dbuf[line_index]
@@ -1844,41 +1846,49 @@ def dash_review() -> None:
                 a_h2.append((line_index + 1, book[line_index]))
                 # Delete all the pairs just found.
                 line = re.sub(r"(?<!-)--(?!-)", "", line)
+            # Look for quads of hyphen-minus (keyboard "-") possibly being
+            # used in place of long em-dash. We will check and flag this later.
+            if re.search(r"(?<!-)----(?!-)", line):
+                resall = re.findall(r"(?<!-)----(?!-)", line)
+                counth4 += len(resall)
+                a_h4.append((line_index + 1, book[line_index]))
+                # Delete all the quads just found.
+                line = re.sub(r"(?<!-)----(?!-)", "", line)
             # Look for other consecutive dashes (of any kind).
             if re.search(r"\p{Pd}\p{Pd}+", line):
                 a_hh.append((line_index + 1, book[line_index]))
-                # Delete consecutive dashes just found. Any left at final test are 'unecognised'.
+                # Delete consecutive dashes just found. Any left at final test are 'unrecognised'.
                 line = re.sub(r"\p{Pd}\p{Pd}+", "", line)
                 not_consecutive_dashes = False
             # Look for hyphen-minus
             if ch_hm in line and not_consecutive_dashes:
                 a_hm.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_hm, "")
             # Look for hyphen
             if ch_hy in line:
                 a_hy.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrcognised'.
                 line = line.replace(ch_hy, "")
             # Look for non-breaking hyphen
             if ch_nb in line:
                 a_nb.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_nb, "")
             # Look for figure dash
             if ch_fd in line:
                 a_fd.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_fd, "")
             # Look for endash
             if ch_en in line:
                 a_en.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_en, "")
             # Look for emdash
             if ch_em in line:
                 a_em.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_em, "")
             # If any dashes left on line at this point treat them as unrecognised
             if re.search(r"\p{Pd}", line):
@@ -1897,7 +1907,7 @@ def dash_review() -> None:
             first_header = False
         else:
             checker_dialog.add_header("")
-        checker_dialog.add_header("Pairs of '--' (keyboard '-') found")
+        checker_dialog.add_header("'--' (keyboard '-') found")
 
         count = 0
         for record in a_h2:
@@ -1917,6 +1927,35 @@ def dash_review() -> None:
             checker_dialog.add_footer(
                 "",
                 "    [Book seems to use '--' as em-dash so not reporting these further]",
+            )
+
+    # If many pairs of "----" detected report only the first five.
+
+    if len(a_h4) > 0:
+        if first_header:
+            first_header = False
+        else:
+            checker_dialog.add_header("")
+        checker_dialog.add_header("'----' (keyboard '-') found")
+
+        count = 0
+        for record in a_h4:
+            line_number = record[0]
+            line = record[1]
+
+            if count < 5:
+                report_all_occurrences_on_line(r"(?<!-)----(?!-)", line, line_number)
+            count += 1
+        if count > 5:
+            if len(a_h4) - 5 == 1:
+                output_record = "  ...1 more line"
+            else:
+                output_record = f"  ...{len(a_h4) - 5} more lines"
+            checker_dialog.add_footer(output_record)
+        if counth4 > 5:
+            checker_dialog.add_footer(
+                "",
+                "    [Book seems to use '----' as long em-dash so not reporting these further]",
             )
 
     # Report other consecutive dashes
