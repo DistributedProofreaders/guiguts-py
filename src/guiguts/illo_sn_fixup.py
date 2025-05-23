@@ -212,6 +212,7 @@ class IlloSNChecker:
 
         # Find first line below illo/SN that is not blank/[Blank page]/page separator/illo/sidenote
         in_illo_sn = False
+        nested = False  # Doesn't handle double nesting
         for line_num in range(illosn_last_line_num + 1, file_last_line_num + 1):
             below_illosn_line_txt = maintext().get(f"{line_num}.0", f"{line_num}.end")
             if (
@@ -225,9 +226,13 @@ class IlloSNChecker:
                 in_illo_sn = True
             # If in illo/SN, keep on ignoring lines
             if in_illo_sn:
+                if "[" in below_illosn_line_txt:
+                    nested = True
                 # If illo/SN ends, reset the flag
                 if "]" in below_illosn_line_txt:
-                    in_illo_sn = False
+                    if not nested:
+                        in_illo_sn = False
+                    nested = False
                 continue
             # Found "normal" text line - anomalous if previous line is not blank,
             # i.e. not a paragraph start, and ok if previous line is blank
