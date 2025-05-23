@@ -224,7 +224,7 @@ class PPhtmlChecker:
             reverse=True,
         )
         for fname, fsize in size_list:
-            if fsize > 1024 * 1024:
+            if fsize > 1024 * 1024 and not re.search(r"cover.(jpg|png)$", fname):
                 severity = "ERROR: "
                 test_passed = False
             elif fsize > 256 * 1024:
