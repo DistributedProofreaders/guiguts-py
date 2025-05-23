@@ -144,6 +144,7 @@ class PrefKey(StrEnum):
     SURROUND_WITH_AFTER_HISTORY = auto()
     REGEX_TIMEOUT = auto()
     LEVENSHTEIN_DIGITS = auto()
+    CURLY_DOUBLE_QUOTE_EXCEPTION = auto()
 
 
 class Preferences:
