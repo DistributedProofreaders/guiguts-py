@@ -1,5 +1,6 @@
 """PPtxt tool"""
 
+from dataclasses import dataclass
 from typing import Dict, Sequence, List, Any
 import regex as re
 
@@ -51,6 +52,17 @@ cdq: int
 # Go author: Roger Franks (DP:rfrank) - 2020
 # Python author: Quentin Campbell (DP:qgc) - 2024
 ########################################################
+
+
+@dataclass
+class MsgInfo:
+    """Class to store info for potential message.
+    Stores message when found so can later be processed to avoid near duplicates."""
+
+    msg: str
+    text_range: IndexRange
+    hilite_start: int
+    hilite_end: int
 
 
 def get_words_on_line(line: str) -> list[str]:
@@ -317,9 +329,13 @@ def repeated_words_check() -> None:
     # in that case are not counted as repeated words. The regex search on that line
     # will determine whether such repeats are counted as 'repeated words' or not.
 
-    none_found = True
-    for rec_num in range(len(book) - 1):
-        book_line = book[rec_num]
+    # NOTE: This could potentially be simplified/improved using `findall` to get all
+    # non-overlapping matches of "word word" on the line after adding the first word
+    # of the next line. Or maybe slurp whole file, then search for "word \1".
+
+    repeat_msg: list[MsgInfo] = []
+
+    for rec_num, book_line in enumerate(book):
         words_on_line = word_list_map_words[rec_num]
         # Run through words found on a line looking for possible repeats. This quick
         # and cheap check eliminates most lines from being 'possibles'. Numbers are
@@ -351,12 +367,11 @@ def repeated_words_check() -> None:
                 # Build a regex.
                 regx = f"(\\b{word}\\b +\\b{word}\\b)"
                 if res := re.search(regx, book_line):
-                    none_found = False
                     repl = " " * len(word)
-                    # Obsfucate the first occurence of 'word' on the line so
+                    # Obsfucate the first occurence of 'word' in the match so
                     # next re.search can't find it. It's replaced by blanks
                     # to the same length as 'word'.
-                    book_line = re.sub(word, repl, book_line, count=1)
+                    book_line = re.sub(word, repl, book_line, pos=res.start(0), count=1)
                     # Get start/end of the repeated words in file.
                     error_start = str(rec_num + 1) + "." + str(res.start(0))
                     error_end = str(rec_num + 1) + "." + str(res.end(0))
@@ -372,27 +387,28 @@ def repeated_words_check() -> None:
                     hilite_start = res.start(0)
                     hilite_end = res.end(0)
                     # Add message to dialog.
-                    checker_dialog.add_entry(
-                        record,
-                        IndexRange(start_rowcol, end_rowcol),
-                        hilite_start,
-                        hilite_end,
+                    repeat_msg.append(
+                        MsgInfo(
+                            record,
+                            IndexRange(start_rowcol, end_rowcol),
+                            hilite_start,
+                            hilite_end,
+                        )
                     )
 
         # We may get here also if current line is a blank line.
 
-        if len(no_numbers_words_on_line) > 0:
+        if len(no_numbers_words_on_line) > 0 and rec_num < len(book) - 1:
             # Completed determinative search of line for possible repeated words.
             # Now look at last word on the line and the first word of the next.
             word = no_numbers_words_on_line[-1]
             # If last word on current line is same as first word on next line then
             # this is also an instance of repeated words.
-            regx1 = f"(\\b{word}$)"
-            regx2 = f"(^{word}\\b)"
+            regx1 = f"(\\b{word} *$)"
+            regx2 = f"(^ *{word}\\b)"
             if (res1 := re.search(regx1, book[rec_num])) and (
                 res2 := re.search(regx2, book[rec_num + 1])
             ):
-                none_found = False
                 # Get start/end of the repeated words in file.
                 error_start = str(rec_num + 1) + "." + str(res1.start(0))
                 error_end = str(rec_num + 2) + "." + str(res2.end(0))
@@ -410,60 +426,82 @@ def repeated_words_check() -> None:
                 # to end of current line.
                 hilite_end = len(record)
                 # Add message to dialog.
-                checker_dialog.add_entry(
-                    record,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
+                repeat_msg.append(
+                    MsgInfo(
+                        record,
+                        IndexRange(start_rowcol, end_rowcol),
+                        hilite_start,
+                        hilite_end,
+                    )
                 )
 
-    # At this point all lines but the last have been searched for repeated words.
-    # Do this now for the last line of the book.
-
-    if len(book) > 0:
-        last_line = book[-1]
-        words_on_line = word_list_map_words[-1]
-        for word in words_on_line:
-            # Ignore word if it is a number.
-            if re.match(r"^[\p{Nd}]+$", word):
-                continue
-            # Build a regex.
-            regx = f"(\\b{word}\\b +\\b{word}\\b)"
-            if res := re.search(regx, last_line):
-                none_found = False
-                repl = " " * len(word)
-                # Obsfucate the first occurence of 'word' on the line so
-                # next re.search can't find it. It's replaced by blanks
-                # to the same length as 'word'.
-                last_line = re.sub(word, repl, last_line, count=1)
-                # Get start/end of the repeated words in file.
-                last_line_number = len(book)
-                error_start = str(last_line_number) + "." + str(res.start(0))
-                error_end = str(last_line_number) + "." + str(res.end(0))
-                # Store in structure for file row/col positions & range.
-                start_rowcol = IndexRowCol(error_start)
-                end_rowcol = IndexRowCol(error_end)
-                # Get whole of file line.
-                line = maintext().get(
-                    error_start + " linestart", error_end + " lineend"
-                )
-                record = line
-                # Calculate start/end of repeated words in dialog message.
-                hilite_start = res.start(0)
-                hilite_end = res.end(0)
-                # Add message to dialog.
-                checker_dialog.add_entry(
-                    record,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
-                )
-
-    if none_found:
+    # Only output the message if it's on a different line or a different word to the previous
+    if repeat_msg:
+        consolidate_messages(repeat_msg)
+    else:
         checker_dialog.add_footer("", "    No repeated words found.")
 
     # Add line spacer at end of this checker section.
     checker_dialog.add_footer("")
+
+
+def consolidate_messages(repeat_msg: list[MsgInfo]) -> None:
+    """Consolidate messages"""
+    prev_msg_info = None
+    build_msg = None
+    n_matches = 0
+    for msg_info in repeat_msg:
+        # If this message doesn't match previous message, ignoring multiple spaces...
+        if (
+            prev_msg_info is None
+            or msg_info.text_range.start.row != prev_msg_info.text_range.start.row
+            or msg_info.msg != prev_msg_info.msg
+            or re.sub(
+                "  +",
+                " ",
+                msg_info.msg[msg_info.hilite_start : msg_info.hilite_end],
+            )
+            != re.sub(
+                "  +",
+                " ",
+                prev_msg_info.msg[
+                    prev_msg_info.hilite_start : prev_msg_info.hilite_end
+                ],
+            )
+        ):
+            # Output any combined message we've previously built up
+            if build_msg is not None:
+                repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
+                checker_dialog.add_entry(
+                    f"{repeat_str}{build_msg.msg}",
+                    build_msg.text_range,
+                    build_msg.hilite_start + len(repeat_str),
+                    build_msg.hilite_end + len(repeat_str),
+                )
+            # Start a new build message
+            build_msg = MsgInfo(
+                msg_info.msg,
+                msg_info.text_range,
+                msg_info.hilite_start,
+                msg_info.hilite_end,
+            )
+            n_matches = 1
+        else:
+            # "Duplicate" message - amend build message to cover whole relevant range
+            assert build_msg is not None
+            build_msg.text_range.end = msg_info.text_range.end
+            build_msg.hilite_end = msg_info.hilite_end
+            n_matches += 1
+        prev_msg_info = msg_info
+    # Output last message
+    if build_msg is not None:
+        repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
+        checker_dialog.add_entry(
+            f"{repeat_str}{build_msg.msg}",
+            build_msg.text_range,
+            build_msg.hilite_start + len(repeat_str),
+            build_msg.hilite_end + len(repeat_str),
+        )
 
 
 ######################################################################
@@ -749,14 +787,13 @@ def specials_check(project_dict: ProjectDict) -> None:
             # Highlight occurrence of word in the line.
             hilite_start = match_obj.start(0)
             hilite_end = match_obj.end(0)
-            if heading in specials_report:
-                specials_report[heading].append(
-                    (line, error_start, error_end, hilite_start, hilite_end)
+            if heading not in specials_report:
+                specials_report[heading] = []
+            specials_report[heading].append(
+                MsgInfo(
+                    line, IndexRange(error_start, error_end), hilite_start, hilite_end
                 )
-            else:
-                specials_report[heading] = [
-                    (line, error_start, error_end, hilite_start, hilite_end)
-                ]
+            )
 
     def process_word(word: str, exceptions: Sequence[str], line: str) -> None:
         """Helper function for abstraction of processing logic.
@@ -787,16 +824,18 @@ def specials_check(project_dict: ProjectDict) -> None:
                 # Highlight occurrence of word in the line.
                 hilite_start = match_obj.start(0)
                 hilite_end = match_obj.end(0)
-                if heading in specials_report:
-                    specials_report[heading].append(
-                        (line, error_start, error_end, hilite_start, hilite_end)
+                if heading not in specials_report:
+                    specials_report[heading] = []
+                specials_report[heading].append(
+                    MsgInfo(
+                        line,
+                        IndexRange(error_start, error_end),
+                        hilite_start,
+                        hilite_end,
                     )
-                else:
-                    specials_report[heading] = [
-                        (line, error_start, error_end, hilite_start, hilite_end)
-                    ]
+                )
 
-    specials_report: Dict[str, list[tuple]] = {}
+    specials_report: Dict[str, list[MsgInfo]] = {}
 
     ####
     # The following series of checks operate on text of each line.
@@ -882,6 +921,8 @@ def specials_check(project_dict: ProjectDict) -> None:
         heading = "Spaced punctuation."
         # Exclude sequences of " ... ", etc.
         exceptions.append(r"(?<=\s|^)\.\.\.(?=\s|$)")
+        # " .14567" is permitted, i.e. followed by digit
+        exceptions.append(r"(?<=\s|^)\.(?=\d)")
         process_line_with_pattern(r"\s[\?!:;\.]", exceptions, line)
 
         # Clear out the exceptions for the previous check.
@@ -913,6 +954,10 @@ def specials_check(project_dict: ProjectDict) -> None:
             exceptions = []
             # standalone 0 allowed after dollar/pound sign; E.g. $0 25.
             exceptions.append(r"(?<=[\$£])(0)(?=$|\P{Nd})")
+            # 0.123 or 29.0 or 0°
+            exceptions.append(r"\b(0)(?=\.)")
+            exceptions.append(r"(?<=\.)(0)\b")
+            exceptions.append(r"\b(0)(?=°)")
             # Generate dialog tuples only if not an exception.
             heading = "Standalone 0 (excluding exceptions)."
             process_line_with_pattern(pattern, exceptions, line)
@@ -938,8 +983,10 @@ def specials_check(project_dict: ProjectDict) -> None:
             exceptions.append(r"(?<=^|\P{Nd})(1)(?=[-‑‒–—―]\p{Nd})")
             # standalone 1 allowed after num+dash.
             exceptions.append(r"(?<=\p{Nd}[-‑‒–—―])(1)(?=$|\P{Nd})")
-            # standalone 1 allowed as "1." (e.g. a numbered list).
-            exceptions.append(r"(?<=^|\P{Nd})(1)(?=\.(?!$))")
+            # 1.nnn or nnn.1 or 1°
+            exceptions.append(r"\b(1)(?=\.)")
+            exceptions.append(r"(?<=\.)(1)\b")
+            exceptions.append(r"\b(1)(?=°)")
             # standalone 1 allowed as "1st".
             exceptions.append(r"(?<=^|\P{Nd})(1)st")
             # standalone 1 allowed as a footnote anchors
@@ -1126,11 +1173,11 @@ def specials_check(project_dict: ProjectDict) -> None:
 
     # Done with specials checks. Report what, if anything, we've found.
 
-    # Produce dialog lines from the dialog tuples generated by
+    # Produce dialog lines from the dialog MsgInfos generated by
     # the checks above. The specials_report dictionary may be
     # empty in which case there will be no dialog messages.
     first_header = True
-    for header_line, tuples_list in specials_report.items():
+    for header_line, msg_list in specials_report.items():
         none_found = False
         # Insert a blank line before each header except the first one.
         if first_header:
@@ -1139,22 +1186,7 @@ def specials_check(project_dict: ProjectDict) -> None:
             checker_dialog.add_header("")
         # Add header record to dialog.
         checker_dialog.add_header(header_line)
-        # Generate the dialog messages
-        for tple in tuples_list:
-            line = tple[0]
-            # Get start/end of error in file.
-            error_start = tple[1]
-            error_end = tple[2]
-            # Store in structure for file row/col positions & ranges.
-            start_rowcol = IndexRowCol(error_start)
-            end_rowcol = IndexRowCol(error_end)
-            # Highlight occurrence of word in the line.
-            hilite_start = tple[3]
-            hilite_end = tple[4]
-            # Add record to the dialog.
-            checker_dialog.add_entry(
-                line, IndexRange(start_rowcol, end_rowcol), hilite_start, hilite_end
-            )
+        consolidate_messages(msg_list)
 
     if none_found:
         checker_dialog.add_footer("")
@@ -1356,7 +1388,7 @@ def double_dash_replace(matchobj: re.Match) -> str:
 
 
 def report_multiple_occurrences_on_line(
-    pattern: str, line: str, line_number: int
+    pattern: str, line: str, line_number: int, flags: int = 0
 ) -> None:
     """Report multiple occurrences in one message for this line.
 
@@ -1366,7 +1398,7 @@ def report_multiple_occurrences_on_line(
         line_number: The line number of the line in the file.
     """
 
-    matches = list(re.finditer(pattern, line))
+    matches = list(re.finditer(pattern, line, flags=flags))
     if not matches:
         return
     # Get start/end of first/last error on line.
@@ -1501,31 +1533,28 @@ def curly_quote_check() -> None:
 
     first_match = True
     no_suspect_curly_quote_found = True
+    pattern = r"""
+    # === Case A: Match “ ‘ ’ when spaced — always wrong ===
+    (?<=\ )[“‘’](?=\ )         |  # space on both sides
+    ^[“‘’](?=\ )               |  # start of line, space after
+    (?<=\ )[“‘’]$              |  # space before, end of line
+    # === Case B: Match ” unless ditto-style (2+ spaces or line start/end on BOTH sides) ===
+    (?<= (?<!\s)\s )”(?=\s+)   |  # Exactly one space before, 1+ spaces after
+    (?<=\s+)”(?= \s(?!\s) )    |  # 1+ spaces before, exactly one space after
+    ^”(?= \s(?!\s) )           |  # start of line, exactly one space after
+    (?<= (?<!\s)\s )”$            # exactly one space before, end of line    (
+    """
 
     line_number = 1
     for line in book:
-        pattern = r"(?<= )[“”\‘\’](?= )"
-        if re.search(pattern, line):
+        if re.search(pattern, line, flags=re.VERBOSE):
             if first_match:
                 first_match = False
                 checker_dialog.add_header("floating quote (single or double)")
-            report_all_occurrences_on_line(pattern, line, line_number)
+            report_multiple_occurrences_on_line(
+                pattern, line, line_number, flags=re.VERBOSE
+            )
             no_suspect_curly_quote_found = False
-        pattern = r"^[“”\‘\’](?= )"
-        if re.search(pattern, line):
-            if first_match:
-                first_match = False
-                checker_dialog.add_header("floating quote (single or double)")
-            report_all_occurrences_on_line(pattern, line, line_number)
-            no_suspect_curly_quote_found = False
-        pattern = r"(?<= )[“”\‘\’]$"
-        if re.search(pattern, line):
-            if first_match:
-                first_match = False
-                checker_dialog.add_header("floating quote (single or double)")
-            report_all_occurrences_on_line(pattern, line, line_number)
-            no_suspect_curly_quote_found = False
-
         line_number += 1
 
     # Report 'wrong direction' quotes
@@ -1784,6 +1813,7 @@ def dash_review() -> None:
     # FINAL PASS: flag what remains.
 
     a_h2 = []
+    a_h4 = []
     a_hh = []
     a_hm = []
     a_hy = []
@@ -1796,6 +1826,7 @@ def dash_review() -> None:
     dash_suspects_found = False
     line_index = 0
     counth2 = 0
+    counth4 = 0
 
     while line_index < len(dbuf):
         line = dbuf[line_index]
@@ -1816,41 +1847,49 @@ def dash_review() -> None:
                 a_h2.append((line_index + 1, book[line_index]))
                 # Delete all the pairs just found.
                 line = re.sub(r"(?<!-)--(?!-)", "", line)
+            # Look for quads of hyphen-minus (keyboard "-") possibly being
+            # used in place of long em-dash. We will check and flag this later.
+            if re.search(r"(?<!-)----(?!-)", line):
+                resall = re.findall(r"(?<!-)----(?!-)", line)
+                counth4 += len(resall)
+                a_h4.append((line_index + 1, book[line_index]))
+                # Delete all the quads just found.
+                line = re.sub(r"(?<!-)----(?!-)", "", line)
             # Look for other consecutive dashes (of any kind).
             if re.search(r"\p{Pd}\p{Pd}+", line):
                 a_hh.append((line_index + 1, book[line_index]))
-                # Delete consecutive dashes just found. Any left at final test are 'unecognised'.
+                # Delete consecutive dashes just found. Any left at final test are 'unrecognised'.
                 line = re.sub(r"\p{Pd}\p{Pd}+", "", line)
                 not_consecutive_dashes = False
             # Look for hyphen-minus
             if ch_hm in line and not_consecutive_dashes:
                 a_hm.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_hm, "")
             # Look for hyphen
             if ch_hy in line:
                 a_hy.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrcognised'.
                 line = line.replace(ch_hy, "")
             # Look for non-breaking hyphen
             if ch_nb in line:
                 a_nb.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_nb, "")
             # Look for figure dash
             if ch_fd in line:
                 a_fd.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_fd, "")
             # Look for endash
             if ch_en in line:
                 a_en.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_en, "")
             # Look for emdash
             if ch_em in line:
                 a_em.append((line_index + 1, book[line_index]))
-                # Delete dash(es) just found. Any left at final test is 'unecognised'.
+                # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_em, "")
             # If any dashes left on line at this point treat them as unrecognised
             if re.search(r"\p{Pd}", line):
@@ -1869,7 +1908,7 @@ def dash_review() -> None:
             first_header = False
         else:
             checker_dialog.add_header("")
-        checker_dialog.add_header("Pairs of '--' (keyboard '-') found")
+        checker_dialog.add_header("'--' (keyboard '-') found")
 
         count = 0
         for record in a_h2:
@@ -1889,6 +1928,35 @@ def dash_review() -> None:
             checker_dialog.add_footer(
                 "",
                 "    [Book seems to use '--' as em-dash so not reporting these further]",
+            )
+
+    # If many pairs of "----" detected report only the first five.
+
+    if len(a_h4) > 0:
+        if first_header:
+            first_header = False
+        else:
+            checker_dialog.add_header("")
+        checker_dialog.add_header("'----' (keyboard '-') found")
+
+        count = 0
+        for record in a_h4:
+            line_number = record[0]
+            line = record[1]
+
+            if count < 5:
+                report_all_occurrences_on_line(r"(?<!-)----(?!-)", line, line_number)
+            count += 1
+        if count > 5:
+            if len(a_h4) - 5 == 1:
+                output_record = "  ...1 more line"
+            else:
+                output_record = f"  ...{len(a_h4) - 5} more lines"
+            checker_dialog.add_footer(output_record)
+        if counth4 > 5:
+            checker_dialog.add_footer(
+                "",
+                "    [Book seems to use '----' as long em-dash so not reporting these further]",
             )
 
     # Report other consecutive dashes
