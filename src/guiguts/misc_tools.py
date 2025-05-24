@@ -708,14 +708,6 @@ class UnmatchedBracketDialog(UnmatchedCheckerDialog):
         super().__init__("Unmatched Bracket markup", **kwargs)
 
 
-class UnmatchedCurlyQuoteDialog(UnmatchedCheckerDialog):
-    """Unmatched Curly Quote dialog."""
-
-    def __init__(self, **kwargs: Any) -> None:
-        """Initialize Unmatched Curly Quote dialog."""
-        super().__init__("Unmatched Curly Quotes", **kwargs)
-
-
 class UnmatchedDPMarkupDialog(UnmatchedCheckerDialog):
     """Unmatched DP Markup dialog."""
 
@@ -2051,6 +2043,7 @@ class CurlyQuotesDialog(CheckerDialog):
             **kwargs,
         )
 
+        self.custom_frame.columnconfigure(0, weight=1)
         frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW", pady=5)
         frame.columnconfigure(3, weight=1)
@@ -2098,6 +2091,11 @@ class CurlyQuotesDialog(CheckerDialog):
             text=SQUOTES[1],
             command=lambda: insert_in_focus_widget(SQUOTES[1]),
         ).grid(column=8, row=0, sticky="NSE")
+        ttk.Checkbutton(
+            frame,
+            text='Allow "Next paragraph begins with quotes" exception',
+            variable=PersistentBoolean(PrefKey.CURLY_DOUBLE_QUOTE_EXCEPTION),
+        ).grid(column=0, row=1, columnspan=9, sticky="NSW", pady=(5, 0))
 
     def populate(self) -> None:
         """Populate list with suspect curly quotes."""
@@ -2220,7 +2218,11 @@ class CurlyQuotesDialog(CheckerDialog):
                 add_quote_entry("SINGLE QUOTE NOT CONVERTED: ")
             elif match_text == "":  # Blank line
                 # Expect dqtype == 0 unless next line starts with open double quote
-                if dqtype == 1 and maintext().get(f"{linebeg} +1l") != DQUOTES[0]:
+                # AND user has enabled that exception
+                if dqtype == 1 and (
+                    maintext().get(f"{linebeg} +1l") != DQUOTES[0]
+                    or not preferences.get(PrefKey.CURLY_DOUBLE_QUOTE_EXCEPTION)
+                ):
                     hilite_start = IndexRowCol(last_open_double_idx).col
                     self.add_entry(
                         maintext().get(
