@@ -133,6 +133,9 @@ def get_words_on_line(line: str) -> list[str]:
     # Newcastle-upon-Tyne
     line = re.sub(r"(\p{L})-(\p{L})", r"\1①\2", line)
     line = re.sub(r"(\p{L})-(\p{L})", r"\1①\2", line)
+    # paring- or -in (hyphen followed/preceded by whitespace)
+    line = re.sub(r"(\p{L})-( |$)", r"\1①\2", line)
+    line = re.sub(r"( |^)-(\p{L})", r"\1①\2", line)
     # fo’c’s’le
     line = re.sub(r"(\p{L})’(\p{L})", r"\1②\2", line)
     line = re.sub(r"(\p{L})’(\p{L})", r"\1②\2", line)
