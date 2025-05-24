@@ -589,7 +589,7 @@ class BookloupeChecker:
         # Allow inline markup before start of next sentence as well as other non-word characters,
         # such as quotes or brackets. use `[^\w<]` rather than `\W`to stop it matching inline markup at that point
         for match in re.finditer(
-            r"(\p{Letter}+)[\"”'’\)]*(\. (</?[a-z]+>)*[^\w<]*\p{Lowercase_Letter})",
+            r"(\p{Letter}+)[\"”'’\)]*(\.[\"”'’\)]* (</?[a-z]+>)*[^\w<]*\p{Lowercase_Letter})",
             line,
         ):
             # Get the word before the period
