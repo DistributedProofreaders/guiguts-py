@@ -1152,7 +1152,6 @@ class EbookmakerCheckerDialog(CheckerDialog):
             format_frame,
             text="EPUB 2",
             variable=PersistentBoolean(PrefKey.EBOOKMAKER_EPUB2),
-            state=tk.DISABLED,
         ).grid(column=0, row=0, sticky="NSW", padx=5)
         ttk.Checkbutton(
             format_frame,
@@ -1243,7 +1242,8 @@ class EbookmakerChecker:
             command.append("-v")
         command.append("--max-depth=3")
         # Build options
-        command.append("--make=epub.images")  # Epub2 is always turned on
+        if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
+            command.append("--make=epub.images")
         if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
             command.append("--make=epub3.images")
         # Need Calibre to create kindle versions
@@ -1259,6 +1259,11 @@ class EbookmakerChecker:
                 "To create Kindle files, install Calibre and ensure the ebook-convert command is on your PATH"
             )
             Busy.unbusy()
+            return
+        if "--make=" not in command[-1]:
+            logger.error("You must select at least one format to be built")
+            self.dialog.display_entries()
+            self.dialog.lift()
             return
         file_name = the_file().filename
         proj_dir = os.path.dirname(file_name)
@@ -1330,14 +1335,21 @@ class EbookmakerCheckerAPI:
 
         timeout = 300
 
+        build = []
         # Create list of formats to build
-        build = ["epub"]  # Epub2 is always on
+        if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
+            build.append("epub")
         if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
             build.append("epub3")
         if preferences.get(PrefKey.EBOOKMAKER_KINDLE):
             build.append("kindle")
         if preferences.get(PrefKey.EBOOKMAKER_KF8):
             build.append("kf8")
+        if not build:
+            logger.error("You must select at least one format to be built")
+            self.dialog.display_entries()
+            self.dialog.lift()
+            return
 
         file_name = the_file().filename
         proj_dir, file_base = os.path.split(file_name)
