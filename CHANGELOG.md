@@ -1,11 +1,76 @@
 # Changelog
 
 
+## Version 2.0.0-beta.1
+
+- Indent +1/-1/+4 Spaces added to Text menu
+- Commonly Used Characters added to Unicode menu - also available using
+  Shift+Left-click on status bar character button, with Shift+Right-click
+  opening the Unicode Block dialog
+- Search/Replace dialog now has "Highlight All" button, which is a more
+  powerful version of GG1's "Highlight Char, String & Regex"
+- Unicode and Commonly Used Characters display the name of the character
+  being hovered overin the dialog, plus a large copy of the character
+- Image scroll and zoom commands added to Command Palette so user can
+  define keyboard shortcuts
+- Tab and Shift+Tab can now be used to navigate to any button or checkbox
+  within the main window and all dialogs, to improve accessibility, meaning
+  almost everything within Guiguts can be accessed via the keyboard
+- Shift+Return operates the Apply button in OK/Apply/Cancel dialogs
+- Applying the contents of the "Surround Selection With" dialog is now in
+  the Command Palette so can be assigned a keyboard shortcut
+- Word Distance Check can now be configured to ignore words with digits
+- A few improvements to Stealth Scanno regexes
+- Word Frequency navigation resets to start of file after last match is
+  found (like GG1); Shift-clicking navigates backwards through
+  word occurrences
+- Word Frequency Hyphens check, "Two Word" matches are now optional
+- PPtxt reports multiple repeated words on one line with just one message
+- Proofer comment markup added to "Surround Selection With" Autofill button 
+- The Curly Quote check exception to ignore a missing close quote if the
+  following paragraph begins with an open quote has been made optional
+- When running ebookmaker, user can now control whether they want to create
+  EPUB2 files or not
+- Small changes to support use of Python 3.13, and README updated to warn
+  Mac users about Homebrew-installed Python 3.12 or later
+- Touchpad scrolling support for Tk9 added 
+- `-p` or `--prefsfile` command line argument can be used to give the basename
+  of a preferences file instead of `GGprefs` - for development/testing
+- File-save check is omitted in debug mode - for development/testing
+
+### Bug fixes
+
+- User was not warned about using Alt+key as a user-defined shortcut when that
+  combination opened a menu on Windows/Linux, e.g. Alt+F for the File menu 
+- Bookloupe reported `123.png` as a word containing a digit
+- In Word Frequency, clicking on a "word" that began with a non-word character
+  but ended with a word character, e.g. `*--the` didn't display the word
+- WF reported `Joseph-Marie`, `MacDonald`, `E.g.`, etc. as Mixed Case words
+- WF did not ignore ppgen page break commands or comments
+- PPhtml failed to spot the charset definition in non-HTML5 files
+- Theme queries failed when using Tk9
+- OK/Apply buttons in Configure Page Labels did not show whether there were any
+  changes to apply
+- If Undo/Redo were used from the Edit menu while use Page Separator Fixup, the
+  current separator was not re-highlighted
+- Adjusting the indent of an ASCII table did not work correctly if the "Rewrap"
+  setting was enabled
+- Illustration Fixup failed to handle proofer comments inside illo markup
+- Bookloupe did not report lower case after period in quotes
+- PPtxt did not report a repeated word across a line break in indented text
+- PPtxt reported multiple repeated words incorrectly
+- PPtxt reported close curly quotes being used as ditto marks as "spaced"
+- PPtxt sometimes reported `0` and `1` in decimal numbers as "standalone"
+- PPtxt didn't report a potential hyphenated/unhyphenated error if the hyphen
+  was at the start or end of the word
+- PPhtml reported a cover image over 1MB as an error, not a warning
+
 ## Version 2.0.0-alpha.20
 
 ### Bug fixes
 
 - Command Palette Edit button gave an exception error message
+
 
 ## Version 2.0.0-alpha.19
 
@@ -50,6 +115,7 @@
 - When a bookmark was set/changed, the file was not flagged as needing saving
 - Some complex regexes can take a very long time - a timeout now warns the user
 - Extending a column selection as the first operation caused an exception
+
 
 ## Version 2.0.0-alpha.18
 
