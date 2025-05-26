@@ -52,7 +52,7 @@ class SearchDialog(ToplevelDialog):
         selection: True to restrict counting, replacing, etc., to selected text.
     """
 
-    manual_page = "Searching"
+    manual_page = "Search_Menu#The_Search_&_Replace_Dialog"
     # Cannot be initialized here, since Tk root may not be created yet
     selection: tk.BooleanVar
 
