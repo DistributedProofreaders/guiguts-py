@@ -1258,7 +1258,7 @@ def unicode_normalize() -> None:
 class ProoferCommentCheckerDialog(CheckerDialog):
     """Proofer Comment Checker dialog."""
 
-    manual_page = "Navigation#Find_Proofer_Comments_(_[**notes]_)"
+    manual_page = "Search_Menu#Find_Proofer_Comments_(_[**_notes]_)"
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize Proofer Comment dialog."""
@@ -1384,7 +1384,7 @@ def asterisk_check() -> None:
     class AsteriskCheckerDialog(CheckerDialog):
         """Asterisk Checker Dialog."""
 
-        manual_page = "Navigation#Find_Asterisks_w/o_Slash"
+        manual_page = "Search_Menu#Find_Asterisks_w/o_Slash"
 
         def __init__(self, **kwargs: Any) -> None:
             """Initialize Asterisk Checker dialog."""
