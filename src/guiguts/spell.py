@@ -19,6 +19,7 @@ from guiguts.utilities import (
     load_wordfile_into_dict,
     cmd_ctrl_string,
     process_accel,
+    non_text_line,
 )
 from guiguts.widgets import ToolTip, mouse_bind
 
@@ -236,6 +237,10 @@ class SpellChecker:
                     line = mincol * " " + line[mincol:]
                 if column_selection or line_num == maxrow:
                     line = line[:maxcol]
+
+            # Don't spellcheck page separators, etc.
+            if non_text_line(line):
+                continue
 
             words = re.split(r"[^\p{Alnum}\p{Mark}'’]", line)
             next_col = 0

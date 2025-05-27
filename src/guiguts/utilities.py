@@ -753,6 +753,12 @@ class TextWrapper:
         return rewrapped_para
 
 
+def non_text_line(line: str) -> bool:
+    """Return True if line is not part of text, due to being a page separator or
+    ppgen command or ppgen comment."""
+    return bool(re.match(r"-----File:|\.[\p{Letter}\p{Number}]{2} |//", line))
+
+
 def is_debug() -> bool:
     """Return whether in debug mode, specifically if error logging level is debug."""
     return logger.getEffectiveLevel() == logging.DEBUG
