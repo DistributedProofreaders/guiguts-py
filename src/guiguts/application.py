@@ -82,6 +82,8 @@ from guiguts.misc_tools import (
     convert_to_curly_quotes,
     check_curly_quotes,
     indent_selection,
+    align_selection,
+    right_align_numbers,
     ScannoCheckerDialog,
 )
 from guiguts.page_details import PageDetailsDialog
@@ -926,6 +928,10 @@ class Guiguts:
         text_menu.add_button("Indent ~1 space", lambda: indent_selection(1))
         text_menu.add_button("Indent ~4 spaces", lambda: indent_selection(4))
         text_menu.add_button("~Unindent 1 space", lambda: indent_selection(-1))
+        text_menu.add_separator()
+        text_menu.add_button("~Center", lambda: align_selection(True))
+        text_menu.add_button("~Right Align", lambda: align_selection(False))
+        text_menu.add_button("Right Align ~Numbers", right_align_numbers)
 
     def init_html_menu(self) -> None:
         """Create the HTML menu."""

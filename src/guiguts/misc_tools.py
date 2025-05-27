@@ -2413,16 +2413,66 @@ def indent_selection(indent: int) -> None:
         indent: How many spaces to indent.
     """
 
-    def do_indent(line: int, indent: int) -> None:
+    def do_indent(line: int) -> None:
         """Indent given line by adding/removing `indent` space(s)."""
-        text = maintext().get(f"{line}.0", f"{line}.end")
         if indent < 0:
+            text = maintext().get(f"{line}.0", f"{line}.end")
             # Don't try to remove more leading spaces than exist
             n_space = min(-indent, len(text) - len(text.lstrip()))
             maintext().delete(f"{line}.0", f"{line}.{n_space}")
         elif indent > 0:
             maintext().insert(f"{line}.0", " " * indent)
 
+    align_indent(do_indent)
+
+
+def align_selection(center: bool) -> None:
+    """Align selected lines of text.
+
+    Args:
+        center: True to center, False to right-align.
+    """
+
+    right = preferences.get(PrefKey.WRAP_RIGHT_MARGIN)
+
+    def do_align(line: int) -> None:
+        """Align given line by adding/removing space(s)."""
+        text = maintext().get(f"{line}.0", f"{line}.end").strip()
+        text_len = len(text)
+        if text_len > 0:
+            n_spaces = right - text_len
+            if center:
+                n_spaces = int(n_spaces / 2)
+            n_spaces = max(n_spaces, 0)
+            maintext().replace(f"{line}.0", f"{line}.end", f"{n_spaces*' '}{text}")
+
+    align_indent(do_align)
+
+
+def right_align_numbers() -> None:
+    """Right align numbers in selection, e.g. ToC."""
+
+    right = preferences.get(PrefKey.WRAP_RIGHT_MARGIN)
+
+    def number_align(line: int) -> None:
+        """Align numbers at end of given line by adding/removing space(s)."""
+        text = maintext().get(f"{line}.0", f"{line}.end").rstrip()
+        if match := re.fullmatch(r"^(.*?)  +(\d+([,-–] *\d+)*\.?)", text):
+            pre = match[1]
+            post = match[2]
+            n_spaces = right - len(pre) - len(post)
+            n_spaces = max(n_spaces, 2)
+            maintext().replace(f"{line}.0", f"{line}.end", f"{pre}{n_spaces*' '}{post}")
+
+    align_indent(number_align)
+
+
+def align_indent(do_func: Callable[[int], None]) -> None:
+    """Call given function on each selected (or current) line.
+
+    Args:
+        do_func: Function to do the aligning/indenting.
+    """
     maintext().undo_block_begin()
 
     ranges = maintext().selected_ranges()
@@ -2432,10 +2482,10 @@ def indent_selection(indent: int) -> None:
             # End point is end of prev line if sel range ends at line start
             end = maintext().rowcol(f"{sel_range.end.index()}-1c").row
             for line in range(start, end + 1):
-                do_indent(line, indent)
+                do_func(line)
         # When normal selection, first inserted spaces go before the
         # start of the sel tag and don't appear selected, so re-select
         if len(ranges) == 1 and ranges[0].start.col == 0:
             maintext().do_select(ranges[0])
     else:
-        do_indent(maintext().get_insert_index().row, indent)
+        do_func(maintext().get_insert_index().row)
