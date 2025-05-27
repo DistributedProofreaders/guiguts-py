@@ -19,8 +19,7 @@ logger = logging.getLogger(__package__)
 TraversablePath = importlib.resources.abc.Traversable | Path
 
 # Flag so application code can detect if within a pytest run - only use if really needed
-# See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
-CALLED_FROM_TEST = False
+_CALLED_FROM_TEST = False
 
 # Event keysym names as keys, display names as values
 SUPPORTED_SHORTCUT_KEYS = {
@@ -762,3 +761,11 @@ def non_text_line(line: str) -> bool:
 def is_debug() -> bool:
     """Return whether in debug mode, specifically if error logging level is debug."""
     return logger.getEffectiveLevel() == logging.DEBUG
+
+
+def is_test(testing: Optional[bool] = None) -> bool:
+    """Set or query whether in test mode."""
+    global _CALLED_FROM_TEST
+    if testing is not None:
+        _CALLED_FROM_TEST = testing
+    return _CALLED_FROM_TEST
