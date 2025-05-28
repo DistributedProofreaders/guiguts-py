@@ -108,6 +108,7 @@ Start of Spelling Check
 1098.54: tuesday (2)
 1128.44: geographica (2)
 1128.60: historica (1)
+1130.0:  cetera (1)
 1130.52: photobibliography (1)
 1131.14: GMB (1)
 1133.14: Messrs (3)
