@@ -28,13 +28,13 @@ jobs:
         poetry install
     - name: Lint with flake8
       run: |
-        poetry run flake8 ./src
+        poetry run flake8 .
     - name: Lint with pylint
       run: |
         poetry run pylint --recursive y .
     - name: Check format with black
       run: |
-        poetry run black --check --verbose ./src
+        poetry run black --check --verbose .
     - name: Check documentation with sphinx
       run: |
         poetry run sphinx-build -W -b html docs docs/build
