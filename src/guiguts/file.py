@@ -38,6 +38,7 @@ from guiguts.utilities import (
     IndexRange,
     sound_bell,
     folder_dir_str,
+    is_test,
 )
 from guiguts.widgets import grab_focus, ToplevelDialog
 
@@ -427,7 +428,7 @@ class File:
         # Good(?) place to ensure image position gets saved
         mainimage().handle_configure(None)
 
-        if not maintext().is_modified():
+        if is_test() or not maintext().is_modified():
             return True
 
         save = messagebox.askyesnocancel(

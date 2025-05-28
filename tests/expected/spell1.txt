@@ -1,8 +1,29 @@
 Start of Spelling Check
 
-3.16: sd (1)
-3.19: asd (1)
-3.23: askd (1)
+   9.11: px003a (1)
+  11.3:  p003a (1)
+  17.1:  bn (1)
+  17.4:  p003sa (1)
+  24.18: UNWIN (1)
+  25.3:  ADELPHI (1)
+  36.8:  Upcott (1)
+  75.23: Cambrai (1)
+ 130.29: Lachrymatory (1)
+ 213.31: footboard (1)
+ 304.0:  extricatory (1)
+ 379.0:  Decauville (1)
+ 380.42: railheads (2)
+ 401.25: railheads (2)
+ 477.4:  depôts (1)
+ 635.22: higgledy (1)
+ 635.31: piggledy (1)
+ 728.1:  tion (1)
+ 824.18: LACHRYMATORY (2)
+ 866.4:  LACHRYMATORY (2)
+ 961.36: F1 (2)
+1134.31: F1 (2)
+1152.7:  WORKPEOPLE (2)
+1243.0:  WORKPEOPLE (2)
 
 Check complete
 

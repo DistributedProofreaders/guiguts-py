@@ -4,18 +4,29 @@ from pathlib import Path
 import tkinter as tk
 from typing import Callable
 
+import pytest
+
 from guiguts.application import Guiguts
 from guiguts.checkers import CheckerDialog
 from guiguts.file import the_file
 from guiguts.spell import spell_check, SpellCheckerDialog
+from guiguts.tools.jeebies import jeebies_check, JeebiesCheckerDialog
 
 
+@pytest.mark.parametrize(
+    "base_in, base_exp",
+    [
+        ("raw_ctf.txt", "spell1.txt"),
+        ("pp_complete.txt", "spell2.txt"),
+    ],
+)
 def test_spellcheck_output(
-    guiguts_app: Guiguts,  # pylint: disable=unused-argument
+    guiguts_app: Guiguts, base_in: str, base_exp: str  # pylint: disable=unused-argument
 ) -> None:
     """Test the spellchecker."""
-    run_tool_test(
-        "spell1.txt",
+    run_checker_test(
+        base_in,
+        base_exp,
         lambda: spell_check(
             the_file().project_dict,
             the_file().add_good_word_to_project_dictionary,
@@ -25,20 +36,40 @@ def test_spellcheck_output(
     )
 
 
-def run_tool_test(
-    basename: str, run_func: Callable, dialog: type[CheckerDialog]
+@pytest.mark.parametrize(
+    "base_in, base_exp",
+    [
+        ("raw_ctf.txt", "jeebies1.txt"),
+        ("pp_complete.txt", "jeebies2.txt"),
+    ],
+)
+def test_jeebies_output(
+    guiguts_app: Guiguts, base_in: str, base_exp: str  # pylint: disable=unused-argument
+) -> None:
+    """Test Jeebies."""
+    run_checker_test(
+        base_in,
+        base_exp,
+        jeebies_check,
+        JeebiesCheckerDialog,
+    )
+
+
+def run_checker_test(
+    base_in: str, base_exp: str, run_func: Callable, dialog: type[CheckerDialog]
 ) -> None:
     """Test a checker tool.
 
     Args:
-        basename: Name of file to load, e.g. "spell1.txt".
+        base_in: Name of file to load, e.g. "test1.txt".
+        base_exp: Name of file containing expected results, e.g. "spell1.txt".
         run_func: Function to run to test the tool.
         dialog: Class of dialog that will contain results.
     """
     test_dir = Path(__file__).parent
-    input_file = test_dir / "input" / basename
-    expected_file = test_dir / "expected" / basename
-    failed_output_file = test_dir / "actual" / basename
+    input_file = test_dir / "input" / base_in
+    expected_file = test_dir / "expected" / base_exp
+    failed_output_file = test_dir / "actual" / base_exp
 
     the_file().open_file(str(input_file))
     run_func()

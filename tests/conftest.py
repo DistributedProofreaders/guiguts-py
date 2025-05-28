@@ -8,7 +8,7 @@ from guiguts.application import Guiguts
 from guiguts.root import root
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def guiguts_app() -> Generator[Guiguts, None, None]:
     """Start GG in "test" mode"""
     app = Guiguts(args=["--nohome"])  # Force command line args
