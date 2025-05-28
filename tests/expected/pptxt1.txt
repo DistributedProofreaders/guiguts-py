@@ -1,0 +1,313 @@
+----- Quotes types check -------------------------------------------------------
+
+    Only straight quotes found in this file (maybe single and/or double).
+
+----- Trailing spaces check ----------------------------------------------------
+
+    No lines with trailing spaces found.
+
+----- Paragraph spacing check - expecting 4121, 421 or 411 spacing -------------
+ 457.0:  End point of repeated 2-line spacing.
+ 611.0:  End point of repeated 2-line spacing.
+
+----- Repeated words check - can be last word on a line and first on next ------
+
+    No repeated words found.
+
+----- Ellipsis check -----------------------------------------------------------
+
+    No suspect ellipsis found.
+
+----- Basic (positional) curly-quote check -------------------------------------
+
+    No suspect curly quotes found.
+
+----- Hyphenated/non-hyphenated words check ------------------------------------
+
+    No non-hyphenated versions of hyphenated words found.
+
+----- Adjacent spaces check (poetry, block-quotes, etc., are ignored) ----------
+ 539.35: desire is cast on the wooden cases.  Either as
+ 827.17: NIGHT DRILL UNDER  FIRST-LINE
+ 830.2:  (x4) AN  INSTRUCTION  CLASS  AT  THE
+ 837.2:  (x2) AT  MUSKETRY  PRACTICE--PRONE
+
+----- Hyphen/dashes check (one or more present on line) ------------------------
+'--' (keyboard '-') found
+  97.39: The men under instruction have to learn--or else
+  98.27: show that they know already--everything that a
+ 179.9:  exercise"--as one out of a soldier's many forms
+ 180.39: of physical exercise is formally called--do less than
+ 377.43: An excellent way of transporting casualties--where
+  ...13 more lines
+
+    [Book seems to use '--' as em-dash so not reporting these further]
+
+Adjacent dashes (expected at least 8 emdash or keyboard '-' as a separator)
+   1.0:  (x2) -----File: 001.png---------------------------------------------------------
+   7.0:  (x2) -----File: 002.png---------------------------------------------------------
+   9.0:  (x2) -----File: px003a.png------------------------------------------------------
+  28.0:  (x2) -----File: 004.png---------------------------------------------------------
+  39.0:  (x2) -----File: 005.png---------------------------------------------------------
+  73.0:  (x2) -----File: 006.png---------------------------------------------------------
+ 105.0:  (x2) -----File: 007.png---------------------------------------------------------
+ 138.0:  (x2) -----File: 008.png---------------------------------------------------------
+ 171.0:  (x2) -----File: 009.png---------------------------------------------------------
+ 203.0:  (x2) -----File: 010.png---------------------------------------------------------
+ 217.0:  (x2) -----File: 011.png---------------------------------------------------------
+ 253.0:  (x2) -----File: 012.png---------------------------------------------------------
+ 285.0:  (x2) -----File: 013.png---------------------------------------------------------
+ 319.0:  (x2) -----File: 014.png---------------------------------------------------------
+ 350.0:  (x2) -----File: 015.png---------------------------------------------------------
+ 383.0:  (x2) -----File: 016.png---------------------------------------------------------
+ 416.0:  (x2) -----File: 017.png---------------------------------------------------------
+ 435.0:  (x2) -----File: 018.png---------------------------------------------------------
+ 437.0:  (x2) -----File: 019.png---------------------------------------------------------
+ 470.0:  (x2) -----File: 020.png---------------------------------------------------------
+ 505.0:  (x2) -----File: 021.png---------------------------------------------------------
+ 540.0:  (x2) -----File: 022.png---------------------------------------------------------
+ 573.0:  (x2) -----File: 023.png---------------------------------------------------------
+ 589.0:  (x2) -----File: 024.png---------------------------------------------------------
+ 591.0:  (x2) -----File: 025.png---------------------------------------------------------
+ 625.0:  (x2) -----File: 026.png---------------------------------------------------------
+ 659.0:  (x2) -----File: 027.png---------------------------------------------------------
+ 693.0:  (x2) -----File: 028.png---------------------------------------------------------
+ 727.0:  (x2) -----File: 029.png---------------------------------------------------------
+ 758.0:  (x2) -----File: 030.png---------------------------------------------------------
+ 791.0:  (x2) -----File: 031.png---------------------------------------------------------
+ 804.0:  (x2) -----File: 032.png---------------------------------------------------------
+ 806.0:  (x2) -----File: 033.png---------------------------------------------------------
+ 812.0:  (x2) -----File: 034.png---------------------------------------------------------
+ 846.0:  (x2) -----File: 035.png---------------------------------------------------------
+ 860.0:  (x2) -----File: 036.png---------------------------------------------------------
+ 870.0:  (x2) -----File: 037.png---------------------------------------------------------
+ 880.0:  (x2) -----File: 038.png---------------------------------------------------------
+ 890.0:  (x2) -----File: 039.png---------------------------------------------------------
+ 900.0:  (x2) -----File: 040.png---------------------------------------------------------
+ 909.0:  (x2) -----File: 041.png---------------------------------------------------------
+ 919.0:  (x2) -----File: 042.png---------------------------------------------------------
+ 928.0:  (x2) -----File: 043.png---------------------------------------------------------
+ 937.0:  (x2) -----File: 044.png---------------------------------------------------------
+ 946.0:  (x2) -----File: 045.png---------------------------------------------------------
+ 952.0:  (x2) -----File: 046.png---------------------------------------------------------
+ 996.0:  (x2) -----File: 047.png---------------------------------------------------------
+1006.0:  (x2) -----File: 048.png---------------------------------------------------------
+1016.0:  (x2) -----File: 049.png---------------------------------------------------------
+1026.0:  (x2) -----File: 050.png---------------------------------------------------------
+1037.0:  (x2) -----File: 051.png---------------------------------------------------------
+1048.0:  (x2) -----File: 052.png---------------------------------------------------------
+1059.0:  (x2) -----File: 053.png---------------------------------------------------------
+1068.0:  (x2) -----File: 054.png---------------------------------------------------------
+1078.0:  (x2) -----File: 055.png---------------------------------------------------------
+1088.0:  (x2) -----File: 056.png---------------------------------------------------------
+1100.0:  (x2) -----File: 057.png---------------------------------------------------------
+1109.0:  (x2) -----File: 058.png---------------------------------------------------------
+1119.0:  (x2) -----File: 059.png---------------------------------------------------------
+1125.0:  (x2) -----File: 060.png---------------------------------------------------------
+1162.0:  (x2) -----File: 061.png---------------------------------------------------------
+1172.0:  (x2) -----File: 062.png---------------------------------------------------------
+1182.0:  (x2) -----File: 063.png---------------------------------------------------------
+1191.0:  (x2) -----File: 064.png---------------------------------------------------------
+1200.0:  (x2) -----File: 065.png---------------------------------------------------------
+1209.0:  (x2) -----File: 066.png---------------------------------------------------------
+1218.0:  (x2) -----File: 067.png---------------------------------------------------------
+1227.0:  (x2) -----File: 068.png---------------------------------------------------------
+1237.0:  (x2) -----File: 069.png---------------------------------------------------------
+1249.0:  (x2) -----File: 070.png---------------------------------------------------------
+1260.0:  (x2) -----File: 071.png---------------------------------------------------------
+1269.0:  (x2) -----File: 072.png---------------------------------------------------------
+1278.0:  (x2) -----File: 073.png---------------------------------------------------------
+1284.0:  (x2) -----File: 074.png---------------------------------------------------------
+1308.0:  (x2) -----File: 075.png---------------------------------------------------------
+1317.0:  (x2) -----File: 076.png---------------------------------------------------------
+1327.0:  (x2) -----File: 077.png---------------------------------------------------------
+1336.0:  (x2) -----File: 078.png---------------------------------------------------------
+1345.0:  (x2) -----File: 079.png---------------------------------------------------------
+1355.0:  (x2) -----File: 080.png---------------------------------------------------------
+
+Hyphen-minus (single keyboard '-')
+ 629.28: somebody's[** possible typo - delete 's?] else's shirt which has been disinfected
+
+----- Scannos check ------------------------------------------------------------
+
+    No scannos found.
+
+----- Character checks ---------------------------------------------------------
+'/' (104)
+  11.0:  /s p003a
+  14.0:  /*
+  27.1:  */
+  33.0:  /*
+  35.21: <sc>The Avenue Press</sc>
+  ...more
+
+'*' (22)
+  14.1:  /*
+  27.0:  */
+  33.1:  /*
+  38.0:  */
+ 119.27: (x2) quarters at the base depôt[**Add circumflex above o?] camp of the division to
+  ...more
+
+'<' (18)
+  35.0:  <sc>The Avenue Press</sc>
+  35.20: <sc>The Avenue Press</sc>
+  36.1:  (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  36.31: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  37.0:  <sc>London</sc>.
+  37.10: <sc>London</sc>.
+ 216.11: the troops <i>en route</i> for the Front.
+ 216.22: the troops <i>en route</i> for the Front.
+ 686.0:  <i>Tempest</i>--
+ 686.10: <i>Tempest</i>--
+  ...more
+
+'>' (18)
+  35.3:  <sc>The Avenue Press</sc>
+  35.24: <sc>The Avenue Press</sc>
+  36.4:  (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  36.35: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  37.3:  <sc>London</sc>.
+  37.14: <sc>London</sc>.
+ 216.13: the troops <i>en route</i> for the Front.
+ 216.25: the troops <i>en route</i> for the Front.
+ 686.2:  <i>Tempest</i>--
+ 686.13: <i>Tempest</i>--
+  ...more
+
+'"' (24)
+  86.0:  "racing polish" is put on a boat's crew which has
+  86.14: "racing polish" is put on a boat's crew which has
+  88.18: compared with the "post-graduate courses" in
+  88.40: compared with the "post-graduate courses" in
+ 100.41: himself and endanger the enemy. They are "put
+ 101.10: through it" in the ordinary parade movements in
+ 156.0:  "picture targets" in the indispensable art of
+ 156.16: "picture targets" in the indispensable art of
+  ...more
+
+''' (29)
+  86.32: "racing polish" is put on a boat's crew which has
+ 140.47: gas to be met in actual warfare. But if the man's
+ 159.26: course the Indian soldiers' firm balance of the body
+ 179.34: exercise"--as one out of a soldier's many forms
+ 237.41: trench. (If he has been wounded in No Man's
+  ...more
+
+'ô' (8)
+ 119.24: quarters at the base depôt[**Add circumflex above o?] camp of the division to
+ 476.24: having only one base depôt of petrol. At each of
+ 477.7:  its depôts every process is carried out that is
+ 482.11: At each depôt there is one factory for
+ 485.3:  depôt employs more than 200 men and boys on
+  ...more
+
+'#' (88)
+ 820.1:  /#
+ 845.0:  #/
+ 850.1:  /#
+ 855.0:  #/
+ 864.1:  /#
+  ...more
+
+----- Abandoned HTML tag check -------------------------------------------------
+  35.0:  <sc>The Avenue Press</sc>
+  35.20: <sc>The Avenue Press</sc>
+  36.1:  (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  36.31: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  37.0:  <sc>London</sc>.
+  37.10: <sc>London</sc>.
+
+Source file not plain text: 3 book lines with 6 markup instances so far...
+...abandoning check.
+
+----- Unicode numeric character references check -------------------------------
+
+    No unicode numeric character references found.
+
+----- Special situations checks ------------------------------------------------
+Blank Page place holder found.
+   8.0:  [Blank Page]
+ 436.0:  [Blank Page]
+ 590.0:  [Blank Page]
+ 805.0:  [Blank Page]
+
+Query mixed letters/digits in word (excluding exceptions).
+   9.11: -----File: px003a.png------------------------------------------------------
+  11.3:  /s p003a
+  17.4:  .bn p003sa.png
+ 961.36: THE OVERHEAD TROLLEY FOR BRINGING[**F1: hanging indent here and below when multi-line]
+1134.31: CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
+
+Line start with suspect punctuation.
+  17.0:  .bn p003sa.png
+
+Query word starting with 'Lt' (excludes words in project dictionary).
+  24.25: LONDON: T. FISHER UNWIN, Ltd.
+  36.27: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+
+Ampersand character in line (excluding '&c.' and unicode numeric character references).
+  36.20: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+
+Opening square bracket followed by other than I, G, M, S or digit.
+ 119.26: quarters at the base depôt[**Add circumflex above o?] camp of the division to
+ 629.10: somebody's[** possible typo - delete 's?] else's shirt which has been disinfected
+ 821.30: AMIDST DEADLY FUMES OF GAS--ON[**FF: hanging indent here and below when multi-line]
+ 961.33: THE OVERHEAD TROLLEY FOR BRINGING[**F1: hanging indent here and below when multi-line]
+1115.17: WITH HEATING-PIPE[**dash clear on 046.png]
+1134.28: CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
+
+Mixed case in word (excluding words in project dictionary).
+ 163.0:  Sandbag-Filling.
+ 272.13: The Advanced Dressing-Station.
+ 375.0:  Narrow-Gauge Railways.
+
+Single character line.
+ 869.0:  ]
+ 879.0:  ]
+ 889.0:  ]
+ 899.0:  ]
+ 908.0:  ]
+ 918.0:  ]
+ 927.0:  ]
+ 936.0:  ]
+ 945.0:  ]
+1005.0:  ]
+1015.0:  ]
+1025.0:  ]
+1036.0:  ]
+1047.0:  ]
+1058.0:  ]
+1067.0:  ]
+1077.0:  ]
+1087.0:  ]
+1099.0:  ]
+1108.0:  ]
+1118.0:  ]
+1171.0:  ]
+1181.0:  ]
+1190.0:  ]
+1199.0:  ]
+1208.0:  ]
+1217.0:  ]
+1226.0:  ]
+1236.0:  ]
+1248.0:  ]
+1259.0:  ]
+1268.0:  ]
+1277.0:  ]
+1316.0:  ]
+1326.0:  ]
+1335.0:  ]
+1344.0:  ]
+1354.0:  ]
+1365.0:  ]
+
+Single '1' in a word or a standalone '1' (excluding exceptions).
+ 961.37: THE OVERHEAD TROLLEY FOR BRINGING[**F1: hanging indent here and below when multi-line]
+1134.32: CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
+
+--------------------------------------------------------------------------------
+
+Check complete
+

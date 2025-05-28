@@ -1,0 +1,781 @@
+----- Quotes types check -------------------------------------------------------
+
+    Only curly quotes found in this file (maybe single and/or double).
+
+----- Trailing spaces check ----------------------------------------------------
+
+    No lines with trailing spaces found.
+
+----- Paragraph spacing check - expecting 4121, 421 or 411 spacing -------------
+  15.0:  End point of repeated 2-line spacing.
+  18.0:  End point of repeated 2-line spacing.
+  21.0:  End point of repeated 2-line spacing.
+  29.0:  End point of repeated 2-line spacing.
+
+----- Repeated words check - can be last word on a line and first on next ------
+
+    No repeated words found.
+
+----- Ellipsis check -----------------------------------------------------------
+ 123.53: [treating of] ... taste ... grace; modesty ... dress ...; rank ... in
+ 125.7:  beauty ...; by a lady, &c. London, Crosby & Co., 1811.
+ 703.15:   Olphar Hamst ..., 1868, p. xi.
+1075.67:   lord Brougham’s publications,” printed in Lord Brougham’s Works, ...
+1233.21:           _errata’s_,... Sometimes they are put by themselves on
+1256.15:           fault....—John Smith’s Printer’s grammar, 1755, quoted
+1426.0:  ... by Sampson Low, vol. 1. general alphabet, Lond. S. Low & son, 1853.
+2085.65: residence of several years at Alexandria and Norfolk in Virginia ...
+3213.15:    descriptions...” from 15 to 14 to match actual pagination
+3217.11:    alphabet...”
+
+----- Basic (positional) curly-quote check -------------------------------------
+
+    No suspect curly quotes found.
+
+----- Hyphenated/non-hyphenated words check ------------------------------------
+
+    No non-hyphenated versions of hyphenated words found.
+
+----- Adjacent spaces check (poetry, block-quotes, etc., are ignored) ----------
+ 750.18: between brackets [   ]. Additions in titles should be as few and as
+ 895.55: If not in the book, it should be put between brackets [   ], and if
+
+----- Hyphen/dashes check (one or more present on line) ------------------------
+Adjacent dashes (expected at least 8 emdash or keyboard '-' as a separator)
+  40.32:                                 -------
+  81.32:                                 -------
+ 159.32:                                 -------
+ 228.32:                                 -------
+ 265.32:                                 -------
+ 363.32:                                 -------
+ 451.32:                                 -------
+ 768.32:                                 -------
+1052.32:                                 -------
+1114.32:                                 -------
+1156.32:                                 -------
+1230.32:                                 -------
+1342.32:                                 -------
+1536.32:                                 -------
+2271.32:                                 -------
+2277.32:                                 -------
+2309.32:                                 -------
+2314.32:                                 -------
+2330.32:                                 -------
+2346.32:                                 -------
+
+Hyphen-minus (single keyboard '-')
+ 528.36:   librorum typis impressorum,” tom 1-4, A-K. Roma, 1761-1788, fol., and
+ 528.55:   librorum typis impressorum,” tom 1-4, A-K. Roma, 1761-1788, fol., and
+1405.35: The London catalogue of books, 1814-1851, has a classified index, and in
+2258.62:     A book of advice and etiquette. The English catalogue 1835-1862 p.
+2307.21:     This period, 1800-1879 is alone sufficient to occupy a lifetime.
+2582.19:  Crestadoro, A., 19-21, 37.
+2600.48:  Darton & Harvey, publishers, 35, 36, 41, 43, 44-45-46, 48, 49, 50.
+2600.51:  Darton & Harvey, publishers, 35, 36, 41, 43, 44-45-46, 48, 49, 50.
+2783.19:  Houlston, pub., 40-43.
+
+Figure dash
+2050.3:  182‒?
+
+Em-dash
+  25.35:   the use of material instruments.”—Prof. De Morgan (Arithmetical
+ 117.52: I have not included in the list any phrases such as:—A Lady of Rank—A
+ 117.67: I have not included in the list any phrases such as:—A Lady of Rank—A
+ 168.15:           mind.—_Fly leaves.... London_ [published and edited
+ 268.55:           true work that a man has to do, is accuracy.”—_Edward
+ 272.39:           des livres de bibliographie.”—Quérard, Omissions et
+ 281.41:           the preparation of such works.”—Smithsonian Report on
+ 289.54:           labors will be mortifying and unprofitable.”—Ibid, p.
+ 455.54:           serving the tyro no less than the professor.—_Edward
+ 459.60: Books may be classed under four heads, namely (1) Autonymous—(2)
+ 460.11: Polyonymous—(3) Pseudonymous, and—(4) Anonymous.
+ 460.33: Polyonymous—(3) Pseudonymous, and—(4) Anonymous.
+ 556.17:   Samuel Halkett.—See Notes and Queries 4 s. IX., p. 403.
+ 599.48: April, 1872, I suggested the adoption of a line — to shew that a book
+ 632.53: the rule with regard to autonyms. Except when signed:—The Author, The
+ 693.60:   to be obtained, and what difference there was, he replied:—“The
+ 774.33:           universal satisfaction.—W. LENNIE, The principles of
+ 779.53:           page of a book by those who have framed it.—Art of
+ 950.38:   the cataloguer upon them. It is the:—Smithsonian Report on the
+ 996.53:   The most disorderly book I know in this respect is:—A universal
+ 998.9:    quarto:—The following is the collation. Its length would generally
+1024.60: 4 and 3 are numbered with roman numerals, it should be thus:—octavo, pp.
+1128.30: catalogues and notably in the:—“Bibliotheca geographica and historica or
+1160.22:           differently.—Wheatley’s What is an index? 1879, p. 41.
+1256.19:           fault....—John Smith’s Printer’s grammar, 1755, quoted
+1263.56:           menteuse; je confesse les fautes de mon livre.—A. JAL:
+1376.16: [1829?], sm. 8o.—Portugal, or the young travellers, ... 1830.—The new
+1376.61: [1829?], sm. 8o.—Portugal, or the young travellers, ... 1830.—The new
+1378.19: Portugal, ... 1831.—The East Indians at Selwood, or the orphans’ home,
+1380.24: Harvey, 1834, small 12o.—Gleanings from many fields, by the author of
+1445.5:  “Sir,—Seeing that you are collecting, with a view to publication, names
+1461.33: a single date or title correctly.—1. Miss Seaman died in 1829, not
+1462.5:  1830.—2. The reference to the Ryde papers is useless, as too wide for
+1463.31: verification, and inaccessible.—3. The title of each of her works is
+1465.14: all incorrect.—4. The titles are made up.—5. Words not in the
+1465.41: all incorrect.—4. The titles are made up.—5. Words not in the
+1466.44: title-pages are interpolated without notice.—6. The size of the book is
+1538.42:         “Bibliography is a dry occupation,—a caput mortuum,—it
+1538.59:         “Bibliography is a dry occupation,—a caput mortuum,—it
+1544.24:           of falsehood.”—James Atkinson, Medical Bibliography,
+1554.55:           in a catalogue, all reliability on it ceases.—Edward
+1575.52:       (Almeda) was taken from the “Life of Rozelli.”—The author’s name
+1775.47: facts, by a lady. [motto] Dublin, S. B. Oldham,—Whittaker, Lond. 1844.
+1830.21:       Lowndes’ entry:—“629. An Explanation of the Two Sacraments and the
+1925.64:       penny per copy sold, and Warne very shortly paid her £100.—See Law
+2039.47:       also supplied several valuable receipts.”—Preface.
+2287.42:       lighter literature of this century.”—Encyclopædia Britannica,
+2292.15:       Britain.”—Chambers’ Cyclopædia, London, 1874, vol. II. p. 84.
+
+Unrecognised dash
+1684.20: M. L. B*N*P**TE de M⸺T, intended as a sequel to the abbé Gaultier’s
+2148.18:                   ⸺ Is there not a hand,
+
+----- Scannos check ------------------------------------------------------------
+lond
+ 562.45:   in: A handy book about books, by J. Power, Lond., J. Wilson, 1870, p.
+ 805.20:   [Dr. Crestadoro], Lond. 1856, p. 38.
+1379.53: by the author of Portugal; the new estate, &c., &c., Lond. Darton and
+1381.36: Portugal, the new estate, &c., &c., Lond., Darton and Harvey, 1834, 12o.
+1415.0:  Lond. pub. for the executor of the late W. Bent by Longman &c. 1827, 8o.
+1419.39: The London catalogue ... 1816 to 1851, Lond., Thomas Hodgson 13
+1426.46: ... by Sampson Low, vol. 1. general alphabet, Lond. S. Low & son, 1853.
+1488.14: Remarks, &c., Lond. J. Smith, 1823, 8o, pp. 115, 2s 6d, pseudon.
+1493.56: We observe that a book entitled “Little Lily’s travels, Lond. Nelson,
+1498.58: suitable for children, by the author of Little Lily, &c., Lond., J.
+1570.65: 3. Almeda, or the Neapolitan revenge, a tragic drama, by a lady. Lond.
+1578.38: 4. An alphabet of animals, by a lady. Lond. 1865.
+1582.0:  Lond. Houlston 1858, small 12o.
+1587.10: children. Lond. Darton and Harvey 1832, square 16o.
+1590.0:  Lond. Joseph Masters 1855, 24o.
+1594.31: assistant for female teachers. Lond. Harvey and Darton 1824, 12o, pp.
+1602.13: two volumes. Lond. Saunders & Otley 1846.
+1609.0:  Lond. Warne [1873] 12o.
+1612.26: illustrated ... new edit. Lond. Colburn 1847.
+1615.42: Testaments ... selected by a lady [motto] Lond. J. F. Shaw 1857.
+1622.9:  revised. Lond. Hope & Co. 1851.
+1624.58: 15. Buds and blossoms, or stories of children, by a lady. Lond. Hatchard
+1629.20: by a lady [mottoes] Lond. Hatchard 1827.
+1634.54: 18. A catechism of the history of England, by a lady. Lond. Dolman 1850.
+1643.13: 3rd edition. Lond. J. Harris, St. Pauls’ churchyard [1820?] 12o, pp.
+1652.39:     The 2nd edit. 1828, the 39th edit. Lond. Simpkin, 1866.
+1654.48: 21. The child’s manual of prayer, by a lady ... Lond. Dolman 1849.
+1657.60: 22. The child’s own book on New-church doctrine, by a lady. Lond. 1837.
+1660.16: second edition. Lond. Jarrold (Norwich printed) [1858?]
+1666.26: simplified ... by a lady. Lond. C. H. Law, 1851.
+1668.54: 25. Choice descriptive poetry ... selected by a lady. Lond. Whittaker,
+1671.30: 26. Chollerton ... by a lady. Lond. Ollivier 1846, 8o, pp. 381.
+1686.44: and inscribed to governesses ... by a lady. Lond. Hailes, 1835.
+1689.38: author of First lessons in geography. Lond. Hailes 1828(?)
+1692.28: the old and new Testaments. Lond. Jarrold 1844.
+1697.63: 32. Conversations on important scriptural subjects by, a lady. Lond.
+1700.58: 33. Conversations on the lord’s prayer, by a lady [motto] Lond.
+1709.37:       author of “Cookery made easy.” Lond. Dean [1841].
+1711.36: 35. The cottage home ... by a lady. Lond. [1864].
+1714.35: a lady, price 2s. 6d. with plates. Lond. Rodwell & Martin 1824, 12o, pp.
+1719.52: 37. A course of ... prayers ... selected by a lady. Lond. Lyntot, price
+1726.19: language, 2 parts. Lond. Derby, printed [1850].
+1729.31: novel in four vols, by a lady. Lond. Chapple 1815.
+1731.43: 41. The crucifixion, a poem ... by a lady. Lond. Cadell 1817.
+1736.34:     The same published by Seeley, Lond. and Grapel, Liverpool, 1840.
+1742.64: 44. Dates of the kings of England, in easy triplets, by a lady. Lond.
+1746.57: French, Oriental and other foreign dishes ... by a lady. Lond. John
+1752.57: 46. An earnest address to young communicants, by a lady. Lond.
+1757.55: 47. Easy and familiar sermons for children, by a lady. Lond. printed for
+1761.67: 48. Easy lessons in the history of England, by a lady, third edit. Lond.
+1766.61: 50. Economical cookery for young housekeepers ... by a lady. Lond. 1824,
+1771.19: pupils, by a lady. Lond. Groombridge 1850, 8o, pp. 8 and 116, with an
+1775.59: facts, by a lady. [motto] Dublin, S. B. Oldham,—Whittaker, Lond. 1844.
+1778.27: illustrations by the same. Lond. Darton [1859]
+1784.0:  Lond. John Murray 1835, quarto, pp. VII. and 72, price 12s.
+1786.50: 56. Emily Trevor, or the Vale of Elwy, by a lady. Lond. Simpkin, Denbigh
+1792.6:  edit. Lond. [1839?].
+1795.41: lady [mottoes] Bath (printed) W. Pocock. Lond. Simpkin 1840, 8o, pp.
+1800.12: Henry Ward. Lond. Hatchard 1851.
+1802.58: 60. Esthwaite water, a poem in three parts ... by a lady. Lond.
+1810.60: 62. Every lady’s guide to her own greenhouse ... by a lady. Lond. Orr
+1814.36: clergyman of the church of England. Lond. Tabart 1802, small 12o, pp.
+1820.26: the use of young persons. Lond. John Murray 1828, 8o. pp. XI. and 1 and
+1841.63: 66. Familiar dialogues, on interesting subjects ... by a lady. Lond.
+1851.43: plates (M. Spratt del.): by a lady [motto] Lond. Washbourne 1835, small
+1857.65: 68. Florence Nightingale and the Russian war, a poem, by a lady. Lond.
+1865.11: Salisbury. Lond. Simpkin [1860].
+1874.45: and evening in the year: selected by a lady. Lond. J. F. Shaw 1858, 32o,
+1882.28: preface by ... G. R. Gleig. Lond. Dean & Son 1865, 4o.
+1888.52: together with 50 in the French language, by a lady. Lond. Bogue 1851,
+1920.16: Whiteside Cook] Lond. Warne 1873.
+1957.41: a garden and the study of botany [motto] Lond. printed for Harvey and
+1962.0:  Lond. Masters 1857, 12o.
+1966.0:  Lond. Partridge, Oakey & co. 34 Paternoster row 1854, 18o, pp. 32.
+1980.46: 91. Letters to my unknown friends, by a lady. Lond. printed for Longman,
+1985.56: 92. The life of Mary, mother of our Lord ... by a lady. Lond. 1851, 8o.
+1998.63: Brightwell & son, sold also by Longman & co., Whittaker & co., Lond.;
+2002.6:  lady. Lond. printed for John Stockdale, Piccadilly 1800, 16o, pp. 89,
+2031.23: illustrative woodcuts. Lond. John Murray 1851, 8o, XXVIII. 675.
+2043.26: from drawings of her own. Lond. Harris 1807.
+2045.59: 104. My Norske note book; or a month in Norway, by a lady. Lond.
+2049.20: edit., with plates. Lond. Harvey and Darton 1824, 12o, 4s. 3rd edit.
+2053.24: author of Portugal, &c. Lond. printed for Darton and Harvey 1831, 12o,
+2062.23: Revelation) by a lady. Lond. Wertheim, 1860, 8o.
+2066.28: elegant engravings on wood. Lond. printed for B. Crosby & co. 1810; 12o,
+2078.62: 111. Plain lectures on Genesis for family reading, by a lady. Lond.
+2081.36: 112. Poems for children, by a lady. Lond. Darton and Harvey 1834, 12o,
+2092.27: the Lord’s day, by a lady. Lond. J. Hatchard & Son 1837, price 3d, or 2s
+2097.43: lady during three years’ actual residence. Lond. Darton & Harvey 1830,
+2101.0:  Lond. Colburn 1830, 8o.
+2103.43: 117. Prayers, hymns, and texts, by a lady. Lond. Seeley 1846, 12o.
+2106.5:  co.; Lond. Longman 1845, 12o.
+2114.52: 120. The Redeemed Rose, or Willies rest, by a lady. Lond. 1853, 8o.
+2118.26: the Hon. C. E. S. Norton] Lond. 1849, 16o.
+2127.32: subjects, by a lady. Oxford and Lond. Parker 1853, 16o.
+2138.29: 126. The Sceptic, by a lady. Lond. J. Russell Smith 1850, 8o, pp. VIII.
+2144.8:  a lady. Lond. Saunders and Otley 1846, 12o.
+2152.0:  Lond. printed for C. Law Ave maria lane, by Bye and Law, St.
+2166.0:  Lond.; and S. Hazard, Bath 1801, 8o, VI. 82.
+2173.19: pupils. Brighton & Lond. Whittaker 1857, 8o.
+2175.44: 132. Spain yesterday and to-day, by a lady. Lond. Harvey & Darton [1829]
+2181.35: every day in the month, by a lady. Lond. Saunders & Otley 1826, 8o.
+2183.39: 135. Tales from the German, by a lady. Lond. Anderson [1825?] 8o.
+2196.6:  lady. Lond. J. F. Shaw 1858, 16o.
+2213.54: Spanish, Portuguese, and French languages, by a lady. Lond. Saunders &
+2217.17: unknown friends. Lond. Longman 1847, 16o.
+2219.45: 142. Twice Married, my own story, by a lady. Lond. Ward & Lock 1855, 8o.
+2222.23: of Wooton under Edge?] Lond. A. Hall 1851, 12o.
+2229.54: prayer, translated freely from the German, by a lady. Lond. Whittaker &
+2238.53: 147. Woman as a virgin, wife, and mother, by a lady. Lond. Mitchell
+2247.19: made at home, etc. Lond. Simpkin, Birmingham, print. 1838, 4to.
+2252.40: “First lessons in geography by a lady.” Lond. Ward [Bungay printed 1853]
+3222.63:  • p. 47: Supplied period apparently omitted by printer after “Lond” in
+
+iii
+1002.27:   unpaged, then pp. 44 and iii., then corrigenda pp. ix., then a
+1025.20: xii., and iv., 253, iii., because this is more accurate. We use the same
+1029.37: I do not use the sign plus (xii.+iv.+iii.) because it makes the figures
+1560.48: being the 49th anniversary of the reign of Geo. III. ... collected and
+2190.0:  III. 370 the pagination of the appendix is continuous.
+2288.31:       ninth edition. 1875, vol III. p. 658.
+2718.8:   George III. jubilee, 40.
+
+ont
+1261.43:           honte d’avouer les fautes qu’ils ont commises, ou
+
+ou
+1261.57:           honte d’avouer les fautes qu’ils ont commises, ou
+
+----- Character checks ---------------------------------------------------------
+'£' (6)
+ 178.35: The authoress of: “How to dress on £15 a year as a lady, by a lady,”
+1608.56: volume to [but not by the authoress of] How to dress on £15 a year....
+1913.6:        £1000 a year.
+1919.20: 81. How to dress on £15 a year as a lady, by a lady [Mrs. Millicent
+1925.59:       penny per copy sold, and Warne very shortly paid her £100.—See Law
+  ...more
+
+'é' (25)
+ 247.5:  of Quérard’s France Littéraire, which was called in and cancelled; and
+ 247.24: of Quérard’s France Littéraire, which was called in and cancelled; and
+ 272.42:           des livres de bibliographie.”—Quérard, Omissions et
+ 273.11:           bévues du livre intitulé La Littérature Française
+ 273.33:           bévues du livre intitulé La Littérature Française
+ 273.42:           bévues du livre intitulé La Littérature Française
+ 496.48:   of “A notice of the life and works of J. M. Quérard by Olphar Hamst:
+ 500.38:   introduction to either edition of Quérard’s “Supercheries Littéraires
+ 500.64:   introduction to either edition of Quérard’s “Supercheries Littéraires
+  ...more
+
+'è' (2)
+ 271.58:         ... “l’exactitude est le meilleur fondment du succès
+1259.37:         Le nouvel _Errata_, je le répète, est long, d’une
+
+'ç' (1)
+ 273.54:           bévues du livre intitulé La Littérature Française
+
+'ü' (2)
+ 502.52:   “Supercheries littéraires, pastiches,” Londres, Trübner, 1872.
+ 561.47:   small libraries, by W. E. A. Axon, London, Trübner [1869] reprinted
+
+'æ' (8)
+ 527.44:   (1850, p. 469), it is entitled “Bibliothecæ Casanatensis catalogus
+1195.7:    Athenæum, 2 Aug. 1856, p. 953, quoted by Allibone in his Dictionary,
+1555.34:           Edwards, in the Encyclopædia Britannica, eighth
+2287.51:       lighter literature of this century.”—Encyclopædia Britannica,
+2292.32:       Britain.”—Chambers’ Cyclopædia, London, 1874, vol. II. p. 84.
+  ...more
+
+'+' (2)
+1029.32: (x2) I do not use the sign plus (xii.+iv.+iii.) because it makes the figures
+
+'✠' (1)
+1655.9:  Approved ✠ by Nicholas, bishop of Melipotamus.
+
+'*' (19)
+1684.7:  (x4) M. L. B*N*P**TE de M⸺T, intended as a sequel to the abbé Gaultier’s
+2232.18: (x15)     Dedicated to A**** M***** B******, a child of seven years old, by
+
+'⸺' (2)
+1684.20: M. L. B*N*P**TE de M⸺T, intended as a sequel to the abbé Gaultier’s
+2148.18:                   ⸺ Is there not a hand,
+
+'‒' (1)
+2050.3:  182‒?
+
+'•' (18)
+3212.1:   • Table of Contents: Corrected page number for section “Of different
+3214.1:   • p. 16, n. 12: Missing comma supplied after “Bolton Corney”
+3215.1:   • p. 17: Corrected “bcause” to “because”
+3216.1:   • p. 25, n. 26: Opening quotation mark omitted before “A universal
+3218.1:   • p. 32: Corrected “lankey” to “lanky”
+  ...more
+
+'œ' (1)
+3228.29:  • p. 52: Corrected “Encyclopœdia Brittanica” to “Encyclopædia
+
+----- Abandoned HTML tag check -------------------------------------------------
+
+    No abandoned HTML tags found.
+
+----- Unicode numeric character references check -------------------------------
+
+    No unicode numeric character references found.
+
+----- Special situations checks ------------------------------------------------
+Opening square bracket followed by other than I, G, M, S or digit.
+ 123.0:  [treating of] ... taste ... grace; modesty ... dress ...; rank ... in
+ 168.40:           mind.—_Fly leaves.... London_ [published and edited
+ 683.2:    [signed Bolton Corney] to Mr. Sylvanus Urban [motto] London: Shoberl,
+ 683.47:   [signed Bolton Corney] to Mr. Sylvanus Urban [motto] London: Shoberl,
+ 738.62: If a title page has a motto its omission should be shewn thus [motto].
+ 750.17: between brackets [   ]. Additions in titles should be as few and as
+ 755.62: by the cataloguer. For instance, when an author has the words [Reprinted
+ 780.33:           making catalogues, &c. [by A. Crestadoro], 1856, p.
+ 805.2:    [Dr. Crestadoro], Lond. 1856, p. 38.
+ 895.54: If not in the book, it should be put between brackets [   ], and if
+1090.32: Speeches by the lord chancellor [Lyndhurst], lord Brougham, lord
+1099.17: compilers of the [English] Law List have long since discarded
+1131.18: Henry Stevens GMB [_i.e._ gatherer of musty books] ... [with a
+1131.55: Henry Stevens GMB [_i.e._ gatherer of musty books] ... [with a
+1220.25: by Henry B. Wheatley ... [motto] London, Longmans 1879. Besides being
+1357.40: bride, by the author of the fairy bower [motto]. London, James Burns,
+1435.59: America and Continental Europe ... compiled by Sampson Low [and
+1545.19:           1834, 8o [he stopped with letter B].
+1581.16: to her marriage [with prince Frederick William of Prussia] by a lady.
+1601.59: 9. The Astrologer, a legend of the Black Forest, by a lady [motto] in
+1608.10: volume to [but not by the authoress of] How to dress on £15 a year....
+1615.34: Testaments ... selected by a lady [motto] Lond. J. F. Shaw 1857.
+1621.31: 14. A brief guide to happiness [through religion] by a lady, 2nd edit.
+1629.10: by a lady [mottoes] Lond. Hatchard 1827.
+1631.42: 17. Catechism for the use of young people [motto] by a lady. Paris,
+1636.36:     One of a series called Dolman’s [Catholic] catechisms. The history
+1642.65: anecdotes, by a lady, author of Infant’s friend—Easy rhymes, &c. [motto]
+1673.49: 27. The christian’s daily preacher ... by a lady [motto] Weymouth, 1826.
+1700.50: 33. Conversations on the lord’s prayer, by a lady [motto] Lond.
+1775.18: facts, by a lady. [motto] Dublin, S. B. Oldham,—Whittaker, Lond. 1844.
+1795.5:  lady [mottoes] Bath (printed) W. Pocock. Lond. Simpkin 1840, 8o, pp.
+1850.14: illustrations [selected from various authors] embellished with coloured
+1851.35: plates (M. Spratt del.): by a lady [motto] Lond. Washbourne 1835, small
+1867.23: 70. Garden of language [motto] London, Fisher son & co. Newgate street
+1877.43: 72. Glimpses of natural history, by a lady [motto] London, Darton &
+1878.14: Harvey (1843) [afterwards bought by R. Clarke] square 16o, pp. VI. 199,
+1899.0:  [motto] London, printed by H. Teape, Tower hill, sold by Blanchard, City
+1909.40: forty-five years’ experience, by a lady [motto] London, Smith, Elder &
+1929.7:  Nisbet [Bath 1848] 12o.
+1941.26: 84. Ines, and other poems [motto] London, printed for Allman 1816, 8o,
+1957.33: a garden and the study of botany [motto] Lond. printed for Harvey and
+1987.49: 93. Lilias, or fellowship with God ... by a lady [with an introduction
+2013.37: 99. Metrical remembrances, by a lady [motto from Isaiah xl. 29] London
+2058.40:       small work called “Fairy Legends” [by Croker] in speaking of
+2064.21: 108. Original fables [in verse] by a lady; dedicated to her royal
+2072.16: tale, by a lady [mottoes] London, Wm. Ball 1836, 8o, pp. VI. 389.
+2105.34: 118. Ravensdale, a tale by a lady [of Dublin] 2 vols. Dublin, Curry &
+2117.60: spot and from letters written to friends at home, by a lady [edited by
+2123.0:  [motto] Oxford, printed by W. Baxter for R. Pearson High street, Oxford,
+2134.44: 125. The rich old bachelor, a domestic tale [in verse] in the style of
+2135.11: Dr. Syntax [by W. Combe] by a lady [motto] Ward, Printer, Canterbury
+2135.35: Dr. Syntax [by W. Combe] by a lady [motto] Ward, Printer, Canterbury
+2157.67: 129. A series of reflections on the sacred oratorio of the Messiah [by
+2162.47: 130. The siege of Mansoul a drama in five acts [and in verse] the
+2164.39: Shakespeare and other poets, by a lady [motto] Bristol, sold by W.
+2188.37: and instruction of her own daughters [mottoes] in three volumes. London,
+2195.17: 137. A text book [religious] for the sick and afflicted, selected by a
+2208.19: Ireland, by a lady [motto] London, Rivington 1817, 8o, pp. 66.
+2216.34: 141. Twelve years ago, a tale, by [a lady] the author of Letters to
+2242.35: and the public at large, by a lady [motto] London, Longman 1826, 24o,
+2252.51: “First lessons in geography by a lady.” Lond. Ward [Bungay printed 1853]
+
+Spaced punctuation.
+ 123.52: [treating of] ... taste ... grace; modesty ... dress ...; rank ... in
+ 125.6:  beauty ...; by a lady, &c. London, Crosby & Co., 1811.
+ 703.14:   Olphar Hamst ..., 1868, p. xi.
+ 710.62: (x3) should be indicated by three dots ... close together not thus. . . .
+
+Ampersand character in line (excluding '&c.' and unicode numeric character references).
+ 125.42: beauty ...; by a lady, &c. London, Crosby & Co., 1811.
+1129.40: a catalogue of a nine days sale of rare & valuable ... books ... et
+1358.33: Portman street, and Henry Mozley & sons, Derby, 1842, 12o, pp. 302.
+1426.59: ... by Sampson Low, vol. 1. general alphabet, Lond. S. Low & son, 1853.
+1436.32: assistants], London, S. Low Son & Marston, 1864, r. 8o. And
+1602.28: two volumes. Lond. Saunders & Otley 1846.
+1618.58:       Boys’ Own Book,” as to which I had a note in “Notes & Queries” of
+1622.20: revised. Lond. Hope & Co. 1851.
+1714.49: a lady, price 2s. 6d. with plates. Lond. Rodwell & Martin 1824, 12o, pp.
+1715.6:  VIII. & 47.
+1762.7:  Harvey & Darton 1839.
+1867.50: 70. Garden of language [motto] London, Fisher son & co. Newgate street
+1877.66: 72. Glimpses of natural history, by a lady [motto] London, Darton &
+1882.39: preface by ... G. R. Gleig. Lond. Dean & Son 1865, 4o.
+1896.6:  Smith & co. Hunter square 1827, 12o, pp. v. 224.
+1909.69: forty-five years’ experience, by a lady [motto] London, Smith, Elder &
+1916.48: birthday, a fairy tale, by a lady. London, Hope & co. 16 Great
+1966.23: Lond. Partridge, Oakey & co. 34 Paternoster row 1854, 18o, pp. 32.
+1973.43: the dinner table, by a lady. London, Smith & Elder 1861, 8o, pp. XVI.
+1998.11: (x3) Brightwell & son, sold also by Longman & co., Whittaker & co., Lond.;
+2066.56: elegant engravings on wood. Lond. printed for B. Crosby & co. 1810; 12o,
+2087.12: Vernor Hood & Sharpe 31 Poultry 1809, small 8o, pp. 14 and 177.
+2092.45: the Lord’s day, by a lady. Lond. J. Hatchard & Son 1837, price 3d, or 2s
+2097.56: lady during three years’ actual residence. Lond. Darton & Harvey 1830,
+2105.68: 118. Ravensdale, a tale by a lady [of Dublin] 2 vols. Dublin, Curry &
+2111.35:     The work is dedicated to Ellen & Mary. The preface is signed by
+2173.17: pupils. Brighton & Lond. Whittaker 1857, 8o.
+2175.57: 132. Spain yesterday and to-day, by a lady. Lond. Harvey & Darton [1829]
+2181.50: every day in the month, by a lady. Lond. Saunders & Otley 1826, 8o.
+2213.69: Spanish, Portuguese, and French languages, by a lady. Lond. Saunders &
+2219.56: 142. Twice Married, my own story, by a lady. Lond. Ward & Lock 1855, 8o.
+2229.70: prayer, translated freely from the German, by a lady. Lond. Whittaker &
+2259.59:       855 gives a work with this title published by Parker & son 1852.
+2438.8:   Benson & Barling, pub., 42.
+2456.7:   Boase & Courtney’s Bibliotheca Cornubiensis, 9.
+2495.6:   Buds & blossoms, 41.
+2590.6:   Crew & Spencer, pub., 43.
+2600.8:   Darton & Harvey, publishers, 35, 36, 41, 43, 44-45-46, 48, 49, 50.
+2682.7:   Flora & Thalia, 45.
+2781.6:   Hope & Co., pub., 41, 46.
+3038.9:   Rodwell & Martin, pub., 43.
+3052.10:  Saunders & Otley, pub., 41, 50, 51.
+
+Queried double punctuation (excluding exceptions).
+ 125.46: beauty ...; by a lady, &c. London, Crosby & Co., 1811.
+ 456.50:           Edwards_ (Memoirs of Libraries, 1859, II., p. 836).
+ 528.65:   librorum typis impressorum,” tom 1-4, A-K. Roma, 1761-1788, fol., and
+ 546.29:   1872, his son, (see p. xxix., note) has so far as he was able,
+ 556.47:   Samuel Halkett.—See Notes and Queries 4 s. IX., p. 403.
+ 562.49:   in: A handy book about books, by J. Power, Lond., J. Wilson, 1870, p.
+ 703.17:   Olphar Hamst ..., 1868, p. xi.
+ 705.62:   Dictionnaire des ouvrages anonymes par A. A. Barbier, 3e. ed., 1872,
+ 775.37: (x2)           English grammar ... 34th ed., Edinb., 1854, p. 4.
+ 827.51: “In three volumes, vol 1.” Take no notice of “Vol I.,” but invariably
+ 887.54:   subject, of which two editions have been issued, viz., Martin’s
+ 955.5:    xii., 96. Since the above was written Mr. Cutter’s Rules have appeared
+ 965.64:   Naylor on “the size of a book” in Notes and Queries for 10 Feb., 1872,
+ 966.7:    4th s., ix. p. 122.
+1002.30: (x2)   unpaged, then pp. 44 and iii., then corrigenda pp. ix., then a
+1023.40: beyond. Describe it thus: octavo pp. xii., and 4, and 253, and 3. But if
+1025.3:  (x3) xii., and iv., 253, iii., because this is more accurate. We use the same
+1076.7:  (x2)   Edinb., A. and C. Black, 1873, vol XI., pp. 463 to 486.
+1104.30: the title under Bullion, vol I., 1867, p. 763, a title that in
+1233.20:           _errata’s_,... Sometimes they are put by themselves on
+1381.40: Portugal, the new estate, &c., &c., Lond., Darton and Harvey, 1834, 12o.
+1419.43: The London catalogue ... 1816 to 1851, Lond., Thomas Hodgson 13
+1498.62: suitable for children, by the author of Little Lily, &c., Lond., J.
+1637.69:       of France and Germany in the same series are written by A. M. S.,
+1713.62: 36. The cottager’s assistant, or the wedding present, 2nd edit., ... by
+1720.6:  2s. 6d., 1804, 8o.
+1837.40: introductory essay by Thos. Erskine, esq., advocate, author of “Remarks
+1998.43: (x2) Brightwell & son, sold also by Longman & co., Whittaker & co., Lond.;
+2008.65:     The title page is lithographed. The preface is signed M. E. B.,
+2049.4:  edit., with plates. Lond. Harvey and Darton 1824, 12o, 4s. 3rd edit.
+2226.57: Christopher and Jennet, Stockton 1802, small 8o, pp. VIII., 167 and 1.
+2364.10:  Aikin, Dr., 9.
+2375.12:  Allman, pub., 46.
+2386.14:  Anderson, pub., 50.
+2388.13:  Andrews, pub., 42.
+2410.17:  Audiffredi, G. B., 15.
+2418.14:  Axon, W. E. A., 16.
+2424.11:  Baillet, A., 15.
+2426.10:  Ball, pub., 48.
+2428.9:   Banks, W., 44.
+2430.14:  Barbier, A. A., 15.
+2438.22:  Benson & Barling, pub., 42.
+2458.11:  Bogue, pub., 45.
+2493.14:  Brown, rev. J., 46.
+2499.12:  Cadell, pub., 43.
+2514.14:  Cawthorn, pub., 49.
+2518.13:  Chapple, pub., 43.
+2544.17:  Christopher, pub., 51.
+2546.12:  Clarke, pub., 43, 45.
+2550.13:  Cleaver, pub., 47.
+2552.13:  Colburn, pub., 41, 50.
+2554.9:   Combe, W., 49.
+2564.10:  Cook, Mrs., 46.
+2582.14:  Crestadoro, A., 19-21, 37.
+2586.13:  Croker, J. W., 48.
+2588.12:  Crosby, pub., 48.
+2590.20:  Crew & Spencer, pub., 43.
+2594.13:  Cutter, C. A., 11, 24.
+2604.10:  Dean, pub., 45.
+2606.14:  Delepierre, O., 15.
+2619.12:  Dolman, pub., 41, 42.
+2625.12:  Duniol, pub., 41.
+2631.11:  Ebers, pub., 49.
+2637.10:  Edmonds G., 25.
+2666.11:  Erskine, T., 45.
+2678.12:  Fisher, pub., 45.
+2680.11:  Flamank, J., 36.
+2684.10:  Ford, pub., 42.
+2698.15:  Galignani, pub., 41.
+2722.12:  Gilly, W. S., 42.
+2728.11:  Goss, P. S., 48.
+2737.17:  Groombridge, pub., 41, 43.
+2739.12:  Hailes, pub., 42.
+2741.11:  Halkett, S., 16.
+2743.10:  Hall, pub., 51.
+2757.15:  Hardwicke, pub., 47.
+2761.12:  Harris, pub., 41, 48.
+2765.14:  Hatchard, pub., 41, 44, 45, 47, 48, 49, 50, 51.
+2767.14:  Hazlitt, W. C., 34.
+2769.15:  Hegel, G. W. F., 19.
+2771.11:  Higgins, G., 30, 31.
+2779.17:  Holdsworth, A. H., 43.
+2781.10: (x2)  Hope & Co., pub., 41, 46.
+2783.14:  Houlston, pub., 40-43.
+2789.11:  Hurdis, Dr., 50.
+2812.7:   Jal, A., 32, 33.
+2814.13:  Jarrold, pub., 42.
+2818.13:  Jewett, C. C., 10, 24.
+2820.15:  Johnstone, pub., 40.
+2830.9:   Law, pub., 42.
+2834.10:  Lennie, W., 21.
+2856.13:  Longman, pub., 36, 47, 49, 50, 51.
+2860.12:  Louis XVIII., court of, 49.
+2864.14:  Lowndes, W. T., 13, 44.
+2866.10:  Lusk, pub., 45.
+2870.12:  Lyntot, pub., 43.
+2884.13:  Masters, pub., 41, 47.
+2890.16:  McCulloch, J. R., 16, 33.
+2892.15:  McGlashan, pub., 44.
+2894.12:  McPhun, pub., 51.
+2908.14:  Mitchell, pub., 51.
+2914.12:  Mozley, pub., 48.
+2916.12:  Mozley, Mrs., works by, 35.
+2918.12:  Murray, pub., 43, 44, 48, 49.
+2926.10:  Naylor, C., 24.
+2940.11:  Nichols, T., 11.
+2942.15:  Nightingale, F., 45.
+2944.12:  Nisbet, pub., 46.
+2948.21:  Norton, hon. C. E. S., 49.
+2964.9:   Orr, pub., 44.
+2970.15:  Panizzi, Sir A., 11.
+2974.12:  Parker, pub., 45, 49, 51.
+2976.15:  Partridge, pub., 47.
+2984.15:  Pickering, pub., 48.
+2986.12:  Pocock, pub., 44.
+3020.14:  Quérard, J. M., 9, 15, 17, 52.
+3028.16:  Rivingtons, pub., 43, 45, 51.
+3032.13:  Roberts, pub., 43, 47.
+3036.14:  Robinson, pub., 44.
+3038.22:  Rodwell & Martin, pub., 43.
+3042.15:  Routledge, pub., 46.
+3052.22:  Saunders & Otley, pub., 41, 50, 51.
+3062.12:  Seeley, pub., 46, 49.
+3068.10:  Shaw, pub., 41, 45, 50.
+3072.13:  Simpkin, pub., 42, 43, 44, 45, 51.
+3077.11:  Smith, pub., 45, 46, 47.
+3079.9:   Smith, J., fictitious publisher’s name, 38.
+3083.25:  Smith, John Russell, pub., 50.
+3095.10:  Spratt, M., 45.
+3101.11:  Stevens, H., on catalogues, 29.
+3103.17:  Stewart, Agnes M., 41.
+3105.15:  Stockdale, pub., 47, 51.
+3107.10:  Sulger, H., 50.
+3113.13:  Symonds, pub., 40.
+3115.11:  Syntax, Dr., 49.
+3117.12:  Tabart, pub., 44.
+3125.12:  Taylor, pub., 45.
+3127.10:  Taylor, J., Manual of Laconics, 9.
+3139.11: (x2)  Truewit, T., pseud., 14.
+3153.12:  Vernon, Mrs., 44.
+3165.12:  Wallis, pub., 51.
+3167.10:  Ward, pub., 44, 49, 51.
+3169.11:  Warne, pub., 41, 44, 46.
+3171.16:  Washbourne, pub., 45.
+3173.14:  Wertheim, pub., 46, 48.
+3175.14:  Whately, Arch., 36.
+3177.15:  Wheatley, H. B., on indexes, 31.
+3181.15:  Whittaker, pub., 42, 44, 47, 50, 51.
+
+Single '1' in a word or a standalone '1' (excluding exceptions).
+ 190.9:  Footnote 1:
+ 459.47: Books may be classed under four heads, namely (1) Autonymous—(2)
+1021.45: occur four unnumbered, and then we have page 1 on signature B, numbered
+1820.66: the use of young persons. Lond. John Murray 1828, 8o. pp. XI. and 1 and
+3219.33:  • p. 38: Supplied period after “1” to match other list entries
+
+Punctuation after 'the' (excluding exceptions).
+ 337.17: found printed in the: Catalogue of printed books in the British Museum,
+ 729.10:   This is the: Catalogue of the Manchester free library, reference
+ 950.34:   the cataloguer upon them. It is the:—Smithsonian Report on the
+1128.26: catalogues and notably in the:—“Bibliotheca geographica and historica or
+2404.13:  Astrologer, the, 41.
+2454.25:  Black Forest, legend of the, 41.
+2476.20:  British Catalogue, the, 36, 37.
+2482.20:  British Librarian, the, 44.
+2576.10:  Cousins, The, 43.
+2592.14:  Crucifixion, The, 43.
+2656.20:  English Catalogue, the, 19, 36, 37, 42, 51.
+2838.10:  Leslies, the, 46.
+2854.19:  London Catalogue, the, 36, 42, 46.
+2858.19:  Lord’s Prayer, on the, 42.
+2900.10:  Messiah, The, 50.
+2934.13:  New Estate, The, 36, 48.
+2954.13:  Old Bridge, the, 35.
+2978.28:  Pentateuch, questions from the, 43.
+2982.17:  Philanthropist, the, 48.
+3024.16:  Redeemed Rose, the, 49.
+3054.10:  Sceptic, The, 50.
+
+Query mixed letters/digits in word (excluding exceptions).
+ 535.35:   Barbier ... Paris, 1806, 4 vols, 8o. It is curious to note that
+ 684.8:    1839, 8o. A remarkable piece of criticism indispensable to every
+ 705.56:   Dictionnaire des ouvrages anonymes par A. A. Barbier, 3e. ed., 1872,
+ 954.62:   Washington, published by the Smithsonian Institution, 1853, 8vo, pp.
+ 977.0:  12mo, but when he compiles a bibliographical list he will describe it
+1095.60: Gurney’s shorthand notes. Edinb. James Gall and son [1842], 8o, pp.
+1358.54: Portman street, and Henry Mozley & sons, Derby, 1842, 12o, pp. 302.
+1376.13: [1829?], sm. 8o.—Portugal, or the young travellers, ... 1830.—The new
+1380.20: Harvey, 1834, small 12o.—Gleanings from many fields, by the author of
+1381.68: Portugal, the new estate, &c., &c., Lond., Darton and Harvey, 1834, 12o.
+1415.69: Lond. pub. for the executor of the late W. Bent by Longman &c. 1827, 8o.
+1420.47: Paternoster row and sold by Longman &c., 1851, 8o.
+1423.14: Hodgson 1853, 8o.
+1436.52: assistants], London, S. Low Son & Marston, 1864, r. 8o. And
+1451.47: interesting religious tale called Lily, and in 16o, 1825, a capital
+1480.62: young ladies, London (printed at Ryde), for the author, 1822, 12mo, pp.
+1488.36: Remarks, &c., Lond. J. Smith, 1823, 8o, pp. 115, 2s 6d, pseudon.
+1499.20: Smith, 1826 [1825], 18o, pp. xi and 200, 3s, auton.
+1545.16:           1834, 8o [he stopped with letter B].
+1561.40: published by a lady. Birmingham [1809], 4o.
+1568.56: 2. Ailzie Grierson ... by a lady. Edin. Johnstone 1846, 16o.
+1571.14: Symonds 1801, 8o.
+1582.27: Lond. Houlston 1858, small 12o.
+1587.47: children. Lond. Darton and Harvey 1832, square 16o.
+1590.27: Lond. Joseph Masters 1855, 24o.
+1594.61: assistant for female teachers. Lond. Harvey and Darton 1824, 12o, pp.
+1609.19: Lond. Warne [1873] 12o.
+1643.60: 3rd edition. Lond. J. Harris, St. Pauls’ churchyard [1820?] 12o, pp.
+1671.51: 26. Chollerton ... by a lady. Lond. Ollivier 1846, 8o, pp. 381.
+1678.15: Andrews, 1847, 12o.
+1698.22: Ford, Islington 1837, 16o, pp. 102.
+1714.64: a lady, price 2s. 6d. with plates. Lond. Rodwell & Martin 1824, 12o, pp.
+1720.15: 2s. 6d., 1804, 8o.
+1747.13: Murray 1827, 12o.
+1771.43: pupils, by a lady. Lond. Groombridge 1850, 8o, pp. 8 and 116, with an
+1795.61: lady [mottoes] Bath (printed) W. Pocock. Lond. Simpkin 1840, 8o, pp.
+1803.47: Whittaker: Kendal (printed by) J. Hudson 1854, 8o, pp. 44, with an
+1814.61: clergyman of the church of England. Lond. Tabart 1802, small 12o, pp.
+1820.50: the use of young persons. Lond. John Murray 1828, 8o. pp. XI. and 1 and
+1832.30:       Lady, London, 1831, sm. 8vo, publ. at 5s. 6d. A series of
+1852.0:  12o, pp. XII. 200.
+1868.6:  1835, 16o, pp. 31, with illustrations.
+1874.68: and evening in the year: selected by a lady. Lond. J. F. Shaw 1858, 32o,
+1878.54: Harvey (1843) [afterwards bought by R. Clarke] square 16o, pp. VI. 199,
+1882.51: preface by ... G. R. Gleig. Lond. Dean & Son 1865, 4o.
+1885.41: (printed) and London, J. H. Parker 1854, 24o, pp. 23.
+1889.0:  8o.
+1892.62: portions of scripture selected ... by a lady. Edinburgh 1837, 12o.
+1896.32: Smith & co. Hunter square 1827, 12o, pp. v. 224.
+1900.46: road; Kent, Hamilton; and Keene, Dublin 1817, 12o, pp. 4 and 184.
+1910.10: co. 1829, 12o, pp. VII. 175.
+1917.37: Marlborough street 1853 [1852] large 16o, pp. 4 and 200.
+1929.19: Nisbet [Bath 1848] 12o.
+1936.29: Paternoster row [1849] small 12o, pp. 34.
+1941.67: 84. Ines, and other poems [motto] London, printed for Allman 1816, 8o,
+1949.55: charitable purposes. London, Seeley and Burnside 1828, 12o, pp. XIX.
+1958.44: Darton and sold by John Rodford, Hull 1824, 12o, pp. 126.
+1962.20: Lond. Masters 1857, 12o.
+1966.54: Lond. Partridge, Oakey & co. 34 Paternoster row 1854, 18o, pp. 32.
+1973.57: the dinner table, by a lady. London, Smith & Elder 1861, 8o, pp. XVI.
+1978.30: a lady. London, Cleaver 1846, 16o.
+1981.10: &c. 1846, 8o, pp. VI. 294; also 1849 and 1853.
+1985.68: 92. The life of Mary, mother of our Lord ... by a lady. Lond. 1851, 8o.
+1988.33: by ... C. B. Tayler] Edin. 1859, 8o.
+1992.65: printed and sold by Swinborne and Walter; Hatchard, London 1817, 8o, pp.
+1995.67: 95. Little Christian’s sunday alphabet, by a lady, woodcuts. 1849, 16o.
+1999.43: Roberts, Exeter; Nettleton, Plymouth 1839, 8o, pp. VII. 164.
+2002.57: lady. Lond. printed for John Stockdale, Piccadilly 1800, 16o, pp. 89,
+2006.57: edition). London, Robert Hardwicke 192 Piccadilly [1861] 8o.
+2014.6:  1832, 16o.
+2020.6:  1860, 8o, pp. XV. 396, and plates.
+2025.45: Derby, printed by and for Henry Mozley 1820, 12o.
+2031.47: illustrative woodcuts. Lond. John Murray 1851, 8o, XXVIII. 675.
+2046.22: Westerton 1860 [1859] 8o.
+2049.50: edit., with plates. Lond. Harvey and Darton 1824, 12o, 4s. 3rd edit.
+2053.66: author of Portugal, &c. Lond. printed for Darton and Harvey 1831, 12o,
+2062.45: Revelation) by a lady. Lond. Wertheim, 1860, 8o.
+2066.68: elegant engravings on wood. Lond. printed for B. Crosby & co. 1810; 12o,
+2069.57: 109. Outlines of truth by a lady. London, Hatchard 1825, 12o.
+2072.49: tale, by a lady [mottoes] London, Wm. Ball 1836, 8o, pp. VI. 389.
+2074.66:     Announced as by the same author ‘The spirit of sectarianism,’ 8o,
+2079.16: Pickering 1841, 8o.
+2081.66: 112. Poems for children, by a lady. Lond. Darton and Harvey 1834, 12o,
+2087.44: Vernor Hood & Sharpe 31 Poultry 1809, small 8o, pp. 14 and 177.
+2093.12: 6d a dozen, 12o, pp. 12.
+2098.0:  12o.
+2101.20: Lond. Colburn 1830, 8o.
+2103.62: 117. Prayers, hymns, and texts, by a lady. Lond. Seeley 1846, 12o.
+2106.25: co.; Lond. Longman 1845, 12o.
+2109.51: of France, by a lady. London, James Cawthorn 1830, 8o, pp. XI. 208.
+2114.64: 120. The Redeemed Rose, or Willies rest, by a lady. Lond. 1853, 8o.
+2118.38: the Hon. C. E. S. Norton] Lond. 1849, 16o.
+2124.44: and J. Ebers, Old Bond street, London 1816, 8o, pp. 23.
+2127.51: subjects, by a lady. Oxford and Lond. Parker 1853, 16o.
+2131.67: printer, top of Kirkgate, Leeds 1833; entered at Stationers’ Hall, 12o,
+2136.6:  1824, 8o, pp. 312.
+2138.58: 126. The Sceptic, by a lady. Lond. J. Russell Smith 1850, 8o, pp. VIII.
+2144.39: a lady. Lond. Saunders and Otley 1846, 12o.
+2153.33: John’s-square, Clerkenwell 1800, 12o.
+2158.42: Handel] by a lady. London, Hatchard 1812, 8o.
+2166.33: Lond.; and S. Hazard, Bath 1801, 8o, VI. 82.
+2173.41: pupils. Brighton & Lond. Whittaker 1857, 8o.
+2176.4:  sm. 8o.
+2178.64: 133. The stepping stone to astronomy, by a lady. Longmans 1858, 16o.
+2181.64: every day in the month, by a lady. Lond. Saunders & Otley 1826, 8o.
+2183.62: 135. Tales from the German, by a lady. Lond. Anderson [1825?] 8o.
+2189.27: Colburn and Bentley, 1830, 12o, vol I. XXIV. 302, vol. II. IV. 302, vol
+2196.29: lady. Lond. J. F. Shaw 1858, 16o.
+2200.16: Pall Mall 1810, 8o, pp. 391.
+2208.51: Ireland, by a lady [motto] London, Rivington 1817, 8o, pp. 66.
+2214.12: Otley 1839, 8o.
+2217.37: unknown friends. Lond. Longman 1847, 16o.
+2219.69: 142. Twice Married, my own story, by a lady. Lond. Ward & Lock 1855, 8o.
+2222.43: of Wooton under Edge?] Lond. A. Hall 1851, 12o.
+2226.45: Christopher and Jennet, Stockton 1802, small 8o, pp. VIII., 167 and 1.
+2230.10: Co. 1844, 12o, pp. 48.
+2236.29: lady. London, Hatchard 1828, 12o, pp. VIII. 145.
+2239.7:  [1838] 16o, 1s. 6d.
+2242.65: and the public at large, by a lady [motto] London, Longman 1826, 24o,
+2247.59: made at home, etc. Lond. Simpkin, Birmingham, print. 1838, 4to.
+2249.28:     New edit. Simpkin 1840, 4to, 21s.
+2253.0:  12o, 4 edit. 1859.
+2256.0:  16o, pp. 128.
+
+Non-breaking space.
+ 750.18: (x3) between brackets [   ]. Additions in titles should be as few and as
+ 895.55: (x3) If not in the book, it should be put between brackets [   ], and if
+
+Mixed case in word (excluding words in project dictionary).
+1289.11: also J. R. McCulloch’s plan in his “Literature of Political Economy”
+1990.41: 94. Lines addressed to prince Leopold of Saxe-Cobourg on the death of
+2274.60: A martyr to bibliography: a notice of the life and works of Joseph-Marie
+
+Line start with suspect punctuation.
+1426.0:  ... by Sampson Low, vol. 1. general alphabet, Lond. S. Low & son, 1853.
+
+Query unexpected comma after certain words.
+2462.23:  Book, how to describe a, 5, 9, 37;
+2510.12:  Catechism, a, 41, 45.
+2700.22:  Garden, Pleasures of a, 46.
+2795.22:  Index, necessity for an, 30;
+
+--------------------------------------------------------------------------------
+
+Check complete
+

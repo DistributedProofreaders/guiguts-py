@@ -1,0 +1,80 @@
+
+===== Image Checks =====
+*** No images folder found ***
+
+===== Link Tests =====
+--- [pass] External Links Check ---
+--- [pass] Link to cover image for epub (using link rel='icon') ---
+--- [info] File has 689 internal links to 142 expected targets ---
+--- [pass] Duplicate ID Check (file has 149 unique IDs) ---
+--- [info] Not reporting 44 IDs linked to more than once (file may have an index) ---
+--- [info] File has 1 link to images (including cover.jpg) ---
+--- [pass] Check links point to valid targets ---
+--- [info] Check for unreferenced targets ---
+  Page_26, Page_39, Page_54, Page_55, Page_56, Page_57,
+  Page_58
+
+===== DP PPV Tests =====
+--- [pass] Title/h1 check ---
+   5.4: title: Aggravating Ladies | Project Gutenberg
+  98.2:    h1: AGGRAVATING LADIES
+--- [pass] <pre> tags check ---
+--- [pass] Charset is UTF-8 ---
+--- [pass] Document Type Header (file is HTML5) ---
+--- [pass] Image Alt Tag Tests ---
+   0 images with missing alt tags
+   0 images with blank alt tags
+   0 images with empty alt tags
+   0 images with textual alt tags
+--- [pass] Language code check: en ---
+--- [info] Document Heading Outline ---
+  98.2: h1: AGGRAVATING LADIES
+ 144.2:   h2: CONTENTS.
+ 225.2:   h2: PREFACE.
+ 314.2:   h2: PRELIMINARY REMARKS.
+ 396.2:   h2: HOW TO DESCRIBE A BOOK.
+ 436.2:   h2: CATALOGUING.
+ 632.2:   h2: OF DIFFERENT DESCRIPTIONS OF BOOKS.
+ 972.2:   h2: MATTERS TO BE ATTENDED TO IN CATALOGUING.
+1271.2:   h2: STYLE OF PRINTING.
+1341.2:   h2: PUNCTUATION.
+1391.2:   h2: THE BEGINNING AND THE END.
+1477.2:   h2: OF ERRORS.
+1597.2:   h2: ON THE MEANS OF IDENTIFYING THE AUTHORS OF ANONYMOUS AND PSEUDONYMOUS PUBLICATIONS.
+1824.2:   h2: LIST OF WORKS BY A LADY.
+2909.2:   h2: ADVERTISEMENTS.
+3039.2:   h2: INDEX.
+
+===== Project Gutenberg Tests =====
+--- [info] 15 <h2> tags; 15 class="chapter" attributes ---
+
+===== CSS Tests =====
+--- [info] Defined classes ---
+  c000, c001, c002, c003, c004, c005, c006, c007, c008,
+  c009, c010, c011, c012, c013, c014, c015, c016, c017,
+  c018, c019, c020, c021, c022, c023, chapter, colwidth9,
+  colwidth90, footnote, fss, group, in12, index, large, lg-
+  container-l, line, linegroup, nf-center, nf-center-c0, nf-
+  center-c1, pageno, pb, pbb, sc, small, table0,
+  transcribers-notes, ul_1, x-ebookmaker, xlarge
+--- [info] Used classes ---
+  c000, c001, c002, c003, c004, c005, c006, c007, c008,
+  c009, c010, c011, c012, c013, c014, c015, c016, c017,
+  c018, c019, c020, c021, c022, c023, chapter, colwidth9,
+  colwidth90, footnote, fss, group, in12, index, large, lg-
+  container-l, line, linegroup, nf-center, nf-center-c0, nf-
+  center-c1, pageno, pb, pbb, sc, small, table0,
+  transcribers-notes, ul_1, xlarge
+--- [pass] Classes used but not defined ---
+--- [pass] Classes defined but not used ---
+
+===== Miscellaneous checks =====
+--- [pass] Lines with "--" instead of "—" (should be 0): 0 ---
+--- [pass] Number of h2 tags (usually chapters; should be > 0): 15 ---
+--- [info] Number of h3 tags (usually sections): 0 ---
+--- [info] Number of tables: 1 ---
+--- [pass] Special checks ---
+--- [info] Styles used ---
+
+Check complete
+

@@ -11,6 +11,8 @@ from guiguts.checkers import CheckerDialog
 from guiguts.file import the_file
 from guiguts.spell import spell_check, SpellCheckerDialog
 from guiguts.tools.jeebies import jeebies_check, JeebiesCheckerDialog
+from guiguts.tools.pphtml import PPhtmlChecker, PPhtmlCheckerDialog
+from guiguts.tools.pptxt import pptxt, PPtxtCheckerDialog
 
 
 @pytest.mark.parametrize(
@@ -55,6 +57,44 @@ def test_jeebies_output(
     )
 
 
+@pytest.mark.parametrize(
+    "base_in, base_exp",
+    [
+        ("raw_ctf.txt", "pptxt1.txt"),
+        ("pp_complete.txt", "pptxt2.txt"),
+    ],
+)
+def test_pptxt_output(
+    guiguts_app: Guiguts, base_in: str, base_exp: str  # pylint: disable=unused-argument
+) -> None:
+    """Test PPtxt."""
+    run_checker_test(
+        base_in,
+        base_exp,
+        lambda: pptxt(the_file().project_dict),
+        PPtxtCheckerDialog,
+    )
+
+
+@pytest.mark.parametrize(
+    "base_in, base_exp",
+    [
+        ("raw_ctf.txt", "pphtml1.txt"),
+        ("pp_complete.html", "pphtml2.txt"),
+    ],
+)
+def test_pphtml_output(
+    guiguts_app: Guiguts, base_in: str, base_exp: str  # pylint: disable=unused-argument
+) -> None:
+    """Test PPhtml."""
+    run_checker_test(
+        base_in,
+        base_exp,
+        lambda: PPhtmlChecker().run(),
+        PPhtmlCheckerDialog,
+    )
+
+
 def run_checker_test(
     base_in: str, base_exp: str, run_func: Callable, dialog: type[CheckerDialog]
 ) -> None:
@@ -77,7 +117,10 @@ def run_checker_test(
     assert dlg is not None
     actual_output = dlg.text.get("1.0", tk.END)
 
-    expected_output = expected_file.read_text(encoding="utf-8")
+    try:
+        expected_output = expected_file.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        expected_output = ""
 
     if actual_output == expected_output:
         failed_output_file.unlink(

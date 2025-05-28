@@ -1,0 +1,90 @@
+
+===== Image Checks =====
+*** No images folder found ***
+
+===== Link Tests =====
+--- [pass] External Links Check ---
+--- *FAIL* Link to cover image for epub ---
+--- [info] File has 0 internal links to 0 expected targets ---
+--- [pass] Duplicate ID Check (file has 0 unique IDs) ---
+--- [pass] Check for IDs targeted by multiple links ---
+--- [pass] Check links point to valid targets ---
+--- [info] Check for unreferenced targets ---
+
+===== DP PPV Tests =====
+--- *FAIL* Title/h1 check: missing <title>...</title> ---
+--- *FAIL* Title/h1 check: missing <h1>...</h1> ---
+--- [pass] <pre> tags check ---
+--- *FAIL* No charset found ---
+--- *FAIL* Document Type Header not HTML5 ---
+--- [pass] Image Alt Tag Tests ---
+   0 images with missing alt tags
+   0 images with blank alt tags
+   0 images with empty alt tags
+   0 images with textual alt tags
+--- *FAIL* Language code check: none specified ---
+--- [info] Document Heading Outline ---
+
+===== Project Gutenberg Tests =====
+--- [info] 0 <h2> tags; 0 class="chapter" attributes ---
+
+===== CSS Tests =====
+--- [info] Defined classes ---
+--- [info] Used classes ---
+--- [pass] Classes used but not defined ---
+--- [pass] Classes defined but not used ---
+
+===== Miscellaneous checks =====
+--- *FAIL* Lines with "--" instead of "—" (should be 0): 98 ---
+--- *FAIL* Number of h2 tags (usually chapters; should be > 0): 0 ---
+--- [info] Number of h3 tags (usually sections): 0 ---
+--- [info] Number of tables: 0 ---
+--- *FAIL* Special checks ---
+   8.1: Blank Page
+ 436.1: Blank Page
+ 590.1: Blank Page
+ 805.1: Blank Page
+ 848.0: Unconverted illustration
+ 862.0: Unconverted illustration
+ 872.0: Unconverted illustration
+ 882.0: Unconverted illustration
+ 892.0: Unconverted illustration
+ 902.0: Unconverted illustration
+ 911.0: Unconverted illustration
+ 921.0: Unconverted illustration
+ 930.0: Unconverted illustration
+ 939.0: Unconverted illustration
+ 998.0: Unconverted illustration
+1008.0: Unconverted illustration
+1018.0: Unconverted illustration
+1028.0: Unconverted illustration
+1039.0: Unconverted illustration
+1050.0: Unconverted illustration
+1061.0: Unconverted illustration
+1070.0: Unconverted illustration
+1080.0: Unconverted illustration
+1090.0: Unconverted illustration
+1102.0: Unconverted illustration
+1111.0: Unconverted illustration
+1164.0: Unconverted illustration
+1174.0: Unconverted illustration
+1184.0: Unconverted illustration
+1193.0: Unconverted illustration
+1202.0: Unconverted illustration
+1211.0: Unconverted illustration
+1220.0: Unconverted illustration
+1229.0: Unconverted illustration
+1239.0: Unconverted illustration
+1251.0: Unconverted illustration
+1262.0: Unconverted illustration
+1271.0: Unconverted illustration
+1310.0: Unconverted illustration
+1319.0: Unconverted illustration
+1329.0: Unconverted illustration
+1338.0: Unconverted illustration
+1347.0: Unconverted illustration
+1357.0: Unconverted illustration
+--- [info] Styles used ---
+
+Check complete
+
