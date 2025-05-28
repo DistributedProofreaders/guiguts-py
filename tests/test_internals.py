@@ -30,7 +30,7 @@ def test_preferences(guiguts_app: Guiguts) -> None:  # pylint: disable=unused-ar
     keys = preferences.keys()
     assert len(keys) >= 1
     assert PrefKey.ROOT_GEOMETRY in keys
-    preferences.set_default(PrefKey.AUTO_IMAGE, True)
+    preferences.set_default(PrefKey.AUTO_IMAGE, False)
     keys = preferences.keys()
     assert len(keys) >= 2
     assert PrefKey.ROOT_GEOMETRY in keys
