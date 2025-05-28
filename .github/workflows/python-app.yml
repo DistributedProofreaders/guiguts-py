@@ -45,9 +45,6 @@ jobs:
       run: |
         poetry run mypy --disallow-untyped-defs -p guiguts
         poetry run mypy --disallow-untyped-defs tests
-    - name: Install Xvfb
-      run: sudo apt-get update && sudo apt-get install -y xvfb
-    - name: Test with pytest (headless)
+    - name: Test with pytest
       run: |
-        xvfb-run -a poetry run pytest -q
-        
+        poetry run pytest

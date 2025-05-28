@@ -27,11 +27,11 @@ def test_preferences() -> None:
         raise RuntimeError("Failed to trap lack of preferences default")
     except AssertionError:
         pass
-    preferences.set_default(PrefKey.ROOT_GEOMETRY, "500x500")
-    assert preferences.get_default(PrefKey.ROOT_GEOMETRY) == "500x500"
-    preferences.set(PrefKey.ROOT_GEOMETRY, "600x600")
-    assert preferences.get(PrefKey.ROOT_GEOMETRY) == "600x600"
-    assert preferences.get_default(PrefKey.ROOT_GEOMETRY) == "500x500"
+    preferences.set_default(PrefKey.ROOT_GEOMETRY, "TestGeometry")
+    assert preferences.get_default(PrefKey.ROOT_GEOMETRY) == "TestGeometry"
+    preferences.set(PrefKey.ROOT_GEOMETRY, "OtherGeometry")
+    assert preferences.get(PrefKey.ROOT_GEOMETRY) == "OtherGeometry"
+    assert preferences.get_default(PrefKey.ROOT_GEOMETRY) == "TestGeometry"
     keys = preferences.keys()
     assert len(keys) == 1
     assert PrefKey.ROOT_GEOMETRY in keys

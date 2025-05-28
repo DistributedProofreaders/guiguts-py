@@ -9,7 +9,7 @@ import time
 import tkinter as tk
 from typing import Any, Callable, Optional
 
-from guiguts.utilities import is_x11, is_windows, is_test, load_dict_from_json
+from guiguts.utilities import is_x11, is_windows, CALLED_FROM_TEST, load_dict_from_json
 
 if is_windows():
     from win32com.shell import shell, shellcon  # type: ignore # pylint: disable=import-error, no-name-in-module
@@ -345,7 +345,7 @@ class Preferences:
                 os.path.expanduser("~"), "Documents", "GGprefs"
             )
         # If testing, use a test prefs file so tests and normal running do not interact
-        if is_test():
+        if CALLED_FROM_TEST:
             prefs_name = "GGprefs_test.json"
         elif prefs_basefile is None:
             prefs_name = "GGprefs.json"
@@ -375,7 +375,7 @@ class Preferences:
 
     def _remove_test_prefs_file(self) -> None:
         """Remove temporary JSON file used for prefs during testing."""
-        if is_test() and os.path.exists(self.prefsfile):
+        if CALLED_FROM_TEST and os.path.exists(self.prefsfile):
             os.remove(self.prefsfile)
 
 
