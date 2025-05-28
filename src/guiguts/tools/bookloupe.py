@@ -205,6 +205,7 @@ class BookloupeChecker:
         """
         next_step = 1
         para_first_step = 1
+        para_last_step = 1
         paragraph = ""  # Store up paragraph for those checks that need whole para
         step_end = maintext().end().row
         while next_step <= step_end:
@@ -225,7 +226,7 @@ class BookloupeChecker:
             if not line:
                 # If paragraph has just ended, check quotes, etc. & ending punctuation
                 if paragraph:
-                    self.check_para(para_first_step, step - 1, paragraph)
+                    self.check_para(para_first_step, para_last_step, paragraph)
                     paragraph = ""
                 continue
             # Normal line
@@ -252,6 +253,7 @@ class BookloupeChecker:
                 paragraph += "\n" + line
             else:
                 paragraph = line
+            para_last_step = step
         # End of file - check the final para
         if paragraph:
             self.check_para(para_first_step, step, paragraph)

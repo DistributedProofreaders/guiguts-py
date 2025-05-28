@@ -756,7 +756,12 @@ class TextWrapper:
 def non_text_line(line: str) -> bool:
     """Return True if line is not part of text, due to being a page separator or
     ppgen command or ppgen comment."""
-    return bool(re.match(r"-----File:|\.[\p{Letter}\p{Number}]{2} |//", line))
+    return bool(
+        re.match(
+            r"-----File:|\.\p{Letter}[\p{Letter}\p{Number}](?![\p{Letter}\p{Number}])|//",
+            line,
+        )
+    )
 
 
 def is_debug() -> bool:
