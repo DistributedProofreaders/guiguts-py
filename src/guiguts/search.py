@@ -5,9 +5,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tk_font
 import traceback
-from typing import Any, Tuple, Optional
+from typing import Any, Tuple, Optional, Callable
 
 import regex as re
+import roman  # type: ignore[import-untyped]
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError, FindMatch, menubar_metadata
@@ -18,6 +19,7 @@ from guiguts.utilities import (
     IndexRange,
     sing_plur,
     process_accel,
+    DiacriticRemover,
 )
 from guiguts.widgets import (
     ToplevelDialog,
@@ -901,8 +903,9 @@ def get_regex_replacement(
     Returns:
         Replacement string.
     """
-    temp_bs = "\x9f"
-    # Unused character to temporarily replace backslash in `\C`, `\E`
+    temp_bs = (
+        "\x9f"  # Unused character to temporarily replace backslash in `\C`, `\E`, etc.
+    )
 
     # Since below we do a sub on the match text, rather than the whole text, we need
     # to handle start/end word boundaries and look-behind/ahead by removing them.
@@ -912,33 +915,70 @@ def get_regex_replacement(
     search_regex = re.sub(r"\(\?=.*?\)$", "", search_regex)
     search_regex = search_regex.removeprefix(r"\b").removesuffix(r"\b")
 
-    # Allow execution of python code
-    replace_regex = replace_regex.replace(r"\C", f"{temp_bs}C")
-    replace_regex = replace_regex.replace(r"\E", f"{temp_bs}E")
+    for ch in ("E", "C", "L", "U", "T", "A", "R"):
+        replace_regex = replace_regex.replace(rf"\{ch}", f"{temp_bs}{ch}")
     replace_str = re.sub(search_regex, replace_regex, match_text, flags=flags)
-    if f"{temp_bs}C" in replace_str:
+
+    def do_extended_regex(cmd: str, func: Callable[[str], str], string: str) -> str:
+        """Perform extended regex replacement for one command type. Takes
+        `string` from `\\<cmd>` to `\\E` and replaces it with results of calling `func`
+
+        Args:
+            cmd: Command type to be processed, e.g. `C`.
+            func: Function to do the processing.
+            string: String to apply command to.
+
+        Returns:
+            String after processing all occurrences of `cmd`.
+        """
         while True:
-            c_index = replace_str.find(f"{temp_bs}C")
-            if c_index < 0:
+            start_idx = string.find(f"{temp_bs}{cmd}")
+            if start_idx < 0:
                 break
-            e_index = replace_str.find(f"{temp_bs}E", c_index)
-            if e_index < 0:
+            end_idx = string.find(f"{temp_bs}E", start_idx)
+            if end_idx < 0:
                 break
-            python_in = replace_str[c_index + 2 : e_index]
-            try:
-                python_out = str(eval(python_in))  # pylint:disable=eval-used
-            except Exception as exc:
-                tb = re.sub(
-                    r'.+File "<string>", line 1[^\n]*',
-                    r"\\C...\\E - error in Python code",
-                    traceback.format_exc(),
-                    flags=re.DOTALL,
-                )
-                logger.error(tb)
-                raise re.error("\\C...\\E error - see message log for details") from exc
-            replace_str = (
-                replace_str[:c_index] + python_out + replace_str[e_index + 2 :]
+            string = (
+                string[:start_idx]
+                + func(string[start_idx + 2 : end_idx])
+                + string[end_idx + 2 :]
             )
+        return string
+
+    def eval_python(python_in: str) -> str:
+        """Evaluate string as python and return results as string."""
+        try:
+            return str(eval(python_in))  # pylint:disable=eval-used
+        except Exception as exc:
+            tb = re.sub(
+                r'.+File "<string>", line 1[^\n]*',
+                r"\\C...\\E - error in Python code",
+                traceback.format_exc(),
+                flags=re.DOTALL,
+            )
+            logger.error(tb)
+            raise re.error("\\C...\\E error - see message log for details") from exc
+
+    def make_anchor(string: str) -> str:
+        """Convert string to string suitable for anchor."""
+        string = DiacriticRemover.remove_diacritics(string)
+        string = re.sub(r"[^-\p{Alnum}]", "_", string)
+        string = re.sub("_{2,}", "_", string)
+        return string
+
+    def make_roman(string: str) -> str:
+        """Convert string to uppercase Roman numerals."""
+        try:
+            return roman.toRoman(int(string))
+        except (ValueError, roman.OutOfRangeError) as exc:
+            raise re.error("\\R...\\E error - invalid number") from exc
+
+    replace_str = do_extended_regex("C", eval_python, replace_str)
+    replace_str = do_extended_regex("L", lambda s: s.lower(), replace_str)
+    replace_str = do_extended_regex("U", lambda s: s.upper(), replace_str)
+    replace_str = do_extended_regex("T", lambda s: s.title(), replace_str)
+    replace_str = do_extended_regex("A", make_anchor, replace_str)
+    replace_str = do_extended_regex("R", make_roman, replace_str)
     return replace_str
 
 
