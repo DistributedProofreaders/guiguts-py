@@ -20,7 +20,7 @@ from guiguts.preferences import (
     PersistentString,
     PersistentBoolean,
 )
-from guiguts.utilities import IndexRange, DiacriticRemover, IndexRowCol
+from guiguts.utilities import IndexRange, DiacriticRemover, IndexRowCol, is_test
 from guiguts.widgets import ToplevelDialog, Busy
 
 logger = logging.getLogger(__package__)
@@ -936,7 +936,7 @@ def insert_header_footer() -> None:
 
     # Get user's header file if there is one
     user_path = Path(preferences.prefsdir, HTML_HEADER_NAME)
-    if user_path.is_file():
+    if not is_test() and user_path.is_file():
         user_header = replace_header_keywords(user_path.read_text(encoding="utf-8"))
     else:
         user_header = ""

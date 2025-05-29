@@ -6,6 +6,7 @@ import argparse
 import logging
 import importlib.resources
 from importlib.metadata import version
+import sys
 import tkinter as tk
 from typing import Optional
 import unicodedata
@@ -102,6 +103,7 @@ from guiguts.utilities import (
     is_x11,
     folder_dir_str,
     get_keyboard_layout,
+    is_test,
 )
 from guiguts.widgets import (
     themed_style,
@@ -120,12 +122,12 @@ THEMES_DIR = importlib.resources.files(themes)
 class Guiguts:
     """Top level Guiguts application."""
 
-    def __init__(self) -> None:
+    def __init__(self, args: Optional[list[str]] = None) -> None:
         """Initialize Guiguts class.
 
         Creates windows and sets default preferences."""
 
-        self.parse_args()
+        self.parse_args(args)
 
         self.logging_init()
         logger.info("Guiguts started")
@@ -181,8 +183,12 @@ class Guiguts:
         # Start autodetect loop for OS dark mode, if appropriate
         self.update_theme()
 
-    def parse_args(self) -> None:
+    def parse_args(self, args: Optional[list[str]] = None) -> None:
         """Parse command line args"""
+        if args is None:
+            args = sys.argv[1:]
+        else:
+            is_test(True)
         parser = argparse.ArgumentParser(
             prog="guiguts", description="Guiguts is an ebook creation tool"
         )
@@ -212,7 +218,7 @@ class Guiguts:
             action="store_true",
             help="Do not load the Preferences file",
         )
-        self.args = parser.parse_args()
+        self.args = parser.parse_args(args)
 
     def load_file_if_given(self) -> None:
         """If filename, or recent number, given on command line

@@ -1,0 +1,226 @@
+----- Quotes types check -------------------------------------------------------
+
+    Only straight quotes found in this file (maybe single and/or double).
+
+----- Trailing spaces check ----------------------------------------------------
+
+    No lines with trailing spaces found.
+
+----- Paragraph spacing check - expecting 4121, 421 or 411 spacing -------------
+ 457.0:  End point of repeated 2-line spacing.
+ 611.0:  End point of repeated 2-line spacing.
+
+----- Repeated words check - can be last word on a line and first on next ------
+
+    No repeated words found.
+
+----- Ellipsis check -----------------------------------------------------------
+
+    No suspect ellipsis found.
+
+----- Basic (positional) curly-quote check -------------------------------------
+
+    No suspect curly quotes found.
+
+----- Hyphenated/non-hyphenated words check ------------------------------------
+
+    No non-hyphenated versions of hyphenated words found.
+
+----- Adjacent spaces check (poetry, block-quotes, etc., are ignored) ----------
+ 539.35: desire is cast on the wooden cases.  Either as
+ 827.17: NIGHT DRILL UNDER  FIRST-LINE
+ 830.2:  (x4) AN  INSTRUCTION  CLASS  AT  THE
+ 837.2:  (x2) AT  MUSKETRY  PRACTICE--PRONE
+
+----- Hyphen/dashes check (one or more present on line) ------------------------
+'--' (keyboard '-') found
+  97.39: The men under instruction have to learn--or else
+  98.27: show that they know already--everything that a
+ 179.9:  exercise"--as one out of a soldier's many forms
+ 180.39: of physical exercise is formally called--do less than
+ 377.43: An excellent way of transporting casualties--where
+  ...13 more lines
+
+    [Book seems to use '--' as em-dash so not reporting these further]
+
+Hyphen-minus (single keyboard '-')
+ 629.28: somebody's[** possible typo - delete 's?] else's shirt which has been disinfected
+
+----- Scannos check ------------------------------------------------------------
+
+    No scannos found.
+
+----- Character checks ---------------------------------------------------------
+'/' (104)
+  11.0:  /s p003a
+  14.0:  /*
+  27.1:  */
+  33.0:  /*
+  35.21: <sc>The Avenue Press</sc>
+  ...more
+
+'*' (22)
+  14.1:  /*
+  27.0:  */
+  33.1:  /*
+  38.0:  */
+ 119.27: (x2) quarters at the base depôt[**Add circumflex above o?] camp of the division to
+  ...more
+
+'<' (18)
+  35.0:  <sc>The Avenue Press</sc>
+  35.20: <sc>The Avenue Press</sc>
+  36.1:  (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  36.31: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  37.0:  <sc>London</sc>.
+  37.10: <sc>London</sc>.
+ 216.11: the troops <i>en route</i> for the Front.
+ 216.22: the troops <i>en route</i> for the Front.
+ 686.0:  <i>Tempest</i>--
+ 686.10: <i>Tempest</i>--
+  ...more
+
+'>' (18)
+  35.3:  <sc>The Avenue Press</sc>
+  35.24: <sc>The Avenue Press</sc>
+  36.4:  (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  36.35: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  37.3:  <sc>London</sc>.
+  37.14: <sc>London</sc>.
+ 216.13: the troops <i>en route</i> for the Front.
+ 216.25: the troops <i>en route</i> for the Front.
+ 686.2:  <i>Tempest</i>--
+ 686.13: <i>Tempest</i>--
+  ...more
+
+'"' (24)
+  86.0:  "racing polish" is put on a boat's crew which has
+  86.14: "racing polish" is put on a boat's crew which has
+  88.18: compared with the "post-graduate courses" in
+  88.40: compared with the "post-graduate courses" in
+ 100.41: himself and endanger the enemy. They are "put
+ 101.10: through it" in the ordinary parade movements in
+ 156.0:  "picture targets" in the indispensable art of
+ 156.16: "picture targets" in the indispensable art of
+  ...more
+
+''' (29)
+  86.32: "racing polish" is put on a boat's crew which has
+ 140.47: gas to be met in actual warfare. But if the man's
+ 159.26: course the Indian soldiers' firm balance of the body
+ 179.34: exercise"--as one out of a soldier's many forms
+ 237.41: trench. (If he has been wounded in No Man's
+  ...more
+
+'ô' (8)
+ 119.24: quarters at the base depôt[**Add circumflex above o?] camp of the division to
+ 476.24: having only one base depôt of petrol. At each of
+ 477.7:  its depôts every process is carried out that is
+ 482.11: At each depôt there is one factory for
+ 485.3:  depôt employs more than 200 men and boys on
+  ...more
+
+'#' (88)
+ 820.1:  /#
+ 845.0:  #/
+ 850.1:  /#
+ 855.0:  #/
+ 864.1:  /#
+  ...more
+
+----- Abandoned HTML tag check -------------------------------------------------
+  35.0:  <sc>The Avenue Press</sc>
+  35.20: <sc>The Avenue Press</sc>
+  36.1:  (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  36.31: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  37.0:  <sc>London</sc>.
+  37.10: <sc>London</sc>.
+
+Source file not plain text: 3 book lines with 6 markup instances so far...
+...abandoning check.
+
+----- Unicode numeric character references check -------------------------------
+
+    No unicode numeric character references found.
+
+----- Special situations checks ------------------------------------------------
+Blank Page place holder found.
+   8.0:  [Blank Page]
+ 436.0:  [Blank Page]
+ 590.0:  [Blank Page]
+ 805.0:  [Blank Page]
+
+Query mixed letters/digits in word (excluding exceptions).
+  11.3:  /s p003a
+ 961.36: THE OVERHEAD TROLLEY FOR BRINGING[**F1: hanging indent here and below when multi-line]
+1134.31: CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
+
+Query word starting with 'Lt' (excludes words in project dictionary).
+  24.25: LONDON: T. FISHER UNWIN, Ltd.
+  36.27: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+
+Ampersand character in line (excluding '&c.' and unicode numeric character references).
+  36.20: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+
+Opening square bracket followed by other than I, G, M, S or digit.
+ 119.26: quarters at the base depôt[**Add circumflex above o?] camp of the division to
+ 629.10: somebody's[** possible typo - delete 's?] else's shirt which has been disinfected
+ 821.30: AMIDST DEADLY FUMES OF GAS--ON[**FF: hanging indent here and below when multi-line]
+ 961.33: THE OVERHEAD TROLLEY FOR BRINGING[**F1: hanging indent here and below when multi-line]
+1115.17: WITH HEATING-PIPE[**dash clear on 046.png]
+1134.28: CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
+
+Mixed case in word (excluding words in project dictionary).
+ 163.0:  Sandbag-Filling.
+ 272.13: The Advanced Dressing-Station.
+ 375.0:  Narrow-Gauge Railways.
+
+Single character line.
+ 869.0:  ]
+ 879.0:  ]
+ 889.0:  ]
+ 899.0:  ]
+ 908.0:  ]
+ 918.0:  ]
+ 927.0:  ]
+ 936.0:  ]
+ 945.0:  ]
+1005.0:  ]
+1015.0:  ]
+1025.0:  ]
+1036.0:  ]
+1047.0:  ]
+1058.0:  ]
+1067.0:  ]
+1077.0:  ]
+1087.0:  ]
+1099.0:  ]
+1108.0:  ]
+1118.0:  ]
+1171.0:  ]
+1181.0:  ]
+1190.0:  ]
+1199.0:  ]
+1208.0:  ]
+1217.0:  ]
+1226.0:  ]
+1236.0:  ]
+1248.0:  ]
+1259.0:  ]
+1268.0:  ]
+1277.0:  ]
+1316.0:  ]
+1326.0:  ]
+1335.0:  ]
+1344.0:  ]
+1354.0:  ]
+1365.0:  ]
+
+Single '1' in a word or a standalone '1' (excluding exceptions).
+ 961.37: THE OVERHEAD TROLLEY FOR BRINGING[**F1: hanging indent here and below when multi-line]
+1134.32: CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
+
+--------------------------------------------------------------------------------
+
+Check complete
+

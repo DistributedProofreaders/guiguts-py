@@ -1,13 +1,16 @@
 """Configure pytest."""
 
+from typing import Generator
+
 import pytest
 
-import guiguts.utilities
+from guiguts.application import Guiguts
+from guiguts.root import root
 
 
-def pytest_configure(config: pytest.Config) -> None:  # pylint: disable=unused-argument
-    """Set flag so application code can detect if within a pytest run
-
-    See: https://pytest.org/en/7.4.x/example/simple.html#detect-if-running-from-within-a-pytest-run
-    """
-    guiguts.utilities.CALLED_FROM_TEST = True
+@pytest.fixture(scope="session")
+def guiguts_app() -> Generator[Guiguts, None, None]:
+    """Start GG in "test" mode"""
+    app = Guiguts(args=["--nohome"])  # Force command line args
+    yield app  # Don't enter event loop
+    root().destroy()  # Cleanup after test

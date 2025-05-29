@@ -20,6 +20,7 @@ from guiguts.utilities import (
     cmd_ctrl_string,
     process_accel,
     non_text_line,
+    is_test,
 )
 from guiguts.widgets import ToolTip, mouse_bind
 
@@ -449,11 +450,13 @@ class SpellChecker:
         if not words_loaded:
             logger.warning(f"No default dictionary for language {lang}")
 
-        path = Path(preferences.prefsdir, f"dict_{lang}_user.txt")
-        if load_wordfile_into_dict(path, self.dictionary):
-            words_loaded = True
-        if not words_loaded:  # Neither default nor user dictionary exist
-            raise DictionaryNotFoundError(lang)
+        # Don't load user dictionary if testing or it will skew results
+        if not is_test():
+            path = Path(preferences.prefsdir, f"dict_{lang}_user.txt")
+            if load_wordfile_into_dict(path, self.dictionary):
+                words_loaded = True
+            if not words_loaded:  # Neither default nor user dictionary exist
+                raise DictionaryNotFoundError(lang)
 
 
 def get_spell_checker() -> SpellChecker | None:
