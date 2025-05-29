@@ -95,41 +95,41 @@ class SearchDialog(ToplevelDialog):
             text="Reverse",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REVERSE),
             command=self.set_first_last,
-        ).grid(row=0, column=0, padx=2, sticky="NSEW")
+        ).grid(row=0, column=0, padx=2, sticky="NSW")
         ttk.Checkbutton(
             options_frame,
             text="Match case",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MATCH_CASE),
-        ).grid(row=0, column=1, padx=2, sticky="NSEW")
+        ).grid(row=0, column=1, padx=2, sticky="NSW")
         ttk.Checkbutton(
             options_frame,
             text="Regex",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_REGEX),
             command=lambda: self.is_valid_regex(self.search_box.get()),
-        ).grid(row=0, column=2, padx=2, sticky="NSEW")
+        ).grid(row=0, column=2, padx=2, sticky="NSW")
 
         ttk.Checkbutton(
             self.top_frame,
             text="In selection",
             variable=SearchDialog.selection,
-        ).grid(row=0, column=4, sticky="NSE")
+        ).grid(row=0, column=4, sticky="NSw")
 
         ttk.Checkbutton(
             options_frame,
             text="Whole word",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WHOLE_WORD),
-        ).grid(row=1, column=0, padx=2, sticky="NSEW")
+        ).grid(row=1, column=0, padx=2, sticky="NSW")
         ttk.Checkbutton(
             options_frame,
             text="Wrap around",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WRAP),
-        ).grid(row=1, column=1, padx=2, sticky="NSEW")
+        ).grid(row=1, column=1, padx=2, sticky="NSW")
         ttk.Checkbutton(
             options_frame,
             text="Multi-replace",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MULTI_REPLACE),
             command=self.show_multi_replace,
-        ).grid(row=1, column=2, padx=2, sticky="NSEW")
+        ).grid(row=1, column=2, padx=2, sticky="NSW")
 
         self.count_btn = ttk.Button(
             self.top_frame,
