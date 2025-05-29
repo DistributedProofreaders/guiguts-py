@@ -7,7 +7,6 @@ from typing import Any, Callable
 
 import regex as re
 
-from guiguts.file import PAGE_SEPARATOR_REGEX
 from guiguts.maintext import maintext
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.misc_tools import tool_save
@@ -27,6 +26,7 @@ from guiguts.utilities import (
     process_accel,
     cmd_ctrl_string,
     is_mac,
+    non_text_line,
 )
 from guiguts.widgets import (
     ToplevelDialog,
@@ -40,7 +40,6 @@ _THE_WORD_LISTS = None
 
 RETURN_ARROW = "⏎"
 MARKUP_TYPES = "i|b|sc|f|g|u|cite|em|strong"
-PPGEN_IGNORE_REGEX = r"\.pn |\.bn |//"  # page number, binfile, comment
 
 
 class WFDisplayType(StrEnum):
@@ -96,9 +95,7 @@ class WFWordLists:
         if self.all_words:
             return
         for line, _ in maintext().get_lines():
-            if re.search(PAGE_SEPARATOR_REGEX, line) or re.match(
-                PPGEN_IGNORE_REGEX, line
-            ):
+            if non_text_line(line):
                 continue
             if preferences.get(PrefKey.WFDIALOG_IGNORE_CASE):
                 line = line.lower()

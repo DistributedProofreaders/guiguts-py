@@ -12,7 +12,7 @@ import roman  # type: ignore[import-untyped]
 from guiguts.checkers import CheckerDialog, CheckerViewOptionsDialog, CheckerFilterText
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
-from guiguts.utilities import IndexRange, DiacriticRemover
+from guiguts.utilities import IndexRange, DiacriticRemover, non_text_line
 
 logger = logging.getLogger(__package__)
 
@@ -205,6 +205,7 @@ class BookloupeChecker:
         """
         next_step = 1
         para_first_step = 1
+        para_last_step = 1
         paragraph = ""  # Store up paragraph for those checks that need whole para
         step_end = maintext().end().row
         while next_step <= step_end:
@@ -214,8 +215,8 @@ class BookloupeChecker:
             # If line is block markup or all asterisks/hyphens, pretend it's empty
             if self.is_skippable_line(line):
                 line = ""
-            # If it's a page separator, skip the line
-            if self.is_page_separator(line):
+            # If it's a page separator, etc., skip the line
+            if non_text_line(line):
                 continue
             # Are we starting a new paragraph?
             if line and not paragraph:
@@ -225,7 +226,7 @@ class BookloupeChecker:
             if not line:
                 # If paragraph has just ended, check quotes, etc. & ending punctuation
                 if paragraph:
-                    self.check_para(para_first_step, step - 1, paragraph)
+                    self.check_para(para_first_step, para_last_step, paragraph)
                     paragraph = ""
                 continue
             # Normal line
@@ -252,6 +253,7 @@ class BookloupeChecker:
                 paragraph += "\n" + line
             else:
                 paragraph = line
+            para_last_step = step
         # End of file - check the final para
         if paragraph:
             self.check_para(para_first_step, step, paragraph)
@@ -488,9 +490,7 @@ class BookloupeChecker:
         end_step = maintext().end().row
         for check_step in range(step + 1, end_step + 1):
             check_line = maintext().get(f"{check_step}.0", f"{check_step}.end")
-            if not (
-                self.is_skippable_line(check_line) or self.is_page_separator(check_line)
-            ):
+            if not (self.is_skippable_line(check_line) or non_text_line(check_line)):
                 if len(check_line) == 0:
                     return
                 break
@@ -498,9 +498,7 @@ class BookloupeChecker:
         # Look backwards to find first non-skippable line & check its length
         for check_step in range(step - 1, 0, -1):
             check_line = maintext().get(f"{check_step}.0", f"{check_step}.end")
-            if not (
-                self.is_skippable_line(check_line) or self.is_page_separator(check_line)
-            ):
+            if not (self.is_skippable_line(check_line) or non_text_line(check_line)):
                 if (
                     len(check_line) <= shortest_pg_line
                 ):  # <= rather than < for backward compatibility
@@ -897,10 +895,6 @@ class BookloupeChecker:
                 flags=re.IGNORECASE,
             )
         )
-
-    def is_page_separator(self, line: str) -> bool:
-        """Return True if a page separator line"""
-        return line.startswith("-----File:")
 
     def remove_inline_markup(self, string: str) -> str:
         """Remove all types of DP inline markup from given string.
