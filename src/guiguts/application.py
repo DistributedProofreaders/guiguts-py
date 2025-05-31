@@ -26,6 +26,7 @@ from guiguts.html_tools import (
     EbookmakerChecker,
     EbookmakerCheckerAPI,
     HTMLAutoTableDialog,
+    HTMLMarkupDialog,
 )
 from guiguts.illo_sn_fixup import illosn_check
 
@@ -563,6 +564,14 @@ class Guiguts:
         preferences.set_default(PrefKey.REGEX_TIMEOUT, 5)
         preferences.set_default(PrefKey.LEVENSHTEIN_DIGITS, True)
         preferences.set_default(PrefKey.CURLY_DOUBLE_QUOTE_EXCEPTION, False)
+        preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_0, "")
+        preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_1, "")
+        preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_2, "")
+        preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_3, "")
+        preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_0_HISTORY, [])
+        preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_1_HISTORY, [])
+        preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_2_HISTORY, [])
+        preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_3_HISTORY, [])
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -945,6 +954,7 @@ class Guiguts:
         html_menu.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
         html_menu.add_button("Auto-~Illustrations...", HTMLImageDialog.show_dialog)
         html_menu.add_button("Auto-~Table...", HTMLAutoTableDialog.show_dialog)
+        html_menu.add_button("HTML ~Markup...", HTMLMarkupDialog.show_dialog)
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
         html_menu.add_button("HTML ~Link Checker", lambda: HTMLLinkChecker().run())
@@ -1127,6 +1137,7 @@ class Guiguts:
         SearchDialog.add_orphan_commands()
         ScannoCheckerDialog.add_orphan_commands()
         SurroundWithDialog.add_orphan_commands()
+        HTMLMarkupDialog.add_orphan_commands()
         mainimage().add_orphan_commands()
         menubar_metadata().add_button_orphan(
             "Quit Without Saving File", lambda: root().quit()

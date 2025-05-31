@@ -19,7 +19,7 @@ import requests
 
 from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerEntrySeverity
 from guiguts.file import the_file
-from guiguts.maintext import maintext
+from guiguts.maintext import maintext, menubar_metadata
 from guiguts.preferences import (
     PersistentString,
     PersistentBoolean,
@@ -1713,3 +1713,212 @@ class HTMLAutoTableDialog(ToplevelDialog):
                 case "r" | "R" | ">":
                     align = "r"
         return f"td{align}"
+
+
+class HTMLMarkupDialog(ToplevelDialog):
+    """HTML Markup dialog."""
+
+    manual_page = "HTML_Menu#HTML_Markup"
+
+    markup_types = [
+        "i",
+        "em",
+        "cite",
+        "strong",
+        "p",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "table",
+        "tr",
+        "td",
+        "sup",
+        "sub",
+        "ol",
+        "ul",
+        "li",
+        "ins",
+        "del",
+        "blkq",
+        "pre",
+        "hr",
+        "br",
+    ]
+    custom_types = ["div", "span", "i"]
+    attribute_keys = [
+        PrefKey.CUSTOM_MARKUP_ATTRIBUTE_0,
+        PrefKey.CUSTOM_MARKUP_ATTRIBUTE_1,
+        PrefKey.CUSTOM_MARKUP_ATTRIBUTE_2,
+        PrefKey.CUSTOM_MARKUP_ATTRIBUTE_3,
+    ]
+    history_keys = [
+        PrefKey.CUSTOM_MARKUP_ATTRIBUTE_0_HISTORY,
+        PrefKey.CUSTOM_MARKUP_ATTRIBUTE_1_HISTORY,
+        PrefKey.CUSTOM_MARKUP_ATTRIBUTE_2_HISTORY,
+        PrefKey.CUSTOM_MARKUP_ATTRIBUTE_3_HISTORY,
+    ]
+
+    def __init__(self) -> None:
+        """Initialize HTML Markup dialog."""
+        super().__init__("HTML Markup", resize_x=False, resize_y=False)
+
+        markup_frame = ttk.LabelFrame(self.top_frame, text="Markup", padding=3)
+        markup_frame.grid(row=0, column=0, sticky="NSEW")
+        ncols = 5
+        for col in range(ncols):
+            markup_frame.columnconfigure(col, uniform="markups")
+        for idx, markup in enumerate(self.markup_types):
+            ttk.Button(
+                markup_frame,
+                text=f"<{markup}>",
+                command=lambda markup=markup: self.add_markup(  # type:ignore[misc]
+                    f"<{markup}>",
+                    f"</{markup}>",
+                ),
+            ).grid(row=idx // ncols, column=idx % ncols, padx=1, pady=1, sticky="NSEW")
+        next_row = len(self.markup_types) // ncols + 1
+        # Add nbsp at end of last row
+        ttk.Button(
+            markup_frame,
+            text="&nbsp;",
+            command=lambda: self.add_markup("&nbsp;", ""),
+        ).grid(row=next_row - 1, column=ncols - 1, padx=1, pady=1, sticky="NSEW")
+
+        first_row = next_row
+        for row, attr_key in enumerate(HTMLMarkupDialog.attribute_keys):
+            pady = (10, 1) if row == 0 else (1, 1)
+            cbx = Combobox(
+                markup_frame,
+                HTMLMarkupDialog.history_keys[row],
+                textvariable=PersistentString(attr_key),
+            )
+            cbx.grid(
+                row=first_row + row,
+                column=0,
+                columnspan=2,
+                padx=1,
+                pady=pady,
+                sticky="NSEW",
+            )
+            for idx, markup in enumerate(HTMLMarkupDialog.custom_types):
+                ttk.Button(
+                    markup_frame,
+                    text=f"<{markup}>",
+                    command=lambda attr_key=attr_key, markup=markup, cbx=cbx: self.add_custom_markup(  # type:ignore[misc]
+                        attr_key, markup, cbx
+                    ),
+                ).grid(
+                    row=first_row + row,
+                    column=2 + idx,
+                    padx=1,
+                    pady=pady,
+                    sticky="NSEW",
+                )
+            ttk.Button(
+                self.top_frame,
+                text="Remove HTML Markup From Selection",
+                command=self.remove_markup,
+            ).grid(row=1, column=0, pady=5)
+
+    @classmethod
+    def add_orphan_commands(cls) -> None:
+        """Add orphan commands to command palette."""
+        for markup in cls.markup_types:
+            menubar_metadata().add_button_orphan(
+                f'HTML Markup, Apply "{markup}"',
+                lambda markup=markup: cls.add_markup(f"<{markup}>", f"</{markup}>"),
+            )
+        menubar_metadata().add_button_orphan(
+            'HTML Markup, Apply "&nbsp;"',
+            lambda markup=markup: cls.add_markup("&nbsp;", ""),
+        )
+        for idx, attr_key in enumerate(cls.attribute_keys):
+            for markup in cls.custom_types:
+                menubar_metadata().add_button_orphan(
+                    f'HTML Markup, Apply custom "{markup}" {idx+1}',
+                    lambda attr_key=attr_key, markup=markup: cls.add_custom_markup(
+                        attr_key, markup, None
+                    ),
+                )
+        menubar_metadata().add_button_orphan(
+            "HTML Markup, Remove Markup", cls.remove_markup
+        )
+
+    @classmethod
+    def add_custom_markup(
+        cls, attr_key: PrefKey, markup: str, cbx: Optional[Combobox]
+    ) -> None:
+        """Add custom markup around selected text, or if none, just insert it.
+
+        Args:
+            attr_key: Key to pref containing class name or attribute, e.g.
+                `myclass` or `lang="fr"`.
+            markup: Type of markup to add, e.g. `div`.
+            cbx: Combobox to add history to (or None)
+        """
+        attr: str = preferences.get(attr_key)
+        if cbx is not None:
+            cbx.add_to_history(attr)
+        # If simple word given, it's a class name
+        if re.fullmatch(r"[-_\w]+", attr):
+            attr = f"class={attr}"
+        if attr:
+            attr = f" {attr}"
+        cls.add_markup(f"<{markup}{attr}>", f"</{markup}>")
+
+    @classmethod
+    def add_markup(cls, pre_markup: str, post_markup: str) -> None:
+        """Add given markup around selected text, or if none, just insert it.
+
+        Args:
+            pre_markup: markup to add before selection
+            post_markup: markup to add after selection
+        """
+        maintext().undo_block_begin()
+
+        sel_ranges = maintext().selected_ranges()
+        # If no selection, create dummy range at insert point,
+        # so start and end markup will just be inserted there
+        if sel_ranges:
+            for sel_range in sel_ranges:
+                maintext().insert(sel_range.end.index(), post_markup)
+                maintext().insert(sel_range.start.index(), pre_markup)
+        else:
+            save_insert = maintext().get_insert_index().index()
+            maintext().insert(save_insert, f"{pre_markup}{post_markup}")
+            maintext().focus_widget().mark_set(
+                tk.INSERT, f"{save_insert}+{len(pre_markup)}c"
+            )
+
+    @classmethod
+    def remove_markup(cls) -> None:
+        """Remove HTML markup from selected text."""
+        maintext().undo_block_begin()
+        maintext().selection_ranges_store_with_marks()
+
+        for sel_range in maintext().selected_ranges():
+            matches = maintext().find_all(
+                sel_range,
+                r"<[a-z/](.|\n)+?>",
+                regexp=True,
+                wholeword=False,
+                nocase=False,
+            )
+            for match in reversed(matches):
+                idx = match.rowcol.index()
+                maintext().delete(idx, f"{idx}+{match.count}c")
+        for sel_range in maintext().selected_ranges():
+            matches = maintext().find_all(
+                sel_range,
+                "&nbsp;",
+                regexp=False,
+                wholeword=False,
+                nocase=False,
+            )
+            for match in reversed(matches):
+                idx = match.rowcol.index()
+                maintext().replace(idx, f"{idx}+{match.count}c", " ")
+
+        maintext().selection_ranges_restore_from_marks()
