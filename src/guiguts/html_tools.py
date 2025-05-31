@@ -1901,7 +1901,7 @@ class HTMLMarkupDialog(ToplevelDialog):
         for sel_range in maintext().selected_ranges():
             matches = maintext().find_all(
                 sel_range,
-                r"<[a-z/](.|\n)+?>",
+                r"</?[a-z](.|\n)*?>",
                 regexp=True,
                 wholeword=False,
                 nocase=False,
