@@ -1721,30 +1721,31 @@ class HTMLMarkupDialog(ToplevelDialog):
     manual_page = "HTML_Menu#HTML_Markup"
 
     markup_types = [
-        "i",
-        "em",
-        "cite",
-        "strong",
-        "p",
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "table",
-        "tr",
-        "td",
-        "sup",
-        "sub",
-        "ol",
-        "ul",
-        "li",
-        "ins",
-        "del",
-        "blkq",
-        "pre",
-        "hr",
-        "br",
+        ("<i>", "</i>"),
+        ("<em>", "</em>"),
+        ("<cite>", "</cite>"),
+        ("<strong>", "</strong>"),
+        ("<p>", "</p>"),
+        ("<h1>", "</h1>"),
+        ("<h2>", "</h2>"),
+        ("<h3>", "</h3>"),
+        ("<h4>", "</h4>"),
+        ("<h5>", "</h5>"),
+        ("<table>", "</table>"),
+        ("<tr>", "</tr>"),
+        ("<td>", "</td>"),
+        ("<sup>", "</sup>"),
+        ("<sub>", "</sub>"),
+        ("<ol>", "</ol>"),
+        ("<ul>", "</ul>"),
+        ("<li>", "</li>"),
+        ("<ins>", "</ins>"),
+        ("<del>", "</del>"),
+        ("<blkq>", "</blkq>"),
+        ("<pre>", "</pre>"),
+        ("<hr>", ""),
+        ("<br>", ""),
+        ("&nbsp;", ""),
     ]
     custom_types = ["div", "span", "i"]
     attribute_keys = [
@@ -1769,24 +1770,17 @@ class HTMLMarkupDialog(ToplevelDialog):
         ncols = 5
         for col in range(ncols):
             markup_frame.columnconfigure(col, uniform="markups")
-        for idx, markup in enumerate(self.markup_types):
+        for idx, (mopen, mclose) in enumerate(self.markup_types):
             ttk.Button(
                 markup_frame,
-                text=f"<{markup}>",
-                command=lambda markup=markup: self.add_markup(  # type:ignore[misc]
-                    f"<{markup}>",
-                    f"</{markup}>",
+                text=mopen,
+                command=lambda mopen=mopen, mclose=mclose: self.add_markup(  # type:ignore[misc]
+                    mopen,
+                    mclose,
                 ),
             ).grid(row=idx // ncols, column=idx % ncols, padx=1, pady=1, sticky="NSEW")
-        next_row = len(self.markup_types) // ncols + 1
-        # Add nbsp at end of last row
-        ttk.Button(
-            markup_frame,
-            text="&nbsp;",
-            command=lambda: self.add_markup("&nbsp;", ""),
-        ).grid(row=next_row - 1, column=ncols - 1, padx=1, pady=1, sticky="NSEW")
 
-        first_row = next_row
+        first_row = len(self.markup_types) // ncols
         for row, attr_key in enumerate(HTMLMarkupDialog.attribute_keys):
             pady = (10, 1) if row == 0 else (1, 1)
             cbx = Combobox(
@@ -1825,15 +1819,11 @@ class HTMLMarkupDialog(ToplevelDialog):
     @classmethod
     def add_orphan_commands(cls) -> None:
         """Add orphan commands to command palette."""
-        for markup in cls.markup_types:
+        for mopen, mclose in cls.markup_types:
             menubar_metadata().add_button_orphan(
-                f'HTML Markup, Apply "{markup}"',
-                lambda markup=markup: cls.add_markup(f"<{markup}>", f"</{markup}>"),
+                f'HTML Markup, Apply "{mopen}"',
+                lambda mopen=mopen, mclose=mclose: cls.add_markup(mopen, mclose),
             )
-        menubar_metadata().add_button_orphan(
-            'HTML Markup, Apply "&nbsp;"',
-            lambda markup=markup: cls.add_markup("&nbsp;", ""),
-        )
         for idx, attr_key in enumerate(cls.attribute_keys):
             for markup in cls.custom_types:
                 menubar_metadata().add_button_orphan(
