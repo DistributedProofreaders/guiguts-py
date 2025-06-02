@@ -135,6 +135,7 @@ class File:
     def filename(self, value: str) -> None:
         self._filename = value
         self._filename_callback()
+        mainimage().proj_filename = value  # Main Image also needs to know
 
     @property
     def image_dir(self) -> Any:
@@ -153,6 +154,7 @@ class File:
     @image_dir.setter
     def image_dir(self, value: str) -> None:
         self._image_dir = value
+        mainimage().image_dir = value  # Main Image also needs to know
 
     @property
     def project_id(self) -> Any:
