@@ -7,7 +7,7 @@ import os.path
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
-from typing import Any, Callable, Final, TypedDict, Literal, Optional, cast
+from typing import Callable, Final, TypedDict, Literal, Optional, cast
 
 import regex as re
 
@@ -138,7 +138,7 @@ class File:
         mainimage().proj_filename = value  # Main Image also needs to know
 
     @property
-    def image_dir(self) -> Any:
+    def image_dir(self) -> str:
         """Directory containing scan images.
 
         If unset, defaults to pngs subdir of project dir"""
@@ -157,7 +157,7 @@ class File:
         mainimage().image_dir = value  # Main Image also needs to know
 
     @property
-    def project_id(self) -> Any:
+    def project_id(self) -> str:
         """ID of project, e.g. "projectID0123456789abc".
 
         If unset, extract from project comments filename.
@@ -177,7 +177,7 @@ class File:
         self._project_id = value
 
     @property
-    def languages(self) -> Any:
+    def languages(self) -> str:
         """Languages of currently loaded file.
 
         Multiple languages are separated by "+"
@@ -507,9 +507,9 @@ class File:
                     detail["index"], detail["style"], detail["number"]
                 )
         self.set_page_marks(self.page_details)
-        self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
-        self.project_id = bin_dict.get(BINFILE_KEY_PROJECTID)
-        self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES)
+        self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR, "")
+        self.project_id = bin_dict.get(BINFILE_KEY_PROJECTID, "")
+        self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES, "")
         bookmarks: Optional[dict[str, str]]
         if bookmarks := bin_dict.get(BINFILE_KEY_BOOKMARKS):
             for key, value in bookmarks.items():

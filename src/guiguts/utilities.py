@@ -11,6 +11,7 @@ import subprocess
 from tkinter import _tkinter  # type: ignore[attr-defined]
 from typing import Any, Optional, Callable, Mapping
 from unicodedata import combining, normalize
+from urllib.parse import urlparse, unquote
 
 import regex as re
 
@@ -761,6 +762,27 @@ def non_text_line(line: str) -> bool:
             line,
         )
     )
+
+
+def fname_from_drag_and_drop(drop_data: str) -> str:
+    """Extracts the first filename from drag and dropped file(s).
+
+    Args:
+        drop_data: The data attribute of the drop Event.
+
+    Returns:
+        First filename in the data.
+    """
+    # Filename(s) may be wrapped in braces - extract first one
+    if "{" in drop_data:
+        fname = re.sub(r"{(.+?)}.*", r"\1", drop_data)
+    # Otherwise, filenames are separated by space characters
+    else:
+        fname = drop_data.split(" ")[0]
+    # Filename may be URI
+    if fname.startswith("file://"):
+        fname = unquote(urlparse(fname).path)
+    return fname
 
 
 def is_debug() -> bool:

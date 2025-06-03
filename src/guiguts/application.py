@@ -11,7 +11,9 @@ import tkinter as tk
 from typing import Optional
 import unicodedata
 import webbrowser
+
 import darkdetect  # type: ignore[import-untyped]
+from tkinterdnd2 import DND_FILES  # type: ignore[import-untyped]
 
 from guiguts.ascii_tables import JustifyStyle
 from guiguts.data import themes
@@ -105,6 +107,7 @@ from guiguts.utilities import (
     folder_dir_str,
     get_keyboard_layout,
     is_test,
+    fname_from_drag_and_drop,
 )
 from guiguts.widgets import (
     themed_style,
@@ -141,6 +144,12 @@ class Guiguts:
         self.mainwindow = MainWindow()
         self.file.mainwindow = self.mainwindow
         self.update_title()
+
+        # Allow user to drag and drop file into maintext or image viewer
+        maintext().drop_target_register(DND_FILES)  # type:ignore[attr-defined]
+        maintext().dnd_bind(  # type:ignore[attr-defined]
+            "<<Drop>>", lambda e: self.open_file(fname_from_drag_and_drop(e.data))
+        )
 
         theme_path = THEMES_DIR.joinpath("awthemes-10.4.0")
         root().tk.call("lappend", "auto_path", theme_path)

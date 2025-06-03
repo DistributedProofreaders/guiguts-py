@@ -7,6 +7,7 @@ import tkinter as tk
 
 from types import TracebackType
 from typing import Any
+from tkinterdnd2 import TkinterDnD  # type: ignore[import-untyped]
 
 from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_x11
@@ -24,7 +25,7 @@ class RootWindowState(StrEnum):
     FULLSCREEN = auto()
 
 
-class Root(tk.Tk):
+class Root(TkinterDnD.Tk):
     """Inherits from Tk root window"""
 
     def __init__(self, **kwargs: Any) -> None:

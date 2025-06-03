@@ -16,6 +16,7 @@ levenshtein = "^0.27.1"
 requests = "^2.32.3"
 darkdetect = "^0.8.0"
 rapidfuzz = "^3.13.0"
+tkinterdnd2 = "^0.4.3"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1"
