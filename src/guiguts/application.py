@@ -16,7 +16,7 @@ import darkdetect  # type: ignore[import-untyped]
 
 try:  # Not yet supported for Tk9
     from tkinterdnd2 import DND_FILES  # type: ignore[import-untyped]
-except (ImportError, RuntimeError):
+except (ImportError, tk.TclError):
     DND_FILES = "DND_Files"
 
 from guiguts.ascii_tables import JustifyStyle
