@@ -10,7 +10,7 @@ from typing import Any
 
 try:  # Not yet supported for Tk9
     from tkinterdnd2 import TkinterDnD  # type: ignore[import-untyped]
-except ImportError:
+except (ImportError, RuntimeError):
     TkinterDnD = tk
 
 from guiguts.preferences import preferences, PrefKey
