@@ -7,7 +7,6 @@ import tkinter as tk
 
 from types import TracebackType
 from typing import Any
-from tkinterdnd2 import TkinterDnD  # type: ignore[import-untyped]
 
 from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_x11
@@ -15,6 +14,28 @@ from guiguts.utilities import is_x11
 logger = logging.getLogger(__package__)
 
 _THE_ROOT = None
+
+
+def get_root_class() -> type[tk.Tk]:
+    """Determine at import time whether to use DnD-enabled root"""
+    temp_root = tk.Tk()
+    tk_version: str = temp_root.call("info", "patchlevel")
+    temp_root.destroy()
+
+    if tk_version.startswith("8."):
+        try:
+            from tkinterdnd2 import (  # type: ignore[import-untyped] # pylint: disable=import-outside-toplevel
+                TkinterDnD,
+            )
+
+            return TkinterDnD.Tk
+        except ImportError:
+            return tk.Tk
+    else:
+        return tk.Tk
+
+
+_BaseRoot: type[tk.Tk] = get_root_class()
 
 
 class RootWindowState(StrEnum):
@@ -25,7 +46,7 @@ class RootWindowState(StrEnum):
     FULLSCREEN = auto()
 
 
-class Root(TkinterDnD.Tk):
+class Root(_BaseRoot):  # type: ignore[misc, valid-type]
     """Inherits from Tk root window"""
 
     def __init__(self, **kwargs: Any) -> None:
