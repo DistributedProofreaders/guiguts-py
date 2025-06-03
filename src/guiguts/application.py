@@ -937,6 +937,9 @@ class Guiguts:
         text_menu.add_button(
             "Convert ~Markup...", TextMarkupConvertorDialog.show_dialog
         )
+        text_menu.add_button(
+            "Convert <~sc> Manually...", TextMarkupConvertorDialog.manual_sc
+        )
         text_menu.add_button("~PPtxt", lambda: pptxt(self.file.project_dict))
         text_menu.add_button("ASCII ~Table Effects", ASCIITableDialog.show_dialog)
         text_menu.add_separator()
