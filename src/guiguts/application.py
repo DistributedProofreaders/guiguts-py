@@ -13,7 +13,11 @@ import unicodedata
 import webbrowser
 
 import darkdetect  # type: ignore[import-untyped]
-from tkinterdnd2 import DND_FILES  # type: ignore[import-untyped]
+
+try:  # Not yet supported for Tk9
+    from tkinterdnd2 import DND_FILES  # type: ignore[import-untyped]
+except ImportError:
+    DND_FILES = "DND_Files"
 
 from guiguts.ascii_tables import JustifyStyle
 from guiguts.data import themes
@@ -145,22 +149,23 @@ class Guiguts:
         self.file.mainwindow = self.mainwindow
         self.update_title()
 
-        # Allow user to drag and drop file into maintext
-        maintext().drop_target_register(DND_FILES)  # type:ignore[attr-defined]
-        maintext().dnd_bind(  # type:ignore[attr-defined]
-            "<<Drop>>", lambda e: self.open_file(fname_from_drag_and_drop(e.data))
-        )
-
-        # Also allow drag and drop image files into image viewer
+        # Allow user to drag and drop file into maintext & image viewer
         def load_image(fname: str) -> None:
             """Load image into image viewer"""
             mainimage().load_image(fname)
             preferences.set(PrefKey.AUTO_IMAGE, False)
 
-        mainimage().drop_target_register(DND_FILES)  # type:ignore[attr-defined]
-        mainimage().dnd_bind(  # type:ignore[attr-defined]
-            "<<Drop>>", lambda e: load_image(fname_from_drag_and_drop(e.data))
-        )
+        try:
+            maintext().drop_target_register(DND_FILES)  # type:ignore[attr-defined]
+            maintext().dnd_bind(  # type:ignore[attr-defined]
+                "<<Drop>>", lambda e: self.open_file(fname_from_drag_and_drop(e.data))
+            )
+            mainimage().drop_target_register(DND_FILES)  # type:ignore[attr-defined]
+            mainimage().dnd_bind(  # type:ignore[attr-defined]
+                "<<Drop>>", lambda e: load_image(fname_from_drag_and_drop(e.data))
+            )
+        except AttributeError:
+            logger.debug("TkinterDnd2 drag and drop not enabled")
 
         theme_path = THEMES_DIR.joinpath("awthemes-10.4.0")
         root().tk.call("lappend", "auto_path", theme_path)

@@ -7,7 +7,11 @@ import tkinter as tk
 
 from types import TracebackType
 from typing import Any
-from tkinterdnd2 import TkinterDnD  # type: ignore[import-untyped]
+
+try:  # Not yet supported for Tk9
+    from tkinterdnd2 import TkinterDnD  # type: ignore[import-untyped]
+except ImportError:
+    TkinterDnD = tk
 
 from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_x11
