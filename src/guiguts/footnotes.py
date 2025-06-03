@@ -350,10 +350,13 @@ class FootnoteChecker:
         text_range = self.checker_dialog.entries[cur_idx].text_range
         assert text_range is not None
         fn_start = text_range.start
-        fn_records = self.get_fn_records()
-        for fn_index, fn_record in enumerate(fn_records):
+        for fn_index, fn_record in enumerate(self.get_fn_records()):
             if fn_record.start == fn_start:
                 return fn_index
+        # No footnote match, so try anchors
+        for an_record in self.get_an_records():
+            if an_record.start == fn_start:
+                return an_record.fn_index  # Return footnote for this anchor
         return -1
 
     def enable_disable_buttons(self) -> None:
