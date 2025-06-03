@@ -14,11 +14,6 @@ import webbrowser
 
 import darkdetect  # type: ignore[import-untyped]
 
-try:  # Not yet supported for Tk9
-    from tkinterdnd2 import DND_FILES  # type: ignore[import-untyped]
-except (ImportError, RuntimeError, tk.TclError):
-    DND_FILES = "DND_Files"
-
 from guiguts.ascii_tables import JustifyStyle
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -156,11 +151,11 @@ class Guiguts:
             preferences.set(PrefKey.AUTO_IMAGE, False)
 
         try:
-            maintext().drop_target_register(DND_FILES)  # type:ignore[attr-defined]
+            maintext().drop_target_register("DND_Files")  # type:ignore[attr-defined]
             maintext().dnd_bind(  # type:ignore[attr-defined]
                 "<<Drop>>", lambda e: self.open_file(fname_from_drag_and_drop(e.data))
             )
-            mainimage().drop_target_register(DND_FILES)  # type:ignore[attr-defined]
+            mainimage().drop_target_register("DND_Files")  # type:ignore[attr-defined]
             mainimage().dnd_bind(  # type:ignore[attr-defined]
                 "<<Drop>>", lambda e: load_image(fname_from_drag_and_drop(e.data))
             )
