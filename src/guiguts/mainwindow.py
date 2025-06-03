@@ -898,6 +898,10 @@ class MainImage(tk.Frame):
             lambda: self.image_zoom_to_height(disable_autofit=True),
             "Cmd/Ctrl+0",
         )
+        menubar_metadata().add_button_orphan(
+            "Image Browse",
+            self.browse,
+        )
 
     def scroll_y(self, *args: Any, **kwargs: Any) -> None:
         """Scroll canvas vertically and redraw the image"""
