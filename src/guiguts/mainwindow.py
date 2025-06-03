@@ -13,7 +13,7 @@ from tkinter import ttk, messagebox, EventType, filedialog
 from typing import Any, Callable, Optional
 from pathlib import Path
 
-from PIL import Image, ImageTk, ImageChops
+from PIL import Image, ImageTk, ImageChops, UnidentifiedImageError
 import regex as re
 
 from guiguts.maintext import MainText, maintext, menubar_metadata, MenuMetadata
@@ -1146,7 +1146,12 @@ class MainImage(tk.Frame):
 
         if filename and os.path.isfile(filename):
             self.filename = filename
-            image = Image.open(filename)
+            try:
+                image = Image.open(filename)
+            except UnidentifiedImageError:
+                logger.error("Invalid image file type")
+                return False
+
             self.grayscale = image.mode in ("1", "L")
             self.image = image.convert("RGB")  # Needed for some operations
             self.width, self.height = self.image.size

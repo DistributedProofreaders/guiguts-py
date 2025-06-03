@@ -145,10 +145,21 @@ class Guiguts:
         self.file.mainwindow = self.mainwindow
         self.update_title()
 
-        # Allow user to drag and drop file into maintext or image viewer
+        # Allow user to drag and drop file into maintext
         maintext().drop_target_register(DND_FILES)  # type:ignore[attr-defined]
         maintext().dnd_bind(  # type:ignore[attr-defined]
             "<<Drop>>", lambda e: self.open_file(fname_from_drag_and_drop(e.data))
+        )
+
+        # Also allow drag and drop image files into image viewer
+        def load_image(fname: str) -> None:
+            """Load image into image viewer"""
+            mainimage().load_image(fname)
+            preferences.set(PrefKey.AUTO_IMAGE, False)
+
+        mainimage().drop_target_register(DND_FILES)  # type:ignore[attr-defined]
+        mainimage().dnd_bind(  # type:ignore[attr-defined]
+            "<<Drop>>", lambda e: load_image(fname_from_drag_and_drop(e.data))
         )
 
         theme_path = THEMES_DIR.joinpath("awthemes-10.4.0")
