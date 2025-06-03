@@ -9,7 +9,7 @@ import shlex
 import subprocess
 import time
 import tkinter as tk
-from tkinter import ttk, messagebox, EventType
+from tkinter import ttk, messagebox, EventType, filedialog
 from typing import Any, Callable, Optional
 from pathlib import Path
 
@@ -637,6 +637,9 @@ class MainImage(tk.Frame):
         self.short_name = ""
         self.short_name_label = tk.StringVar(self, "<no image>")
         self.rotation_details: dict[str, int] = {}
+        self.image_dir = ""
+        self.proj_filename = ""
+        self.grayscale = True
 
         # Introduce an apparently superfluous Frame to contain everything.
         # This is because when MainImage is undocked, Tk converts it to a
@@ -664,7 +667,7 @@ class MainImage(tk.Frame):
             command=lambda: self.next_image(reverse=True),
         )
         self.prev_img_button.grid(row=0, column=0, sticky="NSEW")
-        ToolTip(self.prev_img_button, use_pointer_pos=True, msg="Previous image")
+        ToolTip(self.prev_img_button, msg="Previous image")
 
         def focus_prev(evt: tk.Event) -> str:
             if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
@@ -682,11 +685,19 @@ class MainImage(tk.Frame):
             command=self.next_image,
         )
         self.next_img_button.grid(row=0, column=1, sticky="NSEW")
-        ToolTip(self.next_img_button, use_pointer_pos=True, msg="Next image")
+        ToolTip(self.next_img_button, msg="Next image")
 
         ttk.Label(control_frame, textvariable=self.short_name_label).grid(
             row=0, column=2, sticky="NSEW", padx=5
         )
+        self.browse_btn = ttk.Button(
+            control_frame,
+            text="📂",
+            width=min_button_width + 1 if is_mac() else min_button_width,
+            command=self.browse,
+        )
+        self.browse_btn.grid(row=0, column=3, sticky="NSEW")
+        ToolTip(self.browse_btn, msg="Load an image file")
 
         self.zoom_in_btn = ttk.Button(
             control_frame,
@@ -694,8 +705,8 @@ class MainImage(tk.Frame):
             width=min_button_width,
             command=lambda: self.image_zoom(zoom_in=True),
         )
-        self.zoom_in_btn.grid(row=0, column=3, sticky="NSEW", padx=(10, 0))
-        ToolTip(self.zoom_in_btn, use_pointer_pos=True, msg="Zoom in")
+        self.zoom_in_btn.grid(row=0, column=4, sticky="NSEW", padx=(10, 0))
+        ToolTip(self.zoom_in_btn, msg="Zoom in")
 
         self.zoom_out_btn = ttk.Button(
             control_frame,
@@ -703,8 +714,8 @@ class MainImage(tk.Frame):
             width=min_button_width,
             command=lambda: self.image_zoom(zoom_in=False),
         )
-        self.zoom_out_btn.grid(row=0, column=4, sticky="NSEW")
-        ToolTip(self.zoom_out_btn, use_pointer_pos=True, msg="Zoom out")
+        self.zoom_out_btn.grid(row=0, column=5, sticky="NSEW")
+        ToolTip(self.zoom_out_btn, msg="Zoom out")
 
         self.rotate_btn = ttk.Button(
             control_frame,
@@ -712,26 +723,24 @@ class MainImage(tk.Frame):
             width=min_button_width + 1 if is_mac() else min_button_width,
             command=self.rotate,
         )
-        self.rotate_btn.grid(row=0, column=5, sticky="NSEW", padx=(10, 0))
-        ToolTip(
-            self.rotate_btn, use_pointer_pos=True, msg="Rotate 90º counter-clockwise"
-        )
+        self.rotate_btn.grid(row=0, column=6, sticky="NSEW", padx=(10, 0))
+        ToolTip(self.rotate_btn, msg="Rotate 90º counter-clockwise")
 
         self.ftw_btn = ttk.Checkbutton(
             control_frame,
             text="Fit ←→",
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_WIDTH),
         )
-        self.ftw_btn.grid(row=0, column=6, sticky="NSEW", padx=(10, 0))
-        ToolTip(self.ftw_btn, use_pointer_pos=True, msg="Fit image to viewer width")
+        self.ftw_btn.grid(row=0, column=7, sticky="NSEW", padx=(10, 0))
+        ToolTip(self.ftw_btn, msg="Fit image to viewer width")
 
         self.fth_btn = ttk.Checkbutton(
             control_frame,
             text="Fit ↑↓",
             variable=PersistentBoolean(PrefKey.IMAGE_AUTOFIT_HEIGHT),
         )
-        self.fth_btn.grid(row=0, column=7, sticky="NSEW", padx=(10, 0))
-        ToolTip(self.fth_btn, use_pointer_pos=True, msg="Fit image to viewer height")
+        self.fth_btn.grid(row=0, column=8, sticky="NSEW", padx=(10, 0))
+        ToolTip(self.fth_btn, msg="Fit image to viewer height")
 
         self.invert_btn = ttk.Checkbutton(
             control_frame,
@@ -739,8 +748,8 @@ class MainImage(tk.Frame):
             command=self.show_image,
             variable=PersistentBoolean(PrefKey.IMAGE_INVERT),
         )
-        self.invert_btn.grid(row=0, column=8, sticky="NSEW", padx=(10, 0))
-        ToolTip(self.invert_btn, use_pointer_pos=True, msg="Invert image colors")
+        self.invert_btn.grid(row=0, column=9, sticky="NSEW", padx=(10, 0))
+        ToolTip(self.invert_btn, msg="Invert image colors")
 
         self.dock_btn = ttk.Checkbutton(
             control_frame,
@@ -748,7 +757,7 @@ class MainImage(tk.Frame):
             command=self.set_image_docking,
             variable=PersistentBoolean(PrefKey.IMAGE_WINDOW_DOCKED),
         )
-        self.dock_btn.grid(row=0, column=9, sticky="NSEW", padx=(10, 0))
+        self.dock_btn.grid(row=0, column=10, sticky="NSEW", padx=(10, 0))
         ToolTip(
             self.dock_btn,
             use_pointer_pos=True,
@@ -761,8 +770,8 @@ class MainImage(tk.Frame):
             width=min_button_width,
             command=self.hide_func,
         )
-        self.close_btn.grid(row=0, column=10, sticky="NSE")
-        ToolTip(self.close_btn, use_pointer_pos=True, msg="Hide image viewer")
+        self.close_btn.grid(row=0, column=11, sticky="NSE")
+        ToolTip(self.close_btn, msg="Hide image viewer")
 
         def close_tab(evt: tk.Event) -> str:
             if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
@@ -888,6 +897,10 @@ class MainImage(tk.Frame):
             "Image Fit ↑↓",
             lambda: self.image_zoom_to_height(disable_autofit=True),
             "Cmd/Ctrl+0",
+        )
+        menubar_metadata().add_button_orphan(
+            "Image Browse",
+            self.browse,
         )
 
     def scroll_y(self, *args: Any, **kwargs: Any) -> None:
@@ -1035,7 +1048,7 @@ class MainImage(tk.Frame):
         preferences.set(PrefKey.IMAGE_SCALE_FACTOR, self.image_scale)
         scaled_width = int(self.image_scale * image.width + 1)
         scaled_height = int(self.image_scale * image.height + 1)
-        if preferences.get(PrefKey.IMAGE_INVERT):
+        if preferences.get(PrefKey.IMAGE_INVERT) and self.grayscale:
             image = ImageChops.invert(self.image)
         if self.imagetk:
             del self.imagetk
@@ -1133,7 +1146,9 @@ class MainImage(tk.Frame):
 
         if filename and os.path.isfile(filename):
             self.filename = filename
-            self.image = Image.open(filename).convert("RGB")
+            image = Image.open(filename)
+            self.grayscale = image.mode in ("1", "L")
+            self.image = image.convert("RGB")  # Needed for some operations
             self.width, self.height = self.image.size
             self.canvas.yview_moveto(0)
             self.canvas.xview_moveto(0)
@@ -1298,6 +1313,27 @@ class MainImage(tk.Frame):
                 mainimage().image_zoom_to_width()
             elif preferences.get(PrefKey.IMAGE_AUTOFIT_HEIGHT):
                 mainimage().image_zoom_to_height()
+
+    def browse(self) -> None:
+        """Browse for a file to open."""
+        if self.filename and os.path.isfile(self.filename):
+            initial_dir = os.path.dirname(self.filename)
+        elif self.image_dir != "" and os.path.isdir(self.image_dir):
+            initial_dir = self.image_dir
+        elif self.proj_filename != "":
+            initial_dir = os.path.dirname(self.proj_filename)
+        else:
+            return
+        if filename := filedialog.askopenfilename(
+            initialdir=initial_dir,
+            title="Choose Image File",
+            filetypes=(
+                ("Image files", "*.png *.jpg"),
+                ("All files", "*.*"),
+            ),
+        ):
+            self.load_image(filename)
+        preferences.set(PrefKey.AUTO_IMAGE, False)
 
     def get_current_rotation(self) -> int:
         """Return the current rotation for one image"""
