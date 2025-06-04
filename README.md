@@ -28,13 +28,26 @@ previous version of GG2).
 
 3. Type `guiguts` to run GG2.
 
+4. If the above does not work, then 
+    a. Install pipx: `/usr/local/bin/python3 -m pip install pipx`
+    b. Type `/usr/local/bin/python3 -m pipx install guiguts`
+       (or `/usr/local/bin/python3 -m pipx install guiguts --upgrade`
+       to upgrade from a previous version of GG2).
+    c. Type `guiguts` or `~/.local/bin/guiguts` to run GG2.
+
 ### Linux
 
-1. Ensure you have Python 3.11 or 3.12 installed. See Linux development instructions above
-if necessary.
-2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
-previous version of GG2).
-3. Type `guiguts` to run GG2.
+1. `apt-get update`
+2. `apt-get install -y python3 python3-pip python3-tk idle-python3.12`
+3. Type `pip3 install guiguts` (or `pip3 install guiguts --upgrade`
+to upgrade from a previous version of GG2).
+4. Type `guiguts` to run GG2.
+5. If the above does not work, then 
+    a. Install pipx: `apt-get install -y python3-pipx`
+    b. Type `pipx install guiguts`
+       (or `pipx install guiguts --upgrade`
+       to upgrade from a previous version of GG2).
+    c. Type `guiguts` to run GG2.
 
 ### Chromebook (after enabling Linux)
 
@@ -209,8 +222,6 @@ python you installed above.
 
 ### macOS Development Setup
 
-Developing Guiguts on macOS requires installing [Homebrew](https://brew.sh/) first.
-
 #### Install Python
 
 Install python 3.11 or later from [python.org](https://www.python.org/).
@@ -220,11 +231,8 @@ Homebrew may install Tk version 9 instead of 8.6, which GG is optimized to use.
 
 #### Install Poetry
 
-We install poetry using Homebrew.
-
-```bash
-brew install poetry
-```
+1. Install pipx: `/usr/local/bin/python3 -m pip install pipx`
+2. Install poetry: `/usr/local/bin/python3 -m pipx install poetry`
 
 #### Clone the GG2 repo
 
@@ -237,7 +245,7 @@ In the cloned GG2 directory, create a virtual environment using a version of
 python you installed above.
 
 ```bash
-poetry env use $(brew --prefix)/bin/python3.11
+poetry env use /usr/local/bin/python3
 ```
 
 ### Linux Development Setup
@@ -250,6 +258,7 @@ poetry env use $(brew --prefix)/bin/python3.11
      ## Test that Tk will work
      python3.11 -m tkinter
      ```
+   * If this does not work, try using `pipx` in place of `pip` in the above commands.
    * The last line above tests that Tk is working with Python. It should open a small
      window on your screen. Click the `Click me!` button to test mouse clicks, and
      `QUIT` to close the window, ending the test.
