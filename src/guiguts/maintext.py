@@ -27,6 +27,7 @@ from guiguts.widgets import (
     register_focus_widget,
     grab_focus,
     bind_mouse_wheel,
+    unbind_mouse_wheel,
 )
 
 logger = logging.getLogger(__package__)
@@ -238,7 +239,8 @@ class TextLineNumbers(tk.Canvas):
         # Shift-click in line number gutter to extend selection to start of clicked line
         self.bind("<Shift-Button-1>", self.shift_drag_handler_start)
         self.bind("<Shift-B1-Motion>", self.shift_drag_handler)
-        bind_mouse_wheel(self, self.textwidget)
+        self.bind("<Enter>", lambda _: bind_mouse_wheel(self, self.textwidget))
+        self.bind("<Leave>", lambda _: unbind_mouse_wheel(self))
 
     def redraw(self) -> None:
         """Redraw line numbers."""

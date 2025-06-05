@@ -916,38 +916,33 @@ def handle_mouse_wheel(widget: tk.Widget, event: tk.Event) -> None:
 def bind_mouse_wheel(
     bind_widget: tk.Widget, scroll_widget: Optional[tk.Widget] = None
 ) -> None:
-    """Bind wheel events when the cursor enters the control."""
+    """Bind wheel events when the cursor enters the control.
+    Necessary to use bind_all to catch events on bind_widget's children,
+    hence the need to bind/unbind on Enter/Leave"""
     if scroll_widget is None:
         scroll_widget = bind_widget
     if is_x11():
-        bind_widget.bind(
-            "<Button-4>",
-            lambda evt, sw=scroll_widget: handle_mouse_wheel(  # type:ignore[misc]
-                sw, evt
-            ),
+        bind_widget.bind_all(
+            "<Button-4>", lambda evt: handle_mouse_wheel(scroll_widget, evt)
         )
-        bind_widget.bind(
-            "<Button-5>",
-            lambda evt, sw=scroll_widget: handle_mouse_wheel(  # type:ignore[misc]
-                sw, evt
-            ),
+        bind_widget.bind_all(
+            "<Button-5>", lambda evt: handle_mouse_wheel(scroll_widget, evt)
         )
     else:
-        bind_widget.bind(
-            "<MouseWheel>",
-            lambda evt, sw=scroll_widget: handle_mouse_wheel(  # type:ignore[misc]
-                sw, evt
-            ),
+        bind_widget.bind_all(
+            "<MouseWheel>", lambda evt: handle_mouse_wheel(scroll_widget, evt)
         )
 
 
 def unbind_mouse_wheel(bind_widget: tk.Widget) -> None:
-    """Unbind wheel events when the cursor leaves the control."""
+    """Unbind wheel events when the cursor enters the control.
+    Necessary to use bind_all to catch events on bind_widget's children,
+    hence the need to bind/unbind on Enter/Leave"""
     if is_x11():
-        bind_widget.unbind("<Button-4>")
-        bind_widget.unbind("<Button-5>")
+        bind_widget.unbind_all("<Button-4>")
+        bind_widget.unbind_all("<Button-5>")
     else:
-        bind_widget.unbind("<MouseWheel>")
+        bind_widget.unbind_all("<MouseWheel>")
 
 
 # For convenient access, store the single Style instance here,
@@ -1181,3 +1176,61 @@ class Busy:
                     del Busy._busy_widget_cursors[widget]
                 except KeyError:
                     pass  # OK if widget has already been removed
+
+
+class ScrollableFrame(ttk.Frame):
+    """A scrollable ttk.Frame.
+
+    Consider rewriting, so it's like ScrolledReadOnlyText, i.e. self is the frame you add to,
+    and grid method is overridden for correct placement.
+    """
+
+    def __init__(self, parent: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        # Create a containing frame (not visible to the user of this widget)
+        self._container = ttk.Frame(parent)
+        self._container.grid(row=0, column=0, sticky="NSEW")
+        self._container.columnconfigure(0, weight=1)
+        self._container.rowconfigure(0, weight=1)
+
+        # Initialize the visible frame (the one user interacts with)
+        self.canvas = tk.Canvas(self._container, highlightthickness=0)
+        self._v_scrollbar = ttk.Scrollbar(
+            self._container, orient="vertical", command=self.canvas.yview
+        )
+        self._h_scrollbar = ttk.Scrollbar(
+            self._container, orient="horizontal", command=self.canvas.xview
+        )
+
+        # Call ttk.Frame.__init__ with the internal scrollable frame as self
+        super().__init__(self.canvas, *args, **kwargs)
+        self._bg = str(ttk.Style().lookup(self["style"], "background"))
+        self.canvas["background"] = self._bg
+
+        # Put self (the scrollable frame) into the canvas
+        self.canvas.create_window((0, 0), window=self, anchor="nw")
+
+        # Scroll configuration
+        self.canvas.configure(yscrollcommand=self._v_scrollbar.set)
+        self.canvas.configure(xscrollcommand=self._h_scrollbar.set)
+
+        # Grid everything
+        self.canvas.grid(column=0, row=0, sticky="NSEW")
+        self._v_scrollbar.grid(column=1, row=0, sticky="NS")
+        self._h_scrollbar.grid(column=0, row=1, sticky="EW")
+
+        # Bind scroll region and mouse entry
+        self.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
+        )
+        self.canvas.bind("<Enter>", lambda _: bind_mouse_wheel(self.canvas))
+        self.canvas.bind("<Leave>", lambda _: unbind_mouse_wheel(self.canvas))
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        """Delegate grid to the container."""
+        self._container.grid(*args, **kwargs)
+
+    def reset_scroll(self) -> None:
+        """Scroll canvas to top left position."""
+        self.canvas.xview_moveto(0.0)
+        self.canvas.yview_moveto(0.0)
