@@ -1,5 +1,6 @@
 """Handle main text widget"""
 
+import copy
 from html.parser import HTMLParser
 import logging
 import subprocess
@@ -8,7 +9,6 @@ from tkinter import ttk, Text, messagebox
 from tkinter import font as tk_font
 from typing import Any, Callable, Optional, Literal, Generator, cast
 from enum import auto, StrEnum
-import darkdetect  # type: ignore[import-untyped]
 
 import regex as re
 
@@ -484,19 +484,41 @@ HTML_TAG_TAGS = {
 }
 
 
-class BaseColors:
-    """Global base color settings (text panel foreground/background)."""
+class ColorKey(StrEnum):
+    """Enum class to store color keys."""
 
-    DEFAULT = {
-        "Light": {"background": "#F1F1F1", "foreground": "#4A3F31"},
-        "Dark": {"background": "#061626", "foreground": "#DADADA"},
-    }
+    MAIN_DEFAULT = auto()
+    MAIN_HI_CONTRAST = auto()
 
-    # Simple: black and white.
-    HIGH_CONTRAST = {
-        "Light": {"background": "#FFFFFF", "foreground": "#000000"},
-        "Dark": {"background": "#000000", "foreground": "#FFFFFF"},
-    }
+
+class ConfigurableColor:
+    """Settings for a configurable color."""
+
+    def __init__(
+        self,
+        tag_name: str,
+        description: str,
+        dark: dict[str, str],
+        light: dict[str, str],
+        update_func: Callable,
+    ) -> None:
+        """Initialize a configurable color.
+
+        Args:
+            tag_name: Tag name if color defines a tag.
+            description: Description of color's use for customization dialog.
+            dark: Dictionary of Tk settings for this color in dark theme.
+            light: Dictionary of Tk settings for this color in light theme.
+            update_func: Function to be called if color is updated.
+        """
+        self.tag = tag_name
+        self.description = description
+        self.light = light
+        self.dark = dark
+        self.update_func = update_func
+
+
+ConfigurableColors = dict[ColorKey, ConfigurableColor]
 
 
 class HighlightColors:
@@ -779,6 +801,10 @@ class MainText(tk.Text):
         # Register this widget to have its focus tracked for inserting special characters
         register_focus_widget(self)
 
+        self.default_colors = self.get_default_colors()
+
+        self.colors = copy.deepcopy(self.default_colors)
+
         # Configure tags
         self.tag_configure(PAGE_FLAG_TAG, background="gold", foreground="black")
         self.tag_configure(BOOKMARK_TAG, background="lime", foreground="black")
@@ -812,6 +838,7 @@ class MainText(tk.Text):
             "<<ThemeChanged>>",
             lambda _event: self.theme_set_tk_widget_colors(self.peer),
         )
+
         self.theme_set_tk_widget_colors(self.peer)
 
         self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
@@ -1111,32 +1138,13 @@ class MainText(tk.Text):
             widget: The widget to be customized.
         """
         if preferences.get(PrefKey.HIGH_CONTRAST):
-            dark_bg = BaseColors.HIGH_CONTRAST["Dark"]["background"]
-            dark_fg = BaseColors.HIGH_CONTRAST["Dark"]["foreground"]
-            light_bg = BaseColors.HIGH_CONTRAST["Light"]["background"]
-            light_fg = BaseColors.HIGH_CONTRAST["Light"]["foreground"]
+            contrast_key = ColorKey.MAIN_HI_CONTRAST
         else:
-            dark_bg = BaseColors.DEFAULT["Dark"]["background"]
-            dark_fg = BaseColors.DEFAULT["Dark"]["foreground"]
-            light_bg = BaseColors.DEFAULT["Light"]["background"]
-            light_fg = BaseColors.DEFAULT["Light"]["foreground"]
-        theme_name = preferences.get(PrefKey.THEME_NAME)
-        if theme_name == "Default":
-            theme_name = darkdetect.theme()
-        if theme_name == "Dark":
-            widget.configure(
-                background=dark_bg,
-                foreground=dark_fg,
-                insertbackground=dark_fg,
-                highlightbackground=dark_bg,
-            )
-        elif theme_name == "Light":
-            widget.configure(
-                background=light_bg,
-                foreground=light_fg,
-                insertbackground=light_fg,
-                highlightbackground=light_fg,
-            )
+            contrast_key = ColorKey.MAIN_DEFAULT
+        if themed_style().is_dark_theme():
+            widget.configure(self.colors[contrast_key].dark)
+        else:
+            widget.configure(self.colors[contrast_key].light)
 
     def focus_widget(self) -> tk.Text:
         """Return whether main text or peer last had focus.
@@ -3991,6 +3999,51 @@ class MainText(tk.Text):
         # since they're independent.
         self.tag_lower("sel", HighlightTag.QUOTEMARK)
         self.peer.tag_lower("sel", HighlightTag.QUOTEMARK)
+
+    def get_default_colors(self) -> ConfigurableColors:
+        """Return conigurable color defaults."""
+
+        def update_maintext_colors() -> None:
+            """Update default text foreground & background for maintext & peer."""
+            for widget in self, self.peer:
+                self.theme_set_tk_widget_colors(widget)
+
+        return {
+            ColorKey.MAIN_DEFAULT: ConfigurableColor(
+                "",
+                "Default text",
+                {
+                    "background": "#061626",
+                    "foreground": "#DADADA",
+                    "insertbackground": "#DADADA",
+                    "highlightbackground": "#061626",
+                },
+                {
+                    "background": "#F1F1F1",
+                    "foreground": "#4A3F31",
+                    "insertbackground": "#4A3F31",
+                    "highlightbackground": "#4A3F31",
+                },
+                update_maintext_colors,
+            ),
+            ColorKey.MAIN_HI_CONTRAST: ConfigurableColor(
+                "",
+                "Hi-contrast text",
+                {
+                    "background": "#000000",
+                    "foreground": "#FFFFFF",
+                    "insertbackground": "#FFFFFF",
+                    "highlightbackground": "#000000",
+                },
+                {
+                    "background": "#FFFFFF",
+                    "foreground": "#000000",
+                    "insertbackground": "#000000",
+                    "highlightbackground": "#000000",
+                },
+                update_maintext_colors,
+            ),
+        }
 
     def _autoscroll_start(self, _event: tk.Event) -> None:
         """When Button-1 is pressed, turn mouse-drag monitoring on"""
