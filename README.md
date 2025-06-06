@@ -8,20 +8,21 @@ Guiguts - an application to support creation of ebooks for PG
 
 This section contains notes from users who have installed Guiguts 2 on various platforms to use for PPing. **If you are a developer, you probably want the [Development Installation Notes](#common-development-setup).**
 
-Note that although the developers' installation notes specify Python 3.11,
-Guiguts 2 also works with version 3.12 if that is more convenient
+Note that although some example installation commands specify Python 3.11, Guiguts 2
+also works with later versions of Python, and has been tested in versions up to 3.13.
 
 ### Windows
 
-1. Install Python 3.11 or 3.12 from [Python.org](https://www.python.org/downloads/windows/)
-if you haven't already done that.
+1. Install Python 3.11 or above from [Python.org](https://www.python.org/downloads/windows/).
+GG has been tested in versions up to 3.13.
 2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
 previous version of GG2).
 3. Type `guiguts` to run GG2.
 
 ### macOS
 
-1. Install Python 3.11 or 3.12 from [python.org](https://www.python.org/), not a Homebrew-installed Python.
+1. Install Python 3.11 or above from [python.org](https://www.python.org/), not a Homebrew-installed Python.
+GG has been tested in versions up to 3.13.
 
 2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
 previous version of GG2).
@@ -36,6 +37,9 @@ previous version of GG2).
     c. Type `guiguts` or `~/.local/bin/guiguts` to run GG2.
 
 ### Linux
+
+Python needs to be version 3.11 or above, and GG has been tested in
+versions up to 3.13.
 
 1. `apt-get update`
 2. `apt-get install -y python3 python3-pip python3-tk idle-python3.12`
@@ -169,7 +173,8 @@ environment, either exit the shell or run `deactivate`.
 
 ##### Single (system-wide) version
 
-1. Download Python 3.11 from [python.org](https://www.python.org/).
+1. Download Python 3.11 or above from [python.org](https://www.python.org/). GG has been
+   tested in versions up to 3.13.
 2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python311`
 3. Ensure this dir is in PATH variable
 
@@ -224,7 +229,8 @@ python you installed above.
 
 #### Install Python
 
-Install python 3.11 or later from [python.org](https://www.python.org/).
+Install python 3.11 or later from [python.org](https://www.python.org/). GG has been tested
+in versions up to 3.13.
 
 Note that installing python and python-tk using Homebrew is not supported for GG development.
 Homebrew may install Tk version 9 instead of 8.6, which GG is optimized to use.
@@ -251,7 +257,8 @@ poetry env use /usr/local/bin/python3
 ### Linux Development Setup
 
 1. Install Python, Poetry, etc.
-   * Example from Ubuntu 22.04 -- adapt to your own Linux distro
+   * Example from Ubuntu 22.04 -- adapt to your own Linux distro. Python should
+     be version 3.11 or above, and GG has been tested in versions up to 3.13.
      ```bash
      sudo apt install python3.11 python3-pip python3-tk idle-python3.11 git
      sudo python3.11 -m pip install poetry
