@@ -899,18 +899,25 @@ def mouse_bind(
         widget.bind(event, callback)
 
 
-def handle_mouse_wheel(widget: tk.Widget, event: tk.Event) -> None:
-    """Cross platform scroll wheel event."""
+def handle_mouse_wheel(widget: tk.Widget, event: tk.Event, vertical: bool) -> None:
+    """Cross platform scroll wheel event.
+
+    Args:
+        widget: Widget to be scrolled.
+        event: Event containing scroll delta.
+        vertical: True for vertical scroll, False for horizontal.
+    """
     assert isinstance(widget, (tk.Canvas, tk.Text))
+    scroll_func = widget.yview_scroll if vertical else widget.xview_scroll
     if is_windows():
-        widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        scroll_func(int(-1 * (event.delta / 120)), "units")
     elif is_mac():
-        widget.yview_scroll(int(-1 * event.delta), "units")
+        scroll_func(int(-1 * event.delta), "units")
     else:
         if event.num == 4:
-            widget.yview_scroll(-1, "units")
+            scroll_func(-1, "units")
         elif event.num == 5:
-            widget.yview_scroll(1, "units")
+            scroll_func(1, "units")
 
 
 def bind_mouse_wheel(
@@ -923,14 +930,26 @@ def bind_mouse_wheel(
         scroll_widget = bind_widget
     if is_x11():
         bind_widget.bind_all(
-            "<Button-4>", lambda evt: handle_mouse_wheel(scroll_widget, evt)
+            "<Button-4>", lambda evt: handle_mouse_wheel(scroll_widget, evt, True)
         )
         bind_widget.bind_all(
-            "<Button-5>", lambda evt: handle_mouse_wheel(scroll_widget, evt)
+            "<Button-5>", lambda evt: handle_mouse_wheel(scroll_widget, evt, True)
+        )
+        bind_widget.bind_all(
+            "<Shift-Button-4>",
+            lambda evt: handle_mouse_wheel(scroll_widget, evt, False),
+        )
+        bind_widget.bind_all(
+            "<Shift-Button-5>",
+            lambda evt: handle_mouse_wheel(scroll_widget, evt, False),
         )
     else:
         bind_widget.bind_all(
-            "<MouseWheel>", lambda evt: handle_mouse_wheel(scroll_widget, evt)
+            "<MouseWheel>", lambda evt: handle_mouse_wheel(scroll_widget, evt, True)
+        )
+        bind_widget.bind_all(
+            "<Shift-MouseWheel>",
+            lambda evt: handle_mouse_wheel(scroll_widget, evt, False),
         )
 
 
