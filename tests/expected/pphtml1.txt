@@ -35,7 +35,7 @@
 --- [pass] Classes defined but not used ---
 
 ===== Miscellaneous checks =====
---- *FAIL* Lines with "--" instead of "—" (should be 0): 98 ---
+--- [pass] Lines with "--" instead of "—" (should be 0): 0 ---
 --- *FAIL* Number of h2 tags (usually chapters; should be > 0): 0 ---
 --- [info] Number of h3 tags (usually sections): 0 ---
 --- [info] Number of tables: 0 ---
