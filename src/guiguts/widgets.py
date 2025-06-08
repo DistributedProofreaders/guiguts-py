@@ -1198,11 +1198,7 @@ class Busy:
 
 
 class ScrollableFrame(ttk.Frame):
-    """A scrollable ttk.Frame.
-
-    Consider rewriting, so it's like ScrolledReadOnlyText, i.e. self is the frame you add to,
-    and grid method is overridden for correct placement.
-    """
+    """A scrollable ttk.Frame."""
 
     def __init__(self, parent: tk.Widget, *args: Any, **kwargs: Any) -> None:
         # Create a containing frame (not visible to the user of this widget)
@@ -1244,6 +1240,15 @@ class ScrollableFrame(ttk.Frame):
         )
         self.canvas.bind("<Enter>", lambda _: bind_mouse_wheel(self.canvas))
         self.canvas.bind("<Leave>", lambda _: unbind_mouse_wheel(self.canvas))
+
+        def set_bg(_: tk.Event) -> None:
+            """Set the Canvas to have the same background as the Frame whenever
+            the theme is changed.
+            """
+            bg = themed_style().lookup("TFrame", "background")
+            self.canvas["background"] = bg
+
+        self.bind("<<ThemeChanged>>", set_bg)
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         """Delegate grid to the container."""

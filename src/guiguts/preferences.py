@@ -153,6 +153,7 @@ class PrefKey(StrEnum):
     CUSTOM_MARKUP_ATTRIBUTE_1_HISTORY = auto()
     CUSTOM_MARKUP_ATTRIBUTE_2_HISTORY = auto()
     CUSTOM_MARKUP_ATTRIBUTE_3_HISTORY = auto()
+    CUSTOMIZABLE_COLORS = auto()
 
 
 class Preferences:

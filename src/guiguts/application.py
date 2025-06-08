@@ -572,6 +572,7 @@ class Guiguts:
         preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_1_HISTORY, [])
         preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_2_HISTORY, [])
         preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_3_HISTORY, [])
+        preferences.set_default(PrefKey.CUSTOMIZABLE_COLORS, {})
 
         # Check all preferences have a default
         for pref_key in PrefKey:

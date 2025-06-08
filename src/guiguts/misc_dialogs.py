@@ -5,7 +5,7 @@ import logging
 import platform
 import sys
 import tkinter as tk
-from tkinter import ttk, font, filedialog, messagebox
+from tkinter import ttk, font, filedialog, messagebox, colorchooser
 from typing import Literal, Optional, Callable
 import unicodedata
 
@@ -18,6 +18,8 @@ from guiguts.maintext import (
     menubar_metadata,
     EntryMetadata,
     KeyboardShortcutsDict,
+    StyleDict,
+    ColorKey,
 )
 
 from guiguts.mainwindow import ScrolledReadOnlyText
@@ -42,6 +44,7 @@ from guiguts.widgets import (
     Busy,
     TreeviewList,
     ScrollableFrame,
+    themed_style,
 )
 
 logger = logging.getLogger(__package__)
@@ -57,8 +60,9 @@ class PreferencesDialog(ToplevelDialog):
 
     def __init__(self) -> None:
         """Initialize preferences dialog."""
-        super().__init__("Settings", resize_x=False, resize_y=False)
-        self.minsize(250, 10)
+        super().__init__("Settings")
+
+        self.minsize(500, 10)
 
         # Set up tab notebook
         notebook = Notebook(self.top_frame)
@@ -170,6 +174,19 @@ class PreferencesDialog(ToplevelDialog):
             text="Visual",
             variable=PersistentBoolean(PrefKey.BELL_VISUAL),
         ).grid(column=2, row=0, sticky="NEW")
+
+        # Colors
+        c_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(c_frame, text="Colors")
+        c_frame.columnconfigure(0, weight=1)
+        c_frame.rowconfigure(0, weight=1)
+        self.colors_frame = ScrollableFrame(c_frame)
+        self.colors_frame.grid(row=0, column=0)
+        self.color_settings = maintext().get_colors()
+        self.default_colors = maintext().get_default_colors()
+
+        self.create_color_rows()
+        self.bind("<<ThemeChanged>>", lambda _: self.create_color_rows())
 
         # Image Viewer
         image_viewer_frame = ttk.Frame(notebook, padding=10)
@@ -429,6 +446,177 @@ class PreferencesDialog(ToplevelDialog):
             "Enable Auto Save", PrefKey.AUTOSAVE_ENABLED
         )
         menubar_metadata().add_checkbutton_orphan("Tooltips", PrefKey.SHOW_TOOLTIPS)
+
+    def create_color_rows(self) -> None:
+        """Create row of widgets for each configurable color.
+        If widgets already exist, delete them first.
+        """
+        sample_tag_name = "sample_tag"
+        dark_theme = themed_style().is_dark_theme()
+
+        for widget in self.colors_frame.winfo_children():
+            widget.destroy()
+
+        for row, key in enumerate(self.color_settings):
+            style_dict = (
+                self.color_settings[key].dark
+                if dark_theme
+                else self.color_settings[key].light
+            )
+            default_dict = (
+                self.default_colors[key].dark
+                if dark_theme
+                else self.default_colors[key].light
+            )
+
+            # Description sample as a Text widget
+            desc = tk.Text(
+                self.colors_frame,
+                background=maintext()["background"],
+                font=maintext()["font"],
+                width=20,
+                height=1,
+                relief="flat",
+                bd=0,
+                exportselection=False,
+                highlightthickness=0,
+                padx=0,
+                pady=0,
+            )
+            desc.insert("1.0", self.color_settings[key].description)
+            desc.tag_configure(sample_tag_name, style_dict)
+            desc.tag_add(sample_tag_name, "1.0", "1.end")
+            desc.config(state="disabled")
+            desc.grid(row=row, column=0, sticky="w", padx=5, pady=2)
+            ToolTip(desc, "Left-click to set text color; right click to set background")
+
+            # Colorpicker bindings
+            def click_callback(
+                attr: str,
+                key: ColorKey = key,
+                widget: tk.Text = desc,
+                style_dict: StyleDict = style_dict,
+            ) -> None:
+                current = str(style_dict.get(attr, "#000000"))
+                color = colorchooser.askcolor(color=current, parent=self)[1]
+                if color:
+                    style_dict[attr] = color
+                    widget.config(state="normal")
+                    widget.tag_configure(sample_tag_name, style_dict)
+                    widget.config(state="disabled")
+                    self.update_color(key)
+
+            desc.bind(
+                "<Button-1>",
+                lambda _, cb=click_callback: cb("foreground"),  # type:ignore[misc]
+            )
+            desc.bind(
+                "<Button-3>",
+                lambda _, cb=click_callback: cb("background"),  # type:ignore[misc]
+            )
+
+            # Underline toggle
+            underline_var = tk.BooleanVar(
+                value=bool(style_dict.get("underline", False))
+            )
+
+            def underline_callback(
+                key: ColorKey = key,
+                widget: tk.Text = desc,
+                style_dict: StyleDict = style_dict,
+                var: tk.BooleanVar = underline_var,
+            ) -> None:
+                style_dict["underline"] = "1" if var.get() else "0"
+                widget.config(state="normal")
+                widget.tag_configure(sample_tag_name, style_dict)
+                widget.config(state="disabled")
+                self.update_color(key)
+
+            default_font_name = themed_style().lookup("TCheckbutton", "font")
+            if not default_font_name:
+                default_font_name = "TkDefaultFont"
+            underline_font = font.Font(name=default_font_name, exists=True).copy()
+            underline_font.configure(underline=True)
+            themed_style().configure("Underline.TCheckbutton", font=underline_font)
+
+            underline_btn = ttk.Checkbutton(
+                self.colors_frame,
+                text="U",
+                command=underline_callback,
+                variable=underline_var,
+                state=tk.ACTIVE if self.color_settings[key].tag else tk.DISABLED,
+                style="Underline.TCheckbutton",
+            )
+            underline_btn.grid(row=row, column=3, padx=2)
+            ToolTip(underline_btn, "Underline text")
+
+            # Border toggle
+            border_var = tk.BooleanVar(value=bool(style_dict.get("borderwidth", 0)))
+
+            def border_callback(
+                key: ColorKey = key,
+                widget: tk.Text = desc,
+                style_dict: StyleDict = style_dict,
+                var: tk.BooleanVar = border_var,
+            ) -> None:
+                border = var.get()
+                style_dict["borderwidth"] = "2" if border else "0"
+                style_dict["relief"] = tk.RIDGE if border else tk.FLAT
+                widget.config(state="normal")
+                widget.tag_configure(sample_tag_name, style_dict)
+                widget.config(state="disabled")
+                self.update_color(key)
+
+            border_btn = ttk.Checkbutton(
+                self.colors_frame,
+                text="⬜",
+                command=border_callback,
+                variable=border_var,
+                state=tk.ACTIVE if self.color_settings[key].tag else tk.DISABLED,
+            )
+            border_btn.grid(row=row, column=4, padx=2)
+            ToolTip(border_btn, "Add border to text")
+
+            # Reset button
+            def reset_callback(
+                key: ColorKey = key,
+                widget: tk.Text = desc,
+                default_dict: StyleDict = default_dict,
+                style_dict: StyleDict = style_dict,
+                underline_var: tk.BooleanVar = underline_var,
+                border_var: tk.BooleanVar = border_var,
+            ) -> None:
+                style_dict.clear()
+                style_dict.update(default_dict)
+                if self.color_settings[key].tag:
+                    if "underline" not in default_dict:
+                        style_dict["underline"] = False
+                    if "borderwidth" not in default_dict:
+                        style_dict["borderwidth"] = 0
+                    if "relief" not in default_dict:
+                        style_dict["relief"] = tk.FLAT
+                    underline_var.set(bool(style_dict["underline"]))
+                    border_var.set(bool(style_dict["borderwidth"]))
+
+                widget.config(state="normal")
+                widget.tag_configure(sample_tag_name, style_dict)
+                widget.config(state="disabled")
+                self.update_color(key)
+
+            reset_btn = ttk.Button(
+                self.colors_frame, text="Reset", command=reset_callback
+            )
+            reset_btn.grid(row=row, column=5, padx=2)
+            ToolTip(reset_btn, "Restore default appearnce")
+
+    def update_color(self, color_key: ColorKey) -> None:
+        """Update everywhere that needs to know about color change.
+
+        Args:
+            color_key: Key of color that has been changed.
+        """
+        self.color_settings[color_key].update_func(color_key)
+        maintext().save_colors_to_prefs()
 
 
 class HelpAboutDialog(ToplevelDialog):

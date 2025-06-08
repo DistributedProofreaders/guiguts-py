@@ -485,12 +485,24 @@ HTML_TAG_TAGS = {
     "wbr": HighlightTag.HTML_TAG_GOOD,
 }
 
+StyleDict = dict[str, str | int | bool]
+
 
 class ColorKey(StrEnum):
     """Enum class to store color keys."""
 
     MAIN_DEFAULT = auto()
     MAIN_HI_CONTRAST = auto()
+    SEARCH = auto()
+
+
+def update_maintext_tag(key: ColorKey) -> None:
+    """Update maintext tag with new settings."""
+    c_color = maintext().colors[key]
+    assert c_color.tag
+    maintext().tag_configure(
+        c_color.tag, c_color.dark if themed_style().is_dark_theme() else c_color.light
+    )
 
 
 class ConfigurableColor:
@@ -500,9 +512,9 @@ class ConfigurableColor:
         self,
         tag_name: str,
         description: str,
-        dark: dict[str, str],
-        light: dict[str, str],
-        update_func: Callable,
+        dark: StyleDict,
+        light: StyleDict,
+        update_func: Optional[Callable[[ColorKey], None]] = None,
     ) -> None:
         """Initialize a configurable color.
 
@@ -511,13 +523,15 @@ class ConfigurableColor:
             description: Description of color's use for customization dialog.
             dark: Dictionary of Tk settings for this color in dark theme.
             light: Dictionary of Tk settings for this color in light theme.
-            update_func: Function to be called if color is updated.
+            update_func: Function to be called if color is updated. Defaults to
+                updating tag in maintext.
         """
         self.tag = tag_name
         self.description = description
         self.light = light
         self.dark = dark
-        self.update_func = update_func
+
+        self.update_func = update_maintext_tag if update_func is None else update_func
 
 
 ConfigurableColors = dict[ColorKey, ConfigurableColor]
@@ -598,18 +612,8 @@ class HighlightColors:
     }
 
     SEARCH = {
-        "Light": {
-            "background": "#f0f0f0",
-            "foreground": "#a8a8a8",
-            "relief": "ridge",
-            "borderwidth": "2",
-        },
-        "Dark": {
-            "background": "#0f0f0f",
-            "foreground": "#8a8a8a",
-            "relief": "ridge",
-            "borderwidth": "2",
-        },
+        "Light": {"foreground": "black"},
+        "Dark": {"foreground": "white"},
     }
 
     PROOFERCOMMENT = {
@@ -803,9 +807,10 @@ class MainText(tk.Text):
         # Register this widget to have its focus tracked for inserting special characters
         register_focus_widget(self)
 
+        # Set up colors by initializing defaults, then loading from Prefs
         self.default_colors = self.get_default_colors()
-
         self.colors = copy.deepcopy(self.default_colors)
+        self.update_colors_from_prefs()
 
         # Configure tags
         self.tag_configure(PAGE_FLAG_TAG, background="gold", foreground="black")
@@ -1145,8 +1150,16 @@ class MainText(tk.Text):
             contrast_key = ColorKey.MAIN_DEFAULT
         if themed_style().is_dark_theme():
             widget.configure(self.colors[contrast_key].dark)
+            widget.configure(
+                insertbackground=str(self.colors[contrast_key].dark["foreground"]),
+                highlightbackground=str(self.colors[contrast_key].dark["background"]),
+            )
         else:
             widget.configure(self.colors[contrast_key].light)
+            widget.configure(
+                insertbackground=str(self.colors[contrast_key].light["foreground"]),
+                highlightbackground=str(self.colors[contrast_key].light["foreground"]),
+            )
 
     def focus_widget(self) -> tk.Text:
         """Return whether main text or peer last had focus.
@@ -3997,15 +4010,42 @@ class MainText(tk.Text):
             if order_needs_update:
                 self.tag_lower(tag)
 
+        update_maintext_tag(ColorKey.SEARCH)
+
         # Position the "sel" tag specially. This must be done for both widgets
         # since they're independent.
         self.tag_lower("sel", HighlightTag.QUOTEMARK)
         self.peer.tag_lower("sel", HighlightTag.QUOTEMARK)
 
-    def get_default_colors(self) -> ConfigurableColors:
-        """Return conigurable color defaults."""
+    def save_colors_to_prefs(self) -> None:
+        """Save current color settings to Prefs file."""
+        colors_dict = {}
+        for color_key, color in self.colors.items():
+            colors_dict[color_key] = {
+                "dark": color.dark,
+                "light": color.light,
+            }
+        preferences.set(PrefKey.CUSTOMIZABLE_COLORS, colors_dict)
 
-        def update_maintext_colors() -> None:
+    def update_colors_from_prefs(self) -> None:
+        """Update current color settings from Prefs file."""
+        colors_dict: dict[ColorKey, dict[str, StyleDict]] = preferences.get(
+            PrefKey.CUSTOMIZABLE_COLORS
+        )
+        for color_key, color in colors_dict.items():
+            if color_key not in self.colors:
+                continue
+            self.colors[color_key].dark = color["dark"]
+            self.colors[color_key].light = color["light"]
+
+    def get_colors(self) -> ConfigurableColors:
+        """Return configurable colors."""
+        return self.colors
+
+    def get_default_colors(self) -> ConfigurableColors:
+        """Return configurable color defaults."""
+
+        def update_maintext_colors(_: ColorKey) -> None:
             """Update default text foreground & background for maintext & peer."""
             for widget in self, self.peer:
                 self.theme_set_tk_widget_colors(widget)
@@ -4017,14 +4057,10 @@ class MainText(tk.Text):
                 {
                     "background": "#061626",
                     "foreground": "#DADADA",
-                    "insertbackground": "#DADADA",
-                    "highlightbackground": "#061626",
                 },
                 {
                     "background": "#F1F1F1",
                     "foreground": "#4A3F31",
-                    "insertbackground": "#4A3F31",
-                    "highlightbackground": "#4A3F31",
                 },
                 update_maintext_colors,
             ),
@@ -4034,16 +4070,28 @@ class MainText(tk.Text):
                 {
                     "background": "#000000",
                     "foreground": "#FFFFFF",
-                    "insertbackground": "#FFFFFF",
-                    "highlightbackground": "#000000",
                 },
                 {
                     "background": "#FFFFFF",
                     "foreground": "#000000",
-                    "insertbackground": "#000000",
-                    "highlightbackground": "#000000",
                 },
                 update_maintext_colors,
+            ),
+            ColorKey.SEARCH: ConfigurableColor(
+                HighlightTag.SEARCH,
+                "Search match highlight",
+                {
+                    "background": "#0f0f0f",
+                    "foreground": "#8a8a8a",
+                    "relief": tk.RIDGE,
+                    "borderwidth": 2,
+                },
+                {
+                    "background": "#f0f0f0",
+                    "foreground": "#606060",
+                    "relief": tk.RIDGE,
+                    "borderwidth": 2,
+                },
             ),
         }
 
