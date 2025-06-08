@@ -4042,8 +4042,8 @@ class MainText(tk.Text):
         # choosing some arbitrary boundaries. Enforce a minimum and maximum
         # value, otherwise we start at about 5 seconds and get to ridiculous
         # minimums.
-        scroll_delay_fastest = 100
-        scroll_delay_slowest = 500
+        scroll_delay_fastest = 50
+        scroll_delay_slowest = 150
         scroll_delay = max(
             scroll_delay_slowest,
             min(scroll_delay_fastest, (5000 / out_of_bounds_distance)),
@@ -4055,13 +4055,13 @@ class MainText(tk.Text):
 
         # Scroll in the appropriate direction (x or y).
         if widget_y < 0:
-            event.widget.yview_scroll(-1, "units")
+            event.widget.yview_scroll(-5, "pixels")
         elif widget_y > height:
-            event.widget.yview_scroll(1, "units")
+            event.widget.yview_scroll(5, "pixels")
         elif widget_x < 0:
-            event.widget.xview_scroll(-1, "units")
+            event.widget.xview_scroll(-5, "pixels")
         elif widget_x > width:
-            event.widget.xview_scroll(1, "units")
+            event.widget.xview_scroll(5, "pixels")
 
         self._on_change()
         self.after(int(scroll_delay), lambda: self._autoscroll_callback(event))
