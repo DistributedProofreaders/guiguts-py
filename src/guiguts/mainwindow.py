@@ -1088,17 +1088,18 @@ class MainImage(tk.Frame):
 
     def wheel_scroll(self, evt: tk.Event) -> None:
         """Scroll image up/down using mouse wheel."""
+        # This event seems to lock up the UI in Linux; unsupported.
+        if is_x11():
+            return
+
+        if is_mac() and tk.TkVersion < 8.7:
+            scroll_amount = int(-1 * evt.delta)
+        else:
+            scroll_amount = int(-1 * (evt.delta / 120))
         if evt.state == 0:
-            if is_mac() and tk.TkVersion < 8.7:
-                self.canvas.yview_scroll(int(-1 * evt.delta), "units")
-            else:
-                self.canvas.yview_scroll(int(-1 * (evt.delta / 120)), "units")
+            self.canvas.yview_scroll(scroll_amount, "units")
         if evt.state == 1:
-            if is_mac() and tk.TkVersion < 8.7:
-                self.canvas.xview_scroll(int(-1 * evt.delta), "units")
-            else:
-                self.canvas.xview_scroll(int(-1 * (evt.delta / 120)), "units")
-        self.show_image()
+            self.canvas.xview_scroll(scroll_amount, "units")
 
     def touchpad_scroll(self, evt: tk.Event) -> None:
         """Scroll image using touchpad."""
