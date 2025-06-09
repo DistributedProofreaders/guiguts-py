@@ -1088,11 +1088,9 @@ class MainImage(tk.Frame):
 
     def wheel_scroll(self, evt: tk.Event) -> None:
         """Scroll image up/down using mouse wheel."""
-        # This event seems to lock up the UI in Linux; unsupported.
         if is_x11():
-            return
-
-        if is_mac() and tk.TkVersion < 8.7:
+            scroll_amount = -1 if evt.num == 4 else 1
+        elif is_mac() and tk.TkVersion < 8.7:
             scroll_amount = int(-1 * evt.delta)
         else:
             scroll_amount = int(-1 * (evt.delta / 120))
