@@ -1323,7 +1323,7 @@ class MainImage(tk.Frame):
         elif self.proj_filename != "":
             initial_dir = os.path.dirname(self.proj_filename)
         else:
-            return
+            initial_dir = None
         if filename := filedialog.askopenfilename(
             initialdir=initial_dir,
             title="Choose Image File",
