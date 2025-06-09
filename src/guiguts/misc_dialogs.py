@@ -62,8 +62,6 @@ class PreferencesDialog(ToplevelDialog):
         """Initialize preferences dialog."""
         super().__init__("Settings")
 
-        self.minsize(500, 10)
-
         # Set up tab notebook
         notebook = Notebook(self.top_frame)
         notebook.grid(column=0, row=0, sticky="NSEW")
@@ -483,12 +481,15 @@ class PreferencesDialog(ToplevelDialog):
                 padx=0,
                 pady=0,
             )
+            desc.grid(row=row, column=0, sticky="NSEW", padx=2, pady=2)
             desc.insert("1.0", self.color_settings[key].description)
             desc.tag_configure(sample_tag_name, style_dict)
             desc.tag_add(sample_tag_name, "1.0", "1.end")
             desc.config(state="disabled")
-            desc.grid(row=row, column=0, sticky="w", padx=5, pady=2)
-            ToolTip(desc, "Left-click to set text color; right click to set background")
+            ToolTip(
+                desc,
+                "Left-click to set text color. Right-click or Shift-left-click to set background",
+            )
 
             # Colorpicker bindings
             def click_callback(
@@ -512,6 +513,10 @@ class PreferencesDialog(ToplevelDialog):
             )
             desc.bind(
                 "<Button-3>",
+                lambda _, cb=click_callback: cb("background"),  # type:ignore[misc]
+            )
+            desc.bind(
+                "<Shift-Button-1>",
                 lambda _, cb=click_callback: cb("background"),  # type:ignore[misc]
             )
 

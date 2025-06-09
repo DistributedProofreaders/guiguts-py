@@ -493,6 +493,7 @@ class ColorKey(StrEnum):
 
     MAIN_DEFAULT = auto()
     MAIN_HI_CONTRAST = auto()
+    MAIN_SELECT = auto()
     SEARCH = auto()
 
 
@@ -815,10 +816,6 @@ class MainText(tk.Text):
         # Configure tags
         self.tag_configure(PAGE_FLAG_TAG, background="gold", foreground="black")
         self.tag_configure(BOOKMARK_TAG, background="lime", foreground="black")
-
-        # Ensure text still shows selected when focus is in another dialog
-        if not is_mac() and "inactiveselect" not in kwargs:
-            self["inactiveselect"] = "#b0b0b0"
 
         self.current_sel_ranges: list[IndexRange] = []
         self.prev_sel_ranges: list[IndexRange] = []
@@ -1149,17 +1146,22 @@ class MainText(tk.Text):
         else:
             contrast_key = ColorKey.MAIN_DEFAULT
         if themed_style().is_dark_theme():
-            widget.configure(self.colors[contrast_key].dark)
-            widget.configure(
-                insertbackground=str(self.colors[contrast_key].dark["foreground"]),
-                highlightbackground=str(self.colors[contrast_key].dark["background"]),
-            )
+            style_dict = self.colors[contrast_key].dark
+            sel_dict = self.colors[ColorKey.MAIN_SELECT].dark
         else:
-            widget.configure(self.colors[contrast_key].light)
-            widget.configure(
-                insertbackground=str(self.colors[contrast_key].light["foreground"]),
-                highlightbackground=str(self.colors[contrast_key].light["foreground"]),
-            )
+            style_dict = self.colors[contrast_key].light
+            sel_dict = self.colors[ColorKey.MAIN_SELECT].light
+        widget.configure(style_dict)
+        widget.configure(
+            insertbackground=str(style_dict["background"]),
+            highlightbackground=str(style_dict["foreground"]),
+        )
+        widget.configure(
+            selectbackground=str(sel_dict["background"]),
+            selectforeground=str(sel_dict["foreground"]),
+        )
+        # Ensure text still shows selected when focus is in another dialog
+        self["inactiveselectbackground"] = self["selectbackground"]
 
     def focus_widget(self) -> tk.Text:
         """Return whether main text or peer last had focus.
@@ -4050,6 +4052,19 @@ class MainText(tk.Text):
             for widget in self, self.peer:
                 self.theme_set_tk_widget_colors(widget)
 
+        # Temporarily create a Text to get the default select bg & fg colors
+        # which may be a name like "SystemHighlightText" so convert it to rgb
+        temp_text = tk.Text()
+        r, g, b = (
+            value // 256 for value in temp_text.winfo_rgb(temp_text["selectbackground"])
+        )
+        sel_bg = f"#{r:02x}{g:02x}{b:02x}"
+        r, g, b = (
+            value // 256 for value in temp_text.winfo_rgb(temp_text["selectforeground"])
+        )
+        sel_fg = f"#{r:02x}{g:02x}{b:02x}"
+        temp_text.destroy()
+
         return {
             ColorKey.MAIN_DEFAULT: ConfigurableColor(
                 "",
@@ -4077,9 +4092,22 @@ class MainText(tk.Text):
                 },
                 update_maintext_colors,
             ),
+            ColorKey.MAIN_SELECT: ConfigurableColor(
+                "",
+                "Selected text",
+                {
+                    "background": sel_bg,
+                    "foreground": sel_fg,
+                },
+                {
+                    "background": sel_bg,
+                    "foreground": sel_fg,
+                },
+                update_maintext_colors,
+            ),
             ColorKey.SEARCH: ConfigurableColor(
                 HighlightTag.SEARCH,
-                "Search match highlight",
+                "Search highlight",
                 {
                     "background": "#0f0f0f",
                     "foreground": "#8a8a8a",
