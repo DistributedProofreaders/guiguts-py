@@ -986,10 +986,14 @@ class PPhtmlChecker:
 
     def misc_counts(self) -> None:
         """Miscellaneous counting checks"""
-        # "--" emdashes, ignoring HTML comments (typically from ppgen)
+        # "--" emdashes, ignoring CSS style section and HTML comments (typically from ppgen)
         count = 0
+        in_html = False
         for line in self.file_lines:
-            if "<!--" not in line and "-->" not in line and "--" in line:
+            if "</style>" in line:
+                in_html = True
+                continue
+            if in_html and "<!--" not in line and "-->" not in line and "--" in line:
                 count += 1
         self.output_subsection_errors(
             count == 0,
