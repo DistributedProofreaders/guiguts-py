@@ -499,7 +499,9 @@ class PreferencesDialog(ToplevelDialog):
                 style_dict: StyleDict = style_dict,
             ) -> None:
                 current = str(style_dict.get(attr, "#000000"))
-                color = colorchooser.askcolor(color=current, parent=self)[1]
+                color = colorchooser.askcolor(
+                    color=current, parent=self, title=f"Choose {attr} color"
+                )[1]
                 if color:
                     style_dict[attr] = color
                     widget.config(state="normal")
@@ -507,16 +509,19 @@ class PreferencesDialog(ToplevelDialog):
                     widget.config(state="disabled")
                     self.update_color(key)
 
-            desc.bind(
-                "<Button-1>",
+            mouse_bind(
+                desc,
+                "1",
                 lambda _, cb=click_callback: cb("foreground"),  # type:ignore[misc]
             )
-            desc.bind(
-                "<Button-3>",
+            mouse_bind(
+                desc,
+                "3",
                 lambda _, cb=click_callback: cb("background"),  # type:ignore[misc]
             )
-            desc.bind(
-                "<Shift-Button-1>",
+            mouse_bind(
+                desc,
+                "Shift+1",
                 lambda _, cb=click_callback: cb("background"),  # type:ignore[misc]
             )
 
