@@ -1616,10 +1616,15 @@ class HTMLAutoTableDialog(ToplevelDialog):
         sel_ranges = maintext().selected_ranges()
         if not sel_ranges:
             return
+        # Extend selection range to cover full lines
+        sel_ranges[0].start.col = 0
+        if sel_ranges[-1].end.col != 0:
+            sel_ranges[-1].end.row += 1
+            sel_ranges[-1].end.col = 0
         table_text = (
             maintext()
-            .get(sel_ranges[0].start.index(), sel_ranges[0].end.index())
-            .rstrip(" ")
+            .get(sel_ranges[0].start.index(), sel_ranges[-1].end.index())
+            .rstrip()
         )
         if not table_text:
             return
@@ -1651,7 +1656,7 @@ class HTMLAutoTableDialog(ToplevelDialog):
         # Work backwards through table rows to avoid affecting later indexes into file,
         # since typically replacement text will consist of more lines than origina.
         # Also work a row at a time to avoid moving page markers.
-        end_linenum = sel_ranges[0].end.row
+        end_linenum = sel_ranges[-1].end.row
         maintext().insert(f"{end_linenum}.0", "</table>\n")
         for rev_row_num, text_row in enumerate(reversed(text_rows)):
             n_lines = text_row.count("\n") + 1  # No. of lines in original table row
