@@ -141,7 +141,7 @@ class SearchDialog(ToplevelDialog):
         self.count_btn.grid(row=1, column=4, padx=PADX, pady=PADY, sticky="NSEW")
 
         # Search
-        style = ttk.Style()
+        style = themed_style()
         new_col = "#ff8080" if themed_style().is_dark_theme() else "#e60000"
         style.configure("BadRegex.TCombobox", foreground=new_col)
 

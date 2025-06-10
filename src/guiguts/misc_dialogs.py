@@ -184,7 +184,12 @@ class PreferencesDialog(ToplevelDialog):
         self.default_colors = maintext().get_default_colors()
 
         self.create_color_rows()
-        self.bind("<<ThemeChanged>>", lambda _: self.create_color_rows())
+        self.theme_name = themed_style().theme_use()
+        # Give main text a chance to update first
+        self.bind(
+            "<<ThemeChanged>>",
+            lambda _: self.after_idle(lambda: self.create_color_rows(refresh=True)),
+        )
 
         # Image Viewer
         image_viewer_frame = ttk.Frame(notebook, padding=10)
@@ -445,10 +450,20 @@ class PreferencesDialog(ToplevelDialog):
         )
         menubar_metadata().add_checkbutton_orphan("Tooltips", PrefKey.SHOW_TOOLTIPS)
 
-    def create_color_rows(self) -> None:
+    def create_color_rows(self, refresh: bool = False) -> None:
         """Create row of widgets for each configurable color.
         If widgets already exist, delete them first.
+
+        Args:
+            refresh: True if may want to destroy and recreate widgets because theme
+                has changed.
         """
+        # Don't refresh if theme change is not a change of name
+        if refresh:
+            if themed_style().theme_use() == self.theme_name:
+                return
+            self.theme_name = themed_style().theme_use()
+
         sample_tag_name = "sample_tag"
         dark_theme = themed_style().is_dark_theme()
 
@@ -483,6 +498,12 @@ class PreferencesDialog(ToplevelDialog):
             )
             desc.grid(row=row, column=0, sticky="NSEW", padx=2, pady=2)
             desc.insert("1.0", self.color_settings[key].description)
+            desc.bind(
+                "<Enter>", lambda _, desc=desc: desc.see("1.0")  # type:ignore[misc]
+            )
+            desc.bind(
+                "<Leave>", lambda _, desc=desc: desc.see("1.0")  # type:ignore[misc]
+            )
             desc.tag_configure(sample_tag_name, style_dict)
             desc.tag_add(sample_tag_name, "1.0", "1.end")
             desc.config(state="disabled")
@@ -1901,7 +1922,7 @@ class UnicodeBlockDialog(ToplevelDialog):
         )
 
         self.button_list: list[ttk.Label] = []
-        style = ttk.Style()
+        style = themed_style()
         style.configure("unicodedialog.TLabel", font=maintext().font)
         self.block_selected(update_pref=False)
 

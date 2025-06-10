@@ -559,7 +559,7 @@ class PathnameCombobox(Combobox):
         font = tk_font.nametofont(str(self.cget("font")))
         width = max(0, font.measure(long.strip() + "pad") - self.winfo_width())
 
-        ttk.Style().configure("TCombobox", postoffset=(0, 0, width, 0))
+        themed_style().configure("TCombobox", postoffset=(0, 0, width, 0))
         self.xview_moveto(1.0)
 
     def update_callback(self, value: str) -> None:

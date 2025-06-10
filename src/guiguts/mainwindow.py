@@ -1819,7 +1819,7 @@ def do_sound_bell() -> None:
         bell_button = statusbar().fields["rowcol"]
         # Belt & suspenders: uses the "disabled" state of button in temporary style,
         # but also restores setting in temporary style, and restores default style.
-        style = ttk.Style()
+        style = themed_style()
         # Set temporary style's disabled bg to red
         style.map("W.TButton", foreground=[("disabled", "red")])
         # Save current disabled bg default for buttons
