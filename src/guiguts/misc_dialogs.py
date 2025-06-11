@@ -487,7 +487,7 @@ class PreferencesDialog(ToplevelDialog):
                 self.colors_frame,
                 background=maintext()["background"],
                 font=maintext()["font"],
-                width=20,
+                width=25,
                 height=1,
                 relief="flat",
                 bd=0,

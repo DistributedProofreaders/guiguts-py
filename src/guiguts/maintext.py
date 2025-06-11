@@ -493,7 +493,7 @@ class ColorKey(StrEnum):
     MAIN_DEFAULT = auto()
     MAIN_HI_CONTRAST = auto()
     MAIN_SELECT = auto()
-    SEARCH = auto()
+    MAIN_SELECT_INACTIVE = auto()
     CHAR_STR_REGEX = auto()
     QUOTEMARK = auto()
     SPOTLIGHT = auto()
@@ -509,6 +509,7 @@ class ColorKey(StrEnum):
     ALIGNCOL = auto()
     CURSOR_LINE_ACTIVE = auto()
     CURSOR_LINE_INACTIVE = auto()
+    SEARCH = auto()
     PROOFERCOMMENT = auto()
     HTML_TAG_BAD = auto()
     HTML_TAG_GOOD = auto()
@@ -736,7 +737,6 @@ class MainText(tk.Text):
             highlightthickness=self["highlightthickness"],
             spacing1=self["spacing1"],
             insertwidth=self["insertwidth"],
-            inactiveselectbackground=self["inactiveselectbackground"],
             wrap=self["wrap"],
         )
         self.peer.bind(
@@ -1057,20 +1057,19 @@ class MainText(tk.Text):
         if themed_style().is_dark_theme():
             style_dict = self.colors[contrast_key].dark
             sel_dict = self.colors[ColorKey.MAIN_SELECT].dark
+            in_sel_dict = self.colors[ColorKey.MAIN_SELECT_INACTIVE].dark
         else:
             style_dict = self.colors[contrast_key].light
             sel_dict = self.colors[ColorKey.MAIN_SELECT].light
+            in_sel_dict = self.colors[ColorKey.MAIN_SELECT_INACTIVE].light
         widget.configure(style_dict)
         widget.configure(
-            insertbackground=str(style_dict["background"]),
+            insertbackground=str(style_dict["foreground"]),
             highlightbackground=str(style_dict["foreground"]),
-        )
-        widget.configure(
             selectbackground=str(sel_dict["background"]),
             selectforeground=str(sel_dict["foreground"]),
+            inactiveselectbackground=str(in_sel_dict["background"]),
         )
-        # Ensure text still shows selected when focus is in another dialog
-        self["inactiveselectbackground"] = self["selectbackground"]
 
     def focus_widget(self) -> tk.Text:
         """Return whether main text or peer last had focus.
@@ -3980,14 +3979,26 @@ class MainText(tk.Text):
             ColorKey.CURSOR_LINE_ACTIVE: ConfigurableColor(
                 HighlightTag.CURSOR_LINE_ACTIVE,
                 "Active cursor line",
-                {"background": "#122E57"},
-                {"background": "#E8E1DC"},
+                {
+                    "background": "#122E57",
+                    "foreground": "#DADADA",
+                },
+                {
+                    "background": "#E8E1DC",
+                    "foreground": "#4A3F31",
+                },
             ),
             ColorKey.CURSOR_LINE_INACTIVE: ConfigurableColor(
                 HighlightTag.CURSOR_LINE_INACTIVE,
                 "Inactive cursor line",
-                {"background": "#122232"},
-                {"background": "#E8E8E8"},
+                {
+                    "background": "#122232",
+                    "foreground": "#DADADA",
+                },
+                {
+                    "background": "#E8E8E8",
+                    "foreground": "#4A3F31",
+                },
             ),
             ColorKey.MAIN_SELECT: ConfigurableColor(
                 "",
@@ -3998,6 +4009,19 @@ class MainText(tk.Text):
                 },
                 {
                     "background": sel_bg,
+                    "foreground": sel_fg,
+                },
+                update_maintext_colors,
+            ),
+            ColorKey.MAIN_SELECT_INACTIVE: ConfigurableColor(
+                "",
+                "Selected text",
+                {
+                    "background": "#666666",
+                    "foreground": sel_fg,
+                },
+                {
+                    "background": "#666666",
                     "foreground": sel_fg,
                 },
                 update_maintext_colors,

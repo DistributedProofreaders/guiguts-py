@@ -969,9 +969,6 @@ def unbind_mouse_wheel(bind_widget: tk.Widget) -> None:
 # Also store the default colors for a Text widget that are not
 # altered by the default themes.
 _SINGLE_STYLE = None
-_THEME_DEFAULT_TEXT_BG = ""
-_THEME_DEFAULT_TEXT_FG = ""
-_THEME_DEFAULT_TEXT_IBG = ""
 
 
 class ThemedStyle(ttk.Style):
@@ -1009,7 +1006,6 @@ def themed_style(style: Optional[ThemedStyle] = None) -> ThemedStyle:
     if style is not None:
         assert _SINGLE_STYLE is None
         _SINGLE_STYLE = style
-        _theme_init_tk_widget_colors()
     assert _SINGLE_STYLE is not None
     return _SINGLE_STYLE
 
@@ -1036,20 +1032,6 @@ def theme_name_internal_from_user(user_theme: str) -> str:
             return "awlight"
         case _:
             assert False, "Bad user theme name"
-
-
-def _theme_init_tk_widget_colors() -> None:
-    """Get default bg & fg colors of a Text (non-themed) widget,
-    by creating one, getting the colors, then destroying it.
-
-    Needs to be called before theme is changed from default theme.
-    """
-    global _THEME_DEFAULT_TEXT_BG, _THEME_DEFAULT_TEXT_FG, _THEME_DEFAULT_TEXT_IBG
-    temp_text = tk.Text()
-    _THEME_DEFAULT_TEXT_BG = temp_text.cget("background")
-    _THEME_DEFAULT_TEXT_FG = temp_text.cget("foreground")
-    _THEME_DEFAULT_TEXT_IBG = temp_text.cget("insertbackground")
-    temp_text.destroy()
 
 
 # Keep track of which Text/Entry widget of interest last had focus.
