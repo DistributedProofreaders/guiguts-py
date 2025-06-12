@@ -960,8 +960,11 @@ def unbind_mouse_wheel(bind_widget: tk.Widget) -> None:
     if is_x11():
         bind_widget.unbind_all("<Button-4>")
         bind_widget.unbind_all("<Button-5>")
+        bind_widget.unbind_all("<Shift-Button-4>")
+        bind_widget.unbind_all("<Shift-Button-5>")
     else:
         bind_widget.unbind_all("<MouseWheel>")
+        bind_widget.unbind_all("<Shift-MouseWheel>")
 
 
 # For convenient access, store the single Style instance here,
