@@ -1,5 +1,6 @@
 """Handle main text widget"""
 
+import copy
 from html.parser import HTMLParser
 import logging
 import subprocess
@@ -8,7 +9,6 @@ from tkinter import ttk, Text, messagebox
 from tkinter import font as tk_font
 from typing import Any, Callable, Optional, Literal, Generator, cast
 from enum import auto, StrEnum
-import darkdetect  # type: ignore[import-untyped]
 
 import regex as re
 
@@ -27,6 +27,7 @@ from guiguts.widgets import (
     register_focus_widget,
     grab_focus,
     bind_mouse_wheel,
+    unbind_mouse_wheel,
 )
 
 logger = logging.getLogger(__package__)
@@ -36,7 +37,6 @@ WRAP_NEXT_LINE_MARK = "WrapParagraphStart"
 INDEX_END_MARK = "IndexEnd"
 INDEX_NEXT_LINE_MARK = "IndexLineStart"
 WRAP_END_MARK = "WrapSectionEnd"
-PAGE_FLAG_TAG = "PageFlag"
 PAGEMARK_PIN = "\x7f"  # Temp char to pin page mark locations
 BOOKMARK_TAG = "Bookmark"
 PAGEMARK_PREFIX = "Pg"
@@ -156,8 +156,9 @@ class TextColumnNumbers(tk.Text):
             return
 
         # respond to font size changing
+        cur_col_tag = "curcol"
         self.configure(height=1)
-        self.tag_remove(HighlightTag.COLUMN_RULER, "1.0", tk.END)
+        self.tag_remove(cur_col_tag, "1.0", tk.END)
         self.delete("1.0", tk.END)
 
         if maintext().focus_widget() == self.textwidget:
@@ -165,9 +166,7 @@ class TextColumnNumbers(tk.Text):
         else:
             cur_bg = self.textwidget["inactiveselectbackground"]
         cur_fg = self.textwidget["selectforeground"]
-        self.tag_configure(
-            HighlightTag.COLUMN_RULER, background=cur_bg, foreground=cur_fg
-        )
+        self.tag_configure(cur_col_tag, background=cur_bg, foreground=cur_fg)
 
         # Draw the ruler to be the length of the longest line in the viewport.
         # If the longest line is narrower than the viewport, then pad it to be
@@ -180,7 +179,7 @@ class TextColumnNumbers(tk.Text):
         # Highlight the current column (unless we're at column 0)
         cur_col = IndexRowCol(self.textwidget.index(tk.INSERT)).col
         if cur_col:
-            self.tag_add(HighlightTag.COLUMN_RULER, f"1.{cur_col - 1}")
+            self.tag_add(cur_col_tag, f"1.{cur_col - 1}")
 
     def longest_line(self) -> int:
         """Look at lines in the current text widget's viewport and
@@ -238,7 +237,8 @@ class TextLineNumbers(tk.Canvas):
         # Shift-click in line number gutter to extend selection to start of clicked line
         self.bind("<Shift-Button-1>", self.shift_drag_handler_start)
         self.bind("<Shift-B1-Motion>", self.shift_drag_handler)
-        bind_mouse_wheel(self, self.textwidget)
+        self.bind("<Enter>", lambda _: bind_mouse_wheel(self, self.textwidget))
+        self.bind("<Leave>", lambda _: unbind_mouse_wheel(self))
 
     def redraw(self) -> None:
         """Redraw line numbers."""
@@ -374,6 +374,8 @@ class HighlightTag(StrEnum):
     CHAR_STR_REGEX = auto()
     QUOTEMARK = auto()
     SPOTLIGHT = auto()
+    PAGE_FLAG_TAG = auto()
+    BOOKMARK_TAG = auto()
     PAREN = auto()
     CURLY_BRACKET = auto()
     SQUARE_BRACKET = auto()
@@ -384,7 +386,6 @@ class HighlightTag(StrEnum):
     ALIGNCOL = auto()
     CURSOR_LINE_ACTIVE = auto()
     CURSOR_LINE_INACTIVE = auto()
-    COLUMN_RULER = auto()
     SEARCH = auto()
     PROOFERCOMMENT = auto()
     HTML_TAG_BAD = auto()
@@ -483,148 +484,82 @@ HTML_TAG_TAGS = {
     "wbr": HighlightTag.HTML_TAG_GOOD,
 }
 
-
-class BaseColors:
-    """Global base color settings (text panel foreground/background)."""
-
-    DEFAULT = {
-        "Light": {"background": "#F1F1F1", "foreground": "#4A3F31"},
-        "Dark": {"background": "#061626", "foreground": "#DADADA"},
-    }
-
-    # Simple: black and white.
-    HIGH_CONTRAST = {
-        "Light": {"background": "#FFFFFF", "foreground": "#000000"},
-        "Dark": {"background": "#000000", "foreground": "#FFFFFF"},
-    }
+StyleDict = dict[str, str | int | bool]
 
 
-class HighlightColors:
-    """Global highlight color settings."""
+class ColorKey(StrEnum):
+    """Enum class to store color keys."""
 
-    # Must be a definition for each available theme
-    CHAR_STR_REGEX = {
-        "Light": {"background": "#a08dfc", "foreground": "black"},
-        "Dark": {"background": "darkmagenta", "foreground": "white"},
-    }
+    MAIN_DEFAULT = auto()
+    MAIN_HI_CONTRAST = auto()
+    MAIN_SELECT = auto()
+    MAIN_SELECT_INACTIVE = auto()
+    CHAR_STR_REGEX = auto()
+    QUOTEMARK = auto()
+    SPOTLIGHT = auto()
+    PAGE_FLAG_TAG = auto()
+    BOOKMARK_TAG = auto()
+    PAREN = auto()
+    CURLY_BRACKET = auto()
+    SQUARE_BRACKET = auto()
+    STRAIGHT_DOUBLE_QUOTE = auto()
+    CURLY_DOUBLE_QUOTE = auto()
+    STRAIGHT_SINGLE_QUOTE = auto()
+    CURLY_SINGLE_QUOTE = auto()
+    ALIGNCOL = auto()
+    CURSOR_LINE_ACTIVE = auto()
+    CURSOR_LINE_INACTIVE = auto()
+    SEARCH = auto()
+    PROOFERCOMMENT = auto()
+    HTML_TAG_BAD = auto()
+    HTML_TAG_GOOD = auto()
+    HTML_TAG_DIV = auto()
+    HTML_TAG_SPAN = auto()
+    HTML_TAG_P = auto()
+    HTML_TAG_A = auto()
+    TABLE_COLUMN = auto()
+    TABLE_BODY = auto()
 
-    QUOTEMARK = {
-        "Light": {"background": "#a08dfc", "foreground": "black"},
-        "Dark": {"background": "darkmagenta", "foreground": "white"},
-    }
 
-    SPOTLIGHT = {
-        "Light": {"background": "orange", "foreground": "black"},
-        "Dark": {"background": "darkorange", "foreground": "white"},
-    }
+def update_maintext_tag(key: ColorKey) -> None:
+    """Update maintext tag with new settings."""
+    c_color = maintext().colors[key]
+    assert c_color.tag
+    maintext().tag_configure(
+        c_color.tag, c_color.dark if themed_style().is_dark_theme() else c_color.light
+    )
 
-    PAREN = {
-        "Light": {"background": "violet", "foreground": "white"},
-        "Dark": {"background": "mediumpurple", "foreground": "white"},
-    }
 
-    CURLY_BRACKET = {
-        "Light": {"background": "blue", "foreground": "white"},
-        "Dark": {"background": "blue", "foreground": "white"},
-    }
+class ConfigurableColor:
+    """Settings for a configurable color."""
 
-    SQUARE_BRACKET = {
-        "Light": {"background": "purple", "foreground": "white"},
-        "Dark": {"background": "purple", "foreground": "white"},
-    }
+    def __init__(
+        self,
+        tag_name: str,
+        description: str,
+        dark: StyleDict,
+        light: StyleDict,
+        update_func: Optional[Callable[[ColorKey], None]] = None,
+    ) -> None:
+        """Initialize a configurable color.
 
-    STRAIGHT_DOUBLE_QUOTE = {
-        "Light": {"background": "green", "foreground": "white"},
-        "Dark": {"background": "green", "foreground": "white"},
-    }
+        Args:
+            tag_name: Tag name if color defines a tag.
+            description: Description of color's use for customization dialog.
+            dark: Dictionary of Tk settings for this color in dark theme.
+            light: Dictionary of Tk settings for this color in light theme.
+            update_func: Function to be called if color is updated. Defaults to
+                updating tag in maintext.
+        """
+        self.tag = tag_name
+        self.description = description
+        self.light = light
+        self.dark = dark
 
-    CURLY_DOUBLE_QUOTE = {
-        "Light": {"background": "limegreen", "foreground": "white"},
-        "Dark": {"background": "teal", "foreground": "white"},
-    }
+        self.update_func = update_maintext_tag if update_func is None else update_func
 
-    STRAIGHT_SINGLE_QUOTE = {
-        "Light": {"background": "grey", "foreground": "white"},
-        "Dark": {"background": "sienna", "foreground": "white"},
-    }
 
-    CURLY_SINGLE_QUOTE = {
-        "Light": {"background": "dodgerblue", "foreground": "white"},
-        "Dark": {"background": "#b23e0c", "foreground": "white"},
-    }
-
-    ALIGNCOL = {
-        "Light": {"background": "greenyellow", "foreground": "black"},
-        "Dark": {"background": "green", "foreground": "white"},
-    }
-
-    CURSOR_LINE_ACTIVE = {
-        "Light": {"background": "#E8E1DC"},
-        "Dark": {"background": "#122E57"},
-    }
-
-    CURSOR_LINE_INACTIVE = {
-        "Light": {"background": "#E8E8E8"},
-        "Dark": {"background": "#122232"},
-    }
-
-    COLUMN_RULER = {
-        "Light": {"background": "#A6CDFF", "foreground": "black"},
-        "Dark": {"background": "#324F78", "foreground": "white"},
-    }
-
-    SEARCH = {
-        "Light": {
-            "background": "#f0f0f0",
-            "foreground": "#a8a8a8",
-            "relief": "ridge",
-            "borderwidth": "2",
-        },
-        "Dark": {
-            "background": "#0f0f0f",
-            "foreground": "#8a8a8a",
-            "relief": "ridge",
-            "borderwidth": "2",
-        },
-    }
-
-    PROOFERCOMMENT = {
-        "Light": {"background": "LightYellow", "foreground": "Red"},
-        "Dark": {"background": "#1C1C1C", "foreground": "DarkOrange"},
-    }
-
-    HTML_TAG_BAD = {
-        "Light": {"foreground": "red"},
-        "Dark": {"foreground": "red2"},
-    }
-    HTML_TAG_GOOD = {
-        "Light": {"foreground": "purple"},
-        "Dark": {"foreground": "purple1"},
-    }
-    HTML_TAG_DIV = {
-        "Light": {"foreground": "green"},
-        "Dark": {"foreground": "green2"},
-    }
-    HTML_TAG_SPAN = {
-        "Light": {"foreground": "blue"},
-        "Dark": {"foreground": "RoyalBlue2"},
-    }
-    HTML_TAG_P = {
-        "Light": {"foreground": "cyan3"},
-        "Dark": {"foreground": "cyan2"},
-    }
-    HTML_TAG_A = {
-        "Light": {"foreground": "gold4"},
-        "Dark": {"foreground": "gold2"},
-    }
-    TABLE_BODY = {
-        "Light": {"background": "salmon", "foreground": "black"},
-        "Dark": {"background": "salmon", "foreground": "white"},
-    }
-    TABLE_COLUMN = {
-        "Light": {"background": "lime", "foreground": "black"},
-        "Dark": {"background": "lime", "foreground": "white"},
-    }
+ConfigurableColors = dict[ColorKey, ConfigurableColor]
 
 
 class TextPeer(tk.Text):
@@ -779,13 +714,10 @@ class MainText(tk.Text):
         # Register this widget to have its focus tracked for inserting special characters
         register_focus_widget(self)
 
-        # Configure tags
-        self.tag_configure(PAGE_FLAG_TAG, background="gold", foreground="black")
-        self.tag_configure(BOOKMARK_TAG, background="lime", foreground="black")
-
-        # Ensure text still shows selected when focus is in another dialog
-        if not is_mac() and "inactiveselect" not in kwargs:
-            self["inactiveselect"] = "#b0b0b0"
+        # Set up colors by initializing defaults, then loading from Prefs
+        self.default_colors = self.get_default_colors()
+        self.colors = copy.deepcopy(self.default_colors)
+        self.update_colors_from_prefs()
 
         self.current_sel_ranges: list[IndexRange] = []
         self.prev_sel_ranges: list[IndexRange] = []
@@ -805,14 +737,12 @@ class MainText(tk.Text):
             highlightthickness=self["highlightthickness"],
             spacing1=self["spacing1"],
             insertwidth=self["insertwidth"],
-            inactiveselectbackground=self["inactiveselectbackground"],
             wrap=self["wrap"],
         )
         self.peer.bind(
             "<<ThemeChanged>>",
             lambda _event: self.theme_set_tk_widget_colors(self.peer),
         )
-        self.theme_set_tk_widget_colors(self.peer)
 
         self.peer_linenumbers = TextLineNumbers(self.peer_frame, self.peer)
         self.peer_linenumbers.grid(column=0, row=1, sticky="NSEW")
@@ -1040,9 +970,14 @@ class MainText(tk.Text):
 
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
-        self.bind_event(
-            "<<ThemeChanged>>", lambda _event: self.theme_set_tk_widget_colors(self)
-        )
+
+        def theme_change(_: tk.Event) -> None:
+            """Set widget colors and tag colors"""
+            self.theme_set_tk_widget_colors(self)
+            for color_key in self.colors.keys():
+                self.colors[color_key].update_func(color_key)
+
+        self.bind_event("<<ThemeChanged>>", theme_change)
 
         # Fix macOS text selection bug
         #
@@ -1100,8 +1035,13 @@ class MainText(tk.Text):
         # Whether we were on dark theme the last time we looked (bool)
         self.dark_theme = themed_style().is_dark_theme()
 
+        for color_key in self.colors.keys():
+            self.colors[color_key].update_func(color_key)
+
+        self.theme_set_tk_widget_colors(self.peer)
+
         # Initialize highlighting tags
-        self.after_idle(lambda: self.highlight_configure_tags(first_run=True))
+        self.after_idle(self.highlight_configure_tags)
 
     def theme_set_tk_widget_colors(self, widget: tk.Text) -> None:
         """Set bg & fg colors of a Text (non-themed) widget to match
@@ -1111,32 +1051,25 @@ class MainText(tk.Text):
             widget: The widget to be customized.
         """
         if preferences.get(PrefKey.HIGH_CONTRAST):
-            dark_bg = BaseColors.HIGH_CONTRAST["Dark"]["background"]
-            dark_fg = BaseColors.HIGH_CONTRAST["Dark"]["foreground"]
-            light_bg = BaseColors.HIGH_CONTRAST["Light"]["background"]
-            light_fg = BaseColors.HIGH_CONTRAST["Light"]["foreground"]
+            contrast_key = ColorKey.MAIN_HI_CONTRAST
         else:
-            dark_bg = BaseColors.DEFAULT["Dark"]["background"]
-            dark_fg = BaseColors.DEFAULT["Dark"]["foreground"]
-            light_bg = BaseColors.DEFAULT["Light"]["background"]
-            light_fg = BaseColors.DEFAULT["Light"]["foreground"]
-        theme_name = preferences.get(PrefKey.THEME_NAME)
-        if theme_name == "Default":
-            theme_name = darkdetect.theme()
-        if theme_name == "Dark":
-            widget.configure(
-                background=dark_bg,
-                foreground=dark_fg,
-                insertbackground=dark_fg,
-                highlightbackground=dark_bg,
-            )
-        elif theme_name == "Light":
-            widget.configure(
-                background=light_bg,
-                foreground=light_fg,
-                insertbackground=light_fg,
-                highlightbackground=light_fg,
-            )
+            contrast_key = ColorKey.MAIN_DEFAULT
+        if themed_style().is_dark_theme():
+            style_dict = self.colors[contrast_key].dark
+            sel_dict = self.colors[ColorKey.MAIN_SELECT].dark
+            in_sel_dict = self.colors[ColorKey.MAIN_SELECT_INACTIVE].dark
+        else:
+            style_dict = self.colors[contrast_key].light
+            sel_dict = self.colors[ColorKey.MAIN_SELECT].light
+            in_sel_dict = self.colors[ColorKey.MAIN_SELECT_INACTIVE].light
+        widget.configure(style_dict)
+        widget.configure(
+            insertbackground=str(style_dict["foreground"]),
+            highlightbackground=str(style_dict["foreground"]),
+            selectbackground=str(sel_dict["background"]),
+            selectforeground=str(sel_dict["foreground"]),
+            inactiveselectbackground=str(in_sel_dict["background"]),
+        )
 
     def focus_widget(self) -> tk.Text:
         """Return whether main text or peer last had focus.
@@ -1289,8 +1222,6 @@ class MainText(tk.Text):
             self.root.after_idle(self._do_linenumbers_redraw)
             self.root.after_idle(self._call_config_callbacks)
             self.root.after_idle(self.save_sash_coords)
-            # run `highlight_configure_tags` _before_ other highlighters
-            self.root.after_idle(self.highlight_configure_tags)
             self.root.after_idle(self.highlight_quotbrac)
             self.root.after_idle(self.highlight_aligncol)
             self.root.after_idle(self.highlight_cursor_line)
@@ -3928,27 +3859,8 @@ class MainText(tk.Text):
         for tag in HTML_TAG_TAGS.values():
             self.tag_remove(tag, "1.0", tk.END)
 
-    def highlight_configure_tags(self, first_run: bool = False) -> None:
-        """Configure highlight tags with colors based on the current theme.
-        On first run, will also initialize the tag stack order.
-
-        Args:
-            first_run: if True, will set the tag ordering/priority
-        """
-        colors_need_update = False
-        order_needs_update = False
-        dark_theme = themed_style().is_dark_theme()
-
-        if first_run:
-            colors_need_update = True
-            order_needs_update = True
-            self.dark_theme = dark_theme
-        elif self.dark_theme != dark_theme:
-            colors_need_update = True
-            self.dark_theme = dark_theme
-
-        if not colors_need_update:
-            return
+    def highlight_configure_tags(self) -> None:
+        """Initialize the tag stack order."""
 
         # Loop through a list of tags, in order of priority. Earlier in the list will
         # take precedence over later in the list; that is, the first entry in this
@@ -3957,40 +3869,312 @@ class MainText(tk.Text):
         #
         # ** THE ORDER MATTERS HERE **
         #
-        for tag, colors in (
-            (HighlightTag.CHAR_STR_REGEX, HighlightColors.CHAR_STR_REGEX),
-            (HighlightTag.QUOTEMARK, HighlightColors.QUOTEMARK),
-            (HighlightTag.SPOTLIGHT, HighlightColors.SPOTLIGHT),
-            (HighlightTag.PROOFERCOMMENT, HighlightColors.PROOFERCOMMENT),
-            (HighlightTag.SEARCH, HighlightColors.SEARCH),
-            (HighlightTag.PAREN, HighlightColors.PAREN),
-            (HighlightTag.CURLY_BRACKET, HighlightColors.CURLY_BRACKET),
-            (HighlightTag.SQUARE_BRACKET, HighlightColors.SQUARE_BRACKET),
-            (HighlightTag.STRAIGHT_DOUBLE_QUOTE, HighlightColors.STRAIGHT_DOUBLE_QUOTE),
-            (HighlightTag.CURLY_DOUBLE_QUOTE, HighlightColors.CURLY_DOUBLE_QUOTE),
-            (HighlightTag.STRAIGHT_SINGLE_QUOTE, HighlightColors.STRAIGHT_SINGLE_QUOTE),
-            (HighlightTag.CURLY_SINGLE_QUOTE, HighlightColors.CURLY_SINGLE_QUOTE),
-            (HighlightTag.HTML_TAG_BAD, HighlightColors.HTML_TAG_BAD),
-            (HighlightTag.HTML_TAG_GOOD, HighlightColors.HTML_TAG_GOOD),
-            (HighlightTag.HTML_TAG_DIV, HighlightColors.HTML_TAG_DIV),
-            (HighlightTag.HTML_TAG_SPAN, HighlightColors.HTML_TAG_SPAN),
-            (HighlightTag.HTML_TAG_P, HighlightColors.HTML_TAG_P),
-            (HighlightTag.HTML_TAG_A, HighlightColors.HTML_TAG_A),
-            (HighlightTag.ALIGNCOL, HighlightColors.ALIGNCOL),
-            (HighlightTag.TABLE_COLUMN, HighlightColors.TABLE_COLUMN),
-            (HighlightTag.TABLE_BODY, HighlightColors.TABLE_BODY),
-            (HighlightTag.CURSOR_LINE_ACTIVE, HighlightColors.CURSOR_LINE_ACTIVE),
-            (HighlightTag.CURSOR_LINE_INACTIVE, HighlightColors.CURSOR_LINE_INACTIVE),
+        for tag in (
+            HighlightTag.CHAR_STR_REGEX,
+            HighlightTag.QUOTEMARK,
+            HighlightTag.SPOTLIGHT,
+            HighlightTag.PROOFERCOMMENT,
+            HighlightTag.SEARCH,
+            HighlightTag.PAGE_FLAG_TAG,
+            HighlightTag.BOOKMARK_TAG,
+            HighlightTag.PAREN,
+            HighlightTag.CURLY_BRACKET,
+            HighlightTag.SQUARE_BRACKET,
+            HighlightTag.STRAIGHT_DOUBLE_QUOTE,
+            HighlightTag.CURLY_DOUBLE_QUOTE,
+            HighlightTag.STRAIGHT_SINGLE_QUOTE,
+            HighlightTag.CURLY_SINGLE_QUOTE,
+            HighlightTag.HTML_TAG_BAD,
+            HighlightTag.HTML_TAG_GOOD,
+            HighlightTag.HTML_TAG_DIV,
+            HighlightTag.HTML_TAG_SPAN,
+            HighlightTag.HTML_TAG_P,
+            HighlightTag.HTML_TAG_A,
+            HighlightTag.ALIGNCOL,
+            HighlightTag.TABLE_COLUMN,
+            HighlightTag.TABLE_BODY,
+            HighlightTag.CURSOR_LINE_ACTIVE,
+            HighlightTag.CURSOR_LINE_INACTIVE,
         ):
-            if colors:
-                self._highlight_configure_tag(tag, colors)
-            if order_needs_update:
-                self.tag_lower(tag)
+            self.tag_lower(tag)
 
         # Position the "sel" tag specially. This must be done for both widgets
         # since they're independent.
         self.tag_lower("sel", HighlightTag.QUOTEMARK)
         self.peer.tag_lower("sel", HighlightTag.QUOTEMARK)
+
+    def save_colors_to_prefs(self) -> None:
+        """Save current color settings to Prefs file."""
+        colors_dict = {}
+        for color_key, color in self.colors.items():
+            colors_dict[color_key] = {
+                "dark": color.dark,
+                "light": color.light,
+            }
+        preferences.set(PrefKey.CUSTOMIZABLE_COLORS, colors_dict)
+
+    def update_colors_from_prefs(self) -> None:
+        """Update current color settings from Prefs file."""
+        colors_dict: dict[ColorKey, dict[str, StyleDict]] = preferences.get(
+            PrefKey.CUSTOMIZABLE_COLORS
+        )
+        for color_key, color in colors_dict.items():
+            if color_key not in self.colors:
+                continue
+            self.colors[color_key].dark = color["dark"]
+            self.colors[color_key].light = color["light"]
+
+    def get_colors(self) -> ConfigurableColors:
+        """Return configurable colors."""
+        return self.colors
+
+    def get_default_colors(self) -> ConfigurableColors:
+        """Return configurable color defaults."""
+
+        def update_maintext_colors(_: ColorKey) -> None:
+            """Update default text foreground & background for maintext & peer."""
+            for widget in self, self.peer:
+                self.theme_set_tk_widget_colors(widget)
+
+        # Temporarily create a Text to get the default select bg & fg colors
+        # which may be a name like "SystemHighlightText" so convert it to rgb
+        temp_text = tk.Text()
+        r, g, b = (
+            value // 256 for value in temp_text.winfo_rgb(temp_text["selectbackground"])
+        )
+        sel_bg = f"#{r:02x}{g:02x}{b:02x}"
+        r, g, b = (
+            value // 256 for value in temp_text.winfo_rgb(temp_text["selectforeground"])
+        )
+        sel_fg = f"#{r:02x}{g:02x}{b:02x}"
+        temp_text.destroy()
+
+        return {
+            ColorKey.MAIN_DEFAULT: ConfigurableColor(
+                "",
+                "Default text",
+                {
+                    "background": "#061626",
+                    "foreground": "#DADADA",
+                },
+                {
+                    "background": "#F1F1F1",
+                    "foreground": "#4A3F31",
+                },
+                update_maintext_colors,
+            ),
+            ColorKey.MAIN_HI_CONTRAST: ConfigurableColor(
+                "",
+                "Hi-contrast text",
+                {
+                    "background": "#000000",
+                    "foreground": "#FFFFFF",
+                },
+                {
+                    "background": "#FFFFFF",
+                    "foreground": "#000000",
+                },
+                update_maintext_colors,
+            ),
+            ColorKey.CURSOR_LINE_ACTIVE: ConfigurableColor(
+                HighlightTag.CURSOR_LINE_ACTIVE,
+                "Active cursor line",
+                {
+                    "background": "#122E57",
+                    "foreground": "#DADADA",
+                },
+                {
+                    "background": "#E8E1DC",
+                    "foreground": "#4A3F31",
+                },
+            ),
+            ColorKey.CURSOR_LINE_INACTIVE: ConfigurableColor(
+                HighlightTag.CURSOR_LINE_INACTIVE,
+                "Inactive cursor line",
+                {
+                    "background": "#122232",
+                    "foreground": "#DADADA",
+                },
+                {
+                    "background": "#E8E8E8",
+                    "foreground": "#4A3F31",
+                },
+            ),
+            ColorKey.MAIN_SELECT: ConfigurableColor(
+                "",
+                "Selected text",
+                {
+                    "background": sel_bg,
+                    "foreground": sel_fg,
+                },
+                {
+                    "background": sel_bg,
+                    "foreground": sel_fg,
+                },
+                update_maintext_colors,
+            ),
+            ColorKey.MAIN_SELECT_INACTIVE: ConfigurableColor(
+                "",
+                "Selected text",
+                {
+                    "background": "#666666",
+                    "foreground": sel_fg,
+                },
+                {
+                    "background": "#666666",
+                    "foreground": sel_fg,
+                },
+                update_maintext_colors,
+            ),
+            ColorKey.SEARCH: ConfigurableColor(
+                HighlightTag.SEARCH,
+                "Search highlight",
+                {
+                    "background": "#0f0f0f",
+                    "foreground": "#8a8a8a",
+                    "relief": tk.RIDGE,
+                    "borderwidth": 2,
+                },
+                {
+                    "background": "#f0f0f0",
+                    "foreground": "#606060",
+                    "relief": tk.RIDGE,
+                    "borderwidth": 2,
+                },
+            ),
+            ColorKey.CHAR_STR_REGEX: ConfigurableColor(
+                HighlightTag.CHAR_STR_REGEX,
+                "Regex highlight",
+                {"background": "darkmagenta", "foreground": "white"},
+                {"background": "#a08dfc", "foreground": "black"},
+            ),
+            ColorKey.QUOTEMARK: ConfigurableColor(
+                HighlightTag.QUOTEMARK,
+                "Quotes highlight",
+                {"background": "darkmagenta", "foreground": "white"},
+                {"background": "#a08dfc", "foreground": "black"},
+            ),
+            ColorKey.SPOTLIGHT: ConfigurableColor(
+                HighlightTag.SPOTLIGHT,
+                "Checker spotlight",
+                {"background": "darkorange", "foreground": "white"},
+                {"background": "orange", "foreground": "black"},
+            ),
+            ColorKey.PAGE_FLAG_TAG: ConfigurableColor(
+                HighlightTag.PAGE_FLAG_TAG,
+                "Page markers",
+                {"background": "gold", "foreground": "black"},
+                {"background": "gold", "foreground": "black"},
+            ),
+            ColorKey.BOOKMARK_TAG: ConfigurableColor(
+                HighlightTag.BOOKMARK_TAG,
+                "Bookmarks",
+                {"background": "lime", "foreground": "black"},
+                {"background": "lime", "foreground": "black"},
+            ),
+            ColorKey.PAREN: ConfigurableColor(
+                HighlightTag.PAREN,
+                "Parentheses highlight",
+                {"background": "mediumpurple", "foreground": "white"},
+                {"background": "violet", "foreground": "white"},
+            ),
+            ColorKey.CURLY_BRACKET: ConfigurableColor(
+                HighlightTag.CURLY_BRACKET,
+                "Curly bracket highlight",
+                {"background": "blue", "foreground": "white"},
+                {"background": "blue", "foreground": "white"},
+            ),
+            ColorKey.SQUARE_BRACKET: ConfigurableColor(
+                HighlightTag.SQUARE_BRACKET,
+                "Square bracket highlight",
+                {"background": "purple", "foreground": "white"},
+                {"background": "purple", "foreground": "white"},
+            ),
+            ColorKey.STRAIGHT_DOUBLE_QUOTE: ConfigurableColor(
+                HighlightTag.STRAIGHT_DOUBLE_QUOTE,
+                "Straight double highlight",
+                {"background": "green", "foreground": "white"},
+                {"background": "green", "foreground": "white"},
+            ),
+            ColorKey.CURLY_DOUBLE_QUOTE: ConfigurableColor(
+                HighlightTag.CURLY_DOUBLE_QUOTE,
+                "Curly double highlight",
+                {"background": "teal", "foreground": "white"},
+                {"background": "limegreen", "foreground": "white"},
+            ),
+            ColorKey.STRAIGHT_SINGLE_QUOTE: ConfigurableColor(
+                HighlightTag.STRAIGHT_SINGLE_QUOTE,
+                "Straight single highlight",
+                {"background": "sienna", "foreground": "white"},
+                {"background": "grey", "foreground": "white"},
+            ),
+            ColorKey.CURLY_SINGLE_QUOTE: ConfigurableColor(
+                HighlightTag.CURLY_SINGLE_QUOTE,
+                "Curly single highlight",
+                {"background": "#b23e0c", "foreground": "white"},
+                {"background": "dodgerblue", "foreground": "white"},
+            ),
+            ColorKey.ALIGNCOL: ConfigurableColor(
+                HighlightTag.ALIGNCOL,
+                "Alignment column",
+                {"background": "green", "foreground": "white"},
+                {"background": "greenyellow", "foreground": "black"},
+            ),
+            ColorKey.PROOFERCOMMENT: ConfigurableColor(
+                HighlightTag.PROOFERCOMMENT,
+                "Proofer comments",
+                {"background": "#1C1C1C", "foreground": "DarkOrange"},
+                {"background": "LightYellow", "foreground": "Red"},
+            ),
+            ColorKey.HTML_TAG_BAD: ConfigurableColor(
+                HighlightTag.HTML_TAG_BAD,
+                "HTML tag bad",
+                {"foreground": "red2"},
+                {"foreground": "red"},
+            ),
+            ColorKey.HTML_TAG_GOOD: ConfigurableColor(
+                HighlightTag.HTML_TAG_GOOD,
+                "HTML tag good",
+                {"foreground": "purple1"},
+                {"foreground": "purple"},
+            ),
+            ColorKey.HTML_TAG_DIV: ConfigurableColor(
+                HighlightTag.HTML_TAG_DIV,
+                "HTML tag div",
+                {"foreground": "green2"},
+                {"foreground": "green"},
+            ),
+            ColorKey.HTML_TAG_SPAN: ConfigurableColor(
+                HighlightTag.HTML_TAG_SPAN,
+                "HTML tag span",
+                {"foreground": "RoyalBlue2"},
+                {"foreground": "blue"},
+            ),
+            ColorKey.HTML_TAG_P: ConfigurableColor(
+                HighlightTag.HTML_TAG_P,
+                "HTML tag p",
+                {"foreground": "cyan2"},
+                {"foreground": "cyan3"},
+            ),
+            ColorKey.HTML_TAG_A: ConfigurableColor(
+                HighlightTag.HTML_TAG_A,
+                "HTML tag a",
+                {"foreground": "gold2"},
+                {"foreground": "gold4"},
+            ),
+            ColorKey.TABLE_BODY: ConfigurableColor(
+                HighlightTag.TABLE_BODY,
+                "ASCII table body",
+                {"background": "salmon", "foreground": "white"},
+                {"background": "salmon", "foreground": "black"},
+            ),
+            ColorKey.TABLE_COLUMN: ConfigurableColor(
+                HighlightTag.TABLE_COLUMN,
+                "ASCII table col",
+                {"background": "lime", "foreground": "white"},
+                {"background": "lime", "foreground": "black"},
+            ),
+        }
 
     def _autoscroll_start(self, _event: tk.Event) -> None:
         """When Button-1 is pressed, turn mouse-drag monitoring on"""

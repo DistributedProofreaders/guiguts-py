@@ -559,7 +559,7 @@ class PathnameCombobox(Combobox):
         font = tk_font.nametofont(str(self.cget("font")))
         width = max(0, font.measure(long.strip() + "pad") - self.winfo_width())
 
-        ttk.Style().configure("TCombobox", postoffset=(0, 0, width, 0))
+        themed_style().configure("TCombobox", postoffset=(0, 0, width, 0))
         self.xview_moveto(1.0)
 
     def update_callback(self, value: str) -> None:
@@ -899,55 +899,69 @@ def mouse_bind(
         widget.bind(event, callback)
 
 
-def handle_mouse_wheel(widget: tk.Widget, event: tk.Event) -> None:
-    """Cross platform scroll wheel event."""
+def handle_mouse_wheel(widget: tk.Widget, event: tk.Event, vertical: bool) -> None:
+    """Cross platform scroll wheel event.
+
+    Args:
+        widget: Widget to be scrolled.
+        event: Event containing scroll delta.
+        vertical: True for vertical scroll, False for horizontal.
+    """
     assert isinstance(widget, (tk.Canvas, tk.Text))
+    scroll_func = widget.yview_scroll if vertical else widget.xview_scroll
     if is_windows():
-        widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        scroll_func(int(-1 * (event.delta / 120)), "units")
     elif is_mac():
-        widget.yview_scroll(int(-1 * event.delta), "units")
+        scroll_func(int(-1 * event.delta), "units")
     else:
         if event.num == 4:
-            widget.yview_scroll(-1, "units")
+            scroll_func(-1, "units")
         elif event.num == 5:
-            widget.yview_scroll(1, "units")
+            scroll_func(1, "units")
 
 
 def bind_mouse_wheel(
     bind_widget: tk.Widget, scroll_widget: Optional[tk.Widget] = None
 ) -> None:
-    """Bind wheel events when the cursor enters the control."""
+    """Bind wheel events when the cursor enters the control.
+    Necessary to use bind_all to catch events on bind_widget's children,
+    hence the need to bind/unbind on Enter/Leave"""
     if scroll_widget is None:
         scroll_widget = bind_widget
     if is_x11():
-        bind_widget.bind(
-            "<Button-4>",
-            lambda evt, sw=scroll_widget: handle_mouse_wheel(  # type:ignore[misc]
-                sw, evt
-            ),
+        bind_widget.bind_all(
+            "<Button-4>", lambda evt: handle_mouse_wheel(scroll_widget, evt, True)
         )
-        bind_widget.bind(
-            "<Button-5>",
-            lambda evt, sw=scroll_widget: handle_mouse_wheel(  # type:ignore[misc]
-                sw, evt
-            ),
+        bind_widget.bind_all(
+            "<Button-5>", lambda evt: handle_mouse_wheel(scroll_widget, evt, True)
+        )
+        bind_widget.bind_all(
+            "<Shift-Button-4>",
+            lambda evt: handle_mouse_wheel(scroll_widget, evt, False),
+        )
+        bind_widget.bind_all(
+            "<Shift-Button-5>",
+            lambda evt: handle_mouse_wheel(scroll_widget, evt, False),
         )
     else:
-        bind_widget.bind(
-            "<MouseWheel>",
-            lambda evt, sw=scroll_widget: handle_mouse_wheel(  # type:ignore[misc]
-                sw, evt
-            ),
+        bind_widget.bind_all(
+            "<MouseWheel>", lambda evt: handle_mouse_wheel(scroll_widget, evt, True)
+        )
+        bind_widget.bind_all(
+            "<Shift-MouseWheel>",
+            lambda evt: handle_mouse_wheel(scroll_widget, evt, False),
         )
 
 
 def unbind_mouse_wheel(bind_widget: tk.Widget) -> None:
-    """Unbind wheel events when the cursor leaves the control."""
+    """Unbind wheel events when the cursor enters the control.
+    Necessary to use bind_all to catch events on bind_widget's children,
+    hence the need to bind/unbind on Enter/Leave"""
     if is_x11():
-        bind_widget.unbind("<Button-4>")
-        bind_widget.unbind("<Button-5>")
+        bind_widget.unbind_all("<Button-4>")
+        bind_widget.unbind_all("<Button-5>")
     else:
-        bind_widget.unbind("<MouseWheel>")
+        bind_widget.unbind_all("<MouseWheel>")
 
 
 # For convenient access, store the single Style instance here,
@@ -955,9 +969,6 @@ def unbind_mouse_wheel(bind_widget: tk.Widget) -> None:
 # Also store the default colors for a Text widget that are not
 # altered by the default themes.
 _SINGLE_STYLE = None
-_THEME_DEFAULT_TEXT_BG = ""
-_THEME_DEFAULT_TEXT_FG = ""
-_THEME_DEFAULT_TEXT_IBG = ""
 
 
 class ThemedStyle(ttk.Style):
@@ -995,7 +1006,6 @@ def themed_style(style: Optional[ThemedStyle] = None) -> ThemedStyle:
     if style is not None:
         assert _SINGLE_STYLE is None
         _SINGLE_STYLE = style
-        _theme_init_tk_widget_colors()
     assert _SINGLE_STYLE is not None
     return _SINGLE_STYLE
 
@@ -1022,20 +1032,6 @@ def theme_name_internal_from_user(user_theme: str) -> str:
             return "awlight"
         case _:
             assert False, "Bad user theme name"
-
-
-def _theme_init_tk_widget_colors() -> None:
-    """Get default bg & fg colors of a Text (non-themed) widget,
-    by creating one, getting the colors, then destroying it.
-
-    Needs to be called before theme is changed from default theme.
-    """
-    global _THEME_DEFAULT_TEXT_BG, _THEME_DEFAULT_TEXT_FG, _THEME_DEFAULT_TEXT_IBG
-    temp_text = tk.Text()
-    _THEME_DEFAULT_TEXT_BG = temp_text.cget("background")
-    _THEME_DEFAULT_TEXT_FG = temp_text.cget("foreground")
-    _THEME_DEFAULT_TEXT_IBG = temp_text.cget("insertbackground")
-    temp_text.destroy()
 
 
 # Keep track of which Text/Entry widget of interest last had focus.
@@ -1182,3 +1178,66 @@ class Busy:
                     del Busy._busy_widget_cursors[widget]
                 except KeyError:
                     pass  # OK if widget has already been removed
+
+
+class ScrollableFrame(ttk.Frame):
+    """A scrollable ttk.Frame."""
+
+    def __init__(self, parent: tk.Widget, *args: Any, **kwargs: Any) -> None:
+        # Create a containing frame (not visible to the user of this widget)
+        self._container = ttk.Frame(parent)
+        self._container.grid(row=0, column=0, sticky="NSEW")
+        self._container.columnconfigure(0, weight=1)
+        self._container.rowconfigure(0, weight=1)
+
+        # Initialize the visible frame (the one user interacts with)
+        self.canvas = tk.Canvas(self._container, highlightthickness=0)
+        self._v_scrollbar = ttk.Scrollbar(
+            self._container, orient="vertical", command=self.canvas.yview
+        )
+        self._h_scrollbar = ttk.Scrollbar(
+            self._container, orient="horizontal", command=self.canvas.xview
+        )
+
+        # Call ttk.Frame.__init__ with the internal scrollable frame as self
+        super().__init__(self.canvas, *args, **kwargs)
+        self._bg = str(ttk.Style().lookup(self["style"], "background"))
+        self.canvas["background"] = self._bg
+
+        # Put self (the scrollable frame) into the canvas
+        self.canvas.create_window((0, 0), window=self, anchor="nw")
+
+        # Scroll configuration
+        self.canvas.configure(yscrollcommand=self._v_scrollbar.set)
+        self.canvas.configure(xscrollcommand=self._h_scrollbar.set)
+
+        # Grid everything
+        self.canvas.grid(column=0, row=0, sticky="NSEW")
+        self._v_scrollbar.grid(column=1, row=0, sticky="NS")
+        self._h_scrollbar.grid(column=0, row=1, sticky="EW")
+
+        # Bind scroll region and mouse entry
+        self.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
+        )
+        self.canvas.bind("<Enter>", lambda _: bind_mouse_wheel(self.canvas))
+        self.canvas.bind("<Leave>", lambda _: unbind_mouse_wheel(self.canvas))
+
+        def set_bg(_: tk.Event) -> None:
+            """Set the Canvas to have the same background as the Frame whenever
+            the theme is changed.
+            """
+            bg = themed_style().lookup("TFrame", "background")
+            self.canvas["background"] = bg
+
+        self.bind("<<ThemeChanged>>", set_bg)
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        """Delegate grid to the container."""
+        self._container.grid(*args, **kwargs)
+
+    def reset_scroll(self) -> None:
+        """Scroll canvas to top left position."""
+        self.canvas.xview_moveto(0.0)
+        self.canvas.yview_moveto(0.0)

@@ -14,7 +14,7 @@ import regex as re
 from guiguts.mainwindow import mainimage, MainWindow, AutoImageState
 from guiguts.maintext import (
     maintext,
-    PAGE_FLAG_TAG,
+    HighlightTag,
     PAGEMARK_PIN,
     BOOKMARK_TAG,
     img_from_page_mark,
@@ -832,7 +832,7 @@ class File:
             maintext().insert(
                 mark,
                 PAGE_FLAG_START + info + PAGE_FLAG_END,
-                PAGE_FLAG_TAG,
+                HighlightTag.PAGE_FLAG_TAG,
             )
 
     def remove_page_flags(self) -> None:
@@ -883,7 +883,7 @@ class File:
             maintext().set_mark_position(mark, match.rowcol)
             self.page_details[img] = PageDetail(match.rowcol.index(), style, number)
             maintext().tag_add(
-                PAGE_FLAG_TAG,
+                HighlightTag.PAGE_FLAG_TAG,
                 match.rowcol.index(),
                 match.rowcol.index() + f"+{match.count}c",
             )
