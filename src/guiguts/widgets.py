@@ -1107,6 +1107,7 @@ class Busy:
     2. Change the mouse cursor to "watch" (widgets registered via `busy_cursor_setup`).
     """
 
+    BUSY_DELAY = 500  # Suggested time delay before setting unbusy
     _busy_widget: Optional[ttk.Label] = None
     _busy_widget_cursors: dict[tk.Widget | tk.Tk | tk.Toplevel, str] = {}
 
