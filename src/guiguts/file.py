@@ -40,7 +40,7 @@ from guiguts.utilities import (
     folder_dir_str,
     is_test,
 )
-from guiguts.widgets import grab_focus, ToplevelDialog
+from guiguts.widgets import grab_focus, ToplevelDialog, Busy
 
 logger = logging.getLogger(__package__)
 
@@ -308,6 +308,7 @@ class File:
             """Get backup names for filename and bin file."""
             return f"{self.filename}{ext}", f"{bin_name(self.filename)}{ext}"
 
+        Busy.busy()
         binfile_name = bin_name(self.filename)
         try:
             if autosave:
@@ -354,6 +355,8 @@ class File:
                 f"Error details:\n{str(exc)}"
             )
         self.reset_autosave()
+        # May be too quick for user to see without a delay
+        root().after(Busy.BUSY_DELAY, Busy.unbusy)
         return self.filename
 
     def save_as_file(self) -> str:
