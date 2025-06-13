@@ -1099,6 +1099,18 @@ def focus_prev_widget(event: tk.Event) -> str:
     return "break"
 
 
+def bind_shift_tab(widget: tk.Widget, func: Callable) -> None:
+    """Bind `Shift-Tab` to func, including on Linux where sequence
+    is `ISO_Left_Tab` if using X11."""
+    widget.bind("<Shift-Tab>", func)
+    # Rather than check is_x11, just try it. Then if in future a system
+    # is X11 but uses Shift-Tab instead of ISO_Left_Tab, it'll work
+    try:
+        widget.bind("<ISO_Left_Tab>", func)
+    except tk.TclError:
+        pass
+
+
 class Busy:
     """Class to allow program to indicate to user that it is busy.
 

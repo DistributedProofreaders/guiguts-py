@@ -39,6 +39,7 @@ from guiguts.widgets import (
     focus_prev_widget,
     ThemedStyle,
     TreeviewList,
+    bind_shift_tab,
 )
 
 logger = logging.getLogger(__package__)
@@ -676,7 +677,7 @@ class MainImage(tk.Frame):
                 focus_prev_widget(evt)
             return "break"
 
-        self.prev_img_button.bind("<Shift-Tab>", focus_prev)
+        bind_shift_tab(self.prev_img_button, focus_prev)
 
         self.next_img_button = ttk.Button(
             control_frame,
@@ -781,7 +782,7 @@ class MainImage(tk.Frame):
             return "break"
 
         self.close_btn.bind("<Tab>", close_tab)
-        self.close_btn.bind("<Shift-Tab>", focus_prev_widget)
+        bind_shift_tab(self.close_btn, focus_prev_widget)
 
         # By default Tab is accepted by text widget, but we want it to move focus
         def text_reverse_tab(_: tk.Event) -> str:
@@ -807,9 +808,9 @@ class MainImage(tk.Frame):
             return "break"
 
         maintext().bind("<Tab>", text_tab)
-        maintext().bind("<Shift-Tab>", text_reverse_tab)
+        bind_shift_tab(maintext(), text_reverse_tab)
         maintext().peer.bind("<Tab>", focus_next_widget)
-        maintext().peer.bind("<Shift-Tab>", peer_reverse_tab)
+        bind_shift_tab(maintext().peer, peer_reverse_tab)
 
         self.hbar = ttk.Scrollbar(top_frame, orient=tk.HORIZONTAL)
         self.hbar.grid(row=3, column=0, sticky="EW")
@@ -1481,7 +1482,7 @@ class StatusBar(ttk.Frame):
             return "break"
 
         self.fields[key].bind("<Tab>", focus_next)
-        self.fields[key].bind("<Shift-Tab>", focus_prev_widget)
+        bind_shift_tab(self.fields[key], focus_prev_widget)
 
     def set_first_tab_behavior(self, key: str) -> None:
         """Set up tab bindings for first status bar button.
@@ -1498,7 +1499,7 @@ class StatusBar(ttk.Frame):
             return "break"
 
         self.fields[key].bind("<Tab>", focus_next_widget)
-        self.fields[key].bind("<Shift-Tab>", focus_prev)
+        bind_shift_tab(self.fields[key], focus_prev)
 
     def set_focus(self, key: str) -> None:
         """Set focus to given statusbar button."""
@@ -1558,7 +1559,7 @@ class ScrolledReadOnlyText(tk.Text):
 
         # By default Tab is accepted by text widget, but we want it to move focus
         self.bind("<Tab>", focus_next_widget)
-        self.bind("<Shift-Tab>", focus_prev_widget)
+        bind_shift_tab(self, focus_prev_widget)
 
         # Redirect attempts to undo & redo to main text window
         # Keystrokes match those in Undo/Redo menu buttons, with case handled manually here
