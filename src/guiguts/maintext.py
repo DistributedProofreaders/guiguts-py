@@ -1065,7 +1065,8 @@ class MainText(tk.Text):
         widget.configure(style_dict)
         widget.configure(
             insertbackground=str(style_dict["foreground"]),
-            highlightbackground=str(style_dict["foreground"]),
+            highlightbackground=str(style_dict["background"]),
+            highlightcolor=str(style_dict["foreground"]),
             selectbackground=str(sel_dict["background"]),
             selectforeground=str(sel_dict["foreground"]),
             inactiveselectbackground=str(in_sel_dict["background"]),
