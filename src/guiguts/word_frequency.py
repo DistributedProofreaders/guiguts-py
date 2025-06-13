@@ -305,7 +305,7 @@ class WordFrequencyDialog(ToplevelDialog):
             return button
 
         display_radio(0, 0, "All Words", WFDisplayType.ALL_WORDS)
-        display_radio(0, 1, "Accents", WFDisplayType.ACCENTS)
+        display_radio(0, 1, "Diacritics", WFDisplayType.ACCENTS)
         display_radio(0, 2, "Ligatures", WFDisplayType.LIGATURES)
         self.all_caps_btn = display_radio(1, 0, "ALL CAPITALS", WFDisplayType.ALL_CAPS)
         self.mixed_case_btn = display_radio(
@@ -378,7 +378,7 @@ class WordFrequencyDialog(ToplevelDialog):
         self.threshold_box.bind("<Return>", display_markedup)
         self.threshold_box.bind("<<ComboboxSelected>>", display_markedup)
 
-        display_radio(4, 0, "Character Cnts", WFDisplayType.CHAR_COUNTS)
+        display_radio(4, 0, "Character Counts", WFDisplayType.CHAR_COUNTS)
         regex_frame = ttk.Frame(display_frame)
         regex_frame.grid(row=4, column=1, columnspan=2, sticky="NSEW")
         regex_frame.columnconfigure(index=1, weight=1)
