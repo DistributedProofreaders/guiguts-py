@@ -1756,6 +1756,7 @@ class MainWindow:
             autoseparators=True,
             maxundo=-1,
             highlightthickness=2,
+            padx=5,
         )
 
         self.paned_window.add(self.paned_text_window, minsize=MIN_PANE_WIDTH)

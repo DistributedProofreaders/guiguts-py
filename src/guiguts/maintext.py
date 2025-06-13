@@ -738,6 +738,7 @@ class MainText(tk.Text):
             spacing1=self["spacing1"],
             insertwidth=self["insertwidth"],
             wrap=self["wrap"],
+            padx=self["padx"],
         )
         self.peer.bind(
             "<<ThemeChanged>>",
