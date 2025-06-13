@@ -994,6 +994,12 @@ class ThemedStyle(ttk.Style):
             # so replaced with line below as suggested in above comment.
             return self.tk.call(self._name, "theme", "use")  # type:ignore[attr-defined]
         super().theme_use(themename)
+        fg = self.lookup("TButton", "foreground")
+        self.map("TButton", focuscolor=[("focus", fg)])
+        self.map("TCheckbutton", focuscolor=[("focus", fg)])
+        self.map("TRadiobutton", focuscolor=[("focus", fg)])
+        self.map("TCombobox", focuscolor=[("focus", fg)])
+        self.map("TEntry", focuscolor=[("focus", fg)])
         return None
 
     def is_dark_theme(self) -> bool:
