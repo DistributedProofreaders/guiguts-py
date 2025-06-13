@@ -1186,8 +1186,9 @@ class MainImage(tk.Frame):
             width, height = image.size
             for y in range(0, height, 10):
                 for x in range(0, width, 10):
-                    r, g, b = image.getpixel((x, y))
-                    if r != g or r != b:
+                    rgb = image.getpixel((x, y))
+                    assert isinstance(rgb, tuple)
+                    if rgb[0] != rgb[1] or rgb[0] != rgb[2]:
                         return False
             return True
         return False
