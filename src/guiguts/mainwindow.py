@@ -1147,7 +1147,6 @@ class MainImage(tk.Frame):
             self.filename = filename
             image = Image.open(filename)
             self.grayscale = self.is_it_grayscale(image)
-            print(f"{self.filename} {image.mode}", flush=True)
             self.image = image.convert("RGB")  # Needed for some operations
             self.width, self.height = self.image.size
             self.canvas.yview_moveto(0)
