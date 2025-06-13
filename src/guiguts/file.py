@@ -510,9 +510,9 @@ class File:
                     detail["index"], detail["style"], detail["number"]
                 )
         self.set_page_marks(self.page_details)
-        self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR)
-        self.project_id = bin_dict.get(BINFILE_KEY_PROJECTID)
-        self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES)
+        self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR, "")
+        self.project_id = bin_dict.get(BINFILE_KEY_PROJECTID, "")
+        self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES, "")
         bookmarks: Optional[dict[str, str]]
         if bookmarks := bin_dict.get(BINFILE_KEY_BOOKMARKS):
             for key, value in bookmarks.items():

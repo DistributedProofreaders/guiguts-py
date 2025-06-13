@@ -1146,7 +1146,7 @@ class MainImage(tk.Frame):
         if filename and os.path.isfile(filename):
             self.filename = filename
             image = Image.open(filename)
-            self.grayscale = image.mode in ("1", "L")
+            self.grayscale = self.is_it_grayscale(image)
             self.image = image.convert("RGB")  # Needed for some operations
             self.width, self.height = self.image.size
             self.canvas.yview_moveto(0)
@@ -1165,6 +1165,32 @@ class MainImage(tk.Frame):
         else:
             self.clear_image()
         return True
+
+    def is_it_grayscale(self, image: Image.Image) -> bool:
+        """Return True if image is grayscale."""
+        if image.mode in ("1", "L"):  # True grayscale
+            return True
+        if image.mode == "P":  # Palette - are all colors gray?
+            palette = image.getpalette()
+            if palette is None:
+                return False  # No palette defined
+            for idx in range(len(palette) // 3):
+                r = palette[idx * 3]
+                g = palette[idx * 3 + 1]
+                b = palette[idx * 3 + 2]
+                if r != g or r != b:
+                    return False
+            return True
+        if image.mode == "RGB":  # RGB color - are sample of colors all gray?
+            width, height = image.size
+            for y in range(0, height, 10):
+                for x in range(0, width, 10):
+                    rgb = image.getpixel((x, y))
+                    assert isinstance(rgb, tuple)
+                    if rgb[0] != rgb[1] or rgb[0] != rgb[2]:
+                        return False
+            return True
+        return False
 
     def clear_image(self) -> None:
         """Clear the image and reset variables accordingly."""
