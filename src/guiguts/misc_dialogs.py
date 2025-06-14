@@ -514,12 +514,15 @@ class PreferencesDialog(ToplevelDialog):
 
             # Colorpicker bindings
             def click_callback(
-                attr: str,
+                attr: Literal["foreground", "background"],
                 key: ColorKey = key,
                 widget: tk.Text = desc,
                 style_dict: StyleDict = style_dict,
             ) -> None:
                 current = str(style_dict.get(attr, "#000000"))
+                if current == "":
+                    logger.error(f"Cannot set {attr} for this color")
+                    return
                 color = colorchooser.askcolor(
                     color=current, parent=self, title=f"Choose {attr} color"
                 )[1]
