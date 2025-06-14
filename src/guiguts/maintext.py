@@ -2,6 +2,7 @@
 
 import copy
 from html.parser import HTMLParser
+from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found, import-untyped]
 import logging
 import subprocess
 import tkinter as tk
@@ -12,7 +13,7 @@ from enum import auto, StrEnum
 
 import regex as re
 
-from guiguts.preferences import preferences, PrefKey
+from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.utilities import (
     is_mac,
     is_x11,
@@ -28,6 +29,10 @@ from guiguts.widgets import (
     grab_focus,
     bind_mouse_wheel,
     unbind_mouse_wheel,
+    focus_next_widget,
+    focus_prev_widget,
+    bind_shift_tab,
+    mouse_bind,
 )
 
 logger = logging.getLogger(__package__)
@@ -396,6 +401,9 @@ class HighlightTag(StrEnum):
     HTML_TAG_A = auto()
     TABLE_COLUMN = auto()
     TABLE_BODY = auto()
+    CHECKER_SELECTION = auto()
+    CHECKER_HIGHLIGHT = auto()
+    CHECKER_ERROR_PREFIX = auto()
 
 
 # Dictionary to map HTML tags to HighlightTags
@@ -519,15 +527,9 @@ class ColorKey(StrEnum):
     HTML_TAG_A = auto()
     TABLE_COLUMN = auto()
     TABLE_BODY = auto()
-
-
-def update_maintext_tag(key: ColorKey) -> None:
-    """Update maintext tag with new settings."""
-    c_color = maintext().colors[key]
-    assert c_color.tag
-    maintext().tag_configure(
-        c_color.tag, c_color.dark if themed_style().is_dark_theme() else c_color.light
-    )
+    CHECKER_SELECTION = auto()
+    CHECKER_HIGHLIGHT = auto()
+    CHECKER_ERROR_PREFIX = auto()
 
 
 class ConfigurableColor:
@@ -555,8 +557,10 @@ class ConfigurableColor:
         self.description = description
         self.light = light
         self.dark = dark
-
-        self.update_func = update_maintext_tag if update_func is None else update_func
+        if update_func is None:
+            self.update_func = lambda _: None
+        else:
+            self.update_func = update_func
 
 
 ConfigurableColors = dict[ColorKey, ConfigurableColor]
@@ -3938,6 +3942,15 @@ class MainText(tk.Text):
             for widget in self, self.peer:
                 self.theme_set_tk_widget_colors(widget)
 
+        def update_maintext_tag(key: ColorKey) -> None:
+            """Update maintext tag with new settings."""
+            c_color = maintext().colors[key]
+            assert c_color.tag
+            maintext().tag_configure(
+                c_color.tag,
+                c_color.dark if themed_style().is_dark_theme() else c_color.light,
+            )
+
         # Temporarily create a Text to get the default select bg & fg colors
         # which may be a name like "SystemHighlightText" so convert it to rgb
         temp_text = tk.Text()
@@ -3989,6 +4002,7 @@ class MainText(tk.Text):
                     "background": "#E8E1DC",
                     "foreground": "#4A3F31",
                 },
+                update_maintext_tag,
             ),
             ColorKey.CURSOR_LINE_INACTIVE: ConfigurableColor(
                 HighlightTag.CURSOR_LINE_INACTIVE,
@@ -4001,6 +4015,7 @@ class MainText(tk.Text):
                     "background": "#E8E8E8",
                     "foreground": "#4A3F31",
                 },
+                update_maintext_tag,
             ),
             ColorKey.MAIN_SELECT: ConfigurableColor(
                 "",
@@ -4017,14 +4032,14 @@ class MainText(tk.Text):
             ),
             ColorKey.MAIN_SELECT_INACTIVE: ConfigurableColor(
                 "",
-                "Selected text",
+                "Selected text inactive",
                 {
                     "background": "#666666",
-                    "foreground": sel_fg,
+                    "foreground": "",
                 },
                 {
                     "background": "#666666",
-                    "foreground": sel_fg,
+                    "foreground": "",
                 },
                 update_maintext_colors,
             ),
@@ -4043,138 +4058,188 @@ class MainText(tk.Text):
                     "relief": tk.RIDGE,
                     "borderwidth": 2,
                 },
+                update_maintext_tag,
             ),
             ColorKey.CHAR_STR_REGEX: ConfigurableColor(
                 HighlightTag.CHAR_STR_REGEX,
                 "Regex highlight",
                 {"background": "darkmagenta", "foreground": "white"},
                 {"background": "#a08dfc", "foreground": "black"},
+                update_maintext_tag,
             ),
             ColorKey.QUOTEMARK: ConfigurableColor(
                 HighlightTag.QUOTEMARK,
                 "Quotes highlight",
                 {"background": "darkmagenta", "foreground": "white"},
                 {"background": "#a08dfc", "foreground": "black"},
+                update_maintext_tag,
             ),
             ColorKey.SPOTLIGHT: ConfigurableColor(
                 HighlightTag.SPOTLIGHT,
                 "Checker spotlight",
                 {"background": "darkorange", "foreground": "white"},
                 {"background": "orange", "foreground": "black"},
+                update_maintext_tag,
             ),
             ColorKey.PAGE_FLAG_TAG: ConfigurableColor(
                 HighlightTag.PAGE_FLAG_TAG,
                 "Page markers",
                 {"background": "gold", "foreground": "black"},
                 {"background": "gold", "foreground": "black"},
+                update_maintext_tag,
             ),
             ColorKey.BOOKMARK_TAG: ConfigurableColor(
                 HighlightTag.BOOKMARK_TAG,
                 "Bookmarks",
                 {"background": "lime", "foreground": "black"},
                 {"background": "lime", "foreground": "black"},
+                update_maintext_tag,
             ),
             ColorKey.PAREN: ConfigurableColor(
                 HighlightTag.PAREN,
                 "Parentheses highlight",
                 {"background": "mediumpurple", "foreground": "white"},
                 {"background": "violet", "foreground": "white"},
+                update_maintext_tag,
             ),
             ColorKey.CURLY_BRACKET: ConfigurableColor(
                 HighlightTag.CURLY_BRACKET,
                 "Curly bracket highlight",
                 {"background": "blue", "foreground": "white"},
                 {"background": "blue", "foreground": "white"},
+                update_maintext_tag,
             ),
             ColorKey.SQUARE_BRACKET: ConfigurableColor(
                 HighlightTag.SQUARE_BRACKET,
                 "Square bracket highlight",
                 {"background": "purple", "foreground": "white"},
                 {"background": "purple", "foreground": "white"},
+                update_maintext_tag,
             ),
             ColorKey.STRAIGHT_DOUBLE_QUOTE: ConfigurableColor(
                 HighlightTag.STRAIGHT_DOUBLE_QUOTE,
                 "Straight double highlight",
                 {"background": "green", "foreground": "white"},
                 {"background": "green", "foreground": "white"},
+                update_maintext_tag,
             ),
             ColorKey.CURLY_DOUBLE_QUOTE: ConfigurableColor(
                 HighlightTag.CURLY_DOUBLE_QUOTE,
                 "Curly double highlight",
                 {"background": "teal", "foreground": "white"},
                 {"background": "limegreen", "foreground": "white"},
+                update_maintext_tag,
             ),
             ColorKey.STRAIGHT_SINGLE_QUOTE: ConfigurableColor(
                 HighlightTag.STRAIGHT_SINGLE_QUOTE,
                 "Straight single highlight",
                 {"background": "sienna", "foreground": "white"},
                 {"background": "grey", "foreground": "white"},
+                update_maintext_tag,
             ),
             ColorKey.CURLY_SINGLE_QUOTE: ConfigurableColor(
                 HighlightTag.CURLY_SINGLE_QUOTE,
                 "Curly single highlight",
                 {"background": "#b23e0c", "foreground": "white"},
                 {"background": "dodgerblue", "foreground": "white"},
+                update_maintext_tag,
             ),
             ColorKey.ALIGNCOL: ConfigurableColor(
                 HighlightTag.ALIGNCOL,
                 "Alignment column",
                 {"background": "green", "foreground": "white"},
                 {"background": "greenyellow", "foreground": "black"},
+                update_maintext_tag,
             ),
             ColorKey.PROOFERCOMMENT: ConfigurableColor(
                 HighlightTag.PROOFERCOMMENT,
                 "Proofer comments",
                 {"background": "#1C1C1C", "foreground": "DarkOrange"},
                 {"background": "LightYellow", "foreground": "Red"},
+                update_maintext_tag,
             ),
             ColorKey.HTML_TAG_BAD: ConfigurableColor(
                 HighlightTag.HTML_TAG_BAD,
                 "HTML tag bad",
                 {"foreground": "red2"},
                 {"foreground": "red"},
+                update_maintext_tag,
             ),
             ColorKey.HTML_TAG_GOOD: ConfigurableColor(
                 HighlightTag.HTML_TAG_GOOD,
                 "HTML tag good",
                 {"foreground": "purple1"},
                 {"foreground": "purple"},
+                update_maintext_tag,
             ),
             ColorKey.HTML_TAG_DIV: ConfigurableColor(
                 HighlightTag.HTML_TAG_DIV,
                 "HTML tag div",
                 {"foreground": "green2"},
                 {"foreground": "green"},
+                update_maintext_tag,
             ),
             ColorKey.HTML_TAG_SPAN: ConfigurableColor(
                 HighlightTag.HTML_TAG_SPAN,
                 "HTML tag span",
                 {"foreground": "RoyalBlue2"},
                 {"foreground": "blue"},
+                update_maintext_tag,
             ),
             ColorKey.HTML_TAG_P: ConfigurableColor(
                 HighlightTag.HTML_TAG_P,
                 "HTML tag p",
                 {"foreground": "cyan2"},
                 {"foreground": "cyan3"},
+                update_maintext_tag,
             ),
             ColorKey.HTML_TAG_A: ConfigurableColor(
                 HighlightTag.HTML_TAG_A,
                 "HTML tag a",
                 {"foreground": "gold2"},
                 {"foreground": "gold4"},
+                update_maintext_tag,
             ),
             ColorKey.TABLE_BODY: ConfigurableColor(
                 HighlightTag.TABLE_BODY,
                 "ASCII table body",
                 {"background": "salmon", "foreground": "white"},
                 {"background": "salmon", "foreground": "black"},
+                update_maintext_tag,
             ),
             ColorKey.TABLE_COLUMN: ConfigurableColor(
                 HighlightTag.TABLE_COLUMN,
                 "ASCII table col",
                 {"background": "lime", "foreground": "white"},
                 {"background": "lime", "foreground": "black"},
+                update_maintext_tag,
+            ),
+            ColorKey.CHECKER_SELECTION: ConfigurableColor(
+                HighlightTag.CHECKER_SELECTION,
+                "Checker selected line",
+                {"background": "#dddddd", "foreground": "black"},
+                {"background": "#dddddd", "foreground": "black"},
+                None,
+            ),
+            ColorKey.CHECKER_HIGHLIGHT: ConfigurableColor(
+                HighlightTag.CHECKER_HIGHLIGHT,
+                "Checker highlighted text",
+                {
+                    "background": sel_bg,
+                    "foreground": sel_fg,
+                },
+                {
+                    "background": sel_bg,
+                    "foreground": sel_fg,
+                },
+                None,
+            ),
+            ColorKey.CHECKER_ERROR_PREFIX: ConfigurableColor(
+                HighlightTag.CHECKER_ERROR_PREFIX,
+                "Checker error prefix",
+                {"background": "", "foreground": "red"},
+                {"background": "", "foreground": "red"},
+                None,
             ),
         }
 
@@ -4364,6 +4429,307 @@ class KeyboardShortcutsDict(dict):
             return
         self.clear()
         self.save_to_prefs()
+
+
+class ScrolledReadOnlyText(tk.Text):
+    """Implement a read only mode text editor class with scroll bar.
+
+    Done by replacing the bindings for the insert and delete events. From:
+    http://stackoverflow.com/questions/3842155/is-there-a-way-to-make-the-tkinter-text-widget-read-only
+    """
+
+    def __init__(self, parent: tk.Widget, context_menu: bool = True, **kwargs: Any):
+        """Init the class and set the insert and delete event bindings."""
+
+        self.frame = ttk.Frame(parent)
+        self.frame.grid(row=0, column=0, sticky="NSEW")
+        self.frame.columnconfigure(0, weight=1)
+        self.frame.rowconfigure(0, weight=1)
+
+        super().__init__(self.frame, spacing1=maintext()["spacing1"], **kwargs)
+        super().grid(column=0, row=0, sticky="NSEW")
+        self.redirector = WidgetRedirector(self)
+        self.insert = self.redirector.register("insert", lambda *args, **kw: "break")  # type: ignore[method-assign]
+        self.delete = self.redirector.register("delete", lambda *args, **kw: "break")  # type: ignore[method-assign]
+
+        hscroll = ttk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=self.xview)
+        hscroll.grid(column=0, row=1, sticky="NSEW")
+        self["xscrollcommand"] = hscroll.set
+        vscroll = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
+        vscroll.grid(column=1, row=0, sticky="NSEW")
+        self["yscrollcommand"] = vscroll.set
+
+        self["cursor"] = "arrow"
+
+        def update_cols() -> None:
+            """Update colors when theme changes"""
+            maintext().theme_set_tk_widget_colors(self)
+            line_col = maintext().colors[ColorKey.CHECKER_SELECTION]
+            hil_col = maintext().colors[ColorKey.CHECKER_HIGHLIGHT]
+            err_col = maintext().colors[ColorKey.CHECKER_ERROR_PREFIX]
+            if themed_style().is_dark_theme():
+                self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.dark)
+                self.tag_configure(HighlightTag.CHECKER_HIGHLIGHT, hil_col.dark)
+                s_dict = err_col.dark.copy()
+                del s_dict["background"]
+                self.tag_configure(HighlightTag.CHECKER_ERROR_PREFIX, s_dict)
+            else:
+                self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.light)
+                self.tag_configure(HighlightTag.CHECKER_HIGHLIGHT, hil_col.light)
+                s_dict = err_col.light.copy()
+                del s_dict["background"]
+                self.tag_configure(HighlightTag.CHECKER_ERROR_PREFIX, s_dict)
+
+        # Since Text widgets don't normally listen to theme changes,
+        # need to do it explicitly here.
+        super().bind(
+            "<<ThemeChanged>>",
+            lambda _event: update_cols,
+        )
+        # Also on creation, so it's correct for the current theme
+        update_cols()
+
+        # By default Tab is accepted by text widget, but we want it to move focus
+        self.bind("<Tab>", focus_next_widget)
+        bind_shift_tab(self, focus_prev_widget)
+
+        # Redirect attempts to undo & redo to main text window
+        # Keystrokes match those in Undo/Redo menu buttons, with case handled manually here
+        _, key_event = process_accel("Cmd/Ctrl+Z")
+        super().bind(key_event, lambda _event: maintext().event_generate("<<Undo>>"))
+        _, key_event = process_accel("Cmd/Ctrl+z")
+        super().bind(key_event, lambda _event: maintext().event_generate("<<Undo>>"))
+        _, key_event = process_accel("Cmd+Shift+Z" if is_mac() else "Ctrl+Y")
+        super().bind(key_event, lambda _event: maintext().event_generate("<<Redo>>"))
+        _, key_event = process_accel("Cmd+Shift+z" if is_mac() else "Ctrl+y")
+        super().bind(key_event, lambda _event: maintext().event_generate("<<Redo>>"))
+
+        # Intercept copy/cut to queue macOS fix before default copy/cut behavior
+        def copy_fix(_e: tk.Event) -> str:
+            maintext().clipboard_fix()
+            return ""  # Permit default behavior to happen
+
+        super().bind("<<Copy>>", copy_fix)
+        super().bind("<<Cut>>", copy_fix)
+
+        if context_menu:
+            add_text_context_menu(self, read_only=True)
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        """Override ``grid``, so placing Text actually places surrounding Frame"""
+        return self.frame.grid(*args, **kwargs)
+
+    def select_line(self, line_num: int) -> None:
+        """Highlight the line_num'th line of text, removing any other highlights.
+
+        Args:
+            line_num: Line number to be highlighted - assumed valid.
+        """
+        self.tag_remove(HighlightTag.CHECKER_SELECTION, "1.0", tk.END)
+        self.tag_add(
+            HighlightTag.CHECKER_SELECTION, f"{line_num}.0", f"{line_num + 1}.0"
+        )
+        self.see(f"{line_num}.0")
+
+    def get_select_line_num(self) -> Optional[int]:
+        """Get the line number of the currently selected line.
+
+        Returns:
+            Line number of selected line, or None if no line selected.
+        """
+        if tag_range := self.tag_nextrange(HighlightTag.CHECKER_SELECTION, "1.0"):
+            return IndexRowCol(tag_range[0]).row
+        return None
+
+
+class Menu(tk.Menu):
+    """Extend ``tk.Menu`` to make adding buttons with accelerators simpler."""
+
+    def __init__(self, parent: tk.Widget, label: str, **kwargs: Any) -> None:
+        """Initialize menu and add to parent
+
+        Args:
+            parent: Parent menu/menubar, or another widget if context menu.
+            label: Label string for menu, including tilde for keyboard
+              navigation, e.g. "~File".
+            **kwargs: Optional additional keywords args for ``tk.Menu``.
+        """
+
+        super().__init__(parent, **kwargs)
+        command_args: dict[str, Any] = {"menu": self}
+        label_txt = ""
+        if label:
+            (label_tilde, label_txt) = process_label(label)
+            command_args["label"] = label_txt
+            if label_tilde >= 0:
+                command_args["underline"] = label_tilde
+        # Only needs cascade if a child of menu/menubar, not if a context popup menu
+        if isinstance(parent, tk.Menu):
+            parent.add_cascade(command_args)
+
+    def add_button(
+        self,
+        label: str,
+        callback: Callable[[], Any],
+        accel: str = "",
+        bind_all: bool = True,
+    ) -> None:
+        """Add a button to the menu.
+
+        Args:
+            label: Label string for button, including tilde for keyboard
+              navigation, e.g. "~Save".
+            callback: Callback function.
+            accel: String describing optional accelerator key, used when a
+              callback function is passed in as ``handler``. Will be displayed
+              on the button, and will be bound to the same action as the menu
+              button. "Cmd/Ctrl" means `Cmd` key on Mac; `Ctrl` key on
+              Windows/Linux.
+            bind_all: Set False to only bind to maintext.
+        """
+        Menu.bind_button(callback, accel, bind_all)
+
+        (label_tilde, label_txt) = process_label(label)
+        accel = process_accel(accel)[0]
+        command_args = {
+            "label": label_txt,
+            "command": callback,
+            "accelerator": accel,
+        }
+        if label_tilde >= 0:
+            command_args["underline"] = label_tilde
+        self.add_command(command_args)
+
+    @classmethod
+    def bind_button(
+        cls,
+        callback: Callable[[], Any],
+        accel: str = "",
+        bind_all: bool = True,
+    ) -> None:
+        """Bind callback to shortcut."""
+        key_event = process_accel(accel)[1]
+
+        if accel:
+            maintext().key_bind(key_event, lambda _: callback(), bind_all=bind_all)
+
+    def add_checkbox(
+        self,
+        label: str,
+        bool_var: PersistentBoolean,
+        handler_on: Optional[Callable[[], None]] = None,
+        handler_off: Optional[Callable[[], None]] = None,
+        accel: str = "",
+    ) -> None:
+        """Add a checkbox to the menu.
+
+        Args:
+            label: Label string for button, including tilde for keyboard
+              navigation, e.g. "~Save".
+            bool_var: Tk variable to keep track of state or set it from elsewhere
+            handler_on: Callback function for when checkbox gets checked
+            handler_off: Callback function for when checkbox gets checked
+            accel: String describing optional accelerator key, used when a
+              callback function is passed in as ``handler``. Will be displayed
+              on the button, and will be bound to the same action as the menu
+              button. "Cmd/Ctrl" means `Cmd` key on Mac; `Ctrl` key on
+              Windows/Linux.
+        """
+        Menu.bind_checkbox(bool_var.pref_key, handler_on, handler_off, accel)
+
+        label_tilde, label_txt = process_label(label)
+        accel = process_accel(accel)[0]
+        command_args = {
+            "label": label_txt,
+            "command": lambda: Menu.checkbox_clicked(
+                bool_var.pref_key, handler_on, handler_off
+            ),
+            "variable": bool_var,
+            "accelerator": accel,
+        }
+        if label_tilde >= 0:
+            command_args["underline"] = label_tilde
+        self.add_checkbutton(command_args)
+
+    @classmethod
+    def checkbox_clicked(
+        cls,
+        pref_key: PrefKey,
+        handler_on: Optional[Callable[[], None]] = None,
+        handler_off: Optional[Callable[[], None]] = None,
+    ) -> None:
+        """Callback when checkbox is clicked.
+
+        Call appropriate handler depending on setting."""
+        if preferences.get(pref_key):
+            if handler_on is not None:
+                handler_on()
+        else:
+            if handler_off is not None:
+                handler_off()
+
+    @classmethod
+    def bind_checkbox(
+        cls,
+        pref_key: PrefKey,
+        handler_on: Optional[Callable[[], None]] = None,
+        handler_off: Optional[Callable[[], None]] = None,
+        accel: str = "",
+    ) -> None:
+        """Bind callback to shortcut."""
+        _, key_event = process_accel(accel)
+
+        def accel_command(_: tk.Event) -> None:
+            """Command to simulate checkbox click via shortcut key.
+
+            Because key hasn't been clicked, variable hasn't been toggled.
+            """
+            preferences.set(pref_key, not preferences.get(pref_key))
+            Menu.checkbox_clicked(pref_key, handler_on, handler_off)
+
+        if accel:
+            maintext().key_bind(key_event, accel_command, bind_all=True)
+
+    def add_button_virtual_event(
+        self, label: str, virtual_event: str, accel: str = ""
+    ) -> None:
+        """Add a button to this menu to call virtual event."""
+
+        def command() -> None:
+            widget = maintext().winfo_toplevel().focus_get()
+            if widget is None:
+                widget = maintext().focus_widget()
+            widget.event_generate(virtual_event)
+
+        self.add_button(label, command, accel, bind_all=False)
+
+    def add_cut_copy_paste(self, read_only: bool = False) -> None:
+        """Add cut/copy/paste buttons to this menu"""
+        if not read_only:
+            self.add_button_virtual_event("Cu~t", "<<Cut>>", "Cmd/Ctrl+X")
+        self.add_button_virtual_event("~Copy", "<<Copy>>", "Cmd/Ctrl+C")
+        if not read_only:
+            self.add_button_virtual_event("~Paste", "<<Paste>>", "Cmd/Ctrl+V")
+        self.add_separator()
+        self.add_button_virtual_event("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
+
+
+def add_text_context_menu(text_widget: tk.Text, read_only: bool = False) -> None:
+    """Add a context menu to a Text widget.
+
+    Puts Cut, Copy, Paste, Select All menu buttons in a context menu.
+
+    Args:
+        read_only: True if text is read-only, so does not require Cut & Paste options.
+    """
+    menu_context = Menu(text_widget, "")
+    menu_context.add_cut_copy_paste(read_only=read_only)
+
+    def post_context_menu(event: tk.Event) -> None:
+        event.widget.focus_set()
+        menu_context.post(event.x_root, event.y_root)
+
+    mouse_bind(text_widget, "3", post_context_menu)
 
 
 class EntryMetadata:

@@ -1,7 +1,6 @@
 """Define key components of main window"""
 
 from enum import Enum, auto
-from idlelib.redirector import WidgetRedirector  # type: ignore[import-not-found, import-untyped]
 import logging
 import os.path
 from string import ascii_uppercase
@@ -16,7 +15,14 @@ from pathlib import Path
 from PIL import Image, ImageTk, ImageChops
 import regex as re
 
-from guiguts.maintext import MainText, maintext, menubar_metadata, MenuMetadata
+from guiguts.maintext import (
+    MainText,
+    maintext,
+    menubar_metadata,
+    MenuMetadata,
+    ScrolledReadOnlyText,
+    add_text_context_menu,
+)
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.root import Root, root
 from guiguts.utilities import (
@@ -25,8 +31,6 @@ from guiguts.utilities import (
     is_windows,
     bell_set_callback,
     process_accel,
-    process_label,
-    IndexRowCol,
     sound_bell,
 )
 from guiguts.widgets import (
@@ -51,178 +55,6 @@ SEPARATOR_COL = 0
 STATUS_ROW = 2
 STATUS_COL = 0
 MIN_PANE_WIDTH = 20
-
-
-class Menu(tk.Menu):
-    """Extend ``tk.Menu`` to make adding buttons with accelerators simpler."""
-
-    def __init__(self, parent: tk.Widget, label: str, **kwargs: Any) -> None:
-        """Initialize menu and add to parent
-
-        Args:
-            parent: Parent menu/menubar, or another widget if context menu.
-            label: Label string for menu, including tilde for keyboard
-              navigation, e.g. "~File".
-            **kwargs: Optional additional keywords args for ``tk.Menu``.
-        """
-
-        super().__init__(parent, **kwargs)
-        command_args: dict[str, Any] = {"menu": self}
-        label_txt = ""
-        if label:
-            (label_tilde, label_txt) = process_label(label)
-            command_args["label"] = label_txt
-            if label_tilde >= 0:
-                command_args["underline"] = label_tilde
-        # Only needs cascade if a child of menu/menubar, not if a context popup menu
-        if isinstance(parent, tk.Menu):
-            parent.add_cascade(command_args)
-
-    def add_button(
-        self,
-        label: str,
-        callback: Callable[[], Any],
-        accel: str = "",
-        bind_all: bool = True,
-    ) -> None:
-        """Add a button to the menu.
-
-        Args:
-            label: Label string for button, including tilde for keyboard
-              navigation, e.g. "~Save".
-            callback: Callback function.
-            accel: String describing optional accelerator key, used when a
-              callback function is passed in as ``handler``. Will be displayed
-              on the button, and will be bound to the same action as the menu
-              button. "Cmd/Ctrl" means `Cmd` key on Mac; `Ctrl` key on
-              Windows/Linux.
-            bind_all: Set False to only bind to maintext.
-        """
-        Menu.bind_button(callback, accel, bind_all)
-
-        (label_tilde, label_txt) = process_label(label)
-        accel = process_accel(accel)[0]
-        command_args = {
-            "label": label_txt,
-            "command": callback,
-            "accelerator": accel,
-        }
-        if label_tilde >= 0:
-            command_args["underline"] = label_tilde
-        self.add_command(command_args)
-
-    @classmethod
-    def bind_button(
-        cls,
-        callback: Callable[[], Any],
-        accel: str = "",
-        bind_all: bool = True,
-    ) -> None:
-        """Bind callback to shortcut."""
-        key_event = process_accel(accel)[1]
-
-        if accel:
-            maintext().key_bind(key_event, lambda _: callback(), bind_all=bind_all)
-
-    def add_checkbox(
-        self,
-        label: str,
-        bool_var: PersistentBoolean,
-        handler_on: Optional[Callable[[], None]] = None,
-        handler_off: Optional[Callable[[], None]] = None,
-        accel: str = "",
-    ) -> None:
-        """Add a checkbox to the menu.
-
-        Args:
-            label: Label string for button, including tilde for keyboard
-              navigation, e.g. "~Save".
-            bool_var: Tk variable to keep track of state or set it from elsewhere
-            handler_on: Callback function for when checkbox gets checked
-            handler_off: Callback function for when checkbox gets checked
-            accel: String describing optional accelerator key, used when a
-              callback function is passed in as ``handler``. Will be displayed
-              on the button, and will be bound to the same action as the menu
-              button. "Cmd/Ctrl" means `Cmd` key on Mac; `Ctrl` key on
-              Windows/Linux.
-        """
-        Menu.bind_checkbox(bool_var.pref_key, handler_on, handler_off, accel)
-
-        label_tilde, label_txt = process_label(label)
-        accel = process_accel(accel)[0]
-        command_args = {
-            "label": label_txt,
-            "command": lambda: Menu.checkbox_clicked(
-                bool_var.pref_key, handler_on, handler_off
-            ),
-            "variable": bool_var,
-            "accelerator": accel,
-        }
-        if label_tilde >= 0:
-            command_args["underline"] = label_tilde
-        self.add_checkbutton(command_args)
-
-    @classmethod
-    def checkbox_clicked(
-        cls,
-        pref_key: PrefKey,
-        handler_on: Optional[Callable[[], None]] = None,
-        handler_off: Optional[Callable[[], None]] = None,
-    ) -> None:
-        """Callback when checkbox is clicked.
-
-        Call appropriate handler depending on setting."""
-        if preferences.get(pref_key):
-            if handler_on is not None:
-                handler_on()
-        else:
-            if handler_off is not None:
-                handler_off()
-
-    @classmethod
-    def bind_checkbox(
-        cls,
-        pref_key: PrefKey,
-        handler_on: Optional[Callable[[], None]] = None,
-        handler_off: Optional[Callable[[], None]] = None,
-        accel: str = "",
-    ) -> None:
-        """Bind callback to shortcut."""
-        _, key_event = process_accel(accel)
-
-        def accel_command(_: tk.Event) -> None:
-            """Command to simulate checkbox click via shortcut key.
-
-            Because key hasn't been clicked, variable hasn't been toggled.
-            """
-            preferences.set(pref_key, not preferences.get(pref_key))
-            Menu.checkbox_clicked(pref_key, handler_on, handler_off)
-
-        if accel:
-            maintext().key_bind(key_event, accel_command, bind_all=True)
-
-    def add_button_virtual_event(
-        self, label: str, virtual_event: str, accel: str = ""
-    ) -> None:
-        """Add a button to this menu to call virtual event."""
-
-        def command() -> None:
-            widget = maintext().winfo_toplevel().focus_get()
-            if widget is None:
-                widget = maintext().focus_widget()
-            widget.event_generate(virtual_event)
-
-        self.add_button(label, command, accel, bind_all=False)
-
-    def add_cut_copy_paste(self, read_only: bool = False) -> None:
-        """Add cut/copy/paste buttons to this menu"""
-        if not read_only:
-            self.add_button_virtual_event("Cu~t", "<<Cut>>", "Cmd/Ctrl+X")
-        self.add_button_virtual_event("~Copy", "<<Copy>>", "Cmd/Ctrl+C")
-        if not read_only:
-            self.add_button_virtual_event("~Paste", "<<Paste>>", "Cmd/Ctrl+V")
-        self.add_separator()
-        self.add_button_virtual_event("Select ~All", "<<SelectAll>>", "Cmd/Ctrl+A")
 
 
 class CustomMenuDialog(ToplevelDialog):
@@ -1506,110 +1338,6 @@ class StatusBar(ttk.Frame):
         self.fields[key].focus()
 
 
-class ScrolledReadOnlyText(tk.Text):
-    """Implement a read only mode text editor class with scroll bar.
-
-    Done by replacing the bindings for the insert and delete events. From:
-    http://stackoverflow.com/questions/3842155/is-there-a-way-to-make-the-tkinter-text-widget-read-only
-    """
-
-    # Tag can be used to select a line of text, and to search for the selected line
-    # Can't use standard selection since that would interfere with user trying to copy/paste, etc.
-    SELECT_TAG_NAME = "chk_select"
-
-    def __init__(self, parent: tk.Widget, context_menu: bool = True, **kwargs: Any):
-        """Init the class and set the insert and delete event bindings."""
-
-        self.frame = ttk.Frame(parent)
-        self.frame.grid(row=0, column=0, sticky="NSEW")
-        self.frame.columnconfigure(0, weight=1)
-        self.frame.rowconfigure(0, weight=1)
-
-        super().__init__(self.frame, spacing1=maintext()["spacing1"], **kwargs)
-        super().grid(column=0, row=0, sticky="NSEW")
-        self.redirector = WidgetRedirector(self)
-        self.insert = self.redirector.register("insert", lambda *args, **kw: "break")  # type: ignore[method-assign]
-        self.delete = self.redirector.register("delete", lambda *args, **kw: "break")  # type: ignore[method-assign]
-
-        hscroll = ttk.Scrollbar(self.frame, orient=tk.HORIZONTAL, command=self.xview)
-        hscroll.grid(column=0, row=1, sticky="NSEW")
-        self["xscrollcommand"] = hscroll.set
-        vscroll = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
-        vscroll.grid(column=1, row=0, sticky="NSEW")
-        self["yscrollcommand"] = vscroll.set
-
-        self["inactiveselect"] = self["selectbackground"]
-
-        self.tag_configure(
-            ScrolledReadOnlyText.SELECT_TAG_NAME,
-            background="#dddddd",
-            foreground="#000000",
-        )
-
-        self["cursor"] = "arrow"
-
-        # Since Text widgets don't normally listen to theme changes,
-        # need to do it explicitly here.
-        super().bind(
-            "<<ThemeChanged>>",
-            lambda _event: maintext().theme_set_tk_widget_colors(self),
-        )
-        # Also on creation, so it's correct for the current theme
-        maintext().theme_set_tk_widget_colors(self)
-
-        # By default Tab is accepted by text widget, but we want it to move focus
-        self.bind("<Tab>", focus_next_widget)
-        bind_shift_tab(self, focus_prev_widget)
-
-        # Redirect attempts to undo & redo to main text window
-        # Keystrokes match those in Undo/Redo menu buttons, with case handled manually here
-        _, key_event = process_accel("Cmd/Ctrl+Z")
-        super().bind(key_event, lambda _event: maintext().event_generate("<<Undo>>"))
-        _, key_event = process_accel("Cmd/Ctrl+z")
-        super().bind(key_event, lambda _event: maintext().event_generate("<<Undo>>"))
-        _, key_event = process_accel("Cmd+Shift+Z" if is_mac() else "Ctrl+Y")
-        super().bind(key_event, lambda _event: maintext().event_generate("<<Redo>>"))
-        _, key_event = process_accel("Cmd+Shift+z" if is_mac() else "Ctrl+y")
-        super().bind(key_event, lambda _event: maintext().event_generate("<<Redo>>"))
-
-        # Intercept copy/cut to queue macOS fix before default copy/cut behavior
-        def copy_fix(_e: tk.Event) -> str:
-            maintext().clipboard_fix()
-            return ""  # Permit default behavior to happen
-
-        super().bind("<<Copy>>", copy_fix)
-        super().bind("<<Cut>>", copy_fix)
-
-        if context_menu:
-            add_text_context_menu(self, read_only=True)
-
-    def grid(self, *args: Any, **kwargs: Any) -> None:
-        """Override ``grid``, so placing Text actually places surrounding Frame"""
-        return self.frame.grid(*args, **kwargs)
-
-    def select_line(self, line_num: int) -> None:
-        """Highlight the line_num'th line of text, removing any other highlights.
-
-        Args:
-            line_num: Line number to be highlighted - assumed valid.
-        """
-        self.tag_remove(ScrolledReadOnlyText.SELECT_TAG_NAME, "1.0", tk.END)
-        self.tag_add(
-            ScrolledReadOnlyText.SELECT_TAG_NAME, f"{line_num}.0", f"{line_num + 1}.0"
-        )
-        self.see(f"{line_num}.0")
-
-    def get_select_line_num(self) -> Optional[int]:
-        """Get the line number of the currently selected line.
-
-        Returns:
-            Line number of selected line, or None if no line selected.
-        """
-        if tag_range := self.tag_nextrange(ScrolledReadOnlyText.SELECT_TAG_NAME, "1.0"):
-            return IndexRowCol(tag_range[0]).row
-        return None
-
-
 class MessageLogDialog(ToplevelDialog):
     """A dialog that displays error/info messages."""
 
@@ -1866,24 +1594,6 @@ def do_sound_bell() -> None:
 
 
 bell_set_callback(do_sound_bell)
-
-
-def add_text_context_menu(text_widget: tk.Text, read_only: bool = False) -> None:
-    """Add a context menu to a Text widget.
-
-    Puts Cut, Copy, Paste, Select All menu buttons in a context menu.
-
-    Args:
-        read_only: True if text is read-only, so does not require Cut & Paste options.
-    """
-    menu_context = Menu(text_widget, "")
-    menu_context.add_cut_copy_paste(read_only=read_only)
-
-    def post_context_menu(event: tk.Event) -> None:
-        event.widget.focus_set()
-        menu_context.post(event.x_root, event.y_root)
-
-    mouse_bind(text_widget, "3", post_context_menu)
 
 
 def mainimage() -> MainImage:

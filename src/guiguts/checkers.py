@@ -7,7 +7,7 @@ from typing import Any, Optional, Callable
 
 import regex as re
 
-from guiguts.maintext import maintext
+from guiguts.maintext import maintext, HighlightTag
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.preferences import PrefKey, preferences, PersistentBoolean
 from guiguts.root import root
@@ -21,8 +21,6 @@ from guiguts.utilities import (
 from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind, Busy, ToolTip
 
 MARK_ENTRY_TO_SELECT = "MarkEntryToSelect"
-HILITE_TAG_NAME = "chk_hilite"
-ERROR_PREFIX_TAG_NAME = "chk_error_prefix"
 REFRESH_MESSAGE = "Click this message to refresh after Undo/Redo"
 
 
@@ -571,12 +569,6 @@ class CheckerDialog(ToplevelDialog):
         self.process_command = process_command
         self.rowcol_key = sort_key_rowcol or CheckerDialog.sort_key_rowcol
         self.alpha_key = sort_key_alpha or CheckerDialog.sort_key_alpha
-        self.text.tag_configure(
-            HILITE_TAG_NAME,
-            background=maintext()["selectbackground"],
-            foreground=maintext()["selectforeground"],
-        )
-        self.text.tag_configure(ERROR_PREFIX_TAG_NAME, foreground="red")
 
         def do_clear_on_undo_redo() -> None:
             """If undo/redo operation should trigger user to Re-run tool, clear dialog."""
@@ -914,7 +906,9 @@ class CheckerDialog(ToplevelDialog):
                     entry.hilite_end + len(rowcol_str) + len(entry.error_prefix),
                 )
                 self.text.tag_add(
-                    HILITE_TAG_NAME, start_rowcol.index(), end_rowcol.index()
+                    HighlightTag.CHECKER_HIGHLIGHT,
+                    start_rowcol.index(),
+                    end_rowcol.index(),
                 )
             if entry.error_prefix:
                 start_rowcol = IndexRowCol(self.text.index(tk.END + "-2line"))
@@ -923,7 +917,9 @@ class CheckerDialog(ToplevelDialog):
                     start_rowcol.row, len(rowcol_str) + len(entry.error_prefix)
                 )
                 self.text.tag_add(
-                    ERROR_PREFIX_TAG_NAME, start_rowcol.index(), end_rowcol.index()
+                    HighlightTag.CHECKER_ERROR_PREFIX,
+                    start_rowcol.index(),
+                    end_rowcol.index(),
                 )
         # Output "Check complete", so user knows it's done
         if complete_msg:

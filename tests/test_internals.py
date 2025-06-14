@@ -2,9 +2,15 @@
 
 from guiguts.application import Guiguts
 from guiguts.file import File
-from guiguts.mainwindow import process_label, process_accel
 from guiguts.preferences import preferences, PrefKey
-from guiguts.utilities import is_mac, is_windows, is_x11, _is_system
+from guiguts.utilities import (
+    is_mac,
+    is_windows,
+    is_x11,
+    _is_system,
+    process_label,
+    process_accel,
+)
 
 
 def test_which_os(guiguts_app: Guiguts) -> None:  # pylint: disable=unused-argument

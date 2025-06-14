@@ -38,10 +38,10 @@ from guiguts.maintext import (
     SeparatorMetadata,
     ButtonMetadata,
     CheckbuttonMetadata,
+    Menu,
 )
 from guiguts.mainwindow import (
     MainWindow,
-    Menu,
     menubar,
     StatusBar,
     statusbar,

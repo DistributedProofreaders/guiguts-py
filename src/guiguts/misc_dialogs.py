@@ -507,19 +507,24 @@ class PreferencesDialog(ToplevelDialog):
             desc.tag_configure(sample_tag_name, style_dict)
             desc.tag_add(sample_tag_name, "1.0", "1.end")
             desc.config(state="disabled")
-            ToolTip(
-                desc,
-                "Left-click to set text color. Right-click or Shift-left-click to set background",
-            )
+            tooltip = ""
+            if style_dict.get("foreground", "#000000") != "":
+                tooltip += "Left-click to set text color. "
+            if style_dict.get("background", "#000000") != "":
+                tooltip += "Right-click or Shift-left-click to set background"
+            ToolTip(desc, tooltip)
 
             # Colorpicker bindings
             def click_callback(
-                attr: str,
+                attr: Literal["foreground", "background"],
                 key: ColorKey = key,
                 widget: tk.Text = desc,
                 style_dict: StyleDict = style_dict,
             ) -> None:
                 current = str(style_dict.get(attr, "#000000"))
+                if current == "":
+                    logger.error(f"{attr.capitalize()} color is not configurable")
+                    return
                 color = colorchooser.askcolor(
                     color=current, parent=self, title=f"Choose {attr} color"
                 )[1]
