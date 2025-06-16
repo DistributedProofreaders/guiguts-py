@@ -486,6 +486,11 @@ class PreferencesDialog(ToplevelDialog):
             desc = tk.Text(
                 self.colors_frame,
                 background=maintext()["background"],
+                foreground=(
+                    maintext()["selectforeground"]
+                    if key == ColorKey.MAIN_SELECT_INACTIVE
+                    else maintext()["foreground"]
+                ),
                 font=maintext()["font"],
                 width=25,
                 height=1,
