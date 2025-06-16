@@ -33,6 +33,7 @@ from guiguts.widgets import (
     focus_prev_widget,
     bind_shift_tab,
     mouse_bind,
+    ToplevelDialog
 )
 
 logger = logging.getLogger(__package__)
@@ -3951,6 +3952,19 @@ class MainText(tk.Text):
                 c_color.dark if themed_style().is_dark_theme() else c_color.light,
             )
 
+        def update_checker_tag(key: ColorKey) -> None:
+            """Update all checker dialogs' text widgets' tag with new settings."""
+            c_color = maintext().colors[key]
+            assert c_color.tag
+            for dlg in ToplevelDialog._toplevel_dialogs.values():
+                try:
+                    dlg.text.tag_configure(
+                        c_color.tag,
+                        c_color.dark if themed_style().is_dark_theme() else c_color.light,
+                    )
+                except Exception:
+                    pass
+
         # Temporarily create a Text to get the default select bg & fg colors
         # which may be a name like "SystemHighlightText" so convert it to rgb
         temp_text = tk.Text()
@@ -4219,7 +4233,7 @@ class MainText(tk.Text):
                 "Checker selected line",
                 {"background": "#dddddd", "foreground": "black"},
                 {"background": "#dddddd", "foreground": "black"},
-                None,
+                update_checker_tag,
             ),
             ColorKey.CHECKER_HIGHLIGHT: ConfigurableColor(
                 HighlightTag.CHECKER_HIGHLIGHT,
@@ -4232,14 +4246,14 @@ class MainText(tk.Text):
                     "background": sel_bg,
                     "foreground": sel_fg,
                 },
-                None,
+                update_checker_tag,
             ),
             ColorKey.CHECKER_ERROR_PREFIX: ConfigurableColor(
                 HighlightTag.CHECKER_ERROR_PREFIX,
                 "Checker error prefix",
                 {"background": "", "foreground": "red"},
                 {"background": "", "foreground": "red"},
-                None,
+                update_checker_tag,
             ),
         }
 
