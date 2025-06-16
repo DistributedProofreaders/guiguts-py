@@ -506,6 +506,10 @@ class PreferencesDialog(ToplevelDialog):
             )
             desc.tag_configure(sample_tag_name, style_dict)
             desc.tag_add(sample_tag_name, "1.0", "1.end")
+            desc.tag_configure(
+                "sel", foreground=desc["foreground"], background=desc["background"]
+            )
+            desc.config(inactiveselectbackground=desc["background"])
             desc.config(state="disabled")
             tooltip = ""
             if style_dict.get("foreground", "#000000") != "":
