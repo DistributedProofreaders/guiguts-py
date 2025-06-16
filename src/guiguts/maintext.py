@@ -33,7 +33,7 @@ from guiguts.widgets import (
     focus_prev_widget,
     bind_shift_tab,
     mouse_bind,
-    ToplevelDialog
+    ToplevelDialog,
 )
 
 logger = logging.getLogger(__package__)
@@ -3953,16 +3953,21 @@ class MainText(tk.Text):
             )
 
         def update_checker_tag(key: ColorKey) -> None:
-            """Update all checker dialogs' text widgets' tag with new settings."""
+            """Update all checker dialogs' text widget's tag with new settings."""
             c_color = maintext().colors[key]
             assert c_color.tag
-            for dlg in ToplevelDialog._toplevel_dialogs.values():
+            for dlg in ToplevelDialog.toplevel_dialogs.values():
                 try:
-                    dlg.text.tag_configure(
+                    dlg.text.tag_configure(  # type:ignore[attr-defined]
                         c_color.tag,
-                        c_color.dark if themed_style().is_dark_theme() else c_color.light,
+                        (
+                            c_color.dark
+                            if themed_style().is_dark_theme()
+                            else c_color.light
+                        ),
                     )
-                except Exception:
+                except AttributeError:
+                    # Ignore dialogs that don't have a "text" widget or that have been closed
                     pass
 
         # Temporarily create a Text to get the default select bg & fg colors

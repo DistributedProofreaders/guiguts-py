@@ -35,7 +35,7 @@ class ToplevelDialog(tk.Toplevel):
 
     # Dictionary of ToplevelDialog objects, keyed by class name.
     # Used to ensure only one instance of any dialog is created.
-    _toplevel_dialogs: dict[str, "ToplevelDialog"] = {}
+    toplevel_dialogs: dict[str, "ToplevelDialog"] = {}
 
     # Location of manual page for most recently focused dialog
     context_help = ""
@@ -132,7 +132,7 @@ class ToplevelDialog(tk.Toplevel):
         # Or do we need to create it?
         if not cls.get_dialog():
             dlg = cls(**kwargs)
-        ToplevelDialog._toplevel_dialogs[dlg_name] = dlg
+        ToplevelDialog.toplevel_dialogs[dlg_name] = dlg
         dlg.grab_focus()
         return dlg
 
@@ -145,10 +145,10 @@ class ToplevelDialog(tk.Toplevel):
         """
         dlg_name = cls.get_dlg_name()
         if (
-            dlg_name in ToplevelDialog._toplevel_dialogs
-            and ToplevelDialog._toplevel_dialogs[dlg_name].winfo_exists()
+            dlg_name in ToplevelDialog.toplevel_dialogs
+            and ToplevelDialog.toplevel_dialogs[dlg_name].winfo_exists()
         ):
-            return ToplevelDialog._toplevel_dialogs[dlg_name]  # type: ignore[return-value]
+            return ToplevelDialog.toplevel_dialogs[dlg_name]  # type: ignore[return-value]
         return None
 
     @classmethod
@@ -209,11 +209,11 @@ class ToplevelDialog(tk.Toplevel):
     @classmethod
     def close_all(cls) -> None:
         """Close all open ToplevelDialogs."""
-        for dlg in ToplevelDialog._toplevel_dialogs.values():
+        for dlg in ToplevelDialog.toplevel_dialogs.values():
             if dlg.winfo_exists():
                 dlg.destroy()
                 dlg.reset()
-        ToplevelDialog._toplevel_dialogs.clear()
+        ToplevelDialog.toplevel_dialogs.clear()
 
     def _do_config(self) -> None:
         """Configure the geometry of the ToplevelDialog.
