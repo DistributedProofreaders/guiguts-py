@@ -669,6 +669,18 @@ class SearchDialog(ToplevelDialog):
             sound_bell()
             return
 
+        # Mark start & end of each replace_range in case row.col indexes are changed by earlier replacements
+        mark_pref = self.get_dlg_name()
+        for replace_range in replace_ranges:
+            maintext().mark_set(
+                f"{mark_pref}RangeStart{replace_range.start.index()}",
+                replace_range.start.index(),
+            )
+            maintext().mark_set(
+                f"{mark_pref}RangeEnd{replace_range.end.index()}",
+                replace_range.end.index(),
+            )
+
         if SearchDialog.selection.get():
             maintext().selection_ranges_store_with_marks()
         maintext().undo_block_begin()
@@ -677,20 +689,35 @@ class SearchDialog(ToplevelDialog):
         replace_match = replace_string
         match_count = 0
 
+        Busy.busy()
         for replace_range in replace_ranges:
+            # Refresh range using marks stored earlier, in case range has moved due to earlier replacements
+            refreshed_range = IndexRange(
+                maintext().index(f"{mark_pref}RangeStart{replace_range.start.index()}"),
+                maintext().index(f"{mark_pref}RangeEnd{replace_range.end.index()}"),
+            )
             try:
-                matches = maintext().find_all(replace_range, search_string)
+                matches = maintext().find_all(refreshed_range, search_string)
             except re.error as e:
                 self.display_message(message_from_regex_exception(e))
+                Busy.unbusy()
                 return
+
+            # Mark start of each match so not offset by earlier replacements
+            for match in matches:
+                maintext().mark_set(
+                    f"{mark_pref}MatchStart{match.rowcol.index()}", match.rowcol.index()
+                )
 
             flags = (
                 0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
             )
 
-            # Work backwards so replacements don't affect future match locations
-            for match in reversed(matches):
-                start_index = match.rowcol.index()
+            for match in matches:
+                # Get marked start of match
+                start_index = maintext().index(
+                    f"{mark_pref}MatchStart{match.rowcol.index()}"
+                )
                 end_index = maintext().index(start_index + f"+{match.count}c")
                 match_text = maintext().get(start_index, end_index)
                 if regexp:
@@ -701,9 +728,17 @@ class SearchDialog(ToplevelDialog):
                     except re.error as e:
                         self.display_message(f"Regex error: {str(e)}")
                         sound_bell()
+                        Busy.unbusy()
                         return
                 maintext().replace(start_index, end_index, replace_match)
+                # Remove temporary match mark
+                maintext().mark_unset(f"{mark_pref}MatchStart{match.rowcol.index()}")
             match_count += len(matches)
+
+        # Remove range marks
+        for replace_range in replace_ranges:
+            maintext().mark_unset(f"{mark_pref}RangeStart{replace_range.start.index()}")
+            maintext().mark_unset(f"{mark_pref}RangeEnd{replace_range.end.index()}")
 
         if SearchDialog.selection.get():
             maintext().selection_ranges_restore_from_marks()
@@ -712,6 +747,7 @@ class SearchDialog(ToplevelDialog):
 
         match_str = sing_plur(match_count, "match", "matches")
         self.display_message(f"Replaced: {match_str} {range_name}")
+        Busy.unbusy()
 
     def highlightall_clicked(self) -> None:
         """Highlight all occurrences  of the string in the search box."""
