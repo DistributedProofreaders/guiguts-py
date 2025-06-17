@@ -689,6 +689,7 @@ class SearchDialog(ToplevelDialog):
         replace_match = replace_string
         match_count = 0
 
+        Busy.busy()
         for replace_range in replace_ranges:
             # Refresh range using marks stored earlier, in case range has moved due to earlier replacements
             refreshed_range = IndexRange(
@@ -699,6 +700,7 @@ class SearchDialog(ToplevelDialog):
                 matches = maintext().find_all(refreshed_range, search_string)
             except re.error as e:
                 self.display_message(message_from_regex_exception(e))
+                Busy.unbusy()
                 return
 
             # Mark start of each match so not offset by earlier replacements
@@ -726,6 +728,7 @@ class SearchDialog(ToplevelDialog):
                     except re.error as e:
                         self.display_message(f"Regex error: {str(e)}")
                         sound_bell()
+                        Busy.unbusy()
                         return
                 maintext().replace(start_index, end_index, replace_match)
                 # Remove temporary match mark
@@ -744,6 +747,7 @@ class SearchDialog(ToplevelDialog):
 
         match_str = sing_plur(match_count, "match", "matches")
         self.display_message(f"Replaced: {match_str} {range_name}")
+        Busy.unbusy()
 
     def highlightall_clicked(self) -> None:
         """Highlight all occurrences  of the string in the search box."""
