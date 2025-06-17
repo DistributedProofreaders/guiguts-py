@@ -38,6 +38,9 @@ MARK_END_RANGE = "SearchRangeEnd"
 PADX = 2
 PADY = 2
 
+# Passed into eval call when `\C...\E` used in regex replacement
+lglobal = {}
+
 
 class NoMatchFoundError(Exception):
     """Raised when no match is found for the search string."""
@@ -945,10 +948,20 @@ def get_regex_replacement(
             )
         return string
 
+    def cset(key: str, value: str | int) -> str | int:
+        """Set value in lglobal[key] & return it."""
+        lglobal[key] = value
+        return value
+
+    def cget(key: str) -> str | int:
+        """Get value from lglobal[key]."""
+        return lglobal[key]
+
     def eval_python(python_in: str) -> str:
         """Evaluate string as python and return results as string."""
+        global_vars = {"lglobal": lglobal, "cset": cset, "cget": cget}
         try:
-            return str(eval(python_in))  # pylint:disable=eval-used
+            return str(eval(python_in, global_vars))  # pylint:disable=eval-used
         except Exception as exc:
             tb = re.sub(
                 r'.+File "<string>", line 1[^\n]*',
