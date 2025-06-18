@@ -15,7 +15,7 @@ also works with later versions of Python, and has been tested in versions up to 
 
 1. Install Python 3.11 or above from [Python.org](https://www.python.org/downloads/windows/).
 GG has been tested in versions up to 3.13.
-2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
+2. Type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
 previous version of GG2).
 3. Type `guiguts` to run GG2.
 
@@ -24,7 +24,7 @@ previous version of GG2).
 1. Install Python 3.11 or above from [python.org](https://www.python.org/), not a Homebrew-installed Python.
 GG has been tested in versions up to 3.13.
 
-2. Type `pip install guiguts` (or `pip install guiguts --upgrade` to upgrade from a
+2. Type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
 previous version of GG2).
 
 3. Type `guiguts` to run GG2.
@@ -41,12 +41,16 @@ previous version of GG2).
 Python needs to be version 3.11 or above, and GG has been tested in
 versions up to 3.13.
 
-1. `apt-get update`
-2. `apt-get install -y python3 python3-pip python3-tk idle-python3.12`
-3. Type `pip3 install guiguts` (or `pip3 install guiguts --upgrade`
+1. Install python, pip3, and Tk:
+    a. `apt-get update`
+    b. `apt-get install -y python3 python3-pip python3-tk idle-python3.12`
+
+2. Type `pip3 install guiguts` (or `pip3 install guiguts --upgrade`
 to upgrade from a previous version of GG2).
-4. Type `guiguts` to run GG2.
-5. If the above does not work, then 
+
+3. Type `guiguts` to run GG2.
+
+4. If the above does not work, then 
     a. Install pipx: `apt-get install -y python3-pipx`
     b. Type `pipx install guiguts`
        (or `pipx install guiguts --upgrade`
