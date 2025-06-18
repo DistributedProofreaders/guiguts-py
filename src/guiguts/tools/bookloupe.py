@@ -108,7 +108,7 @@ checker_filters = [
     CheckerFilterText("Endquote missing punctuation", "Endquote missing punctuation.*"),
     CheckerFilterText("Extra period", "Extra period.*"),
     CheckerFilterText("Forward slash", "Forward slash.*"),
-    CheckerFilterText("HTML Tag", "HTML Tag.*"),
+    CheckerFilterText("HTML tag", "HTML tag.*"),
     CheckerFilterText("HTML symbol", "HTML symbol.*"),
     CheckerFilterText("Hyphen at end of line", "Hyphen at end of line.*"),
     CheckerFilterText("Long line", "Long line .*"),
@@ -842,7 +842,7 @@ class BookloupeChecker:
             self.add_match_entry(
                 step,
                 match,
-                f"HTML Tag {match[0]}",
+                f"HTML tag {match[0]}",
             )
 
     def check_html_entity(self, step: int, line: str) -> None:
