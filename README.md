@@ -32,9 +32,11 @@ previous version of GG2).
 4. If the above does not work, then 
 
     a. Install pipx: `/usr/local/bin/python3 -m pip install pipx`
+
     b. Type `/usr/local/bin/python3 -m pipx install guiguts`
        (or `/usr/local/bin/python3 -m pipx install guiguts --upgrade`
        to upgrade from a previous version of GG2).
+
     c. Type `guiguts` or `~/.local/bin/guiguts` to run GG2.
 
 ### Linux
@@ -45,6 +47,7 @@ versions up to 3.13.
 1. Install python, pip3, and Tk:
 
     a. `apt-get update`
+
     b. `apt-get install -y python3 python3-pip python3-tk idle-python3.12`
 
 2. Type `pip3 install guiguts` (or `pip3 install guiguts --upgrade`
@@ -55,9 +58,10 @@ to upgrade from a previous version of GG2).
 4. If the above does not work, then 
 
     a. Install pipx: `apt-get install -y python3-pipx`
-    b. Type `pipx install guiguts`
-       (or `pipx install guiguts --upgrade`
+
+    b. Type `pipx install guiguts` (or `pipx install guiguts --upgrade`
        to upgrade from a previous version of GG2).
+
     c. Type `guiguts` to run GG2.
 
 ### Chromebook (after enabling Linux)
