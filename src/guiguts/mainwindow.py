@@ -451,8 +451,8 @@ class MainImage(tk.Frame):
         self,
         parent: tk.PanedWindow,
         hide_func: Callable[[], None],
-        float_func: Callable[[Any], None],
-        dock_func: Callable[[Any], None],
+        float_func: Callable[[], None],
+        dock_func: Callable[[], None],
     ) -> None:
         """Initialize the MainImage to contain an empty Canvas with scrollbars.
 
@@ -1037,9 +1037,9 @@ class MainImage(tk.Frame):
     def set_image_docking(self) -> None:
         """Float/dock image depending on flag."""
         if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
-            self.dock_func(None)
+            self.dock_func()
         else:
-            self.float_func(None)
+            self.float_func()
 
     def is_image_loaded(self) -> bool:
         """Return if an image is currently loaded."""
@@ -1514,7 +1514,7 @@ class MainWindow:
         self.paned_window.forget(mainimage())
         preferences.set(PrefKey.IMAGE_VIEWER_INTERNAL, False)
 
-    def float_image(self, _event: Optional[tk.Event] = None) -> None:
+    def float_image(self) -> None:
         """Float the image into a separate window"""
         mainimage().grid_remove()
         root().wm_manage(mainimage())
@@ -1530,10 +1530,17 @@ class MainWindow:
         # It is OK to save image viewer geometry from now on
         mainimage().enable_geometry_storage()
 
-    def dock_image(self, _event: Optional[tk.Event] = None) -> None:
+    def dock_image(self) -> None:
         """Dock the image back into the main window"""
         root().wm_forget(mainimage())  # type: ignore[arg-type]
-        self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
+        self.paned_window.forget(mainimage())
+        self.paned_window.forget(self.paned_text_window)
+        if preferences.get(PrefKey.IMAGE_VIEWER_DOCK_SIDE) == "right":
+            self.paned_window.add(self.paned_text_window, minsize=MIN_PANE_WIDTH)
+            self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
+        else:
+            self.paned_window.add(mainimage(), minsize=MIN_PANE_WIDTH)
+            self.paned_window.add(self.paned_text_window, minsize=MIN_PANE_WIDTH)
         self.paned_window.sash_place(
             0, preferences.get(PrefKey.IMAGE_DOCK_SASH_COORD), 0
         )
