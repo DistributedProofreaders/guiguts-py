@@ -230,8 +230,6 @@ class PageDetailsDialog(OkApplyCancelDialog):
         else:
             row_id, col_id = self.list.identify_rowcol(which)
         row = self.list.set(row_id)
-        if col_id not in (STYLE_COLUMN, NUMBER_COLUMN):
-            return "break"
 
         if col_id == STYLE_COLUMN:
             if COL_HEAD_STYLE not in row:
