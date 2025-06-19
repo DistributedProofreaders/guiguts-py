@@ -105,3 +105,23 @@ def import_prep_text_files() -> None:
     maintext().set_insert_index(maintext().start())
     # Give user chance to save immediately
     the_file().save_as_file()
+
+
+def cp_character_substitutions() -> None:
+    """Apply standard character substitutions."""
+
+    # List of (search_char, replacement_string) pairs
+    fixes = [
+        ("\t", " "),  # tab → space
+        ("—", "--"),  # em dash → --
+        ("¬", "-"),  # not sign → hyphen
+        ("‘", "'"),  # left single quote → straight
+        ("’", "'"),  # right single quote → straight
+        ("“", '"'),  # left double quote → straight
+        ("”", '"'),  # right double quote → straight
+    ]
+
+    maintext().undo_block_begin()
+    for search_char, replacement in fixes:
+        maintext().replace_all(search_char, replacement)
+    maintext().undo_block_end()

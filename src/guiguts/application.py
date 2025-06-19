@@ -14,7 +14,11 @@ import webbrowser
 import darkdetect  # type: ignore[import-untyped]
 
 from guiguts.ascii_tables import JustifyStyle
-from guiguts.content_providing import export_prep_text_files, import_prep_text_files
+from guiguts.content_providing import (
+    export_prep_text_files,
+    import_prep_text_files,
+    cp_character_substitutions,
+)
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle
@@ -643,14 +647,19 @@ class Guiguts:
 
     def init_file_content_menu(self, parent: MenuMetadata) -> None:
         """Create the File->Content Providing menu."""
-        project_menu = parent.add_submenu("Co~ntent Providing")
-        project_menu.add_button(
+        cp_menu = parent.add_submenu("Co~ntent Providing")
+        cp_menu.add_button(
             "~Import Prep Text Files...",
             import_prep_text_files,
         )
-        project_menu.add_button(
+        cp_menu.add_button(
             "~Export As Prep Text Files...",
             export_prep_text_files,
+        )
+        cp_menu.add_separator()
+        cp_menu.add_button(
+            "CP Character ~Substitutions",
+            cp_character_substitutions,
         )
 
     def init_file_project_menu(self, parent: MenuMetadata) -> None:
