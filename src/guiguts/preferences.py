@@ -154,6 +154,7 @@ class PrefKey(StrEnum):
     CUSTOM_MARKUP_ATTRIBUTE_2_HISTORY = auto()
     CUSTOM_MARKUP_ATTRIBUTE_3_HISTORY = auto()
     CUSTOMIZABLE_COLORS = auto()
+    IMAGE_VIEWER_DOCK_SIDE = auto()
 
 
 class Preferences:
