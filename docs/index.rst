@@ -18,6 +18,11 @@ Checkers
     
 .. automodule:: checkers
  
+Content Providing
+=================
+    
+.. automodule:: content_providing
+ 
 File
 ====
     
