@@ -63,7 +63,7 @@ from guiguts.misc_dialogs import (
     SurroundWithDialog,
 )
 from guiguts.misc_tools import (
-    basic_fixup_check,
+    BasicFixup,
     page_separator_fixup,
     PageSepAutoType,
     unmatched_dp_markup,
@@ -858,7 +858,7 @@ class Guiguts:
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""
         tools_menu = self.top_level_menu("~Tools")
-        tools_menu.add_button("Basic Fi~xup", basic_fixup_check)
+        tools_menu.add_button("Basic Fi~xup", lambda: BasicFixup().run())
         tools_menu.add_button("~Word Frequency", word_frequency)
         tools_menu.add_button("~Bookloupe", bookloupe_check)
         tools_menu.add_button(
