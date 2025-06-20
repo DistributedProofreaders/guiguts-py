@@ -112,13 +112,41 @@ def cp_character_substitutions() -> None:
 
     # List of (search_char, replacement_string) pairs
     fixes = [
-        ("\t", " "),  # tab → space
-        ("—", "--"),  # em dash → --
-        ("¬", "-"),  # not sign → hyphen
-        ("‘", "'"),  # left single quote → straight
-        ("’", "'"),  # right single quote → straight
-        ("“", '"'),  # left double quote → straight
-        ("”", '"'),  # right double quote → straight
+        ("\u0009", " "),  # horizontal tab
+        ("\u000b", "\n"),  # vertical tab
+        ("\u000c", "\n"),  # form feed
+        ("\u0085", "\n"),  # next line
+        ("\u00a0", " "),  # no-break space
+        ("\u00ac", "-"),  # not sign
+        ("\u1680", " "),  # ogham space mark
+        ("\u2000", " "),  # en quad
+        ("\u2001", " "),  # em quad
+        ("\u2002", " "),  # en space
+        ("\u2003", " "),  # em space
+        ("\u2004", " "),  # three-per-em space
+        ("\u2005", " "),  # four-per-em space
+        ("\u2006", " "),  # six-per-em space
+        ("\u2007", " "),  # figure space
+        ("\u2008", " "),  # punctuation space
+        ("\u2009", " "),  # thin space
+        ("\u200a", " "),  # hair space (corrected from original)
+        ("\u2010", "-"),  # hyphen
+        ("\u2011", "-"),  # non-breaking hyphen
+        ("\u2012", "--"),  # figure dash
+        ("\u2013", "-"),  # en-dash
+        ("\u2014", "--"),  # em-dash
+        ("\u2015", "--"),  # horizontal bar
+        ("\u2018", "'"),  # open curly single quote
+        ("\u2019", "'"),  # close curly single quote
+        ("\u201c", '"'),  # open curly double quote
+        ("\u201d", '"'),  # close curly double quote
+        ("\u2026", "..."),  # horizontal ellipsis
+        ("\u2028", "\n"),  # line separator
+        ("\u2029", "\n"),  # paragraph separator
+        ("\u202f", " "),  # narrow no-break space
+        ("\u205f", " "),  # medium mathematical space
+        ("\u2212", "-"),  # minus sign
+        ("\u3000", " "),  # ideographic space
     ]
 
     maintext().undo_block_begin()
