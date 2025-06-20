@@ -22,7 +22,7 @@ from guiguts.maintext import (
     ColorKey,
 )
 
-from guiguts.mainwindow import ScrolledReadOnlyText
+from guiguts.mainwindow import ScrolledReadOnlyText, mainimage
 from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
@@ -197,12 +197,33 @@ class PreferencesDialog(ToplevelDialog):
         image_viewer_frame.columnconfigure(0, weight=1)
         image_viewer_frame.columnconfigure(1, weight=1)
 
+        dock_side_frame = ttk.Frame(image_viewer_frame)
+        dock_side_frame.grid(column=0, row=0, sticky="NW", pady=5)
+        ttk.Label(dock_side_frame, text="Dock Image Viewer on: ").grid(
+            column=0, row=0, sticky="NW"
+        )
+        dock_side_textvariable = PersistentString(PrefKey.IMAGE_VIEWER_DOCK_SIDE)
+        ttk.Radiobutton(
+            dock_side_frame,
+            text="Left",
+            variable=dock_side_textvariable,
+            value="left",
+            command=lambda: mainimage().dock_func(),
+        ).grid(column=1, row=0, sticky="NW", padx=20)
+        ttk.Radiobutton(
+            dock_side_frame,
+            text="Right",
+            variable=dock_side_textvariable,
+            value="right",
+            command=lambda: mainimage().dock_func(),
+        ).grid(column=2, row=0, sticky="NW")
+
         iv_btn = ttk.Checkbutton(
             image_viewer_frame,
             text="Auto Img Reload Alert",
             variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_ALERT),
         )
-        iv_btn.grid(column=0, row=0, sticky="NEW", pady=5)
+        iv_btn.grid(column=0, row=1, sticky="NEW", pady=5)
         ToolTip(
             iv_btn,
             "Whether to flash the border when Auto Img re-loads the\n"
@@ -212,9 +233,9 @@ class PreferencesDialog(ToplevelDialog):
             image_viewer_frame,
             text="Use External Viewer",
             variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_EXTERNAL),
-        ).grid(column=0, row=1, sticky="NEW", pady=5)
+        ).grid(column=0, row=2, sticky="NEW", pady=5)
         file_name_frame = ttk.Frame(image_viewer_frame)
-        file_name_frame.grid(row=2, column=0, columnspan=2, sticky="NSEW")
+        file_name_frame.grid(row=3, column=0, columnspan=2, sticky="NSEW")
         file_name_frame.columnconfigure(0, weight=1)
         self.filename_textvariable = tk.StringVar(self, "")
         ttk.Entry(
