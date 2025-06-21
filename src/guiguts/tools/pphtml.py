@@ -612,7 +612,7 @@ class PPhtmlChecker:
 
     def dtd_check(self) -> None:
         """Check for valid HTML5 document type header."""
-        if "<!DOCTYPE html>" in self.file_lines[0]:
+        if "<!DOCTYPE HTML>" in self.file_lines[0].upper():
             self.output_subsection_errors(
                 True, "Document Type Header (file is HTML5)", []
             )
