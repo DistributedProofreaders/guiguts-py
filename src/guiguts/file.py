@@ -230,11 +230,17 @@ class File:
             grab_focus(root(), maintext())
         return filename
 
-    def close_file(self) -> None:
-        """Close current file, leaving an empty file."""
+    def close_file(self) -> bool:
+        """Close current file, leaving an empty file.
+
+        Returns:
+            True if file was closed, so OK to continue with another operation.
+        """
         if self.check_save():
             self.reset()
             maintext().do_close()
+            return True
+        return False
 
     def load_file(self, filename: str) -> None:
         """Load file & bin file.
