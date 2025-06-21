@@ -1,6 +1,7 @@
 """Support running of checking tools"""
 
 from enum import Enum, IntEnum, StrEnum, auto
+import math
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Optional, Callable
@@ -164,7 +165,11 @@ class CheckerViewOptionsDialog(ToplevelDialog):
         self.checkbuttons: list[ttk.Checkbutton] = []
         check_frame = ttk.Frame(self.top_frame)
         check_frame.grid(row=0, column=0)
-        max_height = 15  # Don't want too many checkbuttons per column
+        max_columns = 3  # Don't want too many columns
+        max_rows = 15  # Don't want too many checkbuttons per column
+        n_items = len(self.checker_dialog.view_options_filters)
+        columns = min(max_columns, math.ceil(n_items / max_rows))
+        max_height = math.ceil(n_items / columns)
 
         def btn_clicked(
             idx: int,
