@@ -477,11 +477,20 @@ def move_selection_up(tag_type: str) -> None:
     # the) selected Illo or SN record. NB We may not be able to move the record at all if
     # it means skipping over another tag of the same type.
     line_num = maintext().index(f"{first_line_num}-1l")
-    while (
-        line_num != "0.0"
-    ):  # NB That index does not exist but see at end of while loop.
+    while True:
         # What is on this line?
         line_txt = maintext().get(line_num, f"{line_num} lineend")
+
+        # If closing ] - skip to first line of this item
+        if line_txt and line_txt[-1] == "]":
+            while True:
+                line_num = maintext().index(f"{line_num}-1l")
+                line_txt = maintext().get(line_num, f"{line_num} lineend")
+                if line_txt and line_txt[0] == "[" or line_txt[0:1] == "*[":
+                    break
+                if line_num == "1.0":  # Hit top of file before tag start
+                    return
+
         # Is it a tag of the same type as the selected one?
         if tag_type == "Sidenote" and (
             line_txt[0:10] == "[Sidenote:" or line_txt[0:11] == "*[Sidenote:"
@@ -534,13 +543,11 @@ def move_selection_up(tag_type: str) -> None:
             )
             checker.update_after_move(tag_type, selected_illosn_index)
             return
-        # If we have reached the top of the file, and it is not a blank line, then we
-        # have to 'create' non-existent line number '0.0' to terminate the while-loop.
+        # If we have reached the top of the file, return.
         if line_num == "1.0":
-            line_num = "0.0"
-        else:
-            # Decrement line_num normally.
-            line_num = maintext().index(f"{line_num}-1l")
+            return
+        # Decrement line_num normally.
+        line_num = maintext().index(f"{line_num}-1l")
     return
 
 
