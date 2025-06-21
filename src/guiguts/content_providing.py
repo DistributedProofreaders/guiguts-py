@@ -117,7 +117,6 @@ def cp_character_substitutions() -> None:
         ("\u000c", "\n"),  # form feed
         ("\u0085", "\n"),  # next line
         ("\u00a0", " "),  # no-break space
-        ("\u00ac", "-"),  # not sign
         ("\u1680", " "),  # ogham space mark
         ("\u2000", " "),  # en quad
         ("\u2001", " "),  # em quad
@@ -129,7 +128,7 @@ def cp_character_substitutions() -> None:
         ("\u2007", " "),  # figure space
         ("\u2008", " "),  # punctuation space
         ("\u2009", " "),  # thin space
-        ("\u200a", " "),  # hair space (corrected from original)
+        ("\u200a", " "),  # hair space
         ("\u2010", "-"),  # hyphen
         ("\u2011", "-"),  # non-breaking hyphen
         ("\u2012", "--"),  # figure dash
