@@ -1049,6 +1049,13 @@ class MainText(tk.Text):
         # Initialize highlighting tags
         self.after_idle(self.highlight_configure_tags)
 
+    def switch_text_peer(self) -> None:
+        """Switch focus between main text and peer widget"""
+        if self.focus_widget() is self and preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+            self.peer.focus()
+        else:
+            self.focus()
+
     def theme_set_tk_widget_colors(self, widget: tk.Text) -> None:
         """Set bg & fg colors of a Text (non-themed) widget to match
         the theme colors.
