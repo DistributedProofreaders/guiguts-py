@@ -481,8 +481,13 @@ def move_selection_up(tag_type: str) -> None:
         # What is on this line?
         line_txt = maintext().get(line_num, f"{line_num} lineend")
 
-        # If closing ] - skip to first line of this item
-        if line_txt and line_txt[-1] == "]":
+        # If closing ] - skip to first line of this item unless single line [...]
+        if (
+            line_txt
+            and line_txt[-1] == "]"
+            and line_txt[0] != "["
+            and line_txt[0:1] != "*["
+        ):
             while True:
                 line_num = maintext().index(f"{line_num}-1l")
                 line_txt = maintext().get(line_num, f"{line_num} lineend")
