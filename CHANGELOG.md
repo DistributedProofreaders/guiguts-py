@@ -1,6 +1,63 @@
 # Changelog
 
 
+## Version 2.0.0-beta.2
+
+- Almost all colors used by GG can now be customized by the user via the
+  Preferences dialog; colors may be set for the dark theme or light theme
+- Alignment options added to Text menu: Center, Right Align, and
+  Right Align Numbers
+- GG-specific extended regexes added: `\U` uppercases, `\L` lowercases, 
+  `\T` titlecases, `\A` creates a hyperlink, `\R` converts to Roman numerals
+- GG2 now has the ability to store (using cset) and retrieve (using cget)
+  persistent variables when using `\C...\E` to execute python code, similar
+  to the use of `lglobal` in GG1
+- HTML markup dialog added to HTML menu
+- `Convert <sc> Manually` added to Text menu
+- Basic Fixup now has View Options so that messages of one type can be
+  hidden or shown
+- New `Content Providing` submenu of File menu has three functions:
+  Export as Prep Text Files, Import Prep Text Files, CP Character Substitution  
+- Browse button in image viewer allows user to load any image file
+- Scrolling during select-and-drag operations and within image viewer is now
+  smoother, particularly on Macs
+- In Page Labels configuration dialog, user can now click in the Img and Label
+  columns to select the label and jump to the page break in the text file
+- Image viewer can now be docked on the left or right of the text window
+- View Options dialogs have checkboxes spread evenly across columns
+- The busy cursor and "working" label now show during file saving operations
+- Spellcheck, Bookloupe and PPtext now ignore page separator lines, ppgen
+  command lines, and ppgen comment lines
+- Illustration/Sidenote fixups now sound the bell if an attempt is made to
+  move an illo/sidenote past another one
+- Focus ring around the currently-focused button or other user interface
+  control made more visible, especially in dark mode
+- Mac installation instructions improved
+- Some minor improvments to the wording and case of labels and buttons
+- Running `guiguts --version` prints the current Guiguts version number
+- New test suite auto-runs some tools and checks the results
+
+### Bug fixes
+
+- Prev/Next Footnote buttons did not work if an anchor line was selected
+  in the dialog rather than a footnote line
+- HTML autotable sometimes mis-selected the table causing a line to be lost
+  or duplicated
+- During HTML generation, `<p>` markup was wrongly added around `pagenum`
+  spans inside poetry
+- Scan images that were stored as palettized or RGB files were never inverted
+  in the image viewer
+- Illustration Fixup sometimes corrupted Illustration markup when attempting
+  to move an illo upwards past an illo block containing blank lines 
+- Mousewheel scrolling in image viewer was broken for Mac users
+- PPhtml reported double hyphens in comments in the CSS style block
+- PPhtml did not recognize valid DOCTYPE declarations if case was unexpected
+- On Linux, Shift-tab did not work correctly to change which user interface
+  control had focus
+- Some checkboxes in the S/R dialog were wider than needed, so users might
+  click them in error, thinking they were clicking in some empty space
+
+
 ## Version 2.0.0-beta.1
 
 - Indent +1/-1/+4 Spaces added to Text menu
