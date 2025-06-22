@@ -65,11 +65,12 @@ class PPhtmlChecker:
         # dict of image file information (width, height, format, mode, filesize)
         self.filedata: dict[str, PPhtmlFileData] = {}
         self.file_text = ""  # Text of file
+        self.end_css = ""
         self.file_lines: list[str] = []  # Text split into lines
         self.links: dict[str, list[IndexRange]] = {}
         self.targets: dict[str, list[IndexRange]] = {}
-        self.used_classes: set[str] = set()
-        self.defined_classes: set[str] = set()
+        self.used_classes: dict[str, Optional[IndexRange]] = {}
+        self.defined_classes: dict[str, Optional[IndexRange]] = {}
 
     def reset(self) -> None:
         """Reset PPhtml checker."""
@@ -78,11 +79,14 @@ class PPhtmlChecker:
         self.image_files = []
         self.filedata = {}
         self.file_text = maintext().get_text()
+        self.end_css = maintext().search("</style>", "end", "1.0", backwards=True)
+        if not self.end_css:
+            self.end_css = "1.0"
         self.file_lines = self.file_text.split("\n")
         self.links = {}
         self.targets = {}
-        self.used_classes = set()
-        self.defined_classes = set()
+        self.used_classes = {}
+        self.defined_classes = {}
 
     def run(self) -> None:
         """Run PPhtml."""
@@ -824,16 +828,35 @@ class PPhtmlChecker:
             def __init__(self) -> None:
                 """Initialize HTML outline parser."""
                 super().__init__()
-                self.classes: set[str] = set()
+                self.classes: dict[str, Optional[IndexRange]] = {}
+                self.tag_start = IndexRowCol(0, 0)
 
             def handle_starttag(
                 self, tag: str, attrs: list[tuple[str, str | None]]
             ) -> None:
                 """Handle start tags to find classes used."""
+                tag_index = self.getpos()
+                self.tag_start = IndexRowCol(tag_index[0], tag_index[1])
                 for attr in attrs:
-                    if attr[0] == "class" and attr[1] is not None:
-                        self.classes.update(attr[1].split())
-                        break
+                    if attr[0] != "class" or attr[1] is None:
+                        continue
+                    for css_class in attr[1].split():
+                        if css_class in self.classes:
+                            continue
+                        idx = maintext().search(
+                            rf"\y{css_class}\y",
+                            f"{tag_index[0]}.0",
+                            f"{tag_index[0]}.0+5l",
+                            regexp=True,
+                        )
+                        if idx:
+                            end_idx = maintext().rowcol(f"{idx}+{len(css_class)}c")
+                            self.classes[css_class] = IndexRange(
+                                IndexRowCol(idx), end_idx
+                            )
+                        else:
+                            self.classes[css_class] = None
+                    break
 
         parser = ClassHTMLParser()
         parser.feed(self.file_text)
@@ -851,7 +874,7 @@ class PPhtmlChecker:
             )
         )
 
-        self.defined_classes = set()
+        self.defined_classes = {}
         split_content = css_content.split("\n")
 
         # Strip out any comments in css
@@ -863,7 +886,7 @@ class PPhtmlChecker:
             ].strip().endswith("*/"):
                 del split_content[lnum]
                 continue
-            # Nulti line
+            # Multi line
             if split_content[lnum].strip().startswith("/*"):
                 del split_content[lnum]
                 while not split_content[lnum].strip().endswith("*/"):
@@ -916,8 +939,23 @@ class PPhtmlChecker:
             line = line.strip()
             for a_class in line.split(" "):
                 # Classes that are not pseudo-classes
-                if a_class.startswith(".") and ":" not in a_class:
-                    self.defined_classes.add(a_class[1:])
+                if (
+                    a_class.startswith(".")
+                    and ":" not in a_class
+                    and a_class[1:] not in self.defined_classes
+                ):
+                    self.defined_classes[a_class[1:]] = self.find_defined_class(
+                        a_class[1:]
+                    )
+
+    def find_defined_class(self, css_class: str) -> Optional[IndexRange]:
+        """Return index range of first occurrence of css_class in file."""
+        if idx := maintext().search(
+            rf"\y{css_class}\y", "1.0", self.end_css, regexp=True
+        ):
+            end_idx = maintext().rowcol(f"{idx}+{len(css_class)}c")
+            return IndexRange(IndexRowCol(idx), end_idx)
+        return None
 
     def resolve_css(self) -> None:
         """Resolve CSS classes used and defined."""
@@ -931,7 +969,7 @@ class PPhtmlChecker:
             "Defined classes",
             wrapped_lines,
         )
-        join_string = ", ".join(sorted(self.used_classes))
+        join_string = ", ".join(sorted(self.used_classes.keys()))
         wrapped_lines = wrap(
             join_string, width=60, initial_indent="  ", subsequent_indent="  "
         )
@@ -941,36 +979,37 @@ class PPhtmlChecker:
             wrapped_lines,
         )
 
+        def class_sort_key(
+            item: tuple[str, Optional[IndexRange]],
+        ) -> tuple[bool, IndexRowCol | str | None]:
+            cls, loc = item
+            # Sort known locations first, then by location, then by class name
+            return (loc is None, loc.start if loc is not None else cls)
+
         # Classes used but not defined
         difference = [
-            cl
-            for cl in self.used_classes.difference(self.defined_classes)
-            if not cl.startswith("x-ebookmaker")
+            (css_class, rowcol)
+            for css_class, rowcol in self.used_classes.items()
+            if css_class not in self.defined_classes
+            and not css_class.startswith("x-ebookmaker")
         ]
-        join_string = ", ".join(sorted(difference))
-        wrapped_lines = wrap(
-            join_string, width=60, initial_indent="  ", subsequent_indent="  "
-        )
         self.output_subsection_errors(
-            len(wrapped_lines) == 0,
+            len(difference) == 0,
             "Classes used but not defined",
-            wrapped_lines,
+            sorted(difference, key=class_sort_key),
         )
 
         # Classes defined but not used
         difference = [
-            cl
-            for cl in self.defined_classes.difference(self.used_classes)
-            if not cl.startswith("x-ebookmaker")
+            (css_class, rowcol)
+            for css_class, rowcol in self.defined_classes.items()
+            if css_class not in self.used_classes
+            and not css_class.startswith("x-ebookmaker")
         ]
-        join_string = ", ".join(sorted(difference))
-        wrapped_lines = wrap(
-            join_string, width=60, initial_indent="  ", subsequent_indent="  "
-        )
         self.output_subsection_errors(
-            len(wrapped_lines) == 0,
+            len(difference) == 0,
             "Classes defined but not used",
-            wrapped_lines,
+            sorted(difference, key=class_sort_key),
             fail_string="*WARN*",
         )
 
