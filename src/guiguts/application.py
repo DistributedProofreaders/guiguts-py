@@ -135,6 +135,10 @@ class Guiguts:
 
         self.parse_args(args)
 
+        if self.args.version:
+            print(version("guiguts"))
+            sys.exit(0)
+
         self.logging_init()
         logger.info("Guiguts started")
 
@@ -223,6 +227,11 @@ class Guiguts:
             "--nohome",
             action="store_true",
             help="Do not load the Preferences file",
+        )
+        parser.add_argument(
+            "--version",
+            action="store_true",
+            help="Display the version of Guiguts",
         )
         self.args = parser.parse_args(args)
 
