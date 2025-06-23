@@ -133,9 +133,6 @@ class IlloSNChecker:
     ) -> SelectedIlloSNRecord:
         """Get line number indexes of the selected Illo or SN record.
 
-        The returned indexes will be the same if selected record is not multi-line;
-        e.g. [Illustration]
-
         Returns:
             Line number index of first line of the record; e.g. '5.0'
             Line number index of last line of the record; e.g. '6.14'
@@ -144,14 +141,9 @@ class IlloSNChecker:
         records = self.get_illosn_records()
         # Get record of the selected tag
         selected_record = records[selected_illosn_index]
-        # Get line number index of the first line of the selected record.
         selected_record_start = selected_record.start.index()
-        first_line_num = maintext().index(f"{selected_record_start} linestart")
-        # Get line number index of the last line of the selected record.
-        # If not a multi-line record then this will be same index as above.
         selected_record_end = selected_record.end.index()
-        last_line_num = maintext().index(f"{selected_record_end}")
-        rec = SelectedIlloSNRecord(first_line_num, last_line_num)
+        rec = SelectedIlloSNRecord(selected_record_start, selected_record_end)
         return rec
 
     def get_selected_illosn_index(self) -> int:
@@ -348,26 +340,30 @@ class IlloSNChecker:
             # Check this line. It's immediately above the (first line of the) Illo or SN record.
             if prev_line_txt[0:10] == "-----File:" and next_line_txt == "":
                 # Case 2
-                first_delete_line_num = maintext().index(f"{first_line_num}")
+                first_delete_line_num = maintext().index(f"{first_line_num} linestart")
                 last_delete_line_num = maintext().index(f"{last_line_num}+2l linestart")
                 maintext().delete(first_delete_line_num, last_delete_line_num)
                 return
         if next_line_txt != "":
             if next_line_txt[:10] == "-----File:" and prev_line_txt == "":
                 # Case 1
-                first_delete_line_num = maintext().index(f"{first_line_num}-1l")
+                first_delete_line_num = maintext().index(
+                    f"{first_line_num}-1l linestart"
+                )
                 last_delete_line_num = maintext().index(f"{last_line_num}+1l linestart")
                 maintext().delete(first_delete_line_num, last_delete_line_num)
                 return
         if prev_line_txt == "" and next_line_txt == "":
             # Case 3
-            first_delete_line_num = maintext().index(f"{first_line_num}")
+            first_delete_line_num = maintext().index(f"{first_line_num} linestart")
             last_delete_line_num = maintext().index(f"{last_line_num}+2l linestart")
             maintext().delete(first_delete_line_num, last_delete_line_num)
             return
         # We get here if anomalous line spacing around the Illo or SN record.
         # Just delete the Illo or SN record and ignore any surrounding lines.
-        maintext().delete(first_line_num, f"{last_line_num}+1l linestart")
+        maintext().delete(
+            f"{first_line_num} linestart", f"{last_line_num}+1l linestart"
+        )
         return
 
     def advance_up_to_first_bl_of_block(self, line_num: str) -> str:
@@ -523,9 +519,8 @@ def move_selection_up(tag_type: str) -> None:
         #
         # If we are not in this situation, insert selected tag above the blank line we are at.
         # Otherwise look for next blank line above that one.
-        if (
-            line_txt == ""
-            and not maintext().index(f"{line_num}+1l linestart") == first_line_num
+        if line_txt == "" and maintext().compare(
+            f"{line_num}+1l linestart", "!=", f"{first_line_num} linestart"
         ):
             # If we are at the bottom of a block of blank lines, move the insertion
             # point to the top of the block. If the 'block' is just a single blank
@@ -615,9 +610,9 @@ def move_selection_down(tag_type: str) -> None:
         #
         # If we are not in this situation, insert selected tag below the blank line we are at.
         # Otherwise look for next blank line below that one.
-        if line_txt == "" and not maintext().index(
-            f"{line_num}-1l linestart"
-        ) == maintext().index(f"{last_line_num} linestart"):
+        if line_txt == "" and maintext().compare(
+            f"{line_num}-1l linestart", "!=", f"{last_line_num} linestart"
+        ):
             # If we are at the top of a block of blank lines, move the insertion
             # point to the bottom of the block. If the 'block' is just a single blank
             # line then the returned line_num is the same as the argument line_num.
