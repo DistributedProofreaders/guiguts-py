@@ -1832,7 +1832,7 @@ class HTMLMarkupDialog(ToplevelDialog):
         for idx, attr_key in enumerate(cls.attribute_keys):
             for markup in cls.custom_types:
                 menubar_metadata().add_button_orphan(
-                    f'HTML Markup, Apply custom "{markup}" {idx+1}',
+                    f'HTML Markup, Apply custom "{markup}" {idx + 1}',
                     lambda attr_key=attr_key, markup=markup: cls.add_custom_markup(
                         attr_key, markup, None
                     ),

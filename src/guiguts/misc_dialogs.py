@@ -1439,7 +1439,7 @@ class CommandEditDialog(OkCancelDialog):
                     if f"~{match[1]}" in top_menu.label:
                         if not messagebox.askyesno(
                             title="Shortcut Already Assigned",
-                            message=f'"{self.shortcut_variable.get()}" currently opens the {top_menu.label.replace("~","")} menu.',
+                            message=f'"{self.shortcut_variable.get()}" currently opens the {top_menu.label.replace("~", "")} menu.',
                             detail=f'Reassign it to "{new_assign}" instead?',
                             default=messagebox.NO,
                             icon=messagebox.WARNING,

@@ -2477,7 +2477,7 @@ def align_selection(center: bool) -> None:
             if center:
                 n_spaces = int(n_spaces / 2)
             n_spaces = max(n_spaces, 0)
-            maintext().replace(f"{line}.0", f"{line}.end", f"{n_spaces*' '}{text}")
+            maintext().replace(f"{line}.0", f"{line}.end", f"{n_spaces * ' '}{text}")
 
     align_indent(do_align)
 
@@ -2495,7 +2495,9 @@ def right_align_numbers() -> None:
             post = match[2]
             n_spaces = right - len(pre) - len(post)
             n_spaces = max(n_spaces, 2)
-            maintext().replace(f"{line}.0", f"{line}.end", f"{pre}{n_spaces*' '}{post}")
+            maintext().replace(
+                f"{line}.0", f"{line}.end", f"{pre}{n_spaces * ' '}{post}"
+            )
 
     align_indent(number_align)
 
