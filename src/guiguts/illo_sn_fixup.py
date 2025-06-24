@@ -483,6 +483,7 @@ def move_selection_up(tag_type: str) -> None:
             if not line_num:  # Hit top of file before tag start
                 sound_bell()
                 return
+            line_num = maintext().index(f"{line_num} linestart")
             line_txt = maintext().get(line_num, f"{line_num} lineend")
 
         # Is it a tag of the same type as the selected one?
