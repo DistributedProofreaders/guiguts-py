@@ -224,7 +224,11 @@ def html_convert_title() -> None:
             maintext().insert(f"{step - 1}.end", "<br>")
             continue
         # Not in title yet, so skip blank lines, illos or block markup
-        if not selection or re.match(H1_SKIP_REGEX, selection, flags=re.IGNORECASE):
+        if (
+            not selection
+            or selection == "/#"
+            or re.match(H1_SKIP_REGEX, selection, flags=re.IGNORECASE)
+        ):
             continue
         # Found start of title
         in_title = True

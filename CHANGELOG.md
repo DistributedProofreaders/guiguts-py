@@ -48,7 +48,8 @@
 - Scan images that were stored as palettized or RGB files were never inverted
   in the image viewer
 - Illustration Fixup sometimes corrupted Illustration markup when attempting
-  to move an illo upwards past an illo block containing blank lines 
+  to move an illo upwards past an illo block containing blank lines
+- HTML generation exited with a fatal error if the file began with `/#` markup
 - Mousewheel scrolling in image viewer was broken for Mac users
 - PPhtml reported double hyphens in comments in the CSS style block
 - PPhtml did not recognize valid DOCTYPE declarations if case was unexpected
