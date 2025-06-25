@@ -60,18 +60,12 @@ DEFAULT_STEALTH_SCANNOS = "en-common.json"
 DEFAULT_MISSPELLED_SCANNOS = "misspelled.json"
 
 CURLY_QUOTES_CHECKER_FILTERS = [
+    CheckerFilterErrorPrefix("Double quote not converted", "DQ not converted: "),
+    CheckerFilterErrorPrefix("Other double quote errors", "(Open|Close) DQ.*"),
+    CheckerFilterErrorPrefix("Single quote not converted", "SQ not converted: "),
+    CheckerFilterErrorPrefix("Other single open quote errors", "Open SQ.*"),
     CheckerFilterErrorPrefix(
-        "Double quote not converted", "DOUBLE QUOTE NOT CONVERTED: "
-    ),
-    CheckerFilterErrorPrefix(
-        "Other double quote errors", "DOUBLE (OPEN|CLOSE|QUOTE NOT CLOSED).*"
-    ),
-    CheckerFilterErrorPrefix(
-        "Single quote not converted", "SINGLE QUOTE NOT CONVERTED: "
-    ),
-    CheckerFilterErrorPrefix("Other single open quote errors", "SINGLE OPEN.*"),
-    CheckerFilterErrorPrefix(
-        "Other single close quote errors (may be apostrophes)", "SINGLE CLOSE.*"
+        "Other single close quote errors (may be apostrophes)", "Close SQ.*"
     ),
 ]
 
@@ -2173,15 +2167,15 @@ class CurlyQuotesDialog(CheckerDialog):
                     f"{match.rowcol.index()}-1c", f"{match.rowcol.index()}+2c"
                 )
                 if dqtype == 1:
-                    add_quote_entry("DOUBLE OPEN QUOTE UNEXPECTED: ")
+                    add_quote_entry("Open DQ unexpected: ")
                 elif len(context) > 2 and context[2] == "\n":
-                    add_quote_entry("DOUBLE OPEN QUOTE AT END OF LINE: ")
+                    add_quote_entry("Open DQ at line end: ")
                 elif len(context) > 2 and context[2] == " ":
-                    add_quote_entry("DOUBLE OPEN QUOTE FOLLOWED BY SPACE: ")
+                    add_quote_entry("Open DQ before space: ")
                 elif context[0].isalnum():
-                    add_quote_entry("DOUBLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ")
+                    add_quote_entry("Open DQ after letter: ")
                 elif context[0] in punctuation:
-                    add_quote_entry("DOUBLE OPEN QUOTE PRECEDED BY PUNCTUATION: ")
+                    add_quote_entry("Open DQ after punct: ")
                 dqtype = 1
                 last_open_double_idx = match.rowcol.index()
             elif match_text == DQUOTES[1]:  # Close double
@@ -2199,13 +2193,13 @@ class CurlyQuotesDialog(CheckerDialog):
                 ):
                     continue
                 if dqtype == 0:
-                    add_quote_entry("DOUBLE CLOSE QUOTE UNEXPECTED: ")
+                    add_quote_entry("Close DQ unexpected: ")
                 elif context[1] == "\n":
-                    add_quote_entry("DOUBLE CLOSE QUOTE AT START OF LINE: ")
+                    add_quote_entry("Close DQ at line start: ")
                 elif context[1] == " ":
-                    add_quote_entry("DOUBLE CLOSE QUOTE PRECEDED BY SPACE: ")
+                    add_quote_entry("Close DQ after space: ")
                 elif context[3].isalnum():
-                    add_quote_entry("DOUBLE CLOSE QUOTE FOLLOWED BY LETTER: ")
+                    add_quote_entry("Close DQ before letter: ")
                 dqtype = 0
             elif match_text == SQUOTES[0]:  # Open single
                 context = maintext().get(
@@ -2214,15 +2208,15 @@ class CurlyQuotesDialog(CheckerDialog):
                 if len(context) < 3:
                     continue
                 if sqtype == 1:
-                    add_quote_entry("SINGLE OPEN QUOTE UNEXPECTED: ")
+                    add_quote_entry("Open SQ unexpected: ")
                 elif len(context) > 2 and context[2] == "\n":
-                    add_quote_entry("SINGLE OPEN QUOTE AT END OF LINE: ")
+                    add_quote_entry("Open SQ at line end: ")
                 elif len(context) > 2 and context[2] == " ":
-                    add_quote_entry("SINGLE OPEN QUOTE FOLLOWED BY SPACE: ")
+                    add_quote_entry("Open SQ before space: ")
                 elif context[0].isalnum():
-                    add_quote_entry("SINGLE OPEN QUOTE PRECEDED BY WORD CHARACTER: ")
+                    add_quote_entry("Open SQ after letter: ")
                 elif context[0] in punctuation:
-                    add_quote_entry("SINGLE OPEN QUOTE PRECEDED BY PUNCTUATION: ")
+                    add_quote_entry("Open SQ after punct: ")
                 sqtype = 1
                 last_open_single_idx = match.rowcol.index()
             elif match_text == SQUOTES[1]:  # Close single
@@ -2233,22 +2227,18 @@ class CurlyQuotesDialog(CheckerDialog):
                 if len(context) < 5 or context[1].isalpha() and context[3].isalpha():
                     continue
                 if sqtype == 0:
-                    add_quote_entry("SINGLE CLOSE QUOTE UNEXPECTED (or APOSTROPHE): ")
+                    add_quote_entry("Close SQ unexpected (apos?): ")
                 elif context[1] == "\n":
-                    add_quote_entry(
-                        "SINGLE CLOSE QUOTE AT START OF LINE (or APOSTROPHE): "
-                    )
+                    add_quote_entry("Close SQ at line start (apos?): ")
                 elif context[1] == " ":
-                    add_quote_entry(
-                        "SINGLE CLOSE QUOTE PRECEDED BY SPACE (or APOSTROPHE): "
-                    )
+                    add_quote_entry("Close SQ after space (apos?): ")
                 elif context[3].isalnum():
-                    add_quote_entry("SINGLE QUOTE FOLLOWED BY LETTER (or APOSTROPHE): ")
+                    add_quote_entry("Close SQ before letter (apos?): ")
                 sqtype = 0
             elif match_text == '"':  # Straight double
-                add_quote_entry("DOUBLE QUOTE NOT CONVERTED: ")
+                add_quote_entry("DQ not converted: ")
             elif match_text == "'":  # Straight single
-                add_quote_entry("SINGLE QUOTE NOT CONVERTED: ")
+                add_quote_entry("SQ not converted: ")
             elif match_text == "":  # Blank line
                 # Expect dqtype == 0 unless next line starts with open double quote
                 # AND user has enabled that exception
@@ -2268,7 +2258,7 @@ class CurlyQuotesDialog(CheckerDialog):
                         ),
                         hilite_start=hilite_start,
                         hilite_end=hilite_start + 1,
-                        error_prefix="DOUBLE QUOTE NOT CLOSED: ",
+                        error_prefix="DQ not closed: ",
                     )
                 dqtype = 0
                 # Expect sqtype == 0 unless next line starts with open single quote
@@ -2285,7 +2275,7 @@ class CurlyQuotesDialog(CheckerDialog):
                         ),
                         hilite_start=hilite_start,
                         hilite_end=hilite_start + 1,
-                        error_prefix="SINGLE QUOTE NOT CLOSED: ",
+                        error_prefix="SQ not closed: ",
                     )
                 sqtype = 0
         self.display_entries()
