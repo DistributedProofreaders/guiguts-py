@@ -1179,6 +1179,9 @@ class Guiguts:
         menubar_metadata().add_button_orphan(
             "Quit Without Saving File", lambda: root().quit()
         )
+        menubar_metadata().add_button_orphan(
+            "Switch Text Window", lambda: maintext().switch_text_peer()
+        )
 
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
         """Add labels to initialize the statusbar.
