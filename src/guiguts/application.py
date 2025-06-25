@@ -96,7 +96,12 @@ from guiguts.misc_tools import (
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.root import root
-from guiguts.search import show_search_dialog, find_next, SearchDialog
+from guiguts.search import (
+    show_search_dialog,
+    find_next,
+    replace_matched_string,
+    SearchDialog,
+)
 from guiguts.spell import spell_check
 from guiguts.tools.bookloupe import bookloupe_check
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
@@ -784,6 +789,10 @@ class Guiguts:
             "Find Pre~vious",
             lambda: find_next(backwards=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
+        )
+        search_menu.add_button(
+            "Replace ~Match",
+            replace_matched_string,
         )
         search_menu.add_separator()
         self.init_search_goto_menu(search_menu)

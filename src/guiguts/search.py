@@ -871,6 +871,70 @@ def _do_find_next(
         raise NoMatchFoundError
 
 
+def replace_matched_string() -> None:
+    """Replace the found string with the replacement."""
+    try:
+        SearchDialog.selection
+    except AttributeError:
+        sound_bell()
+        return  # Dialog has never been instantiated
+
+    search_string = None
+    replace_string = None
+    # If dialog is visible, then strings in search/replace boxes take
+    # priority over previously-used strings.
+    if dlg := SearchDialog.get_dialog():
+        search_string = dlg.search_box.get()
+        dlg.search_box.add_to_history(search_string)
+        replace_string = dlg.replace_box[0].get()
+        dlg.replace_box[0].add_to_history(replace_string)
+        dlg.display_message()
+    if search_string is None:
+        try:
+            search_string = preferences.get(PrefKey.SEARCH_HISTORY)[0]
+        except IndexError:
+            sound_bell()
+            return  # No Search History
+    if replace_string is None:
+        try:
+            replace_string = preferences.get(PrefKey.REPLACE_HISTORY)[0]
+        except IndexError:
+            sound_bell()
+            return  # No Replace History
+
+    try:
+        start_index = maintext().index(MARK_FOUND_START)
+        end_index = maintext().index(MARK_FOUND_END)
+    except tk.TclError:
+        sound_bell()
+        if dlg:
+            dlg.display_message("No text found to replace")
+        return
+
+    match_text = maintext().get(start_index, end_index)
+    if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
+        flags = 0 if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE) else re.IGNORECASE
+        try:
+            replace_string = get_regex_replacement(
+                search_string, replace_string, match_text, flags=flags
+            )
+        except re.error as e:
+            sound_bell()
+            if dlg:
+                dlg.display_message(f"Regex error: {str(e)}")
+            else:
+                logger.error(f"Regex error: {str(e)}")
+            return
+    maintext().undo_block_begin()
+    maintext().replace(start_index, end_index, replace_string)
+    maintext().set_insert_index(
+        maintext().rowcol(MARK_FOUND_END),
+        focus=False,
+    )
+    maintext().mark_unset(MARK_FOUND_START, MARK_FOUND_END)
+    maintext().clear_selection()
+
+
 def get_search_start(backwards: bool) -> IndexRowCol:
     """Find point to start searching from.
 
