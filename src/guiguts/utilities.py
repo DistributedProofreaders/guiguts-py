@@ -1,6 +1,7 @@
 """Handy utility functions"""
 
 import ctypes
+from dataclasses import dataclass
 import importlib.resources
 import json
 import platform
@@ -160,6 +161,7 @@ def load_wordfile_into_dict(path: TraversablePath, target_dict: dict) -> bool:
         return False
 
 
+@dataclass(order=True)
 class IndexRowCol:
     """Class to store/manipulate Tk Text indexes.
 
@@ -199,12 +201,6 @@ class IndexRowCol:
     def rowcol(self) -> tuple[int, int]:
         """Return row, col tuple."""
         return self.row, self.col
-
-    def __eq__(self, other: object) -> bool:
-        """Override equality test to check row and col."""
-        if not isinstance(other, IndexRowCol):
-            return NotImplemented
-        return (self.row, self.col) == (other.row, other.col)
 
 
 class IndexRange:
