@@ -634,6 +634,7 @@ class Guiguts:
         file_menu = self.top_level_menu("~File")
         file_menu.add_button("~Open...", self.open_file, "Cmd/Ctrl+O")
         self.init_file_recent_menu(file_menu)
+        file_menu.add_button("~Revert/Reload from Disk", self.file.revert_file)
         file_menu.add_button("~Save", self.file.save_file, "Cmd/Ctrl+S")
         file_menu.add_button("Save ~As...", self.file.save_as_file, "Cmd/Ctrl+Shift+S")
         file_menu.add_button("Sa~ve a Copy As...", self.file.save_copy_as_file)

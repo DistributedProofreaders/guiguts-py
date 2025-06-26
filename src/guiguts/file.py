@@ -242,6 +242,21 @@ class File:
             return True
         return False
 
+    def revert_file(self) -> None:
+        """Reload current file from disk."""
+        if not self.filename:  # Can't reload if no filename
+            sound_bell()
+            return
+        if maintext().is_modified() and not messagebox.askyesno(
+            title="Reload file from disk?",
+            message="Reloading will lose any changes made since you last saved.",
+            detail="Are you sure you want to continue?",
+            default=messagebox.NO,
+            icon=messagebox.WARNING,
+        ):
+            return
+        self.load_file(self.filename)
+
     def load_file(self, filename: str) -> None:
         """Load file & bin file.
 
