@@ -1301,6 +1301,7 @@ class ProoferCommentChecker:
             process_command=self.delete_comment,
             match_on_highlight=True,
             show_process_buttons=False,
+            reverse_mark_gravities=True,
         )
         # Taken from CheckerDialog
         fix_btn = ttk.Button(
