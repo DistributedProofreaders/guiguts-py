@@ -256,6 +256,7 @@ class File:
         ):
             return
         self.load_file(self.filename)
+        grab_focus(root(), maintext())
 
     def load_file(self, filename: str) -> None:
         """Load file & bin file.
