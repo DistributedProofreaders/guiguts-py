@@ -283,6 +283,7 @@ class CheckerDialog(ToplevelDialog):
         show_process_buttons: bool = True,
         show_all_buttons: bool = True,
         match_on_highlight: Optional[bool] = False,
+        reverse_mark_gravities: bool = False,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -305,7 +306,7 @@ class CheckerDialog(ToplevelDialog):
             show_all_buttons: Set to False to hide generic buttons that hide/fix "All".
                 Subordinate to `show_remove_buttons` and `show_process_buttons`.
             match_on_highlight: Set to True to base matching messages only on highlighted part of message.
-                Set to None to match all messages in list regardlesss of message text.
+                Set to None to match all messages in list regardless of message text.
         """
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
@@ -605,6 +606,7 @@ class CheckerDialog(ToplevelDialog):
         self.section_count = 0
         self.selected_text = ""
         self.selected_text_range: Optional[IndexRange] = None
+        self.reverse_mark_gravities = reverse_mark_gravities
         self.reset()
 
     def __new__(cls, *args: Any, **kwargs: Any) -> "CheckerDialog":
@@ -841,10 +843,12 @@ class CheckerDialog(ToplevelDialog):
             maintext().set_mark_position(
                 self.mark_from_rowcol(text_range.start),
                 text_range.start,
-                gravity=tk.LEFT,
+                gravity=tk.RIGHT if self.reverse_mark_gravities else tk.LEFT,
             )
             maintext().set_mark_position(
-                self.mark_from_rowcol(text_range.end), text_range.end, gravity=tk.RIGHT
+                self.mark_from_rowcol(text_range.end),
+                text_range.end,
+                gravity=tk.LEFT if self.reverse_mark_gravities else tk.RIGHT,
             )
 
     def display_entries(
