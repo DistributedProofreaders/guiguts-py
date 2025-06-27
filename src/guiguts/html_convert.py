@@ -206,39 +206,18 @@ def html_convert_entities() -> None:
 
 
 def html_convert_title() -> None:
-    """Find first bit of text that may be the book title, and mark it up with h1."""
-    in_title = False
-    for step in range(1, 500):
-        if maintext().compare(f"{step}.0", ">=", tk.END):
-            break
-        selection = maintext().get(f"{step}.0", f"{step}.end")
-        if in_title:
-            # Check if title complete (blank line or end of frontmatter/center/right/etc markup)
-            if not selection:
-                maintext().insert(f"{step - 1}.end", "</h1>")
-                return
-            if re.match("[*$fxcr]/", selection, flags=re.IGNORECASE):
-                maintext().replace(f"{step}.0", f"{step}.end", "</h1>")
-                return
-            # Not complete - add <br> to end of previous line to preserve line breaks
-            maintext().insert(f"{step - 1}.end", "<br>")
-            continue
-        # Not in title yet, so skip blank lines, illos or block markup
-        if (
-            not selection
-            or selection == "/#"
-            or re.match(H1_SKIP_REGEX, selection, flags=re.IGNORECASE)
-        ):
-            continue
-        # Found start of title
-        in_title = True
-        if step > 1 and re.match(
-            "/[*$fxcr]",
-            maintext().get(f"{step - 1}.0", f"{step - 1}.end"),
-        ):
-            maintext().replace(f"{step - 1}.0", f"{step - 1}.end", "<h1>")
-        else:
-            maintext().insert(f"{step}.0", "<h1>")
+    """Find first bit of text that matches the book title, and mark it up with h1."""
+    assert HTMLGeneratorDialog.book_title is not None
+    escaped_title = re.escape(HTMLGeneratorDialog.book_title.get())
+    # Escaped title will have `\ ` for spaces - change that them to `\s+`
+    title_regex = re.sub(" ", "s+", escaped_title)
+    if title_match := maintext().find_match(
+        title_regex, IndexRange("1.0", "500.0"), regexp=True, nocase=True
+    ):
+        start = title_match.rowcol.index()
+        end = f"{start}+{title_match.count}c"
+        maintext().insert(end, "</h1>")
+        maintext().insert(start, "<h1>")
 
 
 def html_convert_inline() -> None:
@@ -1015,11 +994,21 @@ def get_title() -> str:
     """
     complete_title = ""
     in_title = False
+    in_blockquote = False
     # Only search first 500 lines of book
     for step in range(1, 500):
         if maintext().compare(f"{step}.0", ">=", tk.END):
             break
         selection = maintext().get(f"{step}.0", f"{step}.end")
+        # Skip blockquotes
+        if selection.startswith("#/"):
+            in_blockquote = False
+            continue
+        if in_blockquote:
+            continue
+        if selection.startswith("/#"):
+            in_blockquote = True
+            continue
         # Check if title complete (blank line or end of frontmatter markup)
         if in_title and (
             not selection or re.match("f/", selection, flags=re.IGNORECASE)
