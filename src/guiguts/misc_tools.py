@@ -16,6 +16,7 @@ from guiguts.checkers import (
     CheckerEntry,
     CheckerFilterErrorPrefix,
     CheckerViewOptionsDialog,
+    CheckerMatchType,
 )
 from guiguts.data import scannos
 from guiguts.file import the_file
@@ -130,9 +131,10 @@ class BasicFixupCheckerDialog(CheckerDialog):
                     "Left click: Select & find issue",
                     "Right click: Hide issue",
                     f"With {cmd_ctrl_string()} key: Also fix issue",
-                    "With Shift key: Also hide/fix all exactly matching issues",
+                    "With Shift key: Also hide/fix all issues of this type",
                 ]
             ),
+            match_on_highlight=CheckerMatchType.ERROR_PREFIX,
             **kwargs,
         )
 
@@ -1299,7 +1301,7 @@ class ProoferCommentChecker:
         self.dialog = ProoferCommentCheckerDialog.show_dialog(
             rerun_command=self.run,
             process_command=self.delete_comment,
-            match_on_highlight=True,
+            match_on_highlight=CheckerMatchType.HIGHLIGHT,
             show_process_buttons=False,
             reverse_mark_gravities=True,
         )
@@ -1941,7 +1943,7 @@ def stealth_scannos() -> None:
         rerun_command=stealth_scannos,
         process_command=do_replace_scanno,
         show_all_buttons=False,
-        match_on_highlight=None,
+        match_on_highlight=CheckerMatchType.ALL_MESSAGES,
     )
     _the_stealth_scannos_dialog.load_scannos()
 

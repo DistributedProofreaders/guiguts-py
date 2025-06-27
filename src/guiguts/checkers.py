@@ -25,6 +25,15 @@ MARK_ENTRY_TO_SELECT = "MarkEntryToSelect"
 REFRESH_MESSAGE = "Click this message to refresh after Undo/Redo"
 
 
+class CheckerMatchType(Enum):
+    """Enum class to store Checker Dialog match types."""
+
+    ALL_MESSAGES = auto()  # Match all messages
+    WHOLE = auto()  # Match whole of message text
+    HIGHLIGHT = auto()  # Match highlighted text
+    ERROR_PREFIX = auto()  # Match error prefix
+
+
 class CheckerEntryType(Enum):
     """Enum class to store Checker Entry types."""
 
@@ -88,14 +97,21 @@ class CheckerEntry:
         self.error_prefix = error_prefix
         self.severity = severity
 
-    def get_match_text(self, match_on_highlight: bool) -> str:
+    def get_match_text(self, match_on_highlight: CheckerMatchType) -> str:
         """Return portion of message text for matching.
 
         Args:
-            match_on_highlight: True to get highlighted text only; False for whole text.
+            match_on_highlight: Match type.
+
+        Returns:
+            Portion of message to match with
         """
+        if match_on_highlight == CheckerMatchType.ALL_MESSAGES:
+            return "Match all"
+        if match_on_highlight == CheckerMatchType.ERROR_PREFIX:
+            return self.error_prefix
         if (
-            match_on_highlight
+            match_on_highlight == CheckerMatchType.HIGHLIGHT
             and self.hilite_start is not None
             and self.hilite_end is not None
         ):
@@ -282,7 +298,7 @@ class CheckerDialog(ToplevelDialog):
         show_hide_buttons: bool = True,
         show_process_buttons: bool = True,
         show_all_buttons: bool = True,
-        match_on_highlight: Optional[bool] = False,
+        match_on_highlight: CheckerMatchType = CheckerMatchType.WHOLE,
         reverse_mark_gravities: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -305,8 +321,7 @@ class CheckerDialog(ToplevelDialog):
             show_process_buttons: Set to False to hide all generic Fix buttons.
             show_all_buttons: Set to False to hide generic buttons that hide/fix "All".
                 Subordinate to `show_remove_buttons` and `show_process_buttons`.
-            match_on_highlight: Set to True to base matching messages only on highlighted part of message.
-                Set to None to match all messages in list regardless of message text.
+            match_on_highlight: Type of matching for "Fix All", etc.
         """
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
@@ -384,6 +399,14 @@ class CheckerDialog(ToplevelDialog):
         for col in range(6):
             self.message_controls_frame.columnconfigure(col, weight=1)
 
+        if match_on_highlight == CheckerMatchType.ALL_MESSAGES:
+            all_string = "all listed problems"
+        elif match_on_highlight == CheckerMatchType.ERROR_PREFIX:
+            all_string = "all with matching error type"
+        elif match_on_highlight == CheckerMatchType.HIGHLIGHT:
+            all_string = "all with matching highlighted portion of message"
+        else:
+            all_string = "all that exactly match selected message"
         column = 0
         if show_hide_buttons:
             rem_btn = ttk.Button(
@@ -403,8 +426,10 @@ class CheckerDialog(ToplevelDialog):
                 remall_btn.grid(row=0, column=column, sticky="NSEW")
                 ToolTip(
                     remall_btn,
-                    "Hide all messages matching selected one (Shift right-click)",
+                    f"Hide {all_string} (Shift right-click)",
                 )
+
+        self.match_on_highlight = match_on_highlight
         if show_process_buttons:
             if process_command is not None:
                 fix_btn = ttk.Button(
@@ -427,7 +452,7 @@ class CheckerDialog(ToplevelDialog):
                     fixall_btn.grid(row=0, column=column, sticky="NSEW")
                     ToolTip(
                         fixall_btn,
-                        f"Fix all problems matching selected message (Shift {cmd_ctrl_string()} left-click)",
+                        f"Fix {all_string} (Shift {cmd_ctrl_string()} left-click)",
                     )
                 fixrem_btn = ttk.Button(
                     self.message_controls_frame,
@@ -454,7 +479,7 @@ class CheckerDialog(ToplevelDialog):
                     fixremall_btn.grid(row=0, column=column, sticky="NSEW")
                     ToolTip(
                         fixremall_btn,
-                        f"Fix and hide all problems matching selected message (Shift {cmd_ctrl_string()} right-click)",
+                        f"Fix and hide {all_string} (Shift {cmd_ctrl_string()} right-click)",
                     )
 
         sort_frame = ttk.Frame(self.message_controls_frame)
@@ -598,8 +623,6 @@ class CheckerDialog(ToplevelDialog):
         if switch_focus_when_clicked is None:
             switch_focus_when_clicked = False
         self.switch_focus_when_clicked = switch_focus_when_clicked
-
-        self.match_on_highlight = match_on_highlight
 
         self.count_linked_entries = 0  # Not the same as len(self.entries)
         self.count_suspects = 0
@@ -1209,22 +1232,14 @@ class CheckerDialog(ToplevelDialog):
             return
         # Mark before starting so location can be selected later
         self.text.mark_set(MARK_ENTRY_TO_SELECT, f"{linenum}.0")
-        match_text = (
-            ""
-            if self.match_on_highlight is None
-            else self.entries[entry_index].get_match_text(self.match_on_highlight)
-        )
+        match_text = self.entries[entry_index].get_match_text(self.match_on_highlight)
         if all_matching:
             # Work in reverse since may be deleting from list while iterating
             indices = range(len(self.entries) - 1, -1, -1)
         else:
             indices = range(entry_index, entry_index + 1)
         for ii in indices:
-            if (
-                self.match_on_highlight is None
-                or self.entries[ii].get_match_text(self.match_on_highlight)
-                == match_text
-            ):
+            if self.entries[ii].get_match_text(self.match_on_highlight) == match_text:
                 if process and self.process_command:
                     self.process_command(self.entries[ii])
                 if remove:
