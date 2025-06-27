@@ -1383,6 +1383,11 @@ class ProoferCommentChecker:
         )
         maintext().undo_block_begin()
         maintext().delete(start_mark, end_mark)
+        # If this leaves exactly a double space, remove one of them
+        if re.fullmatch(
+            "[^ ]  [^ ]", maintext().get(f"{start_mark}-2c", f"{end_mark}+2c")
+        ):
+            maintext().delete(start_mark)
 
 
 def asterisk_check() -> None:
