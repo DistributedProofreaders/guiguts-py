@@ -1550,11 +1550,13 @@ class TextMarkupConvertorDialog(ToplevelDialog):
     @classmethod
     def manual_sc(cls) -> None:
         """Pop S/R dialog pre-populated to help user convert `<sc>` markup."""
-        dlg = SearchDialog.show_dialog()
         preferences.set(PrefKey.SEARCHDIALOG_MULTI_REPLACE, True)
+        if preferences.get(PrefKey.SEARCHDIALOG_MULTI_ROWS) < 3:
+            preferences.set(PrefKey.SEARCHDIALOG_MULTI_ROWS, 3)
         preferences.set(PrefKey.SEARCHDIALOG_REGEX, True)
         preferences.set(PrefKey.SEARCHDIALOG_MATCH_CASE, False)
         preferences.set(PrefKey.SEARCHDIALOG_WHOLE_WORD, False)
+        dlg = SearchDialog.show_dialog()
         dlg.search_box.set(r"<sc>([^<]+)</sc>")
         dlg.replace_box[0].set(r"\1")
         dlg.replace_box[1].set(r"\U\1\E")
