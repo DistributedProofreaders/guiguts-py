@@ -219,14 +219,14 @@ def html_convert_title() -> None:
         end_row = maintext().rowcol(end).row
         for row in range(title_match.rowcol.row, end_row):
             maintext().insert(f"{row}.end", "<br>")
-        next_line = maintext().get(f"{end}+1l linestart",f"{end}+1l lineend")
+        next_line = maintext().get(f"{end}+1l linestart", f"{end}+1l lineend")
         if re.fullmatch("[*$fxcr]/", next_line):
-            maintext().replace(f"{end}+1l linestart",f"{end}+1l lineend", "</h1>")
+            maintext().replace(f"{end}+1l linestart", f"{end}+1l lineend", "</h1>")
         else:
             maintext().insert(end, "\n</h1>")
-        prev_line = maintext().get(f"{start}-1l linestart",f"{start}-1l lineend")
+        prev_line = maintext().get(f"{start}-1l linestart", f"{start}-1l lineend")
         if re.fullmatch("/[*$fxcr].*", prev_line):
-            maintext().replace(f"{start}-1l linestart",f"{start}-1l lineend", "<h1>")
+            maintext().replace(f"{start}-1l linestart", f"{start}-1l lineend", "<h1>")
         else:
             maintext().insert(start, "<h1>\n")
 
