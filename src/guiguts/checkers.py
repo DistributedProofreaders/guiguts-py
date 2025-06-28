@@ -9,7 +9,7 @@ from typing import Any, Optional, Callable
 import regex as re
 
 from guiguts.maintext import maintext, HighlightTag
-from guiguts.mainwindow import ScrolledReadOnlyText
+from guiguts.mainwindow import ScrolledReadOnlyText, menubar_metadata
 from guiguts.preferences import PrefKey, preferences, PersistentBoolean
 from guiguts.root import root
 from guiguts.utilities import (
@@ -409,52 +409,53 @@ class CheckerDialog(ToplevelDialog):
             all_string = "all that exactly match selected message"
         column = 0
         if show_hide_buttons:
-            rem_btn = ttk.Button(
+            self.rem_btn = ttk.Button(
                 self.message_controls_frame,
                 text="Hide",
                 command=lambda: self.remove_entry_current(all_matching=False),
             )
-            rem_btn.grid(row=0, column=column, sticky="NSEW")
-            ToolTip(rem_btn, "Hide selected message (right-click)")
+            self.rem_btn.grid(row=0, column=column, sticky="NSEW")
+            ToolTip(self.rem_btn, "Hide selected message (right-click)")
             if show_all_buttons:
-                remall_btn = ttk.Button(
+                self.remall_btn = ttk.Button(
                     self.message_controls_frame,
                     text="Hide All",
                     command=lambda: self.remove_entry_current(all_matching=True),
                 )
                 column += 1
-                remall_btn.grid(row=0, column=column, sticky="NSEW")
+                self.remall_btn.grid(row=0, column=column, sticky="NSEW")
                 ToolTip(
-                    remall_btn,
+                    self.remall_btn,
                     f"Hide {all_string} (Shift right-click)",
                 )
 
         self.match_on_highlight = match_on_highlight
         if show_process_buttons:
             if process_command is not None:
-                fix_btn = ttk.Button(
+                self.fix_btn = ttk.Button(
                     self.message_controls_frame,
                     text="Fix",
                     command=lambda: self.process_entry_current(all_matching=False),
                 )
                 column += 1
-                fix_btn.grid(row=0, column=column, sticky="NSEW")
+                self.fix_btn.grid(row=0, column=column, sticky="NSEW")
                 ToolTip(
-                    fix_btn, f"Fix selected problem ({cmd_ctrl_string()} left-click)"
+                    self.fix_btn,
+                    f"Fix selected problem ({cmd_ctrl_string()} left-click)",
                 )
                 if show_all_buttons:
-                    fixall_btn = ttk.Button(
+                    self.fixall_btn = ttk.Button(
                         self.message_controls_frame,
                         text="Fix All",
                         command=lambda: self.process_entry_current(all_matching=True),
                     )
                     column += 1
-                    fixall_btn.grid(row=0, column=column, sticky="NSEW")
+                    self.fixall_btn.grid(row=0, column=column, sticky="NSEW")
                     ToolTip(
-                        fixall_btn,
+                        self.fixall_btn,
                         f"Fix {all_string} (Shift {cmd_ctrl_string()} left-click)",
                     )
-                fixrem_btn = ttk.Button(
+                self.fixrem_btn = ttk.Button(
                     self.message_controls_frame,
                     text="Fix&Hide",
                     command=lambda: self.process_remove_entry_current(
@@ -462,13 +463,13 @@ class CheckerDialog(ToplevelDialog):
                     ),
                 )
                 column += 1
-                fixrem_btn.grid(row=0, column=column, sticky="NSEW")
+                self.fixrem_btn.grid(row=0, column=column, sticky="NSEW")
                 ToolTip(
-                    fixrem_btn,
+                    self.fixrem_btn,
                     f"Fix selected problem & hide message ({cmd_ctrl_string()} right-click)",
                 )
                 if show_all_buttons:
-                    fixremall_btn = ttk.Button(
+                    self.fixremall_btn = ttk.Button(
                         self.message_controls_frame,
                         text="Fix&Hide All",
                         command=lambda: self.process_remove_entry_current(
@@ -476,14 +477,30 @@ class CheckerDialog(ToplevelDialog):
                         ),
                     )
                     column += 1
-                    fixremall_btn.grid(row=0, column=column, sticky="NSEW")
+                    self.fixremall_btn.grid(row=0, column=column, sticky="NSEW")
                     ToolTip(
-                        fixremall_btn,
+                        self.fixremall_btn,
                         f"Fix and hide {all_string} (Shift {cmd_ctrl_string()} right-click)",
                     )
 
+        updown_frame = ttk.Frame(self.message_controls_frame)
+        updown_frame.grid(row=0, column=6, sticky="NSE")
+        updown_frame.rowconfigure(0, weight=1)
+        ttk.Button(
+            updown_frame,
+            text="⇑",
+            width=2,
+            command=lambda: self.select_entry_by_arrow(-1),
+        ).grid(row=0, column=0, sticky="NS", padx=(5, 0))
+        ttk.Button(
+            updown_frame,
+            text="⇓",
+            width=2,
+            command=lambda: self.select_entry_by_arrow(1),
+        ).grid(row=0, column=1, sticky="NS")
+
         sort_frame = ttk.Frame(self.message_controls_frame)
-        sort_frame.grid(row=0, column=6, sticky="NSE", pady=5)
+        sort_frame.grid(row=0, column=7, sticky="NSE", pady=5)
         sort_frame.rowconfigure(0, weight=1)
         ttk.Label(
             sort_frame,
@@ -730,6 +747,107 @@ class CheckerDialog(ToplevelDialog):
             text,
             entry.text_range.start.row,
             entry.text_range.start.col,
+        )
+
+    @classmethod
+    def checker_orphan_wrapper(
+        cls, method_name: str, *args: Any, **kwargs: Any
+    ) -> Callable:
+        """Return a wrapper to simplify calls to add_button_orphan.
+
+        Args:
+            method_name: Name of method to be called when command is executed.
+            args: Positional args for `method_name` method.
+            kwargs: Named args for `method_name` method.
+        """
+
+        def wrapper() -> None:
+            """Get focused CheckerDialog and run method on that."""
+            focus = root().focus_get()
+            if focus is None:
+                return
+            tl_widget = focus.winfo_toplevel()
+            if isinstance(tl_widget, CheckerDialog):
+                getattr(tl_widget, method_name)(*args, **kwargs)
+
+        return wrapper
+
+    @classmethod
+    def checker_button_orphan_wrapper(
+        cls, button_name: str, method_name: str, *args: Any, **kwargs: Any
+    ) -> Callable:
+        """Return a wrapper to simplify calls to add_button_orphan.
+
+        Args:
+            method_name: Name of method to be called when command is executed.
+            args: Positional args for `method_name` method.
+            kwargs: Named args for `method_name` method.
+        """
+
+        def wrapper() -> None:
+            """Get focused CheckerDialog and if given button name exists,
+            run given method on the dialog."""
+            focus = root().focus_get()
+            if focus is None:
+                return
+            tl_widget = focus.winfo_toplevel()
+            if isinstance(tl_widget, CheckerDialog):
+                # If button doesn't exist, do nothing and return
+                try:
+                    getattr(tl_widget, button_name)
+                except AttributeError:
+                    return
+                # Button does exist, so run the method
+                getattr(tl_widget, method_name)(*args, **kwargs)
+
+        return wrapper
+
+    @classmethod
+    def add_checker_orphan_commands(cls) -> None:
+        """Add orphan commands to command palette."""
+        menubar_metadata().add_button_orphan(
+            "Checker, Select Next Message",
+            cls.checker_orphan_wrapper("select_entry_by_arrow", 1),
+        )
+        menubar_metadata().add_button_orphan(
+            "Checker, Select Previous Message",
+            cls.checker_orphan_wrapper("select_entry_by_arrow", -1),
+        )
+        menubar_metadata().add_button_orphan(
+            "Checker, Hide",
+            cls.checker_button_orphan_wrapper(
+                "rem_btn", "remove_entry_current", all_matching=False
+            ),
+        )
+        menubar_metadata().add_button_orphan(
+            "Checker, Hide All",
+            cls.checker_button_orphan_wrapper(
+                "remall_btn", "remove_entry_current", all_matching=True
+            ),
+        )
+        menubar_metadata().add_button_orphan(
+            "Checker, Fix",
+            cls.checker_button_orphan_wrapper(
+                "fix_btn", "process_entry_current", all_matching=False
+            ),
+        )
+        menubar_metadata().add_button_orphan(
+            "Checker, Fix All",
+            cls.checker_button_orphan_wrapper(
+                "fixall_btn", "process_entry_current", all_matching=True
+            ),
+        )
+        menubar_metadata().add_button_orphan(
+            "Checker, Fix & Hide",
+            cls.checker_button_orphan_wrapper(
+                "fixrem_btn", "process_remove_entry_current", all_matching=False
+            ),
+        )
+        menubar_metadata().add_button_orphan(
+            "Checker, Fix & Hide All",
+            cls.checker_button_orphan_wrapper(
+                "fixremall_btn", "process_remove_entry_current", all_matching=True
+            ),
         )
 
     def reset(self) -> None:
