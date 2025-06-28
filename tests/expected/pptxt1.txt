@@ -93,25 +93,6 @@ Hyphen-minus (single keyboard '-')
  686.13: <i>Tempest</i>--
   ...more
 
-'"' (24)
-  86.0:  "racing polish" is put on a boat's crew which has
-  86.14: "racing polish" is put on a boat's crew which has
-  88.18: compared with the "post-graduate courses" in
-  88.40: compared with the "post-graduate courses" in
- 100.41: himself and endanger the enemy. They are "put
- 101.10: through it" in the ordinary parade movements in
- 156.0:  "picture targets" in the indispensable art of
- 156.16: "picture targets" in the indispensable art of
-  ...more
-
-''' (29)
-  86.32: "racing polish" is put on a boat's crew which has
- 140.47: gas to be met in actual warfare. But if the man's
- 159.26: course the Indian soldiers' firm balance of the body
- 179.34: exercise"--as one out of a soldier's many forms
- 237.41: trench. (If he has been wounded in No Man's
-  ...more
-
 'ô' (8)
  119.24: quarters at the base depôt[**Add circumflex above o?] camp of the division to
  476.24: having only one base depôt of petrol. At each of
