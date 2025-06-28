@@ -349,7 +349,7 @@ def run_levenshtein_check_on_file(project_dict: ProjectDict) -> None:
 
         # Add a blank line to separate this word-pair report from that of the
         # next pair.
-        checker_dialog.add_footer("")
+        checker_dialog.add_footer("=" * 80)
 
     def make_into_strings(index_tuple: tuple, hilite_length: int) -> tuple[str, str]:
         """Utility function to generate error_start & error_end strings from int values
