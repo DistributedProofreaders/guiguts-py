@@ -454,7 +454,7 @@ class WordFrequencyDialog(ToplevelDialog):
             "\n".join(
                 [
                     "Left click: Find first match; click again for next match",
-                    "Shift Left click: Find last match; click again for previous match"
+                    "Shift Left click: Find last match; click again for previous match",
                     f"{cmd_ctrl_string()}-left click: Find using Search dialog",
                 ]
             ),
