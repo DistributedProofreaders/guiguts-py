@@ -1072,7 +1072,8 @@ class HTMLLinkChecker:
         unused_header = False
         rgx = r"""id *= *["'][^'"]*["']"""
         for id_name, id_pos in ids.items():
-            if id_pos.used:
+            # Don't report used anchors or page numbers - they shouldn't be removed anyway
+            if id_pos.used or re.fullmatch(r"Page_[ivxlc\d]+", id_name):
                 continue
             if not unused_header:
                 self.dialog.add_header("")
