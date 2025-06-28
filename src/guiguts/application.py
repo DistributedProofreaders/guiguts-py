@@ -395,6 +395,7 @@ class Guiguts:
         preferences.set_default(PrefKey.SEARCHDIALOG_WRAP, True)
         preferences.set_default(PrefKey.SEARCHDIALOG_REGEX, False)
         preferences.set_default(PrefKey.SEARCHDIALOG_MULTI_REPLACE, False)
+        preferences.set_default(PrefKey.SEARCHDIALOG_MULTI_ROWS, 3)
         preferences.set_default(PrefKey.DIALOG_GEOMETRY, {})
         preferences.set_default(PrefKey.ROOT_GEOMETRY, "800x400")
         preferences.set_default(PrefKey.ROOT_GEOMETRY_STATE, "normal")

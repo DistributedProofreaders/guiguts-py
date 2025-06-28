@@ -12,7 +12,7 @@ import roman  # type: ignore[import-untyped]
 
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, TclRegexCompileError, FindMatch, menubar_metadata
-from guiguts.preferences import preferences, PersistentBoolean, PrefKey
+from guiguts.preferences import preferences, PersistentBoolean, PrefKey, PersistentInt
 from guiguts.utilities import (
     sound_bell,
     IndexRowCol,
@@ -58,6 +58,7 @@ class SearchDialog(ToplevelDialog):
     """
 
     manual_page = "Search_Menu#The_Search_&_Replace_Dialog"
+    max_multi_rows = 10
     # Cannot be initialized here, since Tk root may not be created yet
     selection: tk.BooleanVar
 
@@ -77,9 +78,6 @@ class SearchDialog(ToplevelDialog):
 
         # Frames
         self.top_frame.columnconfigure(0, weight=1)
-        for row in range(5):
-            self.top_frame.rowconfigure(row, weight=0)
-        self.top_frame.rowconfigure(6, weight=1)
         options_frame = ttk.Frame(
             self.top_frame, padding=3, borderwidth=1, relief=tk.GROOVE
         )
@@ -92,7 +90,9 @@ class SearchDialog(ToplevelDialog):
         options_frame.rowconfigure(0, weight=1)
         options_frame.rowconfigure(1, weight=1)
         self.separator = ttk.Separator(self.top_frame, orient=tk.VERTICAL)
-        self.separator.grid(row=0, column=3, rowspan=7, padx=2, sticky="NSEW")
+        self.separator.grid(
+            row=0, column=3, rowspan=self.max_multi_rows + 4, padx=2, sticky="NSEW"
+        )
 
         # Options
         ttk.Checkbutton(
@@ -129,13 +129,23 @@ class SearchDialog(ToplevelDialog):
             text="Wrap around",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WRAP),
         ).grid(row=1, column=1, padx=2, sticky="NSW")
+        multi_frame = ttk.Frame(options_frame)
+        multi_frame.grid(row=1, column=2, sticky="NSW")
         ttk.Checkbutton(
-            options_frame,
+            multi_frame,
             text="Multi-replace",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MULTI_REPLACE),
             command=self.show_multi_replace,
-        ).grid(row=1, column=2, padx=2, sticky="NSW")
-
+        ).grid(row=0, column=0, padx=2, sticky="NSW")
+        spinbox = ttk.Spinbox(
+            multi_frame,
+            textvariable=PersistentInt(PrefKey.SEARCHDIALOG_MULTI_ROWS),
+            from_=2,
+            to=10,
+            width=3,
+            command=self.show_multi_replace,
+        )
+        spinbox.grid(row=0, column=1, sticky="NSW")
         self.count_btn = ttk.Button(
             self.top_frame,
             text="Count",
@@ -201,7 +211,7 @@ class SearchDialog(ToplevelDialog):
         self.replace_btn: list[ttk.Button] = []
         self.rands_btn: list[ttk.Button] = []
         self.repl_all_btn: list[ttk.Button] = []
-        for rep_num in range(3):
+        for rep_num in range(self.max_multi_rows):
             cbox = Combobox(
                 self.top_frame, PrefKey.REPLACE_HISTORY, width=30, font=self.font
             )
@@ -258,7 +268,12 @@ class SearchDialog(ToplevelDialog):
             self.top_frame, borderwidth=1, relief="sunken", padding=5
         )
         self.message.grid(
-            row=6, column=0, columnspan=3, sticky="NSEW", padx=1, pady=(4, 2)
+            row=self.max_multi_rows + 3,
+            column=0,
+            columnspan=3,
+            sticky="NSEW",
+            padx=1,
+            pady=(4, 2),
         )
 
         self.highlight_all_btn = ttk.Button(
@@ -267,7 +282,7 @@ class SearchDialog(ToplevelDialog):
             command=self.highlightall_clicked,
         )
         self.highlight_all_btn.grid(
-            row=6, column=4, padx=PADX, pady=PADY, sticky="NSEW"
+            row=self.max_multi_rows + 3, column=4, padx=PADX, pady=PADY, sticky="NSEW"
         )
         self.highlight_mark_prefix = self.get_dlg_name() + "Highlight"
 
@@ -356,15 +371,21 @@ class SearchDialog(ToplevelDialog):
             resize: True (default) to grow/shrink dialog to take account of show/hide
                 When dialog first created, its size is stored in prefs, so won't need resize
         """
-        show = preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE)
+        multi_flag = preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE)
+        num_multi_rows = (
+            preferences.get(PrefKey.SEARCHDIALOG_MULTI_ROWS) if multi_flag else 1
+        )
+        last_shown = 0
         for w_list in (
             self.replace_box,
             self.replace_btn,
             self.rands_btn,
             self.repl_all_btn,
         ):
-            for widget in w_list[1:]:
-                if show:
+            for idx, widget in enumerate(w_list):
+                if widget.winfo_ismapped():
+                    last_shown = idx  # Track how many are currently shown
+                if idx < num_multi_rows:
                     widget.grid()
                 else:
                     widget.grid_remove()
@@ -372,12 +393,13 @@ class SearchDialog(ToplevelDialog):
         if not resize:
             return
 
-        # Height needs to grow/shrink by the space taken up by 2 entry fields
-        offset = 2 * (self.replace_box[0].winfo_y() - self.search_box.winfo_y())
+        # Height needs to grow/shrink by the space taken up by extra entry fields
+        offset = (num_multi_rows - last_shown - 1) * (
+            self.replace_box[0].winfo_y() - self.search_box.winfo_y()
+        )
         geometry = self.geometry()
         height = int(re.sub(r"\d+x(\d+).+", r"\1", geometry))
-        height += offset if show else -offset
-        geometry = re.sub(r"(\d+x)\d+(.+)", rf"\g<1>{height}\g<2>", geometry)
+        geometry = re.sub(r"(\d+x)\d+(.+)", rf"\g<1>{height+offset}\g<2>", geometry)
         self.geometry(geometry)
 
     def is_valid_regex(self, new_value: Optional[str] = None) -> bool:
@@ -605,7 +627,8 @@ class SearchDialog(ToplevelDialog):
         search_string = self.search_box.get()
         self.search_box.add_to_history(search_string)
         replace_string = self.replace_box[box_num].get()
-        self.replace_box[box_num].add_to_history(replace_string)
+        for box in self.replace_box:
+            box.add_to_history(replace_string)
 
         try:
             start_index = maintext().index(MARK_FOUND_START)
@@ -661,7 +684,8 @@ class SearchDialog(ToplevelDialog):
             return
         self.search_box.add_to_history(search_string)
         replace_string = self.replace_box[box_num].get()
-        self.replace_box[box_num].add_to_history(replace_string)
+        for box in self.replace_box:
+            box.add_to_history(replace_string)
 
         replace_ranges, range_name = get_search_ranges()
         if replace_ranges is None:
@@ -887,7 +911,8 @@ def replace_matched_string() -> None:
         search_string = dlg.search_box.get()
         dlg.search_box.add_to_history(search_string)
         replace_string = dlg.replace_box[0].get()
-        dlg.replace_box[0].add_to_history(replace_string)
+        for box in dlg.replace_box:
+            box.add_to_history(replace_string)
         dlg.display_message()
     if search_string is None:
         try:
