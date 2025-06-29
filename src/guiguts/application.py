@@ -14,6 +14,7 @@ import webbrowser
 import darkdetect  # type: ignore[import-untyped]
 
 from guiguts.ascii_tables import JustifyStyle
+from guiguts.checkers import CheckerDialog
 from guiguts.content_providing import (
     export_prep_text_files,
     import_prep_text_files,
@@ -1180,6 +1181,7 @@ class Guiguts:
 
     def init_command_palette_orphans(self) -> None:
         """Add "shadow" commands to command palette."""
+        CheckerDialog.add_checker_orphan_commands()
         PreferencesDialog.add_orphan_commands()
         CommandPaletteDialog.add_orphan_commands()
         SearchDialog.add_orphan_commands()
