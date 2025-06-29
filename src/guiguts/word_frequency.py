@@ -631,6 +631,9 @@ class WordFrequencyDialog(ToplevelDialog):
         """
         if not event.char:
             return ""
+        # If modifiers other than Shift & Caps Lock, don't goto word - allow default processing
+        if int(event.state) & ~(0x0001 | 0x0002) != 0:
+            return ""
         low_char = event.char.lower()
         for idx, entry in enumerate(self.entries):
             if entry.word.lower().startswith(low_char):
