@@ -1610,82 +1610,82 @@ class ScannoCheckerDialog(CheckerDialog):
         frame = ttk.Frame(self.custom_frame, padding=2)
         frame.grid(column=0, row=1, sticky="NSEW")
         self.custom_frame.columnconfigure(0, weight=1)
-        frame.columnconfigure(1, weight=1)
+        frame.columnconfigure(0, weight=1)
         for row in range(4):
             frame.rowconfigure(row, uniform="equal height")
 
-        self.auto_checkbtn = ttk.Checkbutton(
-            frame,
-            text="Auto Adv.",
-            variable=PersistentBoolean(PrefKey.SCANNOS_AUTO_ADVANCE),
-        )
-        self.auto_checkbtn.grid(column=0, row=0, sticky="NSEW", pady=2)
         self.file_combo = PathnameCombobox(
             frame,
             PrefKey.SCANNOS_HISTORY,
             PrefKey.SCANNOS_FILENAME,
         )
-        self.file_combo.grid(column=1, row=0, sticky="NSEW", pady=2)
+        self.file_combo.grid(column=0, row=0, sticky="NSEW", pady=2)
         self.file_combo["state"] = "readonly"
         self.file_combo.bind("<<ComboboxSelected>>", lambda _e: self.select_file())
         ttk.Button(frame, text="Load File", command=self.choose_file).grid(
-            column=2, row=0, sticky="NSEW", padx=(5, 0), pady=2
+            column=1, row=0, sticky="NSEW", padx=(5, 0), pady=2
         )
-
-        self.prev_btn = ttk.Button(
+        self.auto_checkbtn = ttk.Checkbutton(
             frame,
-            text="Prev. Scanno",
-            command=lambda: self.prev_next_scanno(prev=True),
+            text="Auto Adv.",
+            variable=PersistentBoolean(PrefKey.SCANNOS_AUTO_ADVANCE),
         )
-        self.prev_btn.grid(column=0, row=1, sticky="NSEW", padx=(0, 5), pady=2)
+        self.auto_checkbtn.grid(column=2, row=0, sticky="NSEW", padx=(3, 0), pady=2)
+
         self.scanno_textvariable = tk.StringVar(self, "")
         search = ttk.Entry(
             frame,
             textvariable=self.scanno_textvariable,
             font=maintext().font,
         )
-        search.grid(column=1, row=1, sticky="NSEW", pady=2)
+        search.grid(column=0, row=1, sticky="NSEW", pady=2)
         search.bind("<Return>", lambda _: self.list_scannos(update_fields=False))
+        self.prev_btn = ttk.Button(
+            frame,
+            text="Prev. Scanno",
+            command=lambda: self.prev_next_scanno(prev=True),
+        )
+        self.prev_btn.grid(column=1, row=1, sticky="NSEW", padx=(5, 0), pady=2)
         self.next_btn = ttk.Button(
             frame,
             text="Next Scanno",
             command=lambda: self.prev_next_scanno(prev=False),
         )
-        self.next_btn.grid(column=2, row=1, sticky="NSEW", padx=(5, 0), pady=2)
+        self.next_btn.grid(column=2, row=1, sticky="NSEW", padx=(3, 0), pady=2)
 
-        ttk.Button(
-            frame,
-            text="Swap Terms",
-            command=self.swap_terms,
-        ).grid(column=0, row=2, sticky="NSEW", padx=(0, 5), pady=2)
         self.replacement_textvariable = tk.StringVar(self, "")
         replace = ttk.Entry(
             frame,
             textvariable=self.replacement_textvariable,
             font=maintext().font,
         )
-        replace.grid(column=1, row=2, sticky="NSEW", pady=2)
+        replace.grid(column=0, row=2, sticky="NSEW", pady=2)
         replace.bind("<Return>", lambda _: self.list_scannos(update_fields=False))
         ttk.Button(
             frame,
             text="Replace",
             command=lambda: self.process_entry_current(all_matching=False),
-        ).grid(column=2, row=2, sticky="NSEW", padx=(5, 0), pady=2)
-
-        self.count_textvariable = tk.StringVar(self, "")
-        ttk.Label(
-            frame,
-            textvariable=self.count_textvariable,
-        ).grid(column=0, row=3, sticky="NS", padx=(0, 5), pady=2)
-        self.hint_textvariable = tk.StringVar(self, "Hint: ")
-        ttk.Entry(frame, textvariable=self.hint_textvariable, state="readonly").grid(
-            column=1, row=3, sticky="NSEW", pady=2
-        )
+        ).grid(column=1, row=2, sticky="NSEW", padx=(5, 0), pady=2)
         ttk.Button(
             frame,
             text="Replace All",
             command=lambda: self.process_entry_current(all_matching=True),
-        ).grid(column=2, row=3, sticky="NSEW", padx=(5, 0), pady=2)
+        ).grid(column=2, row=2, sticky="NSEW", padx=(3, 0), pady=2)
+
+        self.hint_textvariable = tk.StringVar(self, "Hint: ")
+        ttk.Entry(frame, textvariable=self.hint_textvariable, state="readonly").grid(
+            column=0, row=3, sticky="NSEW", pady=2
+        )
+        ttk.Button(
+            frame,
+            text="Swap Terms",
+            command=self.swap_terms,
+        ).grid(column=1, row=3, sticky="NSEW", padx=(5, 0), pady=2)
+        self.count_textvariable = tk.StringVar(self, "")
+        ttk.Label(
+            frame,
+            textvariable=self.count_textvariable,
+        ).grid(column=2, row=3, sticky="NS", padx=(3, 0), pady=2)
 
         self.scanno_list: list[Scanno] = []
         self.whole_word = False
