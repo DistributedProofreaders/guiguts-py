@@ -642,15 +642,18 @@ def weird_characters() -> None:
     weirdos_lines_dictionary: Dict[str, list[int]] = {}
     weirdos_counts_dictionary: Dict[str, int] = {}
 
+    # If no curly quotes in file, don't consider straight quotes to be weirdos
+    straight_quotes = "\"'" if csq + cdq == 0 else ""
+    weirdo_regex = r"[^A-Za-z0-9\s.,:;?!&\\\-_—–=“”‘’\[\]\(\){}" + straight_quotes + "]"
+
     # Build dictionary of unusual characters ('weirdos'). The key is a
     # weirdo and the value a list of line numbers on which that character
     # appears.
-
     for line_number, line in enumerate(book, start=1):
         if non_text_line(line):
             continue
         # Get list of weirdos on this line. That means any character NOT in the regex.
-        weirdos_list = re.findall(r"[^A-Za-z0-9\s.,:;?!&\\\-_—–=“”‘’\[\]\(\){}]", line)
+        weirdos_list = re.findall(weirdo_regex, line)
         # Update dictionary with the weirdos from the line.
         for weirdo in weirdos_list:
             # Skip exceptions
