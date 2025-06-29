@@ -1377,6 +1377,12 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
                     error_prefix = "CONTINUATION: "
                 else:
                     error_prefix = "NO ANCHOR: "
+            # If "[Footnote" found within footnote, something's wrong, probably relating
+            # to nested or broken markup
+            elif "[Footnote" in maintext().get(
+                f"{fn_record.start.index()}+10c", fn_record.end.index()
+            ):
+                error_prefix = "NESTED/BROKEN MARKUP: "
             else:
                 an_record = an_records[fn_record.an_index]
                 # Check that no other footnote has the same anchor as this one
