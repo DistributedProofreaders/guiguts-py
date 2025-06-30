@@ -1850,18 +1850,19 @@ class SurroundWithDialog(OkApplyCancelDialog):
 
         menubar_metadata().add_button_orphan(
             "Surround Selection With, Apply",
-            cls.orphan_wrapper("apply_changes"),
+            cls.orphan_wrapper("do_apply_changes"),
         )
 
-    def apply_changes(self) -> bool:
-        """Overridden method to apply surrounding text."""
+    @classmethod
+    def do_apply_changes(cls) -> None:
+        """Apply surrounding text based on most recent before/after text."""
         maintext().undo_block_begin()
         ranges = maintext().selected_ranges()
         if not ranges:
             ranges = [
                 IndexRange(maintext().get_insert_index(), maintext().get_insert_index())
             ]
-        end_mark = self.get_dlg_name() + "endpoint"
+        end_mark = cls.get_dlg_name() + "endpoint"
         maintext().mark_set(end_mark, ranges[-1].end.index())
         before = preferences.get(PrefKey.SURROUND_WITH_BEFORE).replace(r"\n", "\n")
         after = preferences.get(PrefKey.SURROUND_WITH_AFTER).replace(r"\n", "\n")
@@ -1869,10 +1870,14 @@ class SurroundWithDialog(OkApplyCancelDialog):
         for a_range in reversed(ranges):
             maintext().insert(a_range.end.index(), after)
             maintext().insert(a_range.start.index(), before)
-        self.before_entry.add_to_history(preferences.get(PrefKey.SURROUND_WITH_BEFORE))
-        self.after_entry.add_to_history(preferences.get(PrefKey.SURROUND_WITH_AFTER))
         # Position cursor at end of last selection so user can do Find Next to find the next match
         maintext().set_insert_index(maintext().rowcol(end_mark), focus=False)
+
+    def apply_changes(self) -> bool:
+        """Overridden method to apply surround text"""
+        SurroundWithDialog.do_apply_changes()
+        self.before_entry.add_to_history(preferences.get(PrefKey.SURROUND_WITH_BEFORE))
+        self.after_entry.add_to_history(preferences.get(PrefKey.SURROUND_WITH_AFTER))
         return True  # Always successful
 
     def autofill_after(self) -> None:
