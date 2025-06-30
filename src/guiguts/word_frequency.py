@@ -697,20 +697,19 @@ class WordFrequencyDialog(ToplevelDialog):
             PrefKey.WFDIALOG_DISPLAY_TYPE
         ) == WFDisplayType.MARKEDUP and not word.startswith("<"):
             match_word = r"(?<![>\w])" + re.escape(newline_word) + r"(?![<\w])"
-            wholeword = False
         elif preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) in (
             WFDisplayType.CHAR_COUNTS,
             WFDisplayType.MARKEDUP,
         ):
-            wholeword = False
             match_word = re.escape(newline_word)
-        elif self.whole_word_search(word):
-            wholeword = True
-            match_word = re.escape(newline_word)
-        else:  # Word begins/ends with non-word char - do manual whole-word
-            wholeword = False
-            left_boundary = r"(?<!\w)" if newline_word[0].isalnum() else r"(?<![^\w\s])"
-            right_boundary = r"(?!\w)" if newline_word[-1].isalnum() else r"(?![^\w\s])"
+        else:  # Do manual whole-word
+            # Ensure apostrophes are handled correctly, i.e. "abc" doesn't match "l'abc" or "abc's"
+            left_boundary = (
+                r"(?<!(\w|\w['’]))" if newline_word[0].isalnum() else r"(?<![^\w\s])"
+            )
+            right_boundary = (
+                r"(?!(\w|['’]\w))" if newline_word[-1].isalnum() else r"(?![^\w\s])"
+            )
             match_word = rf"{left_boundary}{re.escape(newline_word)}{right_boundary}"
 
         # If hyphen matching and there's one (escaped) space in the word, let that match
@@ -725,7 +724,7 @@ class WordFrequencyDialog(ToplevelDialog):
             match_word,
             start,
             nocase=preferences.get(PrefKey.WFDIALOG_IGNORE_CASE),
-            wholeword=wholeword,
+            wholeword=False,
             regexp=True,
             backwards=reverse,
             wrap=False,
