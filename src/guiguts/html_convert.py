@@ -400,11 +400,6 @@ def html_convert_body() -> None:
 
         # "/p" --> poetry until we get "p/"
         if selection_lower == "/p":  # open
-            maintext().replace(
-                line_start,
-                line_end,
-                '<div class="poetry-container"><div class="poetry">',
-            )
             poetry_flag = True
             markup_start = step
             in_stanza = False
@@ -416,13 +411,21 @@ def html_convert_body() -> None:
             poetry_indent = poetry_indentation(
                 maintext().get(f"{line_start}+1l", poetry_end)
             )
+            maintext().replace(
+                line_start,
+                line_end,
+                '<div class="poetry-container">\n  <div class="poetry">',
+            )
+            next_step += 1
             reset_ibs_dict()
             continue
         if poetry_flag:
             if selection_lower == "p/":  # close
+                maintext().replace(line_start, line_end, "  </div>\n</div>")
                 if in_stanza:
-                    maintext().insert(f"{line_start} -1l lineend", "</div>")
-                maintext().replace(line_start, line_end, "</div></div>")
+                    maintext().insert(f"{line_start} -1l lineend", "\n    </div>")
+                    next_step += 1
+                next_step += 1
                 poetry_flag = False
             elif selection:
                 # Handle line numbers (at least 2 spaces plus digits at end of line)
@@ -438,15 +441,16 @@ def html_convert_body() -> None:
                 indent = n_spaces - poetry_indent
                 maintext().insert(
                     line_start,
-                    f'<div class="verse indent{indent}">',
+                    f'      <div class="verse indent{indent}">',
                 )
                 maintext().insert(line_end, replacement + "</div>")
                 add_indent_to_css(indent)
                 if not in_stanza:  # start of stanza
-                    maintext().insert(line_start, '<div class="stanza">')
+                    maintext().insert(line_start, '    <div class="stanza">\n')
+                    next_step += 1
                     in_stanza = True
             elif in_stanza:  # blank line - end of stanza
-                maintext().insert(f"{line_start} -1l lineend", "</div>")
+                maintext().insert(f"{line_start}", "    </div>")
                 in_stanza = False
             continue
 
@@ -468,7 +472,7 @@ def html_convert_body() -> None:
             elif selection:
                 do_per_line_markup(selection, line_start, line_end, ibs_dict)
                 # Now safe to add list markup
-                maintext().insert(line_start, "<li>")
+                maintext().insert(line_start, "  <li>")
                 maintext().insert(line_end, "</li>")
             continue
 
@@ -593,7 +597,9 @@ def html_convert_body() -> None:
                 selection,
             )
             maintext().replace(
-                line_start, line_end, f'<li class="{classname}">{linked_selection}</li>'
+                line_start,
+                line_end,
+                f'  <li class="{classname}">{linked_selection.strip()}</li>',
             )
             index_blank_lines = 0
             continue
@@ -674,19 +680,21 @@ def html_convert_body() -> None:
         # In chapter heading - store lines in heading until we get 2 blank lines
         if in_chap_heading:
             if selection:
-                chap_line = re.sub(" *<h2.+?>", "", selection)
+                chap_line = selection.strip()
+                maintext().replace(line_start, line_end, f"    {chap_line}")
                 chap_heading += (" " if chap_heading else "") + chap_line
                 chap_head_blanks = 0
             elif chap_head_blanks == 0:  # First blank line
                 # May be two part heading, e.g. "Chapter 1|<blank line>|The Start"
-                maintext().insert(line_start, "<br>")
+                maintext().insert(line_start, "    <br>")
                 chap_head_blanks += 1
             else:  # Second blank line = end of heading
                 # First blank line will have had "<br>" inserted in elif above.
                 # Remove that and add </h2> at end of chapter heading.
                 maintext().replace(
-                    f"{line_start}-2l lineend", f"{line_start}-1l lineend", "</h2>\n"
+                    f"{line_start}-1l linestart", f"{line_start}-1l lineend", "</h2>\n"
                 )
+                next_step += 1
                 # Don't want footnote anchors in auto ToC
                 chap_heading = re.sub(r"\[.{1,5}\]", "", chap_heading)
                 auto_toc += f'<a href="#{chap_id}">{chap_heading}</a><br>\n'
@@ -718,8 +726,10 @@ def html_convert_body() -> None:
                     maintext().get(f"{line_start}+1l", f"{line_start}+1l lineend")
                 )
                 maintext().insert(
-                    f"{line_start}+1l linestart", f'<h2 class="nobreak" id="{chap_id}">'
+                    f"{line_start}+1l linestart",
+                    f'<h2 class="nobreak" id="{chap_id}">\n',
                 )
+                next_step += 1
                 in_chap_heading = True
                 chap_start = step
                 chap_head_blanks = 0
@@ -1297,10 +1307,12 @@ def html_add_chapter_divs() -> None:
             check_text = check_text.replace("\n", "")
             if not check_text:
                 h2_start = f"{prev_page_break} linestart"
+        maintext().insert(h2_end, "\n</div>")
+        maintext().insert(f"{h2_end} linestart", "  ")
         maintext().insert(
-            h2_start, '<hr class="chap x-ebookmaker-drop"><div class="chapter">'
+            h2_start, '<hr class="chap x-ebookmaker-drop">\n\n<div class="chapter">\n  '
         )
-        maintext().insert(h2_end, "</div>")
+        h2_end = maintext().index(f"{h2_end}+3l")
 
 
 def html_wrap_long_lines() -> None:

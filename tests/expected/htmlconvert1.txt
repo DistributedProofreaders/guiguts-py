@@ -270,12 +270,18 @@ img.w100 {width: 100%;}
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="NOTES_FROM_CALAIS_BASE">NOTES FROM CALAIS BASE
-——-File: 002.png————————————————————————————-
-[Blank Page]
-——-File: px003a.png———————————————————————————
-<br>
-/s p003a</h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="NOTES_FROM_CALAIS_BASE">
+    NOTES FROM CALAIS BASE
+    ——-File: 002.png————————————————————————————-
+    [Blank Page]
+    ——-File: px003a.png———————————————————————————
+    <br>
+    /s p003a
+  </h2>
+</div>
 
 
 <p>
@@ -308,7 +314,13 @@ Printed in Great Britain by<br>
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="TRAINING_IN_FRANCE">TRAINING IN FRANCE</h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="TRAINING_IN_FRANCE">
+    TRAINING IN FRANCE
+  </h2>
+</div>
 
 
 <p>Of course all our troops are trained
@@ -486,8 +498,14 @@ the troops <i>en route</i> for the Front.
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="THE_CARE_OF_THE">THE CARE OF THE
-WOUNDED</h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="THE_CARE_OF_THE">
+    THE CARE OF THE
+    WOUNDED
+  </h2>
+</div>
 
 
 <p>The first thing to do with a
@@ -706,8 +724,14 @@ hospital and another.
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="THE_ARMYS_PETROL">THE ARMY'S PETROL
-SUPPLY</h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="THE_ARMYS_PETROL">
+    THE ARMY'S PETROL
+    SUPPLY
+  </h2>
+</div>
 
 
 <p>In the early part of the war the
@@ -860,7 +884,13 @@ close of business by the officers on both sides.
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="A_GIANT_COBBLERS_SHOP">A GIANT COBBLER'S SHOP</h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="A_GIANT_COBBLERS_SHOP">
+    A GIANT COBBLER'S SHOP
+  </h2>
+</div>
 
 
 <p>The biggest cobbler's shop in the
@@ -1075,13 +1105,25 @@ cobbler's shops the same methods prevail.
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="TRAINING_IN_FRANCE">TRAINING IN FRANCE
-——-File: 034.png————————————————————————————-</h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="TRAINING_IN_FRANCE">
+    TRAINING IN FRANCE
+    ——-File: 034.png————————————————————————————-
+  </h2>
+</div>
 
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="TRAINING_IN_FRANCE"><i>TRAINING IN FRANCE</i></h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="TRAINING_IN_FRANCE">
+    <i>TRAINING IN FRANCE</i>
+  </h2>
+</div>
 
 
 <div class="blockquot">
@@ -1215,13 +1257,25 @@ DISEMBARKING</p>
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="THE_CARE_OF_THE_WOUNDED">THE CARE OF THE WOUNDED
-——-File: 046.png————————————————————————————-</h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="THE_CARE_OF_THE_WOUNDED">
+    THE CARE OF THE WOUNDED
+    ——-File: 046.png————————————————————————————-
+  </h2>
+</div>
 
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="THE_CARE_OF_THE_WOUNDED"><i>THE CARE OF THE WOUNDED</i></h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="THE_CARE_OF_THE_WOUNDED">
+    <i>THE CARE OF THE WOUNDED</i>
+  </h2>
+</div>
 
 
 <div class="blockquot">
@@ -1388,13 +1442,25 @@ UNDER SEAT</p>
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="THE_ARMYS_PETROL_SUPPLY">THE ARMY'S PETROL SUPPLY
-——-File: 060.png————————————————————————————-</h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="THE_ARMYS_PETROL_SUPPLY">
+    THE ARMY'S PETROL SUPPLY
+    ——-File: 060.png————————————————————————————-
+  </h2>
+</div>
 
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="THE_ARMYS_PETROL_SUPPLY"><i>THE ARMY'S PETROL SUPPLY</i></h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="THE_ARMYS_PETROL_SUPPLY">
+    <i>THE ARMY'S PETROL SUPPLY</i>
+  </h2>
+</div>
 
 
 <div class="blockquot">
@@ -1547,13 +1613,25 @@ DEPARTMENT</p>
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="A_GIANT_COBBLERS_SHOP">A GIANT COBBLER'S SHOP
-——-File: 074.png————————————————————————————-</h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="A_GIANT_COBBLERS_SHOP">
+    A GIANT COBBLER'S SHOP
+    ——-File: 074.png————————————————————————————-
+  </h2>
+</div>
 
 
 
 
-<hr class="chap x-ebookmaker-drop"><div class="chapter"><h2 class="nobreak" id="A_GIANT_COBBLERS_SHOP"><i>A GIANT COBBLER'S SHOP</i></h2></div>
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+  <h2 class="nobreak" id="A_GIANT_COBBLERS_SHOP">
+    <i>A GIANT COBBLER'S SHOP</i>
+  </h2>
+</div>
 
 
 <div class="blockquot">
