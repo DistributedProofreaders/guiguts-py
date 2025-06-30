@@ -4369,6 +4369,17 @@ class MainText(tk.Text):
             self.delete(f"{match_index}", f"{match_index} lineend")
             search_range = IndexRange(match.rowcol, self.end())
 
+    def delete_to_end_of_line(self) -> None:
+        """Delete from current cursor position to end of line, as Ctrl+K does
+        by default in Text widgets. If at end of line, delete newline character."""
+        self.undo_block_begin()
+        ins_idx = self.get_insert_index().index()
+        ins_end = f"{ins_idx} lineend"
+        if self.compare(ins_idx, "==", ins_end):
+            self.delete(ins_idx)
+        else:
+            self.delete(ins_idx, f"{ins_idx} lineend")
+
 
 def img_from_page_mark(mark: str) -> str:
     """Get base image name from page mark, e.g. "Pg027" gives "027".

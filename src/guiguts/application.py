@@ -1195,6 +1195,9 @@ class Guiguts:
         menubar_metadata().add_button_orphan(
             "Switch Text Window", lambda: maintext().switch_text_peer()
         )
+        menubar_metadata().add_button_orphan(
+            "Delete To End Of Line", lambda: maintext().delete_to_end_of_line()
+        )
 
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
         """Add labels to initialize the statusbar.
