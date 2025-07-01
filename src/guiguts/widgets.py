@@ -347,8 +347,29 @@ class ToplevelDialog(tk.Toplevel):
             kwargs: Named args for `method_name` method.
         """
 
+        def is_class_or_static_method(
+            cls: type[ToplevelDialog], method_name: str
+        ) -> bool:
+            """Check Method Resolution Order to find if it's a class/static method.
+
+            Args:
+                cls: Class to be checked.
+                method_name: Name of method to be checked.
+
+            Returns:
+                True if method is a class or static method.
+            """
+            for cls_ in cls.__mro__:
+                if method_name in cls_.__dict__:
+                    attr = cls_.__dict__[method_name]
+                    return isinstance(attr, (classmethod, staticmethod))
+            return False
+
         def wrapper() -> None:
-            if dlg := cls.get_dialog():
+            """Call given method on dialog or dialog class."""
+            if is_class_or_static_method(cls, method_name):
+                getattr(cls, method_name)(*args, **kwargs)
+            elif dlg := cls.get_dialog():
                 getattr(dlg, method_name)(*args, **kwargs)
 
         assert hasattr(cls, method_name)
