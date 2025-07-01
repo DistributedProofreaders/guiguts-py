@@ -219,7 +219,7 @@ def html_convert_title() -> None:
         end_row = maintext().rowcol(end).row
         # Work in reverse to avoid affecting index locations - add "</h1>" markup
         next_line = maintext().get(f"{end}+1l linestart", f"{end}+1l lineend")
-        if re.fullmatch("[*$fxcr]/", next_line):
+        if re.fullmatch("[*$fxcr]/", next_line, flags=re.IGNORECASE):
             maintext().replace(f"{end}+1l linestart", f"{end}+1l lineend", "</h1>")
         else:
             maintext().insert(end, "\n</h1>")
@@ -228,7 +228,7 @@ def html_convert_title() -> None:
             maintext().insert(f"{row}.end", "<br>")
         # Add "<h1>" markup
         prev_line = maintext().get(f"{start}-1l linestart", f"{start}-1l lineend")
-        if re.fullmatch("/[*$fxcr].*", prev_line):
+        if re.fullmatch("/[*$fxcr].*", prev_line, flags=re.IGNORECASE):
             maintext().replace(f"{start}-1l linestart", f"{start}-1l lineend", "<h1>")
         else:
             maintext().insert(start, "<h1>\n")
@@ -553,6 +553,7 @@ def html_convert_body() -> None:
                 maintext().insert(line_end, "</span>")
             if next_lower not in ("$/", "*/"):
                 maintext().insert(line_end, "<br>")
+            maintext().insert(line_start, "  ")
             continue
 
         # "/i" --> index until we get "i/"
@@ -662,9 +663,11 @@ def html_convert_body() -> None:
                     if line_len > 0 and right_pad > 0:
                         maintext().insert(
                             f"{right_block_line_num}.0",
-                            f'<span style="margin-left: {right_pad * 0.5}em;">',
+                            f'<span style="margin-right: {right_pad * 0.5}em;">',
                         )
                         maintext().insert(f"{right_block_line_num}.end", "</span>")
+                    if line_len > 0:
+                        maintext().insert(f"{right_block_line_num}.0", "  ")
                     if line_idx < len(right_line_lengths) - 1:
                         maintext().insert(f"{right_block_line_num}.end", "<br>")
             else:  # lines within "/r" markup
