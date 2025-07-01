@@ -285,18 +285,18 @@ img.w100 {width: 100%;}
 
 
 <p>
-NOTES<br>
-from CALAIS BASE<br>
-<span class="pagenum" id="Page_1">[Pg 1]</span>.bn p003sa.png<br>
-<br>
-AND PICTURES OF ITS<br>
-MANY ACTIVITIES<br>
-<br>
-By C. E. MONTAGUE<br>
-<br>
-LONDON: T. FISHER UNWIN, Ltd.<br>
-1, ADELPHI TERRACE, W.C.<br>
-1918
+  NOTES<br>
+  from CALAIS BASE<br>
+<span class="pagenum" id="Page_1">[Pg 1]</span>  .bn p003sa.png<br>
+  <br>
+  AND PICTURES OF ITS<br>
+  MANY ACTIVITIES<br>
+  <br>
+  By C. E. MONTAGUE<br>
+  <br>
+  LONDON: T. FISHER UNWIN, Ltd.<br>
+  1, ADELPHI TERRACE, W.C.<br>
+  1918
 </p>
 <p>——-File: 004.png————————————————————————————-</p>
 
@@ -304,10 +304,10 @@ LONDON: T. FISHER UNWIN, Ltd.<br>
 
 
 <p>
-Printed in Great Britain by<br>
-<span class="smcap">The Avenue Press</span><br>
-(<span class="smcap">L. Upcott Gill &amp; Son, Ltd.</span>),<br>
-<span class="smcap">London</span>.
+  Printed in Great Britain by<br>
+  <span class="smcap">The Avenue Press</span><br>
+  (<span class="smcap">L. Upcott Gill &amp; Son, Ltd.</span>),<br>
+  <span class="smcap">London</span>.
 </p>
 <p>——-File: 005.png————————————————————————————-</p>
 
@@ -983,9 +983,9 @@ to waste. It is like the drowned man in the
 <i>Tempest</i>—</p>
 
 <p>
-Nothing of it that doth fade,<br>
-But all doth suffer a sea change<br>
-Into something rich and strange.
+  Nothing of it that doth fade,<br>
+  But all doth suffer a sea change<br>
+  Into something rich and strange.
 </p>
 <p>——-File: 028.png————————————————————————————-</p>
 

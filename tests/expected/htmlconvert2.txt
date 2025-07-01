@@ -262,19 +262,19 @@ CHERRY-BLOSSOMS
 <p>[Illustration:</p>
 
 <p>
-<span class="smcap">Dragons</span><br>
-<span class="smcap">and</span><br>
-<span class="smcap">Cherry</span><br>
-<span class="smcap">Blossoms</span><br>
-<br>
-By<br>
-Mrs. Robert<br>
-C. Morris<br>
-<br>
-New York<br>
-Dodd, Mead<br>
-&amp; Company<br>
-1896
+  <span class="smcap">Dragons</span><br>
+  <span class="smcap">and</span><br>
+  <span class="smcap">Cherry</span><br>
+  <span class="smcap">Blossoms</span><br>
+  <br>
+  By<br>
+  Mrs. Robert<br>
+  C. Morris<br>
+  <br>
+  New York<br>
+  Dodd, Mead<br>
+  &amp; Company<br>
+  1896
 </p>
 <p>]</p>
 
@@ -282,22 +282,22 @@ Dodd, Mead<br>
 
 
 <p>
-<i>Copyright, 1896</i>,<br>
-<span class="smcap">By Dodd, Mead and Company</span>.<br>
-<br>
-<i>All rights reserved.</i><br>
-<br>
-<br>
-University Press:<br>
-<span class="smcap">John Wilson and Son, Cambridge, U.S.A.</span>
+  <i>Copyright, 1896</i>,<br>
+  <span class="smcap">By Dodd, Mead and Company</span>.<br>
+  <br>
+  <i>All rights reserved.</i><br>
+  <br>
+  <br>
+  University Press:<br>
+  <span class="smcap">John Wilson and Son, Cambridge, U.S.A.</span>
 </p>
 
 
 
 
 <p>
-TO<br>
-MY HUSBAND.
+  TO<br>
+  MY HUSBAND.
 </p>
 
 
@@ -355,23 +355,23 @@ MY HUSBAND.
 
 
 <p>
-<span style="margin-left: 3.0em;"><span class="smcap">Page</span></span><br>
-<br>
-Foreign Residents      15<br>
-<br>
-Shopping      49<br>
-<br>
-Our Dinner at Kioto      81<br>
-<br>
-Miyako Odori      109<br>
-<br>
-The Rise and Fall of the Kakemono      141<br>
-<br>
-A Glimpse of Royalty      173<br>
-<br>
-Fin de Siècle Japan      209<br>
-<br>
-Cho and Eba       239
+  <span style="margin-left: 3.0em;"><span class="smcap">Page</span></span><br>
+  <br>
+  Foreign Residents      15<br>
+  <br>
+  Shopping      49<br>
+  <br>
+  Our Dinner at Kioto      81<br>
+  <br>
+  Miyako Odori      109<br>
+  <br>
+  The Rise and Fall of the Kakemono      141<br>
+  <br>
+  A Glimpse of Royalty      173<br>
+  <br>
+  Fin de Siècle Japan      209<br>
+  <br>
+  Cho and Eba       239
 </p>
 
 
