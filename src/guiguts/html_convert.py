@@ -169,6 +169,7 @@ def do_html_autogenerate() -> None:
     html_convert_sidenotes()
     html_add_chapter_divs()
     html_wrap_long_lines()
+    maintext().replace_all("\n\n\n+", "\n\n", regexp=True)  # No multi-blank lines
     maintext().set_insert_index(maintext().start())
 
 
@@ -695,7 +696,9 @@ def html_convert_body() -> None:
                 # First blank line will have had "<br>" inserted in elif above.
                 # Remove that and add </h2> at end of chapter heading.
                 maintext().replace(
-                    f"{line_start}-1l linestart", f"{line_start}-1l lineend", "</h2>\n"
+                    f"{line_start}-1l linestart",
+                    f"{line_start}-1l lineend",
+                    "  </h2>\n",
                 )
                 next_step += 1
                 # Don't want footnote anchors in auto ToC
@@ -730,7 +733,7 @@ def html_convert_body() -> None:
                 )
                 maintext().insert(
                     f"{line_start}+1l linestart",
-                    f'<h2 class="nobreak" id="{chap_id}">\n',
+                    f'  <h2 class="nobreak" id="{chap_id}">\n',
                 )
                 next_step += 1
                 in_chap_heading = True
@@ -1162,7 +1165,7 @@ def html_convert_page_anchors() -> None:
             pagenum_span = f'<span class="pagenum">{anchors}{pstring}</span>'
         insert_index = safe_index(page_detail_buffer[0]["index"])
         if outside_paragraph(insert_index):
-            pagenum_span = f"<p>{pagenum_span}</p>"
+            pagenum_span = f"\n<p>{pagenum_span}</p>\n"
         maintext().insert(insert_index, pagenum_span)
 
     show_page_numbers = preferences.get(PrefKey.HTML_SHOW_PAGE_NUMBERS)
@@ -1297,11 +1300,12 @@ def html_add_chapter_divs() -> None:
     """Add chapter divs where there are h2 headings, attempting to
     enclose pagenum spans where appropriate."""
     h2_end = "1.0"
-    while h2_start := maintext().search("<h2", h2_end, tk.END):
+    while h2_start := maintext().search("  <h2", h2_end, tk.END):
         h2_end = f'{maintext().search("</h2>", h2_start, tk.END)} lineend'
         prev_page_break = maintext().search(
             '<span class="pagenum"', h2_start, "1.0", backwards=True
         )
+        extra_nl = ""
         if prev_page_break:
             check_text = maintext().get(f"{prev_page_break} linestart", h2_start)
             check_text = re.sub(r'<span class="pagenum".+?</span>', "", check_text)
@@ -1310,10 +1314,11 @@ def html_add_chapter_divs() -> None:
             check_text = check_text.replace("\n", "")
             if not check_text:
                 h2_start = f"{prev_page_break} linestart"
+                extra_nl = "\n"
         maintext().insert(h2_end, "\n</div>")
-        maintext().insert(f"{h2_end} linestart", "  ")
         maintext().insert(
-            h2_start, '<hr class="chap x-ebookmaker-drop">\n\n<div class="chapter">\n  '
+            h2_start,
+            f'\n\n<hr class="chap x-ebookmaker-drop">\n<div class="chapter">\n{extra_nl}',
         )
         h2_end = maintext().index(f"{h2_end}+3l")
 
