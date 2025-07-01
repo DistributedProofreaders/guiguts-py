@@ -305,7 +305,7 @@ class WordFrequencyDialog(ToplevelDialog):
             return button
 
         display_radio(0, 0, "All Words", WFDisplayType.ALL_WORDS)
-        display_radio(0, 1, "Diacritics/Ligatures", WFDisplayType.ACCENTS)
+        display_radio(0, 1, "Diacritics/æ/œ", WFDisplayType.ACCENTS)
         display_radio(0, 2, "Ligatures", WFDisplayType.LIGATURES)
         self.all_caps_btn = display_radio(1, 0, "ALL CAPITALS", WFDisplayType.ALL_CAPS)
         self.mixed_case_btn = display_radio(
