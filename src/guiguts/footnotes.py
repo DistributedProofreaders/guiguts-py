@@ -27,6 +27,8 @@ logger = logging.getLogger(__package__)
 _THE_FOOTNOTE_CHECKER: Optional["FootnoteChecker"] = None
 
 INSERTION_MARK_PREFIX = "Shadow"
+UNPAIRED_ANCHOR_PREFIX = "UNPAIRED ANCHOR: "
+UNPAIRED_FLAG = -1
 
 
 class FootnoteIndexStyle(StrEnum):
@@ -463,7 +465,9 @@ class FootnoteChecker:
                 anchor_context = maintext().get(
                     f"{anchor_match.rowcol.index()}-2c", anchor_match.rowcol.index()
                 )
-                if not re.fullmatch("/[#$*FILPXCR]", anchor_context):
+                if not re.fullmatch(
+                    "/[#$*FILPXCR]", anchor_context, flags=re.IGNORECASE
+                ):
                     break
                 start_point = anchor_match.rowcol
 
@@ -491,6 +495,34 @@ class FootnoteChecker:
                 self.an_records.append(anr)
 
             search_range = IndexRange(end_point, maintext().end())
+
+        # Check for anchors that are not paired
+        anchor_matches = maintext().find_all(
+            maintext().start_to_end(),
+            r"(?<!/[#$*FfIiLlPpXxCcRr])\[([\d]+|[A-Z])]",
+            regexp=True,
+            wholeword=False,
+            nocase=False,
+        )
+        for anchor_match in anchor_matches:
+            for an_record in self.an_records:
+                if an_record.start == anchor_match.rowcol:  # Already paired
+                    break
+            else:
+                an_line = maintext().get(
+                    f"{anchor_match.rowcol.row}.0", f"{anchor_match.rowcol.row}.end"
+                )
+                anr = AnchorRecord(
+                    an_line,
+                    anchor_match.rowcol,
+                    maintext().rowcol(
+                        f"{anchor_match.rowcol.index()}+{anchor_match.count}c",
+                    ),
+                    anchor_match.rowcol.col,
+                    anchor_match.rowcol.col + anchor_match.count,
+                    UNPAIRED_FLAG,
+                )
+                self.an_records.append(anr)
 
 
 def sort_key_type(
@@ -1424,7 +1456,9 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
         # such as "SAME ANCHOR", "NO ANCHOR" or "CONTINUATION". Note the last is not
         # an error as such but does need action by the PPer (join it to the previous
         # footnote) before reindexing and moving to paragraphs or LZ(s).
-        if error_prefix != "":
+        # "UNPAIRED ANCHOR" is hopefully temporary to get round current code
+        # limitations, and should not count as an error.
+        if error_prefix not in ("", UNPAIRED_ANCHOR_PREFIX):
             errors_flagged = True
         checker_dialog.add_entry(
             fn_record.text,
@@ -1447,6 +1481,9 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
             IndexRange(an_record.start, an_record.end),
             an_record.hilite_start,
             an_record.hilite_end,
+            error_prefix=(
+                UNPAIRED_ANCHOR_PREFIX if an_record.fn_index == UNPAIRED_FLAG else ""
+            ),
         )
     checker_dialog.display_entries(auto_select_line)
     _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
