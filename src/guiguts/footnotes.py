@@ -495,16 +495,13 @@ class FootnoteChecker:
 
 def sort_key_type(
     entry: CheckerEntry,
-) -> tuple[int, int, int]:
-    """Sort key function to sort Footnote entries by type (footnote/anchor), then rowcol.
-
-    Types are distinguished lazily - anchors have a short highlit text, "[1]"
-    """
+) -> tuple[bool, bool, str, int, int]:
+    """Sort key function to sort Footnote entries by type (footnote/anchor), error_prefix, then rowcol."""
     assert entry.text_range is not None
-    assert entry.hilite_start is not None
-    assert entry.hilite_end is not None
     return (
-        entry.hilite_end - entry.hilite_start,
+        "[Footnote" not in entry.text,
+        entry.error_prefix == "",
+        entry.error_prefix,
         entry.text_range.start.row,
         entry.text_range.start.col,
     )
