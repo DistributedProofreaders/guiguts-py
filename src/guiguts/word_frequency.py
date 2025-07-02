@@ -704,11 +704,19 @@ class WordFrequencyDialog(ToplevelDialog):
             match_word = re.escape(newline_word)
         else:  # Do manual whole-word
             # Ensure apostrophes are handled correctly, i.e. "abc" doesn't match "l'abc" or "abc's"
+            # Also, boundary for an emdash is any non-emdash, but for other non-word characters the
+            # boundary is a word/space character
+            emdash_bound = "—" if newline_word[0] == "—" else r"[^\w\s]"
             left_boundary = (
-                r"(?<!(\w|\w['’]))" if newline_word[0].isalnum() else r"(?<![^\w\s])"
+                r"(?<!(\w|\w['’]))"
+                if newline_word[0].isalnum()
+                else rf"(?<!{emdash_bound})"
             )
+            emdash_bound = "—" if newline_word[-1] == "—" else r"[^\w\s]"
             right_boundary = (
-                r"(?!(\w|['’]\w))" if newline_word[-1].isalnum() else r"(?![^\w\s])"
+                r"(?!(\w|['’]\w))"
+                if newline_word[-1].isalnum()
+                else rf"(?!{emdash_bound})"
             )
             match_word = rf"{left_boundary}{re.escape(newline_word)}{right_boundary}"
 
@@ -729,6 +737,7 @@ class WordFrequencyDialog(ToplevelDialog):
             backwards=reverse,
             wrap=False,
         )
+        maintext().remove_spotlights()
         if match is None:
             sound_bell()
             maintext().set_insert_index(
@@ -736,7 +745,6 @@ class WordFrequencyDialog(ToplevelDialog):
             )
         else:
             maintext().set_insert_index(match.rowcol, focus=False)
-            maintext().remove_spotlights()
             start_index = match.rowcol.index()
             end_index = maintext().index(start_index + f"+{match.count}c")
             maintext().spotlight_range(IndexRange(start_index, end_index))
