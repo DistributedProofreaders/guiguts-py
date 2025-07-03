@@ -773,7 +773,7 @@ class Guiguts:
         )
         if not is_mac():
             edit_menu.add_separator()
-            edit_menu.add_button("Pre~ferences...", PreferencesDialog.show_dialog)
+            edit_menu.add_button("~Settings...", PreferencesDialog.show_dialog)
 
     def init_search_menu(self) -> None:
         """Create the Search menu."""
