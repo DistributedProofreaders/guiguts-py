@@ -644,7 +644,7 @@ class Guiguts:
         self.init_file_project_menu(file_menu)
         self.init_file_content_menu(file_menu)
         file_menu.add_separator()
-        file_menu.add_button("~Quit", self.quit_program)
+        file_menu.add_button("~Quit", self.quit_program, "Cmd+Q" if is_mac() else "")
 
     def init_file_recent_menu(self, parent: MenuMetadata) -> None:
         """Create the Recent Documents menu."""
@@ -771,7 +771,9 @@ class Guiguts:
             maintext().surround_rtl,
         )
         edit_menu.add_separator()
-        edit_menu.add_button("~Settings...", PreferencesDialog.show_dialog)
+        edit_menu.add_button(
+            "~Settings...", PreferencesDialog.show_dialog, "Cmd+," if is_mac() else ""
+        )
 
     def init_search_menu(self) -> None:
         """Create the Search menu."""
