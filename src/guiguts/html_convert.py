@@ -1320,7 +1320,7 @@ def html_add_chapter_divs() -> None:
             h2_start,
             f'\n\n<hr class="chap x-ebookmaker-drop">\n<div class="chapter">\n{extra_nl}',
         )
-        h2_end = maintext().index(f"{h2_end}+3l")
+        h2_end = maintext().index(f"{h2_end}+5l")
 
 
 def html_wrap_long_lines() -> None:
