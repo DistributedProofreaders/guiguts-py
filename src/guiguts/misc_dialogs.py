@@ -45,6 +45,7 @@ from guiguts.widgets import (
     TreeviewList,
     ScrollableFrame,
     themed_style,
+    set_global_font,
 )
 
 logger = logging.getLogger(__package__)
@@ -113,54 +114,23 @@ class PreferencesDialog(ToplevelDialog):
                 preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier New")
             return True
 
-        font_frame = ttk.Frame(appearance_frame)
-        font_frame.grid(column=0, row=3, sticky="NEW", pady=(5, 0))
-        ttk.Label(font_frame, text="Font: ").grid(column=0, row=0, sticky="NEW")
-        font_list = sorted(font.families(), key=str.lower)
-        font_list.insert(0, self.COMBO_SEPARATOR)
-        for preferred_font in "Courier New", "DejaVu Sans Mono", "DP Sans Mono":
-            if preferred_font in font_list:
-                font_list.insert(0, preferred_font)
-            elif preferred_font == "Courier New" and "Courier" in font_list:
-                font_list.insert(0, "Courier")
-        cb = ttk.Combobox(
-            font_frame,
-            textvariable=PersistentString(PrefKey.TEXT_FONT_FAMILY),
-            width=30,
-            validate=tk.ALL,
-            validatecommand=(self.register(is_valid_font), "%P"),
-            values=font_list,
-            state="readonly",
-        )
-        cb.grid(column=1, row=0, sticky="NEW")
-
-        spinbox = ttk.Spinbox(
-            font_frame,
-            textvariable=PersistentInt(PrefKey.TEXT_FONT_SIZE),
-            from_=1,
-            to=99,
-            width=5,
-        )
-        spinbox.grid(column=2, row=0, sticky="NEW", padx=2)
-        ToolTip(spinbox, "Font size")
-
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
             variable=PersistentBoolean(PrefKey.LINE_NUMBERS),
-        ).grid(column=0, row=4, sticky="NEW", pady=5)
+        ).grid(column=0, row=3, sticky="NEW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
             text="Display Column Numbers",
             variable=PersistentBoolean(PrefKey.COLUMN_NUMBERS),
-        ).grid(column=0, row=5, sticky="NEW", pady=5)
+        ).grid(column=0, row=4, sticky="NEW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
             text="Show Character Names in Status Bar",
             variable=PersistentBoolean(PrefKey.ORDINAL_NAMES),
-        ).grid(column=0, row=6, sticky="NEW", pady=5)
+        ).grid(column=0, row=5, sticky="NEW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=7, sticky="NEW", pady=(5, 0))
+        bell_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))
         ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
         ttk.Checkbutton(
             bell_frame,
@@ -190,6 +160,86 @@ class PreferencesDialog(ToplevelDialog):
             "<<ThemeChanged>>",
             lambda _: self.after_idle(lambda: self.create_color_rows(refresh=True)),
         )
+
+        # Fonts
+        font_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(font_frame, text="Fonts")
+        font_frame.columnconfigure(1, weight=1)
+        # font_frame.rowconfigure(0, weight=1)
+
+        ttk.Label(font_frame, text="Text Window: ").grid(column=0, row=0, sticky="NEW")
+        font_list = sorted(font.families(), key=str.lower)
+        font_list.insert(0, self.COMBO_SEPARATOR)
+        for preferred_font in "Courier New", "DejaVu Sans Mono", "DP Sans Mono":
+            if preferred_font in font_list:
+                font_list.insert(0, preferred_font)
+            elif preferred_font == "Courier New" and "Courier" in font_list:
+                font_list.insert(0, "Courier")
+        cb = ttk.Combobox(
+            font_frame,
+            textvariable=PersistentString(PrefKey.TEXT_FONT_FAMILY),
+            validate=tk.ALL,
+            validatecommand=(self.register(is_valid_font), "%P"),
+            values=font_list,
+            state="readonly",
+        )
+        cb.grid(column=1, row=0, sticky="NSEW")
+
+        spinbox = ttk.Spinbox(
+            font_frame,
+            textvariable=PersistentInt(PrefKey.TEXT_FONT_SIZE),
+            from_=1,
+            to=99,
+            width=5,
+        )
+        spinbox.grid(column=2, row=0, sticky="NSEW", padx=2)
+        ToolTip(spinbox, "Font size")
+
+        def system_font_effects() -> None:
+            """Handle toggling of system font checkbutton."""
+            set_global_font()
+            state = (
+                tk.DISABLED
+                if preferences.get(PrefKey.GLOBAL_FONT_SYSTEM)
+                else tk.ACTIVE
+            )
+            self.global_font_family["state"] = state
+            self.global_font_size["state"] = state
+
+        ttk.Checkbutton(
+            font_frame,
+            text="Use System Font for Labels, Buttons, etc.",
+            variable=PersistentBoolean(PrefKey.GLOBAL_FONT_SYSTEM),
+            command=system_font_effects,
+        ).grid(column=0, row=1, pady=(15, 0), columnspan=3, sticky="NSW")
+        ttk.Label(font_frame, text="Labels, Buttons, etc: ").grid(
+            column=0, row=2, sticky="NSEW"
+        )
+        font_list = sorted(font.families(), key=str.lower)
+        self.global_font_family = ttk.Combobox(
+            font_frame,
+            textvariable=PersistentString(PrefKey.GLOBAL_FONT_FAMILY),
+            validate=tk.ALL,
+            validatecommand=(self.register(is_valid_font), "%P"),
+            values=font_list,
+            state="readonly",
+        )
+        self.global_font_family.grid(column=1, row=2, sticky="NSEW")
+        self.global_font_family.bind(
+            "<<ComboboxSelected>>", lambda _e: set_global_font()
+        )
+
+        self.global_font_size = ttk.Spinbox(
+            font_frame,
+            textvariable=PersistentInt(PrefKey.GLOBAL_FONT_SIZE),
+            command=set_global_font,
+            from_=1,
+            to=99,
+            width=5,
+        )
+        self.global_font_size.grid(column=2, row=2, sticky="NSEW", padx=2)
+        ToolTip(self.global_font_size, "Font size")
+        system_font_effects()
 
         # Image Viewer
         image_viewer_frame = ttk.Frame(notebook, padding=10)
@@ -242,7 +292,7 @@ class PreferencesDialog(ToplevelDialog):
             file_name_frame,
             textvariable=PersistentString(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH),
             width=30,
-        ).grid(row=0, column=0, sticky="EW", padx=(0, 2))
+        ).grid(row=0, column=0, sticky="NSEW", padx=(0, 2))
 
         def choose_external_viewer() -> None:
             """Choose program to view images."""
