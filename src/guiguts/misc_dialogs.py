@@ -208,11 +208,12 @@ class PreferencesDialog(ToplevelDialog):
 
         ttk.Checkbutton(
             font_frame,
-            text="Use System Font for Labels, Buttons, etc.",
+            text="Use System Font for Menus, Labels, Buttons, etc.",
             variable=PersistentBoolean(PrefKey.GLOBAL_FONT_SYSTEM),
             command=system_font_effects,
         ).grid(column=0, row=1, pady=(15, 0), columnspan=3, sticky="NSW")
-        ttk.Label(font_frame, text="Labels, Buttons, etc: ").grid(
+
+        ttk.Label(font_frame, text="Menus, Labels & Buttons: ").grid(
             column=0, row=2, sticky="NSEW"
         )
         font_list = sorted(font.families(), key=str.lower)
@@ -240,6 +241,12 @@ class PreferencesDialog(ToplevelDialog):
         self.global_font_size.grid(column=2, row=2, sticky="NSEW", padx=2)
         ToolTip(self.global_font_size, "Font size")
         system_font_effects()
+
+        if is_mac():
+            ttk.Label(
+                font_frame,
+                text="(May require restart to fully resize buttons & labels)",
+            ).grid(column=0, row=3, columnspan=3, sticky="NSEW", pady=5)
 
         # Image Viewer
         image_viewer_frame = ttk.Frame(notebook, padding=10)
