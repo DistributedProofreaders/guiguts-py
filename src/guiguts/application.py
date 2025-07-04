@@ -585,6 +585,7 @@ class Guiguts:
         preferences.set_default(PrefKey.REGEX_TIMEOUT, 5)
         preferences.set_default(PrefKey.LEVENSHTEIN_DIGITS, True)
         preferences.set_default(PrefKey.CURLY_DOUBLE_QUOTE_EXCEPTION, False)
+        preferences.set_default(PrefKey.CURLY_SINGLE_QUOTE_STRICT, True)
         preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_0, "")
         preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_1, "")
         preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_2, "")

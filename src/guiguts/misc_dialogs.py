@@ -402,9 +402,20 @@ class PreferencesDialog(ToplevelDialog):
             text="Show Tooltips",
             variable=PersistentBoolean(PrefKey.SHOW_TOOLTIPS),
         ).grid(column=0, row=5, sticky="NEW", pady=5)
+        cqc = ttk.Checkbutton(
+            advance_frame,
+            text="Strict Single Curly Quote Conversion",
+            variable=PersistentBoolean(PrefKey.CURLY_SINGLE_QUOTE_STRICT),
+        )
+        cqc.grid(column=0, row=6, sticky="NEW", pady=5)
+        ToolTip(
+            cqc,
+            "On - only convert straight single quotes to curly if certain\n"
+            "Off - convert some straight single quotes inside double quotes to apostrophes",
+        )
         add_label_spinbox(
             advance_frame,
-            6,
+            7,
             "Regex timeout (seconds):",
             PrefKey.REGEX_TIMEOUT,
             "Longest time a regex search is allowed to take.\n"
@@ -414,7 +425,7 @@ class PreferencesDialog(ToplevelDialog):
             advance_frame,
             text="Reset shortcuts to default (change requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
-        ).grid(column=0, row=7, sticky="NSW", pady=5, columnspan=3)
+        ).grid(column=0, row=8, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",

@@ -146,6 +146,7 @@ class PrefKey(StrEnum):
     REGEX_TIMEOUT = auto()
     LEVENSHTEIN_DIGITS = auto()
     CURLY_DOUBLE_QUOTE_EXCEPTION = auto()
+    CURLY_SINGLE_QUOTE_STRICT = auto()
     CUSTOM_MARKUP_ATTRIBUTE_0 = auto()
     CUSTOM_MARKUP_ATTRIBUTE_1 = auto()
     CUSTOM_MARKUP_ATTRIBUTE_2 = auto()
