@@ -177,7 +177,7 @@ $t: selected Text (only the first line if column selection)
 $u: Unicode codepoint of current character from status bar, e.g. "0041" for capital A.
 
 To assist in opening a hi-res scan for the current page, $s can also be given an offset, \
-e.g. $(s+5) would give 12 for the 5th png.
+e.g. $(s+7) would give 12 for the 5th png.
 """,
         )
         help_label.grid(row=0, column=0, padx=5, pady=2, sticky="NSEW")
