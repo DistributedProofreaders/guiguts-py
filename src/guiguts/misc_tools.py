@@ -1999,6 +1999,7 @@ def convert_to_curly_quotes() -> None:
         if line == "":
             dqtype = 0  # Reset double quotes at paragraph break
             continue
+        start_line_dqtype = dqtype  # Needed for single quote conversion later
 
         # Apart from special cases, alternate open/close double quotes through each paragraph
         # Ditto marks first - surrounded by double-space. Also permit 0/1 space
@@ -2047,6 +2048,25 @@ def convert_to_curly_quotes() -> None:
             line, count = re.subn(regex, SQUOTES[1], line)
             if count:
                 edited = True
+        # If PPer has enabled it, convert straight quote at start of word to
+        # apostrophe if it's inside double quotes
+        if not preferences.get(PrefKey.CURLY_SINGLE_QUOTE_STRICT) and "'" in line:
+            chars = list(line)
+            # Begin with situation at start of line
+            in_double_quotes = bool(start_line_dqtype)
+            for idx, ch in enumerate(chars):
+                if ch == "“":
+                    in_double_quotes = True
+                elif ch == "”":
+                    in_double_quotes = False
+                elif in_double_quotes and ch == "'":
+                    # If single quote at start of line or start of word, assume it is an apostrophe
+                    if (idx == 0 or chars[idx - 1] in " “>") and (
+                        idx + 1 < len(chars) and chars[idx + 1].isalpha()
+                    ):
+                        chars[idx] = "’"
+                        edited = True
+            line = "".join(chars)
 
         if edited:
             maintext().replace(lstart, lend, line)
