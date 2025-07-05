@@ -643,9 +643,8 @@ class Guiguts:
         file_menu.add_button("~Close", self.close_command, "Cmd+W" if is_mac() else "")
         self.init_file_project_menu(file_menu)
         self.init_file_content_menu(file_menu)
-        if not is_mac():
-            file_menu.add_separator()
-            file_menu.add_button("E~xit", self.quit_program, "")
+        file_menu.add_separator()
+        file_menu.add_button("~Quit", self.quit_program)
 
     def init_file_recent_menu(self, parent: MenuMetadata) -> None:
         """Create the Recent Documents menu."""
@@ -771,9 +770,8 @@ class Guiguts:
             "~Surround selected text with RLM...LRM markers",
             maintext().surround_rtl,
         )
-        if not is_mac():
-            edit_menu.add_separator()
-            edit_menu.add_button("~Settings...", PreferencesDialog.show_dialog)
+        edit_menu.add_separator()
+        edit_menu.add_button("~Settings...", PreferencesDialog.show_dialog)
 
     def init_search_menu(self) -> None:
         """Create the Search menu."""
