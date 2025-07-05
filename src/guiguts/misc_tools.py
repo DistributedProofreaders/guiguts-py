@@ -2061,7 +2061,7 @@ def convert_to_curly_quotes() -> None:
                     in_double_quotes = False
                 elif in_double_quotes and ch == "'":
                     # If single quote at start of line or start of word, assume it is an apostrophe
-                    if (idx == 0 or chars[idx - 1].isspace()) and (
+                    if (idx == 0 or chars[idx - 1] in " “>") and (
                         idx + 1 < len(chars) and chars[idx + 1].isalpha()
                     ):
                         chars[idx] = "’"
