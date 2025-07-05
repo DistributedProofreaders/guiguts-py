@@ -44,6 +44,7 @@ from guiguts.widgets import (
     ThemedStyle,
     TreeviewList,
     bind_shift_tab,
+    init_global_font,
 )
 
 logger = logging.getLogger(__package__)
@@ -1420,6 +1421,7 @@ class MainWindow:
         Root()
         # Themes
         themed_style(ThemedStyle())
+        init_global_font()
 
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()

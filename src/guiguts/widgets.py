@@ -18,6 +18,9 @@ from guiguts.root import root, RootWindowState
 from guiguts.utilities import is_windows, is_mac, process_accel, cmd_ctrl_string, is_x11
 
 NUM_HISTORY = 10
+GLOBAL_FONT_NAME = "global_font"
+global_font: Optional[tk_font.Font] = None
+default_font: Optional[tk_font.Font] = None
 
 
 TlDlg = TypeVar("TlDlg", bound="ToplevelDialog")
@@ -1283,3 +1286,37 @@ class ScrollableFrame(ttk.Frame):
         """Scroll canvas to top left position."""
         self.canvas.xview_moveto(0.0)
         self.canvas.yview_moveto(0.0)
+
+
+def init_global_font() -> None:
+    """Initialize the global font to match the default system font for labels or
+    the values from preferences."""
+    global global_font, default_font
+    temp_label = tk.Label()
+    default_font = tk_font.nametofont(temp_label["font"])
+    temp_label.destroy()
+    global_font = tk_font.Font(name=GLOBAL_FONT_NAME)
+    if preferences.get(PrefKey.GLOBAL_FONT_FAMILY) == "":
+        preferences.set(PrefKey.GLOBAL_FONT_FAMILY, default_font.cget("family"))
+    if preferences.get(PrefKey.GLOBAL_FONT_SIZE) < 0:
+        preferences.set(PrefKey.GLOBAL_FONT_SIZE, default_font.cget("size"))
+    set_global_font()
+    root().option_add("*font", GLOBAL_FONT_NAME)
+
+
+def set_global_font() -> None:
+    """Set the global font to match the default system font for labels or
+    the values from preferences."""
+    assert global_font is not None and default_font is not None
+    if preferences.get(PrefKey.GLOBAL_FONT_SYSTEM):
+        global_font.config(
+            family=default_font.cget("family"),
+            size=default_font.cget("size"),
+            weight=default_font.cget("weight"),
+        )
+    else:
+        global_font.config(
+            family=preferences.get(PrefKey.GLOBAL_FONT_FAMILY),
+            size=preferences.get(PrefKey.GLOBAL_FONT_SIZE),
+            weight=default_font.cget("weight"),
+        )

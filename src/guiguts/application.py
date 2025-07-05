@@ -121,6 +121,7 @@ from guiguts.widgets import (
     themed_style,
     theme_name_internal_from_user,
     ToplevelDialog,
+    GLOBAL_FONT_NAME,
 )
 from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
 
@@ -450,6 +451,10 @@ class Guiguts:
             PrefKey.TEXT_FONT_SIZE,
             lambda *value: maintext().set_font(),
         )
+        # Similarly, set empty string & negative size here, and set true default later.
+        preferences.set_default(PrefKey.GLOBAL_FONT_FAMILY, "")
+        preferences.set_default(PrefKey.GLOBAL_FONT_SIZE, -1)
+        preferences.set_default(PrefKey.GLOBAL_FONT_SYSTEM, True)
         # For some reason line spacing on Mac is very tight, so pad a bit here
         preferences.set_default(PrefKey.TEXT_LINE_SPACING, 4 if is_mac() else 0)
         preferences.set_callback(
@@ -1406,6 +1411,9 @@ class Guiguts:
             self.update_theme()
         elif value in ("Light", "Dark"):
             themed_style().theme_use(theme_name_internal_from_user(value))
+
+        # After theme loaded, set font
+        themed_style().configure(".", font=GLOBAL_FONT_NAME)
 
     def update_theme(self) -> None:
         """Self-calling method to check OS dark mode on a repeating cycle,
