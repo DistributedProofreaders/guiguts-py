@@ -62,9 +62,13 @@ DEFAULT_MISSPELLED_SCANNOS = "misspelled.json"
 
 CURLY_QUOTES_CHECKER_FILTERS = [
     CheckerFilterErrorPrefix("Double quote not converted", "DQ not converted: "),
-    CheckerFilterErrorPrefix("Other double quote errors", "(Open|Close) DQ.*"),
+    CheckerFilterErrorPrefix(
+        "Other double quote errors", "(Open|Close) DQ.*|DQ not closed: "
+    ),
     CheckerFilterErrorPrefix("Single quote not converted", "SQ not converted: "),
-    CheckerFilterErrorPrefix("Other single open quote errors", "Open SQ.*"),
+    CheckerFilterErrorPrefix(
+        "Other single open quote errors", "Open SQ.*|SQ not closed: "
+    ),
     CheckerFilterErrorPrefix(
         "Other single close quote errors (may be apostrophes)", "Close SQ.*"
     ),
