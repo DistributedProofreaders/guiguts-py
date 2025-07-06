@@ -1,6 +1,7 @@
 """Support running of checking tools"""
 
 from enum import Enum, IntEnum, StrEnum, auto
+import logging
 import math
 import tkinter as tk
 from tkinter import ttk
@@ -20,6 +21,8 @@ from guiguts.utilities import (
     cmd_ctrl_string,
 )
 from guiguts.widgets import ToplevelDialog, TlDlg, mouse_bind, Busy, ToolTip
+
+logger = logging.getLogger(__package__)
 
 MARK_ENTRY_TO_SELECT = "MarkEntryToSelect"
 REFRESH_MESSAGE = "Click this message to refresh after Undo/Redo"
@@ -1005,6 +1008,24 @@ class CheckerDialog(ToplevelDialog):
         """
 
         Busy.busy()
+        try:
+            self.do_display_entries(auto_select_line, complete_msg)
+        except tk.TclError:
+            logger.debug("Tcl error: Dialog closed while tool was running?")
+        Busy.unbusy()
+
+    def do_display_entries(
+        self, auto_select_line: bool = True, complete_msg: bool = True
+    ) -> None:
+        """Display all the stored entries in the dialog according to
+        the sort setting.
+
+        Args:
+            auto_select_line: Default True. Set to False if calling routine takes
+            responsibility for selecting a line in the dialog.
+            complete_msg: Set to False if "Check complete" message not wanted.
+        """
+
         sort_key: Callable[[CheckerEntry], tuple]
         if (
             self.get_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT)
@@ -1103,7 +1124,6 @@ class CheckerDialog(ToplevelDialog):
                         self.select_entry_by_index(index)
                         break
         self.update_count_label()
-        Busy.unbusy()
 
     def showing_suspects_only(self) -> bool:
         """Return whether dialog is showing Suspects Only.

@@ -1,6 +1,7 @@
 """Store, analyze and report on word frequency and inconsistencies."""
 
 from enum import StrEnum, auto
+import logging
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable
@@ -35,6 +36,8 @@ from guiguts.widgets import (
     mouse_bind,
     Busy,
 )
+
+logger = logging.getLogger(__package__)
 
 _THE_WORD_LISTS = None
 
@@ -811,6 +814,20 @@ def wf_populate(wf_dialog: WordFrequencyDialog) -> None:
         wf_dialog: The word frequency dialog.
     """
     Busy.busy()
+    try:
+        do_wf_populate(wf_dialog)
+    except tk.TclError:
+        logger.debug("Tcl error: Dialog closed while tool was running?")
+    Busy.unbusy()
+
+
+def do_wf_populate(wf_dialog: WordFrequencyDialog) -> None:
+    """Populate the WF dialog with words based on the display type.
+
+    Args:
+        wf_dialog: The word frequency dialog.
+    """
+    Busy.busy()
     wf_dialog.previous_word = ""
     display_type = preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
 
@@ -854,7 +871,6 @@ def wf_populate(wf_dialog: WordFrequencyDialog) -> None:
         case _ as bad_value:
             assert False, f"Invalid WFDisplayType: {bad_value}"
     wf_dialog.goto_word(0, force_first=True)
-    Busy.unbusy()
 
 
 def wf_populate_all(wf_dialog: WordFrequencyDialog) -> None:
