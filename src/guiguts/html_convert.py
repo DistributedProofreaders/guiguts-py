@@ -81,9 +81,17 @@ class HTMLGeneratorDialog(ToplevelDialog):
         )
         self.display_page_numbers.grid(row=1, column=0, sticky="NSEW", pady=5)
 
+        # Whether h2 headings should include multiple lines
+        self.display_page_numbers = ttk.Checkbutton(
+            self.top_frame,
+            text="Multi-line Chapter Headings",
+            variable=PersistentBoolean(PrefKey.HTML_MULTILINE_CHAPTER_HEADINGS),
+        )
+        self.display_page_numbers.grid(row=2, column=0, sticky="NSEW", pady=5)
+
         # Markup conversion
         markup_frame = ttk.LabelFrame(self.top_frame, text="Inline Markup", padding=2)
-        markup_frame.grid(row=2, column=0, sticky="NSEW")
+        markup_frame.grid(row=3, column=0, sticky="NSEW")
         for col, text in enumerate(
             ("Keep", "<em>", "<em class>", "<span class>"), start=1
         ):
@@ -117,7 +125,7 @@ class HTMLGeneratorDialog(ToplevelDialog):
             self.top_frame,
             text="Auto-generate HTML",
             command=html_autogenerate,
-        ).grid(row=3, column=0, pady=2)
+        ).grid(row=4, column=0, pady=2)
 
 
 def html_autogenerate() -> None:
@@ -478,7 +486,9 @@ def html_convert_body() -> None:
             continue
 
         # "/#" --> enter new level of blockquote until we get "#/"
-        if selection.startswith("/#"):  # open
+        # Don't process here if we're in chapter heading - allow the blockquote
+        # to signal the end of chapter heading - code will loop round again
+        if selection.startswith("/#") and not in_chap_heading:  # open
             blockquote_level += 1
             maintext().replace(
                 line_start,
@@ -682,25 +692,38 @@ def html_convert_body() -> None:
             continue
 
         # In chapter heading - store lines in heading until we get 2 blank lines
+        # (if HTML_MULTILINE_CHAPTER_HEADINGS is True) or 1 blank line if it's False
         if in_chap_heading:
-            if selection:
+            if selection and not selection.startswith("/#"):
                 chap_line = selection.strip()
                 maintext().replace(line_start, line_end, f"    {chap_line}")
                 chap_heading += (" " if chap_heading else "") + chap_line
                 chap_head_blanks = 0
-            elif chap_head_blanks == 0:  # First blank line
-                # May be two part heading, e.g. "Chapter 1|<blank line>|The Start"
+            elif chap_head_blanks == 0 and preferences.get(
+                PrefKey.HTML_MULTILINE_CHAPTER_HEADINGS
+            ):
+                # First blank line, maybe of a two part heading, e.g. "Chapter 1|<blank line>|The Start"
                 maintext().insert(line_start, "    <br>")
                 chap_head_blanks += 1
-            else:  # Second blank line = end of heading
-                # First blank line will have had "<br>" inserted in elif above.
+            else:
+                # Three cases drop through to here and imply "end of heading":
+                #   First blank line of single line heading
+                #   Second blank line of multiline heading
+                #   Start of blockquote, after blank line of multiline heading
+                # First blank line may have had "<br>" inserted in elif above.
                 # Remove that and add </h2> at end of chapter heading.
-                maintext().replace(
-                    f"{line_start}-1l linestart",
-                    f"{line_start}-1l lineend",
-                    "  </h2>\n",
-                )
-                next_step += 1
+                if preferences.get(PrefKey.HTML_MULTILINE_CHAPTER_HEADINGS):
+                    maintext().replace(
+                        f"{line_start}-1l linestart",
+                        f"{line_start}-1l lineend",
+                        "  </h2>\n",
+                    )
+                else:
+                    maintext().insert(line_start, "  </h2>\n")
+                # If stopping due to blockquote, don't advance through file
+                # Need to loop round again so blockquote markup is processed
+                if not selection.startswith("/#"):
+                    next_step += 1
                 # Don't want footnote anchors in auto ToC
                 chap_heading = re.sub(r"\[.{1,5}\]", "", chap_heading)
                 auto_toc += f'<a href="#{chap_id}">{chap_heading}</a><br>\n'

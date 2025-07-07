@@ -519,6 +519,7 @@ class Guiguts:
             PrefKey.HTML_UNDERLINE_MARKUP, HTMLMarkupTypes.SPAN_CLASS
         )
         preferences.set_default(PrefKey.HTML_SHOW_PAGE_NUMBERS, True)
+        preferences.set_default(PrefKey.HTML_MULTILINE_CHAPTER_HEADINGS, True)
         preferences.set_default(PrefKey.HTML_IMAGE_UNIT, "%")
         preferences.set_default(PrefKey.HTML_IMAGE_OVERRIDE_EPUB, True)
         preferences.set_default(PrefKey.HTML_IMAGE_ALIGNMENT, "center")
