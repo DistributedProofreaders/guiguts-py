@@ -550,7 +550,7 @@ class CheckerDialog(ToplevelDialog):
                 self.message_controls_frame,
                 text="View Options",
                 command=show_view_options,
-            ).grid(row=1, column=0, sticky="NS", columnspan=7)
+            ).grid(row=1, column=0, sticky="NS", columnspan=8)
         if view_options_filters is None:
             view_options_filters = []
         self.view_options_filters = view_options_filters
