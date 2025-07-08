@@ -1402,6 +1402,7 @@ class MainText(tk.Text):
             with open(fname, "r", encoding="utf-8") as fh:
                 self.insert(tk.END, maintext().reverse_rtl(fh.read()))
         except UnicodeDecodeError:
+            logger.warning("File failed to open as utf-8, attempting as iso-8859-1")
             with open(fname, "r", encoding="iso-8859-1") as fh:
                 self.insert(tk.END, fh.read())
         # Remove BOM from first line if present
