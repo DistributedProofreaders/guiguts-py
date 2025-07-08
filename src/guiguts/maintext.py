@@ -44,7 +44,6 @@ INDEX_END_MARK = "IndexEnd"
 INDEX_NEXT_LINE_MARK = "IndexLineStart"
 WRAP_END_MARK = "WrapSectionEnd"
 PAGEMARK_PIN = "\x7f"  # Temp char to pin page mark locations
-BOOKMARK_TAG = "Bookmark"
 PAGEMARK_PREFIX = "Pg"
 REPLACE_END_MARK = "ReplaceEnd"
 SELECTION_MARK_START = "SelectionMarkStart"
@@ -1688,6 +1687,7 @@ class MainText(tk.Text):
         elif len(ranges) > 1:
             col_range = IndexRange(ranges[0].start, ranges[-1].end)
             self.do_column_select(col_range)
+        self.focus()
 
     def selection_ranges_store_with_marks(self) -> None:
         """Set marks at start and end of selection range(s).
@@ -3884,13 +3884,13 @@ class MainText(tk.Text):
         # ** THE ORDER MATTERS HERE **
         #
         for tag in (
+            HighlightTag.BOOKMARK_TAG,
             HighlightTag.CHAR_STR_REGEX,
             HighlightTag.QUOTEMARK,
             HighlightTag.SPOTLIGHT,
             HighlightTag.PROOFERCOMMENT,
             HighlightTag.SEARCH,
             HighlightTag.PAGE_FLAG_TAG,
-            HighlightTag.BOOKMARK_TAG,
             HighlightTag.PAREN,
             HighlightTag.CURLY_BRACKET,
             HighlightTag.SQUARE_BRACKET,
