@@ -1397,18 +1397,26 @@ class MainText(tk.Text):
         Args:
             fname: Name of file to load text from.
         """
+        warnings = []
         self.delete("1.0", tk.END)
         try:
             with open(fname, "r", encoding="utf-8") as fh:
                 self.insert(tk.END, maintext().reverse_rtl(fh.read()))
         except UnicodeDecodeError:
+            warnings.append("Unable to open as UTF-8, so opened as ISO-8859-1.")
             with open(fname, "r", encoding="iso-8859-1") as fh:
                 self.insert(tk.END, fh.read())
         # Remove BOM from first line if present
         if bom_match := self.find_match(
             "\ufeff", IndexRange("1.0", self.index("1.0 lineend"))
         ):
+            warnings.append("BOM detected and removed from file.")
             self.delete(bom_match.rowcol.index())
+        if warnings:
+            warnings.append(
+                "Check encoding is correct.\nNote that files will be saved as UTF-8 without BOM"
+            )
+            logger.error("\n".join(warnings))
         self.reset()
 
     def do_close(self) -> None:
