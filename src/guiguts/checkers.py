@@ -366,6 +366,42 @@ class CheckerDialog(ToplevelDialog):
         else:
             self.suspects_only_btn = None
 
+        sort_frame = ttk.Frame(count_header_frame)
+        sort_frame.grid(row=0, column=2, sticky="NS", pady=5)
+        sort_frame.rowconfigure(0, weight=1)
+        for cc in range(0, 2):
+            sort_frame.columnconfigure(cc, weight=1)
+        ttk.Label(
+            sort_frame,
+            text="Sort:",
+        ).grid(row=0, column=0, sticky="NS", padx=5)
+
+        # Can't use a PersistentString directly, since we save this value for each checker dialog
+        sort_type = tk.StringVar(
+            self,
+            self.get_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT)
+            or CheckerSortType.ROWCOL,
+        )
+
+        def sort_type_changed() -> None:
+            self.save_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT, sort_type.get())
+            self.display_entries()
+
+        ttk.Radiobutton(
+            sort_frame,
+            text="Line & Col",
+            command=sort_type_changed,
+            variable=sort_type,
+            value=CheckerSortType.ROWCOL,
+        ).grid(row=0, column=1, sticky="NS", padx=2)
+        ttk.Radiobutton(
+            sort_frame,
+            text="Alpha/Type",
+            command=sort_type_changed,
+            variable=sort_type,
+            value=CheckerSortType.ALPHABETIC,
+        ).grid(row=0, column=2, sticky="NS", padx=2)
+
         def copy_errors() -> None:
             """Copy text messages to clipboard."""
             maintext().clipboard_clear()
@@ -374,7 +410,7 @@ class CheckerDialog(ToplevelDialog):
         copy_button = ttk.Button(
             count_header_frame, text="Copy Results", command=copy_errors
         )
-        copy_button.grid(row=0, column=2, sticky="NSE")
+        copy_button.grid(row=0, column=3, sticky="NSE")
 
         def rerunner() -> None:
             self.selection_on_clear[self.get_dlg_name()] = None
@@ -385,7 +421,7 @@ class CheckerDialog(ToplevelDialog):
         self.rerun_button = ttk.Button(
             count_header_frame, text="Re-run", command=rerunner
         )
-        self.rerun_button.grid(row=0, column=3, sticky="NSE", padx=(10, 0))
+        self.rerun_button.grid(row=0, column=4, sticky="NSE", padx=(10, 0))
 
         # Next a custom frame with contents determined by the dialog, e.g. Footnote tools
         self.custom_frame = ttk.Frame(
@@ -501,40 +537,6 @@ class CheckerDialog(ToplevelDialog):
             width=2,
             command=lambda: self.select_entry_by_arrow(1),
         ).grid(row=0, column=1, sticky="NS")
-
-        sort_frame = ttk.Frame(self.message_controls_frame)
-        sort_frame.grid(row=0, column=7, sticky="NSE", pady=5)
-        sort_frame.rowconfigure(0, weight=1)
-        ttk.Label(
-            sort_frame,
-            text="Sort:",
-        ).grid(row=0, column=0, sticky="NS", padx=5)
-
-        # Can't use a PersistentString directly, since we save this value for each checker dialog
-        sort_type = tk.StringVar(
-            self,
-            self.get_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT)
-            or CheckerSortType.ROWCOL,
-        )
-
-        def sort_type_changed() -> None:
-            self.save_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT, sort_type.get())
-            self.display_entries()
-
-        ttk.Radiobutton(
-            sort_frame,
-            text="Line & Col",
-            command=sort_type_changed,
-            variable=sort_type,
-            value=CheckerSortType.ROWCOL,
-        ).grid(row=0, column=1, sticky="NS", padx=2)
-        ttk.Radiobutton(
-            sort_frame,
-            text="Alpha/Type",
-            command=sort_type_changed,
-            variable=sort_type,
-            value=CheckerSortType.ALPHABETIC,
-        ).grid(row=0, column=2, sticky="NS", padx=2)
 
         self.view_options_dialog: Optional[CheckerViewOptionsDialog] = None
 
@@ -1175,12 +1177,12 @@ class CheckerDialog(ToplevelDialog):
                 self.count_label.update()
                 return
             es = sing_plur(self.count_linked_entries, "Entry", "Entries")
-            ss = (
-                f"({sing_plur(self.count_suspects, 'Suspect')})"
-                if self.count_suspects > 0
-                else ""
-            )
-            self.count_label["text"] = f"{es} {ss}"
+            ss = sing_plur(self.count_suspects, "Suspect")
+            s_label = f" ({ss})" if self.count_suspects > 0 else ""
+            if self.count_suspects == self.count_linked_entries > 0:
+                self.count_label["text"] = ss
+            else:
+                self.count_label["text"] = f"{es}{s_label}"
 
     def select_entry_by_arrow(self, increment: int) -> None:
         """Select next/previous line in dialog, and jump to the line in the
