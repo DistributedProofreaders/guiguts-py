@@ -1287,7 +1287,7 @@ def html_convert_footnotes() -> None:
         while an_start := maintext().search(f"[{fn_label}]", an_search_start, fn_start):
             an_end = f"{an_start}+{len(fn_label) + 2}c"
             maintext().insert(an_end, "</a>")
-            open_markup = f'<a {id_markup}href="#{fn_id}" class="fnanchor">'
+            open_markup = f'&#x2060;<a {id_markup}href="#{fn_id}" class="fnanchor">'
             maintext().insert(an_start, open_markup)
             id_markup = ""
             an_search_start = maintext().index(f"{an_start}+{len(open_markup) + 4}c")
