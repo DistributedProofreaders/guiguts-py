@@ -19,6 +19,7 @@ import requests
 
 from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerEntrySeverity
 from guiguts.file import the_file
+from guiguts.html_convert import make_anchor_id
 from guiguts.maintext import maintext, menubar_metadata
 from guiguts.preferences import (
     PersistentString,
@@ -2133,6 +2134,6 @@ class HTMLLinksDialog(ToplevelDialog):
             sel_ranges.append(
                 IndexRange(maintext().get_insert_index(), maintext().get_insert_index())
             )
-        sel_text = maintext().selected_text()
+        sel_text = make_anchor_id(maintext().selected_text())
         maintext().insert(sel_ranges[0].start.index(), f'<a id="{sel_text}"></a>')
         maintext().set_insert_index(sel_ranges[0].start, focus=False)

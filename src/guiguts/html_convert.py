@@ -728,7 +728,7 @@ def html_convert_body() -> None:
                     flags=re.IGNORECASE,
                 ):
                     continue
-                chap_id = make_anchor(
+                chap_id = make_anchor_id(
                     maintext().get(f"{line_start}+1l", f"{line_start}+1l lineend")
                 )
                 maintext().insert(
@@ -989,7 +989,7 @@ def replace_header_keywords(header: str) -> str:
     return header
 
 
-def make_anchor(string: str) -> str:
+def make_anchor_id(string: str) -> str:
     """Make a valid HTML id from string which may contain HTML markup,
     accented characters, punctuation, etc.
 
