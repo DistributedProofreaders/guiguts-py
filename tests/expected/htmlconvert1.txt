@@ -161,7 +161,8 @@ em.gesperrt
     font-style: normal;
 }
 
-figcaption  {font-weight: bold;}
+figcaption   {font-weight: bold;}
+figcaption p {margin-top: 0; margin-bottom: 0;}
 
 /* Images */
 
