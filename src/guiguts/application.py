@@ -33,6 +33,7 @@ from guiguts.html_tools import (
     EbookmakerCheckerAPI,
     HTMLAutoTableDialog,
     HTMLMarkupDialog,
+    HTMLLinksDialog,
 )
 from guiguts.illo_sn_fixup import illosn_check
 
@@ -523,6 +524,9 @@ class Guiguts:
         preferences.set_default(PrefKey.HTML_IMAGE_UNIT, "%")
         preferences.set_default(PrefKey.HTML_IMAGE_OVERRIDE_EPUB, True)
         preferences.set_default(PrefKey.HTML_IMAGE_ALIGNMENT, "center")
+        preferences.set_default(PrefKey.HTML_LINKS_ALPHABETIC, False)
+        preferences.set_default(PrefKey.HTML_LINKS_HIDE_PAGE, False)
+        preferences.set_default(PrefKey.HTML_LINKS_HIDE_FOOTNOTE, True)
         preferences.set_default(PrefKey.ALIGN_COL_ACTIVE, False)
         preferences.set_default(PrefKey.CSS_VALIDATION_LEVEL, "css3")
         preferences.set_default(PrefKey.PPHTML_VERBOSE, False)
@@ -1006,12 +1010,20 @@ class Guiguts:
         """Create the HTML menu."""
         html_menu = self.top_level_menu("HT~ML")
         html_menu.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
-        html_menu.add_button("Auto-~Illustrations...", HTMLImageDialog.show_dialog)
+        html_menu.add_button(
+            "Auto-~Illustrations...",
+            lambda: HTMLImageDialog(auto_illus=True).show_dialog,
+        )
         html_menu.add_button("Auto-~Table...", HTMLAutoTableDialog.show_dialog)
+        html_menu.add_separator()
         html_menu.add_button("HTML ~Markup...", HTMLMarkupDialog.show_dialog)
+        html_menu.add_button("HTML ~Links/Anchors...", HTMLLinksDialog.show_dialog)
+        html_menu.add_button(
+            "HTML Image~s...", lambda: HTMLImageDialog(auto_illus=False).show_dialog
+        )
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
-        html_menu.add_button("HTML ~Link Checker", lambda: HTMLLinkChecker().run())
+        html_menu.add_button("HTML Lin~k Checker", lambda: HTMLLinkChecker().run())
         html_menu.add_button("~PPhtml", lambda: PPhtmlChecker().run())
         html_menu.add_button("HTML5 ~Validator (online)", lambda: HTMLValidator().run())
         html_menu.add_button("~CSS Validator (online)", lambda: CSSValidator().run())

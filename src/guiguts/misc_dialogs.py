@@ -1216,7 +1216,7 @@ class ComposeHelpDialog(ToplevelDialog):
                 f"#{col + 1}",
                 minwidth=10,
                 width=widths[col],
-                stretch=False,
+                stretch=True,
                 anchor=tk.W,
             )
             self.help.heading(

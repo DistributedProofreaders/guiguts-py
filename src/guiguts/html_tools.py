@@ -19,6 +19,7 @@ import requests
 
 from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerEntrySeverity
 from guiguts.file import the_file
+from guiguts.html_convert import make_anchor_id
 from guiguts.maintext import maintext, menubar_metadata
 from guiguts.preferences import (
     PersistentString,
@@ -34,7 +35,15 @@ from guiguts.utilities import (
     folder_dir_str,
     is_windows,
 )
-from guiguts.widgets import ToplevelDialog, Busy, Combobox, ToolTip
+from guiguts.widgets import (
+    ToplevelDialog,
+    Busy,
+    Combobox,
+    ToolTip,
+    TreeviewList,
+    mouse_bind,
+    grab_focus,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -48,10 +57,14 @@ LAND_Y = 3
 class HTMLImageDialog(ToplevelDialog):
     """Dialog for inserting image markup into HTML."""
 
-    manual_page = "HTML_Menu#Add_Illustrations"
+    manual_page = "HTML_Menu#Auto-Illustrations"
 
-    def __init__(self) -> None:
-        """Initialize HTML Image dialog."""
+    def __init__(self, auto_illus: bool) -> None:
+        """Initialize HTML Image dialog.
+
+        Args:
+            auto_illus: True to work in Auto-Illustration mode
+        """
         super().__init__(
             "HTML Images",
             resize_x=False,
@@ -238,18 +251,22 @@ class HTMLImageDialog(ToplevelDialog):
         btn_frame.grid(row=6, column=0, pady=(5, 0))
         ttk.Button(
             btn_frame,
-            text="Convert to HTML",
-            command=self.convert_to_html,
+            text="Convert to HTML" if auto_illus else "Insert Markup",
+            command=lambda: self.convert_to_html(auto_illus),
             width=18,
         ).grid(row=0, column=0, sticky="NSEW", padx=2)
-        ttk.Button(
-            btn_frame,
-            text="Find [Illustration]",
-            command=self.find_illo_markup,
-            width=18,
-        ).grid(row=0, column=1, sticky="NSEW", padx=2)
+        if auto_illus:
+            ttk.Button(
+                btn_frame,
+                text="Find [Illustration]",
+                command=self.find_illo_markup,
+                width=18,
+            ).grid(row=0, column=1, sticky="NSEW", padx=2)
 
-        self.find_illo_markup()
+        if auto_illus:
+            self.find_illo_markup()
+        else:
+            self.choose_file()
 
     def load_file(self, file_name: str) -> None:
         """Load given image file."""
@@ -373,7 +390,7 @@ class HTMLImageDialog(ToplevelDialog):
             start_index = illo_match_end.rowcol.index()
             match_text = maintext().get(start_index, f"{start_index} lineend")
             # Have we found the end of the illo markup (i.e. end of line bracket)
-            if not nested and re.fullmatch("] *(</p>)?$", match_text):
+            if not nested and re.fullmatch("] *(</p>|<br>)?$", match_text):
                 break
             # Keep track of whether there are nested brackets, e.g. [12] inside illo markup
             nested = match_text[0] == "["
@@ -391,7 +408,7 @@ class HTMLImageDialog(ToplevelDialog):
             self.illo_range.start.index(), self.illo_range.end.index()
         )
         caption = re.sub(r"(?<=(^<p.?>|^))\[Illustration:? ?", "", caption)
-        caption = re.sub(r"\](?=(</p> *$| *$))", "", caption)
+        caption = re.sub(r"\](<br> *)?(?=(</p> *$| *$))", "", caption)
         # Remove simple <p> markup and replace newlines with return_arrow character
         if caption:
             caption = re.sub("</?p>", "", caption)
@@ -404,9 +421,17 @@ class HTMLImageDialog(ToplevelDialog):
         self.next_file()
         self.lift()
 
-    def convert_to_html(self) -> None:
-        """Convert selected [Illustration...] markup to HTML."""
+    def convert_to_html(self, auto_illus: bool) -> None:
+        """Add illustration markup to HTML.
+
+        Args:
+            auto_illus: True to convert selected [Illustration...], False to just insert.
+        """
         filename = self.filename_textvariable.get()
+        if not auto_illus:
+            self.illo_range = IndexRange(
+                maintext().get_insert_index(), maintext().get_insert_index()
+            )
         if self.illo_range is None or not filename:
             sound_bell()
             return
@@ -451,8 +476,9 @@ class HTMLImageDialog(ToplevelDialog):
         html += f'  <img{img_class} src="{filename}"{img_size}{alt}>\n'
         html += f"{caption}</figure>"
 
-        # Replace [Illustration...] with HTML
         maintext().undo_block_begin()
+        # If in Auto-Illustration mode, replace [Illustration...] with HTML
+        # If not, dummy illo_range was set up above so HTML gets inserted at cursor
         maintext().replace(
             self.illo_range.start.index(), self.illo_range.end.index(), html
         )
@@ -1918,3 +1944,196 @@ class HTMLMarkupDialog(ToplevelDialog):
                 maintext().replace(idx, f"{idx}+{match.count}c", " ")
 
         maintext().selection_ranges_restore_from_marks()
+
+
+class HTMLLinksDialog(ToplevelDialog):
+    """HTML Links dialog."""
+
+    manual_page = "HTML_Menu#HTML_Links%%2FAnchors"
+    ilist_cols = ("Links",)
+
+    def __init__(self) -> None:
+        """Initialize HTML Links/Anchors dialog."""
+        super().__init__("HTML Links & Anchors")
+
+        internal_frame = ttk.LabelFrame(self.top_frame, text="Internal Link", padding=3)
+        internal_frame.grid(row=0, column=0, sticky="NSEW", pady=3)
+        internal_frame.rowconfigure(2, weight=1)
+        internal_frame.columnconfigure(0, weight=1)
+        internal_frame.columnconfigure(1, weight=1)
+        ttk.Checkbutton(
+            internal_frame,
+            text="Sort Alphabetically",
+            variable=PersistentBoolean(PrefKey.HTML_LINKS_ALPHABETIC),
+            command=self.ilist_populate,
+        ).grid(row=0, column=0, sticky="NS", columnspan=2)
+        ttk.Checkbutton(
+            internal_frame,
+            text="Hide Page Anchors",
+            variable=PersistentBoolean(PrefKey.HTML_LINKS_HIDE_PAGE),
+            command=self.ilist_populate,
+        ).grid(row=1, column=0, sticky="NS", padx=(0, 5))
+        ttk.Checkbutton(
+            internal_frame,
+            text="Hide Footnote Anchors",
+            variable=PersistentBoolean(PrefKey.HTML_LINKS_HIDE_FOOTNOTE),
+            command=self.ilist_populate,
+        ).grid(row=1, column=1, sticky="NS")
+
+        list_frame = ttk.Frame(
+            internal_frame, borderwidth=1, relief=tk.GROOVE, padding=2
+        )
+        list_frame.grid(row=2, column=0, sticky="NSEW", columnspan=2)
+        list_frame.columnconfigure(0, weight=1)
+        list_frame.rowconfigure(0, weight=1)
+        self.internal_list = TreeviewList(
+            list_frame, columns=self.ilist_cols, height=8, show=""
+        )
+        ToolTip(
+            self.internal_list,
+            "Click (or press Space or Return) to insert link",
+            use_pointer_pos=True,
+        )
+        self.internal_list.column(
+            0,
+            minwidth=100,
+            stretch=True,
+            anchor=tk.W,
+        )
+        self.internal_list.heading(
+            0,
+            text=self.ilist_cols[0],
+            anchor=tk.W,
+        )
+        self.internal_list.grid(row=0, column=0, sticky=tk.NSEW)
+
+        i_scrollbar = ttk.Scrollbar(
+            list_frame, orient=tk.VERTICAL, command=self.internal_list.yview
+        )
+        i_scrollbar.grid(row=0, column=1, sticky=tk.NS)
+        self.internal_list.configure(yscrollcommand=i_scrollbar.set)
+        self.ilist_populate()
+
+        mouse_bind(self.internal_list, "1", self.insert_ilink)
+        self.internal_list.bind("<Return>", lambda _: self.insert_ilink(None))
+        self.internal_list.bind("<space>", lambda _: self.insert_ilink(None))
+
+        external_frame = ttk.LabelFrame(self.top_frame, text="External Link", padding=3)
+        external_frame.grid(row=1, column=0, sticky="NSEW", pady=3)
+        external_frame.columnconfigure(0, weight=1)
+        self.elink_variable = tk.StringVar()
+        self.e_entry = ttk.Entry(external_frame, textvariable=self.elink_variable)
+        self.e_entry.grid(row=0, column=0, sticky="NSEW")
+        ttk.Button(external_frame, text="Browse", command=self.browse_elink).grid(
+            row=0, column=1, padx=(2, 0)
+        )
+        ttk.Button(external_frame, text="Insert Link", command=self.insert_elink).grid(
+            row=1, column=0, columnspan=2, pady=(3, 0)
+        )
+
+        anchor_frame = ttk.LabelFrame(self.top_frame, text="Anchor", padding=3)
+        anchor_frame.grid(row=2, column=0, sticky="NSEW", pady=3)
+        anchor_frame.columnconfigure(0, weight=1)
+        ttk.Button(
+            anchor_frame, text="Insert Anchor At Selection", command=self.insert_anchor
+        ).grid(row=0, column=0)
+
+    def insert_ilink(self, event: Optional[tk.Event]) -> None:
+        """Insert internal link corresponding to row clicked.
+
+        Args:
+            event: Event containing location of mouse click. If None, use focused row.
+        """
+        if event is None:
+            row_id = self.internal_list.focus()
+            if not row_id:
+                return
+        else:
+            row_id, _ = self.internal_list.identify_rowcol(event)
+        row = self.internal_list.set(row_id)
+        try:
+            ilink = row[self.ilist_cols[0]]
+        except KeyError:
+            return
+        sel_ranges = maintext().selected_ranges()
+        if not sel_ranges:
+            sel_ranges.append(
+                IndexRange(maintext().get_insert_index(), maintext().get_insert_index())
+            )
+        maintext().insert(sel_ranges[0].end.index(), "</a>")
+        maintext().insert(sel_ranges[0].start.index(), f'<a href="{ilink}">')
+        maintext().set_insert_index(sel_ranges[0].start, focus=False)
+
+    def ilist_populate(self) -> None:
+        """Populate list with internal id values"""
+        for child in self.internal_list.get_children():
+            self.internal_list.delete(child)
+
+        matches = maintext().find_all(
+            maintext().start_to_end(),
+            r"(?<=\bid *= *['\"]).+?(?=['\"])",
+            regexp=True,
+            wholeword=False,
+            nocase=True,
+        )
+        link_list: list = []
+        for match in matches:
+            text = maintext().get_match_text(match)
+            if preferences.get(PrefKey.HTML_LINKS_HIDE_PAGE) and text.startswith(
+                "Page_"
+            ):
+                continue
+            if preferences.get(PrefKey.HTML_LINKS_HIDE_FOOTNOTE) and text.startswith(
+                ("Footnote_", "FNanchor_")
+            ):
+                continue
+            link_list.append(f"#{text}")
+
+        for link in (
+            sorted(link_list)
+            if preferences.get(PrefKey.HTML_LINKS_ALPHABETIC)
+            else link_list
+        ):
+            self.internal_list.insert("", tk.END, values=(link,))
+
+        self.internal_list.select_and_focus_by_index(0)
+
+    def insert_elink(self) -> None:
+        """Insert external link from entry field."""
+        sel_ranges = maintext().selected_ranges()
+        if not sel_ranges:
+            sel_ranges.append(
+                IndexRange(maintext().get_insert_index(), maintext().get_insert_index())
+            )
+        maintext().insert(sel_ranges[0].end.index(), "</a>")
+        maintext().insert(
+            sel_ranges[0].start.index(), f'<a href="{self.elink_variable.get()}">'
+        )
+        maintext().set_insert_index(sel_ranges[0].start, focus=False)
+
+    def browse_elink(self) -> None:
+        """Browse for file to link to."""
+        linkname = filedialog.askopenfilename(title="Choose File")
+        grab_focus(self, self.e_entry)
+        self.e_entry.icursor(tk.END)
+        if not linkname:
+            return
+        filename = the_file().filename
+        if is_windows():  # Always want forward slashes in HTML
+            linkname = linkname.replace("\\", "/")
+            filename = filename.replace("\\", "/")
+        # Strip common path to make chosen filename relative to project folder
+        common = os.path.commonpath((filename, linkname))
+        linkname = linkname[len(common) :].removeprefix("/")
+        self.elink_variable.set(linkname)
+
+    def insert_anchor(self) -> None:
+        """Insert anchor for selected text."""
+        sel_ranges = maintext().selected_ranges()
+        if not sel_ranges:
+            sel_ranges.append(
+                IndexRange(maintext().get_insert_index(), maintext().get_insert_index())
+            )
+        sel_text = make_anchor_id(maintext().selected_text())
+        maintext().insert(sel_ranges[0].start.index(), f'<a id="{sel_text}"></a>')
+        maintext().set_insert_index(sel_ranges[0].start, focus=False)
