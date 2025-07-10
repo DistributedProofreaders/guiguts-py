@@ -444,8 +444,10 @@ class HTMLImageDialog(ToplevelDialog):
         caption = self.caption_textvariable.get()
         if caption:
             if preferences.get(PrefKey.HTML_IMAGE_CAPTION_P):
-                caption = f"<p>{caption}</p>"
-                caption = re.sub(RETURN_ARROW * 2, "</p>\n      <p>", caption)
+                caption = f"<p>{caption.lstrip()}</p>"
+                caption = re.sub(
+                    f"{RETURN_ARROW}{RETURN_ARROW} *", "</p>\n      <p>", caption
+                )
             caption = re.sub(RETURN_ARROW, "\n    ", f"      {caption}")
             caption = f"  <figcaption>\n{caption}\n  </figcaption>\n"
         # Now alt text - escape any double quotes
