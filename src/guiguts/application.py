@@ -901,12 +901,13 @@ class Guiguts:
                 f"Ctrl+Shift+Key-{keys[kbd]}",
             )
 
-        for bm in range(1, 6):
+        for bm in range(1, len(shortcuts) + 1):
             bookmark_menu.add_button(
                 f"Go To Bookmark ~{bm}",
                 lambda num=bm: self.file.goto_bookmark(num),  # type:ignore[misc]
                 f"Ctrl+Key-{bm}",
             )
+        bookmark_menu.add_separator()
 
     def init_tools_menu(self) -> None:
         """Create the Tools menu."""

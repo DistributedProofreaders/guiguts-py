@@ -16,7 +16,6 @@ from guiguts.maintext import (
     maintext,
     HighlightTag,
     PAGEMARK_PIN,
-    BOOKMARK_TAG,
     img_from_page_mark,
     page_mark_from_img,
 )
@@ -76,6 +75,8 @@ PAGE_FLAG_REGEX = rf"{PAGE_FLAG_START_E}{PAGE_FLAG_PREFIX}(.+?){PAGE_FLAG_SEP_E}
 PAGE_SEPARATOR_REGEX = r"File:.+?([^/\\ ]+)\.(png|jpg)"
 
 BOOKMARK_BASE = "Bookmark"
+BOOKMARK_START = f"{BOOKMARK_BASE}Start"
+BOOKMARK_END = f"{BOOKMARK_BASE}End"
 
 
 class BinDict(TypedDict):
@@ -1097,7 +1098,8 @@ class File:
         maintext().set_mark_position(bm_name, maintext().rowcol(idx))
 
     def set_bookmark(self, bm_num: int) -> None:
-        """Set the position of the given bookmark at the current insert location.
+        """Set the position of the given bookmark at the current insert location
+        and around the current selection if there is one.
 
         Args:
             bm_num: Number of bookmark to add (must be 1 to 5).
@@ -1106,11 +1108,20 @@ class File:
         maintext().set_mark_position(
             f"{BOOKMARK_BASE}{bm_num}", maintext().get_insert_index()
         )
+        if sel_ranges := maintext().selected_ranges():
+            maintext().set_mark_position(
+                f"{BOOKMARK_START}{bm_num}", sel_ranges[0].start
+            )
+            maintext().set_mark_position(f"{BOOKMARK_END}{bm_num}", sel_ranges[-1].end)
+        else:
+            maintext().mark_unset(f"{BOOKMARK_START}{bm_num}")
+            maintext().mark_unset(f"{BOOKMARK_END}{bm_num}")
         self.highlight_bookmark(bm_num)
         maintext().set_modified(True)
 
     def goto_bookmark(self, bm_num: int) -> None:
-        """Set the insert position to the location of the given bookmark.
+        """Set the insert position to the location of the given bookmark,
+        and re-select the range if there is one.
 
         Args:
             bm_num: Number of bookmark to find (must be 1 to 5).
@@ -1123,6 +1134,12 @@ class File:
         except tk.TclError:
             sound_bell()  # Bookmark hasn't been set
             return
+        try:
+            start = maintext().rowcol(f"{BOOKMARK_START}{bm_num}")
+            end = maintext().rowcol(f"{BOOKMARK_END}{bm_num}")
+            maintext().do_select(IndexRange(start, end))
+        except tk.TclError:
+            pass  # OK if no selection to be made
         self.highlight_bookmark(bm_num)
 
     def highlight_bookmark(self, bm_num: int) -> None:
@@ -1132,7 +1149,9 @@ class File:
             bm_num: Number of bookmark to find (must be 1 to 5).
         """
         assert 1 <= bm_num <= 5
-        maintext().tag_add(BOOKMARK_TAG, maintext().index(f"{BOOKMARK_BASE}{bm_num}"))
+        maintext().tag_add(
+            HighlightTag.BOOKMARK_TAG, maintext().index(f"{BOOKMARK_BASE}{bm_num}")
+        )
         maintext().after(1000, self.remove_bookmark_tags)
 
     def get_bookmarks(self) -> dict[str, str]:
@@ -1143,13 +1162,12 @@ class File:
         bookmarks: dict[str, str] = {}
         for name in maintext().mark_names():
             if name.startswith(BOOKMARK_BASE):
-                assert re.fullmatch(f"{BOOKMARK_BASE}[1-5]", name)
                 bookmarks[name] = maintext().index(name)
         return bookmarks
 
     def remove_bookmark_tags(self) -> None:
-        """Remove all bookmark highlightling."""
-        maintext().tag_remove(BOOKMARK_TAG, "1.0", tk.END)
+        """Remove all bookmark highlighting."""
+        maintext().tag_remove(HighlightTag.BOOKMARK_TAG, "1.0", tk.END)
 
 
 def bin_name(basename: str) -> str:
