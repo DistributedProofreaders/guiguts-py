@@ -705,14 +705,13 @@ def reindex() -> None:
         maintext().replace(an_start, an_end, f"[{label}]")
         #
         fn_record = fn_records[index - 1]
-        fn_line_text = fn_record.text
-        hl_start = fn_record.hilite_start
-        hl_end = fn_record.hilite_end
-        fn_line_text = f"{fn_line_text[0:hl_start + 9]}{label}{fn_line_text[hl_end:]}"
+        label_start = fn_record.hilite_start + 9
+        label_end = fn_record.hilite_end
         fn_start = f"{fn_record.start.index()} linestart"
-        # Replace (first line of) footnote using new label value.
-        maintext().delete(f"{fn_start}", f"{fn_start} lineend")
-        maintext().insert(f"{fn_start}", fn_line_text)
+        # Replace label in footnote with new label value.
+        maintext().replace(
+            f"{fn_start}+{label_start}c", f"{fn_start}+{label_end}c", label
+        )
     # AN/FN file entries have changed. Update AN/FN records.
     _THE_FOOTNOTE_CHECKER.run_check()
     # Maintain the order of function calls below.
