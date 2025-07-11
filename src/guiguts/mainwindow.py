@@ -155,7 +155,7 @@ class CustomMenuDialog(ToplevelDialog):
         ).grid(row=0, column=2, padx=2)
 
         # Help LabelFrame
-        start_open = "start" if is_windows() else "open"
+        start_open = "start" if is_windows() else "open" if is_mac() else "xdg-open"
         help_frame = ttk.LabelFrame(self.top_frame, padding=3, text="Help")
         help_frame.grid(row=3, column=0, pady=5, padx=5, sticky="NSEW")
         help_frame.columnconfigure(0, weight=1)
@@ -259,7 +259,9 @@ e.g. $(s+7) would give 12 for the 5th png.
 
             # If first token is a URL, insert `open`/`start`
             if cmd[0].startswith("http"):
-                cmd.insert(0, "start" if is_windows() else "open")
+                cmd.insert(
+                    0, "start" if is_windows() else "open" if is_mac() else "xdg-open"
+                )
 
             shell = False
             run_func: Callable = subprocess.run
@@ -274,7 +276,7 @@ e.g. $(s+7) would give 12 for the 5th png.
 
             # Linux/Windows using app name rather than `open`/`start`
             # need `Popen` instead of `run` to avoid blocking
-            if not is_mac() and cmd[0] not in ("start", "open"):
+            if not is_mac() and cmd[0] not in ("start", "xdg-open"):
                 run_func = subprocess.Popen
 
             try:
@@ -859,7 +861,7 @@ class MainImage(tk.Frame):
                     cmd = viewer_path.split()
                     run_func = subprocess.Popen
                 else:
-                    cmd = ["open"]
+                    cmd = ["xdg-open"]
             cmd.append(self.filename)
 
             focus_widget = root().focus_get()
