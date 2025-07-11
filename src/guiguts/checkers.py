@@ -1179,7 +1179,10 @@ class CheckerDialog(ToplevelDialog):
             es = sing_plur(self.count_linked_entries, "Entry", "Entries")
             ss = sing_plur(self.count_suspects, "Suspect")
             s_label = f" ({ss})" if self.count_suspects > 0 else ""
-            if self.count_suspects == self.count_linked_entries > 0:
+            if self.count_suspects == self.count_linked_entries > 0 or (
+                self.count_suspects == 0
+                and self.get_dialog_pref(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT)
+            ):
                 self.count_label["text"] = ss
             else:
                 self.count_label["text"] = f"{es}{s_label}"
