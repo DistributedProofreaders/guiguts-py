@@ -45,25 +45,17 @@ previous version of GG2).
 Python needs to be version 3.11 or above, and GG has been tested in
 versions up to 3.13.
 
-1. Install python, pip3, and Tk:
+1. Install python, pipx, and Tk. Note that on some Linux distributions, the version number for `idle-python3.12` may differ slightly.
 
     a. `apt-get update`
 
-    b. `apt-get install -y python3 python3-pip python3-tk idle-python3.12`
+    b. `apt-get install -y python3 python3-pip python3-tk idle-python3.12 pipx`
 
-2. Type `pip3 install guiguts` (or `pip3 install guiguts --upgrade`
-to upgrade from a previous version of GG2).
+2. Type `pipx install guiguts` (or `pipx upgrade guiguts` to upgrade from a previous version of GG2).
 
-3. Type `guiguts` to run GG2.
+3. Add `$HOME/.local/bin` to your `$PATH` if it isn't already. Restart your shell / terminal window to refresh the path.
 
-4. If the above does not work, then 
-
-    a. Install pipx: `apt-get install -y python3-pipx`
-
-    b. Type `pipx install guiguts` (or `pipx install guiguts --upgrade`
-       to upgrade from a previous version of GG2).
-
-    c. Type `guiguts` to run GG2.
+4. Type `guiguts` to run GG2.
 
 ### Chromebook (after enabling Linux)
 
@@ -272,8 +264,8 @@ poetry env use /usr/local/bin/python3
    * Example from Ubuntu 22.04 -- adapt to your own Linux distro. Python should
      be version 3.11 or above, and GG has been tested in versions up to 3.13.
      ```bash
-     sudo apt install python3.11 python3-pip python3-tk idle-python3.11 git
-     sudo python3.11 -m pip install poetry
+     sudo apt install python3.11 python3-pip python3-tk idle-python3.11 git pipx
+     sudo pipx install poetry
      ## Test that Tk will work
      python3.11 -m tkinter
      ```
