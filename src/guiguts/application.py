@@ -1013,14 +1013,14 @@ class Guiguts:
         html_menu.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
         html_menu.add_button(
             "Auto-~Illustrations...",
-            lambda: HTMLImageDialog(auto_illus=True).show_dialog,
+            lambda: HTMLImageDialog.show_dialog(auto_illus=True),
         )
         html_menu.add_button("Auto-~Table...", HTMLAutoTableDialog.show_dialog)
         html_menu.add_separator()
         html_menu.add_button("HTML ~Markup...", HTMLMarkupDialog.show_dialog)
         html_menu.add_button("HTML ~Links/Anchors...", HTMLLinksDialog.show_dialog)
         html_menu.add_button(
-            "HTML Image~s...", lambda: HTMLImageDialog(auto_illus=False).show_dialog
+            "HTML Image~s...", lambda: HTMLImageDialog.show_dialog(auto_illus=False)
         )
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)

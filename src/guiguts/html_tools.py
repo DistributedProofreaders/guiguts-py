@@ -258,10 +258,16 @@ class HTMLImageDialog(ToplevelDialog):
         if auto_illus:
             ttk.Button(
                 btn_frame,
+                text="Convert & Find Next",
+                command=self.convert_and_advance,
+                width=18,
+            ).grid(row=0, column=1, sticky="NSEW", padx=2)
+            ttk.Button(
+                btn_frame,
                 text="Find [Illustration]",
                 command=self.find_illo_markup,
                 width=18,
-            ).grid(row=0, column=1, sticky="NSEW", padx=2)
+            ).grid(row=0, column=2, sticky="NSEW", padx=2)
 
         if auto_illus:
             self.find_illo_markup()
@@ -420,6 +426,11 @@ class HTMLImageDialog(ToplevelDialog):
         self.alt_textvariable.set("")
         self.next_file()
         self.lift()
+
+    def convert_and_advance(self) -> None:
+        """Add markup to HTML & find next illo markup."""
+        self.convert_to_html(auto_illus=True)
+        self.find_illo_markup()
 
     def convert_to_html(self, auto_illus: bool) -> None:
         """Add illustration markup to HTML.
