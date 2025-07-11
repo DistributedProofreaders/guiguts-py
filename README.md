@@ -45,7 +45,7 @@ previous version of GG2).
 Python needs to be version 3.11 or above, and GG has been tested in
 versions up to 3.13.
 
-1. Install python, pipx, and Tk. Note that on some Linux distributions, the version number for `idle-python3.12` may differ slightly.
+1. Install python, pipx, and Tk. Note that on some Linux distributions, the version number for `idle-python3.12` may differ slightly, e.g. as of this writing Debian 12 would require `idle-python3.11`.
 
     a. `apt-get update`
 
@@ -269,7 +269,6 @@ poetry env use /usr/local/bin/python3
      ## Test that Tk will work
      python3.11 -m tkinter
      ```
-   * If this does not work, try using `pipx` in place of `pip` in the above commands.
    * The last line above tests that Tk is working with Python. It should open a small
      window on your screen. Click the `Click me!` button to test mouse clicks, and
      `QUIT` to close the window, ending the test.
