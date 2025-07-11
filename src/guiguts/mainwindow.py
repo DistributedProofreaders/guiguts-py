@@ -259,7 +259,9 @@ e.g. $(s+7) would give 12 for the 5th png.
 
             # If first token is a URL, insert `open`/`start`
             if cmd[0].startswith("http"):
-                cmd.insert(0, "start" if is_windows() else "open" if is_mac() else "xdg-open")
+                cmd.insert(
+                    0, "start" if is_windows() else "open" if is_mac() else "xdg-open"
+                )
 
             shell = False
             run_func: Callable = subprocess.run
