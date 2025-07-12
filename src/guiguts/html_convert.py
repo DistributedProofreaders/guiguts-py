@@ -694,7 +694,7 @@ def html_convert_body() -> None:
         # In chapter heading - store lines in heading until we get 2 blank lines
         # (if HTML_MULTILINE_CHAPTER_HEADINGS is True) or 1 blank line if it's False
         if in_chap_heading:
-            if selection and not selection.startswith("/#"):
+            if selection and not selection.startswith(("/#", "[Footnote")):
                 chap_line = selection.strip()
                 maintext().replace(line_start, line_end, f"    {chap_line}")
                 chap_heading += (" " if chap_heading else "") + chap_line
@@ -710,6 +710,7 @@ def html_convert_body() -> None:
                 #   First blank line of single line heading
                 #   Second blank line of multiline heading
                 #   Start of blockquote, after blank line of multiline heading
+                #   Start of footnote, after blank line of multiline heading
                 # First blank line may have had "<br>" inserted in elif above.
                 # Remove that and add </h2> at end of chapter heading.
                 if preferences.get(PrefKey.HTML_MULTILINE_CHAPTER_HEADINGS):
@@ -720,9 +721,9 @@ def html_convert_body() -> None:
                     )
                 else:
                     maintext().insert(line_start, "  </h2>\n")
-                # If stopping due to blockquote, don't advance through file
-                # Need to loop round again so blockquote markup is processed
-                if not selection.startswith("/#"):
+                # If stopping due to blockquote/footnote, don't advance through file
+                # Need to loop round again so the found markup is processed
+                if not selection.startswith(("/#", "[Footnote")):
                     next_step += 1
                 # Don't want footnote anchors in auto ToC
                 chap_heading = re.sub(r"\[.{1,5}\]", "", chap_heading)
