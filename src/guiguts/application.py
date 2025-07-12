@@ -19,6 +19,7 @@ from guiguts.content_providing import (
     export_prep_text_files,
     import_prep_text_files,
     cp_character_substitutions,
+    import_tia_ocr_file,
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -684,6 +685,11 @@ class Guiguts:
         cp_menu.add_button(
             "~Export As Prep Text Files...",
             export_prep_text_files,
+        )
+        cp_menu.add_separator()
+        cp_menu.add_button(
+            "Import ~TIA Abbyy OCR File...",
+            import_tia_ocr_file,
         )
         cp_menu.add_separator()
         cp_menu.add_button(
