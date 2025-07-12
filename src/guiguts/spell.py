@@ -9,7 +9,7 @@ import regex as re
 
 from guiguts.data import dictionaries
 from guiguts.file import ProjectDict
-from guiguts.checkers import CheckerDialog, CheckerEntry
+from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext, FindMatch
 from guiguts.misc_tools import tool_save
 from guiguts.preferences import preferences, PersistentInt, PrefKey
@@ -83,10 +83,15 @@ class SpellCheckerDialog(CheckerDialog):
                 checker.dictionary[word] = True
             self.remove_entry_current(all_matching=True)
 
-        def add_to_project_dict(checker_entry: CheckerEntry) -> None:
-            """Process the spelling error by adding the word to the project dictionary."""
+        def add_to_project_dict() -> None:
+            """Add current word to project dictionary."""
+            current_index = self.current_entry_index()
+            if current_index is None:
+                return
+            checker_entry = self.entries[current_index]
             if checker_entry.text_range:
                 self.add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
+            self.remove_entry_current(all_matching=True)
 
         # Complication because callbacks to add to project/global dictionaries
         # are passed in from outside, but we need "process_command" to call
@@ -97,7 +102,6 @@ class SpellCheckerDialog(CheckerDialog):
         assert "add_global_word_callback" in kwargs
         self.add_global_word_callback = kwargs["add_global_word_callback"]
         del kwargs["add_global_word_callback"]
-        kwargs["process_command"] = add_to_project_dict
         super().__init__(
             "Spelling Check Results",
             tooltip="\n".join(
@@ -105,7 +109,8 @@ class SpellCheckerDialog(CheckerDialog):
                     "Left click: Select & find spelling error",
                     "Right click: Skip spelling error",
                     "Shift Right click: Skip all matching spelling errors",
-                    f"With {cmd_ctrl_string()} key: Also add spelling to project dictionary",
+                    f"{cmd_ctrl_string()}-click: Add spelling to project dictionary",
+                    f"Shift {cmd_ctrl_string()}-click: Add spelling to global dictionary",
                 ]
             ),
             **kwargs,
@@ -146,12 +151,12 @@ class SpellCheckerDialog(CheckerDialog):
             self.bind(key_event, lambda _: invoke_and_break(global_dict_button))
         ToolTip(
             global_dict_button,
-            f"{cmd_ctrl_string()}+A",
+            f"{cmd_ctrl_string()}+A or Shift-{cmd_ctrl_string()}-click message",
         )
         project_dict_button = ttk.Button(
             frame,
             text="Add to Project Dict",
-            command=lambda: self.process_remove_entry_current(all_matching=True),
+            command=add_to_project_dict,
         )
         project_dict_button.grid(column=3, row=0, sticky="NSW")
         for accel in ("Cmd/Ctrl+p", "Cmd/Ctrl+P"):
@@ -188,13 +193,27 @@ class SpellCheckerDialog(CheckerDialog):
             f"{cmd_ctrl_string()}+I or Shift+right-click message",
         )
 
-        # When we add to project dict using Cmd/Ctrl click, we also want to
-        # remove the entry(ies) from the list, so need to override bindings
-        mouse_bind(self.text, "Cmd/Ctrl+1", self.process_remove_entry_by_click)
+        # When we add to global/project dict using (Shift+)Cmd/Ctrl click, we also want to
+        # remove all entries from the list, so need to override default checker bindings.
+        mouse_bind(
+            self.text,
+            "Cmd/Ctrl+1",
+            lambda _: invoke_and_break(project_dict_button),
+        )
+        mouse_bind(
+            self.text,
+            "Cmd/Ctrl+3",
+            lambda _: invoke_and_break(project_dict_button),
+        )
         mouse_bind(
             self.text,
             "Shift+Cmd/Ctrl+1",
-            lambda event: self.process_remove_entry_by_click(event, all_matching=True),
+            lambda _: invoke_and_break(global_dict_button),
+        )
+        mouse_bind(
+            self.text,
+            "Shift+Cmd/Ctrl+3",
+            lambda _: invoke_and_break(global_dict_button),
         )
 
 
