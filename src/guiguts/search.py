@@ -363,6 +363,7 @@ class SearchDialog(ToplevelDialog):
     def reset(self) -> None:
         """Called when dialog is reset/destroyed - remove search highlights."""
         maintext().highlight_search_deactivate()
+        maintext().highlight_regex_deactivate()
 
     def show_multi_replace(self, resize: bool = True) -> None:
         """Show or hide the multi-replace buttons, based on Pref
