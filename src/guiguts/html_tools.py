@@ -132,6 +132,11 @@ class HTMLImageDialog(ToplevelDialog):
             caption_frame,
             textvariable=self.caption_textvariable,
         ).grid(row=0, column=0, sticky="NSEW")
+        ttk.Checkbutton(
+            caption_frame,
+            text="Use <p> markup for caption",
+            variable=PersistentBoolean(PrefKey.HTML_IMAGE_CAPTION_P),
+        ).grid(row=2, column=0, sticky="NS")
 
         # Alt text
         alt_frame = ttk.LabelFrame(self.top_frame, text="Alt text", padding=2)
@@ -409,7 +414,7 @@ class HTMLImageDialog(ToplevelDialog):
             maintext().rowcol(f"{illo_match_end.rowcol.index()} lineend"),
         )
         maintext().spotlight_range(self.illo_range)
-        # Display caption in dialog and add <p> markup if none
+        # Display caption in dialog
         caption = maintext().get(
             self.illo_range.start.index(), self.illo_range.end.index()
         )
@@ -449,6 +454,11 @@ class HTMLImageDialog(ToplevelDialog):
         # Get caption & add some space to prettify HTML
         caption = self.caption_textvariable.get()
         if caption:
+            if preferences.get(PrefKey.HTML_IMAGE_CAPTION_P):
+                caption = f"<p>{caption.lstrip()}</p>"
+                caption = re.sub(
+                    f"{RETURN_ARROW}{RETURN_ARROW} *", "</p>\n      <p>", caption
+                )
             caption = re.sub(RETURN_ARROW, "\n    ", f"      {caption}")
             caption = f"  <figcaption>\n{caption}\n  </figcaption>\n"
         # Now alt text - escape any double quotes
