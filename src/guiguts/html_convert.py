@@ -13,6 +13,7 @@ import regex as re
 from guiguts.data import html
 from guiguts.file import the_file
 from guiguts.maintext import maintext
+from guiguts.misc_tools import tool_save
 from guiguts.page_details import PAGE_LABEL_PREFIX, PageDetail
 from guiguts.preferences import (
     preferences,
@@ -130,28 +131,37 @@ class HTMLGeneratorDialog(ToplevelDialog):
 
 def html_autogenerate() -> None:
     """Autogenerate HTML from text file."""
+    if not tool_save():
+        return
+
     Busy.busy()
-    backup_fn = re.sub(r"\.[^\.]*$", "-htmlbak.txt", the_file().filename)
-    the_file().save_copy(backup_fn)
+    backup_fn = ""
+    # In production, `tool_save` call above ensures there is a filename, but
+    # in `-d` debugging, that check is skipped
+    if the_file().filename:
+        backup_fn = re.sub(r"\.[^\.]*$", "-htmlbak.txt", the_file().filename)
+        the_file().save_copy(backup_fn)
+
     try:
         do_html_autogenerate()
     except SyntaxError as exc:
         logger.error(exc)
         # Check if user would like to reload backup file
-        reload = messagebox.askokcancel(
-            title="Re-load backup file?",
-            message="An error occurred during HTML autogeneration,\nand the file was not completely converted.",
-            detail='Click "OK" to re-load pre-conversion backup file,\nor "Cancel" to explore partially converted file (see manual).',
-            icon=messagebox.QUESTION,
-        )
-        if reload:
-            # Save name because load_file will overwrite it
-            old_filename = the_file().filename
-            the_file().load_file(backup_fn)
-            # Restore original filename
-            the_file().filename = old_filename
-            # Put it at the top of the recent files list
-            the_file().store_recent_file(old_filename)
+        if backup_fn:
+            reload = messagebox.askokcancel(
+                title="Re-load backup file?",
+                message="An error occurred during HTML autogeneration,\nand the file was not completely converted.",
+                detail='Click "OK" to re-load pre-conversion backup file,\nor "Cancel" to explore partially converted file (see manual).',
+                icon=messagebox.QUESTION,
+            )
+            if reload:
+                # Save name because load_file will overwrite it
+                old_filename = the_file().filename
+                the_file().load_file(backup_fn)
+                # Restore original filename
+                the_file().filename = old_filename
+                # Put it at the top of the recent files list
+                the_file().store_recent_file(old_filename)
         # Go to error line number if available
         line_num, is_line_num = re.subn(r"Line (\d+):.*", r"\1", str(exc))
         if is_line_num:
