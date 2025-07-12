@@ -1217,6 +1217,17 @@ class Guiguts:
             "Delete To End Of Line", lambda: maintext().delete_to_end_of_line()
         )
 
+        def open_file_number(fn: int) -> None:
+            """Open recent file number `fn`."""
+            f_list = preferences.get(PrefKey.RECENT_FILES)
+            if fn < len(f_list):
+                self.open_file(f_list[fn - 1])
+
+        for fn in range(1, 4):
+            menubar_metadata().add_button_orphan(
+                f"Load Recent File {fn}", lambda fn=fn: open_file_number(fn)
+            )
+
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
         """Add labels to initialize the statusbar.
 
