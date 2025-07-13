@@ -4503,7 +4503,7 @@ class ScrolledReadOnlyText(tk.Text):
         vscroll = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.yview)
         vscroll.grid(column=1, row=0, sticky="NSEW")
         self["yscrollcommand"] = vscroll.set
-        ttk.Sizegrip(self.frame).grid(row=1, column=1, sticky="SE")        
+        ttk.Sizegrip(self.frame).grid(row=1, column=1, sticky="SE")
 
         self["cursor"] = "arrow"
 
