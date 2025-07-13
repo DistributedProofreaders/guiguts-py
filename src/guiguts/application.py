@@ -32,6 +32,7 @@ from guiguts.html_tools import (
     EbookmakerChecker,
     EbookmakerCheckerAPI,
     HTMLAutoTableDialog,
+    HTMLAutoListDialog,
     HTMLMarkupDialog,
     HTMLLinksDialog,
 )
@@ -589,6 +590,8 @@ class Guiguts:
         preferences.set_default(PrefKey.AUTOTABLE_DEFAULT_ALIGNMENT, "left")
         preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT, "")
         preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT_HISTORY, [])
+        preferences.set_default(PrefKey.AUTOLIST_MULTILINE, False)
+        preferences.set_default(PrefKey.AUTOLIST_TYPE, HTMLAutoListDialog.UNORDERED)
         preferences.set_default(PrefKey.SURROUND_WITH_BEFORE, "")
         preferences.set_default(PrefKey.SURROUND_WITH_BEFORE_HISTORY, [])
         preferences.set_default(PrefKey.SURROUND_WITH_AFTER, "")
@@ -1017,9 +1020,10 @@ class Guiguts:
             lambda: HTMLImageDialog.show_dialog(auto_illus=True),
         )
         html_menu.add_button("Auto-~Table...", HTMLAutoTableDialog.show_dialog)
+        html_menu.add_button("Auto-~List...", HTMLAutoListDialog.show_dialog)
         html_menu.add_separator()
         html_menu.add_button("HTML ~Markup...", HTMLMarkupDialog.show_dialog)
-        html_menu.add_button("HTML ~Links/Anchors...", HTMLLinksDialog.show_dialog)
+        html_menu.add_button("HTML Links/A~nchors...", HTMLLinksDialog.show_dialog)
         html_menu.add_button(
             "HTML Image~s...", lambda: HTMLImageDialog.show_dialog(auto_illus=False)
         )

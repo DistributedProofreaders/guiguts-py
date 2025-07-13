@@ -1585,6 +1585,86 @@ def ebookmaker_sort_key_type(
     return (EbookmakerChecker.severities.get(entry.error_prefix, 10), entry.initial_pos)
 
 
+class HTMLAutoListDialog(ToplevelDialog):
+    """HTML Auto-List dialog."""
+
+    manual_page = "HTML_Menu#Auto-List"
+    ORDERED = "ordered"
+    UNORDERED = "unordered"
+
+    def __init__(self) -> None:
+        """Initialize HTML Auto-List dialog."""
+        super().__init__("HTML Auto-List", resize_x=False, resize_y=False)
+
+        ttk.Checkbutton(
+            self.top_frame,
+            text="Multi-line (entries separated by blank lines)",
+            variable=PersistentBoolean(PrefKey.AUTOLIST_MULTILINE),
+        ).grid(row=0, column=0, sticky="NSEW", pady=3)
+
+        type_frame = ttk.Frame(self.top_frame)
+        type_frame.grid(row=1, column=0, sticky="NS", pady=3)
+        type_variable = PersistentString(PrefKey.AUTOLIST_TYPE)
+        ttk.Radiobutton(
+            type_frame,
+            text="Unordered",
+            variable=type_variable,
+            value=self.UNORDERED,
+        ).grid(row=0, column=0, sticky="NS", padx=10)
+        ttk.Radiobutton(
+            type_frame,
+            text="Ordered",
+            variable=type_variable,
+            value=self.ORDERED,
+        ).grid(row=0, column=1, sticky="NS", padx=10)
+
+        ttk.Button(self.top_frame, text="Convert to HTML", command=self.convert).grid(
+            row=2, column=0, sticky="NS", pady=(5, 2)
+        )
+
+    def convert(self) -> None:
+        """Convert selected text to HTML list."""
+        sel_ranges = maintext().selected_ranges()
+        if not sel_ranges:
+            return
+        # Extend selection range to cover full lines
+        sel_ranges[0].start.col = 0
+        if sel_ranges[-1].end.col != 0:
+            sel_ranges[-1].end.row += 1
+            sel_ranges[-1].end.col = 0
+
+        if not maintext().selected_text():
+            return
+
+        multiline = preferences.get(PrefKey.AUTOLIST_MULTILINE)
+        type_element = (
+            "ol" if preferences.get(PrefKey.AUTOLIST_TYPE) == self.ORDERED else "ul"
+        )
+        maintext().undo_block_begin()
+        maintext().insert(f"{sel_ranges[-1].end.index()}", f"</{type_element}>\n")
+
+        for row in range(sel_ranges[-1].end.row - 1, sel_ranges[0].start.row - 1, -1):
+            blank_line = len(maintext().get(f"{row}.0", f"{row}.end").strip()) == 0
+            if blank_line and multiline:
+                if row != sel_ranges[0].start.row:
+                    maintext().insert(f"{row-1}.end", "</li>")
+                if row != sel_ranges[-1].end.row - 1:
+                    maintext().insert(f"{row+1}.0", "<li>")
+            elif not blank_line and multiline:
+                if row == sel_ranges[-1].end.row - 1:
+                    maintext().insert(f"{row}.end", "</li>")
+                if row == sel_ranges[0].start.row:
+                    maintext().insert(f"{row}.0", "<li>")
+            elif not blank_line and not multiline:
+                maintext().insert(f"{row}.0", "<li>")
+                maintext().insert(f"{row}.end", "</li>")
+
+        maintext().insert(f"{sel_ranges[0].start.index()}", f"<{type_element}>\n")
+
+        maintext().clear_selection()
+        maintext().set_insert_index(sel_ranges[0].start)
+
+
 class HTMLAutoTableDialog(ToplevelDialog):
     """HTML Auto-Table dialog."""
 
