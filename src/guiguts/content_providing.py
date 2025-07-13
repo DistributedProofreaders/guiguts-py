@@ -1,5 +1,6 @@
 """Functionality to support content providers."""
 
+import gzip
 import logging
 from pathlib import Path
 from tkinter import filedialog
@@ -99,6 +100,79 @@ def import_prep_text_files() -> None:
         file_text = re.sub(r"[ \n]+$", "", file_text)
         separator = f"-----File: {file_path.stem}.png" + "-" * 45
         maintext().insert("end", separator + "\n" + file_text + "\n")
+    maintext().undo_block_end()
+
+    the_file().mark_page_boundaries()
+    maintext().set_insert_index(maintext().start())
+    # Give user chance to save immediately
+    the_file().save_as_file()
+
+
+def import_tia_ocr_file() -> None:
+    """Import the an Abbyy TIA OCR file."""
+
+    # Close existing file (saving first if user wants to)
+    if not the_file().close_file():
+        return
+
+    filename = filedialog.askopenfilename(
+        title="Open OCR file",
+        filetypes=(
+            ("Gzip files", "*.gz"),
+            ("All files", "*.*"),
+        ),
+    )
+    if not filename:
+        return
+
+    maintext().undo_block_begin()
+    # Open gzip file and read the text
+    with gzip.open(filename) as fp:
+        try:
+            file_text = fp.read().decode("utf-8")
+        except OSError as e:
+            logger.error(f"Error reading file '{filename}': {e}")
+            maintext().undo_block_end()
+            return
+
+    def flush_buffer(buffer: list[str]) -> None:
+        """Flush the buffer by appending to text file after translating
+        HTML entities and removing unwanted spaces & blank lines."""
+        if not buffer:
+            return
+        buffer.append("\n")  # Ensure terminating newline - duplicates stripped below
+        page_text = "".join(buffer)
+        page_text = page_text.replace("&amp;", "&")
+        page_text = page_text.replace("&lt;", "<")
+        page_text = page_text.replace("&gt;", ">")
+        page_text = page_text.replace("&apos;", "'")
+        page_text = page_text.replace("&quot;", '"')
+        page_text = re.sub(" +\n", "\n", page_text)  # Remove trailing spaces on lines
+        page_text = re.sub(
+            " +$", "", page_text
+        )  # Remove trailing spaces at end of page
+        page_text = re.sub("  +", " ", page_text)  # Compress multiple spaces to one
+        page_text = re.sub("\n\n\n+", "\n\n", page_text)  # Multiple blank lines to one
+        page_text = re.sub("\n\n+$", "\n", page_text)  # Remove trailing blank lines
+        maintext().insert("end", page_text)
+
+    page_num = 0
+    buffer: list[str] = []
+    # Split at closing tags so there's just one opening tag per line
+    for line in re.split(r"</.+?>", file_text):
+        if "<page " in line:
+            flush_buffer(buffer)
+            buffer = [f"\n-----File: {page_num:05}.png-----"]
+            page_num += 1
+        elif "<par " in line:
+            buffer.append("\n")
+        if "<line " in line:
+            buffer.append("\n")
+        # "char" can be on same text line as "line" so don't use elif
+        if match := re.search(r"<charParams.*?>(.+)", line):
+            buffer.append(match[1])
+
+    flush_buffer(buffer)
     maintext().undo_block_end()
 
     the_file().mark_page_boundaries()
