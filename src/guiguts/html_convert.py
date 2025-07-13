@@ -208,8 +208,8 @@ def html_convert_entities() -> None:
     while match := maintext().find_match("(<|>)", search_range, regexp=True):
         match_index = match.rowcol.index()
         match_text = maintext().get(match_index, f"{match_index} lineend")
-        # Check if it's a DP tag, like `<i>` or `</sc>`
-        check_match = re.match("</?(i|b|f|g|u|sc|tb)>", match_text)
+        # Check if it's a DP/HTML tag, like `<i>`, `</sc>`, or `<del id="error13">`
+        check_match = re.match("(</?[^<]+?>)", match_text)
         if check_match is None:
             maintext().replace(
                 match_index,
