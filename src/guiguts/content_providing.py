@@ -122,6 +122,8 @@ def import_tia_ocr_file() -> None:
             ("All files", "*.*"),
         ),
     )
+    if not filename:
+        return
 
     maintext().undo_block_begin()
     # Open gzip file and read the text
@@ -156,17 +158,18 @@ def import_tia_ocr_file() -> None:
 
     page_num = 0
     buffer: list[str] = []
-    for line in file_text.split("\n"):
-        if line.startswith("<page "):
+    # Split at closing tags so there's just one opening tag per line
+    for line in re.split(r"</.+?>", file_text):
+        if "<page " in line:
             flush_buffer(buffer)
             buffer = [f"-----File: {page_num:05}.png-----\n"]
             page_num += 1
-        elif line.startswith("<par "):
+        elif "<par " in line:
             buffer.append("\n")
-        elif line.startswith("<line "):
+        if "<line " in line:
             buffer.append("\n")
         # "char" can be on same text line as "line" so don't use elif
-        for match in re.finditer(r"<charParams.*?>(.+?)</charParams>", line):
+        if match := re.search(r"<charParams.*?>(.+)", line):
             buffer.append(match[1])
 
     flush_buffer(buffer)
