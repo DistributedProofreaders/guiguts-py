@@ -162,7 +162,7 @@ def import_tia_ocr_file() -> None:
     for line in re.split(r"</.+?>", file_text):
         if "<page " in line:
             flush_buffer(buffer)
-            buffer = [f"-----File: {page_num:05}.png-----\n"]
+            buffer = [f"\n-----File: {page_num:05}.png-----"]
             page_num += 1
         elif "<par " in line:
             buffer.append("\n")
