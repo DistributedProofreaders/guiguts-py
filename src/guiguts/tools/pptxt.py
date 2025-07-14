@@ -1,6 +1,7 @@
 """PPtxt tool"""
 
 from dataclasses import dataclass
+from tkinter import ttk
 from typing import Dict, Sequence, List, Any
 import regex as re
 
@@ -8,6 +9,7 @@ from guiguts.checkers import CheckerDialog
 from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
+from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.utilities import IndexRowCol, IndexRange, non_text_line
 
 
@@ -29,6 +31,34 @@ class PPtxtCheckerDialog(CheckerDialog):
             ),
             **kwargs,
         )
+
+        self.custom_frame.columnconfigure(0, weight=1)
+        frame = ttk.LabelFrame(self.custom_frame, text="Checks")
+        frame.grid(row=0, column=0, sticky="NSEW")
+        for col in range(0, 5):
+            frame.columnconfigure(col, weight=1)
+
+        for cnt, (prefkey, label) in enumerate(
+            {
+                PrefKey.PPTXT_QUOTE_TYPES_CHECK: "Quote Types",
+                PrefKey.PPTXT_TRAILING_SPACES_CHECK: "Trailing Spaces",
+                PrefKey.PPTXT_SPACING_CHECK: "Blank Line Spacing",
+                PrefKey.PPTXT_REPEATED_WORDS_CHECK: "Repeated Words",
+                PrefKey.PPTXT_ELLIPSIS_CHECK: "Ellipses",
+                PrefKey.PPTXT_CURLY_QUOTE_CHECK: "Curly Quotes",
+                PrefKey.PPTXT_HYPHENATED_WORDS_CHECK: "Hyphenated Words",
+                PrefKey.PPTXT_ADJACENT_SPACES_CHECK: "Adjacent Spaces",
+                PrefKey.PPTXT_DASH_REVIEW_CHECK: "Hyphens/Dashes",
+                PrefKey.PPTXT_SCANNO_CHECK: "Scannos",
+                PrefKey.PPTXT_WEIRD_CHARACTERS_CHECK: "Uncommon Characters",
+                PrefKey.PPTXT_HTML_CHECK: "HTML Tags",
+                PrefKey.PPTXT_UNICODE_NUMERIC_CHARACTER_CHECK: "Numeric Entities",
+                PrefKey.PPTXT_SPECIALS_CHECK: "Specials",
+            }.items()
+        ):
+            ttk.Checkbutton(
+                frame, variable=PersistentBoolean(prefkey), text=label
+            ).grid(row=cnt // 5, column=cnt % 5, sticky="NSEW")
 
 
 REPORT_LIMIT = 5  # Max number of times to report same issue for some checks
@@ -627,7 +657,7 @@ def hyphenated_words_check() -> None:
 ######################################################################
 
 
-def weird_characters() -> None:
+def weird_characters_check() -> None:
     """Collects lines containing unusual characters. Lines in the report
     are grouped by unusual character and each instance of the character
     on a report line is highlighted."""
@@ -1228,7 +1258,7 @@ def html_check() -> None:
             lines_with_html_tags += 1
 
         # If abandoned_HTML_tag_count > courtesy_limit then it looks like we are
-        # not dealing with a plain text file afterall. Flag this and report the
+        # not dealing with a plain text file after all. Flag this and report the
         # number of HTML tags found so far then exit loop.
 
         if abandoned_html_tag_count > courtesy_limit:
@@ -1597,7 +1627,7 @@ def curly_quote_check() -> None:
 ######################################################################
 
 
-def quote_type_checks() -> None:
+def quote_types_check() -> None:
     """Check for mixed straight/curly quotes."""
 
     checker_dialog.add_header(
@@ -1634,7 +1664,7 @@ def quote_type_checks() -> None:
 ######################################################################
 
 
-def dash_review() -> None:
+def dash_review_check() -> None:
     """Hyphen/dashes check."""
 
     checker_dialog.add_header(
@@ -2698,23 +2728,34 @@ def pptxt(project_dict: ProjectDict) -> None:
     # We're done reading the input. Start processing it.
     ###################################################
 
-    # The checks are run in the following order...
-
-    quote_type_checks()
-    trailing_spaces_check()
-    spacing_check()
-    repeated_words_check()
-    ellipsis_check()
-    curly_quote_check()
-    hyphenated_words_check()
-    adjacent_spaces_check()
-    dash_review()
-    scanno_check()
-    weird_characters()
-    html_check()
-    unicode_numeric_character_check()
-    # This final one does multiple checks.
-    specials_check(project_dict)
+    if preferences.get(PrefKey.PPTXT_QUOTE_TYPES_CHECK):
+        quote_types_check()
+    if preferences.get(PrefKey.PPTXT_TRAILING_SPACES_CHECK):
+        trailing_spaces_check()
+    if preferences.get(PrefKey.PPTXT_SPACING_CHECK):
+        spacing_check()
+    if preferences.get(PrefKey.PPTXT_REPEATED_WORDS_CHECK):
+        repeated_words_check()
+    if preferences.get(PrefKey.PPTXT_ELLIPSIS_CHECK):
+        ellipsis_check()
+    if preferences.get(PrefKey.PPTXT_CURLY_QUOTE_CHECK):
+        curly_quote_check()
+    if preferences.get(PrefKey.PPTXT_HYPHENATED_WORDS_CHECK):
+        hyphenated_words_check()
+    if preferences.get(PrefKey.PPTXT_ADJACENT_SPACES_CHECK):
+        adjacent_spaces_check()
+    if preferences.get(PrefKey.PPTXT_DASH_REVIEW_CHECK):
+        dash_review_check()
+    if preferences.get(PrefKey.PPTXT_SCANNO_CHECK):
+        scanno_check()
+    if preferences.get(PrefKey.PPTXT_WEIRD_CHARACTERS_CHECK):
+        weird_characters_check()
+    if preferences.get(PrefKey.PPTXT_HTML_CHECK):
+        html_check()
+    if preferences.get(PrefKey.PPTXT_UNICODE_NUMERIC_CHARACTER_CHECK):
+        unicode_numeric_character_check()
+    if preferences.get(PrefKey.PPTXT_SPECIALS_CHECK):
+        specials_check(project_dict)
 
     # Add final divider line to dialog.
 

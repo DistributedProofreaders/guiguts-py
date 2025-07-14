@@ -611,6 +611,20 @@ class Guiguts:
         preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_3_HISTORY, [])
         preferences.set_default(PrefKey.CUSTOMIZABLE_COLORS, {})
         preferences.set_default(PrefKey.IMAGE_VIEWER_DOCK_SIDE, "right")
+        preferences.set_default(PrefKey.PPTXT_QUOTE_TYPES_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_TRAILING_SPACES_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_SPACING_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_REPEATED_WORDS_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_ELLIPSIS_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_CURLY_QUOTE_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_HYPHENATED_WORDS_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_ADJACENT_SPACES_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_DASH_REVIEW_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_SCANNO_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_WEIRD_CHARACTERS_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_HTML_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_UNICODE_NUMERIC_CHARACTER_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_SPECIALS_CHECK, True)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
