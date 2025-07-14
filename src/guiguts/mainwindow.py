@@ -281,7 +281,7 @@ e.g. $(s+7) would give 12 for the 5th png.
                 run_func = subprocess.Popen
                 # Windows needs a new console window to run command in
                 if is_windows():
-                    creationflags = subprocess.CREATE_NEW_CONSOLE
+                    creationflags = subprocess.CREATE_NEW_CONSOLE  # type: ignore[attr-defined]
 
             try:
                 run_func(  # pylint: disable=subprocess-run-check
