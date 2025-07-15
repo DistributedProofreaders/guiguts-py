@@ -1458,6 +1458,8 @@ class CheckerDialog(ToplevelDialog):
         Args:
             event: Event object containing mouse click position.
         """
+        if not self.text.winfo_exists():
+            return
         linenum = self.linenum_from_entry_index(entry_index)
         self.text.select_line(linenum)
         self.text.mark_set(tk.INSERT, f"{linenum}.0")
