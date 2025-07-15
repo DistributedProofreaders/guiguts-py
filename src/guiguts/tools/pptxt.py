@@ -2117,7 +2117,6 @@ def scanno_check() -> None:
                     scanno_outrecs[word_lc] = [(line_index + 1, line)]
                 else:
                     scanno_outrecs[word_lc].append((line_index + 1, line))
-            previously_found_on_this_line = []
 
     # We're done looking for scannos on each line. Report what we found.
     # NB 'scanno_outrecs' is a dictionary. The keys are a scanno and the
@@ -2138,32 +2137,34 @@ def scanno_check() -> None:
         # Header is the scanno.
         checker_dialog.add_header(scanno)
 
-        for tple in tple_list:
+        for cnt, tple in enumerate(tple_list):
+            if cnt >= 5:
+                checker_dialog.add_footer("  ...more")
+                break
+
             line_number = tple[0]
             line = tple[1]
 
             # We know that scanno appears at least once on line; it may
             # be repeated, possibly in a different case.
-            # Get all occuurences of scanno on line and report them.
+            # Get all occurrences of scanno on line and report them.
 
             regx = f"\\b{scanno}\\b"
-            for match_obj in re.finditer(regx, line, re.IGNORECASE):
-                # Get start/end of error in file.
-                error_start = str(line_number) + "." + str(match_obj.start(0))
-                error_end = str(line_number) + "." + str(match_obj.end(0))
-                # Store in structure for file row/col positions & ranges.
-                start_rowcol = IndexRowCol(error_start)
-                end_rowcol = IndexRowCol(error_end)
-                # Highlight occurrence of word in the line.
-                hilite_start = match_obj.start(0)
-                hilite_end = match_obj.end(0)
-                # Add record to the dialog.
-                checker_dialog.add_entry(
-                    line,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
-                )
+            match_list = list(re.finditer(regx, line, re.IGNORECASE))
+            multiplier = f"(x{len(match_list)}) " if len(match_list) > 1 else ""
+            # Get start/end of all errors on line.
+            start_rowcol = IndexRowCol(line_number, match_list[0].start(0))
+            end_rowcol = IndexRowCol(line_number, match_list[-1].end(0))
+            # Highlight occurrence of word in the line.
+            hilite_start = match_list[0].start(0) + len(multiplier)
+            hilite_end = match_list[-1].end(0) + len(multiplier)
+            # Add record to the dialog.
+            checker_dialog.add_entry(
+                f"{multiplier}{line}",
+                IndexRange(start_rowcol, end_rowcol),
+                hilite_start,
+                hilite_end,
+            )
 
     if no_scannos_found:
         checker_dialog.add_footer("")
