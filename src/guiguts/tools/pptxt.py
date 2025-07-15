@@ -693,7 +693,11 @@ def weird_characters_check() -> None:
 
     # If no curly quotes in file, don't consider straight quotes to be weirdos
     straight_quotes = "\"'" if csq + cdq == 0 else ""
-    weirdo_regex = r"[^A-Za-z0-9\s.,:;?!&\\\-_—–=“”‘’\[\]\(\){}" + straight_quotes + "]"
+    weirdo_regex = (
+        r"[^A-Za-z0-9\s.,:;?!&\\\-_—–=“”‘’\[\]\(\){}¼½¾¹²³⁰⁴-⁹₀-₉⅐-⅞"
+        + straight_quotes
+        + "]"
+    )
 
     # Build dictionary of unusual characters ('weirdos'). The key is a
     # weirdo and the value a list of line numbers on which that character
