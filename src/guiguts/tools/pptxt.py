@@ -700,10 +700,26 @@ def weird_characters_check() -> None:
             else:
                 weirdos_counts_dictionary[weirdo] = 1
 
+    # Check whether to ignore Greek letters
+    skip_greek = (
+        sum(
+            1
+            for weirdo in weirdos_lines_dictionary
+            if re.fullmatch(r"\p{Greek}", weirdo)
+        )
+        > 5
+    )
+    if skip_greek:
+        checker_dialog.add_footer(
+            "[Book contains over 5 different Greek letters so not reporting them]", ""
+        )
+
     # If nothing in the dictioary, nothing to do!
     if len(weirdos_lines_dictionary) != 0:
         none_found = False
         for weirdo, line_list in weirdos_lines_dictionary.items():
+            if skip_greek and re.fullmatch(r"\p{Greek}", weirdo):
+                continue
             count = weirdos_counts_dictionary[weirdo]
             # Make a header with this info and output it to dialog.
             # E.g. "'¢' (3)".
@@ -719,8 +735,6 @@ def weird_characters_check() -> None:
             # Under the header add to the dialog every line containing an instance of the weirdo.
             # If there are multiple instances of a weirdo on a line then the line will appear in
             # the dialog multiple times, each time highlighting a different instance of it.
-            # If character is in `report_once_list`, just report once per line (used for text tables)
-            report_once_list = "+|*"
 
             prev_line_number = -1
             regx = "(" + "\\" + weirdo + ")"
@@ -740,10 +754,8 @@ def weird_characters_check() -> None:
                 # ... but note that a new dialog line is generated for each time the word appears
                 # on the line so there may be more than 5 dialog lines output.
                 line = book[line_number - 1]
-                if weirdo in report_once_list:
-                    report_multiple_occurrences_on_line(regx, line, line_number)
-                else:
-                    report_all_occurrences_on_line(regx, line, line_number)
+                report_multiple_occurrences_on_line(regx, line, line_number)
+
                 count += 1
                 prev_line_number = line_number
 
