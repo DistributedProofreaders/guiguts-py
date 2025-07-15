@@ -477,11 +477,17 @@ def repeated_words_check() -> None:
     checker_dialog.add_footer("")
 
 
-def consolidate_messages(repeat_msg: list[MsgInfo]) -> None:
-    """Consolidate messages"""
+def consolidate_messages(repeat_msg: list[MsgInfo], limit: int = 0) -> None:
+    """Consolidate messages.
+
+    Args:
+        repeat_msg: List of messages to be consolidated.
+        limit: If > 0, limit number of messages output.
+    """
     prev_msg_info = None
     build_msg = None
     n_matches = 0
+    n_messages = 0
     for msg_info in repeat_msg:
         # If this message doesn't match previous message, ignoring multiple spaces...
         if (
@@ -503,6 +509,13 @@ def consolidate_messages(repeat_msg: list[MsgInfo]) -> None:
         ):
             # Output any combined message we've previously built up
             if build_msg is not None:
+                # No more than 5 of any type
+                n_messages += 1
+                if limit > 0 and n_messages >= limit + 1:
+                    if n_messages == limit + 1:
+                        checker_dialog.add_footer("  ...more")
+                    continue
+
                 repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
                 checker_dialog.add_entry(
                     f"{repeat_str}{build_msg.msg}",
@@ -527,13 +540,18 @@ def consolidate_messages(repeat_msg: list[MsgInfo]) -> None:
         prev_msg_info = msg_info
     # Output last message
     if build_msg is not None:
-        repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
-        checker_dialog.add_entry(
-            f"{repeat_str}{build_msg.msg}",
-            build_msg.text_range,
-            build_msg.hilite_start + len(repeat_str),
-            build_msg.hilite_end + len(repeat_str),
-        )
+        n_messages += 1
+        if limit > 0 and n_messages >= limit + 1:
+            if n_messages == limit + 1:
+                checker_dialog.add_footer("  ...more")
+        else:
+            repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
+            checker_dialog.add_entry(
+                f"{repeat_str}{build_msg.msg}",
+                build_msg.text_range,
+                build_msg.hilite_start + len(repeat_str),
+                build_msg.hilite_end + len(repeat_str),
+            )
 
 
 ######################################################################
@@ -1062,8 +1080,17 @@ def specials_check(project_dict: ProjectDict) -> None:
             exceptions.append(r"(?i)-the-")
             # Ignore contexts such as "the’re", "the’ve"
             exceptions.append(r"(?i)\bthe[’ve|’re]")
+            # Ignore "the," - checked below with a limit
+            exceptions.append(r"(?i)\bthe,")
             # Generate dialog tuples only if not an exception.
             heading = "Punctuation after 'the' (excluding exceptions)."
+            process_line_with_pattern(pattern, exceptions, line)
+
+        # Check for comma after case-insensitive 'the'
+        pattern = r"(?i)\bthe,"
+        if re.search(pattern, line):
+            exceptions = []
+            heading = "Comma after 'the'."
             process_line_with_pattern(pattern, exceptions, line)
 
         # The following check for double punctuation consists of:
@@ -1229,7 +1256,9 @@ def specials_check(project_dict: ProjectDict) -> None:
             checker_dialog.add_header("")
         # Add header record to dialog.
         checker_dialog.add_header(header_line)
-        consolidate_messages(msg_list)
+        # Some checks have a limit for how many times to report
+        limit = 5 if header_line == "Comma after 'the'." else 0
+        consolidate_messages(msg_list, limit=limit)
 
     if none_found:
         checker_dialog.add_footer("")
