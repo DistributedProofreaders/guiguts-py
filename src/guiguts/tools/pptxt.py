@@ -1862,6 +1862,8 @@ def dash_review_check() -> None:
         dbuf[line_index] = re.sub(r"\p{L}—\p{L}", "", dbuf[line_index])
         # em-dash between lower-case letter or 'I' and punctuation
         dbuf[line_index] = re.sub(r"[\p{Ll}I]—\p{P}", "", dbuf[line_index])
+        # em-dash between period or markup and letter
+        dbuf[line_index] = re.sub(r"[\._=+\)\]]—[\p{L}_=+\()]", "", dbuf[line_index])
         # lower-case letter, em-dash, space, upper-case letter
         dbuf[line_index] = re.sub(r"\p{Ll}— \p{Lu}", "", dbuf[line_index])
         # em-dash should not end a line - may be exceptions
@@ -2216,8 +2218,10 @@ def scanno_check() -> None:
             # be repeated, possibly in a different case.
             # Get all occurrences of scanno on line and report them.
 
-            regx = f"\\b{scanno}\\b"
+            regx = r"(?<!\p{L}|\p{Nd})" + scanno + r"(?!\p{L}|\p{Nd})"
             match_list = list(re.finditer(regx, line, re.IGNORECASE))
+            if not match_list:
+                continue
             multiplier = f"(x{len(match_list)}) " if len(match_list) > 1 else ""
             # Get start/end of all errors on line.
             start_rowcol = IndexRowCol(line_number, match_list[0].start(0))
