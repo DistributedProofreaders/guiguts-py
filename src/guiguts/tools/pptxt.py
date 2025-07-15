@@ -41,8 +41,7 @@ class PPtxtCheckerDialog(CheckerDialog):
         for cnt, (prefkey, label) in enumerate(
             {
                 PrefKey.PPTXT_QUOTE_TYPES_CHECK: "Quote Types",
-                PrefKey.PPTXT_TRAILING_SPACES_CHECK: "Trailing Spaces",
-                PrefKey.PPTXT_SPACING_CHECK: "Blank Line Spacing",
+                PrefKey.PPTXT_SPACING_CHECK: "Paragraph Spacing",
                 PrefKey.PPTXT_REPEATED_WORDS_CHECK: "Repeated Words",
                 PrefKey.PPTXT_ELLIPSIS_CHECK: "Ellipses",
                 PrefKey.PPTXT_CURLY_QUOTE_CHECK: "Curly Quotes",
@@ -1358,48 +1357,6 @@ def adjacent_spaces_check() -> None:
     # All book lines scanned.
     if no_adjacent_spaces_found:
         checker_dialog.add_footer("", "    No lines with adjacent spaces found.")
-
-    # Add line spacer at end of this checker section.
-    checker_dialog.add_footer("")
-
-
-######################################################################
-# Scan book for trailing spaces
-######################################################################
-
-
-def trailing_spaces_check() -> None:
-    """Scans each book line for trailing spaces."""
-
-    checker_dialog.add_header(
-        "----- Trailing spaces check ----------------------------------------------------"
-    )
-
-    no_trailing_spaces_found = True
-    regx = r" +$"
-    for line_number, line in enumerate(book, start=1):
-        if non_text_line(line):
-            continue
-        if res := re.search(regx, line):
-            # Line has trailing space
-            no_trailing_spaces_found = False
-            # Get start/end of error in file.
-            error_start = str(line_number) + "." + str(res.start(0))
-            error_end = str(line_number) + "." + str(res.end(0))
-            # Store in structure for file row/col positions & ranges.
-            start_rowcol = IndexRowCol(error_start)
-            end_rowcol = IndexRowCol(error_end)
-            # Highlight occurrence of word in the line.
-            hilite_start = res.start(0)
-            hilite_end = res.end(0)
-            # Add record to the dialog.
-            checker_dialog.add_entry(
-                line, IndexRange(start_rowcol, end_rowcol), hilite_start, hilite_end
-            )
-
-    # All book lines scanned.
-    if no_trailing_spaces_found:
-        checker_dialog.add_footer("", "    No lines with trailing spaces found.")
 
     # Add line spacer at end of this checker section.
     checker_dialog.add_footer("")
@@ -2730,8 +2687,6 @@ def pptxt(project_dict: ProjectDict) -> None:
 
     if preferences.get(PrefKey.PPTXT_QUOTE_TYPES_CHECK):
         quote_types_check()
-    if preferences.get(PrefKey.PPTXT_TRAILING_SPACES_CHECK):
-        trailing_spaces_check()
     if preferences.get(PrefKey.PPTXT_SPACING_CHECK):
         spacing_check()
     if preferences.get(PrefKey.PPTXT_REPEATED_WORDS_CHECK):

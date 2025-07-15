@@ -168,7 +168,6 @@ class PrefKey(StrEnum):
     CUSTOMIZABLE_COLORS = auto()
     IMAGE_VIEWER_DOCK_SIDE = auto()
     PPTXT_QUOTE_TYPES_CHECK = auto()
-    PPTXT_TRAILING_SPACES_CHECK = auto()
     PPTXT_SPACING_CHECK = auto()
     PPTXT_REPEATED_WORDS_CHECK = auto()
     PPTXT_ELLIPSIS_CHECK = auto()
