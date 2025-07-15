@@ -1096,7 +1096,7 @@ def specials_check(project_dict: ProjectDict) -> None:
         # The following check for double punctuation consists of:
         #
         # GENERAL TEST
-        pattern = r",\.|\.,|,,|(?<!\.)\.\.(?!\.)"
+        pattern = r",\.|,,|(?<!\.)\.\.(?!\.)"
         if re.search(pattern, line):
             # Here if possible issue.
             #
@@ -1105,14 +1105,25 @@ def specials_check(project_dict: ProjectDict) -> None:
             # NB Each regex below returns the pattern in a match
             #    as group(0).
             exceptions = []
-            # Ignore contexts such as "etc.,", "&c.,"
-            exceptions.append(r"(?i)etc\.,")
+            # Ignore contexts such as 4-dot ellipsis
             exceptions.append(r"(?i)etc\.{4}(?!\.)")
-            exceptions.append(r"(?i)&c\.,")
             # Exclude sequences of " ... ", etc.
             exceptions.append(r"(?<=\s|^)\.\.\.(?=\s|$)")
             # Generate dialog tuples only if not an exception.
-            heading = "Queried double punctuation (excluding exceptions)."
+            heading = "Query double punctuation (excluding exceptions)."
+            process_line_with_pattern(pattern, exceptions, line)
+
+        # The following check for period-comma consists of:
+        #
+        # GENERAL TEST
+        pattern = r"\.,"
+        if re.search(pattern, line):
+            exceptions = []
+            # Ignore contexts such as "etc.,", "&c.,"
+            exceptions.append(r"(?i)etc\.,")
+            exceptions.append(r"(?i)&c\.,")
+            # Generate dialog tuples only if not an exception.
+            heading = "Query period-comma (excluding exceptions)."
             process_line_with_pattern(pattern, exceptions, line)
 
         # Unexpected comma check. Commas should not occur after these words:
@@ -1257,7 +1268,12 @@ def specials_check(project_dict: ProjectDict) -> None:
         # Add header record to dialog.
         checker_dialog.add_header(header_line)
         # Some checks have a limit for how many times to report
-        limit = 5 if header_line == "Comma after 'the'." else 0
+        limit = (
+            5
+            if header_line
+            in ("Comma after 'the'.", "Query period-comma (excluding exceptions).")
+            else 0
+        )
         consolidate_messages(msg_list, limit=limit)
 
     if none_found:
@@ -1637,17 +1653,13 @@ def quote_types_check() -> None:
     if ssq > 0 or sdq > 0:
         # Yep, so what about any curly single and double quotes?
         if csq == 0 and cdq == 0:
-            checker_dialog.add_header(
-                "    Only straight quotes found in this file (maybe single and/or double)."
-            )
+            checker_dialog.add_header("    Only straight quotes found in this file.")
         elif csq > 0 or cdq > 0:
             checker_dialog.add_header(
-                "    Both straight and curly quotes found in this file (maybe single and/or double)."
+                "    Both straight and curly quotes found in this file."
             )
     elif (ssq == 0 and sdq == 0) and (csq > 0 or cdq > 0):
-        checker_dialog.add_header(
-            "    Only curly quotes found in this file (maybe single and/or double)."
-        )
+        checker_dialog.add_header("    Only curly quotes found in this file.")
     elif ssq == 0 and sdq == 0 and csq == 0 and cdq == 0:
         checker_dialog.add_header(
             "    No single or double quotes of any type found in file - that is unusual."

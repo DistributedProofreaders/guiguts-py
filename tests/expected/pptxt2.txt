@@ -1,6 +1,6 @@
 ----- Quotes types check -------------------------------------------------------
 
-    Only curly quotes found in this file (maybe single and/or double).
+    Only curly quotes found in this file.
 
 ----- Paragraph spacing check - expecting 4121, 421 or 411 spacing -------------
   15.0:  End point of repeated 2-line spacing.
@@ -333,155 +333,13 @@ Ampersand character in line (excluding '&c.' and unicode numeric character refer
 3038.9:   Rodwell & Martin, pub., 43.
 3052.10:  Saunders & Otley, pub., 41, 50, 51.
 
-Queried double punctuation (excluding exceptions).
+Query period-comma (excluding exceptions).
  125.46: beauty ...; by a lady, &c. London, Crosby & Co., 1811.
  456.50:           Edwards_ (Memoirs of Libraries, 1859, II., p. 836).
  528.65:   librorum typis impressorum,” tom 1-4, A-K. Roma, 1761-1788, fol., and
  546.29:   1872, his son, (see p. xxix., note) has so far as he was able,
  556.47:   Samuel Halkett.—See Notes and Queries 4 s. IX., p. 403.
- 562.49:   in: A handy book about books, by J. Power, Lond., J. Wilson, 1870, p.
- 703.17:   Olphar Hamst ..., 1868, p. xi.
- 705.62:   Dictionnaire des ouvrages anonymes par A. A. Barbier, 3e. ed., 1872,
- 775.37: (x2)           English grammar ... 34th ed., Edinb., 1854, p. 4.
- 827.51: “In three volumes, vol 1.” Take no notice of “Vol I.,” but invariably
- 887.54:   subject, of which two editions have been issued, viz., Martin’s
- 955.5:    xii., 96. Since the above was written Mr. Cutter’s Rules have appeared
- 965.64:   Naylor on “the size of a book” in Notes and Queries for 10 Feb., 1872,
- 966.7:    4th s., ix. p. 122.
-1002.30: (x2)   unpaged, then pp. 44 and iii., then corrigenda pp. ix., then a
-1023.40: beyond. Describe it thus: octavo pp. xii., and 4, and 253, and 3. But if
-1025.3:  (x3) xii., and iv., 253, iii., because this is more accurate. We use the same
-1076.7:  (x2)   Edinb., A. and C. Black, 1873, vol XI., pp. 463 to 486.
-1104.30: the title under Bullion, vol I., 1867, p. 763, a title that in
-1233.20:           _errata’s_,... Sometimes they are put by themselves on
-1381.40: Portugal, the new estate, &c., &c., Lond., Darton and Harvey, 1834, 12o.
-1419.43: The London catalogue ... 1816 to 1851, Lond., Thomas Hodgson 13
-1498.62: suitable for children, by the author of Little Lily, &c., Lond., J.
-1637.69:       of France and Germany in the same series are written by A. M. S.,
-1713.62: 36. The cottager’s assistant, or the wedding present, 2nd edit., ... by
-1720.6:  2s. 6d., 1804, 8o.
-1837.40: introductory essay by Thos. Erskine, esq., advocate, author of “Remarks
-1998.43: (x2) Brightwell & son, sold also by Longman & co., Whittaker & co., Lond.;
-2008.65:     The title page is lithographed. The preface is signed M. E. B.,
-2049.4:  edit., with plates. Lond. Harvey and Darton 1824, 12o, 4s. 3rd edit.
-2226.57: Christopher and Jennet, Stockton 1802, small 8o, pp. VIII., 167 and 1.
-2364.10:  Aikin, Dr., 9.
-2375.12:  Allman, pub., 46.
-2386.14:  Anderson, pub., 50.
-2388.13:  Andrews, pub., 42.
-2410.17:  Audiffredi, G. B., 15.
-2418.14:  Axon, W. E. A., 16.
-2424.11:  Baillet, A., 15.
-2426.10:  Ball, pub., 48.
-2428.9:   Banks, W., 44.
-2430.14:  Barbier, A. A., 15.
-2438.22:  Benson & Barling, pub., 42.
-2458.11:  Bogue, pub., 45.
-2493.14:  Brown, rev. J., 46.
-2499.12:  Cadell, pub., 43.
-2514.14:  Cawthorn, pub., 49.
-2518.13:  Chapple, pub., 43.
-2544.17:  Christopher, pub., 51.
-2546.12:  Clarke, pub., 43, 45.
-2550.13:  Cleaver, pub., 47.
-2552.13:  Colburn, pub., 41, 50.
-2554.9:   Combe, W., 49.
-2564.10:  Cook, Mrs., 46.
-2582.14:  Crestadoro, A., 19-21, 37.
-2586.13:  Croker, J. W., 48.
-2588.12:  Crosby, pub., 48.
-2590.20:  Crew & Spencer, pub., 43.
-2594.13:  Cutter, C. A., 11, 24.
-2604.10:  Dean, pub., 45.
-2606.14:  Delepierre, O., 15.
-2619.12:  Dolman, pub., 41, 42.
-2625.12:  Duniol, pub., 41.
-2631.11:  Ebers, pub., 49.
-2637.10:  Edmonds G., 25.
-2666.11:  Erskine, T., 45.
-2678.12:  Fisher, pub., 45.
-2680.11:  Flamank, J., 36.
-2684.10:  Ford, pub., 42.
-2698.15:  Galignani, pub., 41.
-2722.12:  Gilly, W. S., 42.
-2728.11:  Goss, P. S., 48.
-2737.17:  Groombridge, pub., 41, 43.
-2739.12:  Hailes, pub., 42.
-2741.11:  Halkett, S., 16.
-2743.10:  Hall, pub., 51.
-2757.15:  Hardwicke, pub., 47.
-2761.12:  Harris, pub., 41, 48.
-2765.14:  Hatchard, pub., 41, 44, 45, 47, 48, 49, 50, 51.
-2767.14:  Hazlitt, W. C., 34.
-2769.15:  Hegel, G. W. F., 19.
-2771.11:  Higgins, G., 30, 31.
-2779.17:  Holdsworth, A. H., 43.
-2781.10: (x2)  Hope & Co., pub., 41, 46.
-2783.14:  Houlston, pub., 40-43.
-2789.11:  Hurdis, Dr., 50.
-2812.7:   Jal, A., 32, 33.
-2814.13:  Jarrold, pub., 42.
-2818.13:  Jewett, C. C., 10, 24.
-2820.15:  Johnstone, pub., 40.
-2830.9:   Law, pub., 42.
-2834.10:  Lennie, W., 21.
-2856.13:  Longman, pub., 36, 47, 49, 50, 51.
-2860.12:  Louis XVIII., court of, 49.
-2864.14:  Lowndes, W. T., 13, 44.
-2866.10:  Lusk, pub., 45.
-2870.12:  Lyntot, pub., 43.
-2884.13:  Masters, pub., 41, 47.
-2890.16:  McCulloch, J. R., 16, 33.
-2892.15:  McGlashan, pub., 44.
-2894.12:  McPhun, pub., 51.
-2908.14:  Mitchell, pub., 51.
-2914.12:  Mozley, pub., 48.
-2916.12:  Mozley, Mrs., works by, 35.
-2918.12:  Murray, pub., 43, 44, 48, 49.
-2926.10:  Naylor, C., 24.
-2940.11:  Nichols, T., 11.
-2942.15:  Nightingale, F., 45.
-2944.12:  Nisbet, pub., 46.
-2948.21:  Norton, hon. C. E. S., 49.
-2964.9:   Orr, pub., 44.
-2970.15:  Panizzi, Sir A., 11.
-2974.12:  Parker, pub., 45, 49, 51.
-2976.15:  Partridge, pub., 47.
-2984.15:  Pickering, pub., 48.
-2986.12:  Pocock, pub., 44.
-3020.14:  Quérard, J. M., 9, 15, 17, 52.
-3028.16:  Rivingtons, pub., 43, 45, 51.
-3032.13:  Roberts, pub., 43, 47.
-3036.14:  Robinson, pub., 44.
-3038.22:  Rodwell & Martin, pub., 43.
-3042.15:  Routledge, pub., 46.
-3052.22:  Saunders & Otley, pub., 41, 50, 51.
-3062.12:  Seeley, pub., 46, 49.
-3068.10:  Shaw, pub., 41, 45, 50.
-3072.13:  Simpkin, pub., 42, 43, 44, 45, 51.
-3077.11:  Smith, pub., 45, 46, 47.
-3079.9:   Smith, J., fictitious publisher’s name, 38.
-3083.25:  Smith, John Russell, pub., 50.
-3095.10:  Spratt, M., 45.
-3101.11:  Stevens, H., on catalogues, 29.
-3103.17:  Stewart, Agnes M., 41.
-3105.15:  Stockdale, pub., 47, 51.
-3107.10:  Sulger, H., 50.
-3113.13:  Symonds, pub., 40.
-3115.11:  Syntax, Dr., 49.
-3117.12:  Tabart, pub., 44.
-3125.12:  Taylor, pub., 45.
-3127.10:  Taylor, J., Manual of Laconics, 9.
-3139.11: (x2)  Truewit, T., pseud., 14.
-3153.12:  Vernon, Mrs., 44.
-3165.12:  Wallis, pub., 51.
-3167.10:  Ward, pub., 44, 49, 51.
-3169.11:  Warne, pub., 41, 44, 46.
-3171.16:  Washbourne, pub., 45.
-3173.14:  Wertheim, pub., 46, 48.
-3175.14:  Whately, Arch., 36.
-3177.15:  Wheatley, H. B., on indexes, 31.
-3181.15:  Whittaker, pub., 42, 44, 47, 50, 51.
+  ...more
 
 Single '1' in a word or a standalone '1' (excluding exceptions).
  190.9:  Footnote 1:
@@ -624,6 +482,9 @@ Query mixed letters/digits in word (excluding exceptions).
 Non-breaking space.
  750.18: (x3) between brackets [   ]. Additions in titles should be as few and as
  895.55: (x3) If not in the book, it should be put between brackets [   ], and if
+
+Query double punctuation (excluding exceptions).
+1233.20:           _errata’s_,... Sometimes they are put by themselves on
 
 Mixed case in word (excluding words in project dictionary).
 1289.11: also J. R. McCulloch’s plan in his “Literature of Political Economy”
