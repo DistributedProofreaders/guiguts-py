@@ -1655,7 +1655,7 @@ def dash_review_check() -> None:
     #                   [\p{L}—\p{L}] between letters with no spacing
     #                       My favorite food—pizza—originated in Italy.
     #                       My granddaughter—Kenzie—plays volleyball.
-    #                   [\p{Ll}—\p{P}(?=$)] between lower-case letter and closing punctuation
+    #                   [\p{Ll}—\p{P}] between lower-case letter and punctuation
     #                       “What if we—”
     #                   \p{Ll}— \p{Lu} lower-case letter, en dash, space, upper-case letter
     #                       If you tell him— Wait, I will give you this.
@@ -1793,8 +1793,8 @@ def dash_review_check() -> None:
         dbuf[line_index] = re.sub(r"\p{Nd}\s–\s\p{Nd}", "", dbuf[line_index])
         # em-dash between letters with no spacing
         dbuf[line_index] = re.sub(r"\p{L}—\p{L}", "", dbuf[line_index])
-        # em-dash between lower-case letter or 'I' and final punctuation
-        dbuf[line_index] = re.sub(r"[\p{Ll}I]—\p{P}(?=$)", "", dbuf[line_index])
+        # em-dash between lower-case letter or 'I' and punctuation
+        dbuf[line_index] = re.sub(r"[\p{Ll}I]—\p{P}", "", dbuf[line_index])
         # lower-case letter, em-dash, space, upper-case letter
         dbuf[line_index] = re.sub(r"\p{Ll}— \p{Lu}", "", dbuf[line_index])
         # em-dash should not end a line - may be exceptions
