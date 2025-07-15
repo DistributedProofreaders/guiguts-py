@@ -10,7 +10,7 @@ from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
-from guiguts.utilities import IndexRowCol, IndexRange, non_text_line
+from guiguts.utilities import IndexRowCol, IndexRange, non_text_line, sing_plur
 
 
 class PPtxtCheckerDialog(CheckerDialog):
@@ -40,7 +40,7 @@ class PPtxtCheckerDialog(CheckerDialog):
 
         for cnt, (prefkey, label) in enumerate(
             {
-                PrefKey.PPTXT_QUOTE_TYPES_CHECK: "Quote Types",
+                PrefKey.PPTXT_FILE_ANALYSIS_CHECK: "File Analysis",
                 PrefKey.PPTXT_SPACING_CHECK: "Paragraph Spacing",
                 PrefKey.PPTXT_REPEATED_WORDS_CHECK: "Repeated Words",
                 PrefKey.PPTXT_ELLIPSIS_CHECK: "Ellipses",
@@ -73,6 +73,8 @@ ssq: int
 sdq: int
 csq: int
 cdq: int
+longest_line: tuple[int, int]
+shortest_line: tuple[int, int]
 
 
 ########################################################
@@ -1641,11 +1643,11 @@ def curly_quote_check() -> None:
 ######################################################################
 
 
-def quote_types_check() -> None:
-    """Check for mixed straight/curly quotes."""
+def file_analysis_check() -> None:
+    """Check for mixed straight/curly quotes & line lengths."""
 
     checker_dialog.add_header(
-        "----- Quotes types check -------------------------------------------------------",
+        "----- File analysis check -------------------------------------------------------",
         "",
     )
 
@@ -1653,19 +1655,31 @@ def quote_types_check() -> None:
     if ssq > 0 or sdq > 0:
         # Yep, so what about any curly single and double quotes?
         if csq == 0 and cdq == 0:
-            checker_dialog.add_header("    Only straight quotes found in this file.")
+            checker_dialog.add_header("Only straight quotes found in this file.")
         elif csq > 0 or cdq > 0:
             checker_dialog.add_header(
-                "    Both straight and curly quotes found in this file."
+                "Both straight and curly quotes found in this file."
             )
     elif (ssq == 0 and sdq == 0) and (csq > 0 or cdq > 0):
-        checker_dialog.add_header("    Only curly quotes found in this file.")
+        checker_dialog.add_header("Only curly quotes found in this file.")
     elif ssq == 0 and sdq == 0 and csq == 0 and cdq == 0:
         checker_dialog.add_header(
-            "    No single or double quotes of any type found in file - that is unusual."
+            "No single or double quotes of any type found in file - that is unusual."
         )
+    checker_dialog.add_footer("")
 
-    # Add line spacer at end of this checker section.
+    if longest_line[1] > 0:
+        pos = maintext().rowcol(f"{longest_line[0]}.0")
+        checker_dialog.add_entry(
+            f"Longest line - {sing_plur(longest_line[1], 'character')}",
+            IndexRange(pos, pos),
+        )
+    if shortest_line[1] > 0:
+        pos = maintext().rowcol(f"{shortest_line[0]}.0")
+        checker_dialog.add_entry(
+            f"Shortest line - {sing_plur(shortest_line[1], 'character')}",
+            IndexRange(pos, pos),
+        )
     checker_dialog.add_footer("")
 
 
@@ -2658,6 +2672,7 @@ def pptxt(project_dict: ProjectDict) -> None:
     global book, word_list_map_count, word_list_map_lines, word_list_map_words
     global found_long_doctype_declaration
     global ssq, sdq, csq, cdq
+    global longest_line, shortest_line
 
     if not tool_save():
         return
@@ -2686,6 +2701,8 @@ def pptxt(project_dict: ProjectDict) -> None:
     sdq = 0
     csq = 0
     cdq = 0
+    longest_line = (0, 0)
+    shortest_line = (0, 9999)
 
     for line_number, line in enumerate(input_lines, start=1):
         line = line.rstrip("\r\n")
@@ -2697,6 +2714,12 @@ def pptxt(project_dict: ProjectDict) -> None:
                 []
             )  # Needs to correspond to lines, even when ignored
             continue
+
+        line_length = len(line)
+        if line_length > longest_line[1]:
+            longest_line = (line_number, line_length)
+        if 0 < line_length < shortest_line[1]:
+            shortest_line = (line_number, line_length)
 
         # Note types of single/double quotes if present. They are
         # not being counted here, only their presence in the file.
@@ -2739,8 +2762,8 @@ def pptxt(project_dict: ProjectDict) -> None:
     # We're done reading the input. Start processing it.
     ###################################################
 
-    if preferences.get(PrefKey.PPTXT_QUOTE_TYPES_CHECK):
-        quote_types_check()
+    if preferences.get(PrefKey.PPTXT_FILE_ANALYSIS_CHECK):
+        file_analysis_check()
     if preferences.get(PrefKey.PPTXT_SPACING_CHECK):
         spacing_check()
     if preferences.get(PrefKey.PPTXT_REPEATED_WORDS_CHECK):

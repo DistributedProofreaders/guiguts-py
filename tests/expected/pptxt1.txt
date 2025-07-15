@@ -1,6 +1,9 @@
------ Quotes types check -------------------------------------------------------
+----- File analysis check -------------------------------------------------------
 
-    Only straight quotes found in this file.
+Only straight quotes found in this file.
+
+ 869.0:  Shortest line - 1 character
+ 961.0:  Longest line - 86 characters
 
 ----- Paragraph spacing check - expecting 4121, 421 or 411 spacing -------------
  457.0:  End point of repeated 2-line spacing.

@@ -611,7 +611,7 @@ class Guiguts:
         preferences.set_default(PrefKey.CUSTOM_MARKUP_ATTRIBUTE_3_HISTORY, [])
         preferences.set_default(PrefKey.CUSTOMIZABLE_COLORS, {})
         preferences.set_default(PrefKey.IMAGE_VIEWER_DOCK_SIDE, "right")
-        preferences.set_default(PrefKey.PPTXT_QUOTE_TYPES_CHECK, True)
+        preferences.set_default(PrefKey.PPTXT_FILE_ANALYSIS_CHECK, True)
         preferences.set_default(PrefKey.PPTXT_SPACING_CHECK, True)
         preferences.set_default(PrefKey.PPTXT_REPEATED_WORDS_CHECK, True)
         preferences.set_default(PrefKey.PPTXT_ELLIPSIS_CHECK, True)
