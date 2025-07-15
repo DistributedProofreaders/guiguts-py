@@ -2,10 +2,6 @@
 
     Only curly quotes found in this file (maybe single and/or double).
 
------ Trailing spaces check ----------------------------------------------------
-
-    No lines with trailing spaces found.
-
 ----- Paragraph spacing check - expecting 4121, 421 or 411 spacing -------------
   15.0:  End point of repeated 2-line spacing.
   18.0:  End point of repeated 2-line spacing.
@@ -87,9 +83,6 @@ Em-dash
  281.41:           the preparation of such works.”—Smithsonian Report on
  289.54:           labors will be mortifying and unprofitable.”—Ibid, p.
  455.54:           serving the tyro no less than the professor.—_Edward
- 459.60: Books may be classed under four heads, namely (1) Autonymous—(2)
- 460.11: Polyonymous—(3) Pseudonymous, and—(4) Anonymous.
- 460.33: Polyonymous—(3) Pseudonymous, and—(4) Anonymous.
  556.17:   Samuel Halkett.—See Notes and Queries 4 s. IX., p. 403.
  599.48: April, 1872, I suggested the adoption of a line — to shew that a book
  632.53: the rule with regard to autonyms. Except when signed:—The Author, The
@@ -138,114 +131,7 @@ lond
 1379.53: by the author of Portugal; the new estate, &c., &c., Lond. Darton and
 1381.36: Portugal, the new estate, &c., &c., Lond., Darton and Harvey, 1834, 12o.
 1415.0:  Lond. pub. for the executor of the late W. Bent by Longman &c. 1827, 8o.
-1419.39: The London catalogue ... 1816 to 1851, Lond., Thomas Hodgson 13
-1426.46: ... by Sampson Low, vol. 1. general alphabet, Lond. S. Low & son, 1853.
-1488.14: Remarks, &c., Lond. J. Smith, 1823, 8o, pp. 115, 2s 6d, pseudon.
-1493.56: We observe that a book entitled “Little Lily’s travels, Lond. Nelson,
-1498.58: suitable for children, by the author of Little Lily, &c., Lond., J.
-1570.65: 3. Almeda, or the Neapolitan revenge, a tragic drama, by a lady. Lond.
-1578.38: 4. An alphabet of animals, by a lady. Lond. 1865.
-1582.0:  Lond. Houlston 1858, small 12o.
-1587.10: children. Lond. Darton and Harvey 1832, square 16o.
-1590.0:  Lond. Joseph Masters 1855, 24o.
-1594.31: assistant for female teachers. Lond. Harvey and Darton 1824, 12o, pp.
-1602.13: two volumes. Lond. Saunders & Otley 1846.
-1609.0:  Lond. Warne [1873] 12o.
-1612.26: illustrated ... new edit. Lond. Colburn 1847.
-1615.42: Testaments ... selected by a lady [motto] Lond. J. F. Shaw 1857.
-1622.9:  revised. Lond. Hope & Co. 1851.
-1624.58: 15. Buds and blossoms, or stories of children, by a lady. Lond. Hatchard
-1629.20: by a lady [mottoes] Lond. Hatchard 1827.
-1634.54: 18. A catechism of the history of England, by a lady. Lond. Dolman 1850.
-1643.13: 3rd edition. Lond. J. Harris, St. Pauls’ churchyard [1820?] 12o, pp.
-1652.39:     The 2nd edit. 1828, the 39th edit. Lond. Simpkin, 1866.
-1654.48: 21. The child’s manual of prayer, by a lady ... Lond. Dolman 1849.
-1657.60: 22. The child’s own book on New-church doctrine, by a lady. Lond. 1837.
-1660.16: second edition. Lond. Jarrold (Norwich printed) [1858?]
-1666.26: simplified ... by a lady. Lond. C. H. Law, 1851.
-1668.54: 25. Choice descriptive poetry ... selected by a lady. Lond. Whittaker,
-1671.30: 26. Chollerton ... by a lady. Lond. Ollivier 1846, 8o, pp. 381.
-1686.44: and inscribed to governesses ... by a lady. Lond. Hailes, 1835.
-1689.38: author of First lessons in geography. Lond. Hailes 1828(?)
-1692.28: the old and new Testaments. Lond. Jarrold 1844.
-1697.63: 32. Conversations on important scriptural subjects by, a lady. Lond.
-1700.58: 33. Conversations on the lord’s prayer, by a lady [motto] Lond.
-1709.37:       author of “Cookery made easy.” Lond. Dean [1841].
-1711.36: 35. The cottage home ... by a lady. Lond. [1864].
-1714.35: a lady, price 2s. 6d. with plates. Lond. Rodwell & Martin 1824, 12o, pp.
-1719.52: 37. A course of ... prayers ... selected by a lady. Lond. Lyntot, price
-1726.19: language, 2 parts. Lond. Derby, printed [1850].
-1729.31: novel in four vols, by a lady. Lond. Chapple 1815.
-1731.43: 41. The crucifixion, a poem ... by a lady. Lond. Cadell 1817.
-1736.34:     The same published by Seeley, Lond. and Grapel, Liverpool, 1840.
-1742.64: 44. Dates of the kings of England, in easy triplets, by a lady. Lond.
-1746.57: French, Oriental and other foreign dishes ... by a lady. Lond. John
-1752.57: 46. An earnest address to young communicants, by a lady. Lond.
-1757.55: 47. Easy and familiar sermons for children, by a lady. Lond. printed for
-1761.67: 48. Easy lessons in the history of England, by a lady, third edit. Lond.
-1766.61: 50. Economical cookery for young housekeepers ... by a lady. Lond. 1824,
-1771.19: pupils, by a lady. Lond. Groombridge 1850, 8o, pp. 8 and 116, with an
-1775.59: facts, by a lady. [motto] Dublin, S. B. Oldham,—Whittaker, Lond. 1844.
-1778.27: illustrations by the same. Lond. Darton [1859]
-1784.0:  Lond. John Murray 1835, quarto, pp. VII. and 72, price 12s.
-1786.50: 56. Emily Trevor, or the Vale of Elwy, by a lady. Lond. Simpkin, Denbigh
-1792.6:  edit. Lond. [1839?].
-1795.41: lady [mottoes] Bath (printed) W. Pocock. Lond. Simpkin 1840, 8o, pp.
-1800.12: Henry Ward. Lond. Hatchard 1851.
-1802.58: 60. Esthwaite water, a poem in three parts ... by a lady. Lond.
-1810.60: 62. Every lady’s guide to her own greenhouse ... by a lady. Lond. Orr
-1814.36: clergyman of the church of England. Lond. Tabart 1802, small 12o, pp.
-1820.26: the use of young persons. Lond. John Murray 1828, 8o. pp. XI. and 1 and
-1841.63: 66. Familiar dialogues, on interesting subjects ... by a lady. Lond.
-1851.43: plates (M. Spratt del.): by a lady [motto] Lond. Washbourne 1835, small
-1857.65: 68. Florence Nightingale and the Russian war, a poem, by a lady. Lond.
-1865.11: Salisbury. Lond. Simpkin [1860].
-1874.45: and evening in the year: selected by a lady. Lond. J. F. Shaw 1858, 32o,
-1882.28: preface by ... G. R. Gleig. Lond. Dean & Son 1865, 4o.
-1888.52: together with 50 in the French language, by a lady. Lond. Bogue 1851,
-1920.16: Whiteside Cook] Lond. Warne 1873.
-1957.41: a garden and the study of botany [motto] Lond. printed for Harvey and
-1962.0:  Lond. Masters 1857, 12o.
-1966.0:  Lond. Partridge, Oakey & co. 34 Paternoster row 1854, 18o, pp. 32.
-1980.46: 91. Letters to my unknown friends, by a lady. Lond. printed for Longman,
-1985.56: 92. The life of Mary, mother of our Lord ... by a lady. Lond. 1851, 8o.
-1998.63: Brightwell & son, sold also by Longman & co., Whittaker & co., Lond.;
-2002.6:  lady. Lond. printed for John Stockdale, Piccadilly 1800, 16o, pp. 89,
-2031.23: illustrative woodcuts. Lond. John Murray 1851, 8o, XXVIII. 675.
-2043.26: from drawings of her own. Lond. Harris 1807.
-2045.59: 104. My Norske note book; or a month in Norway, by a lady. Lond.
-2049.20: edit., with plates. Lond. Harvey and Darton 1824, 12o, 4s. 3rd edit.
-2053.24: author of Portugal, &c. Lond. printed for Darton and Harvey 1831, 12o,
-2062.23: Revelation) by a lady. Lond. Wertheim, 1860, 8o.
-2066.28: elegant engravings on wood. Lond. printed for B. Crosby & co. 1810; 12o,
-2078.62: 111. Plain lectures on Genesis for family reading, by a lady. Lond.
-2081.36: 112. Poems for children, by a lady. Lond. Darton and Harvey 1834, 12o,
-2092.27: the Lord’s day, by a lady. Lond. J. Hatchard & Son 1837, price 3d, or 2s
-2097.43: lady during three years’ actual residence. Lond. Darton & Harvey 1830,
-2101.0:  Lond. Colburn 1830, 8o.
-2103.43: 117. Prayers, hymns, and texts, by a lady. Lond. Seeley 1846, 12o.
-2106.5:  co.; Lond. Longman 1845, 12o.
-2114.52: 120. The Redeemed Rose, or Willies rest, by a lady. Lond. 1853, 8o.
-2118.26: the Hon. C. E. S. Norton] Lond. 1849, 16o.
-2127.32: subjects, by a lady. Oxford and Lond. Parker 1853, 16o.
-2138.29: 126. The Sceptic, by a lady. Lond. J. Russell Smith 1850, 8o, pp. VIII.
-2144.8:  a lady. Lond. Saunders and Otley 1846, 12o.
-2152.0:  Lond. printed for C. Law Ave maria lane, by Bye and Law, St.
-2166.0:  Lond.; and S. Hazard, Bath 1801, 8o, VI. 82.
-2173.19: pupils. Brighton & Lond. Whittaker 1857, 8o.
-2175.44: 132. Spain yesterday and to-day, by a lady. Lond. Harvey & Darton [1829]
-2181.35: every day in the month, by a lady. Lond. Saunders & Otley 1826, 8o.
-2183.39: 135. Tales from the German, by a lady. Lond. Anderson [1825?] 8o.
-2196.6:  lady. Lond. J. F. Shaw 1858, 16o.
-2213.54: Spanish, Portuguese, and French languages, by a lady. Lond. Saunders &
-2217.17: unknown friends. Lond. Longman 1847, 16o.
-2219.45: 142. Twice Married, my own story, by a lady. Lond. Ward & Lock 1855, 8o.
-2222.23: of Wooton under Edge?] Lond. A. Hall 1851, 12o.
-2229.54: prayer, translated freely from the German, by a lady. Lond. Whittaker &
-2238.53: 147. Woman as a virgin, wife, and mother, by a lady. Lond. Mitchell
-2247.19: made at home, etc. Lond. Simpkin, Birmingham, print. 1838, 4to.
-2252.40: “First lessons in geography by a lady.” Lond. Ward [Bungay printed 1853]
-3222.63:  • p. 47: Supplied period apparently omitted by printer after “Lond” in
+  ...more
 
 iii
 1002.27:   unpaged, then pp. 44 and iii., then corrigenda pp. ix., then a
@@ -253,8 +139,7 @@ iii
 1029.37: I do not use the sign plus (xii.+iv.+iii.) because it makes the figures
 1560.48: being the 49th anniversary of the reign of Geo. III. ... collected and
 2190.0:  III. 370 the pagination of the appendix is continuous.
-2288.31:       ninth edition. 1875, vol III. p. 658.
-2718.8:   George III. jubilee, 40.
+  ...more
 
 ont
 1261.43:           honte d’avouer les fautes qu’ils ont commises, ou
@@ -272,15 +157,11 @@ ou
   ...more
 
 'é' (25)
- 247.5:  of Quérard’s France Littéraire, which was called in and cancelled; and
- 247.24: of Quérard’s France Littéraire, which was called in and cancelled; and
+ 247.5:  (x2) of Quérard’s France Littéraire, which was called in and cancelled; and
  272.42:           des livres de bibliographie.”—Quérard, Omissions et
- 273.11:           bévues du livre intitulé La Littérature Française
- 273.33:           bévues du livre intitulé La Littérature Française
- 273.42:           bévues du livre intitulé La Littérature Française
+ 273.11: (x3)           bévues du livre intitulé La Littérature Française
  496.48:   of “A notice of the life and works of J. M. Quérard by Olphar Hamst:
- 500.38:   introduction to either edition of Quérard’s “Supercheries Littéraires
- 500.64:   introduction to either edition of Quérard’s “Supercheries Littéraires
+ 500.38: (x2)   introduction to either edition of Quérard’s “Supercheries Littéraires
   ...more
 
 'è' (2)
@@ -614,23 +495,6 @@ Punctuation after 'the' (excluding exceptions).
  729.10:   This is the: Catalogue of the Manchester free library, reference
  950.34:   the cataloguer upon them. It is the:—Smithsonian Report on the
 1128.26: catalogues and notably in the:—“Bibliotheca geographica and historica or
-2404.13:  Astrologer, the, 41.
-2454.25:  Black Forest, legend of the, 41.
-2476.20:  British Catalogue, the, 36, 37.
-2482.20:  British Librarian, the, 44.
-2576.10:  Cousins, The, 43.
-2592.14:  Crucifixion, The, 43.
-2656.20:  English Catalogue, the, 19, 36, 37, 42, 51.
-2838.10:  Leslies, the, 46.
-2854.19:  London Catalogue, the, 36, 42, 46.
-2858.19:  Lord’s Prayer, on the, 42.
-2900.10:  Messiah, The, 50.
-2934.13:  New Estate, The, 36, 48.
-2954.13:  Old Bridge, the, 35.
-2978.28:  Pentateuch, questions from the, 43.
-2982.17:  Philanthropist, the, 48.
-3024.16:  Redeemed Rose, the, 49.
-3054.10:  Sceptic, The, 50.
 
 Query mixed letters/digits in word (excluding exceptions).
  535.35:   Barbier ... Paris, 1806, 4 vols, 8o. It is curious to note that
@@ -768,6 +632,14 @@ Mixed case in word (excluding words in project dictionary).
 
 Line start with suspect punctuation.
 1426.0:  ... by Sampson Low, vol. 1. general alphabet, Lond. S. Low & son, 1853.
+
+Comma after 'the'.
+2404.13:  Astrologer, the, 41.
+2454.25:  Black Forest, legend of the, 41.
+2476.20:  British Catalogue, the, 36, 37.
+2482.20:  British Librarian, the, 44.
+2576.10:  Cousins, The, 43.
+  ...more
 
 Query unexpected comma after certain words.
 2462.23:  Book, how to describe a, 5, 9, 37;
