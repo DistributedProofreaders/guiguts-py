@@ -264,6 +264,7 @@ e.g. $(s+7) would give 12 for the 5th png.
                 )
 
             shell = False
+            creationflags = 0
             run_func: Callable = subprocess.run
             # Windows needs shell and a dummy arg with `start` command
             if is_windows() and cmd[0] == "start":
@@ -278,9 +279,14 @@ e.g. $(s+7) would give 12 for the 5th png.
             # need `Popen` instead of `run` to avoid blocking
             if not is_mac() and cmd[0] not in ("start", "xdg-open"):
                 run_func = subprocess.Popen
+                # Windows needs a new console window to run command in
+                if is_windows():
+                    creationflags = subprocess.CREATE_NEW_CONSOLE  # type: ignore[attr-defined]
 
             try:
-                run_func(cmd, shell=shell)  # pylint: disable=subprocess-run-check
+                run_func(  # pylint: disable=subprocess-run-check
+                    cmd, shell=shell, creationflags=creationflags
+                )
             except OSError:
                 logger.error(f"Unable to execute {cmd_string}")
 
