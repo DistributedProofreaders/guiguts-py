@@ -49,7 +49,7 @@ Hyphen-minus (single keyboard '-')
 
     No scannos found.
 
------ Character checks ---------------------------------------------------------
+----- Uncommon Characters ------------------------------------------------------
 '/' (104)
   11.0:  /s p003a
   14.0:  /*

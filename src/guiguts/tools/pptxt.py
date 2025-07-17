@@ -682,7 +682,7 @@ def weird_characters_check() -> None:
     on a report line is highlighted."""
 
     checker_dialog.add_header(
-        "----- Character checks ---------------------------------------------------------"
+        "----- Uncommon Characters ------------------------------------------------------"
     )
 
     first_header = True
