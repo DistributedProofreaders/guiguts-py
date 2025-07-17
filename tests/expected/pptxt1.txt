@@ -1,10 +1,9 @@
------ Quotes types check -------------------------------------------------------
+----- File analysis check -------------------------------------------------------
 
-    Only straight quotes found in this file (maybe single and/or double).
+Only straight quotes found in this file.
 
------ Trailing spaces check ----------------------------------------------------
-
-    No lines with trailing spaces found.
+ 869.0:  Shortest line - 1 character
+ 961.0:  Longest line - 86 characters
 
 ----- Paragraph spacing check - expecting 4121, 421 or 411 spacing -------------
  457.0:  End point of repeated 2-line spacing.
@@ -50,7 +49,7 @@ Hyphen-minus (single keyboard '-')
 
     No scannos found.
 
------ Character checks ---------------------------------------------------------
+----- Uncommon Characters ------------------------------------------------------
 '/' (104)
   11.0:  /s p003a
   14.0:  /*
@@ -68,29 +67,19 @@ Hyphen-minus (single keyboard '-')
   ...more
 
 '<' (18)
-  35.0:  <sc>The Avenue Press</sc>
-  35.20: <sc>The Avenue Press</sc>
-  36.1:  (<sc>L. Upcott Gill & Son, Ltd.</sc>),
-  36.31: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
-  37.0:  <sc>London</sc>.
-  37.10: <sc>London</sc>.
- 216.11: the troops <i>en route</i> for the Front.
- 216.22: the troops <i>en route</i> for the Front.
- 686.0:  <i>Tempest</i>--
- 686.10: <i>Tempest</i>--
+  35.0:  (x2) <sc>The Avenue Press</sc>
+  36.1:  (x2) (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  37.0:  (x2) <sc>London</sc>.
+ 216.11: (x2) the troops <i>en route</i> for the Front.
+ 686.0:  (x2) <i>Tempest</i>--
   ...more
 
 '>' (18)
-  35.3:  <sc>The Avenue Press</sc>
-  35.24: <sc>The Avenue Press</sc>
-  36.4:  (<sc>L. Upcott Gill & Son, Ltd.</sc>),
-  36.35: (<sc>L. Upcott Gill & Son, Ltd.</sc>),
-  37.3:  <sc>London</sc>.
-  37.14: <sc>London</sc>.
- 216.13: the troops <i>en route</i> for the Front.
- 216.25: the troops <i>en route</i> for the Front.
- 686.2:  <i>Tempest</i>--
- 686.13: <i>Tempest</i>--
+  35.3:  (x2) <sc>The Avenue Press</sc>
+  36.4:  (x2) (<sc>L. Upcott Gill & Son, Ltd.</sc>),
+  37.3:  (x2) <sc>London</sc>.
+ 216.13: (x2) the troops <i>en route</i> for the Front.
+ 686.2:  (x2) <i>Tempest</i>--
   ...more
 
 'ô' (8)

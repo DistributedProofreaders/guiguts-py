@@ -1,6 +1,7 @@
 """PPtxt tool"""
 
 from dataclasses import dataclass
+from tkinter import ttk
 from typing import Dict, Sequence, List, Any
 import regex as re
 
@@ -8,7 +9,8 @@ from guiguts.checkers import CheckerDialog
 from guiguts.file import ProjectDict
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
-from guiguts.utilities import IndexRowCol, IndexRange, non_text_line
+from guiguts.preferences import preferences, PrefKey, PersistentBoolean
+from guiguts.utilities import IndexRowCol, IndexRange, non_text_line, sing_plur
 
 
 class PPtxtCheckerDialog(CheckerDialog):
@@ -30,6 +32,33 @@ class PPtxtCheckerDialog(CheckerDialog):
             **kwargs,
         )
 
+        self.custom_frame.columnconfigure(0, weight=1)
+        frame = ttk.LabelFrame(self.custom_frame, text="Checks")
+        frame.grid(row=0, column=0, sticky="NSEW")
+        for col in range(0, 5):
+            frame.columnconfigure(col, weight=1)
+
+        for cnt, (prefkey, label) in enumerate(
+            {
+                PrefKey.PPTXT_FILE_ANALYSIS_CHECK: "File Analysis",
+                PrefKey.PPTXT_SPACING_CHECK: "Paragraph Spacing",
+                PrefKey.PPTXT_REPEATED_WORDS_CHECK: "Repeated Words",
+                PrefKey.PPTXT_ELLIPSIS_CHECK: "Ellipses",
+                PrefKey.PPTXT_CURLY_QUOTE_CHECK: "Curly Quotes",
+                PrefKey.PPTXT_HYPHENATED_WORDS_CHECK: "Hyphenated Words",
+                PrefKey.PPTXT_ADJACENT_SPACES_CHECK: "Adjacent Spaces",
+                PrefKey.PPTXT_DASH_REVIEW_CHECK: "Hyphens/Dashes",
+                PrefKey.PPTXT_SCANNO_CHECK: "Scannos",
+                PrefKey.PPTXT_WEIRD_CHARACTERS_CHECK: "Uncommon Characters",
+                PrefKey.PPTXT_HTML_CHECK: "HTML Tags",
+                PrefKey.PPTXT_UNICODE_NUMERIC_CHARACTER_CHECK: "Numeric Entities",
+                PrefKey.PPTXT_SPECIALS_CHECK: "Specials",
+            }.items()
+        ):
+            ttk.Checkbutton(
+                frame, variable=PersistentBoolean(prefkey), text=label
+            ).grid(row=cnt // 5, column=cnt % 5, sticky="NSEW")
+
 
 REPORT_LIMIT = 5  # Max number of times to report same issue for some checks
 
@@ -44,6 +73,8 @@ ssq: int
 sdq: int
 csq: int
 cdq: int
+longest_line: tuple[int, int]
+shortest_line: tuple[int, int]
 
 
 ########################################################
@@ -448,11 +479,17 @@ def repeated_words_check() -> None:
     checker_dialog.add_footer("")
 
 
-def consolidate_messages(repeat_msg: list[MsgInfo]) -> None:
-    """Consolidate messages"""
+def consolidate_messages(repeat_msg: list[MsgInfo], limit: int = 0) -> None:
+    """Consolidate messages.
+
+    Args:
+        repeat_msg: List of messages to be consolidated.
+        limit: If > 0, limit number of messages output.
+    """
     prev_msg_info = None
     build_msg = None
     n_matches = 0
+    n_messages = 0
     for msg_info in repeat_msg:
         # If this message doesn't match previous message, ignoring multiple spaces...
         if (
@@ -474,6 +511,13 @@ def consolidate_messages(repeat_msg: list[MsgInfo]) -> None:
         ):
             # Output any combined message we've previously built up
             if build_msg is not None:
+                # No more than 5 of any type
+                n_messages += 1
+                if limit > 0 and n_messages >= limit + 1:
+                    if n_messages == limit + 1:
+                        checker_dialog.add_footer("  ...more")
+                    continue
+
                 repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
                 checker_dialog.add_entry(
                     f"{repeat_str}{build_msg.msg}",
@@ -498,13 +542,18 @@ def consolidate_messages(repeat_msg: list[MsgInfo]) -> None:
         prev_msg_info = msg_info
     # Output last message
     if build_msg is not None:
-        repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
-        checker_dialog.add_entry(
-            f"{repeat_str}{build_msg.msg}",
-            build_msg.text_range,
-            build_msg.hilite_start + len(repeat_str),
-            build_msg.hilite_end + len(repeat_str),
-        )
+        n_messages += 1
+        if limit > 0 and n_messages >= limit + 1:
+            if n_messages == limit + 1:
+                checker_dialog.add_footer("  ...more")
+        else:
+            repeat_str = f"(x{n_matches}) " if n_matches > 1 else ""
+            checker_dialog.add_entry(
+                f"{repeat_str}{build_msg.msg}",
+                build_msg.text_range,
+                build_msg.hilite_start + len(repeat_str),
+                build_msg.hilite_end + len(repeat_str),
+            )
 
 
 ######################################################################
@@ -627,13 +676,13 @@ def hyphenated_words_check() -> None:
 ######################################################################
 
 
-def weird_characters() -> None:
+def weird_characters_check() -> None:
     """Collects lines containing unusual characters. Lines in the report
     are grouped by unusual character and each instance of the character
     on a report line is highlighted."""
 
     checker_dialog.add_header(
-        "----- Character checks ---------------------------------------------------------"
+        "----- Uncommon Characters ------------------------------------------------------"
     )
 
     first_header = True
@@ -644,7 +693,11 @@ def weird_characters() -> None:
 
     # If no curly quotes in file, don't consider straight quotes to be weirdos
     straight_quotes = "\"'" if csq + cdq == 0 else ""
-    weirdo_regex = r"[^A-Za-z0-9\s.,:;?!&\\\-_—–=“”‘’\[\]\(\){}" + straight_quotes + "]"
+    weirdo_regex = (
+        r"[^A-Za-z0-9\s.,:;?!&\\\-_—–=“”‘’\[\]\(\){}¼½¾¹²³⁰⁴-⁹₀-₉⅐-⅞"
+        + straight_quotes
+        + "]"
+    )
 
     # Build dictionary of unusual characters ('weirdos'). The key is a
     # weirdo and the value a list of line numbers on which that character
@@ -671,10 +724,26 @@ def weird_characters() -> None:
             else:
                 weirdos_counts_dictionary[weirdo] = 1
 
+    # Check whether to ignore Greek letters
+    skip_greek = (
+        sum(
+            1
+            for weirdo in weirdos_lines_dictionary
+            if re.fullmatch(r"\p{Greek}", weirdo)
+        )
+        > 5
+    )
+    if skip_greek:
+        checker_dialog.add_footer(
+            "[Book contains over 5 different Greek letters so not reporting them]", ""
+        )
+
     # If nothing in the dictioary, nothing to do!
     if len(weirdos_lines_dictionary) != 0:
         none_found = False
         for weirdo, line_list in weirdos_lines_dictionary.items():
+            if skip_greek and re.fullmatch(r"\p{Greek}", weirdo):
+                continue
             count = weirdos_counts_dictionary[weirdo]
             # Make a header with this info and output it to dialog.
             # E.g. "'¢' (3)".
@@ -690,8 +759,6 @@ def weird_characters() -> None:
             # Under the header add to the dialog every line containing an instance of the weirdo.
             # If there are multiple instances of a weirdo on a line then the line will appear in
             # the dialog multiple times, each time highlighting a different instance of it.
-            # If character is in `report_once_list`, just report once per line (used for text tables)
-            report_once_list = "+|*"
 
             prev_line_number = -1
             regx = "(" + "\\" + weirdo + ")"
@@ -711,10 +778,8 @@ def weird_characters() -> None:
                 # ... but note that a new dialog line is generated for each time the word appears
                 # on the line so there may be more than 5 dialog lines output.
                 line = book[line_number - 1]
-                if weirdo in report_once_list:
-                    report_multiple_occurrences_on_line(regx, line, line_number)
-                else:
-                    report_all_occurrences_on_line(regx, line, line_number)
+                report_multiple_occurrences_on_line(regx, line, line_number)
+
                 count += 1
                 prev_line_number = line_number
 
@@ -1021,14 +1086,23 @@ def specials_check(project_dict: ProjectDict) -> None:
             exceptions.append(r"(?i)-the-")
             # Ignore contexts such as "the’re", "the’ve"
             exceptions.append(r"(?i)\bthe[’ve|’re]")
+            # Ignore "the," - checked below with a limit
+            exceptions.append(r"(?i)\bthe,")
             # Generate dialog tuples only if not an exception.
             heading = "Punctuation after 'the' (excluding exceptions)."
+            process_line_with_pattern(pattern, exceptions, line)
+
+        # Check for comma after case-insensitive 'the'
+        pattern = r"(?i)\bthe,"
+        if re.search(pattern, line):
+            exceptions = []
+            heading = "Comma after 'the'."
             process_line_with_pattern(pattern, exceptions, line)
 
         # The following check for double punctuation consists of:
         #
         # GENERAL TEST
-        pattern = r",\.|\.,|,,|(?<!\.)\.\.(?!\.)"
+        pattern = r",\.|,,|(?<!\.)\.\.(?!\.)"
         if re.search(pattern, line):
             # Here if possible issue.
             #
@@ -1037,14 +1111,25 @@ def specials_check(project_dict: ProjectDict) -> None:
             # NB Each regex below returns the pattern in a match
             #    as group(0).
             exceptions = []
-            # Ignore contexts such as "etc.,", "&c.,"
-            exceptions.append(r"(?i)etc\.,")
+            # Ignore contexts such as 4-dot ellipsis
             exceptions.append(r"(?i)etc\.{4}(?!\.)")
-            exceptions.append(r"(?i)&c\.,")
             # Exclude sequences of " ... ", etc.
             exceptions.append(r"(?<=\s|^)\.\.\.(?=\s|$)")
             # Generate dialog tuples only if not an exception.
-            heading = "Queried double punctuation (excluding exceptions)."
+            heading = "Query double punctuation (excluding exceptions)."
+            process_line_with_pattern(pattern, exceptions, line)
+
+        # The following check for period-comma consists of:
+        #
+        # GENERAL TEST
+        pattern = r"\.,"
+        if re.search(pattern, line):
+            exceptions = []
+            # Ignore contexts such as "etc.,", "&c.,"
+            exceptions.append(r"(?i)etc\.,")
+            exceptions.append(r"(?i)&c\.,")
+            # Generate dialog tuples only if not an exception.
+            heading = "Query period-comma (excluding exceptions)."
             process_line_with_pattern(pattern, exceptions, line)
 
         # Unexpected comma check. Commas should not occur after these words:
@@ -1188,7 +1273,14 @@ def specials_check(project_dict: ProjectDict) -> None:
             checker_dialog.add_header("")
         # Add header record to dialog.
         checker_dialog.add_header(header_line)
-        consolidate_messages(msg_list)
+        # Some checks have a limit for how many times to report
+        limit = (
+            5
+            if header_line
+            in ("Comma after 'the'.", "Query period-comma (excluding exceptions).")
+            else 0
+        )
+        consolidate_messages(msg_list, limit=limit)
 
     if none_found:
         checker_dialog.add_footer("")
@@ -1228,7 +1320,7 @@ def html_check() -> None:
             lines_with_html_tags += 1
 
         # If abandoned_HTML_tag_count > courtesy_limit then it looks like we are
-        # not dealing with a plain text file afterall. Flag this and report the
+        # not dealing with a plain text file after all. Flag this and report the
         # number of HTML tags found so far then exit loop.
 
         if abandoned_html_tag_count > courtesy_limit:
@@ -1328,48 +1420,6 @@ def adjacent_spaces_check() -> None:
     # All book lines scanned.
     if no_adjacent_spaces_found:
         checker_dialog.add_footer("", "    No lines with adjacent spaces found.")
-
-    # Add line spacer at end of this checker section.
-    checker_dialog.add_footer("")
-
-
-######################################################################
-# Scan book for trailing spaces
-######################################################################
-
-
-def trailing_spaces_check() -> None:
-    """Scans each book line for trailing spaces."""
-
-    checker_dialog.add_header(
-        "----- Trailing spaces check ----------------------------------------------------"
-    )
-
-    no_trailing_spaces_found = True
-    regx = r" +$"
-    for line_number, line in enumerate(book, start=1):
-        if non_text_line(line):
-            continue
-        if res := re.search(regx, line):
-            # Line has trailing space
-            no_trailing_spaces_found = False
-            # Get start/end of error in file.
-            error_start = str(line_number) + "." + str(res.start(0))
-            error_end = str(line_number) + "." + str(res.end(0))
-            # Store in structure for file row/col positions & ranges.
-            start_rowcol = IndexRowCol(error_start)
-            end_rowcol = IndexRowCol(error_end)
-            # Highlight occurrence of word in the line.
-            hilite_start = res.start(0)
-            hilite_end = res.end(0)
-            # Add record to the dialog.
-            checker_dialog.add_entry(
-                line, IndexRange(start_rowcol, end_rowcol), hilite_start, hilite_end
-            )
-
-    # All book lines scanned.
-    if no_trailing_spaces_found:
-        checker_dialog.add_footer("", "    No lines with trailing spaces found.")
 
     # Add line spacer at end of this checker section.
     checker_dialog.add_footer("")
@@ -1597,11 +1647,11 @@ def curly_quote_check() -> None:
 ######################################################################
 
 
-def quote_type_checks() -> None:
-    """Check for mixed straight/curly quotes."""
+def file_analysis_check() -> None:
+    """Check for mixed straight/curly quotes & line lengths."""
 
     checker_dialog.add_header(
-        "----- Quotes types check -------------------------------------------------------",
+        "----- File analysis check -------------------------------------------------------",
         "",
     )
 
@@ -1609,23 +1659,31 @@ def quote_type_checks() -> None:
     if ssq > 0 or sdq > 0:
         # Yep, so what about any curly single and double quotes?
         if csq == 0 and cdq == 0:
-            checker_dialog.add_header(
-                "    Only straight quotes found in this file (maybe single and/or double)."
-            )
+            checker_dialog.add_header("Only straight quotes found in this file.")
         elif csq > 0 or cdq > 0:
             checker_dialog.add_header(
-                "    Both straight and curly quotes found in this file (maybe single and/or double)."
+                "Both straight and curly quotes found in this file."
             )
     elif (ssq == 0 and sdq == 0) and (csq > 0 or cdq > 0):
-        checker_dialog.add_header(
-            "    Only curly quotes found in this file (maybe single and/or double)."
-        )
+        checker_dialog.add_header("Only curly quotes found in this file.")
     elif ssq == 0 and sdq == 0 and csq == 0 and cdq == 0:
         checker_dialog.add_header(
-            "    No single or double quotes of any type found in file - that is unusual."
+            "No single or double quotes of any type found in file - that is unusual."
         )
+    checker_dialog.add_footer("")
 
-    # Add line spacer at end of this checker section.
+    if longest_line[1] > 0:
+        pos = maintext().rowcol(f"{longest_line[0]}.0")
+        checker_dialog.add_entry(
+            f"Longest line - {sing_plur(longest_line[1], 'character')}",
+            IndexRange(pos, pos),
+        )
+    if shortest_line[1] > 0:
+        pos = maintext().rowcol(f"{shortest_line[0]}.0")
+        checker_dialog.add_entry(
+            f"Shortest line - {sing_plur(shortest_line[1], 'character')}",
+            IndexRange(pos, pos),
+        )
     checker_dialog.add_footer("")
 
 
@@ -1634,7 +1692,7 @@ def quote_type_checks() -> None:
 ######################################################################
 
 
-def dash_review() -> None:
+def dash_review_check() -> None:
     """Hyphen/dashes check."""
 
     checker_dialog.add_header(
@@ -1668,7 +1726,7 @@ def dash_review() -> None:
     #                   [\p{L}—\p{L}] between letters with no spacing
     #                       My favorite food—pizza—originated in Italy.
     #                       My granddaughter—Kenzie—plays volleyball.
-    #                   [\p{Ll}—\p{P}(?=$)] between lower-case letter and closing punctuation
+    #                   [\p{Ll}—\p{P}] between lower-case letter and punctuation
     #                       “What if we—”
     #                   \p{Ll}— \p{Lu} lower-case letter, en dash, space, upper-case letter
     #                       If you tell him— Wait, I will give you this.
@@ -1806,8 +1864,10 @@ def dash_review() -> None:
         dbuf[line_index] = re.sub(r"\p{Nd}\s–\s\p{Nd}", "", dbuf[line_index])
         # em-dash between letters with no spacing
         dbuf[line_index] = re.sub(r"\p{L}—\p{L}", "", dbuf[line_index])
-        # em-dash between lower-case letter or 'I' and final punctuation
-        dbuf[line_index] = re.sub(r"[\p{Ll}I]—\p{P}(?=$)", "", dbuf[line_index])
+        # em-dash between lower-case letter or 'I' and punctuation
+        dbuf[line_index] = re.sub(r"[\p{Ll}I]—\p{P}", "", dbuf[line_index])
+        # em-dash between period or markup and letter
+        dbuf[line_index] = re.sub(r"[\._=+\)\]]—[\p{L}_=+\()]", "", dbuf[line_index])
         # lower-case letter, em-dash, space, upper-case letter
         dbuf[line_index] = re.sub(r"\p{Ll}— \p{Lu}", "", dbuf[line_index])
         # em-dash should not end a line - may be exceptions
@@ -2130,7 +2190,6 @@ def scanno_check() -> None:
                     scanno_outrecs[word_lc] = [(line_index + 1, line)]
                 else:
                     scanno_outrecs[word_lc].append((line_index + 1, line))
-            previously_found_on_this_line = []
 
     # We're done looking for scannos on each line. Report what we found.
     # NB 'scanno_outrecs' is a dictionary. The keys are a scanno and the
@@ -2151,32 +2210,36 @@ def scanno_check() -> None:
         # Header is the scanno.
         checker_dialog.add_header(scanno)
 
-        for tple in tple_list:
+        for cnt, tple in enumerate(tple_list):
+            if cnt >= 5:
+                checker_dialog.add_footer("  ...more")
+                break
+
             line_number = tple[0]
             line = tple[1]
 
             # We know that scanno appears at least once on line; it may
             # be repeated, possibly in a different case.
-            # Get all occuurences of scanno on line and report them.
+            # Get all occurrences of scanno on line and report them.
 
-            regx = f"\\b{scanno}\\b"
-            for match_obj in re.finditer(regx, line, re.IGNORECASE):
-                # Get start/end of error in file.
-                error_start = str(line_number) + "." + str(match_obj.start(0))
-                error_end = str(line_number) + "." + str(match_obj.end(0))
-                # Store in structure for file row/col positions & ranges.
-                start_rowcol = IndexRowCol(error_start)
-                end_rowcol = IndexRowCol(error_end)
-                # Highlight occurrence of word in the line.
-                hilite_start = match_obj.start(0)
-                hilite_end = match_obj.end(0)
-                # Add record to the dialog.
-                checker_dialog.add_entry(
-                    line,
-                    IndexRange(start_rowcol, end_rowcol),
-                    hilite_start,
-                    hilite_end,
-                )
+            regx = r"(?<!\p{L}|\p{Nd})" + scanno + r"(?!\p{L}|\p{Nd})"
+            match_list = list(re.finditer(regx, line, re.IGNORECASE))
+            if not match_list:
+                continue
+            multiplier = f"(x{len(match_list)}) " if len(match_list) > 1 else ""
+            # Get start/end of all errors on line.
+            start_rowcol = IndexRowCol(line_number, match_list[0].start(0))
+            end_rowcol = IndexRowCol(line_number, match_list[-1].end(0))
+            # Highlight occurrence of word in the line.
+            hilite_start = match_list[0].start(0) + len(multiplier)
+            hilite_end = match_list[-1].end(0) + len(multiplier)
+            # Add record to the dialog.
+            checker_dialog.add_entry(
+                f"{multiplier}{line}",
+                IndexRange(start_rowcol, end_rowcol),
+                hilite_start,
+                hilite_end,
+            )
 
     if no_scannos_found:
         checker_dialog.add_footer("")
@@ -2617,6 +2680,7 @@ def pptxt(project_dict: ProjectDict) -> None:
     global book, word_list_map_count, word_list_map_lines, word_list_map_words
     global found_long_doctype_declaration
     global ssq, sdq, csq, cdq
+    global longest_line, shortest_line
 
     if not tool_save():
         return
@@ -2645,6 +2709,8 @@ def pptxt(project_dict: ProjectDict) -> None:
     sdq = 0
     csq = 0
     cdq = 0
+    longest_line = (0, 0)
+    shortest_line = (0, 9999)
 
     for line_number, line in enumerate(input_lines, start=1):
         line = line.rstrip("\r\n")
@@ -2656,6 +2722,12 @@ def pptxt(project_dict: ProjectDict) -> None:
                 []
             )  # Needs to correspond to lines, even when ignored
             continue
+
+        line_length = len(line)
+        if line_length > longest_line[1]:
+            longest_line = (line_number, line_length)
+        if 0 < line_length < shortest_line[1]:
+            shortest_line = (line_number, line_length)
 
         # Note types of single/double quotes if present. They are
         # not being counted here, only their presence in the file.
@@ -2698,23 +2770,32 @@ def pptxt(project_dict: ProjectDict) -> None:
     # We're done reading the input. Start processing it.
     ###################################################
 
-    # The checks are run in the following order...
-
-    quote_type_checks()
-    trailing_spaces_check()
-    spacing_check()
-    repeated_words_check()
-    ellipsis_check()
-    curly_quote_check()
-    hyphenated_words_check()
-    adjacent_spaces_check()
-    dash_review()
-    scanno_check()
-    weird_characters()
-    html_check()
-    unicode_numeric_character_check()
-    # This final one does multiple checks.
-    specials_check(project_dict)
+    if preferences.get(PrefKey.PPTXT_FILE_ANALYSIS_CHECK):
+        file_analysis_check()
+    if preferences.get(PrefKey.PPTXT_SPACING_CHECK):
+        spacing_check()
+    if preferences.get(PrefKey.PPTXT_REPEATED_WORDS_CHECK):
+        repeated_words_check()
+    if preferences.get(PrefKey.PPTXT_ELLIPSIS_CHECK):
+        ellipsis_check()
+    if preferences.get(PrefKey.PPTXT_CURLY_QUOTE_CHECK):
+        curly_quote_check()
+    if preferences.get(PrefKey.PPTXT_HYPHENATED_WORDS_CHECK):
+        hyphenated_words_check()
+    if preferences.get(PrefKey.PPTXT_ADJACENT_SPACES_CHECK):
+        adjacent_spaces_check()
+    if preferences.get(PrefKey.PPTXT_DASH_REVIEW_CHECK):
+        dash_review_check()
+    if preferences.get(PrefKey.PPTXT_SCANNO_CHECK):
+        scanno_check()
+    if preferences.get(PrefKey.PPTXT_WEIRD_CHARACTERS_CHECK):
+        weird_characters_check()
+    if preferences.get(PrefKey.PPTXT_HTML_CHECK):
+        html_check()
+    if preferences.get(PrefKey.PPTXT_UNICODE_NUMERIC_CHARACTER_CHECK):
+        unicode_numeric_character_check()
+    if preferences.get(PrefKey.PPTXT_SPECIALS_CHECK):
+        specials_check(project_dict)
 
     # Add final divider line to dialog.
 
