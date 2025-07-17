@@ -363,66 +363,6 @@ class IlloSNChecker:
         )
         return
 
-    def advance_up_to_first_bl_of_block(self, line_num: str) -> str:
-        """Move insert point to the top of the block of blank lines.
-
-        The insert point will not move if the 'block' is a single blank line.
-
-        Arg:
-            line_num: a line number index of a blank line; e.g. '5.0'
-
-        Returns:
-            A line number index, possibly same as the input one.
-        """
-        # Don't go past start of file.
-        stop_line_num = "1.0"
-        # We are at a blank line, possibly the bottom line of a block of
-        # blank lines. Find the blank line at the top of the block and
-        # return its line number.
-        while True:
-            if line_num == stop_line_num:
-                # First line of file is a blank line (and top of the block).
-                return line_num
-            # Decrement line_num and see if it is another blank line.
-            prev_line_num = line_num
-            line_num = maintext().index(f"{line_num}-1l")
-            if maintext().get(line_num, f"{line_num} lineend") == "":
-                # We are in a block of blank lines. Continue looking for the
-                # top of the block.
-                continue
-            # We get here if at the line above the top of the bl block.
-            return prev_line_num
-
-    def advance_down_to_last_bl_of_block(self, line_num: str) -> str:
-        """Move insert point to the bottom of the block of blank lines.
-
-        The insert point will not move if the 'block' is a single blank line.
-
-        Arg:
-            line_num: a line number index of a blank line; e.g. '5.0'
-
-        Returns:
-            A line number index, possibly same as the input one.
-        """
-        # Don't go past end of file.
-        stop_line_num = maintext().end().index()
-        # We are at a blank line, possibly the top line of a block of
-        # blank lines. Find the blank line at the bottom of the block
-        # and return its line number.
-        while True:
-            if line_num == stop_line_num:
-                # Last line of file is a blank line (and bottom of the block).
-                return line_num
-            # Increment line_num and see if it is another blank line.
-            prev_line_num = line_num
-            line_num = maintext().index(f"{line_num}+1l")
-            if maintext().get(line_num, f"{line_num} lineend") == "":
-                # We are in a block of blank lines. Continue looking for the
-                # bottom of the block.
-                continue
-            # We get here if at the line below the bottom of the bl block.
-            return prev_line_num
-
     def updated_index(self, old_index: str) -> str:
         """Get an updated index using the checker dialog marks.
 
@@ -518,10 +458,6 @@ def move_selection_up(tag_type: str) -> None:
         if line_txt == "" and maintext().compare(
             f"{line_num}+1l linestart", "!=", f"{first_line_num} linestart"
         ):
-            # If we are at the bottom of a block of blank lines, move the insertion
-            # point to the top of the block. If the 'block' is just a single blank
-            # line then the returned line_num is the same as the argument line_num.
-            line_num = checker.advance_up_to_first_bl_of_block(line_num)
             # We can insert the selected tag above the blank line at line_num.
             # Copy the lines of the Illo or SN record to be moved. Don't include the
             # prefixing "*" if present.
@@ -613,10 +549,6 @@ def move_selection_down(tag_type: str) -> None:
         if line_txt == "" and maintext().compare(
             f"{line_num}-1l linestart", "!=", f"{last_line_num} linestart"
         ):
-            # If we are at the top of a block of blank lines, move the insertion
-            # point to the bottom of the block. If the 'block' is just a single blank
-            # line then the returned line_num is the same as the argument line_num.
-            line_num = checker.advance_down_to_last_bl_of_block(line_num)
             # We can insert the selected tag below the blank line at line_num.
             # Copy the lines of the Illo or SN record to be moved. Don't include the
             # prefixing "*" if present.
