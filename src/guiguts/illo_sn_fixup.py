@@ -26,7 +26,7 @@ class IlloSNRecord:
         text: str,
         start: IndexRowCol,
         end: IndexRowCol,
-        mid_para: bool,
+        mid_para: int,
         hilite_start: int,
         hilite_end: int,
     ) -> None:
@@ -36,7 +36,7 @@ class IlloSNRecord:
             text - text of (first line of) the SN or Illo (if caption present).
             start - start rowcol of SN or Illo in file.
             end - end rowcol of SN or Illon in file.
-            mid_para - True if Illo or SN record mid-paragraph, False otherwise.
+            mid_para - >0 if Illo or SN record mid-para, <0 if previously mid-para, 0 if neither.
             hilite_start - start column of highlighting in text.
             hilite_end - end column of highlighting in text.
         """
@@ -285,26 +285,38 @@ class IlloSNChecker:
             # Look for a prefixing '*' to the tag.
             illosn_line = maintext().get(f"{start.index()}-1c", f"{start.row}.end")
             if illosn_line[0:1] == "*":
-                mid_para = True
+                mid_para = 1
                 illosn_txt = illosn_line
             else:
                 # The tag will also be flagged as 'MIDPARAGRAPH' in the dialog if there
                 # is any doubt that it is *not* a mid-paragraph tag.
-                mid_para = self.check_for_anomalous_illo_or_sn(start, end_point)
+                mid_para = (
+                    1 if self.check_for_anomalous_illo_or_sn(start, end_point) else 0
+                )
             illosn_rec = IlloSNRecord(
                 illosn_txt, start, end_point, mid_para, 1, colon_pos.col - start.col
             )
             self.illosn_records.append(illosn_rec)
             search_range = IndexRange(end_point, maintext().end())
 
-    def update_after_move(self, tag_type: str, selected_illosn_index: int) -> None:
+    def update_after_move(
+        self, tag_type: str, selected_illosn_index: int, mid_para_list: list[int]
+    ) -> None:
         """Update Illo or SN records list, update dialog and reselect tag just moved.
 
         Args:
             tag_type: either "Illustration" or "Sidenote"
+            selected_illosn_index: index of selected illo/sn
+            mid_para_list: List of mid-para flags of illos/sns before movement
         """
         # Update illosn_records list
         self.run_check(tag_type)
+        # If selected illo/sn was mid-para previous to move(s), and is no longer mid-para,
+        # flag it as being "PREV MIDPARA"
+        assert len(mid_para_list) == len(self.illosn_records)
+        for idx, mid_para_flag in enumerate(mid_para_list):
+            if mid_para_flag != 0 and self.illosn_records[idx].mid_para == 0:
+                self.illosn_records[idx].mid_para = -1
         # Update dialog
         display_illosn_entries(tag_type)
         # Select again the tag we have just moved so it is highlighted.
@@ -327,7 +339,7 @@ class IlloSNChecker:
         first_line_num = self.updated_index(selected.first_line_num)
         last_line_num = self.updated_index(selected.last_line_num)
         # Line before the (first record of the) Illo or SN record.
-        prev_line_num = maintext().index(f"{first_line_num}-1l")
+        prev_line_num = maintext().index(f"{first_line_num}-1l linestart")
         prev_line_txt = maintext().get(prev_line_num, f"{prev_line_num} lineend")
         # Line after the (last record of the) Illo or SN record.
         next_line_num = maintext().index(f"{last_line_num}+1l linestart")
@@ -362,66 +374,6 @@ class IlloSNChecker:
             f"{first_line_num} linestart", f"{last_line_num}+1l linestart"
         )
         return
-
-    def advance_up_to_first_bl_of_block(self, line_num: str) -> str:
-        """Move insert point to the top of the block of blank lines.
-
-        The insert point will not move if the 'block' is a single blank line.
-
-        Arg:
-            line_num: a line number index of a blank line; e.g. '5.0'
-
-        Returns:
-            A line number index, possibly same as the input one.
-        """
-        # Don't go past start of file.
-        stop_line_num = "1.0"
-        # We are at a blank line, possibly the bottom line of a block of
-        # blank lines. Find the blank line at the top of the block and
-        # return its line number.
-        while True:
-            if line_num == stop_line_num:
-                # First line of file is a blank line (and top of the block).
-                return line_num
-            # Decrement line_num and see if it is another blank line.
-            prev_line_num = line_num
-            line_num = maintext().index(f"{line_num}-1l")
-            if maintext().get(line_num, f"{line_num} lineend") == "":
-                # We are in a block of blank lines. Continue looking for the
-                # top of the block.
-                continue
-            # We get here if at the line above the top of the bl block.
-            return prev_line_num
-
-    def advance_down_to_last_bl_of_block(self, line_num: str) -> str:
-        """Move insert point to the bottom of the block of blank lines.
-
-        The insert point will not move if the 'block' is a single blank line.
-
-        Arg:
-            line_num: a line number index of a blank line; e.g. '5.0'
-
-        Returns:
-            A line number index, possibly same as the input one.
-        """
-        # Don't go past end of file.
-        stop_line_num = maintext().end().index()
-        # We are at a blank line, possibly the top line of a block of
-        # blank lines. Find the blank line at the bottom of the block
-        # and return its line number.
-        while True:
-            if line_num == stop_line_num:
-                # Last line of file is a blank line (and bottom of the block).
-                return line_num
-            # Increment line_num and see if it is another blank line.
-            prev_line_num = line_num
-            line_num = maintext().index(f"{line_num}+1l")
-            if maintext().get(line_num, f"{line_num} lineend") == "":
-                # We are in a block of blank lines. Continue looking for the
-                # bottom of the block.
-                continue
-            # We get here if at the line below the bottom of the bl block.
-            return prev_line_num
 
     def updated_index(self, old_index: str) -> str:
         """Get an updated index using the checker dialog marks.
@@ -518,10 +470,6 @@ def move_selection_up(tag_type: str) -> None:
         if line_txt == "" and maintext().compare(
             f"{line_num}+1l linestart", "!=", f"{first_line_num} linestart"
         ):
-            # If we are at the bottom of a block of blank lines, move the insertion
-            # point to the top of the block. If the 'block' is just a single blank
-            # line then the returned line_num is the same as the argument line_num.
-            line_num = checker.advance_up_to_first_bl_of_block(line_num)
             # We can insert the selected tag above the blank line at line_num.
             # Copy the lines of the Illo or SN record to be moved. Don't include the
             # prefixing "*" if present.
@@ -537,7 +485,8 @@ def move_selection_up(tag_type: str) -> None:
                 maintext().index(f"{line_num}"),
                 "\n" + the_selected_record_lines + "\n",
             )
-            checker.update_after_move(tag_type, selected_illosn_index)
+            mid_para_list = [item.mid_para for item in checker.illosn_records]
+            checker.update_after_move(tag_type, selected_illosn_index, mid_para_list)
             break  # Moved successfully
         # If we have reached the top of the file, return.
         if line_num == "1.0":
@@ -613,10 +562,6 @@ def move_selection_down(tag_type: str) -> None:
         if line_txt == "" and maintext().compare(
             f"{line_num}-1l linestart", "!=", f"{last_line_num} linestart"
         ):
-            # If we are at the top of a block of blank lines, move the insertion
-            # point to the bottom of the block. If the 'block' is just a single blank
-            # line then the returned line_num is the same as the argument line_num.
-            line_num = checker.advance_down_to_last_bl_of_block(line_num)
             # We can insert the selected tag below the blank line at line_num.
             # Copy the lines of the Illo or SN record to be moved. Don't include the
             # prefixing "*" if present.
@@ -632,7 +577,8 @@ def move_selection_down(tag_type: str) -> None:
             )
             # Delete the selected tag from its current position in the file.
             checker.delete_illosn_record_from_file(selected)
-            checker.update_after_move(tag_type, selected_illosn_index)
+            mid_para_list = [item.mid_para for item in checker.illosn_records]
+            checker.update_after_move(tag_type, selected_illosn_index, mid_para_list)
             return  # Moved successfully
         # Increment line_num.
         line_num = maintext().index(f"{line_num}+1l")
@@ -695,8 +641,10 @@ def display_illosn_entries(tag_type: str) -> None:
     illosn_records = the_checker.get_illosn_records()
     for illosn_record in illosn_records:
         error_prefix = ""
-        if illosn_record.mid_para:
+        if illosn_record.mid_para > 0:
             error_prefix = "MIDPARAGRAPH: "
+        elif illosn_record.mid_para < 0:
+            error_prefix = "PREV MIDPARA: "
         checker_dialog.add_entry(
             illosn_record.text,
             IndexRange(illosn_record.start, illosn_record.end),
