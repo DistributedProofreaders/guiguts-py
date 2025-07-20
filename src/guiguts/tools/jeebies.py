@@ -129,9 +129,8 @@ class JeebiesChecker:
         be_cnt_in_file = 0
         he_cnt_in_file = 0
         for line in input_lines:
-            line_lc = line.lower()
-            be_cnt_in_file += len(re.findall(r"(?<=\W|^)be(?=\W|$)", line_lc))
-            he_cnt_in_file += len(re.findall(r"(?<=\W|^)he(?=\W|$)", line_lc))
+            be_cnt_in_file += len(re.findall(r"(?<=\W|^)be(?=\W|$)", line))
+            he_cnt_in_file += len(re.findall(r"(?<=\W|^)he(?=\W|$)", line))
 
         # We have a list of paragraphs as strings in paragraph_strings and counts
         # of 'he's and 'be's in the file.
@@ -424,30 +423,26 @@ class JeebiesChecker:
         if order == "first":
             # Looking for hebe as first word of 2-word punctuation delimited phrase.
 
-            para_lc = paragraph_text.lower()
-
             # NB A hebe phrase containing a contraction as in 'an’ be damned' has already
             #    been processed as a 3-form phrase. Avoid it being processed again as a
             #    2-form phrase. Obscure the right curly quote characters whenever they
             #    and a space precede a hebe.
             qs_hebe = f"’ {hebe}"
             ss_hebe = f"  {hebe}"
-            para_lc = re.sub(qs_hebe, ss_hebe, para_lc)
+            paragraph_text = re.sub(qs_hebe, ss_hebe, paragraph_text)
             # Look for type 1, 2-form hebe phrases in the edited paragraph string.
-            regx = rf"(?<=^|\p{{P}}|\p{{P}} ){hebe} [a-z]+"
-            suspects_count += do_finditer_and_report(regx, para_lc)
+            regx = rf"(?<=^|\p{{P}}|\p{{P}} ){hebe} [a-zA-Z]+"
+            suspects_count += do_finditer_and_report(regx, paragraph_text)
 
         elif order == "second":
             # Looking for hebe as second word of 2-word punctuation delimited phrase.
 
-            para_lc = paragraph_text.lower()
-
-            regx = rf"[a-z]+ {hebe}(?=\p{{P}}|$)"
-            suspects_count += do_finditer_and_report(regx, para_lc)
+            regx = rf"[a-zA-Z]+ {hebe}(?=\p{{P}}|$)"
+            suspects_count += do_finditer_and_report(regx, paragraph_text)
 
         else:
             # Should never get here. Variable 'order' value either 'first' or 'second'.
-            pass
+            assert order in ("first", "second")
 
         return suspects_count
 
@@ -490,11 +485,10 @@ class JeebiesChecker:
         behe = "he" if hebe == "be" else "be"
 
         # Search for 3-form pattern "w1 he/be w2" in a lower-case copy of paragraph.
-        para_lc = paragraph_text.lower()
-        for match_obj in re.finditer(f"[a-z’]+ {hebe} [a-z’]+", para_lc):
+        for match_obj in re.finditer(f"[a-zA-Z’]+ {hebe} [a-zA-Z’]+", paragraph_text):
             # Have a 3-word form here (e.g. "must be taken" or "long he remained").
             # See if it's in the list. If so get its frequency of occurrence.
-            hebe_form = para_lc[match_obj.start(0) : match_obj.end(0)]
+            hebe_form = paragraph_text[match_obj.start(0) : match_obj.end(0)]
             hebe_count = self.find_in_dictionary(hebe_form)
             # Avoid the "tribe be not" or "catastrophe he had" trap.
             s_hebe = f" {hebe}"
@@ -589,16 +583,17 @@ class JeebiesChecker:
     def find_in_dictionary(self, phrase: str) -> int:
         """Returns frequency in hebe phrase corpus or zero."""
 
-        freq = self.dictionary.get(phrase, 0)
+        phrase_lc = phrase.lower()
+        freq = self.dictionary.get(phrase_lc, 0)
         if freq != 0:
             return freq
         # Try again with a prefixing " " character
-        key = f" {phrase}"
+        key = f" {phrase_lc}"
         freq = self.dictionary.get(key, 0)
         if freq != 0:
             return freq
         # Try finally with a trailing " " character
-        key = f"{phrase} "
+        key = f"{phrase_lc} "
         freq = self.dictionary.get(key, 0)
         return freq
 
