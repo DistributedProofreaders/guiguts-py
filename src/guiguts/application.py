@@ -341,7 +341,10 @@ class Guiguts:
     def close_command(self) -> None:
         """Close top-level dialog with focus, or close the file if it's
         the main window."""
-        focus_widget = maintext().focus_get()
+        try:
+            focus_widget = maintext().focus_get()
+        except KeyError:  # Weird stuff allowed to happen if dialog being closed
+            focus_widget = None
         if focus_widget is None:
             return
         focus_tl = focus_widget.winfo_toplevel()
