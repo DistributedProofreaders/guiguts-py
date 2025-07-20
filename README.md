@@ -25,12 +25,12 @@ previous version of GG2).
 1. Install Python 3.11 or above from [python.org](https://www.python.org/), not a Homebrew-installed Python.
 GG has been tested in versions up to 3.13.
 
-2. In a command window, type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
+2. In a terminal window, type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
 previous version of GG2).
 
-3. In a command window, type `guiguts` to run GG2.
+3. In a terminal window, type `guiguts` to run GG2.
 
-4. If the above does not work, then try the following in a command window:
+4. If the above does not work, then try the following in a terminal window:
 
     a. Install pipx: `/usr/local/bin/python3 -m pip install pipx`
 
