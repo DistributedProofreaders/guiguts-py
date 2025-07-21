@@ -16,21 +16,21 @@ also works with later versions of Python, and has been tested in versions up to 
 1. Install Python 3.11 or above from [Python.org](https://www.python.org/downloads/windows/).
 GG has been tested in versions up to 3.13. Ensure the "Add Python to PATH" box is checked
 during installation.
-2. Type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
+2. In a command window, type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
 previous version of GG2).
-3. Type `guiguts` to run GG2.
+3. In a command window, Type `guiguts` to run GG2.
 
 ### macOS
 
 1. Install Python 3.11 or above from [python.org](https://www.python.org/), not a Homebrew-installed Python.
 GG has been tested in versions up to 3.13.
 
-2. Type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
+2. In a terminal window, type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
 previous version of GG2).
 
-3. Type `guiguts` to run GG2.
+3. In a terminal window, type `guiguts` to run GG2.
 
-4. If the above does not work, then 
+4. If the above does not work, then try the following in a terminal window:
 
     a. Install pipx: `/usr/local/bin/python3 -m pip install pipx`
 
