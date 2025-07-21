@@ -1,4 +1,4 @@
-  --> 'be' counted 173 times and 'he' counted 47 times in file.
+  --> 'be' counted 172 times and 'he' counted 43 times in file.
 
  106.56: An explanation of the title of this essay will no doubt be looked for in
  628.23: my list. Though a book be anonymous so far as the title page informs us,
