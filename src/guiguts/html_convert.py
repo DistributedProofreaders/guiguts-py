@@ -1171,17 +1171,22 @@ def html_convert_page_anchors() -> None:
     def outside_paragraph(index: str) -> bool:
         """Return True if given index is not within `<p>` markup, and
         also not within poetry (best guess)."""
-        prev_markup = maintext().find_match(
-            r"(<p[> ]|</p>)", IndexRange(index, "1.0"), regexp=True, backwards=True
+        prev_pl_markup = maintext().find_match(
+            r"(<(p|ol|ul)[> ]|</(p|ol|ul)>)",
+            IndexRange(index, "1.0"),
+            regexp=True,
+            backwards=True,
         )
-        outside_para_not_in_poetry = (
-            prev_markup is None or maintext().get_match_text(prev_markup) == "</p>"
+        needs_p_markup = bool(
+            prev_pl_markup is None
+            or re.fullmatch(r"</(p|ol|ul)>", maintext().get_match_text(prev_pl_markup))
         )
-        if outside_para_not_in_poetry:  # Is it inside poetry?
+        # If not in above markup, check if it's inside poetry.
+        if needs_p_markup:
             prev_2 = maintext().get(f"{index}-2l", index)
             if re.search('<div class="(poetry|stanza|verse)', prev_2):
-                outside_para_not_in_poetry = False
-        return outside_para_not_in_poetry
+                needs_p_markup = False
+        return needs_p_markup
 
     def flush_page_detail_buffer() -> None:
         """Output contents of buffer in pgnum span."""
