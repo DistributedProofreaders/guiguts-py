@@ -108,7 +108,7 @@ class WFWordLists:
 
             def strip_punc(word: str) -> str:
                 """Strip relevant leading/trailing punctuation from word."""
-                return re.sub(r"^[\.,'’_-]+|[\.,'’_-]+$", "", word)
+                return re.sub(r"^[\.,'’_-]+|[\.,'’_*-]+$", "", word)
 
             # Build a list of emdash words, i.e. "word1--word2"
             words = re.split(r"\s+", line)
