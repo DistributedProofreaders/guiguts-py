@@ -3,7 +3,8 @@
 
 ## Version 2.0.0-beta.3
 
-- Font used for labels, buttons, etc., can now be configured
+- Font used for labels, buttons, etc., can now be configured - Mac users
+  need to restart Guiguts to see the full benefit
 - HTML Links, Anchors and Images can now be added via the HTML menu
 - Auto-List added to HTML menu
 - Search/Replace dialog can now have up to 10 replacement fields
@@ -17,7 +18,8 @@
 - Convert & Find Next button added to Auto-Illustration dialog
 - PPtxt has been made significantly less verbose, not reporting several
   things that PPers do not require
-- Size grips added to bottom right of checkers and similar dialogs
+- Size grips added to bottom right of checkers and similar dialogs, for
+  easier resizing
 - Switch Text Window command added to Command Palette
 - Recent Files 1, 2 & 3 added to Command Palette
 - Delete To End Of Line added to Command Palette
