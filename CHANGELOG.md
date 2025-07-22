@@ -1,6 +1,74 @@
 # Changelog
 
 
+## Version 2.0.0-beta.3
+
+- Font used for labels, buttons, etc., can now be configured - Mac users
+  need to restart Guiguts to see the full benefit
+- HTML Links, Anchors and Images can now be added via the HTML menu
+- Auto-List added to HTML menu
+- Search/Replace dialog can now have up to 10 replacement fields
+- Bookmarks now save and restore the current selection
+- Replace Match added to Search menu
+- Revert/Reload from Disk added to File menu
+- CSS classes listed by PPhtml are now sorted
+- Fix/Hide All in Basic Fixup now fixes/hides all errors of that type
+- Up/Down buttons added to checker dialogs and related commands added to
+  Command Palette
+- Convert & Find Next button added to Auto-Illustration dialog
+- PPtxt has been made significantly less verbose, not reporting several
+  things that PPers do not require
+- Size grips added to bottom right of checkers and similar dialogs, for
+  easier resizing
+- Switch Text Window command added to Command Palette
+- Recent Files 1, 2 & 3 added to Command Palette
+- Delete To End Of Line added to Command Palette
+- TIA Abbyy import added to Content Providing menu
+- Movement of Illustrations/Sidenotes is now more flexible
+- Dutch, Portuguese & Spanish language dictionaries added to release
+- Custom commands on Windows that do not use the "start" command will now
+  display their results in a command window
+- PPtxt no longer reports straight quotes if all quotes are straight
+- HTML link checker no longer reports page breaks as unused anchors
+- Less strict option for Curly Quote conversion added
+- Footnote anchors tied to previous word with Word Joiner character
+- Stealth Scanno buttons reorganized for ease of use
+- HTML generator uses the dialog's title field to facilitate h1 markup
+- HTML generation of chapter headings improved, including dialog option
+- Footnote sorting using Alpha/Type has been improved
+- Different methods to add words to project/global dictionaries now all
+  work the same as one another
+- Highlight All highlights are now removed when S/R dialog is closed
+- Generated HTML is indented to improve ease of reading
+- To reduce cross-platform differences, File-->Exit is named Quit, and
+  Preferences is named Settings at the bottom of the Edit menu
+- Use of paragraph markup in illustration captions is now optional
+- Word Distance entries separated more clearly
+- WF Diacritics label clarified
+- Curly Quote messages have been shortened for ease of reading
+- Checker dialog header layout adjusted to reduce required width
+- Unnamed files can no longer be converted to HTML
+- If a non-UTF8 file, or one containing a BOM, is loaded, an error is reported
+- Installation notes improved and clarified
+
+### Bug fixes
+
+- Deleting a proofer comment could delete a previous fix
+- Deleting a proofer comment could leave a double space behind
+- Jeebies erroneously reported he/be occurrences that were not lowercase
+- HTML autogen used paragraph markup for pagenums within list markup
+- Nested square bracket within footnote was not reported, confusing Fixup
+- Apply Surround Selection command did not work if dialog was dismissed
+- Word Frequency failed to find locations of some "words"
+- Word Frequency did not allow some keyboard shortcuts to work
+- Pre-existing HTML markup was broken during HTML generation
+- Unpaired footnote anchors were not reported
+- WF and checkers could cause exception if closed while in progress
+- Custom dialog had incorrect example for $s
+- Nested footnotes could cause re-indexing problems
+- Default command to open a URL did not work on all Linux systems
+
+
 ## Version 2.0.0-beta.2
 
 - Almost all colors used by GG can now be customized by the user via the
