@@ -4400,7 +4400,8 @@ def img_from_page_mark(mark: str) -> str:
     Returns:
         Image name.
     """
-    return mark.removeprefix(PAGEMARK_PREFIX)
+    # `&` is used in place of `-` in page mark names - see below for details
+    return mark.removeprefix(PAGEMARK_PREFIX).replace("&", "-")
 
 
 def page_mark_from_img(img: str) -> str:
@@ -4413,7 +4414,10 @@ def page_mark_from_img(img: str) -> str:
     Returns:
         Page mark string.
     """
-    return PAGEMARK_PREFIX + img
+    # Use `&` in place of `-` in page mark names. Without this, Tcl/Tk
+    # interprets the minus sign as attempting to subtract from the index position,
+    # e.g. if png file is "001-1.png", "Pg001-1-3c" causes an error
+    return PAGEMARK_PREFIX + img.replace("-", "&")
 
 
 class TclRegexCompileError(Exception):
