@@ -1243,10 +1243,11 @@ def html_convert_sidenotes() -> None:
         if "\n\n" in sidenote_text:
             p_open = "<p>"
             p_close = "</p>"
+        # Replace end first, so it isn't affected by replacement of start
+        maintext().replace(sidenote_end, f"{sidenote_end}+5c", f"{p_close}</div>")
         maintext().replace(
             sidenote_start, f"{sidenote_start}+14c", f'<div class="sidenote">{p_open}'
         )
-        maintext().replace(sidenote_end, f"{sidenote_end}+5c", f"{p_close}</div>")
 
 
 def html_convert_footnotes() -> None:
