@@ -34,6 +34,7 @@ from guiguts.widgets import (
     bind_shift_tab,
     mouse_bind,
     ToplevelDialog,
+    insert_in_focus_widget,
 )
 
 logger = logging.getLogger(__package__)
@@ -1838,7 +1839,7 @@ class MainText(tk.Text):
         except tk.TclError:
             return
         clipboard = self.reverse_rtl(clipboard)
-        maintext().insert(tk.INSERT, clipboard)
+        insert_in_focus_widget(clipboard)
 
     def reverse_rtl(self, text: str) -> str:
         """Reverse sections of RTL text within string."""
