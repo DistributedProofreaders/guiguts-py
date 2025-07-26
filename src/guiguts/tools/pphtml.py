@@ -449,6 +449,7 @@ class PPhtmlChecker:
                 test_passed,
                 "Check for IDs targeted by multiple links",
                 errors,
+                fail_string="*WARN*",
             )
         else:
             self.output_subsection_errors(
