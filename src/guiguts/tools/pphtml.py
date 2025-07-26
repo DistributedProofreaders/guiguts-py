@@ -951,10 +951,11 @@ class PPhtmlChecker:
     def find_defined_class(self, css_class: str) -> Optional[IndexRange]:
         """Return index range of first occurrence of css_class in file."""
         if idx := maintext().search(
-            rf"\y{css_class}\y", "1.0", self.end_css, regexp=True
+            rf"\.{css_class}\y", "1.0", self.end_css, regexp=True
         ):
-            end_idx = maintext().rowcol(f"{idx}+{len(css_class)}c")
-            return IndexRange(IndexRowCol(idx), end_idx)
+            beg_idx = maintext().rowcol(f"{idx}+1c")
+            end_idx = maintext().rowcol(f"{idx}+{len(css_class) + 1}c")
+            return IndexRange(beg_idx, end_idx)
         return None
 
     def resolve_css(self) -> None:
