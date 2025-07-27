@@ -525,18 +525,29 @@ class CheckerDialog(ToplevelDialog):
         updown_frame = ttk.Frame(self.message_controls_frame)
         updown_frame.grid(row=0, column=6, sticky="NSE")
         updown_frame.rowconfigure(0, weight=1)
+        full_search_btn = ttk.Checkbutton(
+            updown_frame,
+            text="Full🔎",
+            variable=PersistentBoolean(PrefKey.CHECKERDIALOG_FULL_SEARCH),
+            command=lambda: self.select_entry_by_arrow(0),
+        )
+        full_search_btn.grid(row=0, column=0, sticky="NS", padx=5)
+        ToolTip(
+            full_search_btn,
+            "When checked, typing will match against full message text, not just start",
+        )
         ttk.Button(
             updown_frame,
             text="⇑",
             width=2,
             command=lambda: self.select_entry_by_arrow(-1),
-        ).grid(row=0, column=0, sticky="NS", padx=(5, 0))
+        ).grid(row=0, column=1, sticky="NS")
         ttk.Button(
             updown_frame,
             text="⇓",
             width=2,
             command=lambda: self.select_entry_by_arrow(1),
-        ).grid(row=0, column=1, sticky="NS")
+        ).grid(row=0, column=2, sticky="NS")
 
         self.view_options_dialog: Optional[CheckerViewOptionsDialog] = None
 
@@ -1256,6 +1267,7 @@ class CheckerDialog(ToplevelDialog):
 
         n_entries = len(self.entries)
         self.search_buffer += low_char
+        full_search = preferences.get(PrefKey.CHECKERDIALOG_FULL_SEARCH)
         # If nothing selected, pretend last item was selected
         selected = self.current_entry_index() or n_entries - 1
         # If first keypress, start from next entry, so we don't re-find selected one
@@ -1267,7 +1279,12 @@ class CheckerDialog(ToplevelDialog):
             entry = self.entries[idx]
             if self.skip_entry(entry):
                 continue
-            if entry.text.lower().startswith(self.search_buffer):
+            low_text = entry.text.lower()
+            if full_search:
+                found = self.search_buffer in low_text
+            else:
+                found = low_text.startswith(self.search_buffer)
+            if found:
                 self.select_entry_by_index(idx, focus=False)
                 return "break"
         return ""

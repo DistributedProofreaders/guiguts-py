@@ -180,6 +180,7 @@ class PrefKey(StrEnum):
     PPTXT_HTML_CHECK = auto()
     PPTXT_UNICODE_NUMERIC_CHARACTER_CHECK = auto()
     PPTXT_SPECIALS_CHECK = auto()
+    CHECKERDIALOG_FULL_SEARCH = auto()
 
 
 class Preferences:
