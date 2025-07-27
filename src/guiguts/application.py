@@ -1243,6 +1243,9 @@ class Guiguts:
         menubar_metadata().add_button_orphan(
             "Delete To End Of Line", lambda: maintext().delete_to_end_of_line()
         )
+        menubar_metadata().add_button_orphan(
+            "Delete Next Character", lambda: maintext().delete_next_character()
+        )
 
         def open_file_number(fn: int) -> None:
             """Open recent file number `fn`."""
