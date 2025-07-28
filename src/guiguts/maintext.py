@@ -1433,7 +1433,9 @@ class MainText(tk.Text):
     def undo_block_begin(self) -> None:
         """Begin a block of changes that will be undone with one undo operation.
 
-        Block is automatically closed when system becomes idle.
+        Block is automatically closed when system becomes idle. Note that calling
+        `Busy.busy()` can make this happen prematurely, so `busy` should be called
+        before `undo_block_begin`.
 
         Note: this version does not support nesting of blocks.
         """

@@ -1170,6 +1170,10 @@ class Busy:
 
         It is safe to call `busy` more than once during an operation.
         Before control returns to the user, `unbusy` must be called.
+
+        Note that calling this method can force the end of an undo block, so
+        this method should be called before `undo_block_begin`.
+
         """
         assert Busy._busy_widget is not None
         Busy._busy_widget.config(text="Working")
