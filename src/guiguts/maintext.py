@@ -4395,7 +4395,12 @@ class MainText(tk.Text):
         """Delete character to right of current cursor position, as Ctrl+D does
         by default in Text widgets. If at end of line, delete newline character."""
         self.undo_block_begin()
-        self.delete(self.get_insert_index().index())
+        ranges = maintext().selected_ranges()
+        if ranges:
+            for _range in ranges:
+                self.delete(_range.start.index(), _range.end.index())
+        else:
+            self.delete(self.get_insert_index().index())
 
 
 def img_from_page_mark(mark: str) -> str:
