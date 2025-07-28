@@ -708,13 +708,14 @@ class SearchDialog(ToplevelDialog):
 
         if SearchDialog.selection.get():
             maintext().selection_ranges_store_with_marks()
-        maintext().undo_block_begin()
 
         regexp = preferences.get(PrefKey.SEARCHDIALOG_REGEX)
         replace_match = replace_string
         match_count = 0
 
         Busy.busy()
+        maintext().undo_block_begin()
+
         for replace_range in replace_ranges:
             # Refresh range using marks stored earlier, in case range has moved due to earlier replacements
             refreshed_range = IndexRange(
