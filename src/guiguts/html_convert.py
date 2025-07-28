@@ -21,7 +21,13 @@ from guiguts.preferences import (
     PersistentString,
     PersistentBoolean,
 )
-from guiguts.utilities import IndexRange, DiacriticRemover, IndexRowCol, is_test
+from guiguts.utilities import (
+    IndexRange,
+    DiacriticRemover,
+    IndexRowCol,
+    is_test,
+    process_accel,
+)
 from guiguts.widgets import ToplevelDialog, Busy
 
 logger = logging.getLogger(__package__)
@@ -73,6 +79,22 @@ class HTMLGeneratorDialog(ToplevelDialog):
         )
         self.title_entry.grid(row=0, column=1, sticky="NSEW")
         self.title_entry.focus_set()
+
+        def clean_entry(event: tk.Event) -> None:
+            """Schedule cleanup after paste has occurred"""
+            widget = event.widget
+            widget.after_idle(lambda: sanitize_entry(widget))
+
+        def sanitize_entry(entry: ttk.Entry) -> None:
+            """Replace newlines, spaces, etc., with single space."""
+            text = entry.get()
+            cleaned = " ".join(text.split())
+            entry.delete(0, tk.END)
+            entry.insert(0, cleaned)
+
+        _, event_string = process_accel("Cmd/Ctrl+V")
+        self.title_entry.bind(event_string, clean_entry)
+        self.title_entry.bind("<<Paste>>", clean_entry)
 
         # Whether to display page numbers
         self.display_page_numbers = ttk.Checkbutton(
@@ -381,7 +403,7 @@ def html_convert_body() -> None:
         if not chapter_div_open:
             return 0
         maintext().insert(f"{next_step}.0", "</div>\n")
-        return 2
+        return 1
 
     markup_start = 1
     chap_start = 1
@@ -1141,9 +1163,9 @@ def get_title() -> str:
         # Skip blank lines, illos or block markup
         if not selection or re.match(H1_SKIP_REGEX, selection, flags=re.IGNORECASE):
             continue
-        # Strip inline markup, compress multiple spaces & trim trailing spaces
+        # Strip inline markup, replace whitespace with single spaces & trim trailing spaces
         selection = re.sub(r"<.+?>", "", selection)
-        selection = re.sub(r"  +", " ", selection).strip()
+        selection = " ".join(selection.split())
         complete_title = f"{complete_title}{selection} "
         in_title = True
 
