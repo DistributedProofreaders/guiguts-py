@@ -271,6 +271,9 @@ CHERRY-BLOSSOMS
 </p>
 <p>]</p>
 
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
 <p>
   <i>Copyright, 1896</i>,<br>
   <span class="smcap">By Dodd, Mead and Company</span>.<br>
@@ -281,11 +284,16 @@ CHERRY-BLOSSOMS
   University Press:<br>
   <span class="smcap">John Wilson and Son, Cambridge, U.S.A.</span>
 </p>
+</div>
 
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
 <p>
   TO<br>
   MY HUSBAND.
 </p>
+</div>
 
 <p>[Illustration: Clad in native costume]</p>
 

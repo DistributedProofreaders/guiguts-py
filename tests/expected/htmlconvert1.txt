@@ -294,13 +294,17 @@ img.w100 {width: 100%;}
 </p>
 <p>——-File: 004.png————————————————————————————-</p>
 
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
 <p>
   Printed in Great Britain by<br>
   <span class="smcap">The Avenue Press</span><br>
   (<span class="smcap">L. Upcott Gill &amp; Son, Ltd.</span>),<br>
   <span class="smcap">London</span>.
 </p>
-<p>——-File: 005.png————————————————————————————-</p>
+</div>
+——-File: 005.png————————————————————————————-
 
 <hr class="chap x-ebookmaker-drop">
 <div class="chapter">

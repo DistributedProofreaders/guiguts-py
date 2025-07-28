@@ -236,19 +236,29 @@ def html_convert_title() -> None:
         start = title_match.rowcol.index()
         end = f"{start}+{title_match.count}c lineend"
         end_row = maintext().rowcol(end).row
-        # Work in reverse to avoid affecting index locations - add "</h1>" markup
+        prev_line = maintext().get(f"{start}-1l linestart", f"{start}-1l lineend")
+        block_markup_before = bool(
+            re.fullmatch("/[*$fxcr].*", prev_line, flags=re.IGNORECASE)
+        )
         next_line = maintext().get(f"{end}+1l linestart", f"{end}+1l lineend")
-        if re.fullmatch("[*$fxcr]/", next_line, flags=re.IGNORECASE):
+        block_markup_after = bool(
+            re.fullmatch("[*$fxcr]/", next_line, flags=re.IGNORECASE)
+        )
+        # Work in reverse to avoid affecting index locations - add "</h1>" markup
+        if block_markup_after:  # Markup after needs removing
             maintext().replace(f"{end}+1l linestart", f"{end}+1l lineend", "</h1>")
+        elif block_markup_before:  # Insert "before" markup after "</h1>"
+            maintext().insert(end, f"\n</h1>\n{prev_line}")
         else:
             maintext().insert(end, "\n</h1>")
         # Add "<br>" on  intervening lines
         for row in range(title_match.rowcol.row, end_row):
             maintext().insert(f"{row}.end", "<br>")
         # Add "<h1>" markup
-        prev_line = maintext().get(f"{start}-1l linestart", f"{start}-1l lineend")
-        if re.fullmatch("/[*$fxcr].*", prev_line, flags=re.IGNORECASE):
+        if block_markup_before:  # Markup before needs removing
             maintext().replace(f"{start}-1l linestart", f"{start}-1l lineend", "<h1>")
+        elif block_markup_after:  # Insert "after" markup before title
+            maintext().insert(start, f"\n{next_line}\n<h1>")
         else:
             maintext().insert(start, "<h1>\n")
 
@@ -314,6 +324,14 @@ def html_convert_body() -> None:
     right_block_line_num = 0
     poetry_indent = 0
     blockquote_level = 0
+    p_chapter_div_open = False
+    l_chapter_div_open = False
+    bq_chapter_div_open = False
+    d_chapter_div_open = False
+    a_chapter_div_open = False
+    i_chapter_div_open = False
+    c_chapter_div_open = False
+    r_chapter_div_open = False
     right_line_lengths: list[int] = []
     ibs_dict = {
         "i": False,
@@ -340,6 +358,30 @@ def html_convert_body() -> None:
         """Set the italic/bold/smcap flags to False when starting a new block."""
         for key in ibs_dict:
             ibs_dict[key] = False
+
+    def maybe_insert_chapter_div(start_idx: str) -> bool:
+        """Return if block is being surrounded with chapter div.
+
+        Args:
+            start_idx: Index of start of line of block open markup
+        """
+        if maintext().get(f"{start_idx}-4l", start_idx) != "\n\n\n\n":
+            return False
+        maintext().insert(f"{line_start}-3l", '<hr class="chap x-ebookmaker-drop">')
+        maintext().insert(f"{line_start}-1l", '<div class="chapter">')
+        return True
+
+    def maybe_close_chapter_div(chapter_div_open: bool, next_step: int) -> int:
+        """Close chapter div if needed, returning how many lines were inserted.
+
+        Args:
+            chapter_div_open: True if there's currently a chapter div open.
+            next_step: Line number of next line to be processed.
+        """
+        if not chapter_div_open:
+            return 0
+        maintext().insert(f"{next_step}.0", "</div>\n")
+        return 2
 
     markup_start = 1
     chap_start = 1
@@ -419,6 +461,7 @@ def html_convert_body() -> None:
 
         # "/p" --> poetry until we get "p/"
         if selection_lower == "/p":  # open
+            p_chapter_div_open = maybe_insert_chapter_div(line_start)
             poetry_flag = True
             markup_start = step
             in_stanza = False
@@ -445,6 +488,7 @@ def html_convert_body() -> None:
                     maintext().insert(f"{line_start} -1l lineend", "\n    </div>")
                     next_step += 1
                 next_step += 1
+                next_step += maybe_close_chapter_div(p_chapter_div_open, next_step)
                 poetry_flag = False
             elif selection:
                 # Handle line numbers (at least 2 spaces plus digits at end of line)
@@ -475,6 +519,7 @@ def html_convert_body() -> None:
 
         # "/l" --> list until we get "l/"
         if selection_lower == "/l":  # open
+            l_chapter_div_open = maybe_insert_chapter_div(line_start)
             maintext().replace(
                 line_start,
                 line_end,
@@ -488,6 +533,7 @@ def html_convert_body() -> None:
             if selection_lower == "l/":  # close
                 maintext().replace(line_start, line_end, "</ul>")
                 list_flag = False
+                next_step += maybe_close_chapter_div(l_chapter_div_open, next_step)
             elif selection:
                 do_per_line_markup(selection, line_start, line_end, ibs_dict)
                 # Now safe to add list markup
@@ -500,6 +546,8 @@ def html_convert_body() -> None:
         # to signal the end of chapter heading - code will loop round again
         if selection.startswith("/#") and not in_chap_heading:  # open
             blockquote_level += 1
+            if blockquote_level == 1:
+                bq_chapter_div_open = maybe_insert_chapter_div(line_start)
             maintext().replace(
                 line_start,
                 line_end,
@@ -509,6 +557,8 @@ def html_convert_body() -> None:
             continue
         if selection == "#/":  # close
             if blockquote_level > 0:
+                if blockquote_level == 1:
+                    next_step += maybe_close_chapter_div(bq_chapter_div_open, next_step)
                 blockquote_level -= 1
                 maintext().replace(
                     line_start,
@@ -525,6 +575,7 @@ def html_convert_body() -> None:
         # "/$" --> nowrap until we get "$/"
         if selection == "/$":  # open
             check_illegal_nesting()
+            d_chapter_div_open = maybe_insert_chapter_div(line_start)
             dollar_nowrap_flag = True
             markup_start = step
             maintext().replace(
@@ -536,6 +587,7 @@ def html_convert_body() -> None:
             continue
         if dollar_nowrap_flag and selection == "$/":  # close
             dollar_nowrap_flag = False
+            next_step += maybe_close_chapter_div(d_chapter_div_open, next_step)
             maintext().replace(
                 line_start,
                 line_end,
@@ -545,6 +597,7 @@ def html_convert_body() -> None:
         # "/*" --> nowrap until we get "*/"
         if selection == "/*":  # open
             check_illegal_nesting()
+            a_chapter_div_open = maybe_insert_chapter_div(line_start)
             asterisk_nowrap_flag = True
             markup_start = step
             maintext().replace(
@@ -556,6 +609,7 @@ def html_convert_body() -> None:
             continue
         if asterisk_nowrap_flag and selection == "*/":  # close
             asterisk_nowrap_flag = False
+            next_step += maybe_close_chapter_div(a_chapter_div_open, next_step)
             maintext().replace(
                 line_start,
                 line_end,
@@ -580,6 +634,7 @@ def html_convert_body() -> None:
         # "/i" --> index until we get "i/"
         if selection_lower.startswith("/i"):  # open
             check_illegal_nesting()
+            i_chapter_div_open = maybe_insert_chapter_div(line_start)
             index_flag = True
             markup_start = step
             maintext().replace(
@@ -593,6 +648,7 @@ def html_convert_body() -> None:
         if index_flag:
             if selection_lower == "i/":  # close
                 index_flag = False
+                next_step += maybe_close_chapter_div(i_chapter_div_open, next_step)
                 maintext().replace(
                     line_start,
                     line_end,
@@ -629,6 +685,7 @@ def html_convert_body() -> None:
         # "/c" --> center until we get "c/"
         if selection_lower == "/c":  # open
             check_illegal_nesting()
+            c_chapter_div_open = maybe_insert_chapter_div(line_start)
             center_nowrap_flag = True
             markup_start = step
             maintext().replace(
@@ -641,6 +698,7 @@ def html_convert_body() -> None:
         if center_nowrap_flag:
             if selection_lower == "c/":  # close
                 center_nowrap_flag = False
+                next_step += maybe_close_chapter_div(c_chapter_div_open, next_step)
                 maintext().replace(
                     line_start,
                     line_end,
@@ -655,6 +713,7 @@ def html_convert_body() -> None:
         # "/r" --> right-align block until we get "r/"
         if selection_lower == "/r":  # open
             check_illegal_nesting()
+            r_chapter_div_open = maybe_insert_chapter_div(line_start)
             right_nowrap_flag = True
             markup_start = step
             maintext().replace(
@@ -670,6 +729,7 @@ def html_convert_body() -> None:
         if right_nowrap_flag:
             if selection_lower == "r/":  # close
                 right_nowrap_flag = False
+                next_step += maybe_close_chapter_div(r_chapter_div_open, next_step)
                 maintext().replace(
                     line_start,
                     line_end,
