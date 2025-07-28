@@ -14,6 +14,7 @@
 - Block markup around book title was handled badly by HTML autogeneration
 - HTML autogeneration did not add chapter div when block markup preceded
   by 4 blank lines 
+- Undoing Replace All from the S/R dialog only worked one change at a time
 
 
 ## Version 2.0.0-beta.3
