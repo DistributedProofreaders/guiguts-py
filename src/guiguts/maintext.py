@@ -825,6 +825,13 @@ class MainText(tk.Text):
         )
         self.column_selecting = False
 
+        self.dragging = False
+        self.drag_start_index = ""
+        self.drag_text = ""
+        self.bind_event("<ButtonPress-1>", self.start_drag_sel, add=True)
+        self.bind_event("<B1-Motion>", self.do_drag_sel, add=True)
+        self.bind_event("<ButtonRelease-1>", self.end_drag_sel, add=True)
+
         # Override default left/right/up/down arrow key behavior if there is a selection
         # Above behavior would affect Shift-Left/Right/Up/Down, so also bind those to
         # null functions and allow default class behavior to happen
@@ -1940,6 +1947,7 @@ class MainText(tk.Text):
         Args:
             start: Start index of column selection.
         """
+        self.cancel_drag_sel()
         self.focus_widget().config(cursor="tcross")
         self.column_select_start(start)
         self._autoscroll_active = True
@@ -1952,6 +1960,7 @@ class MainText(tk.Text):
         """
         # Starting a column selection needs to manually set focus on the main/peer
         # Force an update so the focus is actually set before it's queried during motion
+        self.cancel_drag_sel()
         event.widget.focus()
         event.widget.update()
         self.column_select_click_action(self.rowcol(f"@{event.x},{event.y}"))
@@ -1967,6 +1976,7 @@ class MainText(tk.Text):
         Args:
             event: Event containing mouse coordinates.
         """
+        self.cancel_drag_sel()
         cur_rowcol = self.rowcol(f"@{event.x},{event.y}")
         # In case we get here without ever having clicked (can happen if user tries
         # to extend column selection as first action this run of the program)
@@ -2025,6 +2035,7 @@ class MainText(tk.Text):
         Args:
             event: Event containing mouse coordinates.
         """
+        self.cancel_drag_sel()
         self._autoscroll_active = False
         self.column_select_motion(event)
         self.column_select_stop(event)
@@ -2037,13 +2048,75 @@ class MainText(tk.Text):
             anchor: Selection anchor (start point) - this is also used by Tk
                     if user switches to normal selection style.
         """
+        self.cancel_drag_sel()
         self.mark_set(TK_ANCHOR_MARK, anchor.index())
         self.column_selecting = True
 
     def column_select_stop(self, event: tk.Event) -> None:
         """Stop column selection."""
+        self.cancel_drag_sel()
         self.column_selecting = False
         event.widget.config(cursor="")
+
+    def start_drag_sel(self, event: tk.Event) -> str:
+        """Start dragging selected text."""
+        index = self.index(f"@{event.x},{event.y}")
+        sel_ranges = self.selected_ranges()
+        if not sel_ranges:
+            return ""
+        sel_start = sel_ranges[0].start.index()
+        sel_end = sel_ranges[0].end.index()
+
+        if self.compare(index, "<", sel_start) or self.compare(index, ">", sel_end):
+            return ""
+        self.drag_start_index = sel_start
+        self.drag_text = self.get(sel_start, sel_end)
+        self.dragging = True
+        return "break"
+
+    def do_drag_sel(self, event: tk.Event) -> str:
+        """Do the dragging of selected text."""
+        if not self.dragging:
+            return ""
+        self.mark_set("insert", f"@{event.x},{event.y}")
+        self.see("insert")
+        return "break"
+
+    def end_drag_sel(self, event: tk.Event) -> str:
+        """End dragging of text, dropping it if appropriate."""
+        if not self.dragging:
+            return ""
+        self.dragging = False
+        self.set_mark_position("seldroptarget", self.rowcol(f"@{event.x+5},{event.y}"))
+
+        # Don't drop onto the original selection
+        if self.compare("seldroptarget", ">=", self.drag_start_index) and self.compare(
+            "seldroptarget",
+            "<=",
+            self.index(f"{self.drag_start_index} + {len(self.drag_text)}c"),
+        ):
+            return ""
+
+        # Check for Ctrl or Cmd key
+        ctrl_held = (int(event.state) & 0x0004) != 0  # Windows/Linux Ctrl
+        cmd_held = (int(event.state) & 0x0010) != 0  # macOS Command
+
+        self.undo_block_begin()
+        if not (ctrl_held or cmd_held):
+            self.delete(
+                self.drag_start_index,
+                f"{self.drag_start_index} + {len(self.drag_text)}c",
+            )
+
+        self.insert("seldroptarget", self.drag_text)
+
+        self.tag_remove("sel", "1.0", "end")
+        self.tag_add("sel", "seldroptarget", f"seldroptarget + {len(self.drag_text)}c")
+        return "break"
+
+    def cancel_drag_sel(self) -> None:
+        """Cancel dragging selected text."""
+        self.dragging = False
 
     def rowcol(self, index: str) -> IndexRowCol:
         """Return IndexRowCol corresponding to given index in maintext/peer.
