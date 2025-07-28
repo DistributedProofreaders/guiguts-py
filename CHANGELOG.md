@@ -1,6 +1,22 @@
 # Changelog
 
 
+## Version 2.0.0
+
+### Bug fixes
+
+- Unicode Block dialog characters were displayed in the wrong font
+- Hebrew paste feature always pasted into main text window
+- One-line sidenotes were converted incorrectly to HTML
+- Png filenames containing hyphens caused a Page Separator Fixup exception
+- PPhtml gave incorrect locations for some unused CSS classes
+- PPhtml reported multiple links to an id as a failure, not a warning
+- Block markup around book title was handled badly by HTML autogeneration
+- HTML autogeneration did not add chapter div when block markup preceded
+  by 4 blank lines 
+- Undoing Replace All from the S/R dialog only worked one change at a time
+
+
 ## Version 2.0.0-beta.3
 
 - Font used for labels, buttons, etc., can now be configured - Mac users
