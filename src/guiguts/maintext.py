@@ -4394,7 +4394,7 @@ class MainText(tk.Text):
     def delete_next_character(self) -> None:
         """Delete character to right of current cursor position, as Ctrl+D does
         by default in Text widgets. If at end of line, delete newline character."""
-        self.undo_block_begin()
+        # undo_block_begin is intentionally NOT used here
         ranges = maintext().selected_ranges()
         if ranges:
             for _range in ranges:
