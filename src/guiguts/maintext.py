@@ -830,6 +830,7 @@ class MainText(tk.Text):
         self.drag_start_index = ""
         self.drag_text = ""
         self.drag_window: Optional[tk.Toplevel] = None
+        self.drag_copy_label: Optional[tk.Label] = None
         self.bind_event(
             "<ButtonPress-1>", self.start_drag_sel, add=True, bind_peer=True
         )
@@ -2092,6 +2093,7 @@ class MainText(tk.Text):
         event.widget.mark_set("insert", f"@{event.x},{event.y}")
         event.widget.see("insert")
         self._move_drag_window(event)
+
         return "break"
 
     def end_drag_sel(self, event: tk.Event) -> str:
@@ -2114,12 +2116,8 @@ class MainText(tk.Text):
         ):
             return ""
 
-        # Check for Ctrl or Cmd key
-        ctrl_held = (int(event.state) & 0x0004) != 0  # Windows/Linux Ctrl
-        cmd_held = (int(event.state) & 0x0010) != 0  # macOS Command
-
         self.undo_block_begin()
-        if not (ctrl_held or cmd_held):
+        if not self._is_copy_mode(event):
             self.delete(
                 self.drag_start_index,
                 f"{self.drag_start_index} + {len(self.drag_text)}c",
@@ -2148,9 +2146,18 @@ class MainText(tk.Text):
             text=truncated_text,
             relief="solid",
             bd=1,
-            justify="left",  # Left-align text
-            anchor="w",  # Align to west inside label box
-        ).pack()
+            justify="left",
+            anchor="w",
+        ).grid(row=0, column=0)
+        self.drag_copy_label = tk.Label(
+            self.drag_window,
+            text="+",
+            relief="solid",
+            bd=1,
+        )
+        self.drag_copy_label.grid(row=0, column=1, sticky="NSEW")
+        if not self._is_copy_mode(event):
+            self.drag_copy_label.grid_remove()
         self._move_drag_window(event)
 
     def _move_drag_window(self, event: tk.Event) -> None:
@@ -2161,6 +2168,11 @@ class MainText(tk.Text):
         x = event.widget.winfo_rootx() + event.x + 10
         y = event.widget.winfo_rooty() + event.y + 10
         self.drag_window.geometry(f"+{x}+{y}")
+        assert self.drag_copy_label is not None
+        if self._is_copy_mode(event):
+            self.drag_copy_label.grid()  # Show "+" label when copying
+        else:
+            self.drag_copy_label.grid_remove()  # Hide "+" label when moving
 
     def _delete_drag_window(self) -> None:
         """Delete the drag preview window."""
@@ -2168,6 +2180,12 @@ class MainText(tk.Text):
             return
         self.drag_window.destroy()
         self.drag_window = None
+
+    def _is_copy_mode(self, event: tk.Event) -> bool:
+        """Return whether select drag should be copying."""
+        ctrl_held = (int(event.state) & 0x0004) != 0  # Windows/Linux Ctrl
+        cmd_held = (int(event.state) & 0x0010) != 0  # macOS Command
+        return ctrl_held or cmd_held
 
     def _get_truncated_preview(self, text: str) -> str:
         """Get a truncated version of the drag text."""
