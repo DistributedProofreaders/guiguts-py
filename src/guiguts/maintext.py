@@ -825,12 +825,21 @@ class MainText(tk.Text):
         )
         self.column_selecting = False
 
+        # Dragging a selection
         self.dragging = False
         self.drag_start_index = ""
         self.drag_text = ""
-        self.bind_event("<ButtonPress-1>", self.start_drag_sel, add=True)
-        self.bind_event("<B1-Motion>", self.do_drag_sel, add=True)
-        self.bind_event("<ButtonRelease-1>", self.end_drag_sel, add=True)
+        self.drag_window: Optional[tk.Toplevel] = None
+        self.bind_event(
+            "<ButtonPress-1>", self.start_drag_sel, add=True, bind_peer=True
+        )
+        self.bind_event("<B1-Motion>", self.do_drag_sel, add=True, bind_peer=True)
+        self.bind_event(
+            "<ButtonRelease-1>", self.end_drag_sel, add=True, bind_peer=True
+        )
+        self.bind_event(
+            "<Escape>", lambda _: self.cancel_drag_sel(), add=True, bind_peer=True
+        )
 
         # Override default left/right/up/down arrow key behavior if there is a selection
         # Above behavior would affect Shift-Left/Right/Up/Down, so also bind those to
@@ -2060,9 +2069,9 @@ class MainText(tk.Text):
 
     def start_drag_sel(self, event: tk.Event) -> str:
         """Start dragging selected text."""
-        index = self.index(f"@{event.x},{event.y}")
+        index = event.widget.index(f"@{event.x},{event.y}")
         sel_ranges = self.selected_ranges()
-        if not sel_ranges:
+        if len(sel_ranges) != 1:  # No selection or column selection
             return ""
         sel_start = sel_ranges[0].start.index()
         sel_end = sel_ranges[0].end.index()
@@ -2072,14 +2081,17 @@ class MainText(tk.Text):
         self.drag_start_index = sel_start
         self.drag_text = self.get(sel_start, sel_end)
         self.dragging = True
+        event.widget.config(cursor="fleur")
+        self._create_drag_window(event)
         return "break"
 
     def do_drag_sel(self, event: tk.Event) -> str:
         """Do the dragging of selected text."""
         if not self.dragging:
             return ""
-        self.mark_set("insert", f"@{event.x},{event.y}")
-        self.see("insert")
+        event.widget.mark_set("insert", f"@{event.x},{event.y}")
+        event.widget.see("insert")
+        self._move_drag_window(event)
         return "break"
 
     def end_drag_sel(self, event: tk.Event) -> str:
@@ -2087,13 +2099,18 @@ class MainText(tk.Text):
         if not self.dragging:
             return ""
         self.dragging = False
-        self.set_mark_position("seldroptarget", self.rowcol(f"@{event.x+5},{event.y}"))
+        self.config(cursor="")
+        self.peer.config(cursor="")
+        self._delete_drag_window()
+        idx = event.widget.index(f"@{event.x},{event.y}")
+        self.set_mark_position("seldroptarget", IndexRowCol(idx))
 
         # Don't drop onto the original selection
-        if self.compare("seldroptarget", ">=", self.drag_start_index) and self.compare(
-            "seldroptarget",
-            "<=",
-            self.index(f"{self.drag_start_index} + {len(self.drag_text)}c"),
+        end_index = event.widget.index(
+            f"{self.drag_start_index} + {len(self.drag_text)}c"
+        )
+        if self.compare("seldroptarget", ">", self.drag_start_index) and self.compare(
+            "seldroptarget", "<", end_index
         ):
             return ""
 
@@ -2117,6 +2134,62 @@ class MainText(tk.Text):
     def cancel_drag_sel(self) -> None:
         """Cancel dragging selected text."""
         self.dragging = False
+        self._delete_drag_window()
+
+    def _create_drag_window(self, event: tk.Event) -> None:
+        """Create a window previewing the text being dragged."""
+        self.drag_window = tk.Toplevel(event.widget)
+        self.drag_window.overrideredirect(True)  # No window manager frame
+        self.drag_window.attributes("-topmost", True)
+        self.drag_window.attributes("-alpha", 0.6)
+        truncated_text = self._get_truncated_preview(self.drag_text)
+        tk.Label(
+            self.drag_window,
+            text=truncated_text,
+            relief="solid",
+            bd=1,
+            justify="left",  # Left-align text
+            anchor="w",  # Align to west inside label box
+        ).pack()
+        self._move_drag_window(event)
+
+    def _move_drag_window(self, event: tk.Event) -> None:
+        """Move the drag preview window with the cursor."""
+        if self.drag_window is None:
+            return
+        # Position drag preview window 10 pixels  south east of the cursor
+        x = event.widget.winfo_rootx() + event.x + 10
+        y = event.widget.winfo_rooty() + event.y + 10
+        self.drag_window.geometry(f"+{x}+{y}")
+
+    def _delete_drag_window(self) -> None:
+        """Delete the drag preview window."""
+        if self.drag_window is None:
+            return
+        self.drag_window.destroy()
+        self.drag_window = None
+
+    def _get_truncated_preview(self, text: str) -> str:
+        """Get a truncated version of the drag text."""
+        max_lines = 3
+        max_chars = 20
+        lines = text.splitlines()
+
+        truncated_lines = []
+        for i, line in enumerate(lines):
+            if i >= max_lines:
+                break
+            # If any line is too long, set last char to ellipsis
+            if len(line) > max_chars:
+                truncated_lines.append(line[: max_chars - 1] + "…")
+            else:
+                truncated_lines.append(line)
+
+        # If too many lines, set last char of last line to ellipsis
+        if len(lines) > max_lines:
+            truncated_lines[-1] = truncated_lines[-1][: max_chars - 1] + "…"
+
+        return "\n".join(truncated_lines)
 
     def rowcol(self, index: str) -> IndexRowCol:
         """Return IndexRowCol corresponding to given index in maintext/peer.
@@ -3386,7 +3459,7 @@ class MainText(tk.Text):
     def selection_cursor(self) -> None:
         """Make the insert cursor (in)visible depending on selection."""
         current = self.focus_widget().cget("insertontime")
-        ontime = 0 if self.selected_ranges() else 600
+        ontime = 0 if self.selected_ranges() and not self.dragging else 600
         if ontime != current:
             self.focus_widget().configure(insertontime=ontime)
 
