@@ -255,6 +255,14 @@ class SearchDialog(ToplevelDialog):
             repl_all_btn.grid(
                 row=rep_num + 3, column=4, padx=PADX, pady=PADY, sticky="NSEW"
             )
+            mouse_bind(
+                repl_all_btn,
+                "Shift+1",
+                lambda _e, idx=rep_num: self.replaceall_clicked(  # type: ignore[misc]
+                    idx,
+                    identicals_only=True,
+                ),
+            )
             self.repl_all_btn.append(repl_all_btn)
         _, key_event = process_accel("Cmd/Ctrl+Return")
         self.bind(key_event, lambda *args: self.replace_clicked(0, search_again=True))
@@ -671,18 +679,21 @@ class SearchDialog(ToplevelDialog):
             find_next(backwards=backwards)
         return "break"
 
-    def replaceall_clicked(self, box_num: int) -> None:
+    def replaceall_clicked(self, box_num: int, identicals_only: bool = False) -> str:
         """Callback when Replace All button clicked.
 
         Replace in whole file or just in selection.
 
         Args:
             box_num: Which replace box's Replace button was clicked.
+            identicals_only: True if only identical matches should be replaced.
 
+        Returns:
+            "break" to avoid calling other callbacks
         """
         search_string = self.search_box.get()
         if not search_string:
-            return
+            return "break"
         self.search_box.add_to_history(search_string)
         replace_string = self.replace_box[box_num].get()
         for box in self.replace_box:
@@ -692,7 +703,7 @@ class SearchDialog(ToplevelDialog):
         if replace_ranges is None:
             self.display_message('No text selected for "In selection" replace')
             sound_bell()
-            return
+            return "break"
 
         # Mark start & end of each replace_range in case row.col indexes are changed by earlier replacements
         mark_pref = self.get_dlg_name()
@@ -722,12 +733,30 @@ class SearchDialog(ToplevelDialog):
                 maintext().index(f"{mark_pref}RangeStart{replace_range.start.index()}"),
                 maintext().index(f"{mark_pref}RangeEnd{replace_range.end.index()}"),
             )
-            try:
-                matches = maintext().find_all(refreshed_range, search_string)
-            except re.error as e:
-                self.display_message(message_from_regex_exception(e))
-                Busy.unbusy()
-                return
+
+            # If only replacing identical matches, get the current match, if any
+            if identicals_only:
+                try:
+                    start_index = maintext().index(MARK_FOUND_START)
+                    end_index = maintext().index(MARK_FOUND_END)
+                    ident_txt = maintext().get(start_index, end_index)
+                except tk.TclError:
+                    ident_txt = ""
+                if not ident_txt:
+                    sound_bell()
+                    self.display_message("No text found to match identicals from")
+                    Busy.unbusy()
+                    return "break"
+                matches = maintext().find_all(
+                    refreshed_range, ident_txt, regexp=False, nocase=False
+                )
+            else:
+                try:
+                    matches = maintext().find_all(refreshed_range, search_string)
+                except re.error as e:
+                    self.display_message(message_from_regex_exception(e))
+                    Busy.unbusy()
+                    return "break"
 
             # Mark start of each match so not offset by earlier replacements
             for match in matches:
@@ -755,7 +784,7 @@ class SearchDialog(ToplevelDialog):
                         self.display_message(f"Regex error: {str(e)}")
                         sound_bell()
                         Busy.unbusy()
-                        return
+                        return "break"
                 maintext().replace(start_index, end_index, replace_match)
                 # Remove temporary match mark
                 maintext().mark_unset(f"{mark_pref}MatchStart{match.rowcol.index()}")
@@ -771,9 +800,13 @@ class SearchDialog(ToplevelDialog):
         else:
             maintext().clear_selection()
 
+        if identicals_only:
+            find_next()
+
         match_str = sing_plur(match_count, "match", "matches")
         self.display_message(f"Replaced: {match_str} {range_name}")
         Busy.unbusy()
+        return "break"
 
     def highlightall_clicked(self) -> None:
         """Highlight all occurrences  of the string in the search box."""
