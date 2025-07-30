@@ -2135,6 +2135,8 @@ class MainText(tk.Text):
 
     def cancel_drag_sel(self) -> None:
         """Cancel dragging selected text."""
+        if not self.dragging:
+            return
         self.dragging = False
         self._delete_drag_window()
         self.config(cursor="")
@@ -2176,9 +2178,11 @@ class MainText(tk.Text):
         self.drag_window.geometry(f"+{x}+{y}")
         assert self.drag_copy_label is not None
         if self._is_copy_mode(event):
-            self.drag_copy_label.grid()  # Show "+" label when copying
+            self.drag_copy_label.grid()  # Show "+" label/cursor when copying
+            event.widget.config(cursor="cross")
         else:
-            self.drag_copy_label.grid_remove()  # Hide "+" label when moving
+            self.drag_copy_label.grid_remove()  # Hide "+" label & use 4-way arrow cursor when moving
+            event.widget.config(cursor="fleur")
 
     def _delete_drag_window(self) -> None:
         """Delete the drag preview window."""
