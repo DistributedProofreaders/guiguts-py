@@ -1032,6 +1032,13 @@ class MainText(tk.Text):
                 "<B1-Motion>", self._autoscroll_callback, add=True, bind_peer=True
             )
 
+        def leave_event(_: tk.Event) -> str:
+            if self.dragging:
+                return "break"
+            return ""
+
+        self.bind_event("<Leave>", leave_event, add=True, bind_peer=True)
+
         # get the current bind tags
         bindtags = list(self.bindtags())
 
@@ -2100,10 +2107,7 @@ class MainText(tk.Text):
         """End dragging of text, dropping it if appropriate."""
         if not self.dragging:
             return ""
-        self.dragging = False
-        self.config(cursor="")
-        self.peer.config(cursor="")
-        self._delete_drag_window()
+        self.cancel_drag_sel()
         idx = event.widget.index(f"@{event.x},{event.y}")
         self.set_mark_position("seldroptarget", IndexRowCol(idx))
 
@@ -2133,6 +2137,8 @@ class MainText(tk.Text):
         """Cancel dragging selected text."""
         self.dragging = False
         self._delete_drag_window()
+        self.config(cursor="")
+        self.peer.config(cursor="")
 
     def _create_drag_window(self, event: tk.Event) -> None:
         """Create a window previewing the text being dragged."""
@@ -2183,9 +2189,9 @@ class MainText(tk.Text):
 
     def _is_copy_mode(self, event: tk.Event) -> bool:
         """Return whether select drag should be copying."""
-        ctrl_held = (int(event.state) & 0x0004) != 0  # Windows/Linux Ctrl
-        cmd_held = (int(event.state) & 0x0010) != 0  # macOS Command
-        return ctrl_held or cmd_held
+        ignored_bits = 0x0100 | 0x0200 | 0x0400  # B1/2/3
+        check_state = int(event.state) & ~ignored_bits
+        return check_state != 0
 
     def _get_truncated_preview(self, text: str) -> str:
         """Get a truncated version of the drag text."""
