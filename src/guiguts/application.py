@@ -445,6 +445,8 @@ class Guiguts:
         preferences.set_callback(PrefKey.THEME_NAME, self.theme_name_callback)
         preferences.set_default(PrefKey.TEAROFF_MENUS, False)
         preferences.set_default(PrefKey.COMPOSE_HISTORY, [])
+        preferences.set_default(PrefKey.COMPOSE_HELP_SORT, 1)
+        preferences.set_default(PrefKey.COMPOSE_HELP_HISTORY, [])
         # Since fonts aren't available until Tk has initialized, set default font family
         # to be empty string here, and set the true default later in MainText.
         preferences.set_default(PrefKey.TEXT_FONT_FAMILY, "")
