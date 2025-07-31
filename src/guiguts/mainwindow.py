@@ -173,7 +173,7 @@ The following variables are available for use in commands:
 $f: full pathname of the current File
 $p: Png name of current image, e.g. 007 for 007.png
 $s: Sequence number of current page, e.g. 7 for 7th png, regardless of numbering
-$t: selected Text (only the first line if column selection)
+$t: selected text with HTML tags stripped (only the first line if column selection)
 $u: Unicode codepoint of current character from status bar, e.g. "0041" for capital A.
 
 To assist in opening a hi-res scan for the current page, $s can also be given an offset, \
@@ -225,8 +225,11 @@ e.g. $(s+7) would give 12 for the 5th png.
             )
             # Non-offset png sequence number
             token = token.replace("$s", str(sequence_number()))
-            # Selected text
-            token = token.replace("$t", re.sub(r"\s+", " ", maintext().selected_text()))
+            # Selected text, strip HTML tags, consolidate whitespace
+            token = token.replace(
+                "$t",
+                re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", maintext().selected_text())),
+            )
             # Unicode codepoint of current char (single selected char, or char following cursor)
             cur = maintext().current_character()
             token = token.replace("$u", f"{ord(cur):04x}" if cur else "")
