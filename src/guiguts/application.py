@@ -1150,7 +1150,7 @@ class Guiguts:
 
     def recreate_menus(self) -> None:
         """Remove the contents of all the top-level menus and re-create them from the metadata.
-        
+
         Warning: don't call this too often. It appears that at least on Windows, this can
         sometimes cause the program to silently exit.
         """
@@ -1270,7 +1270,7 @@ class Guiguts:
         offset = 1 if tk_menu.type(0) == "tearoff" else 0
         for count, file in enumerate(preferences.get(PrefKey.RECENT_FILES)):
             tk_menu.entryconfigure(
-                count+offset,
+                count + offset,
                 label=f"{count+1}: {file}",
                 command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
             )
