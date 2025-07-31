@@ -1434,7 +1434,9 @@ class MessageLog(logging.Handler):
             return f"#{r:02x}{g:02x}{b:02x}"
 
         fg_hex = themed_style().lookup("TLabel", "foreground")
-        self.label_widget.config(text=text.splitlines()[-1], foreground=fg_hex)
+        lines = text.splitlines()
+        msg = lines[-1] if lines else ""
+        self.label_widget.config(text=msg, foreground=fg_hex)
 
         def error_fade() -> None:
             steps = 20
