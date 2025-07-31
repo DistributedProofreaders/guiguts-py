@@ -723,11 +723,15 @@ class TreeviewList(ttk.Treeview):
             self.delete(child)
 
     def identify_rowcol(self, event: tk.Event) -> tuple[str, str]:
-        """Get row and column from mouse click event x & y.
+        """Get row and column from mouse click event x & y. Row is
+        empty if mouse not over a valid row.
 
         Returns:
             Tuple of row and column IDs."""
-        row_id = self.identify_row(event.y)
+        if self.identify_region(event.x, event.y) == "cell":
+            row_id = self.identify_row(event.y)
+        else:
+            row_id = ""
         col_id = self.identify_column(event.x)
         return row_id, col_id
 
