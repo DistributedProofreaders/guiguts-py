@@ -288,7 +288,7 @@ class Guiguts:
         """Handle side effects needed when filename changes."""
         # Recreate menu to reflect recent files
         self.populate_recent_menu()
-        self.recreate_menus()
+        self.update_recent_menu()
         self.update_title()
         CustomMenuDialog.store_filename(self.file.filename)
         maintext().after_idle(maintext().focus_set)
@@ -1149,7 +1149,11 @@ class Guiguts:
             Menu(menubar(), "Window", name="window")
 
     def recreate_menus(self) -> None:
-        """Remove the contents of all the top-level menus and re-create them from the metadata."""
+        """Remove the contents of all the top-level menus and re-create them from the metadata.
+        
+        Warning: don't call this too often. It appears that at least on Windows, this can
+        sometimes cause the program to silently exit.
+        """
         # Remove all tk submenus, buttons, checkbuttons and separators
         for top_level in menubar_metadata().entries:
             assert isinstance(top_level, MenuMetadata)
@@ -1253,6 +1257,22 @@ class Guiguts:
         for fn in range(1, 4):
             menubar_metadata().add_button_orphan(
                 f"Load Recent File {fn}", lambda fn=fn: open_file_number(fn)
+            )
+
+    def update_recent_menu(self) -> None:
+        """Update the Recent Documents menu."""
+        if self.recent_menu is None:
+            return
+        menu_metadata = self.recent_menu
+        tk_menu = menu_metadata.tk_menu
+        if tk_menu is None:
+            return
+        offset = 1 if tk_menu.type(0) == "tearoff" else 0
+        for count, file in enumerate(preferences.get(PrefKey.RECENT_FILES)):
+            tk_menu.entryconfigure(
+                count+offset,
+                label=f"{count+1}: {file}",
+                command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
             )
 
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
