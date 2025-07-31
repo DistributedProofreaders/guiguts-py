@@ -2615,6 +2615,13 @@ class MainText(tk.Text):
             )
             self.highlight_search_deactivate()
             return None, 0
+        except re.error as e:
+            logger.error(
+                f"Regex error: {str(e)}\n\n"
+                "Search highlighting turned off temporarily."
+            )
+            self.highlight_search_deactivate()
+            return None, 0
         if match is None:
             return None, 0
 
