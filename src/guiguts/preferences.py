@@ -73,6 +73,8 @@ class PrefKey(StrEnum):
     THEME_NAME = auto()
     TEAROFF_MENUS = auto()
     COMPOSE_HISTORY = auto()
+    COMPOSE_HELP_SORT = auto()
+    COMPOSE_HELP_HISTORY = auto()
     TEXT_FONT_FAMILY = auto()
     TEXT_FONT_SIZE = auto()
     GLOBAL_FONT_FAMILY = auto()

@@ -1206,6 +1206,7 @@ class ComposeHelpDialog(ToplevelDialog):
             self.top_frame,
             columns=self.column_headings,
         )
+        self.help.grid(row=0, column=0, sticky=tk.NSEW)
         ToolTip(
             self.help,
             "Click (or press Space or Return) to insert character",
@@ -1224,7 +1225,6 @@ class ComposeHelpDialog(ToplevelDialog):
                 text=column,
                 anchor=tk.W,
             )
-        self.help.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.scrollbar = ttk.Scrollbar(
             self.top_frame, orient=tk.VERTICAL, command=self.help.yview
@@ -1232,9 +1232,9 @@ class ComposeHelpDialog(ToplevelDialog):
         self.help.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
-        mouse_bind(self.help, "1", self.insert_char)
-        self.bind("<Return>", lambda _: self.insert_char(None))
-        self.bind("<space>", lambda _: self.insert_char(None))
+        mouse_bind(self.help, "1", self.process_click)
+        self.bind("<Return>", lambda _: self.process_click(None))
+        self.bind("<space>", lambda _: self.process_click(None))
         self.help.focus_force()
 
         init_compose_dict()
@@ -1242,6 +1242,9 @@ class ComposeHelpDialog(ToplevelDialog):
         # Avoid displaying help for reversed 2-char sequence, e.g. "o*" and "*o"
         # Remember ones that have been entered already
         reverse_done = {}
+
+        # Create list of tuples ready for sorting/inserting into dialog
+        self.entries: list[tuple[str, str, str]] = []
         for sequence, char in _compose_dict.items():
             seq_display = sequence.replace(" ", "␣")
             if len(sequence) == 2:
@@ -1262,16 +1265,42 @@ class ComposeHelpDialog(ToplevelDialog):
                 name = unicodedata.name(char)
             except ValueError:
                 continue  # Some Greek combinations don't exist
-            entry = (char, seq_display, name)
-            self.help.insert("", tk.END, values=entry)
+            self.entries.append((char, seq_display, name))
+        self.populate_list()
 
         children = self.help.get_children()
         if children:
             self.help.select_and_focus_by_index(0)
             self.help.see(children[0])
 
-    def insert_char(self, event: Optional[tk.Event]) -> None:
-        """Insert character corresponding to row clicked.
+    def populate_list(self) -> None:
+        """Sort and populate the dialog list with the entries."""
+
+        sort_idx = preferences.get(PrefKey.COMPOSE_HELP_SORT)
+
+        def key_func_codepoint(x: tuple) -> int:
+            """Key function to sort by codepoint."""
+            return x[abs(sort_idx) - 1]
+
+        self.entries.sort(key=key_func_codepoint, reverse=sort_idx < 0)
+        self.help.clear()
+        for entry in self.entries:
+            self.help.insert("", tk.END, values=entry)
+        self.help.select_and_focus_by_index(0)
+
+        for col, column in enumerate(self.column_headings, start=1):
+            if col == sort_idx:
+                column += " ▲"
+            elif col == -sort_idx:
+                column += " ▼"
+            self.help.heading(
+                f"#{col}",
+                text=column,
+                anchor=tk.W,
+            )
+
+    def process_click(self, event: Optional[tk.Event]) -> None:
+        """Insert character corresponding to row clicked or change sort order
 
         Args:
             event: Event containing location of mouse click. If None, use focused row.
@@ -1280,14 +1309,23 @@ class ComposeHelpDialog(ToplevelDialog):
             row_id = self.help.focus()
             if not row_id:
                 return
+            col_id = "#1"
         else:
-            row_id, _ = self.help.identify_rowcol(event)
-        row = self.help.set(row_id)
-        try:
-            char = row[self.column_headings[0]]
-        except KeyError:
-            return
-        insert_in_focus_widget(char)
+            row_id, col_id = self.help.identify_rowcol(event)
+        if row_id:
+            row = self.help.set(row_id)
+            try:
+                char = row[self.column_headings[0]]
+            except KeyError:  # Shouldn't happen
+                return
+            insert_in_focus_widget(char)
+        else:
+            col = int(col_id[1])
+            cur = preferences.get(PrefKey.COMPOSE_HELP_SORT)
+            if abs(cur) == col:
+                col = -cur
+            preferences.set(PrefKey.COMPOSE_HELP_SORT, col)
+            self.populate_list()
 
 
 class RecentPlusEntry:
