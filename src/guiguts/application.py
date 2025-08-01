@@ -188,7 +188,6 @@ class Guiguts:
         root().set_zoom_fullscreen()
 
         self.logging_add_gui()
-        logger.info("GUI initialized")
 
         preferences.run_callbacks()
 
@@ -391,9 +390,12 @@ class Guiguts:
         preferences.set_default(PrefKey.IMAGE_WINDOW_DOCKED, True)
         preferences.set_default(PrefKey.RECENT_FILES, [])
         preferences.set_default(PrefKey.LINE_NUMBERS, True)
-        preferences.set_default(PrefKey.ORDINAL_NAMES, True)
         preferences.set_callback(
             PrefKey.LINE_NUMBERS, lambda value: maintext().show_line_numbers(value)
+        )
+        preferences.set_default(PrefKey.ORDINAL_NAMES, True)
+        preferences.set_callback(
+            PrefKey.ORDINAL_NAMES, lambda _: self.mainwindow.on_resize_status_frame()
         )
         preferences.set_default(PrefKey.SEARCH_HISTORY, [])
         preferences.set_default(PrefKey.REPLACE_HISTORY, [])

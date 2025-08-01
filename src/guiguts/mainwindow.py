@@ -1382,11 +1382,13 @@ class ErrorHandler(logging.Handler):
 class MessageLog(logging.Handler):
     """Handle GUI output of all messages."""
 
-    def __init__(self, *args: Any) -> None:
+    def __init__(self, label_widget: ttk.Label, *args: Any) -> None:
         """Initialize the message log handler."""
         super().__init__(*args)
         self._messagelog: str = ""
         self.dialog: MessageLogDialog
+        self.label_widget = label_widget
+        self.label_fade_ids: list[str] = []  # Store so they can be canceled
 
     def emit(self, record: logging.LogRecord) -> None:
         """Log message in message log.
@@ -1394,6 +1396,7 @@ class MessageLog(logging.Handler):
         Args:
             record: Record containing message.
         """
+        self.display_in_label(record.getMessage())
         message = self.format(record) + "\n"
         self._messagelog += message
 
@@ -1410,6 +1413,58 @@ class MessageLog(logging.Handler):
             self.dialog.append(self._messagelog)
         self.dialog.lift()
 
+    def display_in_label(self, text: str) -> None:
+        """Display (last line of) given message in label."""
+
+        # Cancel any pending fade steps
+        for fid in self.label_fade_ids:
+            self.label_widget.after_cancel(fid)
+        self.label_fade_ids.clear()
+
+        def hex_to_rgb(hex_color: str) -> tuple[int, ...]:
+            """Convert #rrggbb to (r, g, b) tuple."""
+            col_tuple = self.label_widget.winfo_rgb(
+                hex_color
+            )  # returns 16-bit RGB (0–65535)
+            return tuple(c // 256 for c in col_tuple)  # convert to 0–255
+
+        def rgb_to_hex(rgb: tuple[int, ...]) -> str:
+            """Convert (r, g, b) tuple to #rrggbb."""
+            r, g, b = rgb
+            return f"#{r:02x}{g:02x}{b:02x}"
+
+        fg_hex = themed_style().lookup("TLabel", "foreground")
+        lines = text.splitlines()
+        msg = lines[-1] if lines else ""
+        self.label_widget.config(text=msg, foreground=fg_hex)
+
+        def error_fade() -> None:
+            steps = 20
+            delay = 100  # milliseconds
+
+            fg_rgb = hex_to_rgb(fg_hex)
+            bg_rgb = hex_to_rgb(themed_style().lookup("TLabel", "background"))
+
+            def interpolate_rgb(
+                c1: tuple[int, ...], c2: tuple[int, ...], t: float
+            ) -> tuple[int, ...]:
+                """Interpolate between two RGB tuples by factor t (0.0 to 1.0)."""
+                return tuple(int(c1[i] + (c2[i] - c1[i]) * t) for i in range(3))
+
+            for step in range(steps + 1):
+
+                def fade_step(s: int = step) -> None:
+                    current_color = rgb_to_hex(
+                        interpolate_rgb(fg_rgb, bg_rgb, s / steps)
+                    )
+                    self.label_widget.config(foreground=current_color)
+
+                self.label_fade_ids.append(
+                    self.label_widget.after(step * delay, fade_step)
+                )
+
+        self.label_fade_ids.append(self.label_widget.after(5000, error_fade))
+
 
 class MainWindow:
     """Handles the construction of the main window with its basic widgets
@@ -1423,7 +1478,6 @@ class MainWindow:
     mainimage: MainImage
     statusbar: StatusBar
     messagelog: MessageLog
-    busy_widget: ttk.Label
 
     def __init__(self) -> None:
         Root()
@@ -1433,29 +1487,44 @@ class MainWindow:
 
         MainWindow.menubar = tk.Menu()
         root()["menu"] = menubar()
-        MainWindow.messagelog = MessageLog()
 
-        status_frame = ttk.Frame(root())
-        status_frame.grid(
+        self.status_frame = ttk.Frame(root())
+        self.status_frame.grid(
             column=STATUS_COL,
             row=STATUS_ROW,
             sticky="NSEW",
         )
-        status_frame.columnconfigure(0, weight=1)
-        MainWindow.statusbar = StatusBar(status_frame)
+        self.status_frame.columnconfigure(1, weight=1)
+        self.status_frame_wrapped = False
+        self.status_frame.bind("<Configure>", lambda _: self.on_resize_status_frame())
+        MainWindow.statusbar = StatusBar(self.status_frame)
         MainWindow.statusbar.grid(
             column=0,
             row=0,
             sticky="NSW",
         )
-        MainWindow.busy_widget = ttk.Label(status_frame, foreground="red")
-        MainWindow.busy_widget.grid(
-            column=1,
-            row=0,
-            sticky="NSE",
-            padx=10,
+        self.status_label_frame = ttk.Frame(self.status_frame)
+        self.status_label_frame.grid(row=0, column=1, sticky="NSEW")
+        self.status_label_frame.columnconfigure(0, weight=1)
+        self.status_label_frame.columnconfigure(1, weight=0)
+        self.status_label_widget = ttk.Label(
+            self.status_label_frame, borderwidth=1, relief=tk.SUNKEN, padding=1
         )
-        Busy.busy_widget_setup(MainWindow.busy_widget)
+        self.status_label_widget.grid(row=0, column=0, sticky="SEW", padx=5, pady=2)
+        self.status_label_widget.bind(
+            "<ButtonRelease-1>", lambda _: self.messagelog.show()
+        )
+        ToolTip(self.status_label_widget, "Click to view message log")
+        self.busy_widget = ttk.Label(
+            self.status_label_frame,
+            foreground="red",
+            width=8,
+            borderwidth=1,
+            relief=tk.SUNKEN,
+            padding=1,
+        )
+        self.busy_widget.grid(column=1, row=0, sticky="SE", padx=(3, 0), pady=2)
+        Busy.busy_widget_setup(self.busy_widget)
 
         ttk.Separator(root()).grid(
             column=SEPARATOR_COL,
@@ -1510,6 +1579,8 @@ class MainWindow:
         )
         if preferences.get(PrefKey.IMAGE_VIEWER_INTERNAL):
             root().after_idle(lambda: self.load_image("", force_show=True))
+
+        MainWindow.messagelog = MessageLog(self.status_label_widget)
 
     def hide_image(self) -> None:
         """Stop showing the current image."""
@@ -1576,6 +1647,28 @@ class MainWindow:
     def clear_image(self) -> None:
         """Clear the image currently being shown."""
         mainimage().clear_image()
+
+    def on_resize_status_frame(self) -> None:
+        """Handle resizing the status frame, possibly wrapping to 2 columns."""
+        statusbar().update_idletasks()
+
+        btns_width = 0
+        status_bar_btns = list(statusbar().fields.values())
+        # Get total width of buttons - ignore variable length ordinal field initially
+        for btn in status_bar_btns[:-1]:
+            btns_width += btn.winfo_width()
+        btns_width += 200 if preferences.get(PrefKey.ORDINAL_NAMES) else 65
+
+        space_for_error_label = 400
+        wrap_it = self.status_frame.winfo_width() - btns_width < space_for_error_label
+
+        if wrap_it and not self.status_frame_wrapped:
+            self.status_label_frame.grid(row=1, column=0, sticky="SEW", columnspan=2)
+
+            self.status_frame_wrapped = True
+        elif not wrap_it and self.status_frame_wrapped:
+            self.status_label_frame.grid(row=0, column=1, sticky="SEW", columnspan=1)
+            self.status_frame_wrapped = False
 
 
 def do_sound_bell() -> None:
