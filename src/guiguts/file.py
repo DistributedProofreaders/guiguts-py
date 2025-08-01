@@ -446,6 +446,26 @@ class File:
         maintext().do_save(filename, clear_modified_flag=False)
         self.save_bin(filename)
 
+    def include_file(self) -> None:
+        """Open and insert a file into the current file."""
+        filename = filedialog.askopenfilename(
+            filetypes=(
+                ("Text files", "*.txt *.html *.htm"),
+                ("All files", "*.*"),
+            ),
+            title="Include File",
+        )
+        if filename:
+            insert_point = maintext().get_insert_index().index()
+            try:
+                with open(filename, "r", encoding="utf-8") as fh:
+                    maintext().insert(insert_point, maintext().reverse_rtl(fh.read()))
+            except UnicodeDecodeError:
+                logger.warning("Unable to open as UTF-8, so opened as ISO-8859-1.")
+                with open(filename, "r", encoding="iso-8859-1") as fh:
+                    maintext().insert(insert_point, fh.read())
+        grab_focus(root(), maintext())
+
     def check_save(self) -> bool:
         """If file has been edited, check if user wants to save,
         or discard, or cancel the intended operation.
