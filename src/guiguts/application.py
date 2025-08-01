@@ -415,6 +415,7 @@ class Guiguts:
         preferences.set_default(PrefKey.WFDIALOG_SORT_TYPE, WFSortType.ALPHABETIC)
         preferences.set_default(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT, {})
         preferences.set_default(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT, {})
+        preferences.set_default(PrefKey.CHECKERDIALOG_FULL_SEARCH, False)
         preferences.set_default(PrefKey.WFDIALOG_ITALIC_THRESHOLD, ["4"])
         preferences.set_default(PrefKey.WFDIALOG_REGEX, [])
         preferences.set_default(PrefKey.WFDIALOG_HYPHEN_TWO_WORDS, False)

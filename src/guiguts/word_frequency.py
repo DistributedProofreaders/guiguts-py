@@ -417,7 +417,12 @@ class WordFrequencyDialog(ToplevelDialog):
         )
         _, event = process_accel("Cmd/Ctrl+1")
         self.text.bind(event, self.search_word)
-        self.text.bind("<Key>", self.goto_word_by_letter)
+
+        # Bind keystrokes to search function
+        self.text.bind("<Key>", self.goto_word_by_letters)
+        self.search_buffer = ""
+        self.reset_timer_id = ""
+
         _, event = process_accel("Cmd/Ctrl+a")
         self.text.bind(event, lambda _e: self.text.event_generate("<<SelectAll>>"))
         _, event = process_accel("Cmd/Ctrl+A")
@@ -623,8 +628,8 @@ class WordFrequencyDialog(ToplevelDialog):
         self.goto_word(entry_index, reverse=reverse)
         return "break"
 
-    def goto_word_by_letter(self, event: tk.Event) -> str:
-        """Go to first occurrence of word beginning with the character in `event`.
+    def goto_word_by_letters(self, event: tk.Event) -> str:
+        """Go to first occurrence of word beginning with typed character(s).
 
         Args:
             event: Event containing keystroke.
@@ -632,15 +637,38 @@ class WordFrequencyDialog(ToplevelDialog):
         Returns:
             "break" to stop further processing of events if valid character
         """
-        if not event.char:
+        if not event.char or not event.char.isprintable():
             return ""
         # If modifiers other than Shift & Caps Lock, don't goto word - allow default processing
         if int(event.state) & ~(0x0001 | 0x0002) != 0:
             return ""
-        low_char = event.char.lower()
-        for idx, entry in enumerate(self.entries):
-            if entry.word.lower().startswith(low_char):
-                self.text.select_line(idx + 1)
+
+        def reset_buffer() -> None:
+            """Reset the search buffer and the reset timer"""
+            self.reset_timer_id = ""
+            self.search_buffer = ""
+
+        # If timer running, cancel it - new one is started below
+        if self.reset_timer_id:
+            self.after_cancel(self.reset_timer_id)
+            self.reset_timer_id = ""
+
+        # If user doesn't press another key within 1 second, reset the search buffer
+        self.reset_timer_id = self.after(1000, reset_buffer)
+
+        n_entries = len(self.entries)
+        self.search_buffer += event.char.lower()
+        # If nothing selected, pretend last item was selected
+        # (Line numbers begin at 1)
+        selected = (self.text.get_select_line_num() or n_entries) - 1
+        # If first keypress, start from next entry, so we don't re-find selected one
+        if len(self.search_buffer) == 1:
+            selected = selected + 1
+        # Search from selected to end of list & wrap to beginning
+        for loop in range(n_entries):
+            idx = (selected + loop) % n_entries
+            if self.entries[idx].word.lower().startswith(self.search_buffer):
+                self.goto_word(idx, force_first=True)
                 return "break"
         return ""
 
