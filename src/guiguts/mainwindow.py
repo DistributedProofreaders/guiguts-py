@@ -1514,6 +1514,7 @@ class MainWindow:
         self.status_label_widget.bind(
             "<ButtonRelease-1>", lambda _: self.messagelog.show()
         )
+        ToolTip(self.status_label_widget, "Click to view message log")
         self.busy_widget = ttk.Label(
             self.status_label_frame,
             foreground="red",
