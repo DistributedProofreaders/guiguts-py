@@ -1511,6 +1511,9 @@ class MainWindow:
             self.status_label_frame, borderwidth=1, relief=tk.SUNKEN, padding=1
         )
         self.status_label_widget.grid(row=0, column=0, sticky="SEW", padx=5, pady=2)
+        self.status_label_widget.bind(
+            "<ButtonRelease-1>", lambda _: self.messagelog.show()
+        )
         self.busy_widget = ttk.Label(
             self.status_label_frame,
             foreground="red",
