@@ -4391,6 +4391,17 @@ class MainText(tk.Text):
         else:
             self.delete(ins_idx, f"{ins_idx} lineend")
 
+    def delete_next_character(self) -> None:
+        """Delete character to right of current cursor position, as Ctrl+D does
+        by default in Text widgets. If at end of line, delete newline character."""
+        # undo_block_begin is intentionally NOT used here
+        ranges = maintext().selected_ranges()
+        if ranges:
+            for _range in ranges:
+                self.delete(_range.start.index(), _range.end.index())
+        else:
+            self.delete(self.get_insert_index().index())
+
 
 def img_from_page_mark(mark: str) -> str:
     """Get base image name from page mark, e.g. "Pg027" gives "027".
