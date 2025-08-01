@@ -1450,8 +1450,10 @@ class CheckerDialog(ToplevelDialog):
             indices = range(len(self.entries) - 1, -1, -1)
         else:
             indices = range(entry_index, entry_index + 1)
+        count = 0
         for ii in indices:
             if self.entries[ii].get_match_text(self.match_on_highlight) == match_text:
+                count += 1
                 if process and self.process_command:
                     self.process_command(self.entries[ii])
                 if remove:
@@ -1462,6 +1464,7 @@ class CheckerDialog(ToplevelDialog):
                     linenum = self.linenum_from_entry_index(ii)
                     self.text.delete(f"{linenum}.0", f"{linenum + 1}.0")
                     del self.entries[ii]
+        self.report_fix_removes(bool(process and self.process_command), remove, count)
         self.update_count_label()
         self.refresh_view_options()
         # Select line that is now where the first processed/removed line was
@@ -1475,6 +1478,18 @@ class CheckerDialog(ToplevelDialog):
             except IndexError:
                 return
             self.select_entry_by_index(entry_index)
+
+    def report_fix_removes(self, process: bool, remove: bool, num: int) -> None:
+        """Report how many removals and fixes were made."""
+        if process and remove:
+            op = "Fixed and hid"
+        elif process:
+            op = "Fixed"
+        elif remove:
+            op = "Hid"
+        else:
+            return
+        logger.info(f"{op} {sing_plur(num, 'entry', 'entries')}")
 
     def process_entry_current(self, all_matching: bool = False) -> None:
         """Call the "process" callback function, if any, on the
