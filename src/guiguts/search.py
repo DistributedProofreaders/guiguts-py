@@ -811,7 +811,8 @@ class SearchDialog(ToplevelDialog):
         """
         if self.message.winfo_exists():
             self.message["text"] = message
-            logger.info(message)
+            if message:
+                logger.info(message)
 
 
 def show_search_dialog() -> None:
