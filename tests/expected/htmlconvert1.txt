@@ -152,13 +152,14 @@ table.autotable th { padding: 0.25em; }
 
 .gesperrt
 {
+    font-style: normal;
     letter-spacing: 0.2em;
     margin-right: -0.2em;
 }
-
-em.gesperrt
-{
-    font-style: normal;
+.x-ebookmaker-2 .gesperrt {
+    font-style: italic;
+    letter-spacing: normal;
+    margin-right: 0em;
 }
 
 figcaption   {font-weight: bold;}
