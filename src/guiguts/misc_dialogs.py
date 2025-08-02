@@ -2041,6 +2041,9 @@ class UnicodeBlockDialog(ToplevelDialog):
         self.combobox["values"] = block_list
         self.combobox["state"] = "readonly"
         self.combobox.bind("<<ComboboxSelected>>", lambda _e: self.block_selected())
+        self.combobox.bind("<Key>", self.combo_key, add=True)
+        self.reset_timer_id = ""
+        self.search_buffer = ""
         self.top_frame.rowconfigure(0, weight=0)
         self.top_frame.rowconfigure(1, weight=1)
         self.chars_frame = ScrollableFrame(self.top_frame)
@@ -2084,6 +2087,61 @@ class UnicodeBlockDialog(ToplevelDialog):
         dlg.combobox.set(UnicodeBlockDialog.commonly_used_characters_name)
         dlg.block_selected(update_pref=False)
 
+    def combo_key(self, event: tk.Event) -> str:
+        """Handle key press in combo box."""
+        if not event.char or not event.char.isalnum():
+            return ""
+        # If modifiers other than Shift & Caps Lock, don't goto word - allow default processing
+        if int(event.state) & ~(0x0001 | 0x0002) != 0:
+            return ""
+        low_char = event.char.lower()
+
+        def reset_buffer() -> None:
+            """Reset the search buffer and the reset timer"""
+            self.reset_timer_id = ""
+            self.search_buffer = ""
+
+        # If timer running, cancel it - new one is started below
+        if self.reset_timer_id:
+            self.after_cancel(self.reset_timer_id)
+            self.reset_timer_id = ""
+
+        # If user doesn't press another key within 1 second, reset the search buffer
+        self.reset_timer_id = self.after(1000, reset_buffer)
+
+        combobox: ttk.Combobox = event.widget
+        entries: list[str] = combobox["values"]
+        n_entries = len(entries)
+        self.search_buffer += low_char
+        # If nothing selected, pretend last item was selected
+        selected = combobox.current() or n_entries - 1
+        # If first keypress, start from next entry, so we don't re-find selected one
+        if len(self.search_buffer) == 1:
+            selected = selected + 1
+        # Search from selected to end of list & wrap to beginning
+        for loop in range(n_entries):
+            idx = (selected + loop) % n_entries
+            entry = entries[idx]
+            low_text = entry.lower()
+            # First check user's search against words in block name
+            if any(word.startswith(self.search_buffer) for word in low_text.split()):
+                break
+            # Now check against codepoint range
+            if re.fullmatch(r"[0-9a-f]{1,4}", self.search_buffer):
+                # Pad user's search with zeros, e.g. "a15" will match "a100-apsmall300"
+                codepoint = int(self.search_buffer.ljust(4, "0"), 16)
+                # Check if block name has a codepoint range
+                if not (match := re.search(r"\(([\da-f]{4})–([\da-f]{4})\)", low_text)):
+                    continue
+                if int(match[1], 16) <= codepoint <= int(match[2], 16):
+                    break
+        else:  # Didn't find a match in the block name or codepoint range
+            return ""
+        # Found a match
+        combobox.current(idx)
+        self.block_selected()
+        return "break"
+
     def block_selected(self, update_pref: bool = True) -> None:
         """Called when a Unicode block is selected.
 
@@ -2095,6 +2153,7 @@ class UnicodeBlockDialog(ToplevelDialog):
                 btn.destroy()
         self.button_list.clear()
         self.chars_frame.reset_scroll()
+        self.combobox.focus_set()
 
         def add_button(count: int, char: str) -> None:
             """Add a button to the Unicode block dialog.
