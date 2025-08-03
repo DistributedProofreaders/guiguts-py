@@ -959,7 +959,7 @@ def specials_check(project_dict: ProjectDict) -> None:
 
         # Single character line
         heading = "Single character line."
-        process_line_with_pattern(r"^.$", exceptions, line)
+        process_line_with_pattern(r"^[^]]$", exceptions, line)
 
         # Broken hyphenation
         heading = "Broken hyphenation."
@@ -1277,7 +1277,11 @@ def specials_check(project_dict: ProjectDict) -> None:
         limit = (
             5
             if header_line
-            in ("Comma after 'the'.", "Query period-comma (excluding exceptions).")
+            in (
+                "Comma after 'the'.",
+                "Query period-comma (excluding exceptions).",
+                "Single '1' in a word or a standalone '1' (excluding exceptions).",
+            )
             else 0
         )
         consolidate_messages(msg_list, limit=limit)
