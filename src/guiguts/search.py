@@ -1080,7 +1080,7 @@ def get_regex_replacement(
     search_regex = re.sub(r"\(\?=.*?\)$", "", search_regex)
     search_regex = search_regex.removeprefix(r"\b").removesuffix(r"\b")
 
-    for ch in ("E", "C", "L", "U", "T", "A", "R"):
+    for ch in ("E", "C", "L", "U", "T", "A", "R", "N"):
         replace_regex = replace_regex.replace(rf"\{ch}", f"{temp_bs}{ch}")
     replace_str = re.sub(search_regex, replace_regex, match_text, flags=flags)
 
@@ -1146,7 +1146,14 @@ def get_regex_replacement(
         try:
             return roman.toRoman(int(string))
         except (ValueError, roman.OutOfRangeError) as exc:
-            raise re.error("\\R...\\E error - invalid number") from exc
+            raise re.error(f"\\R...\\E error: {exc}") from exc
+
+    def make_arabic(string: str) -> str:
+        """Convert Roman numerals to Arabic, ignoring spaces."""
+        try:
+            return str(roman.fromRoman(string.upper().replace(" ", "")))
+        except (ValueError, roman.InvalidRomanNumeralError) as exc:
+            raise re.error(f"\\N...\\E error: {exc}") from exc
 
     replace_str = do_extended_regex("C", eval_python, replace_str)
     replace_str = do_extended_regex("L", lambda s: s.lower(), replace_str)
@@ -1154,6 +1161,7 @@ def get_regex_replacement(
     replace_str = do_extended_regex("T", lambda s: s.title(), replace_str)
     replace_str = do_extended_regex("A", make_anchor, replace_str)
     replace_str = do_extended_regex("R", make_roman, replace_str)
+    replace_str = do_extended_regex("N", make_arabic, replace_str)
     return replace_str
 
 
