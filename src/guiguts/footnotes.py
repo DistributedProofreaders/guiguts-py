@@ -1405,6 +1405,8 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
                     error_prefix = "CONTINUATION: "
                 else:
                     error_prefix = "NO ANCHOR: "
+            elif maintext().get(fn_record.end.index()) == "*":
+                error_prefix = "CONTINUED: "
             # If "[Footnote" found within footnote, something's wrong, probably relating
             # to nested or broken markup
             elif "[Footnote" in maintext().get(
