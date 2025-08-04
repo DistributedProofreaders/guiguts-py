@@ -2079,6 +2079,7 @@ class MainText(tk.Text):
 
     def start_drag_sel(self, event: tk.Event) -> str:
         """Start dragging selected text."""
+        self._on_change()
         self.drag_start_click = (event.x, event.y)
         index = event.widget.index(f"@{event.x},{event.y}")
         sel_ranges = self.selected_ranges()
@@ -3638,6 +3639,7 @@ class MainText(tk.Text):
         *,
         backwards: bool = False,
         charpair: str = "",
+        exception: str = "",
     ) -> str:
         """
         If searching backward, count characters (e.g. parenthesis) until finding a
@@ -3658,6 +3660,18 @@ class MainText(tk.Text):
         endchar using f"[{startchar}{endchar}]". For example,
 
         startchar='(', endchar=')' results in: charpar='[()]'
+
+        Args:
+            top_index: Top of range to search in.
+            searchfromindex: Index of point to search from.
+            bot_index: Bottom of range to search in.
+            startchar: First character of pair.
+            endchar: Last character of pair.
+            backwards: True to search backwards.
+            charpair: Optional regex to match both chars where default will not work.
+            exception: Optional 3 character exception regex, e.g. to ignore quote
+                if is surrounded by letters.
+
         """
 
         forwards = True
@@ -3693,9 +3707,14 @@ class MainText(tk.Text):
                 forwards=forwards,
                 regexp=True,
             )
-
             if not searchfromindex:
                 break
+
+            # Check if this is an exception, in which case, skip it
+            test_str = self.get(f"{searchfromindex}-1c", f"{searchfromindex}+2c")
+            if exception and re.fullmatch(exception, test_str):
+                searchfromindex = f"{searchfromindex}{index_offset}"
+                continue
 
             # get one character at the identified index
             char = self.get(searchfromindex)
@@ -3728,6 +3747,7 @@ class MainText(tk.Text):
         tag_name: str,
         *,
         charpair: str = "",
+        exception: str = "",
     ) -> None:
         """
         Search for a pair of matching characters that bracket the cursor and tag
@@ -3743,6 +3763,8 @@ class MainText(tk.Text):
             endchar: closing chair of pair (e.g. ')')
             tag_name: name of tag for highlighting (class HighlightTag)
             charpair: optional regex override for matching the pair (e.g. '[][]')
+            exception: Optional 3 character exception regex, e.g. to ignore quote
+                if is surrounded by letters.
         """
         self.tag_remove(tag_name, "1.0", tk.END)
         cursor = self.get_insert_index().index()
@@ -3763,6 +3785,7 @@ class MainText(tk.Text):
             endchar,
             charpair=charpair,
             backwards=True,
+            exception=exception,
         )
         if not startindex:
             return
@@ -3778,6 +3801,7 @@ class MainText(tk.Text):
             startchar,
             endchar,
             charpair=charpair,
+            exception=exception,
         )
 
         if not (startindex and endindex):
@@ -3827,14 +3851,10 @@ class MainText(tk.Text):
     def highlight_single_quotes_around_cursor(self) -> None:
         """Highlight pair of single quotes that most closely brackets the cursor."""
         self.highlight_single_pair_bracketing_cursor(
-            "'",
-            "'",
-            HighlightTag.STRAIGHT_SINGLE_QUOTE,
+            "'", "'", HighlightTag.STRAIGHT_SINGLE_QUOTE, exception=r"\p{L}'\p{L}"
         )
         self.highlight_single_pair_bracketing_cursor(
-            "‘",
-            "’",
-            HighlightTag.CURLY_SINGLE_QUOTE,
+            "‘", "’", HighlightTag.CURLY_SINGLE_QUOTE, exception=r"\p{L}’\p{L}"
         )
 
     def highlight_quotbrac(self) -> None:
