@@ -2087,7 +2087,7 @@ class MainText(tk.Text):
         sel_start = sel_ranges[0].start.index()
         sel_end = sel_ranges[0].end.index()
 
-        if self.compare(index, "<", sel_start) or self.compare(index, ">", sel_end):
+        if self.compare(index, "<", sel_start) or self.compare(index, ">=", sel_end):
             return ""
         self.drag_start_index = sel_start  # Index of start of text
         self.drag_text = self.get(sel_start, sel_end)  # Text being dragged
