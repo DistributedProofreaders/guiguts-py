@@ -1953,7 +1953,6 @@ def stealth_scannos() -> None:
     _the_stealth_scannos_dialog = ScannoCheckerDialog.show_dialog(
         rerun_command=stealth_scannos,
         process_command=do_replace_scanno,
-        show_all_buttons=False,
         match_on_highlight=CheckerMatchType.ALL_MESSAGES,
     )
     _the_stealth_scannos_dialog.load_scannos()
