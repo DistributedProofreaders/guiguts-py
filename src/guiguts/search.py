@@ -1149,9 +1149,9 @@ def get_regex_replacement(
             raise re.error(f"\\R...\\E error: {exc}") from exc
 
     def make_arabic(string: str) -> str:
-        """Convert Roman numerals to Arabic."""
+        """Convert Roman numerals to Arabic, ignoring spaces."""
         try:
-            return str(roman.fromRoman(string.upper()))
+            return str(roman.fromRoman(string.upper().replace(" ", "")))
         except (ValueError, roman.InvalidRomanNumeralError) as exc:
             raise re.error(f"\\N...\\E error: {exc}") from exc
 
