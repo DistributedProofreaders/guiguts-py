@@ -1665,11 +1665,14 @@ class ScannoCheckerDialog(CheckerDialog):
         )
         replace.grid(column=0, row=2, sticky="NSEW", pady=2)
         replace.bind("<Return>", lambda _: self.list_scannos(update_fields=False))
-        ttk.Button(
+        repl_btn = ttk.Button(
             frame,
             text="Replace",
             command=lambda: self.process_entry_current(all_matching=False),
-        ).grid(column=1, row=2, sticky="NSEW", padx=(5, 0), pady=2)
+        )
+        repl_btn.grid(column=1, row=2, sticky="NSEW", padx=(5, 0), pady=2)
+        ToolTip(repl_btn, "Click to replace. Shift-click to open S/R dialog")
+        repl_btn.bind("<Shift-ButtonPress-1>", lambda _: self.sr_dialog())
         ttk.Button(
             frame,
             text="Replace All",
@@ -1921,6 +1924,24 @@ class ScannoCheckerDialog(CheckerDialog):
         self.scanno_textvariable.set(self.replacement_textvariable.get())
         self.replacement_textvariable.set(tempstr)
         self.list_scannos(update_fields=False)
+
+    def sr_dialog(self) -> str:
+        """Pop S/R dialog pre-populated to help user S/R scanno."""
+        preferences.set(PrefKey.SEARCHDIALOG_REGEX, True)
+        preferences.set(PrefKey.SEARCHDIALOG_WHOLE_WORD, False)
+        preferences.set(PrefKey.SEARCHDIALOG_REVERSE, False)
+        dlg = SearchDialog.show_dialog()
+        dlg.search_box.set(self.scanno_textvariable.get())
+        dlg.replace_box[0].set(self.replacement_textvariable.get())
+        maintext().set_insert_index(
+            maintext().rowcol(f"{maintext().get_insert_index().index()}-1c")
+        )
+        dlg.search_clicked()
+        dlg.lift()
+        dlg.replace_box[0].focus_set()
+        dlg.replace_box[0].icursor("end")
+        dlg.replace_box[0].selection_range(0, "end")
+        return "break"
 
 
 _the_stealth_scannos_dialog: Optional[ScannoCheckerDialog] = None
