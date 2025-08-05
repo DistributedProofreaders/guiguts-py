@@ -826,11 +826,13 @@ class MainText(tk.Text):
         self.column_selecting = False
 
         # Dragging a selection
-        self.dragging = False
-        self.drag_start_index = ""
-        self.drag_text = ""
-        self.drag_window: Optional[tk.Toplevel] = None
-        self.drag_copy_label: Optional[tk.Label] = None
+        self.dragging = False  # Whether dragging
+        self.drag_cursor = False  # Whether cursor has been changed to drag
+        self.drag_start_index = ""  # Index of start of text
+        self.drag_start_click = (-1, -1)  # Coordinates of initial click
+        self.drag_text = ""  # Text being dragged
+        self.drag_window: Optional[tk.Toplevel] = None  # Window to drag
+        self.drag_copy_label: Optional[tk.Label] = None  # Label in window
         self.bind_event(
             "<ButtonPress-1>", self.start_drag_sel, add=True, bind_peer=True
         )
@@ -2077,6 +2079,7 @@ class MainText(tk.Text):
 
     def start_drag_sel(self, event: tk.Event) -> str:
         """Start dragging selected text."""
+        self.drag_start_click = (event.x, event.y)
         index = event.widget.index(f"@{event.x},{event.y}")
         sel_ranges = self.selected_ranges()
         if len(sel_ranges) != 1:  # No selection or column selection
@@ -2084,20 +2087,30 @@ class MainText(tk.Text):
         sel_start = sel_ranges[0].start.index()
         sel_end = sel_ranges[0].end.index()
 
-        if self.compare(index, "<", sel_start) or self.compare(index, ">", sel_end):
+        if self.compare(index, "<", sel_start) or self.compare(index, ">=", sel_end):
             return ""
-        self.drag_start_index = sel_start
-        self.drag_text = self.get(sel_start, sel_end)
-        self.dragging = True
-        event.widget.config(cursor="fleur")
-        self._create_drag_window(event)
+        self.drag_start_index = sel_start  # Index of start of text
+        self.drag_text = self.get(sel_start, sel_end)  # Text being dragged
+        self.dragging = True  # We've started dragging
+        self.drag_cursor = False  # Haven't changed cursor yet
         return "break"
 
     def do_drag_sel(self, event: tk.Event) -> str:
         """Do the dragging of selected text."""
         if not self.dragging:
             return ""
-        event.widget.mark_set("insert", f"@{event.x},{event.y}")
+        # Return if mouse hasn't moved since initial click
+        if self.drag_start_click == (event.x, event.y):
+            return ""
+        # Once we start dragging, clear initial click position
+        self.drag_start_click = (-1, -1)
+
+        # If first time move, change cursor and actually create the drag window
+        if not self.drag_cursor:
+            self._create_drag_window(event)
+            event.widget.config(cursor="fleur")
+            self.drag_cursor = True
+        event.widget.mark_set("insert", self._get_drag_index(event))
         event.widget.see("insert")
         self._move_drag_window(event)
 
@@ -2108,27 +2121,32 @@ class MainText(tk.Text):
         if not self.dragging:
             return ""
         self.cancel_drag_sel()
-        idx = event.widget.index(f"@{event.x},{event.y}")
-        self.set_mark_position("seldroptarget", IndexRowCol(idx))
+        self.set_mark_position(
+            "seldroptarget", IndexRowCol(self._get_drag_index(event))
+        )
 
-        # Don't drop onto the original selection
+        # Don't drop onto the original selection - that is equivalent of
+        # just clicking in the selection
         end_index = event.widget.index(
             f"{self.drag_start_index} + {len(self.drag_text)}c"
         )
         if self.compare("seldroptarget", ">", self.drag_start_index) and self.compare(
             "seldroptarget", "<", end_index
         ):
+            self.clear_selection()
+            event.widget.mark_set(tk.INSERT, "seldroptarget")
             return ""
 
+        # Handle dropping - may need to delete text from original position
         self.undo_block_begin()
-        if not self._is_copy_mode(event):
+        if not self._is_drag_copy_mode(event):
             self.delete(
                 self.drag_start_index,
                 f"{self.drag_start_index} + {len(self.drag_text)}c",
             )
-
         self.insert("seldroptarget", self.drag_text)
 
+        # Select newly dropped text instead
         self.tag_remove("sel", "1.0", "end")
         self.tag_add("sel", "seldroptarget", f"seldroptarget + {len(self.drag_text)}c")
         return "break"
@@ -2141,6 +2159,13 @@ class MainText(tk.Text):
         self._delete_drag_window()
         self.config(cursor="")
         self.peer.config(cursor="")
+        self.drag_cursor = False
+        self.drag_start_click = (-1, -1)
+
+    def _get_drag_index(self, event: tk.Event) -> str:
+        """Get index from event with slight offset, or it feels as though
+        it goes to the left of the character too soon."""
+        return event.widget.index(f"@{event.x+5},{event.y}")
 
     def _create_drag_window(self, event: tk.Event) -> None:
         """Create a window previewing the text being dragged."""
@@ -2148,7 +2173,7 @@ class MainText(tk.Text):
         self.drag_window.overrideredirect(True)  # No window manager frame
         self.drag_window.attributes("-topmost", True)
         self.drag_window.attributes("-alpha", 0.6)
-        truncated_text = self._get_truncated_preview(self.drag_text)
+        truncated_text = self._get_truncated_drag_preview(self.drag_text)
         tk.Label(
             self.drag_window,
             text=truncated_text,
@@ -2164,7 +2189,7 @@ class MainText(tk.Text):
             bd=1,
         )
         self.drag_copy_label.grid(row=0, column=1, sticky="NSEW")
-        if not self._is_copy_mode(event):
+        if not self._is_drag_copy_mode(event):
             self.drag_copy_label.grid_remove()
         self._move_drag_window(event)
 
@@ -2177,7 +2202,7 @@ class MainText(tk.Text):
         y = event.widget.winfo_rooty() + event.y + 10
         self.drag_window.geometry(f"+{x}+{y}")
         assert self.drag_copy_label is not None
-        if self._is_copy_mode(event):
+        if self._is_drag_copy_mode(event):
             self.drag_copy_label.grid()  # Show "+" label/cursor when copying
             event.widget.config(cursor="cross")
         else:
@@ -2191,13 +2216,13 @@ class MainText(tk.Text):
         self.drag_window.destroy()
         self.drag_window = None
 
-    def _is_copy_mode(self, event: tk.Event) -> bool:
+    def _is_drag_copy_mode(self, event: tk.Event) -> bool:
         """Return whether select drag should be copying."""
         ignored_bits = 0x0100 | 0x0200 | 0x0400  # B1/2/3
         check_state = int(event.state) & ~ignored_bits
         return check_state != 0
 
-    def _get_truncated_preview(self, text: str) -> str:
+    def _get_truncated_drag_preview(self, text: str) -> str:
         """Get a truncated version of the drag text."""
         max_lines = 3
         max_chars = 20
