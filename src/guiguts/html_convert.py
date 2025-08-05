@@ -268,11 +268,15 @@ def html_convert_title() -> None:
         )
         # Work in reverse to avoid affecting index locations - add "</h1>" markup
         if block_markup_after:  # Markup after needs removing
-            maintext().replace(f"{end}+1l linestart", f"{end}+1l lineend", "</h1>")
+            maintext().replace(f"{end}+1l linestart", f"{end}+1l lineend", "</h1>\n")
         elif block_markup_before:  # Insert "before" markup after "</h1>"
-            maintext().insert(end, f"\n</h1>\n{prev_line}")
+            maintext().insert(end, f"\n</h1>\n\n{prev_line}")
+            # Remove blank line after inserted block markup
+            blank = f"{end} +4l"
+            if maintext().get(f"{blank} linestart", f"{blank} lineend") == "":
+                maintext().delete(f"{blank} linestart", f"{blank} +1l linestart")
         else:
-            maintext().insert(end, "\n</h1>")
+            maintext().insert(end, "\n</h1>\n")
         # Add "<br>" on  intervening lines
         for row in range(title_match.rowcol.row, end_row):
             maintext().insert(f"{row}.end", "<br>")
