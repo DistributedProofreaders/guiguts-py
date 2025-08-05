@@ -1043,8 +1043,12 @@ class MainText(tk.Text):
 
         # Override "Home" behavior
         self.bind_event("<Home>", self.go_home, add=True, bind_peer=True)
+        self.bind_event("<Shift-Home>", self.go_home, add=True, bind_peer=True)
         if is_mac():
             self.bind_event("<Command-Left>", self.go_home, add=True, bind_peer=True)
+            self.bind_event(
+                "<Shift-Command-Left>", self.go_home, add=True, bind_peer=True
+            )
 
         # get the current bind tags
         bindtags = list(self.bindtags())
