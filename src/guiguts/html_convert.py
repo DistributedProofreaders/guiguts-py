@@ -496,7 +496,9 @@ def html_convert_body() -> None:
             continue
 
         # "/p" --> poetry until we get "p/"
-        if selection_lower == "/p":  # open
+        # Don't process here if we're in chapter heading - allow the "/p"
+        # to signal the end of chapter heading - code will loop round again
+        if selection_lower == "/p" and not in_chap_heading:  # open
             check_valid_open_markup()
             p_chapter_div_open = maybe_insert_chapter_div(line_start)
             poetry_flag = True
@@ -802,7 +804,7 @@ def html_convert_body() -> None:
         # In chapter heading - store lines in heading until we get 2 blank lines
         # (if HTML_MULTILINE_CHAPTER_HEADINGS is True) or 1 blank line if it's False
         if in_chap_heading:
-            if selection and not selection.startswith(("/#", "[Footnote")):
+            if selection and not selection_lower.startswith(("/#", "/p", "[footnote")):
                 chap_line = selection.strip()
                 maintext().replace(line_start, line_end, f"    {chap_line}")
                 chap_heading += (" " if chap_heading else "") + chap_line
@@ -818,6 +820,7 @@ def html_convert_body() -> None:
                 #   First blank line of single line heading
                 #   Second blank line of multiline heading
                 #   Start of blockquote, after blank line of multiline heading
+                #   Start of poetry, after blank line of multiline heading
                 #   Start of footnote, after blank line of multiline heading
                 # First blank line may have had "<br>" inserted in elif above.
                 # Remove that and add </h2> at end of chapter heading.
@@ -829,9 +832,9 @@ def html_convert_body() -> None:
                     )
                 else:
                     maintext().insert(line_start, "  </h2>\n")
-                # If stopping due to blockquote/footnote, don't advance through file
+                # If stopping due to blockquote/poetry/footnote, don't advance through file
                 # Need to loop round again so the found markup is processed
-                if not selection.startswith(("/#", "[Footnote")):
+                if not selection_lower.startswith(("/#", "/p", "[footnote")):
                     next_step += 1
                 # Don't want footnote anchors in auto ToC
                 chap_heading = re.sub(r"\[.{1,5}\]", "", chap_heading)
