@@ -3477,11 +3477,9 @@ class MainText(tk.Text):
     def go_home(self, event: tk.Event) -> str:
         """Handle the Home key. Either move to start of line, or if
         already there, move to first non-space on line."""
-        print(f"Entry: {event.state:x}", flush=True)
         if int(event.state) & 0x0004:
             return ""
         start = self.get_insert_index()
-        print(f"Start {start}", flush=True)
         # If already at home, move forward to first non-space
         if start.col == 0:
             idx = start.index()
@@ -3489,7 +3487,6 @@ class MainText(tk.Text):
             new = IndexRowCol(start.row, len(line) - len(line.lstrip(" ")))
         else:
             new = IndexRowCol(start.row, 0)
-        print(f"New {new}", flush=True)
         event.widget.mark_set(tk.INSERT, new.index())
         # If Shift key is held, need to adjust selection
         if int(event.state) & 0x0001:
@@ -3501,18 +3498,15 @@ class MainText(tk.Text):
                     sel.start = new
                 elif sel.end == start:
                     sel.end = new
-                print(f"Sel {sel.start.index()} {sel.end.index()}", flush=True)
                 # Ensure start of selection is before end
                 if self.compare(sel.start.index(), ">", sel.end.index()):
                     sel.start, sel.end = sel.end, sel.start
                 self.do_select(sel)
             # If no selection, select from start position to "Home"
             else:
-                print("Selecting new start", flush=True)
                 self.do_select(IndexRange(new, start))
         # If no Shift, just moving, so clear selection
         else:
-            print("Clearing selection", flush=True)
             self.clear_selection()
         return "break"
 
