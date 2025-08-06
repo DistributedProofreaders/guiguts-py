@@ -365,8 +365,9 @@ def html_convert_body() -> None:
         "sc": False,
     }  # Flags to track open inline markup across lines
 
-    def check_illegal_nesting() -> None:
-        """Raise exception if already inside block markup."""
+    def check_valid_open_markup() -> None:
+        """Raise exception if already inside block markup, or if no blank line
+        immediately preceding."""
         if (
             pre_flag  # pylint: disable=too-many-boolean-expressions
             or front_flag
@@ -379,6 +380,14 @@ def html_convert_body() -> None:
             or index_flag
         ):
             raise SyntaxError(f"Line {step}: Illegally nested block markup")
+        if step == 1:  # OK if first line of file
+            return
+        prev_line = maintext().get(f"{step-1}.0", f"{step-1}.end")
+        # Previous line must be blank, or open block quote (div or blockquote)
+        if prev_line and not prev_line.startswith(("<div", "<blockquote")):
+            raise SyntaxError(
+                f"Line {step}: Open block markup must be preceded by blank line"
+            )
 
     def reset_ibs_dict() -> None:
         """Set the italic/bold/smcap flags to False when starting a new block."""
@@ -465,6 +474,7 @@ def html_convert_body() -> None:
 
         # "/f" --> center all paragraphs until we get "f/"
         if selection_lower == "/f":  # open
+            check_valid_open_markup()
             maintext().delete(line_start, line_end)
             front_flag = True
             markup_start = step
@@ -487,6 +497,7 @@ def html_convert_body() -> None:
 
         # "/p" --> poetry until we get "p/"
         if selection_lower == "/p":  # open
+            check_valid_open_markup()
             p_chapter_div_open = maybe_insert_chapter_div(line_start)
             poetry_flag = True
             markup_start = step
@@ -545,6 +556,7 @@ def html_convert_body() -> None:
 
         # "/l" --> list until we get "l/"
         if selection_lower == "/l":  # open
+            check_valid_open_markup()
             l_chapter_div_open = maybe_insert_chapter_div(line_start)
             maintext().replace(
                 line_start,
@@ -600,7 +612,7 @@ def html_convert_body() -> None:
 
         # "/$" --> nowrap until we get "$/"
         if selection == "/$":  # open
-            check_illegal_nesting()
+            check_valid_open_markup()
             d_chapter_div_open = maybe_insert_chapter_div(line_start)
             dollar_nowrap_flag = True
             markup_start = step
@@ -622,7 +634,7 @@ def html_convert_body() -> None:
             continue
         # "/*" --> nowrap until we get "*/"
         if selection == "/*":  # open
-            check_illegal_nesting()
+            check_valid_open_markup()
             a_chapter_div_open = maybe_insert_chapter_div(line_start)
             asterisk_nowrap_flag = True
             markup_start = step
@@ -659,7 +671,7 @@ def html_convert_body() -> None:
 
         # "/i" --> index until we get "i/"
         if selection_lower.startswith("/i"):  # open
-            check_illegal_nesting()
+            check_valid_open_markup()
             i_chapter_div_open = maybe_insert_chapter_div(line_start)
             index_flag = True
             markup_start = step
@@ -710,7 +722,7 @@ def html_convert_body() -> None:
 
         # "/c" --> center until we get "c/"
         if selection_lower == "/c":  # open
-            check_illegal_nesting()
+            check_valid_open_markup()
             c_chapter_div_open = maybe_insert_chapter_div(line_start)
             center_nowrap_flag = True
             markup_start = step
@@ -738,7 +750,7 @@ def html_convert_body() -> None:
 
         # "/r" --> right-align block until we get "r/"
         if selection_lower == "/r":  # open
-            check_illegal_nesting()
+            check_valid_open_markup()
             r_chapter_div_open = maybe_insert_chapter_div(line_start)
             right_nowrap_flag = True
             markup_start = step
