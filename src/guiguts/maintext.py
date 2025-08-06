@@ -1041,6 +1041,15 @@ class MainText(tk.Text):
 
         self.bind_event("<Leave>", leave_event, add=True, bind_peer=True)
 
+        # Override "Home" behavior
+        self.bind_event("<Home>", self.go_home, add=True, bind_peer=True)
+        self.bind_event("<Shift-Home>", self.go_home, add=True, bind_peer=True)
+        if is_mac():
+            self.bind_event("<Command-Left>", self.go_home, add=True, bind_peer=True)
+            self.bind_event(
+                "<Shift-Command-Left>", self.go_home, add=True, bind_peer=True
+            )
+
         # get the current bind tags
         bindtags = list(self.bindtags())
 
@@ -3464,6 +3473,42 @@ class MainText(tk.Text):
         start = "1.0"
         while start := self.search(" +$", start, regexp=True):
             self.delete(start, f"{start} lineend")
+
+    def go_home(self, event: tk.Event) -> str:
+        """Handle the Home key. Either move to start of line, or if
+        already there, move to first non-space on line."""
+        if int(event.state) & 0x0004:
+            return ""
+        start = self.get_insert_index()
+        # If already at home, move forward to first non-space
+        if start.col == 0:
+            idx = start.index()
+            line = maintext().get(idx, f"{idx} lineend")
+            new = IndexRowCol(start.row, len(line) - len(line.lstrip(" ")))
+        else:
+            new = IndexRowCol(start.row, 0)
+        event.widget.mark_set(tk.INSERT, new.index())
+        # If Shift key is held, need to adjust selection
+        if int(event.state) & 0x0001:
+            # If there's already a selection range with start index as one of
+            # its boundaries, adjust that boundary to the new position
+            if selns := self.selected_ranges():
+                sel = selns[0]
+                if sel.start == start:
+                    sel.start = new
+                elif sel.end == start:
+                    sel.end = new
+                # Ensure start of selection is before end
+                if self.compare(sel.start.index(), ">", sel.end.index()):
+                    sel.start, sel.end = sel.end, sel.start
+                self.do_select(sel)
+            # If no selection, select from start position to "Home"
+            else:
+                self.do_select(IndexRange(new, start))
+        # If no Shift, just moving, so clear selection
+        else:
+            self.clear_selection()
+        return "break"
 
     def store_page_mark(self, mark: str) -> None:
         """Store a page mark for use when page marks are coincident.
