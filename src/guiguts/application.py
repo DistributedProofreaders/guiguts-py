@@ -92,6 +92,8 @@ from guiguts.misc_tools import (
     DEFAULT_MISSPELLED_SCANNOS,
     convert_to_curly_quotes,
     check_curly_quotes,
+    protect_html_straight_quotes,
+    restore_html_straight_quotes,
     indent_selection,
     align_selection,
     right_align_numbers,
@@ -983,8 +985,16 @@ class Guiguts:
         tools_menu.add_button("R~ewrap Selection", self.file.rewrap_selection)
         tools_menu.add_button("C~lean Up Rewrap Markers", self.file.rewrap_cleanup)
         tools_menu.add_separator()
-        tools_menu.add_button("Convert to Curly ~Quotes", convert_to_curly_quotes)
-        tools_menu.add_button("Check Curly Quo~tes", check_curly_quotes)
+        curly_menu = tools_menu.add_submenu("Curly ~Quotes")
+        curly_menu.add_button("Convert to Curly ~Quotes", convert_to_curly_quotes)
+        curly_menu.add_button("~Check Curly Quotes", check_curly_quotes)
+        curly_menu.add_separator()
+        curly_menu.add_button(
+            "~Protect HTML Straight Quotes", protect_html_straight_quotes
+        )
+        curly_menu.add_button(
+            "~Restore HTML Straight Quotes", restore_html_straight_quotes
+        )
 
         unmatched_menu = tools_menu.add_submenu("Un~matched")
         unmatched_menu.add_button("Bloc~k Markup", unmatched_block_markup)
