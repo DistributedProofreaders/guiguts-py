@@ -109,7 +109,9 @@ table.autotable th { padding: 0.25em; }
     font-variant: normal;
 } /* poetry number */
 
-.blockquot {
+blockquote {
+    margin-top: 0;
+    margin-bottom: 0;
     margin-left: 5%;
     margin-right: 10%;
 }

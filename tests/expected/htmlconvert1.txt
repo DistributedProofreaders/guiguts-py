@@ -109,7 +109,9 @@ table.autotable th { padding: 0.25em; }
     font-variant: normal;
 } /* poetry number */
 
-.blockquot {
+blockquote {
+    margin-top: 0;
+    margin-bottom: 0;
     margin-left: 5%;
     margin-right: 10%;
 }
@@ -1059,7 +1061,7 @@ cobbler's shops the same methods prevail.
   </h2>
 </div>
 
-<div class="blockquot">
+<blockquote>
 <p>AMIDST DEADLY FUMES OF GAS—ON[**FF: hanging indent here and below when multi-line]
 THE TRAINING GROUND</p>
 
@@ -1084,17 +1086,17 @@ POSITION</p>
 <p>PHYSICAL EXERCISE</p>
 
 <p>TROOPS DISEMBARKING</p>
-</div>
+</blockquote>
 <p>——-File: 035.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>AMIDST DEADLY
 FUMES OF GAS—ON
 THE
 TRAINING GROUND</p>
-</div>
+</blockquote>
 
 <p>EMERGENCY
 ENTRANCE
@@ -1103,87 +1105,87 @@ ONLY]
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>GOING THROUGH
 THE LACHRYMATORY
 DUG-OUT</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 037.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>NIGHT DRILL
 UNDER FIRST LINE
 CONDITIONS</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 038.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>AN INSTRUCTION
 CLASS AT THE
 LANDSCAPE TARGET</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 039.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>INDIAN TROOPS
 AT
 BAYONET EXERCISE</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 040.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>A LESSON IN
 SANDBAG-FILLING</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 041.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>AT MUSKETRY
 PRACTICE—PRONE
 POSITION</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 042.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>PREPARING FOR
 PHYSICAL EXERCISE</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 043.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>PHYSICAL
 EXERCISE</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 044.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>TROOPS
 DISEMBARKING</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 045.png————————————————————————————-</p>
 
@@ -1202,7 +1204,7 @@ DISEMBARKING</p>
   </h2>
 </div>
 
-<div class="blockquot">
+<blockquote>
 <p>THE OVERHEAD TROLLEY FOR BRINGING[**F1: hanging indent here and below when multi-line]
 WOUNDED THROUGH THE
 TRENCHES</p>
@@ -1237,129 +1239,129 @@ WOUNDED TO THE COAST</p>
 
 <p>AN AMBULANCE WITH HEATING-PIPE
 UNDER SEAT</p>
-</div>
+</blockquote>
 <p>——-File: 047.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>THE OVERHEAD TROLLEY
 FOR BRINGING WOUNDED
 THROUGH THE TRENCHES</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 048.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>CARRYING WOUNDED
 IN A TRENCH:
 A DIFFICULT TURN</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 049.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>OUTSIDE
 AN ADVANCED
 DRESSING-STATION</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 050.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>THE VENTILATING
 TUNNELS OF AN
 ADVANCED
 DRESSING-STATION</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 051.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>SPECIAL WARD
 OF A HOSPITAL
 FOR FRACTURES
 OF THE THIGH</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 052.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>A WARD
 OF ST. JOHN'S
 AMBULANCE
 BRIGADE HOSPITAL</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 053.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>A WHEELED
 STRETCHER</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 054.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>A WHEELED
 STRETCHER WITH
 PNEUMATIC TYRES</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 055.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>AMBULANCE
 TROLLEYS USED
 IN THE OPEN</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 056.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>AMBULANCE BARGE
 FOR CONVEYANCE
 OF VERY BADLY
 WOUNDED
 TO THE COAST</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 057.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>INTERIOR OF A
 HOSPITAL BARGE</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 058.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>AN AMBULANCE
 WITH HEATING-PIPE[**dash clear on 046.png]
 UNDER SEAT</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 059.png————————————————————————————-</p>
 
@@ -1378,7 +1380,7 @@ UNDER SEAT</p>
   </h2>
 </div>
 
-<div class="blockquot">
+<blockquote>
 <p>CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
 CONTAINERS</p>
 
@@ -1406,122 +1408,122 @@ THE FILLING-HOUSE</p>
 <p>MAKING BOXES BY MACHINERY</p>
 
 <p>IN THE BOX-MAKING DEPARTMENT</p>
-</div>
+</blockquote>
 <p>——-File: 061.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>CUTTING SHEET
 TIN FOR
 MAKING CONTAINERS</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 062.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>MAKING THE
 ROUGH TIN
 INTO CANS</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 063.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>ROLLING-ON
 THE EDGES</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 064.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>SOLDERING TINS
 BY MACHINERY</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 065.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>BUSY AT THE
 STAMPING MACHINES</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 066.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>TESTING THE
 CANS BY AIR</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 067.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>INTERIOR OF A
 FILLING-HOUSE</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 068.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>AN ENDLESS BELT
 CONVEYING
 THE FILLED TINS</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 069.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>FRENCH
 WORKPEOPLE
 PACKING THE
 PETROL TINS
 INTO BOXES</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 070.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>SOME FRENCH
 EMPLOYEES
 OUTSIDE THE
 FILLING-HOUSE</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 071.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>MAKING BOXES
 BY MACHINERY</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 072.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>IN THE BOX-MAKING
 DEPARTMENT</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 073.png————————————————————————————-</p>
 
@@ -1540,7 +1542,7 @@ DEPARTMENT</p>
   </h2>
 </div>
 
-<div class="blockquot">
+<blockquote>
 <p>SORTING THE BOOTS</p>
 
 <p>CUTTING OFF TOPS OF OLD BOOTS TO
@@ -1555,64 +1557,64 @@ SHOP</p>
 
 <p>ROLLING-BOILERS FOR WASHING
 WATERPROOF SHEETS</p>
-</div>
+</blockquote>
 <p>——-File: 075.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>SORTING
 THE BOOTS</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 076.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>CUTTING OFF TOPS
 OF OLD BOOTS TO
 MAKE INTO LACES</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 077.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>NAILING SOLES
 BY MACHINERY</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 078.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>REPAIRING
 RUBBER BOOTS</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 079.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>GIRLS IN THE
 RUBBER-BOOT
 REPAIRING SHOP</p>
-</div>
+</blockquote>
 <p>]
 ——-File: 080.png————————————————————————————-</p>
 
 <p>[Illustration:</p>
 
-<div class="blockquot">
+<blockquote>
 <p>ROLLING-BOILERS
 FOR WASHING
 WATERPROOF
 SHEETS</p>
-</div>
+</blockquote>
 <p>]</p>
 
 </body>
