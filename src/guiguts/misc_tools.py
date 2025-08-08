@@ -2007,6 +2007,47 @@ SAFE_APOS_RQUOTE_REGEXES = (
 )
 
 
+def protect_html_straight_quotes() -> None:
+    """Convert straight quotes used within HTML tags to `∮` or `∯`, so they do not
+    interfere with Curly Quote conversion or checks.
+
+    Adapted from https://github.com/DistributedProofreaders/ppwb/blob/master/bin/ppsmq.py
+    """
+    maintext().undo_block_begin()
+    count_var = tk.IntVar()
+    start = maintext().start().index()
+    while start:
+        if start := maintext().search(
+            # Trying to balance false positives and false negatives: PPers do sometimes
+            # wrap HTML files, thus breaking the tag across newlines.
+            # Tag begins with `<`, optionally has a space, then a-z or !, then some
+            # non-angle brackets, permitting newlines, then at least one quote, then
+            # more non-angle brackets and the final closing `>`.
+            r"<\s*[!a-z]([^<>]|\n)*['\"]([^<>]|\n)*>",
+            start,
+            tk.END,
+            count=count_var,
+            regexp=True,
+        ):
+            end = f"{start}+{count_var.get()}c"
+            # Within tag, replace quotes with contour/surface integral characters
+            while quote_idx := maintext().search("'", start, end):
+                maintext().replace(quote_idx, f"{quote_idx}+1c", "∮")
+            while quote_idx := maintext().search('"', start, end):
+                maintext().replace(quote_idx, f"{quote_idx}+1c", "∯")
+            start = end
+
+
+def restore_html_straight_quotes() -> None:
+    """Restore straight quotes used within HTML tags after using `protect_html_curly_quotes`.
+
+    Adapted from https://github.com/DistributedProofreaders/ppwb/blob/master/bin/ppsmq.py
+    """
+    maintext().undo_block_begin()
+    maintext().replace_all("∮", "'")
+    maintext().replace_all("∯", '"')
+
+
 def convert_to_curly_quotes() -> None:
     """Convert straight quotes to curly in whole file, and display list of queries.
 
