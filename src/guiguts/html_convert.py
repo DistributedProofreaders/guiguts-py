@@ -591,7 +591,7 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                '<div class="blockquot">',
+                "<blockquote>",
             )
             markup_start = step
             continue
@@ -603,7 +603,7 @@ def html_convert_body() -> None:
                 maintext().replace(
                     line_start,
                     line_end,
-                    "</div>",
+                    "</blockquote>",
                 )
                 if in_para:
                     maintext().insert(f"{line_start}-1l lineend", "</p>")
