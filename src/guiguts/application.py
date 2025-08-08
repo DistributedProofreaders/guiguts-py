@@ -173,6 +173,7 @@ class Guiguts:
         self.init_menus()
 
         self.init_statusbar(statusbar())
+        self.init_toolbar()
 
         self.file.languages = preferences.get(PrefKey.DEFAULT_LANGUAGES)
 
@@ -394,9 +395,6 @@ class Guiguts:
             PrefKey.LINE_NUMBERS, lambda value: maintext().show_line_numbers(value)
         )
         preferences.set_default(PrefKey.ORDINAL_NAMES, True)
-        preferences.set_callback(
-            PrefKey.ORDINAL_NAMES, lambda _: self.mainwindow.on_resize_status_frame()
-        )
         preferences.set_default(PrefKey.SEARCH_HISTORY, [])
         preferences.set_default(PrefKey.REPLACE_HISTORY, [])
         preferences.set_default(PrefKey.SEARCHDIALOG_REVERSE, False)
@@ -1451,9 +1449,22 @@ class Guiguts:
         the_statusbar.add_binding(
             "ordinal", StatusBar.SHIFT_BTN_3, UnicodeBlockDialog.show_unicode_dialog
         )
-        the_statusbar.set_last_tab_behavior(
-            "ordinal", self.mainwindow.mainimage.prev_img_button
+
+    def init_toolbar(self) -> None:
+        """Initialize toolbar commands."""
+        self.mainwindow.toolbar_button_command("open", self.open_file)
+        self.mainwindow.toolbar_button_command("save", self.file.save_file)
+        self.mainwindow.toolbar_button_virtual_event("undo", "<<Undo>>")
+        self.mainwindow.toolbar_button_virtual_event("redo", "<<Redo>>")
+        self.mainwindow.toolbar_button_virtual_event("cut", "<<Cut>>")
+        self.mainwindow.toolbar_button_virtual_event("copy", "<<Copy>>")
+        self.mainwindow.toolbar_button_virtual_event("paste", "<<Paste>>")
+        self.mainwindow.toolbar_button_command("search", show_search_dialog)
+        self.mainwindow.toolbar_button_command("back", lambda: maintext().go_back())
+        self.mainwindow.toolbar_button_command(
+            "forward", lambda: maintext().go_forward()
         )
+        self.mainwindow.toolbar_button_command("help", ToplevelDialog.show_manual_page)
 
     def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""
@@ -1507,6 +1518,7 @@ class Guiguts:
 
         # After theme loaded, set font
         themed_style().configure(".", font=GLOBAL_FONT_NAME)
+        self.mainwindow.toolbar_theme_update()
 
     def update_theme(self) -> None:
         """Self-calling method to check OS dark mode on a repeating cycle,
@@ -1517,9 +1529,11 @@ class Guiguts:
 
             if os_mode == "Light" and tk_theme != "awlight":
                 themed_style().theme_use("awlight")
+                self.mainwindow.toolbar_theme_update()
             elif os_mode == "Dark" and tk_theme != "awdark":
                 themed_style().theme_use("awdark")
-
+                self.mainwindow.toolbar_theme_update()
+        else:
             root().after(2500, self.update_theme)
 
     def high_contrast_callback(self, _value: bool) -> None:

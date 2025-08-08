@@ -1,6 +1,7 @@
 """Define key components of main window"""
 
 from enum import Enum, auto
+import importlib.resources
 import logging
 import os.path
 from string import ascii_uppercase
@@ -12,9 +13,10 @@ from tkinter import ttk, messagebox, EventType, filedialog
 from typing import Any, Callable, Optional
 from pathlib import Path
 
-from PIL import Image, ImageTk, ImageChops
+from PIL import Image, ImageTk, ImageChops, ImageOps
 import regex as re
 
+from guiguts.data import icons
 from guiguts.maintext import (
     MainText,
     maintext,
@@ -514,15 +516,6 @@ class MainImage(tk.Frame):
         self.prev_img_button.grid(row=0, column=0, sticky="NSEW")
         ToolTip(self.prev_img_button, msg="Previous image")
 
-        def focus_prev(evt: tk.Event) -> str:
-            if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
-                statusbar().set_focus("ordinal")
-            else:
-                focus_prev_widget(evt)
-            return "break"
-
-        bind_shift_tab(self.prev_img_button, focus_prev)
-
         self.next_img_button = ttk.Button(
             control_frame,
             text=">",
@@ -628,31 +621,11 @@ class MainImage(tk.Frame):
         self.close_btn.bind("<Tab>", close_tab)
         bind_shift_tab(self.close_btn, focus_prev_widget)
 
-        # By default Tab is accepted by text widget, but we want it to move focus
-        def text_reverse_tab(_: tk.Event) -> str:
-            if preferences.get(PrefKey.IMAGE_VIEWER_INTERNAL) and preferences.get(
-                PrefKey.IMAGE_WINDOW_DOCKED
-            ):
-                self.close_btn.focus()
-            else:
-                statusbar().set_focus("ordinal")
-            return "break"
-
-        def text_tab(_: tk.Event) -> str:
-            """Switch focus from main text to peer widget."""
-            if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
-                maintext().peer.focus()
-            else:
-                statusbar().set_focus("rowcol")
-            return "break"
-
         def peer_reverse_tab(_: tk.Event) -> str:
             """Switch focus from peer widget to main text."""
             maintext().focus()
             return "break"
 
-        maintext().bind("<Tab>", text_tab)
-        bind_shift_tab(maintext(), text_reverse_tab)
         maintext().peer.bind("<Tab>", focus_next_widget)
         bind_shift_tab(maintext().peer, peer_reverse_tab)
 
@@ -1308,26 +1281,6 @@ class StatusBar(ttk.Frame):
             )
             mouse_bind(self.fields[key], "Shift+Ctrl+space", lambda _: callback())
 
-    def set_last_tab_behavior(self, key: str, wgt: tk.Widget) -> None:
-        """Set up tab bindings for last status bar button.
-
-        Args:
-            key: Key of button to bind to.
-            wgt: Widget to focus on when Tab is pressed.
-        """
-
-        def focus_next(_: tk.Event) -> str:
-            if preferences.get(PrefKey.IMAGE_VIEWER_INTERNAL) and preferences.get(
-                PrefKey.IMAGE_WINDOW_DOCKED
-            ):
-                wgt.focus()
-            else:
-                maintext().focus()
-            return "break"
-
-        self.fields[key].bind("<Tab>", focus_next)
-        bind_shift_tab(self.fields[key], focus_prev_widget)
-
     def set_first_tab_behavior(self, key: str) -> None:
         """Set up tab bindings for first status bar button.
 
@@ -1497,36 +1450,106 @@ class MainWindow:
             row=STATUS_ROW,
             sticky="NSEW",
         )
-        self.status_frame.columnconfigure(1, weight=1)
+        self.status_frame.columnconfigure(0, weight=1)
         self.status_frame_wrapped = False
-        self.status_frame.bind("<Configure>", lambda _: self.on_resize_status_frame())
         MainWindow.statusbar = StatusBar(self.status_frame)
         MainWindow.statusbar.grid(
             column=0,
             row=0,
-            sticky="NSW",
+            sticky="NSEW",
         )
-        self.status_label_frame = ttk.Frame(self.status_frame)
-        self.status_label_frame.grid(row=0, column=1, sticky="NSEW")
-        self.status_label_frame.columnconfigure(0, weight=1)
-        self.status_label_frame.columnconfigure(1, weight=0)
+        status_row2_frame = ttk.Frame(self.status_frame)
+        status_row2_frame.grid(row=1, column=0, sticky="NSEW", pady=(2, 0))
+        status_row2_frame.columnconfigure(1, weight=1)
+        toolbar_frame = ttk.Frame(status_row2_frame)
+        toolbar_frame.grid(row=0, column=0, sticky="NSEW")
+
+        self.tool_btns: dict[str, ttk.Button] = {}
+        self.light_photos: dict[str, ImageTk.PhotoImage] = {}
+        self.dark_photos: dict[str, ImageTk.PhotoImage] = {}
+
+        def create_toolbar_btn(col: int, name: str, tooltip: str) -> None:
+            """Create a toolbar button."""
+            icon_path = str(importlib.resources.files(icons).joinpath(f"{name}.png"))
+            image_light = (
+                Image.open(icon_path)
+                .convert("RGBA")
+                .resize((16, 16), Image.Resampling.LANCZOS)
+            )
+            photo_light = ImageTk.PhotoImage(image_light)
+            # Invert image for dark mode - ensure alpha is preserved
+            r, g, b, a = image_light.split()
+            inverted_rgb = ImageOps.invert(Image.merge("RGB", (r, g, b)))
+            inverted_image = Image.merge("RGBA", (*inverted_rgb.split(), a))
+            inverted_image = inverted_image.resize((16, 16), Image.Resampling.LANCZOS)
+            photo_dark = ImageTk.PhotoImage(inverted_image)
+
+            self.tool_btns[name] = ttk.Button(toolbar_frame)
+            if themed_style().is_dark_theme():
+                self.tool_btns[name].config(image=photo_dark)
+            else:
+                self.tool_btns[name].config(image=photo_light)
+            self.tool_btns[name].grid(row=0, column=col)
+            ToolTip(self.tool_btns[name], tooltip)
+            # Save photo images or python will garbage collect them
+            self.light_photos[name] = photo_light
+            self.dark_photos[name] = photo_dark
+
+        def create_separator(col: int) -> None:
+            """Create a toolbar separator"""
+            sep = ttk.Separator(toolbar_frame, orient=tk.VERTICAL)
+            sep.grid(row=0, column=col, sticky="NSEW", padx=2)
+
+        create_toolbar_btn(0, "open", "Open")
+        create_toolbar_btn(1, "save", "Save")
+        create_separator(2)
+        create_toolbar_btn(3, "undo", "Undo")
+        create_toolbar_btn(4, "redo", "Redo")
+        create_separator(5)
+        create_toolbar_btn(6, "cut", "Cut")
+        create_toolbar_btn(7, "copy", "Copy")
+        create_toolbar_btn(8, "paste", "Paste")
+        create_separator(9)
+        create_toolbar_btn(10, "search", "Search & Replace")
+        create_separator(11)
+        create_toolbar_btn(12, "back", "Back")
+        create_toolbar_btn(13, "forward", "Forward")
+        create_separator(14)
+        create_toolbar_btn(15, "help", "Help")
+
+        def help_focus_next(_: tk.Event) -> str:
+            if preferences.get(PrefKey.IMAGE_VIEWER_INTERNAL) and preferences.get(
+                PrefKey.IMAGE_WINDOW_DOCKED
+            ):
+                self.mainimage.prev_img_button.focus()
+            else:
+                maintext().focus()
+            return "break"
+
+        self.tool_btns["help"].bind("<Tab>", help_focus_next)
+        bind_shift_tab(self.tool_btns["help"], focus_prev_widget)
+
+        status_label_frame = ttk.Frame(status_row2_frame)
+        status_label_frame.grid(row=0, column=1, sticky="EW", pady=(2, 0))
+        status_label_frame.columnconfigure(0, weight=1)
+        status_label_frame.columnconfigure(1, weight=0)
         self.status_label_widget = ttk.Label(
-            self.status_label_frame, borderwidth=1, relief=tk.SUNKEN, padding=1
+            status_label_frame, borderwidth=1, relief=tk.SUNKEN, padding=1
         )
-        self.status_label_widget.grid(row=0, column=0, sticky="SEW", padx=5, pady=2)
+        self.status_label_widget.grid(row=0, column=0, sticky="NSEW", padx=5, pady=2)
         self.status_label_widget.bind(
             "<ButtonRelease-1>", lambda _: self.messagelog.show()
         )
         ToolTip(self.status_label_widget, "Click to view message log")
         self.busy_widget = ttk.Label(
-            self.status_label_frame,
+            status_label_frame,
             foreground="red",
             width=8,
             borderwidth=1,
             relief=tk.SUNKEN,
             padding=1,
         )
-        self.busy_widget.grid(column=1, row=0, sticky="SE", padx=(3, 0), pady=2)
+        self.busy_widget.grid(column=1, row=0, sticky="NSE", padx=(3, 0), pady=2)
         Busy.busy_widget_setup(self.busy_widget)
 
         ttk.Separator(root()).grid(
@@ -1584,6 +1607,54 @@ class MainWindow:
             root().after_idle(lambda: self.load_image("", force_show=True))
 
         MainWindow.messagelog = MessageLog(self.status_label_widget)
+
+        # By default Tab is accepted by text widget, but we want it to move focus
+        def text_reverse_tab(_: tk.Event) -> str:
+            if preferences.get(PrefKey.IMAGE_VIEWER_INTERNAL) and preferences.get(
+                PrefKey.IMAGE_WINDOW_DOCKED
+            ):
+                self.mainimage.close_btn.focus()
+            else:
+                self.tool_btns["help"].focus()
+            return "break"
+
+        def text_tab(_: tk.Event) -> str:
+            """Switch focus from main text to peer widget."""
+            if preferences.get(PrefKey.SPLIT_TEXT_WINDOW):
+                maintext().peer.focus()
+            else:
+                statusbar().set_focus("rowcol")
+            return "break"
+
+        maintext().bind("<Tab>", text_tab)
+        bind_shift_tab(maintext(), text_reverse_tab)
+
+        def prev_img_focus_prev(evt: tk.Event) -> str:
+            if preferences.get(PrefKey.IMAGE_WINDOW_DOCKED):
+                self.tool_btns["help"].focus()
+            else:
+                focus_prev_widget(evt)
+            return "break"
+
+        bind_shift_tab(self.mainimage.prev_img_button, prev_img_focus_prev)
+
+    def toolbar_button_command(self, name: str, command: Callable) -> None:
+        """Set command to be executed by toolbar button."""
+        self.tool_btns[name].config(command=command)
+
+    def toolbar_button_virtual_event(self, name: str, event: str) -> None:
+        """Set virtual event to be executed by toolbar button."""
+        self.toolbar_button_command(
+            name, lambda: maintext().focus_widget().event_generate(event)
+        )
+
+    def toolbar_theme_update(self) -> None:
+        """Update theme colors in toolbar."""
+        for name, btn in self.tool_btns.items():
+            if themed_style().is_dark_theme():
+                btn.config(image=self.dark_photos[name])
+            else:
+                btn.config(image=self.light_photos[name])
 
     def hide_image(self) -> None:
         """Stop showing the current image."""
@@ -1650,28 +1721,6 @@ class MainWindow:
     def clear_image(self) -> None:
         """Clear the image currently being shown."""
         mainimage().clear_image()
-
-    def on_resize_status_frame(self) -> None:
-        """Handle resizing the status frame, possibly wrapping to 2 columns."""
-        statusbar().update_idletasks()
-
-        btns_width = 0
-        status_bar_btns = list(statusbar().fields.values())
-        # Get total width of buttons - ignore variable length ordinal field initially
-        for btn in status_bar_btns[:-1]:
-            btns_width += btn.winfo_width()
-        btns_width += 200 if preferences.get(PrefKey.ORDINAL_NAMES) else 65
-
-        space_for_error_label = 400
-        wrap_it = self.status_frame.winfo_width() - btns_width < space_for_error_label
-
-        if wrap_it and not self.status_frame_wrapped:
-            self.status_label_frame.grid(row=1, column=0, sticky="SEW", columnspan=2)
-
-            self.status_frame_wrapped = True
-        elif not wrap_it and self.status_frame_wrapped:
-            self.status_label_frame.grid(row=0, column=1, sticky="SEW", columnspan=1)
-            self.status_frame_wrapped = False
 
 
 def do_sound_bell() -> None:
