@@ -842,6 +842,14 @@ class Guiguts:
             replace_matched_string,
         )
         search_menu.add_separator()
+        search_menu.add_button(
+            "Go ~Back",
+            lambda: maintext().go_back(),
+        )
+        search_menu.add_button(
+            "Go ~Forward",
+            lambda: maintext().go_forward(),
+        )
         self.init_search_goto_menu(search_menu)
         search_menu.add_separator()
         search_menu.add_button(

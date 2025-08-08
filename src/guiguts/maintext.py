@@ -8,7 +8,7 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk, Text, messagebox
 from tkinter import font as tk_font
-from typing import Any, Callable, Optional, Literal, Generator, cast
+from typing import Any, Callable, Optional, Literal, Generator
 from enum import auto, StrEnum
 
 import regex as re
@@ -567,6 +567,93 @@ class ConfigurableColor:
 ConfigurableColors = dict[ColorKey, ConfigurableColor]
 
 
+class LocationHistory:
+    """Class to store location history."""
+
+    def __init__(self, text_widget: tk.Text, prefix: str):
+        """Initialize"""
+        self.text_widget = text_widget
+        self.prefix = prefix  # e.g. "mainhist" or "peerhist"
+        self.history_marks: list[str] = []
+        # Current position in history - back will go to the mark before this
+        # and forward will go to the mark after this
+        self.history_index: int = 0
+        self.counter: int = 0  # to create unique mark names
+        self.history_size = 100
+
+    def push(self) -> None:
+        """Push current location onto the stack before moving."""
+        # Remove any "forward" history
+        for mark in self.history_marks[self.history_index + 1 :]:
+            maintext().mark_unset(mark)
+        self.history_marks = self.history_marks[: self.history_index + 1]
+        # Avoid pushing duplicate if current history mark is already current location
+        cur_mark_idx = self._get_current_mark_index()
+        cur_rowcol = maintext().get_insert_index()
+        if cur_mark_idx == cur_rowcol.index():
+            self.history_index += 1  # We've moved on from current mark
+            return
+        # Create a mark at current rowcol
+        mark = f"{self.prefix}{self.counter}"
+        maintext().set_mark_position(mark, cur_rowcol)
+        self.counter += 1
+        # Add mark to history
+        self.history_marks.append(mark)
+        # Delete oldest mark if stack is full
+        if len(self.history_marks) > self.history_size:
+            maintext().mark_unset(f"{self.history_marks[0]}")
+            self.history_marks = self.history_marks[1:]
+        else:
+            self.history_index += 1
+
+    def _get_current_mark_index(self) -> str:
+        """Return index of current mark or empty string."""
+        if 0 > self.history_index or self.history_index >= len(self.history_marks):
+            return ""
+        try:
+            return self.text_widget.index(self.history_marks[self.history_index])
+        except tk.TclError:
+            return ""
+
+    def back(self) -> None:
+        """Go to previous point in history."""
+        if self.history_index <= 0:
+            return
+        # If first step back into history, need to append current location to list first
+        # so we can come forward later
+        if self.history_index >= len(self.history_marks):
+            self.push()
+            self.history_index -= 1
+
+        self.history_index -= 1
+        if cur_mark_idx := self._get_current_mark_index():
+            maintext().set_insert_index(IndexRowCol(cur_mark_idx), store_location=False)
+
+    def forward(self) -> None:
+        """Go to next point in history."""
+        if self.history_index >= len(self.history_marks) - 1:
+            return
+        self.history_index += 1
+        if cur_mark_idx := self._get_current_mark_index():
+            maintext().set_insert_index(IndexRowCol(cur_mark_idx), store_location=False)
+
+    def current_mark(self) -> str:
+        """Get current location mark."""
+        try:
+            return self.history_marks[self.history_index]
+        except IndexError:
+            return ""
+
+    def clear(self) -> None:
+        """Clear the location history list."""
+        self.history_marks = []
+        self.history_index = 0
+        self.counter = 0
+        for mark in maintext().mark_names():
+            if mark.startswith(self.prefix):
+                maintext().mark_unset(mark)
+
+
 class TextPeer(tk.Text):
     """A peer of maintext's text widget.
 
@@ -581,6 +668,8 @@ class TextPeer(tk.Text):
         """Create a peer & a tkinter widget based on the peer."""
         main_text.tk.call(main_text, "peer", "create", f"{main_text.peer_frame}.peer")
         tk.BaseWidget._setup(self, main_text.peer_frame, {"name": "peer"})  # type: ignore[attr-defined]
+
+        self.location_history = LocationHistory(self, "peerhist")
 
 
 class MainText(tk.Text):
@@ -634,6 +723,8 @@ class MainText(tk.Text):
             **kwargs,
         )
         tk.Text.grid(self, column=1, row=1, sticky="NSEW")
+
+        self.location_history = LocationHistory(self, "mainhist")
 
         self.languages = ""
         self.clipboard_fix_pending = False
@@ -781,12 +872,12 @@ class MainText(tk.Text):
         self.peer_vscroll.grid(column=2, row=1, sticky="NS")
         self.peer["yscrollcommand"] = peer_vscroll_set
 
-        self._text_peer_focus: tk.Text = self
+        self._text_peer_focus: "MainText" | TextPeer = self
 
         # Track whether main text or peer most recently had focus
         def text_peer_focus_track(event: tk.Event) -> None:
             assert event.widget in (self, self.peer)
-            self._text_peer_focus = cast(tk.Text, event.widget)
+            self._text_peer_focus = event.widget
 
         self.bind_event("<FocusIn>", text_peer_focus_track, add=True, bind_peer=True)
 
@@ -1120,7 +1211,7 @@ class MainText(tk.Text):
             inactiveselectbackground=str(in_sel_dict["background"]),
         )
 
-    def focus_widget(self) -> tk.Text:
+    def focus_widget(self) -> "MainText | TextPeer":
         """Return whether main text or peer last had focus.
 
         Checks current focus, and if neither, returns the one that had it last.
@@ -1464,6 +1555,7 @@ class MainText(tk.Text):
         self.set_modified(False)
         self.edit_reset()
         self.store_page_mark("")
+        self.go_clear()
 
     def undo_block_begin(self) -> None:
         """Begin a block of changes that will be undone with one undo operation.
@@ -1490,6 +1582,21 @@ class MainText(tk.Text):
         self.edit_separator()
         self.config(autoseparators=True)
 
+    def go_back(self) -> None:
+        """Go back to previous history location."""
+        self.clear_selection()
+        self.focus_widget().location_history.back()
+
+    def go_forward(self) -> None:
+        """Go forward to next history location."""
+        self.clear_selection()
+        self.focus_widget().location_history.forward()
+
+    def go_clear(self) -> None:
+        """Clear location history for maintext and peer."""
+        self.location_history.clear()
+        self.peer.location_history.clear()
+
     def get_insert_index(self) -> IndexRowCol:
         """Return index of the insert cursor as IndexRowCol object.
 
@@ -1502,8 +1609,9 @@ class MainText(tk.Text):
         self,
         insert_pos: IndexRowCol,
         focus: bool = True,
-        focus_widget: Optional[tk.Text] = None,
+        focus_widget: Optional["MainText | TextPeer"] = None,
         see_end_rowcol: Optional[IndexRowCol] = None,
+        store_location: bool = True,
     ) -> None:
         """Set the position of the insert cursor.
 
@@ -1515,9 +1623,13 @@ class MainText(tk.Text):
                 If specified, and its row is the same as `insert_pos.row`, then the
                 final `see` uses the mid point of these two positions. Will only
                 change things if there are long lines that don't fit in screen width.
+            store_location: Set False if current location should not be stored in
+                history before insert cursor is moved.
         """
         if focus_widget is None:
             focus_widget = self.focus_widget()
+        if store_location:
+            focus_widget.location_history.push()
         insert_index = insert_pos.index()
         focus_widget.mark_set(tk.INSERT, insert_index)
         # The `see` method can leave the desired line at the top or bottom of window.

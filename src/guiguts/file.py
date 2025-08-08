@@ -18,6 +18,8 @@ from guiguts.maintext import (
     PAGEMARK_PIN,
     img_from_page_mark,
     page_mark_from_img,
+    MainText,
+    TextPeer,
 )
 from guiguts.page_details import (
     PageDetail,
@@ -277,6 +279,7 @@ class File:
         self.languages = preferences.get(PrefKey.DEFAULT_LANGUAGES)
         mainimage().reset_rotation_details()
         bin_matches_file = self.load_bin(filename)
+        maintext().go_clear()
         self.mark_page_boundaries()
         flags_found = (
             self.update_page_marks_from_flags() or self.update_page_marks_from_ppgen()
@@ -633,7 +636,9 @@ class File:
                 mark = page_mark_from_img(img)
                 maintext().set_mark_position(mark, IndexRowCol(detail["index"]))
 
-    def set_initial_position(self, index: str | None, widget: tk.Text) -> None:
+    def set_initial_position(
+        self, index: str | None, widget: MainText | TextPeer
+    ) -> None:
         """Set initial cursor position after file is loaded.
 
         Args:
