@@ -1471,17 +1471,18 @@ class MainWindow:
         def create_toolbar_btn(col: int, name: str, tooltip: str) -> None:
             """Create a toolbar button."""
             icon_path = str(importlib.resources.files(icons).joinpath(f"{name}.png"))
+            size = (20, 20)
             image_light = (
                 Image.open(icon_path)
                 .convert("RGBA")
-                .resize((16, 16), Image.Resampling.LANCZOS)
+                .resize(size, Image.Resampling.LANCZOS)
             )
             photo_light = ImageTk.PhotoImage(image_light)
             # Invert image for dark mode - ensure alpha is preserved
             r, g, b, a = image_light.split()
             inverted_rgb = ImageOps.invert(Image.merge("RGB", (r, g, b)))
             inverted_image = Image.merge("RGBA", (*inverted_rgb.split(), a))
-            inverted_image = inverted_image.resize((16, 16), Image.Resampling.LANCZOS)
+            inverted_image = inverted_image.resize(size, Image.Resampling.LANCZOS)
             photo_dark = ImageTk.PhotoImage(inverted_image)
 
             self.tool_btns[name] = ttk.Button(toolbar_frame)
@@ -1497,8 +1498,8 @@ class MainWindow:
 
         def create_separator(col: int) -> None:
             """Create a toolbar separator"""
-            sep = ttk.Separator(toolbar_frame, orient=tk.VERTICAL)
-            sep.grid(row=0, column=col, sticky="NSEW", padx=2)
+            sep = ttk.Frame(toolbar_frame)  # Just some empty space
+            sep.grid(row=0, column=col, sticky="NSEW", padx=3)
 
         create_toolbar_btn(0, "open", "Open")
         create_toolbar_btn(1, "save", "Save")
