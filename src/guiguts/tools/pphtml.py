@@ -319,6 +319,9 @@ class PPhtmlChecker:
         count_links = 0
         for line_num, line in enumerate(self.file_lines):
             if match := re.search(r"https?://[^'\"\) ]*", line):
+                # Don't report links to w3.org in the first few lines
+                if line_num < 5 and re.match(r"https?://www.w3.org/", match[0]):
+                    continue
                 test_passed = False
                 if count_links <= 10:
                     start = IndexRowCol(line_num + 1, match.span()[0])
