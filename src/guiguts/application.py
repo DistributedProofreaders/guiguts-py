@@ -86,10 +86,13 @@ from guiguts.misc_tools import (
     asterisk_check,
     TextMarkupConvertorDialog,
     stealth_scannos,
+    library_regexes,
     DEFAULT_SCANNOS_DIR,
     DEFAULT_REGEX_SCANNOS,
     DEFAULT_STEALTH_SCANNOS,
     DEFAULT_MISSPELLED_SCANNOS,
+    DEFAULT_REGEX_LIBRARY_DIR,
+    DEFAULT_DASHES_REGEX_LIBRARY,
     convert_to_curly_quotes,
     check_curly_quotes,
     protect_html_straight_quotes,
@@ -98,6 +101,7 @@ from guiguts.misc_tools import (
     align_selection,
     right_align_numbers,
     ScannoCheckerDialog,
+    RegexCheckerDialog,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
@@ -509,6 +513,17 @@ class Guiguts:
             ],
         )
         preferences.set_default(PrefKey.SCANNOS_AUTO_ADVANCE, True)
+        preferences.set_default(
+            PrefKey.REGEX_LIBRARY_FILENAME,
+            str(DEFAULT_REGEX_LIBRARY_DIR.joinpath(DEFAULT_DASHES_REGEX_LIBRARY)),
+        )
+        preferences.set_default(
+            PrefKey.REGEX_LIBRARY_HISTORY,
+            [
+                str(DEFAULT_REGEX_LIBRARY_DIR.joinpath(DEFAULT_DASHES_REGEX_LIBRARY)),
+            ],
+        )
+        preferences.set_default(PrefKey.REGEX_LIBRARY_AUTO_ADVANCE, True)
         preferences.set_default(PrefKey.HIGHLIGHT_QUOTBRAC, False)
         preferences.set_callback(
             PrefKey.HIGHLIGHT_QUOTBRAC, self.highlight_quotbrac_callback
@@ -968,6 +983,7 @@ class Guiguts:
         )
         tools_menu.add_button("~Jeebies", jeebies_check)
         tools_menu.add_button("Stealth S~cannos", stealth_scannos)
+        tools_menu.add_button("Regex Librar~y", library_regexes)
         tools_menu.add_button(
             "Word ~Distance Check", lambda: levenshtein_check(self.file.project_dict)
         )
@@ -1260,6 +1276,7 @@ class Guiguts:
         CommandPaletteDialog.add_orphan_commands()
         SearchDialog.add_orphan_commands()
         ScannoCheckerDialog.add_orphan_commands()
+        RegexCheckerDialog.add_orphan_commands()
         SurroundWithDialog.add_orphan_commands()
         HTMLMarkupDialog.add_orphan_commands()
         mainimage().add_orphan_commands()

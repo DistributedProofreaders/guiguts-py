@@ -18,7 +18,7 @@ from guiguts.checkers import (
     CheckerViewOptionsDialog,
     CheckerMatchType,
 )
-from guiguts.data import scannos
+from guiguts.data import scannos, regex_library
 from guiguts.file import the_file
 from guiguts.maintext import maintext, menubar_metadata
 from guiguts.preferences import (
@@ -59,6 +59,8 @@ DEFAULT_SCANNOS_DIR = importlib.resources.files(scannos)
 DEFAULT_REGEX_SCANNOS = "regex.json"
 DEFAULT_STEALTH_SCANNOS = "en-common.json"
 DEFAULT_MISSPELLED_SCANNOS = "misspelled.json"
+DEFAULT_REGEX_LIBRARY_DIR = importlib.resources.files(regex_library)
+DEFAULT_DASHES_REGEX_LIBRARY = "dashes.json"
 
 CURLY_QUOTES_CHECKER_FILTERS = [
     CheckerFilterErrorPrefix("Double quote not converted", "DQ not converted: "),
@@ -1589,22 +1591,42 @@ class Scanno(dict):
         self[Scanno.HINT] = hint
 
 
-class ScannoCheckerDialog(CheckerDialog):
-    """Dialog to handle stealth scanno checks."""
+class ScannoRegexCheckerDialog(CheckerDialog):
+    """Dialog to handle stealth scanno checks and regex library checks."""
 
     manual_page = "Tools_Menu#Stealth_Scannos"
 
-    def __init__(self, **kwargs: Any) -> None:
-        """Initialize scanno checker dialog."""
+    scanno_type = "scanno"
+    regex_type = "regex"
+
+    def __init__(self, dlg_type: str, **kwargs: Any) -> None:
+        """Initialize scanno/regex checker dialog."""
+        self.dlg_type = dlg_type
+        if self.is_scannos():
+            self.fn_pref = PrefKey.SCANNOS_FILENAME
+            self.hist_pref = PrefKey.SCANNOS_HISTORY
+            self.auto_pref = PrefKey.SCANNOS_AUTO_ADVANCE
+            self.type_cap = "Scanno"
+            self.type_adj = "scannos"
+        else:
+            self.fn_pref = PrefKey.REGEX_LIBRARY_FILENAME
+            self.hist_pref = PrefKey.REGEX_LIBRARY_HISTORY
+            self.auto_pref = PrefKey.REGEX_LIBRARY_AUTO_ADVANCE
+            self.type_cap = "Regex"
+            self.type_adj = "regex"
+
+        title = (
+            "Stealth Scanno Results" if self.is_scannos() else "Regex Library Results"
+        )
         super().__init__(
-            "Stealth Scanno Results",
+            title,
             tooltip="\n".join(
                 [
-                    "Left click: Select & find occurrence of scanno",
-                    "Right click: Hide occurrence of scanno in list",
-                    f"{cmd_ctrl_string()} left click: Fix this occurrence of scanno",
+                    f"Left click: Select & find occurrence of {dlg_type}",
+                    f"Right click: Hide occurrence of {dlg_type} in list",
+                    f"{cmd_ctrl_string()} left click: Fix this occurrence of {dlg_type}",
                     f"{cmd_ctrl_string()} right click: Fix this occurrence and remove from list",
-                    f"Shift {cmd_ctrl_string()} left click: Fix all occurrences of scanno",
+                    f"Shift {cmd_ctrl_string()} left click: Fix all occurrences of {dlg_type}",
                     f"Shift {cmd_ctrl_string()} right click: Fix all occurrences and remove from list",
                 ]
             ),
@@ -1620,8 +1642,8 @@ class ScannoCheckerDialog(CheckerDialog):
 
         self.file_combo = PathnameCombobox(
             frame,
-            PrefKey.SCANNOS_HISTORY,
-            PrefKey.SCANNOS_FILENAME,
+            self.hist_pref,
+            self.fn_pref,
         )
         self.file_combo.grid(column=0, row=0, sticky="NSEW", pady=2)
         self.file_combo["state"] = "readonly"
@@ -1632,7 +1654,7 @@ class ScannoCheckerDialog(CheckerDialog):
         self.auto_checkbtn = ttk.Checkbutton(
             frame,
             text="Auto Adv.",
-            variable=PersistentBoolean(PrefKey.SCANNOS_AUTO_ADVANCE),
+            variable=PersistentBoolean(self.auto_pref),
         )
         self.auto_checkbtn.grid(column=2, row=0, sticky="NSEW", padx=(3, 0), pady=2)
 
@@ -1646,13 +1668,13 @@ class ScannoCheckerDialog(CheckerDialog):
         search.bind("<Return>", lambda _: self.list_scannos(update_fields=False))
         self.prev_btn = ttk.Button(
             frame,
-            text="Prev. Scanno",
+            text=f"Prev. {self.type_cap}",
             command=lambda: self.prev_next_scanno(prev=True),
         )
         self.prev_btn.grid(column=1, row=1, sticky="NSEW", padx=(5, 0), pady=2)
         self.next_btn = ttk.Button(
             frame,
-            text="Next Scanno",
+            text=f"Next {self.type_cap}",
             command=lambda: self.prev_next_scanno(prev=False),
         )
         self.next_btn.grid(column=2, row=1, sticky="NSEW", padx=(3, 0), pady=2)
@@ -1698,44 +1720,21 @@ class ScannoCheckerDialog(CheckerDialog):
         self.whole_word = False
         self.scanno_number = 0
 
-    @classmethod
-    def add_orphan_commands(cls) -> None:
-        """Add orphan commands to command palette."""
-
-        menubar_metadata().add_checkbutton_orphan(
-            "Stealth Scannos, Auto Advance", PrefKey.SCANNOS_AUTO_ADVANCE
-        )
-        menubar_metadata().add_button_orphan(
-            "Stealth Scannos, Previous Scanno",
-            cls.orphan_wrapper("prev_next_scanno", prev=True),
-        )
-        menubar_metadata().add_button_orphan(
-            "Stealth Scannos, Next Scanno",
-            cls.orphan_wrapper("prev_next_scanno", prev=False),
-        )
-        menubar_metadata().add_button_orphan(
-            "Stealth Scannos, Swap Terms", cls.orphan_wrapper("swap_terms")
-        )
-        menubar_metadata().add_button_orphan(
-            "Stealth Scannos, Replace",
-            cls.orphan_wrapper("process_entry_current", all_matching=False),
-        )
-        menubar_metadata().add_button_orphan(
-            "Stealth Scannos, Replace All",
-            cls.orphan_wrapper("process_entry_current", all_matching=True),
-        )
+    def is_scannos(self) -> bool:
+        """Return True if dialog is a scannos dialog, False if Regex Library."""
+        return self.dlg_type == ScannoRegexCheckerDialog.scanno_type
 
     def choose_file(self) -> None:
         """Choose & load a scannos file."""
         filename = filedialog.askopenfilename(
             filetypes=(
-                ("Scannos files", "*.json"),
+                (f"{self.type_adj.capitalize()} files", "*.json"),
                 ("All files", "*.*"),
             )
         )
         if filename:
             self.focus()
-            preferences.set(PrefKey.SCANNOS_FILENAME, filename)
+            preferences.set(self.fn_pref, filename)
             self.load_scannos()
 
     def select_file(self) -> None:
@@ -1744,21 +1743,25 @@ class ScannoCheckerDialog(CheckerDialog):
 
     def load_scannos(self) -> None:
         """Load a scannos file."""
-        path = preferences.get(PrefKey.SCANNOS_FILENAME)
+        path = preferences.get(self.fn_pref)
         self.file_combo.add_to_history(path)
         scanno_dict = load_dict_from_json(path)
         if scanno_dict is None:
-            logger.error(f"Unable to load scannos file {path}")
+            logger.error(f"Unable to load {self.type_adj} file {path}")
             return
         # Some scannos files require whole-word searching
         try:
             self.whole_word = scanno_dict["wholeword"]
         except KeyError:
             self.whole_word = False
-        try:
+        if "scannos" in scanno_dict:
             self.scanno_list = scanno_dict["scannos"]
-        except KeyError:
-            logger.error("Error in scannos file - no 'scannos' array")
+        elif "regexes" in scanno_dict:
+            self.scanno_list = scanno_dict["regexes"]
+        else:
+            logger.error(
+                f"Error in {self.type_adj} file - no 'scannos' or 'regexes' array"
+            )
             return
         # Validate scannos - must have a match, but replacement and/or hint can
         # be omitted, and default to empty strings
@@ -1766,7 +1769,9 @@ class ScannoCheckerDialog(CheckerDialog):
             try:
                 scanno[Scanno.MATCH]
             except KeyError:
-                logger.error("Error in scannos file - entry with no 'match' string")
+                logger.error(
+                    f"Error in {self.type_adj} file - entry with no 'match' string"
+                )
                 self.scanno_list = []
                 return
             try:
@@ -1801,7 +1806,7 @@ class ScannoCheckerDialog(CheckerDialog):
             else:
                 self.scanno_number += -1 if prev else 1
             if self.any_matches(slurp_text, find_range) or not preferences.get(
-                PrefKey.SCANNOS_AUTO_ADVANCE
+                self.auto_pref
             ):
                 self.list_scannos()
                 return
@@ -1866,7 +1871,7 @@ class ScannoCheckerDialog(CheckerDialog):
                 )
             except re.error as e:
                 logger.error(
-                    f"Scanno regex {self.scanno_number + 1} has an error:\n{message_from_regex_exception(e)}"
+                    f"Regex {self.scanno_number + 1} has an error:\n{message_from_regex_exception(e)}"
                 )
                 self.display_entries(complete_msg=False)
                 self.lift()
@@ -1944,24 +1949,113 @@ class ScannoCheckerDialog(CheckerDialog):
         return "break"
 
 
-_the_stealth_scannos_dialog: Optional[ScannoCheckerDialog] = None
+class ScannoCheckerDialog(ScannoRegexCheckerDialog):
+    """Dialog to handle stealth scanno checks."""
 
+    manual_page = "Tools_Menu#Stealth_Scannos"
 
-def do_replace_scanno(checker_entry: CheckerEntry) -> None:
-    """Process the scanno by replacing with the replacement regex/string."""
-    assert _the_stealth_scannos_dialog is not None
-    if checker_entry.text_range:
-        search_string = _the_stealth_scannos_dialog.scanno_textvariable.get()
-        replace_string = _the_stealth_scannos_dialog.replacement_textvariable.get()
-        start = _the_stealth_scannos_dialog.mark_from_rowcol(
-            checker_entry.text_range.start
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize scanno checker dialog."""
+        super().__init__(
+            ScannoRegexCheckerDialog.scanno_type,
+            **kwargs,
         )
-        end = _the_stealth_scannos_dialog.mark_from_rowcol(checker_entry.text_range.end)
+
+    @classmethod
+    def add_orphan_commands(cls) -> None:
+        """Add orphan commands to command palette."""
+
+        menubar_metadata().add_checkbutton_orphan(
+            "Stealth Scannos, Auto Advance", PrefKey.SCANNOS_AUTO_ADVANCE
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Previous Scanno",
+            cls.orphan_wrapper("prev_next_scanno", prev=True),
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Next Scanno",
+            cls.orphan_wrapper("prev_next_scanno", prev=False),
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Swap Terms", cls.orphan_wrapper("swap_terms")
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Replace",
+            cls.orphan_wrapper("process_entry_current", all_matching=False),
+        )
+        menubar_metadata().add_button_orphan(
+            "Stealth Scannos, Replace All",
+            cls.orphan_wrapper("process_entry_current", all_matching=True),
+        )
+
+
+class RegexCheckerDialog(ScannoRegexCheckerDialog):
+    """Dialog to handle regex library checks."""
+
+    manual_page = "Tools_Menu#Regex_Library"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize regex checker dialog."""
+        super().__init__(
+            ScannoRegexCheckerDialog.regex_type,
+            **kwargs,
+        )
+
+    @classmethod
+    def add_orphan_commands(cls) -> None:
+        """Add orphan commands to command palette."""
+
+        menubar_metadata().add_checkbutton_orphan(
+            "Regex Library, Auto Advance", PrefKey.REGEX_LIBRARY_AUTO_ADVANCE
+        )
+        menubar_metadata().add_button_orphan(
+            "Regex Library, Previous Regex",
+            cls.orphan_wrapper("prev_next_scanno", prev=True),
+        )
+        menubar_metadata().add_button_orphan(
+            "Regex Library, Next Regex",
+            cls.orphan_wrapper("prev_next_scanno", prev=False),
+        )
+        menubar_metadata().add_button_orphan(
+            "Regex Library, Swap Terms", cls.orphan_wrapper("swap_terms")
+        )
+        menubar_metadata().add_button_orphan(
+            "Regex Library, Replace",
+            cls.orphan_wrapper("process_entry_current", all_matching=False),
+        )
+        menubar_metadata().add_button_orphan(
+            "Regex Library, Replace All",
+            cls.orphan_wrapper("process_entry_current", all_matching=True),
+        )
+
+
+_the_stealth_scannos_dialog: Optional[ScannoCheckerDialog] = None
+_the_regex_library_dialog: Optional[RegexCheckerDialog] = None
+
+
+def do_replace_scanno_regex(dlg_type: str, checker_entry: CheckerEntry) -> None:
+    """Process the checker entry by replacing with the replacement regex/string."""
+    dlg = (
+        _the_stealth_scannos_dialog
+        if dlg_type == ScannoRegexCheckerDialog.scanno_type
+        else _the_regex_library_dialog
+    )
+    assert dlg is not None
+    if checker_entry.text_range:
+        search_string = dlg.scanno_textvariable.get()
+        replace_string = dlg.replacement_textvariable.get()
+        start = dlg.mark_from_rowcol(checker_entry.text_range.start)
+        end = dlg.mark_from_rowcol(checker_entry.text_range.end)
         match_text = maintext().get(start, end)
         replacement = get_regex_replacement(
             search_string, replace_string, match_text, flags=0
         )
         maintext().replace(start, end, replacement)
+
+
+def do_replace_scanno(checker_entry: CheckerEntry) -> None:
+    """Process the scanno by replacing with the replacement regex/string."""
+    do_replace_scanno_regex(ScannoRegexCheckerDialog.scanno_type, checker_entry)
 
 
 def stealth_scannos() -> None:
@@ -1977,6 +2071,26 @@ def stealth_scannos() -> None:
         match_on_highlight=CheckerMatchType.ALL_MESSAGES,
     )
     _the_stealth_scannos_dialog.load_scannos()
+
+
+def do_replace_regex(checker_entry: CheckerEntry) -> None:
+    """Process the scanno by replacing with the replacement regex/string."""
+    do_replace_scanno_regex(ScannoRegexCheckerDialog.regex_type, checker_entry)
+
+
+def library_regexes() -> None:
+    """Operate the regex library."""
+    global _the_regex_library_dialog
+
+    if not tool_save():
+        return
+
+    _the_regex_library_dialog = RegexCheckerDialog.show_dialog(
+        rerun_command=stealth_scannos,
+        process_command=do_replace_regex,
+        match_on_highlight=CheckerMatchType.ALL_MESSAGES,
+    )
+    _the_regex_library_dialog.load_scannos()
 
 
 DQUOTES = "“”"

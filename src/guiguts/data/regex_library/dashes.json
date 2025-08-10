@@ -1,0 +1,19 @@
+{
+"regexes": [
+{
+"match": "--",
+"replacement": "—",
+"hint": "Replace pair of hyphens with em-dash"
+},
+{
+"match": "(?<=[\\d#¢½¼¾°⅐-⅞])-(?=[\\d#¢½¼¾°⅐-⅞])",
+"replacement": "–",
+"hint": "Replace hyphen between numbers with en-dash"
+},
+{
+"match": "(?<=[\\s\\n])-(?=[\\d\\s\\.])",
+"replacement": "−",
+"hint": "Replace hyphen used as minus sign with minus sign"
+}
+]
+}
