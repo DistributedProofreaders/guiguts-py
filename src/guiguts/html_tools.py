@@ -1412,10 +1412,10 @@ class EbookmakerCheckerAPI:
             PrefKey.EBOOKMAKER_KF8: "kf8-kindle.mobi",
         }
 
-        def zip_html_and_images(
-            html_file_path: str, images_folder_path: str
+        def zip_html_images_music(
+            html_file_path: str, images_folder_path: str, music_folder_path: str
         ) -> io.BytesIO:
-            """Zip current file plus images folder into bytes buffer."""
+            """Zip current file plus images folder (plus music if it exists) into bytes buffer."""
             buffer = io.BytesIO()
             with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
                 # Add the text from the HTML file at the top level of the zip
@@ -1426,20 +1426,23 @@ class EbookmakerCheckerAPI:
                 root_arcname = os.path.basename(images_folder_path.rstrip(os.sep)) + "/"
                 zipf.writestr(root_arcname, "")  # Add empty directory entry
 
-                # Add all files inside the images folder, preserving folder structure
-                for root, _, files in os.walk(images_folder_path):
-                    for f in files:
-                        full_path = os.path.join(root, f)
-                        arcname = os.path.relpath(
-                            full_path, start=os.path.dirname(images_folder_path)
-                        )
-                        zipf.write(full_path, arcname)
+                # Add all files inside the images & music folders, preserving folder structure
+                for folder_path in images_folder_path, music_folder_path:
+                    for root, _, files in os.walk(folder_path):
+                        for f in files:
+                            full_path = os.path.join(root, f)
+                            arcname = os.path.relpath(
+                                full_path, start=os.path.dirname(folder_path)
+                            )
+                            zipf.write(full_path, arcname)
 
             buffer.seek(0)
             return buffer
 
         # Post zip file to ebookmaker
-        fileobj = zip_html_and_images(file_name, os.path.join(proj_dir, "images"))
+        fileobj = zip_html_images_music(
+            file_name, os.path.join(proj_dir, "images"), os.path.join(proj_dir, "music")
+        )
         try:
             response = requests.post(
                 url,
