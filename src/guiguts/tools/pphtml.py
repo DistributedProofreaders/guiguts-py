@@ -323,6 +323,7 @@ class PPhtmlChecker:
         self.scan_musics()
         self.all_musics_used()
         self.all_musics_available()
+        self.music_audio_checks()
         self.music_file_sizes()
 
     def scan_musics(self) -> None:
@@ -383,6 +384,64 @@ class PPhtmlChecker:
                 test_passed = False
         self.output_subsection_errors(
             test_passed, "Target music files in HTML available in music folder", errors
+        )
+
+    def music_audio_checks(self) -> None:
+        """Check `<audio>` elements."""
+
+        class AudioHTMLParser(HTMLParser):
+            """Parse HTML file to get audio elements"""
+
+            def __init__(self) -> None:
+                """Initialize HTML outline parser."""
+                super().__init__()
+                self.audio_list: list[tuple[str, IndexRange | None]] = []
+                self.inaudio = False
+                self.tag_start = IndexRowCol(0, 0)
+                self.text = ""
+
+            def handle_starttag(
+                self, tag: str, attrs: list[tuple[str, str | None]]
+            ) -> None:
+                """Handle h1-h6 start tag."""
+                if tag != "audio":
+                    return
+                self.inaudio = True
+                self.text = ""
+                tag_index = self.getpos()
+                self.tag_start = IndexRowCol(tag_index[0], tag_index[1])
+
+            def handle_data(self, data: str) -> None:
+                """Get contents of audio element."""
+                if self.inaudio:
+                    self.text += " " + data
+
+            def handle_endtag(self, tag: str) -> None:
+                """Handle audio end tag."""
+                if tag != "audio":
+                    return
+                self.inaudio = False
+                self.text = self.text.strip()
+                self.text = re.sub(r"\.$", "", self.text)
+                if (
+                    self.text
+                    != "Audio content is not currently supported on your device"
+                ):
+                    tag_index = self.getpos()
+                    self.audio_list.append(
+                        (
+                            "Audio element does not contain required text",
+                            IndexRange(
+                                self.tag_start,
+                                IndexRowCol(tag_index[0], tag_index[1] + 8),
+                            ),
+                        )
+                    )
+
+        parser = AudioHTMLParser()
+        parser.feed(self.file_text)
+        self.output_subsection_errors(
+            len(parser.audio_list) == 0, "Audio element check", parser.audio_list
         )
 
     def music_file_sizes(self) -> None:
