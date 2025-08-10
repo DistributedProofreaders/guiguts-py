@@ -1,5 +1,6 @@
 """Common code/classes relating to Tk widgets."""
 
+import os.path
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font as tk_font
@@ -480,6 +481,7 @@ class Combobox(ttk.Combobox):
         super().__init__(parent, *args, **kwargs)
         self._handle_popdown_font()
         self.prefs_key = prefs_key
+        self.validate_history()
         self["values"] = preferences.get(self.prefs_key)
         # If user selects value from dropdown, add it to top of history list
         self.bind("<<ComboboxSelected>>", lambda *_: self.add_to_history(self.get()))
@@ -523,6 +525,7 @@ class Combobox(ttk.Combobox):
         Args:
             string: String to add to list.
         """
+        self.validate_history()
         if string:
             history = preferences.get(self.prefs_key)
             try:
@@ -540,6 +543,10 @@ class Combobox(ttk.Combobox):
             self.current(0)
         except tk.TclError:
             self.set("")
+
+    def validate_history(self) -> None:
+        """Validate the history list."""
+        # Does nothing for default combobox
 
 
 class PathnameCombobox(Combobox):
@@ -595,6 +602,14 @@ class PathnameCombobox(Combobox):
             except tk.TclError:
                 pass  # OK if tooltip doesn't exist
             self.tooltip = ToolTip(self, value)
+
+    def validate_history(self) -> None:
+        """Validate the history list, checking paths exist."""
+        path_list: list[str] = []
+        for path in preferences.get(self.prefs_key):
+            if os.path.exists(path):
+                path_list.append(path)
+        preferences.set(self.prefs_key, path_list)
 
 
 class Notebook(ttk.Notebook):

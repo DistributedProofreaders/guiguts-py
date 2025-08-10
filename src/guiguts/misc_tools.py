@@ -1741,6 +1741,9 @@ class ScannoRegexCheckerDialog(CheckerDialog):
         """Handle selection of a scannos file."""
         self.load_scannos()
 
+    def prune_scannos(self) -> None:
+        """Remove files from history that no longer exist."""
+
     def load_scannos(self) -> None:
         """Load a scannos file."""
         path = preferences.get(self.fn_pref)
