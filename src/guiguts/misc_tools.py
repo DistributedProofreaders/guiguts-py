@@ -2089,7 +2089,7 @@ def library_regexes() -> None:
         return
 
     _the_regex_library_dialog = RegexCheckerDialog.show_dialog(
-        rerun_command=stealth_scannos,
+        rerun_command=library_regexes,
         process_command=do_replace_regex,
         match_on_highlight=CheckerMatchType.ALL_MESSAGES,
     )
