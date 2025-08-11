@@ -61,9 +61,12 @@ class PPhtmlChecker:
         """Initialize PPhtml checker."""
         self.dialog = PPhtmlCheckerDialog.show_dialog(rerun_command=self.run)
         self.images_dir = ""
+        self.music_dir = ""
         self.image_files: list[str] = []  # list of files in images folder
+        self.music_files: list[str] = []  # list of files in music folder
         # dict of image file information (width, height, format, mode, filesize)
-        self.filedata: dict[str, PPhtmlFileData] = {}
+        self.imagefiledata: dict[str, PPhtmlFileData] = {}
+        self.musicfiledata: dict[str, PPhtmlFileData] = {}
         self.file_text = ""  # Text of file
         self.end_css = ""
         self.file_lines: list[str] = []  # Text split into lines
@@ -76,8 +79,11 @@ class PPhtmlChecker:
         """Reset PPhtml checker."""
         self.dialog.reset()
         self.images_dir = os.path.join(os.path.dirname(the_file().filename), "images")
+        self.music_dir = os.path.join(os.path.dirname(the_file().filename), "music")
         self.image_files = []
-        self.filedata = {}
+        self.music_files = []
+        self.imagefiledata = {}
+        self.musicfiledata = {}
         self.file_text = maintext().get_text()
         self.end_css = maintext().search("</style>", "end", "1.0", backwards=True)
         if not self.end_css:
@@ -92,6 +98,7 @@ class PPhtmlChecker:
         """Run PPhtml."""
         self.reset()
         self.image_tests()
+        self.music_tests()
         self.link_tests()
         self.ppv_tests()
         self.pg_tests()
@@ -119,7 +126,7 @@ class PPhtmlChecker:
         ]
         self.scan_images()
         self.all_images_used()
-        self.all_targets_available()
+        self.all_images_available()
         self.image_file_sizes()
         self.image_dimensions()
         if preferences.get(PrefKey.PPHTML_VERBOSE):
@@ -146,7 +153,7 @@ class PPhtmlChecker:
             if extension in (".jpg", ".jpeg", ".png"):
                 try:
                     with Image.open(filepath) as im:
-                        self.filedata[filename] = PPhtmlFileData(
+                        self.imagefiledata[filename] = PPhtmlFileData(
                             im.width,
                             im.height,
                             im.format,
@@ -167,7 +174,9 @@ class PPhtmlChecker:
                     r"(?:<\?xml\b[^>]*>[^<]*)?(?:<!--.*?-->[^<]*)*(?:<svg|<!DOCTYPE svg)\b",
                     file_contents,
                 ):
-                    self.filedata[filename] = PPhtmlFileData(0, 0, "SVG", "", fsize)
+                    self.imagefiledata[filename] = PPhtmlFileData(
+                        0, 0, "SVG", "", fsize
+                    )
                 else:
                     errors.append(f"  File '{filename}' is not valid SVG format")
                     test_passed = False
@@ -178,9 +187,9 @@ class PPhtmlChecker:
                 )
                 test_passed = False
                 continue
-            if self.filedata[filename].format not in ("JPEG", "PNG", "SVG"):
+            if self.imagefiledata[filename].format not in ("JPEG", "PNG", "SVG"):
                 errors.append(
-                    f"  File '{filename}' is of type {self.filedata[filename].format}"
+                    f"  File '{filename}' is of type {self.imagefiledata[filename].format}"
                 )
                 test_passed = False
         self.output_subsection_errors(
@@ -191,9 +200,7 @@ class PPhtmlChecker:
         """Verify all images in the images folder are used in the HTML."""
         errors = []
         test_passed = True
-        count_images = 0
-        for fn in self.filedata:
-            count_images += 1
+        for fn in self.imagefiledata:
             if f"images/{fn}" not in self.file_text:
                 errors.append(f"  Image '{fn}' not used in HTML")
                 test_passed = False
@@ -201,7 +208,7 @@ class PPhtmlChecker:
             test_passed, "Image folder files used in the HTML", errors
         )
 
-    def all_targets_available(self) -> None:
+    def all_images_available(self) -> None:
         """Verify all target images in HTML are available in images folder."""
         errors = []
         test_passed = True
@@ -209,7 +216,7 @@ class PPhtmlChecker:
             r"(?<=images/)[\p{Lowercase_Letter}-_\d]+\.(jpg|jpeg|png)", self.file_text
         ):
             filename = match[0]
-            if filename not in self.filedata:
+            if filename not in self.imagefiledata:
                 errors.append(
                     f"  Image '{filename}' referenced in HTML not in images folder"
                 )
@@ -223,7 +230,7 @@ class PPhtmlChecker:
         errors = []
         test_passed = True
         size_list = sorted(
-            [(fname, data.filesize) for fname, data in self.filedata.items()],
+            [(fname, data.filesize) for fname, data in self.imagefiledata.items()],
             key=lambda tup: tup[1],
             reverse=True,
         )
@@ -243,7 +250,7 @@ class PPhtmlChecker:
         Other images must be <= 5000x5000."""
         errors: list[str] = []
         test_passed = True
-        for fname, filedata in self.filedata.items():
+        for fname, filedata in self.imagefiledata.items():
             wd = filedata.width
             ht = filedata.height
             if fname == "cover.jpg" and ht < wd:
@@ -289,7 +296,7 @@ class PPhtmlChecker:
         }
 
         messages = []
-        for fname, filedata in self.filedata.items():
+        for fname, filedata in self.imagefiledata.items():
             mode_desc = type_desc.get(filedata.mode, filedata.mode)
             size_desc = (
                 f"{filedata.width}x{filedata.height}, "
@@ -298,6 +305,157 @@ class PPhtmlChecker:
             )
             messages.append(f"  {fname}, {size_desc}{filedata.format} {mode_desc}")
         self.output_subsection_errors(None, "Image Summary", messages)
+
+    # Music tests
+
+    def music_tests(self) -> None:
+        """Various checks relating to music files."""
+        # Return silently if no music folder
+        if not os.path.isdir(self.music_dir):
+            return
+        self.add_section("Music Checks")
+        # find filenames of all the music files
+        self.music_files = [
+            fn
+            for fn in os.listdir(self.music_dir)
+            if os.path.isfile(os.path.join(self.music_dir, fn))
+        ]
+        self.scan_musics()
+        self.all_musics_used()
+        self.all_musics_available()
+        self.music_audio_checks()
+        self.music_file_sizes()
+
+    def scan_musics(self) -> None:
+        """Scan each music file, checking filename, etc."""
+        errors = []
+        test_passed = True
+        # Check filenames
+        for filename in self.music_files:
+            if " " in filename:
+                errors.append(f"  Music filename '{filename}' contains spaces")
+                test_passed = False
+            if re.search(r"\p{Lu}", filename):
+                errors.append(f"  Music filename '{filename}' not all lower case")
+                test_passed = False
+
+        # Make sure all have valid extensions
+        for filename in self.music_files:
+            filepath = os.path.join(self.music_dir, filename)
+            _, extension = os.path.splitext(filename.lower())
+            fsize = os.path.getsize(filepath)
+            if extension in (".mp3", ".mid", ".midi", ".mxl", ".xml"):
+                self.musicfiledata[filename] = PPhtmlFileData(0, 0, "", "", fsize)
+            else:
+                errors.append(
+                    f"  Music file '{filename}' does not have extension mp3, mid/midi or mxl/xml"
+                )
+                test_passed = False
+                continue
+        self.output_subsection_errors(
+            test_passed, "Music folder consistency tests", errors
+        )
+
+    def all_musics_used(self) -> None:
+        """Verify all music files in the music folder are used in the HTML."""
+        errors = []
+        test_passed = True
+        for fn in self.musicfiledata:
+            if f"music/{fn}" not in self.file_text:
+                errors.append(f"  Music file '{fn}' not used in HTML")
+                test_passed = False
+        self.output_subsection_errors(
+            test_passed, "Music folder files used in the HTML", errors
+        )
+
+    def all_musics_available(self) -> None:
+        """Verify all target music files in HTML are available in music folder."""
+        errors = []
+        test_passed = True
+        for match in re.finditer(
+            r"(?<=music/)[\p{Lowercase_Letter}-_\d]+\.(mp3|mid|midi|mxl|xml)\b",
+            self.file_text,
+        ):
+            filename = match[0]
+            if filename not in self.musicfiledata:
+                errors.append(
+                    f"  Music file '{filename}' referenced in HTML not in music folder"
+                )
+                test_passed = False
+        self.output_subsection_errors(
+            test_passed, "Target music files in HTML available in music folder", errors
+        )
+
+    def music_audio_checks(self) -> None:
+        """Check `<audio>` elements."""
+
+        class AudioHTMLParser(HTMLParser):
+            """Parse HTML file to get audio elements"""
+
+            def __init__(self) -> None:
+                """Initialize HTML outline parser."""
+                super().__init__()
+                self.audio_list: list[tuple[str, IndexRange | None]] = []
+                self.inaudio = False
+                self.tag_start = IndexRowCol(0, 0)
+                self.text = ""
+
+            def handle_starttag(
+                self, tag: str, attrs: list[tuple[str, str | None]]
+            ) -> None:
+                """Handle h1-h6 start tag."""
+                if tag != "audio":
+                    return
+                self.inaudio = True
+                self.text = ""
+                tag_index = self.getpos()
+                self.tag_start = IndexRowCol(tag_index[0], tag_index[1])
+
+            def handle_data(self, data: str) -> None:
+                """Get contents of audio element."""
+                if self.inaudio:
+                    self.text += " " + data
+
+            def handle_endtag(self, tag: str) -> None:
+                """Handle audio end tag."""
+                if tag != "audio":
+                    return
+                self.inaudio = False
+                self.text = self.text.strip()
+                self.text = re.sub(r"\.$", "", self.text)
+                if (
+                    self.text
+                    != "Audio content is not currently supported on your device"
+                ):
+                    tag_index = self.getpos()
+                    self.audio_list.append(
+                        (
+                            "Audio element does not contain required text",
+                            IndexRange(
+                                self.tag_start,
+                                IndexRowCol(tag_index[0], tag_index[1] + 8),
+                            ),
+                        )
+                    )
+
+        parser = AudioHTMLParser()
+        parser.feed(self.file_text)
+        self.output_subsection_errors(
+            len(parser.audio_list) == 0, "Audio element check", parser.audio_list
+        )
+
+    def music_file_sizes(self) -> None:
+        """Show music file sizes."""
+        errors = []
+        test_passed = True
+        size_list = sorted(
+            [(fname, data.filesize) for fname, data in self.musicfiledata.items()],
+            key=lambda tup: tup[1],
+            reverse=True,
+        )
+        for fname, fsize in size_list:
+            errors.append(f"  {fname} ({int(fsize / 1024)}K)")
+        self.output_subsection_errors(test_passed, "Music File Sizes", errors)
 
     # Link tests
 
@@ -353,10 +511,10 @@ class PPhtmlChecker:
         elif re.search("rel *= *['\"]icon['\"]", self.file_text):
             test_passed = True
             title += " (using link rel='icon')"
-        elif "cover.jpg" in self.filedata:
+        elif "cover.jpg" in self.imagefiledata:
             test_passed = True
             title += " (found cover.jpg in images folder)"
-        elif "cover.png" in self.filedata:
+        elif "cover.png" in self.imagefiledata:
             test_passed = True
             title += " (found cover.png in images folder)"
         self.output_subsection_errors(test_passed, title, [])
