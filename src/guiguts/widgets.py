@@ -79,7 +79,7 @@ class ToplevelDialog(tk.Toplevel):
             # Bind right-click context menu for pin/unpin anywhere in the dialog
             self._pin_menu = tk.Menu(self, tearoff=False)
             self._pin_menu.add_command(label="Pin 📌", command=self.toggle_pin)
-            self.bind("<Button-3>", self._show_context_menu)
+            mouse_bind(self, "3", self._show_context_menu)
             self.pin_unpin()
 
         self.columnconfigure(0, weight=1)
@@ -960,7 +960,7 @@ def grab_focus(
 
 
 def mouse_bind(
-    widget: tk.Widget, event: str, callback: Callable[[tk.Event], object]
+    widget: tk.Widget | tk.Toplevel, event: str, callback: Callable[[tk.Event], object]
 ) -> None:
     """Bind mouse button callback to event on widget.
 
