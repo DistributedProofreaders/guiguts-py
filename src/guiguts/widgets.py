@@ -41,6 +41,9 @@ class ToplevelDialog(tk.Toplevel):
     # Used to ensure only one instance of any dialog is created.
     toplevel_dialogs: dict[str, "ToplevelDialog"] = {}
 
+    # Most recently focused dialog - must check it still exists before using it
+    recent_dialog: Optional[tk.Toplevel] = None
+
     # Location of manual page for most recently focused dialog
     context_help = ""
     manual_page: Optional[str] = None
@@ -68,8 +71,16 @@ class ToplevelDialog(tk.Toplevel):
 
         super().__init__(**kwargs)
         self.bind("<Escape>", lambda event: self.destroy())
-        self.title(title)
+
+        self.base_title = title
         self.resizable(resize_x, resize_y)
+
+        if not is_x11():
+            # Bind right-click context menu for pin/unpin anywhere in the dialog
+            self._pin_menu = tk.Menu(self, tearoff=False)
+            self._pin_menu.add_command(label="Pin 📌", command=self.toggle_pin)
+            mouse_bind(self, "3", self._show_context_menu)
+            self.pin_unpin(first=True)
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -162,6 +173,40 @@ class ToplevelDialog(tk.Toplevel):
         """
         return cls.__name__.removesuffix("Dialog")
 
+    def is_pinned(self) -> bool:
+        """Return whether dialog is pinned on not."""
+        return bool(self.get_dialog_pref(PrefKey.DIALOG_PIN_DICT))
+
+    def toggle_pin(self) -> None:
+        """Toggle whether dialog is pinned or not."""
+        new_pin = not self.is_pinned()
+        self.save_dialog_pref(PrefKey.DIALOG_PIN_DICT, new_pin)
+        self.pin_unpin()
+
+    def pin_unpin(self, first: bool = False) -> None:
+        """Pin/unpin dialog based on it's pref setting.
+
+        Args:
+            first: Set True on first call for this dialog.
+        """
+        if self.is_pinned():
+            self.transient(root())
+            self.title(f"{self.base_title} 📌")
+        else:
+            self.transient(None)
+            # Window manager won't release dialog even with the above call, so if
+            # unpinning from pinned, tell user they need to close the dialog to fully unpin.
+            if first:
+                self.title(self.base_title)
+            else:
+                self.title(f"{self.base_title} 📌 (will unpin when closed)")
+
+    def _show_context_menu(self, event: tk.Event) -> None:
+        """Display pin/unpin context menu."""
+        label = "Unpin 📍" if self.is_pinned() else "Pin 📌"
+        self._pin_menu.entryconfigure(0, label=label)
+        self._pin_menu.tk_popup(event.x_root, event.y_root)
+
     def grab_focus(self) -> None:
         """Grab focus and raise to top (if permitted by window manager)."""
         if is_x11():
@@ -171,6 +216,7 @@ class ToplevelDialog(tk.Toplevel):
         """Called when dialog gets focus."""
         assert self.manual_page is not None
         ToplevelDialog.context_help = self.manual_page
+        ToplevelDialog.recent_dialog = self
 
     def register_tooltip(self, tooltip: "ToolTip") -> None:
         """Register a tooltip as being attached to a widget in this
@@ -378,6 +424,12 @@ class ToplevelDialog(tk.Toplevel):
 
         assert hasattr(cls, method_name)
         return wrapper
+
+    @classmethod
+    def toggle_pin_last_dialog(cls) -> None:
+        """Toggle pinning for the most recently focused dialog."""
+        if ToplevelDialog.recent_dialog and ToplevelDialog.recent_dialog.winfo_exists():
+            ToplevelDialog.recent_dialog.toggle_pin()  # type:ignore[attr-defined]
 
 
 class OkApplyCancelDialog(ToplevelDialog):
@@ -917,7 +969,7 @@ def grab_focus(
 
 
 def mouse_bind(
-    widget: tk.Widget, event: str, callback: Callable[[tk.Event], object]
+    widget: tk.Widget | tk.Toplevel, event: str, callback: Callable[[tk.Event], object]
 ) -> None:
     """Bind mouse button callback to event on widget.
 
