@@ -80,7 +80,7 @@ class ToplevelDialog(tk.Toplevel):
             self._pin_menu = tk.Menu(self, tearoff=False)
             self._pin_menu.add_command(label="Pin 📌", command=self.toggle_pin)
             mouse_bind(self, "3", self._show_context_menu)
-            self.pin_unpin()
+            self.pin_unpin(first=True)
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -183,14 +183,23 @@ class ToplevelDialog(tk.Toplevel):
         self.save_dialog_pref(PrefKey.DIALOG_PIN_DICT, new_pin)
         self.pin_unpin()
 
-    def pin_unpin(self) -> None:
-        """Pin/unpin dialog based on it's pref setting."""
+    def pin_unpin(self, first: bool = False) -> None:
+        """Pin/unpin dialog based on it's pref setting.
+
+        Args:
+            first: Set True on first call for this dialog.
+        """
         if self.is_pinned():
             self.transient(root())
             self.title(f"{self.base_title} 📌")
         else:
             self.transient(None)
-            self.title(self.base_title)
+            # Window manager won't release dialog even with the above call, so if
+            # unpinning from pinned, tell user they need to close the dialog to fully unpin.
+            if first:
+                self.title(self.base_title)
+            else:
+                self.title(f"{self.base_title} 📌 (will unpin when closed)")
 
     def _show_context_menu(self, event: tk.Event) -> None:
         """Display pin/unpin context menu."""
