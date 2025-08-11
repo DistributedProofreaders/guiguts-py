@@ -647,6 +647,7 @@ class Guiguts:
         preferences.set_default(PrefKey.PPTXT_HTML_CHECK, True)
         preferences.set_default(PrefKey.PPTXT_UNICODE_NUMERIC_CHARACTER_CHECK, True)
         preferences.set_default(PrefKey.PPTXT_SPECIALS_CHECK, True)
+        preferences.set_default(PrefKey.DIALOG_PIN_DICT, {})
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -1114,6 +1115,11 @@ class Guiguts:
             lambda: maintext().hide_peer(),
             "Cmd/Ctrl+Shift+T",
         )
+        if not is_x11():
+            view_menu.add_button(
+                "~Pin/Unpin Dialog",
+                ToplevelDialog.toggle_pin_last_dialog,
+            )
         view_menu.add_separator()
         view_menu.add_checkbutton(
             "Image ~Viewer",
