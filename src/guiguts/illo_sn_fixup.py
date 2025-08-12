@@ -10,7 +10,9 @@ import regex as re
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
+from guiguts.preferences import PrefKey, PersistentBoolean, preferences
 from guiguts.utilities import IndexRowCol, IndexRange, sound_bell
+from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -87,6 +89,18 @@ class IlloSNCheckerDialog(CheckerDialog):
             command=lambda: move_selection_down(tag_type),
         )
         self.move_down_btn.grid(column=1, row=0, sticky="NSW")
+        if tag_type == "Illustration":
+            pg_btn = ttk.Checkbutton(
+                frame,
+                text="Preserve Illo's Page Number",
+                variable=PersistentBoolean(PrefKey.ILLO_SN_MOVE_PAGE_MARKS),
+            )
+            pg_btn.grid(row=0, column=2, padx=(10, 0), sticky="NSW")
+            ToolTip(
+                pg_btn,
+                "If illo is moved over page breaks, adjust page break locations\n"
+                "so that illo remains on the same page number",
+            )
 
 
 class IlloCheckerDialog(IlloSNCheckerDialog):
@@ -470,6 +484,16 @@ def move_selection_up(tag_type: str) -> None:
         if line_txt == "" and maintext().compare(
             f"{line_num}+1l linestart", "!=", f"{first_line_num} linestart"
         ):
+            # Gather information on page breaks if required
+            page_breaks: list[str] = []
+            if preferences.get(PrefKey.ILLO_SN_MOVE_PAGE_MARKS):
+                page_breaks = get_page_breaks(
+                    line_num,
+                    maintext().index(
+                        f"{checker.updated_index(selected.last_line_num)} lineend"
+                    ),
+                )
+
             # We can insert the selected tag above the blank line at line_num.
             # Copy the lines of the Illo or SN record to be moved. Don't include the
             # prefixing "*" if present.
@@ -485,6 +509,9 @@ def move_selection_up(tag_type: str) -> None:
                 maintext().index(f"{line_num}"),
                 "\n" + the_selected_record_lines + "\n",
             )
+            # Adjust page breaks if required
+            for page_break in page_breaks:
+                maintext().set_mark_position(page_break, maintext().rowcol(line_num))
             mid_para_list = [item.mid_para for item in checker.illosn_records]
             checker.update_after_move(tag_type, selected_illosn_index, mid_para_list)
             break  # Moved successfully
@@ -562,6 +589,15 @@ def move_selection_down(tag_type: str) -> None:
         if line_txt == "" and maintext().compare(
             f"{line_num}-1l linestart", "!=", f"{last_line_num} linestart"
         ):
+            # Gather information on page breaks if required
+            page_breaks: list[str] = []
+            if preferences.get(PrefKey.ILLO_SN_MOVE_PAGE_MARKS):
+                page_breaks = get_page_breaks(
+                    maintext().index(
+                        f"{checker.updated_index(selected.first_line_num)} lineend"
+                    ),
+                    line_num,
+                )
             # We can insert the selected tag below the blank line at line_num.
             # Copy the lines of the Illo or SN record to be moved. Don't include the
             # prefixing "*" if present.
@@ -577,6 +613,9 @@ def move_selection_down(tag_type: str) -> None:
             )
             # Delete the selected tag from its current position in the file.
             checker.delete_illosn_record_from_file(selected)
+            # Adjust page breaks if required
+            for page_break in page_breaks:
+                maintext().set_mark_position(page_break, maintext().rowcol(line_num))
             mid_para_list = [item.mid_para for item in checker.illosn_records]
             checker.update_after_move(tag_type, selected_illosn_index, mid_para_list)
             return  # Moved successfully
@@ -585,6 +624,16 @@ def move_selection_down(tag_type: str) -> None:
     # Reached end of file without finding a place to move it
     sound_bell()
     return
+
+
+def get_page_breaks(start: str, end: str) -> list[str]:
+    """Return list of page marks between start and end (inclusive)"""
+    mark_list = []
+    while start := maintext().page_mark_next(start):
+        if maintext().compare(start, ">", end):
+            break
+        mark_list.append(start)
+    return mark_list
 
 
 def illosn_check(tag_type: str) -> None:
