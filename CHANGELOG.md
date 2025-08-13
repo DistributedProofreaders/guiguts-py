@@ -1,6 +1,111 @@
 # Changelog
 
 
+## Version 2.0.1
+
+- A message bar at the bottom of the main window displays the latest message
+  for several seconds. An example is a message reporting how many fixes were
+  made using Fix All in a checker dialog.
+- A toolbar containing common buttons appears next to the message bar. The
+  toolbar contains Load, Save, Undo, Redo, Cut, Copy, Paste, Search/Replace,
+  Go Back, Go Forward (see below), and Help.
+- Go Back and Go Forward have been added to the Search menu. These are similar
+  to the back/forward buttons in a browser, going back to previous locations
+  in the file. Each time the cursor is moved via a search, or by clicking on 
+  a checker message, the current location is saved into the list that is used.
+- A regex library has been added. This works in a similar way to scannos, using
+  a file of regexes and replacements, but can be used for any replacements,
+  not just scannos. One file is supplied, `dashes.json`, which helps with
+  conversion of hyphens to more specific dashes. Users may add their own files
+  to the library.
+- "Search" within Word Frequency has been improved and extended to all checker
+  dialogs. Instead of just being able to type a single character, e.g. "G" to
+  jump to the first entry in the list beginning with "G", you can now type
+  part or all of a word, in a similar way to Windows File Explorer or macOS
+  Finder. If several characters are typed with no delay, they are treated as
+  a search term. After a delay, the search term is reset. In checker dialogs,
+  the default is to search the beginning of the message, or by enabling
+  "Full Search", to search anywhere in the message. Example: run pptext, then
+  type "ellipsis" in the dialog to jump to the ellipsis test results.
+- A similar feature has been added to the Unicode Block dialog. The string
+  typed can be the beginning of any word in the block's title. Alternatively,
+  if you type the start of a 4-digit Unicode codepoint, it will jump to the
+  block that contains that character, e.g. knowing that open single quote
+  is `U+2018`, typing `201` will jump to General Punctuation, which has the
+  range `2000-206f`. 
+- Shift-clicking the Replace All button in the S/R dialog replaces all 
+  "identical" matches to the current match. An example would be to search for
+  words in italic markup, then if a LOTE word is found, all occurrences of
+  that LOTE word can have a `lang` attribute added.
+- Shift-clicking the Replace button in the Scannos dialog pops the S/R dialog
+  pre-populated with the search and replace fields.
+- View Options has been upgraded to make it easier to view messages one type
+  at a time. Using Next Option will select the next available view option,
+  and display messages of that type. Previous Option goes to the previous
+  view option. Next/Previous respect the setting of "Grey out options with
+  no matches".
+- Illustration Fixup has a new button to "Preserve Illo's Page Number". If
+  enabled, when moving an illo would take it across a page boundary, the
+  page break locations are adjusted to keep the illo's page number the same.
+  This is equivalent to keeping the illo where it was and moving the text
+  around it. 
+- Fix, Fix All, Hide, and Hide All buttons have been added to Scannos dialog.
+- Selected text can now be dragged to another location in the file. If an 
+  attempt is made to drag outside the screen, the selection may look incorrect
+  until the text is dropped at the current mouse location. It is not possible
+  to drag between the two split text windows.
+- Holding one of Ctrl/Cmd/Shift modifier keys while dragging will copy
+  selected text instead of moving. Dragging can be cancelled with Escape key.
+- Any dialog may be "pinned", meaning that it will remain in front of the main
+  window (not available on Linux). When pinned, a pin is shown in the title
+  of the dialog. The current dialog may be pinned using Pin/Unpin Dialog in
+  the View menu, or by right-clicking the dialog in an area where right-click
+  is not normally used, i.e. most of the dialog except a list of messages.
+  When you unpin a dialog, the title bar will say that it will be unpinned
+  when it is next closed. Pinned dialogs are linked to the main window, so
+  are raised, lowered, or iconized with the main window.
+- Vowels with macros and vowels with breves have been added to the Common
+  Characters dialog.
+- "Include File" has been added to the file menu to insert a file at the
+  current location.
+- Footnotes ending in `...]*` are now marked as "CONTINUED" in Footnote Fixup.
+- Regexes now support `\N` which converts a matched Roman numeral string
+  (optionally including spaces) to a regular, Arabic number. This is to
+  support adding `abbr` markup, e.g. `<abbr title="8">VIII</abbr>`.
+- Support for curly quote conversion in HTML files has been added via Protect
+  and Restore HTML Straight Quotes, which protect straight quotes used within
+  HTML elements by replacing them with an obscure character, like the online
+  ppsmq tool. Normal curly quote conversion can then be run, and the quotes
+  restored once this is complete.
+- Compose Help dialog can now be sorted by clicking in the header of any
+  column. Clicking again reverses the sort.
+- The verbosity of more sections of the pptext report has been reduced.
+- HTML tags are now stripped from the selected text passed to a Custom command
+  with the `$t` token.
+- The `blockquote` element is used for blockquotes instead of a `div`.
+- Chapter `h2` markup is closed if poetry is detected in header.
+- Pressing Home or Cmd-Left already moved the insert cursor to the start of
+  the current line. Pressing it again will now move to the first non-space
+  character.
+- PPhtml checks music files in a similar way to image files.
+- PPhtml no longer reports `www.w3.org` links in the HTML header.
+- Shadow command for "delete next character" added to Command Palette.
+- "Highlight Surrounding Quotes & Brackets" now ignores apostrophes that are
+  surrounded by letters.
+- Default CSS for gesperrt has been improved, including a fallback for epub2.
+
+### Bug fixes
+
+- Using the Recent Files menu, and possibly other methods of loading a file,
+  could make Guiguts crash instantly and silently.
+- Music files were not zipped up to send to ebookmaker.
+- If the user ignored the red "bad regex" indication in the S/R dialog and
+  searched for the regex, an exception occurred.
+- Block markup around the book title could cause an error during HTML
+  generation.
+- The default HTML header had a minor incorrect indentation
+
+
 ## Version 2.0.0
 
 ### Bug fixes
