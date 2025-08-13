@@ -253,6 +253,7 @@ class CheckerViewOptionsDialog(ToplevelDialog):
                 if preferences.get(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS) and matches == 0
                 else tk.NORMAL
             )
+            self.flags[row].set(option_filter.on)
 
     def filter_matches(self, option_filter: CheckerFilter) -> int:
         """Return how many messages match the given filter.
@@ -558,12 +559,37 @@ class CheckerDialog(ToplevelDialog):
                 checker_dialog=self
             )
 
-        if view_options_dialog_class is not None:
+        self.has_view_options = bool(view_options_dialog_class is not None)
+        self.view_options_label = tk.StringVar(self, "")
+        self.view_options_crit = tk.StringVar(self, "")
+        if self.has_view_options:
+            view_options_frame = ttk.Frame(self.message_controls_frame)
+            view_options_frame.grid(row=1, column=0, sticky="NSW", columnspan=8)
             ttk.Button(
-                self.message_controls_frame,
+                view_options_frame,
                 text="View Options",
                 command=show_view_options,
-            ).grid(row=1, column=0, sticky="NS", columnspan=8)
+            ).grid(row=0, column=0, sticky="NS")
+            ttk.Button(
+                view_options_frame,
+                text="Prev. Option",
+                command=lambda: self.prev_next_view_option(-1),
+            ).grid(row=0, column=1, sticky="NS", padx=(10, 0))
+            ttk.Button(
+                view_options_frame,
+                text="Next Option",
+                command=lambda: self.prev_next_view_option(1),
+            ).grid(row=0, column=2, sticky="NS", padx=(0, 10))
+            ttk.Label(view_options_frame, textvariable=self.view_options_label).grid(
+                row=0,
+                column=3,
+                sticky="NS",
+            )
+            ttk.Label(
+                view_options_frame,
+                textvariable=self.view_options_crit,
+                foreground="red",
+            ).grid(row=0, column=4, sticky="NS")
         if view_options_filters is None:
             view_options_filters = []
         self.view_options_filters = view_options_filters
@@ -917,6 +943,67 @@ class CheckerDialog(ToplevelDialog):
         ):
             self.view_options_dialog.refresh_checkboxes()
 
+    def update_view_options_label(self) -> None:
+        """Update label showing which View Options are active."""
+        if not self.has_view_options:
+            return
+
+        n_filters = len(self.view_options_filters)
+        count_on, on_index = self.get_view_options_count_index()
+        if count_on == 1:
+            crit = re.sub("[ :]*$", "", self.view_options_filters[on_index].label)
+            self.view_options_label.set(
+                f"Option {on_index+1} enabled (of {n_filters}): "
+            )
+            self.view_options_crit.set(crit)
+        else:
+            self.view_options_label.set(f"{count_on} (of {n_filters}) options enabled")
+            self.view_options_crit.set("")
+
+    def prev_next_view_option(self, direction: int) -> None:
+        """Select the previous/next view option.
+
+        Args:
+            direction: -1 for prev; +1 for next."""
+        n_filters = len(self.view_options_filters)
+        count_on, on_index = self.get_view_options_count_index()
+
+        def n_matches(option_filter: CheckerFilter) -> int:
+            """Return how many matches for filter there are in the list."""
+            return sum(1 for entry in self.entries if option_filter.matches(entry))
+
+        # If not just one selected, pretend the first/last is selected for prev/next
+        if count_on != 1:
+            on_index = 0 if direction < 0 else n_filters - 1
+        gray_unused = preferences.get(PrefKey.CHECKER_GRAY_UNUSED_OPTIONS)
+        for n in range(0, n_filters):
+            # Loop round once in given direction from starting point
+            idx = (on_index + (n + 1) * direction + n_filters) % n_filters
+            # If "gray unused" is checked then we haven't found the one we want
+            # to progress to, unless it has matching messages
+            if not gray_unused or n_matches(self.view_options_filters[idx]) > 0:
+                on_index = idx
+                break
+        else:
+            # Didn't find any matching messages, so just select first/last for next/prev
+            on_index = 0 if direction > 0 else n_filters - 1
+
+        for option_filter in self.view_options_filters:
+            option_filter.on = False
+        self.view_options_filters[on_index].on = True
+        self.display_entries()
+        self.refresh_view_options()
+
+    def get_view_options_count_index(self) -> tuple[int, int]:
+        """Count how many are on, and the index of the only one if there is one."""
+        count_on = 0
+        on_index = -1
+        for i, f in enumerate(self.view_options_filters):
+            if f.on:
+                count_on += 1
+                on_index = i
+        return count_on, on_index
+
     def new_section(self) -> None:
         """Start a new section in the dialog.
 
@@ -1069,6 +1156,10 @@ class CheckerDialog(ToplevelDialog):
         maxrowlen = len(str(maxrow))
         maxcollen = len(str(maxcol)) + 2  # Always colon & at least 1 space after col
 
+        # If exactly one View Option enabled, hide error prefix,
+        # since it will be displayed in the View Options label
+        hide_ep = self.get_view_options_count_index()[0] == 1
+
         for entry in self.entries:
             if self.skip_entry(entry):
                 continue
@@ -1082,29 +1173,24 @@ class CheckerDialog(ToplevelDialog):
                 rowcol_str = (
                     f"{entry.text_range.start.row:>{maxrowlen}}.{colstr:<{maxcollen}}"
                 )
-            self.text.insert(
-                tk.END, rowcol_str + entry.error_prefix + entry.text + "\n"
-            )
+            ep = "" if hide_ep else entry.error_prefix
+            self.text.insert(tk.END, rowcol_str + ep + entry.text + "\n")
             if entry.hilite_start is not None and entry.hilite_end is not None:
                 start_rowcol = IndexRowCol(self.text.index(tk.END + "-2line"))
-                start_rowcol.col = (
-                    entry.hilite_start + len(rowcol_str) + len(entry.error_prefix)
-                )
+                start_rowcol.col = entry.hilite_start + len(rowcol_str) + len(ep)
                 end_rowcol = IndexRowCol(
                     start_rowcol.row,
-                    entry.hilite_end + len(rowcol_str) + len(entry.error_prefix),
+                    entry.hilite_end + len(rowcol_str) + len(ep),
                 )
                 self.text.tag_add(
                     HighlightTag.CHECKER_HIGHLIGHT,
                     start_rowcol.index(),
                     end_rowcol.index(),
                 )
-            if entry.error_prefix:
+            if ep:
                 start_rowcol = IndexRowCol(self.text.index(tk.END + "-2line"))
                 start_rowcol.col = len(rowcol_str)
-                end_rowcol = IndexRowCol(
-                    start_rowcol.row, len(rowcol_str) + len(entry.error_prefix)
-                )
+                end_rowcol = IndexRowCol(start_rowcol.row, len(rowcol_str) + len(ep))
                 self.text.tag_add(
                     HighlightTag.CHECKER_ERROR_PREFIX,
                     start_rowcol.index(),
@@ -1142,6 +1228,7 @@ class CheckerDialog(ToplevelDialog):
                         self.select_entry_by_index(index)
                         break
         self.update_count_label()
+        self.update_view_options_label()
 
     def showing_suspects_only(self) -> bool:
         """Return whether dialog is showing Suspects Only.
