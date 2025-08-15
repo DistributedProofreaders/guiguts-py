@@ -10,12 +10,16 @@ import regex as re
 from guiguts.checkers import CheckerDialog
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
+from guiguts.preferences import PrefKey, PersistentBoolean, preferences
 from guiguts.utilities import IndexRowCol, IndexRange, sound_bell
+from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
 _THE_ILLO_CHECKER: Optional["IlloSNChecker"] = None
 _THE_SN_CHECKER: Optional["IlloSNChecker"] = None
+
+TEMP_SPACE = "\u2231"  # Obscure character
 
 
 class IlloSNRecord:
@@ -87,6 +91,18 @@ class IlloSNCheckerDialog(CheckerDialog):
             command=lambda: move_selection_down(tag_type),
         )
         self.move_down_btn.grid(column=1, row=0, sticky="NSW")
+        if tag_type == "Illustration":
+            pg_btn = ttk.Checkbutton(
+                frame,
+                text="Preserve Illo's Page Number",
+                variable=PersistentBoolean(PrefKey.ILLO_SN_MOVE_PAGE_MARKS),
+            )
+            pg_btn.grid(row=0, column=2, padx=(10, 0), sticky="NSW")
+            ToolTip(
+                pg_btn,
+                "If illo is moved over page breaks, adjust page break locations\n"
+                "so that illo remains on the same page number",
+            )
 
 
 class IlloCheckerDialog(IlloSNCheckerDialog):
@@ -195,7 +211,7 @@ class IlloSNChecker:
             )
             if not (
                 above_illosn_line_txt == ""
-                or above_illosn_line_txt.startswith("-----File:")
+                or above_illosn_line_txt.startswith(("-----File:", ".bn "))
             ):
                 return True
 
@@ -207,7 +223,7 @@ class IlloSNChecker:
             if (
                 below_illosn_line_txt == ""
                 or below_illosn_line_txt == "[Blank Page]"
-                or below_illosn_line_txt.startswith("-----File:")
+                or below_illosn_line_txt.startswith(("-----File:", ".bn "))
             ):
                 continue
             # Check if starting illo/SN markup. If on single line, flag is reset below
@@ -312,11 +328,11 @@ class IlloSNChecker:
         # Update illosn_records list
         self.run_check(tag_type)
         # If selected illo/sn was mid-para previous to move(s), and is no longer mid-para,
-        # flag it as being "PREV MIDPARA"
-        assert len(mid_para_list) == len(self.illosn_records)
-        for idx, mid_para_flag in enumerate(mid_para_list):
-            if mid_para_flag != 0 and self.illosn_records[idx].mid_para == 0:
-                self.illosn_records[idx].mid_para = -1
+        # flag it as being "PREV MIDPARA" (unless user has also edited illos so there are a different number)
+        if len(mid_para_list) == len(self.illosn_records):
+            for idx, mid_para_flag in enumerate(mid_para_list):
+                if mid_para_flag != 0 and self.illosn_records[idx].mid_para == 0:
+                    self.illosn_records[idx].mid_para = -1
         # Update dialog
         display_illosn_entries(tag_type)
         # Select again the tag we have just moved so it is highlighted.
@@ -470,6 +486,17 @@ def move_selection_up(tag_type: str) -> None:
         if line_txt == "" and maintext().compare(
             f"{line_num}+1l linestart", "!=", f"{first_line_num} linestart"
         ):
+            # Gather information on page breaks if required
+            page_marks: list[str] = []
+            page_seps: list[str] = []
+            if preferences.get(PrefKey.ILLO_SN_MOVE_PAGE_MARKS):
+                page_marks, page_seps = get_page_breaks(
+                    line_num,
+                    maintext().index(
+                        f"{checker.updated_index(selected.last_line_num)} lineend"
+                    ),
+                )
+
             # We can insert the selected tag above the blank line at line_num.
             # Copy the lines of the Illo or SN record to be moved. Don't include the
             # prefixing "*" if present.
@@ -485,6 +512,24 @@ def move_selection_up(tag_type: str) -> None:
                 maintext().index(f"{line_num}"),
                 "\n" + the_selected_record_lines + "\n",
             )
+
+            # Insert page seps in new position and delete from old position
+            for idx, mark in enumerate(page_marks):
+                sep = page_seps[idx]
+                ins_pos = f"{line_num}+{idx}c"
+                maintext().set_mark_position(mark, maintext().rowcol(ins_pos))
+                # Insert temp char to keep coincident marks separate
+                maintext().insert(ins_pos, TEMP_SPACE)
+            for idx, mark in enumerate(page_marks):
+                sep = page_seps[idx]
+                if sep:
+                    line = maintext().get(f"{sep} linestart", f"{sep} +1l linestart")
+                    maintext().insert(mark, line)
+                    maintext().delete(f"{sep} linestart", f"{sep} +1l linestart")
+                    maintext().mark_unset(sep)
+            # Remove temp chars
+            maintext().replace_all(TEMP_SPACE, "")
+
             mid_para_list = [item.mid_para for item in checker.illosn_records]
             checker.update_after_move(tag_type, selected_illosn_index, mid_para_list)
             break  # Moved successfully
@@ -553,38 +598,113 @@ def move_selection_down(tag_type: str) -> None:
         # ...
         # BL
         # [Sidenote: Some text.] <- (last line of) the selected tag.
+        # (Optional page sep lines "-----File" if ILLO_SN_MOVE_PAGE_MARKS is on)
         # BL                     <- blank line we are at.
         # ...
         # BL
         #
         # If we are not in this situation, insert selected tag below the blank line we are at.
         # Otherwise look for next blank line below that one.
-        if line_txt == "" and maintext().compare(
-            f"{line_num}-1l linestart", "!=", f"{last_line_num} linestart"
-        ):
-            # We can insert the selected tag below the blank line at line_num.
-            # Copy the lines of the Illo or SN record to be moved. Don't include the
-            # prefixing "*" if present.
-            the_selected_record_lines = maintext().get(
-                first_line_num, f"{last_line_num} lineend"
-            )
-            if the_selected_record_lines[0:1] == "*":
-                the_selected_record_lines = the_selected_record_lines[1:]
-            # Insert copied lines below the blank line we are at and suffix it with a blank line.
-            maintext().insert(
-                maintext().index(f"{line_num} lineend"),
-                "\n" + the_selected_record_lines + "\n",
-            )
-            # Delete the selected tag from its current position in the file.
-            checker.delete_illosn_record_from_file(selected)
-            mid_para_list = [item.mid_para for item in checker.illosn_records]
-            checker.update_after_move(tag_type, selected_illosn_index, mid_para_list)
-            return  # Moved successfully
+        if line_txt == "":
+            if preferences.get(PrefKey.ILLO_SN_MOVE_PAGE_MARKS):
+                all_page_seps = True
+                for ln in range(
+                    IndexRowCol(last_line_num).row + 1, IndexRowCol(line_num).row
+                ):
+                    if (
+                        not maintext()
+                        .get(f"{ln}.0", f"{ln}.end")
+                        .startswith(("-----File:", ".bn "))
+                    ):
+                        all_page_seps = False
+                        break
+            else:
+                all_page_seps = False
+            if not all_page_seps and maintext().compare(
+                f"{line_num}-1l linestart", "!=", f"{last_line_num} linestart"
+            ):
+                # Gather information on page breaks if required
+                page_marks: list[str] = []
+                page_seps: list[str] = []
+                if preferences.get(PrefKey.ILLO_SN_MOVE_PAGE_MARKS):
+                    page_marks, page_seps = get_page_breaks(
+                        maintext().index(
+                            f"{checker.updated_index(selected.last_line_num)} lineend"
+                        ),
+                        line_num,
+                    )
+                # We can insert the selected tag below the blank line at line_num.
+                # Copy the lines of the Illo or SN record to be moved. Don't include the
+                # prefixing "*" if present.
+                the_selected_record_lines = maintext().get(
+                    first_line_num, f"{last_line_num} lineend"
+                )
+                if the_selected_record_lines[0:1] == "*":
+                    the_selected_record_lines = the_selected_record_lines[1:]
+
+                # Insert page seps in new position and delete from old position
+                for idx, mark in enumerate(page_marks):
+                    sep = page_seps[idx]
+                    ins_pos = f"{line_num}+{idx}c"
+                    maintext().set_mark_position(mark, maintext().rowcol(ins_pos))
+                    # Insert temp char to keep coincident marks separate
+                    maintext().insert(ins_pos, TEMP_SPACE)
+
+                # Set right gravities to make sure moved illo goes before page marks
+                for mark in page_marks:
+                    maintext().mark_gravity(mark, tk.RIGHT)
+
+                # Insert copied lines below the blank line we are at and suffix it with a blank line.
+                maintext().insert(
+                    maintext().index(f"{line_num} linestart"),
+                    "\n" + the_selected_record_lines + "\n",
+                )
+                # Correct gravities
+                for mark in page_marks:
+                    maintext().mark_gravity(mark, tk.LEFT)
+                # Delete the selected tag from its current position in the file.
+                checker.delete_illosn_record_from_file(selected)
+                for idx, mark in enumerate(page_marks):
+                    sep = page_seps[idx]
+                    if sep:
+                        line = maintext().get(
+                            f"{sep} linestart", f"{sep} +1l linestart"
+                        )
+                        maintext().insert(mark, line)
+                        maintext().delete(f"{sep} linestart", f"{sep} +1l linestart")
+                        maintext().mark_unset(sep)
+                # Remove temp chars
+                maintext().replace_all(TEMP_SPACE, "")
+
+                mid_para_list = [item.mid_para for item in checker.illosn_records]
+                checker.update_after_move(
+                    tag_type, selected_illosn_index, mid_para_list
+                )
+                return  # Moved successfully
         # Increment line_num.
         line_num = maintext().index(f"{line_num}+1l")
     # Reached end of file without finding a place to move it
     sound_bell()
     return
+
+
+def get_page_breaks(start: str, end: str) -> tuple[list[str], list[str]]:
+    """Return list of page marks between start and end (inclusive)"""
+    mark_list = []
+    pagesep_list = []
+    mark = start
+    while mark := maintext().page_mark_next(mark):
+        if maintext().compare(mark, ">", end):
+            break
+        mark_list.append(mark)
+        line = maintext().get(f"{mark} linestart", f"{mark} lineend")
+        if line.startswith(("-----File:", ".bn ")):
+            # Mark where page seps are
+            maintext().mark_set(f"old_{mark}", f"{mark} linestart")
+            pagesep_list.append(f"old_{mark}")
+        else:
+            pagesep_list.append("")
+    return mark_list, pagesep_list
 
 
 def illosn_check(tag_type: str) -> None:
