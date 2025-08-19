@@ -1,18 +1,35 @@
 """Functionality to support content providers."""
 
 import gzip
+import importlib.resources
 import logging
 from pathlib import Path
-from tkinter import filedialog
+import tkinter as tk
+from tkinter import filedialog, ttk
+from typing import Any
 
 import regex as re
 
+from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerMatchType
+from guiguts.data import cp_files
 from guiguts.file import the_file
 from guiguts.maintext import maintext
+from guiguts.project_dict import ProjectDict
 from guiguts.root import root
-from guiguts.utilities import folder_dir_str
+from guiguts.spell import get_spell_checker, SPELL_CHECK_OK_YES
+from guiguts.utilities import (
+    folder_dir_str,
+    cmd_ctrl_string,
+    load_dict_from_json,
+    IndexRange,
+    sound_bell,
+)
+from guiguts.preferences import PersistentBoolean, PrefKey, preferences
 
 logger = logging.getLogger(__package__)
+
+CP_NOHYPH = str(importlib.resources.files(cp_files).joinpath("no_hyphen.json"))
+NOH_KEY = "no_hyphen"
 
 
 def export_prep_text_files() -> None:
@@ -97,15 +114,323 @@ def import_prep_text_files() -> None:
             maintext().undo_block_end()
             return
 
-        file_text = re.sub(r"[ \n]+$", "", file_text)
+        # Remove BOM & trailing blank lines
+        file_text = re.sub(r"[ \n]+$", "", file_text.replace("\ufeff", ""))
         separator = f"-----File: {file_path.stem}.png" + "-" * 45
         maintext().insert("end", separator + "\n" + file_text + "\n")
     maintext().undo_block_end()
 
     the_file().mark_page_boundaries()
     maintext().set_insert_index(maintext().start())
-    # Give user chance to save immediately
-    the_file().save_as_file()
+    # Give user chance to save immediately to dir containing files dir
+    the_file().save_as_file(str(prep_path.parent))
+
+
+class DehyphenatorCheckerDialog(CheckerDialog):
+    """Dehyphenator Checker dialog."""
+
+    manual_page = "Content_Providing_Menu#Dehyphenation"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Dehyphenator dialog."""
+        super().__init__(
+            "Dehyphenation",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find occurrence of hyphenation",
+                    "Right click: Hide occurrence of hyphenation in list",
+                    f"{cmd_ctrl_string()} left click: Dehyphenate this occurrence",
+                    f"{cmd_ctrl_string()} right click: Dehyphenate this occurrence and remove from list",
+                    f"Shift {cmd_ctrl_string()} left click: Dehyphenate all with matching keep/remove type",
+                    f"Shift {cmd_ctrl_string()} right click: Dehyphenate all with matching keep/remove type and remove from list",
+                ]
+            ),
+            **kwargs,
+        )
+        ttk.Checkbutton(
+            self.custom_frame,
+            text="Use Dictionary For Dehyphenating",
+            variable=PersistentBoolean(PrefKey.GUIPREP_DEHYPH_USE_DICT),
+        ).grid(row=0, column=0)
+
+
+class DehyphenatorChecker:
+    """Dehyphenator checker."""
+
+    remove_prefix = "Remove: "
+    keep_prefix = "Keep: "
+
+    def __init__(self) -> None:
+        """Initialize Dehyphenator checker."""
+        self.dialog = DehyphenatorCheckerDialog.show_dialog(
+            rerun_command=self.run,
+            process_command=self.dehyphenate,
+        )
+
+    def run(self) -> None:
+        """Do the actual check and add messages to the dialog."""
+        self.dialog.reset()
+
+        # Decide whether to use dictionary too
+        use_dict = preferences.get(PrefKey.GUIPREP_DEHYPH_USE_DICT)
+        spell_checker = get_spell_checker()
+        if spell_checker is None:
+            return
+        dummy_proj_dict = ProjectDict()
+
+        # First load words that should always be dehyphenated
+        always_noh = load_dict_from_json(CP_NOHYPH)
+        if always_noh is None:
+            return
+        # Check list of words is in the json file
+        if NOH_KEY not in always_noh:
+            logger.error(f"{CP_NOHYPH} does not contain {NOH_KEY} key")
+            return
+        # Get whole file and convert dash variants to hyphens
+        slurp_text = maintext().get_text()
+        slurp_text = re.sub(r"[\u00AD\u2010\u2011]", "-", slurp_text)
+        slurp_text = re.sub(r"[\u2012\u2013\u2014\u2015]", "--", slurp_text)
+        # Now list of words contained in file
+        words = re.split(r"[^\p{Alpha}']+", slurp_text)
+        # Combine into a single set
+        no_hyphens = set(always_noh[NOH_KEY]) | set(words)
+
+        # For every end-of-line hyphen, check if the potentially-joined word
+        # is in our set of good non-hyphenated words
+        start = maintext().start().index()
+        while start := maintext().search(r"-$", start, tk.END, regexp=True):
+            start = maintext().index(f"{start} lineend")
+            line = maintext().get(f"{start} linestart", f"{start} lineend")
+            if line.startswith("-----File:"):
+                continue
+            next_line = maintext().get(f"{start} +1l linestart", f"{start} +1l lineend")
+            if next_line.startswith("-----File:"):
+                continue
+            # Get portion of word before (possibly spaced) eol hyphen
+            if match := re.search(r"(\w[\w']*?)( ?-)$", line):
+                frag1 = match[1]
+                punc1 = match[2]
+            else:
+                frag1 = ""
+                punc1 = ""
+            # Get portion of word from start of next line
+            if match := re.search(r"^([\w']+)([^\p{IsSpace}]*)", next_line):
+                frag2 = match[1]
+                punc2 = match[2]
+            else:
+                frag2 = ""
+                punc2 = ""
+            if not frag1 or not frag2:
+                continue
+            # Join if two parts make a valid whole word
+            lf1 = len(frag1) + len(punc1)
+            lf2 = len(frag2) + len(punc2)
+            start_rowcol = maintext().rowcol(f"{start} lineend -{lf1}c")
+            end_rowcol = maintext().rowcol(f"{start} +1l linestart +{lf2}c")
+            remove = f"{frag1}{frag2}" in no_hyphens
+            if not remove:
+                remove = bool(
+                    re.match(
+                        r"\b([\w]?ing|[ts]ion|est|er|[mst]?ent|[\w]?ie)[s]?", frag2
+                    )
+                )
+            if not remove:
+                remove = bool(re.match(r"\b([dt]?ed|[\w]?ly|[\w]?ie[s]?)", frag2))
+            if not remove:
+                remove = frag2 == "ness" or frag1 in (
+                    "con",
+                    "ad",
+                    "as",
+                    "en",
+                    "un",
+                    "re",
+                    "de",
+                    "im",
+                )
+            if not remove and use_dict:
+                remove = (
+                    spell_checker.spell_check_word(f"{frag1}{frag2}", dummy_proj_dict)
+                    == SPELL_CHECK_OK_YES
+                )
+
+            self.dialog.add_entry(
+                f"{frag1}{punc1}{frag2}{punc2}",
+                IndexRange(start_rowcol, end_rowcol),
+                error_prefix=self.remove_prefix if remove else self.keep_prefix,
+            )
+        self.dialog.display_entries()
+
+    def dehyphenate(self, checker_entry: CheckerEntry) -> None:
+        """Dehyphenate the given word."""
+        if checker_entry.text_range is None:
+            return
+        start_mark = DehyphenatorCheckerDialog.mark_from_rowcol(
+            checker_entry.text_range.start
+        )
+        end_mark = DehyphenatorCheckerDialog.mark_from_rowcol(
+            checker_entry.text_range.end
+        )
+        maintext().undo_block_begin()
+        # Fetch and delete second half of word
+        part2 = maintext().get(f"{end_mark} linestart", end_mark)
+        maintext().delete(f"{end_mark} linestart", end_mark)
+        # If it would leave leading blanks or empty line, remove them
+        leading_blanks = maintext().get(end_mark, f"{end_mark} lineend")
+        nspace = len(leading_blanks) - len(leading_blanks.lstrip())
+        if nspace > 0:
+            maintext().delete(end_mark, f"{end_mark} +{nspace}c")
+        if maintext().compare(end_mark, "==", f"{end_mark} lineend"):
+            maintext().delete(end_mark)
+        # Remove eol hyphen if needed (possibly spaced)
+        last_ch = f"{start_mark} lineend -1c"
+        if maintext().get(last_ch) == "-":
+            maintext().delete(last_ch)
+        if maintext().get(last_ch) == " ":
+            maintext().delete(last_ch)
+        hyphen = "-" if checker_entry.error_prefix == self.keep_prefix else ""
+        maintext().insert(f"{start_mark} lineend", f"{hyphen}{part2}")
+
+
+class HeadFootCheckerDialog(CheckerDialog):
+    """Header/Footer Checker dialog."""
+
+    manual_page = "Content_Providing_Menu#Header/Footer_Removal"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Header/Footer dialog."""
+        super().__init__(
+            "Header/Footer Removal",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find header/footer",
+                    "Right click: Hide occurrence of header/footer in list",
+                    f"{cmd_ctrl_string()} left click: Delete this header/footer",
+                    f"{cmd_ctrl_string()} right click: Delete this header/footer and remove from list",
+                    f"Shift {cmd_ctrl_string()} left click: Delete all headers/footers with matching text, or matching page number type",
+                    f"Shift {cmd_ctrl_string()} right click: As above and remove from list",
+                ]
+            ),
+            all_match_string="all with matching text, or matching page number type",
+            **kwargs,
+        )
+
+    def process_remove_entries(
+        self, process: bool, remove: bool, all_matching: bool
+    ) -> None:
+        """Process and/or remove the current entry, if any.
+
+        Override to provide nuanced "match all" behavior: if error prefix is
+        plain header/footer, use `CheckerMatchType.WHOLE`, but if page number,
+        use `CheckerMatchType.ERROR_PREFIX`.
+        """
+        entry_index = self.current_entry_index()
+        if entry_index is None:
+            return
+        self.match_on_highlight = (
+            CheckerMatchType.WHOLE
+            if self.entries[entry_index].error_prefix
+            in (HeadFootChecker.header_prefix, HeadFootChecker.footer_prefix)
+            else CheckerMatchType.ERROR_PREFIX
+        )
+        super().process_remove_entries(process, remove, all_matching)
+
+
+class HeadFootChecker:
+    """Header/Footer checker."""
+
+    header_prefix = "Header: "
+    footer_prefix = "Footer: "
+    pagenum_prefix = "Page Number"
+    posspg_prefix = "Page Num?"
+
+    def __init__(self) -> None:
+        """Initialize Header/Footer checker."""
+
+        def sort_key_error(
+            entry: CheckerEntry,
+        ) -> tuple[int, str, int, int]:
+            """Sort key function to sort entries by error prefix, then line number."""
+            assert entry.text_range is not None
+            return (
+                entry.section,
+                entry.error_prefix,
+                entry.text_range.start.row,
+                entry.text_range.start.col,
+            )
+
+        self.dialog = HeadFootCheckerDialog.show_dialog(
+            rerun_command=self.run,
+            process_command=self.delete_head_foot,
+            sort_key_alpha=sort_key_error,
+            match_on_highlight=CheckerMatchType.ERROR_PREFIX,
+        )
+
+    def run(self) -> None:
+        """Do the actual check and add messages to the dialog."""
+        self.dialog.reset()
+
+        start = maintext().start().index()
+        while start := maintext().search(r"-----File:", start, tk.END):
+            self.add_headfoot(self.header_prefix, f"{start} +1l")
+            end = maintext().search(r"-----File:", f"{start} lineend", tk.END) or tk.END
+            # Don't add "footer" if it's the same line as "header"
+            if maintext().compare(f"{end}-1l", ">", f"{start}+1l"):
+                self.add_headfoot(self.footer_prefix, f"{end} -1l")
+            start = f"{end}-1c"
+        self.dialog.display_entries()
+
+    def add_headfoot(self, prefix: str, location: str) -> None:
+        """Add header or footer entry to dialog.
+
+        Args:
+            prefix: `HeadFootChecker.header_prefix` or `HeadFootChecker.footer_prefix`.
+            location: Index of start of potential header/footer line.
+        """
+        start_rowcol = maintext().rowcol(f"{location} linestart")
+        end_rowcol = maintext().rowcol(f"{location} lineend")
+        line = maintext().get(start_rowcol.index(), end_rowcol.index()).strip()
+        # Don't want to report blank lines or pages
+        if not line or line.startswith(("-----File:", "[Blank Page]")):
+            return
+        # Allow one substitution from an all-digit or all roman page number
+        if match := re.fullmatch("([0-9]+|[ivxl]+){s<=1}", line.replace(" ", "")):
+            if match.fuzzy_counts[0] == 0:  # No substitutions necessary
+                prefix = self.get_detailed_prefix(prefix, self.pagenum_prefix)
+            else:  # One number was mis-OCRed
+                prefix = self.get_detailed_prefix(prefix, self.posspg_prefix)
+        self.dialog.add_entry(
+            line, IndexRange(start_rowcol, end_rowcol), error_prefix=prefix
+        )
+
+    def get_detailed_prefix(self, prefix: str, detail: str) -> str:
+        """Add detail to header/footer prefix. Assumes valid arguments."""
+        return prefix.replace(":", f" {detail}:")
+
+    def delete_head_foot(self, checker_entry: CheckerEntry) -> None:
+        """Delete the given header/footer & following/preceding blank lines."""
+        assert checker_entry.text_range is not None
+        start_mark = self.dialog.mark_from_rowcol(checker_entry.text_range.start)
+        end_mark = self.dialog.mark_from_rowcol(checker_entry.text_range.end)
+        # If it's already been deleted, don't delete another line
+        if maintext().compare(start_mark, "==", end_mark):
+            sound_bell()
+            return
+        maintext().mark_unset()
+        start_idx = maintext().index(f"{start_mark} linestart")
+        end_idx = f"{start_idx}+1l linestart"
+        # Also remove leading/trailing blank lines if they would be left behind
+        if checker_entry.error_prefix.startswith(
+            HeadFootChecker.header_prefix.replace(": ", "")
+        ):
+            while maintext().get(end_idx, f"{end_idx} lineend").strip() == "":
+                end_idx = maintext().index(f"{end_idx} +1l")
+        else:
+            while (
+                maintext().get(f"{start_idx}-1l", f"{start_idx}-1l lineend").strip()
+                == ""
+            ):
+                start_idx = maintext().index(f"{start_idx} -1l")
+        maintext().delete(start_idx, end_idx)
 
 
 def import_tia_ocr_file() -> None:

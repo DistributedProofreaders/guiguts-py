@@ -385,8 +385,11 @@ class File:
         root().after(Busy.BUSY_DELAY, Busy.unbusy)
         return self.filename
 
-    def save_as_file(self) -> str:
+    def save_as_file(self, initialdir: str = "") -> str:
         """Save current text as new file.
+
+        Args:
+            initialdir: Initial directory to open save dialog in
 
         Returns:
             Chosen filename or "" if save is cancelled
@@ -413,9 +416,11 @@ class File:
         initialfile = (
             os.path.basename(suggested_fn) if self.filename else f"untitled{extension}"
         )
+        if initialdir == "":
+            initialdir = os.path.dirname(suggested_fn)
         if fn := filedialog.asksaveasfilename(
             initialfile=initialfile,
-            initialdir=os.path.dirname(suggested_fn),
+            initialdir=initialdir,
             filetypes=[(file_type, f"*{extension}"), ("All files", "*")],
             title="Save As",
         ):

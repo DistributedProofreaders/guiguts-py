@@ -20,6 +20,8 @@ from guiguts.content_providing import (
     import_prep_text_files,
     cp_character_substitutions,
     import_tia_ocr_file,
+    DehyphenatorChecker,
+    HeadFootChecker,
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -649,6 +651,7 @@ class Guiguts:
         preferences.set_default(PrefKey.PPTXT_UNICODE_NUMERIC_CHARACTER_CHECK, True)
         preferences.set_default(PrefKey.PPTXT_SPECIALS_CHECK, True)
         preferences.set_default(PrefKey.DIALOG_PIN_DICT, {})
+        preferences.set_default(PrefKey.GUIPREP_DEHYPH_USE_DICT, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -726,6 +729,14 @@ class Guiguts:
         cp_menu.add_button(
             "~Import Prep Text Files...",
             import_prep_text_files,
+        )
+        cp_menu.add_button(
+            "Run ~Dehyphenator",
+            lambda: DehyphenatorChecker().run(),
+        )
+        cp_menu.add_button(
+            "Remove ~Headers/Footers",
+            lambda: HeadFootChecker().run(),
         )
         cp_menu.add_button(
             "~Export As Prep Text Files...",

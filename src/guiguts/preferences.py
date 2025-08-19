@@ -188,6 +188,7 @@ class PrefKey(StrEnum):
     PPTXT_SPECIALS_CHECK = auto()
     CHECKERDIALOG_FULL_SEARCH = auto()
     DIALOG_PIN_DICT = auto()
+    GUIPREP_DEHYPH_USE_DICT = auto()
 
 
 class Preferences:
