@@ -270,7 +270,7 @@ class DehyphenatorChecker:
                 )
 
             self.dialog.add_entry(
-                f"{frag1}{punc1}{frag2}{punc2}",
+                f"{frag1}{punc1}{frag2}",
                 IndexRange(start_rowcol, end_rowcol),
                 error_prefix=self.remove_prefix if remove else self.keep_prefix,
                 severity=CheckerEntrySeverity.INFO,
