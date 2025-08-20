@@ -147,10 +147,10 @@ class DehyphenatorCheckerDialog(CheckerDialog):
                 [
                     "Left click: Select & find occurrence of hyphenation",
                     "Right click: Hide occurrence of hyphenation in list",
-                    f"{cmd_ctrl_string()} left click: Dehyphenate this occurrence",
-                    f"{cmd_ctrl_string()} right click: Dehyphenate this occurrence and remove from list",
-                    f"Shift {cmd_ctrl_string()} left click: Dehyphenate all with matching keep/remove type",
-                    f"Shift {cmd_ctrl_string()} right click: Dehyphenate all with matching keep/remove type and remove from list",
+                    f"{cmd_ctrl_string()} left click: Join this occurrence (keeping or removing hyphen)",
+                    f"{cmd_ctrl_string()} right click: Join this occurrence and remove from list",
+                    f"Shift {cmd_ctrl_string()} left click: Join all (keeping or removing hyphens)",
+                    f"Shift {cmd_ctrl_string()} right click: Join all and remove from list",
                 ]
             ),
             **kwargs,
