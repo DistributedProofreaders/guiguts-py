@@ -10,10 +10,15 @@ from typing import Any
 
 import regex as re
 
-from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerMatchType
+from guiguts.checkers import (
+    CheckerDialog,
+    CheckerEntry,
+    CheckerMatchType,
+    CheckerEntrySeverity,
+)
 from guiguts.data import cp_files
 from guiguts.file import the_file
-from guiguts.maintext import maintext
+from guiguts.maintext import maintext, HighlightTag
 from guiguts.project_dict import ProjectDict
 from guiguts.root import root
 from guiguts.spell import get_spell_checker, SPELL_CHECK_OK_YES
@@ -131,8 +136,11 @@ class DehyphenatorCheckerDialog(CheckerDialog):
 
     manual_page = "Content_Providing_Menu#Dehyphenation"
 
-    def __init__(self, **kwargs: Any) -> None:
-        """Initialize Dehyphenator dialog."""
+    def __init__(self, checker: "DehyphenatorChecker", **kwargs: Any) -> None:
+        """Initialize Dehyphenator dialog.
+
+        Args:
+            checker: Dehyphenator Checker controlled by the dialog."""
         super().__init__(
             "Dehyphenation",
             tooltip="\n".join(
@@ -147,11 +155,15 @@ class DehyphenatorCheckerDialog(CheckerDialog):
             ),
             **kwargs,
         )
+        self.checker = checker
         ttk.Checkbutton(
             self.custom_frame,
             text="Use Dictionary For Dehyphenating",
             variable=PersistentBoolean(PrefKey.GUIPREP_DEHYPH_USE_DICT),
         ).grid(row=0, column=0)
+        ttk.Button(
+            self.custom_frame, text="Keep⇔Remove", command=self.checker.swap_keep_remove
+        ).grid(row=0, column=1, padx=(20, 0))
 
 
 class DehyphenatorChecker:
@@ -162,9 +174,11 @@ class DehyphenatorChecker:
 
     def __init__(self) -> None:
         """Initialize Dehyphenator checker."""
-        self.dialog = DehyphenatorCheckerDialog.show_dialog(
+        self.dialog: DehyphenatorCheckerDialog = DehyphenatorCheckerDialog.show_dialog(
+            checker=self,
             rerun_command=self.run,
             process_command=self.dehyphenate,
+            match_on_highlight=CheckerMatchType.ALL_MESSAGES,
         )
 
     def run(self) -> None:
@@ -204,7 +218,9 @@ class DehyphenatorChecker:
             if line.startswith("-----File:"):
                 continue
             next_line = maintext().get(f"{start} +1l linestart", f"{start} +1l lineend")
+            # If end of page, add asterisk now
             if next_line.startswith("-----File:"):
+                maintext().insert(f"{start} lineend", "*")
                 continue
             # Get portion of word before (possibly spaced) eol hyphen
             if match := re.search(r"(\w[\w']*?)( ?-)$", line):
@@ -222,7 +238,7 @@ class DehyphenatorChecker:
                 punc2 = ""
             if not frag1 or not frag2:
                 continue
-            # Join if two parts make a valid whole word
+            # Can join if two parts make a valid whole word
             lf1 = len(frag1) + len(punc1)
             lf2 = len(frag2) + len(punc2)
             start_rowcol = maintext().rowcol(f"{start} lineend -{lf1}c")
@@ -231,11 +247,11 @@ class DehyphenatorChecker:
             if not remove:
                 remove = bool(
                     re.match(
-                        r"\b([\w]?ing|[ts]ion|est|er|[mst]?ent|[\w]?ie)[s]?", frag2
+                        r"\b([\w]?ing|[ts]ion|est|er|[mst]?ent|[\w]?ie)[s]?$", frag2
                     )
                 )
             if not remove:
-                remove = bool(re.match(r"\b([dt]?ed|[\w]?ly|[\w]?ie[s]?)", frag2))
+                remove = bool(re.match(r"\b([dt]?ed|[\w]?ly)$", frag2))
             if not remove:
                 remove = frag2 == "ness" or frag1 in (
                     "con",
@@ -257,6 +273,7 @@ class DehyphenatorChecker:
                 f"{frag1}{punc1}{frag2}{punc2}",
                 IndexRange(start_rowcol, end_rowcol),
                 error_prefix=self.remove_prefix if remove else self.keep_prefix,
+                severity=CheckerEntrySeverity.INFO,
             )
         self.dialog.display_entries()
 
@@ -287,8 +304,34 @@ class DehyphenatorChecker:
             maintext().delete(last_ch)
         if maintext().get(last_ch) == " ":
             maintext().delete(last_ch)
-        hyphen = "-" if checker_entry.error_prefix == self.keep_prefix else ""
+        hyphen = "-*" if checker_entry.error_prefix == self.keep_prefix else ""
         maintext().insert(f"{start_mark} lineend", f"{hyphen}{part2}")
+
+    def swap_keep_remove(self) -> None:
+        """Swap keep/remove prefix for the selected message."""
+        # Find selected entry
+        entry_index = self.dialog.current_entry_index()
+        if entry_index is None:
+            return
+        entry = self.dialog.entries[entry_index]
+        # Get existing prefix & swap it
+        old_prefix = entry.error_prefix
+        entry.error_prefix = (
+            DehyphenatorChecker.remove_prefix
+            if old_prefix == DehyphenatorChecker.keep_prefix
+            else DehyphenatorChecker.keep_prefix
+        )
+        # Also update the dialog
+        linenum = self.dialog.linenum_from_entry_index(entry_index)
+        ep_index = self.dialog.text.search(old_prefix, f"{linenum}.0", f"{linenum}.end")
+        if not ep_index:
+            return
+        ep_end = f"{ep_index}+{len(old_prefix)}c"
+        self.dialog.text.insert(
+            ep_end, entry.error_prefix, HighlightTag.CHECKER_ERROR_PREFIX
+        )
+        self.dialog.text.delete(ep_index, ep_end)
+        self.dialog.select_entry_by_index(entry_index)
 
 
 class HeadFootCheckerDialog(CheckerDialog):
