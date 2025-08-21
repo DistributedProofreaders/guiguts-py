@@ -304,7 +304,6 @@ class CheckerDialog(ToplevelDialog):
         show_all_buttons: bool = True,
         match_on_highlight: CheckerMatchType = CheckerMatchType.WHOLE,
         reverse_mark_gravities: bool = False,
-        all_match_string: str = "",
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -327,7 +326,6 @@ class CheckerDialog(ToplevelDialog):
             show_all_buttons: Set to False to hide generic buttons that hide/fix "All".
                 Subordinate to `show_remove_buttons` and `show_process_buttons`.
             match_on_highlight: Type of matching for "Fix All", etc.
-            all_match_string: Snippet of text to describing match algorithm in tooltip
         """
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
@@ -441,9 +439,7 @@ class CheckerDialog(ToplevelDialog):
         for col in range(6):
             self.message_controls_frame.columnconfigure(col, weight=1)
 
-        if all_match_string:
-            all_string = all_match_string
-        elif match_on_highlight == CheckerMatchType.ALL_MESSAGES:
+        if match_on_highlight == CheckerMatchType.ALL_MESSAGES:
             all_string = "all listed problems"
         elif match_on_highlight == CheckerMatchType.ERROR_PREFIX:
             all_string = "all with matching error type"

@@ -304,7 +304,7 @@ class DehyphenatorChecker:
             maintext().delete(last_ch)
         if maintext().get(last_ch) == " ":
             maintext().delete(last_ch)
-        hyphen = "-*" if checker_entry.error_prefix == self.keep_prefix else ""
+        hyphen = "-" if checker_entry.error_prefix == self.keep_prefix else ""
         maintext().insert(f"{start_mark} lineend", f"{hyphen}{part2}")
 
     def swap_keep_remove(self) -> None:
@@ -349,33 +349,12 @@ class HeadFootCheckerDialog(CheckerDialog):
                     "Right click: Hide occurrence of header/footer in list",
                     f"{cmd_ctrl_string()} left click: Delete this header/footer",
                     f"{cmd_ctrl_string()} right click: Delete this header/footer and remove from list",
-                    f"Shift {cmd_ctrl_string()} left click: Delete all headers/footers with matching text, or matching page number type",
-                    f"Shift {cmd_ctrl_string()} right click: As above and remove from list",
+                    f"Shift {cmd_ctrl_string()} left click: Delete all headers/footers with matching error type",
+                    f"Shift {cmd_ctrl_string()} right click: Delete all headers/footers with matching error type and remove from list",
                 ]
             ),
-            all_match_string="all with matching text, or matching page number type",
             **kwargs,
         )
-
-    def process_remove_entries(
-        self, process: bool, remove: bool, all_matching: bool
-    ) -> None:
-        """Process and/or remove the current entry, if any.
-
-        Override to provide nuanced "match all" behavior: if error prefix is
-        plain header/footer, use `CheckerMatchType.WHOLE`, but if page number,
-        use `CheckerMatchType.ERROR_PREFIX`.
-        """
-        entry_index = self.current_entry_index()
-        if entry_index is None:
-            return
-        self.match_on_highlight = (
-            CheckerMatchType.WHOLE
-            if self.entries[entry_index].error_prefix
-            in (HeadFootChecker.header_prefix, HeadFootChecker.footer_prefix)
-            else CheckerMatchType.ERROR_PREFIX
-        )
-        super().process_remove_entries(process, remove, all_matching)
 
 
 class HeadFootChecker:
