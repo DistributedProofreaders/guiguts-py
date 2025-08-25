@@ -22,6 +22,10 @@ from guiguts.content_providing import (
     import_tia_ocr_file,
     DehyphenatorChecker,
     HeadFootChecker,
+    CPProcessingDialog,
+    cp_fix_common_scannos,
+    cp_fix_englifh,
+    cp_fix_empty_pages,
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -651,7 +655,31 @@ class Guiguts:
         preferences.set_default(PrefKey.PPTXT_UNICODE_NUMERIC_CHARACTER_CHECK, True)
         preferences.set_default(PrefKey.PPTXT_SPECIALS_CHECK, True)
         preferences.set_default(PrefKey.DIALOG_PIN_DICT, {})
-        preferences.set_default(PrefKey.GUIPREP_DEHYPH_USE_DICT, False)
+        preferences.set_default(PrefKey.CP_DEHYPH_USE_DICT, False)
+        preferences.set_default(PrefKey.CP_MULTIPLE_SPACES, True)
+        preferences.set_default(PrefKey.CP_SPACED_HYPHENS, True)
+        preferences.set_default(PrefKey.CP_SPACED_HYPHEN_EMDASH, True)
+        preferences.set_default(PrefKey.CP_SPACE_BEFORE_PUNC, True)
+        preferences.set_default(PrefKey.CP_SPACE_BEFORE_ELLIPSIS, True)
+        preferences.set_default(PrefKey.CP_SINGLE_QUOTES_DOUBLE, True)
+        preferences.set_default(PrefKey.CP_COMMON_LETTER_SCANNOS, True)
+        preferences.set_default(PrefKey.CP_1_TO_I, True)
+        preferences.set_default(PrefKey.CP_0_TO_O, True)
+        preferences.set_default(PrefKey.CP_L_TO_I, True)
+        preferences.set_default(PrefKey.CP_FRACTIONS, True)
+        preferences.set_default(PrefKey.CP_SUPER_SUB_SCRIPTS, True)
+        preferences.set_default(PrefKey.CP_UNDERSCORES_EMDASH, True)
+        preferences.set_default(PrefKey.CP_COMMAS_DOUBLE_QUOTE, True)
+        preferences.set_default(PrefKey.CP_SPACED_BRACKETS, True)
+        preferences.set_default(PrefKey.CP_SLASH_COMMA_APOSTROPHE, True)
+        preferences.set_default(PrefKey.CP_J_SEMICOLON, True)
+        preferences.set_default(PrefKey.CP_TO_HE_BE, True)
+        preferences.set_default(PrefKey.CP_PUNCT_START, True)
+        preferences.set_default(PrefKey.CP_PUNCT_END, True)
+        preferences.set_default(PrefKey.CP_BLANK_LINES_TOP, True)
+        preferences.set_default(PrefKey.CP_MULTI_BLANK_LINES, True)
+        preferences.set_default(PrefKey.CP_DUBIOUS_SPACED_QUOTES, True)
+        preferences.set_default(PrefKey.CP_SPACED_APOSTROPHES, True)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -731,12 +759,32 @@ class Guiguts:
             import_prep_text_files,
         )
         cp_menu.add_button(
-            "Run ~Dehyphenator",
+            "CP Character ~Substitutions",
+            cp_character_substitutions,
+        )
+        cp_menu.add_button(
+            "Remove ~Headers/Footers...",
+            lambda: HeadFootChecker().run(),
+        )
+        cp_menu.add_button(
+            "Run ~Dehyphenator...",
             lambda: DehyphenatorChecker().run(),
         )
         cp_menu.add_button(
-            "Remove ~Headers/Footers",
-            lambda: HeadFootChecker().run(),
+            "~Filter File...",
+            CPProcessingDialog.show_dialog,
+        )
+        cp_menu.add_button(
+            "Fix ~Common Scannos",
+            cp_fix_common_scannos,
+        )
+        cp_menu.add_button(
+            "Add [~Blank Page] to Empty Pages",
+            cp_fix_empty_pages,
+        )
+        cp_menu.add_button(
+            "Fix ~Olde Englifh",
+            cp_fix_englifh,
         )
         cp_menu.add_button(
             "~Export As Prep Text Files...",
@@ -746,11 +794,6 @@ class Guiguts:
         cp_menu.add_button(
             "Import ~TIA Abbyy OCR File...",
             import_tia_ocr_file,
-        )
-        cp_menu.add_separator()
-        cp_menu.add_button(
-            "CP Character ~Substitutions",
-            cp_character_substitutions,
         )
 
     def init_file_project_menu(self, parent: MenuMetadata) -> None:

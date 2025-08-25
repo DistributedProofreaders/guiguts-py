@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, ttk
-from typing import Any
+from typing import Any, Final
 
 import regex as re
 
@@ -27,14 +27,16 @@ from guiguts.utilities import (
     cmd_ctrl_string,
     load_dict_from_json,
     IndexRange,
-    sound_bell,
 )
 from guiguts.preferences import PersistentBoolean, PrefKey, preferences
+from guiguts.widgets import ToplevelDialog, Busy
 
 logger = logging.getLogger(__package__)
 
 CP_NOHYPH = str(importlib.resources.files(cp_files).joinpath("no_hyphen.json"))
 NOH_KEY = "no_hyphen"
+CP_SCANNOS = str(importlib.resources.files(cp_files).joinpath("scannos.json"))
+CP_ENGLIFH = str(importlib.resources.files(cp_files).joinpath("fcannos.json"))
 
 
 def export_prep_text_files() -> None:
@@ -149,8 +151,8 @@ class DehyphenatorCheckerDialog(CheckerDialog):
                     "Right click: Hide occurrence of hyphenation in list",
                     f"{cmd_ctrl_string()} left click: Join this occurrence (keeping or removing hyphen)",
                     f"{cmd_ctrl_string()} right click: Join this occurrence and remove from list",
-                    f"Shift {cmd_ctrl_string()} left click: Join all (keeping or removing hyphens)",
-                    f"Shift {cmd_ctrl_string()} right click: Join all and remove from list",
+                    f"Shift {cmd_ctrl_string()} left click: Join all with matching error type",
+                    f"Shift {cmd_ctrl_string()} right click: Join all with matching error type and remove from list",
                 ]
             ),
             **kwargs,
@@ -159,7 +161,7 @@ class DehyphenatorCheckerDialog(CheckerDialog):
         ttk.Checkbutton(
             self.custom_frame,
             text="Use Dictionary For Dehyphenating",
-            variable=PersistentBoolean(PrefKey.GUIPREP_DEHYPH_USE_DICT),
+            variable=PersistentBoolean(PrefKey.CP_DEHYPH_USE_DICT),
         ).grid(row=0, column=0)
         ttk.Button(
             self.custom_frame, text="Keep⇔Remove", command=self.checker.swap_keep_remove
@@ -178,7 +180,7 @@ class DehyphenatorChecker:
             checker=self,
             rerun_command=self.run,
             process_command=self.dehyphenate,
-            match_on_highlight=CheckerMatchType.ALL_MESSAGES,
+            match_on_highlight=CheckerMatchType.ERROR_PREFIX,
         )
 
     def run(self) -> None:
@@ -186,7 +188,7 @@ class DehyphenatorChecker:
         self.dialog.reset()
 
         # Decide whether to use dictionary too
-        use_dict = preferences.get(PrefKey.GUIPREP_DEHYPH_USE_DICT)
+        use_dict = preferences.get(PrefKey.CP_DEHYPH_USE_DICT)
         spell_checker = get_spell_checker()
         if spell_checker is None:
             return
@@ -393,35 +395,53 @@ class HeadFootChecker:
 
         start = maintext().start().index()
         while start := maintext().search(r"-----File:", start, tk.END):
-            self.add_headfoot(self.header_prefix, f"{start} +1l")
+            # Find first non-blank line
+            non_blank = maintext().search(
+                r"\S", f"{start} lineend", tk.END, regexp=True
+            )
+            if not non_blank:  # Hit end without a non-blank
+                break
+            self.add_headfoot(
+                self.header_prefix, f"{start} +1l", f"{non_blank} linestart"
+            )
             end = maintext().search(r"-----File:", f"{start} lineend", tk.END) or tk.END
             # Don't add "footer" if it's the same line as "header"
-            if maintext().compare(f"{end}-1l", ">", f"{start}+1l"):
-                self.add_headfoot(self.footer_prefix, f"{end} -1l")
+            if maintext().compare(f"{end} linestart", ">", f"{non_blank} linestart"):
+                self.add_headfoot(self.footer_prefix, f"{end} -1l", f"{end} -1l")
             start = f"{end}-1c"
         self.dialog.display_entries()
 
-    def add_headfoot(self, prefix: str, location: str) -> None:
+    def add_headfoot(self, error_prefix: str, location: str, non_blank: str) -> None:
         """Add header or footer entry to dialog.
 
         Args:
             prefix: `HeadFootChecker.header_prefix` or `HeadFootChecker.footer_prefix`.
-            location: Index of start of potential header/footer line.
+            location: Index of start of potential header/footer line(s)
+            non_blank: Index of start of first non-blank header line (same as location for footers)
         """
         start_rowcol = maintext().rowcol(f"{location} linestart")
-        end_rowcol = maintext().rowcol(f"{location} lineend")
-        line = maintext().get(start_rowcol.index(), end_rowcol.index()).strip()
+        nb_rowcol = maintext().rowcol(f"{non_blank} linestart")
+        end_rowcol = maintext().rowcol(f"{non_blank} lineend")
+        # Add prefix to signify blank lines before header line
+        newline_prefix = "⏎" * (nb_rowcol.row - start_rowcol.row)
+        line = maintext().get(nb_rowcol.index(), end_rowcol.index()).strip()
         # Don't want to report blank lines or pages
         if not line or line.startswith(("-----File:", "[Blank Page]")):
             return
         # Allow one substitution from an all-digit or all roman page number
         if match := re.fullmatch("([0-9]+|[ivxl]+){s<=1}", line.replace(" ", "")):
             if match.fuzzy_counts[0] == 0:  # No substitutions necessary
-                prefix = self.get_detailed_prefix(prefix, self.pagenum_prefix)
+                error_prefix = self.get_detailed_prefix(
+                    error_prefix, self.pagenum_prefix
+                )
             else:  # One number was mis-OCRed
-                prefix = self.get_detailed_prefix(prefix, self.posspg_prefix)
+                error_prefix = self.get_detailed_prefix(
+                    error_prefix, self.posspg_prefix
+                )
         self.dialog.add_entry(
-            line, IndexRange(start_rowcol, end_rowcol), error_prefix=prefix
+            newline_prefix + line,
+            IndexRange(start_rowcol, end_rowcol),
+            error_prefix=error_prefix,
         )
 
     def get_detailed_prefix(self, prefix: str, detail: str) -> str:
@@ -435,11 +455,10 @@ class HeadFootChecker:
         end_mark = self.dialog.mark_from_rowcol(checker_entry.text_range.end)
         # If it's already been deleted, don't delete another line
         if maintext().compare(start_mark, "==", end_mark):
-            sound_bell()
             return
         maintext().mark_unset()
         start_idx = maintext().index(f"{start_mark} linestart")
-        end_idx = f"{start_idx}+1l linestart"
+        end_idx = f"{end_mark}+1l linestart"
         # Also remove leading/trailing blank lines if they would be left behind
         if checker_entry.error_prefix.startswith(
             HeadFootChecker.header_prefix.replace(": ", "")
@@ -453,6 +472,502 @@ class HeadFootChecker:
             ):
                 start_idx = maintext().index(f"{start_idx} -1l")
         maintext().delete(start_idx, end_idx)
+
+
+class CPProcessingDialog(ToplevelDialog):
+    """Dialog to process files for Content Providers."""
+
+    manual_page = "Content_Providing_Menu#Prep_Text_Filtering"
+
+    def __init__(self) -> None:
+        """Initialize Prep Text Processing dialog."""
+        super().__init__("Prep Text Filtering", resize_x=False, resize_y=False)
+
+        center_frame = ttk.Frame(
+            self.top_frame, borderwidth=1, relief=tk.GROOVE, padding=5
+        )
+        center_frame.grid(row=0, column=0, sticky="NSEW")
+        center_frame.columnconfigure(0, pad=10)
+
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert multiple blank lines to single",
+            variable=PersistentBoolean(PrefKey.CP_MULTI_BLANK_LINES),
+        ).grid(row=0, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Remove blank lines from top of page",
+            variable=PersistentBoolean(PrefKey.CP_BLANK_LINES_TOP),
+        ).grid(row=0, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert multiple spaces to single space",
+            variable=PersistentBoolean(PrefKey.CP_MULTIPLE_SPACES),
+        ).grid(row=1, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Remove space on either side of hyphens",
+            variable=PersistentBoolean(PrefKey.CP_SPACED_HYPHENS),
+        ).grid(row=1, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert spaced hyphens to emdashes",
+            variable=PersistentBoolean(PrefKey.CP_SPACED_HYPHEN_EMDASH),
+        ).grid(row=2, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Remove space before mid-word apostrophes",
+            variable=PersistentBoolean(PrefKey.CP_SPACED_APOSTROPHES),
+        ).grid(row=2, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Remove space before  .  ,  !  ?  :  ;",
+            variable=PersistentBoolean(PrefKey.CP_SPACE_BEFORE_PUNC),
+        ).grid(row=3, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Ensure space before ellipsis (except after period)",
+            variable=PersistentBoolean(PrefKey.CP_SPACE_BEFORE_PUNC),
+        ).grid(row=3, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Remove space after open- or before close-brackets",
+            variable=PersistentBoolean(PrefKey.CP_SPACED_BRACKETS),
+        ).grid(row=4, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Remove suspect space around quotes",
+            variable=PersistentBoolean(PrefKey.CP_DUBIOUS_SPACED_QUOTES),
+        ).grid(row=4, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Remove suspect punctuation from start of line",
+            variable=PersistentBoolean(PrefKey.CP_PUNCT_START),
+        ).grid(row=5, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Remove suspect punctuation from end of line",
+            variable=PersistentBoolean(PrefKey.CP_PUNCT_END),
+        ).grid(row=5, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert two commas to one double quote",
+            variable=PersistentBoolean(PrefKey.CP_COMMAS_DOUBLE_QUOTE),
+        ).grid(row=6, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert two single quotes to one double quote",
+            variable=PersistentBoolean(PrefKey.CP_SINGLE_QUOTES_DOUBLE),
+        ).grid(row=6, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert consecutive underscores to emdashes",
+            variable=PersistentBoolean(PrefKey.CP_UNDERSCORES_EMDASH),
+        ).grid(row=7, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert forward slash to comma apostrophe",
+            variable=PersistentBoolean(PrefKey.CP_SLASH_COMMA_APOSTROPHE),
+        ).grid(row=7, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert solitary j to semicolon",
+            variable=PersistentBoolean(PrefKey.CP_J_SEMICOLON),
+        ).grid(row=8, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Fix common 2/3 letter scannos (tii⇒th, wb⇒wh, etc.)",
+            variable=PersistentBoolean(PrefKey.CP_COMMON_LETTER_SCANNOS),
+        ).grid(row=8, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert he to be if it follows to",
+            variable=PersistentBoolean(PrefKey.CP_TO_HE_BE),
+        ).grid(row=9, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert solitary lowercase l to I",
+            variable=PersistentBoolean(PrefKey.CP_L_TO_I),
+        ).grid(row=9, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert solitary 0 to O",
+            variable=PersistentBoolean(PrefKey.CP_0_TO_O),
+        ).grid(row=10, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert solitary 1 to I",
+            variable=PersistentBoolean(PrefKey.CP_1_TO_I),
+        ).grid(row=10, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Expand fractions, e.g. ½ to 1/2, 3¼ to 3-1/4",
+            variable=PersistentBoolean(PrefKey.CP_FRACTIONS),
+        ).grid(row=11, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Expand super/subscripts, e.g. x³ to x^3, x₂ to x_{{2}}",
+            variable=PersistentBoolean(PrefKey.CP_SUPER_SUB_SCRIPTS),
+        ).grid(row=11, column=1, sticky="NSW")
+
+        ttk.Button(self.top_frame, text="Filter File", command=self.process).grid(
+            row=1, column=0, sticky="NS", pady=(5, 0)
+        )
+
+    def process(self) -> None:
+        """Process file according to given options."""
+        fractions_map: Final[dict[str, str]] = {
+            "\u00bc": "1/4",
+            "\u00bd": "1/2",
+            "\u00be": "3/4",
+            "\u2150": "1/7",
+            "\u2151": "1/9",
+            "\u2152": "1/10",
+            "\u2153": "1/3",
+            "\u2154": "2/3",
+            "\u2155": "1/5",
+            "\u2156": "2/5",
+            "\u2157": "3/5",
+            "\u2158": "4/5",
+            "\u2159": "1/6",
+            "\u215a": "5/6",
+            "\u215b": "1/8",
+            "\u215c": "3/8",
+            "\u215d": "5/8",
+            "\u215e": "7/8",
+        }
+        fractions_class = "[" + "".join(fractions_map.keys()) + "]"
+
+        def repl_mixed_frac(m: re.Match[str]) -> str:
+            """Return "N-n/d" format fraction from match.
+
+            Args:
+                m: Match with whole number in group 1, fraction in group 2."""
+            return f"{m.group(1)}-{fractions_map[m.group(2)]}"
+
+        def repl_vulgar_frac(m: re.Match[str]) -> str:
+            """Return "n/d" format fraction from match.
+
+            Args:
+                m: Match with fraction in group 1."""
+            return fractions_map[m.group(0)]
+
+        superscripts_map: Final[dict[str, str]] = {
+            "\u2070": "0",
+            "\u00b9": "1",
+            "\u00b2": "2",
+            "\u00b3": "3",
+            "\u2074": "4",
+            "\u2075": "5",
+            "\u2076": "6",
+            "\u2077": "7",
+            "\u2078": "8",
+            "\u2079": "9",
+        }
+        superscripts_class: Final[str] = "[" + "".join(superscripts_map.keys()) + "]+"
+
+        def repl_sup(m: re.Match[str]) -> str:
+            """Return ^2 or ^_{23} format superscript from match.
+
+            Args:
+                m: Match with superscript characters in group 1."""
+            digits = "".join(superscripts_map[ch] for ch in m.group(0))
+            return "^" + digits if len(digits) == 1 else "^{" + digits + "}"
+
+        subscripts_map: Final[dict[str, str]] = {
+            "\u2080": "0",
+            "\u2081": "1",
+            "\u2082": "2",
+            "\u2083": "3",
+            "\u2084": "4",
+            "\u2085": "5",
+            "\u2086": "6",
+            "\u2087": "7",
+            "\u2088": "8",
+            "\u2089": "9",
+        }
+        subscripts_class: Final[str] = "[" + "".join(subscripts_map.keys()) + "]+"
+
+        def repl_sub(m: re.Match[str]) -> str:
+            """Return x_{23} format subscript from match.
+
+            Args:
+                m: Match with subscript characters in group 1."""
+            digits = "".join(subscripts_map[ch] for ch in m.group(0))
+            return "_{" + digits + "}"
+
+        maintext().undo_block_begin()
+        Busy.busy()
+
+        next_linenum = 1
+        all_blank_so_far = True
+        prev_line_blank = False
+        while maintext().compare(f"{next_linenum}.end", "<", tk.END):
+            linenum = next_linenum
+            next_linenum += 1
+            orig_line = maintext().get(f"{linenum}.0", f"{linenum}.end")
+            if orig_line.startswith("-----File:"):
+                all_blank_so_far = True
+                continue
+
+            # Strip trailing spaces
+            line = orig_line.rstrip()
+            line = line.replace("\u000c", "")  # Tesseract (used to) add form feed
+
+            # Remove blank lines at start of page
+            this_line_blank = len(line) == 0
+            all_blank_so_far = all_blank_so_far and this_line_blank
+            if preferences.get(PrefKey.CP_BLANK_LINES_TOP) and all_blank_so_far:
+                maintext().delete(f"{linenum}.0", f"{linenum+1}.0")
+                next_linenum -= 1  # Compensate for deleted line
+                continue
+
+            # Compress multiple blank lines into one
+            if (
+                preferences.get(PrefKey.CP_MULTI_BLANK_LINES)
+                and prev_line_blank
+                and this_line_blank
+            ):
+                maintext().delete(f"{linenum}.0", f"{linenum+1}.0")
+                next_linenum -= 1  # Compensate for deleted line
+                continue
+            prev_line_blank = this_line_blank
+
+            # Compress double spaces
+            if preferences.get(PrefKey.CP_MULTIPLE_SPACES):
+                line = re.sub("  ", " ", line)
+
+            # Spaced single hyphen - convert to emdash (double hyphen)
+            if preferences.get(PrefKey.CP_SPACED_HYPHEN_EMDASH):
+                line = re.sub(" -( |$)", "--", line)
+
+            # Spaced hyphens - remove spaces
+            # Guiprep had a separate option for spaced "emdashes" (double hyphens), but
+            # even if that was turned off, the spaced hyphens option would removed the spaces
+            if preferences.get(PrefKey.CP_SPACED_HYPHENS):
+                line = line.replace(" -", "-").replace("- ", "-")
+
+            # Spaced punctuation - remove space
+            if preferences.get(PrefKey.CP_SPACE_BEFORE_PUNC):
+                line = re.sub(r" ([\.,!?:;])", r"\1", line)
+
+            # Ensure space before 3-dot ellipsis, but not if 4-dots due to period
+            if preferences.get(PrefKey.CP_SPACE_BEFORE_ELLIPSIS):
+                line = re.sub(r"(?<!\.)\.{3}(?!\.)", " ...", line)
+
+            # Convert 2 single quotes to a double
+            if preferences.get(PrefKey.CP_SINGLE_QUOTES_DOUBLE):
+                line = line.replace("''", '"')
+
+            # Various 2/3 letter scannos
+            if preferences.get(PrefKey.CP_COMMON_LETTER_SCANNOS):
+                # tli, tii, tb, Tli, Tii, Tb at start of word to th/Th
+                # and similar for w
+                line = re.sub(r"(?<=\b[tTw])([li]i|b)", "h", line)
+                line = re.sub(r"\brn", "m", line)  # rn at start of word to m
+                line = re.sub(
+                    r"\bh(?=[lr])", "b", line
+                )  # hl/hr at start of word to bl/br
+                line = re.sub(r"\bVV", "W", line)  # VV at start of word to W
+                line = re.sub(r"\b[vV]{2}", "w", line)  # Vv/vV/vv at start of word to w
+                line = re.sub(r"tb\b", "th", line)  # tb at end of word to th
+                line = re.sub(r"cl\b", "d", line)  # cl at end of word to d
+                line = re.sub(
+                    r"(\bcb|cb\b)", "ch", line
+                )  # cb at start/end of word to ch
+                line = re.sub(r"(?<=[gp])bt", "ht", line)  # gbt/pbt to ght/pht
+                line = re.sub(r"\\[\\v]", "w", line)  # \v or \\ to w
+                line = re.sub(r"([ai])hle", "\1ble", line)  # ahle to able; ihle to ible
+                # variants of mrn to mm (not rnm or rmn which occur in words)
+                line = re.sub(r"mrn|mnr|nmr|nrm", "mm", line)
+                # rnp to mp (except turnpike, hornpipe & plurals, etc)
+                line = (
+                    line.replace("rnp", "mp")
+                    .replace("tumpike", "turnpike")
+                    .replace("hompipe", "hornpipe")
+                )
+                line = line.replace("'11", "'ll")  # '11 to 'll
+                line = re.sub(r"!!(?=\w)", "H", line)  # !! to H if not at end of word
+                line = re.sub(r"(?<=\w)!(?=\w)", "l", line)  # ! to l if midword
+
+            # Standalone 1 preceded by space or quote, not followed by period --> I
+            if preferences.get(PrefKey.CP_1_TO_I):
+                line = re.sub(r"(?<![^'\" ])1\b(?!\.)", "I", line)
+
+            # Standalone 0 preceded by space or quote --> O
+            if preferences.get(PrefKey.CP_0_TO_O):
+                line = re.sub(r"(?<![^'\" ])0\b", "O", line)
+
+            # Standalone l preceded by space or quote, not followed by apostrophe --> I
+            if preferences.get(PrefKey.CP_L_TO_I):
+                line = re.sub(r"(?<![^'\" ])l\b(?!')", "I", line)
+                # Or followed by apostrophe, but not a letter after that (e.g. preserve l'amie)
+                line = re.sub(r"(?<![^'\" ])l'(?!\p{Letter})", "I'", line)
+
+            # Expand Unicode fraction characters, including mixed fractions
+            if preferences.get(PrefKey.CP_FRACTIONS):
+                line = re.sub(r"(\d+)(" + fractions_class + ")", repl_mixed_frac, line)
+                line = re.sub(fractions_class, repl_vulgar_frac, line)
+
+            # Expand super/subscripts
+            if preferences.get(PrefKey.CP_SUPER_SUB_SCRIPTS):
+                line = re.sub(superscripts_class, repl_sup, line)
+                line = re.sub(subscripts_class, repl_sub, line)
+
+            # Double underscore --> emdash
+            if preferences.get(PrefKey.CP_UNDERSCORES_EMDASH):
+                line = line.replace("__", "--")
+
+            # Double comma --> double quote
+            if preferences.get(PrefKey.CP_COMMAS_DOUBLE_QUOTE):
+                line = line.replace(",,", '"')  # ,, to "
+
+            # Remove bad space around brackets
+            if preferences.get(PrefKey.CP_SPACED_BRACKETS):
+                line = re.sub(r"(?<=[[({]) ", "", line)
+                line = re.sub(r" (?=[])}])", "", line)
+
+            # Convert slash to comma+apostrophe
+            if preferences.get(PrefKey.CP_SLASH_COMMA_APOSTROPHE):
+                line = re.sub(r"(?<!(\W))/(?=\W)", ",'", line)
+
+            # Convert solitary or end-of-word j to semicolon
+            if preferences.get(PrefKey.CP_J_SEMICOLON):
+                line = re.sub(r"(?<![ainu])j(?=\s)", ";", line)
+
+            # Convert he --> be if it follows "to"
+            if preferences.get(PrefKey.CP_TO_HE_BE):
+                line = re.sub(r"\bto he\b", "to be", line)
+
+            # Remove bad punctuation at start of line- just retain last one
+            if preferences.get(PrefKey.CP_PUNCT_START):
+                line = re.sub(r"^\p{Punct}+(\p{Punct})", r"\1", line)
+
+            # Remove bad punctuation at end of line
+            if preferences.get(PrefKey.CP_PUNCT_END):
+                line = re.sub(r"\s{3,}[\p{Punct}\s]+$", "", line)
+
+            # Dubious spacing around quotes
+            if preferences.get(PrefKey.CP_DUBIOUS_SPACED_QUOTES):
+                # Straight quotes
+                line = re.sub(r'^" +', '"', line)  # Beg line double quote
+                line = re.sub(r' +" *$', '"', line)  # End line double quote
+                line = re.sub(r' "-', '"-', line)  # With hyphen
+                line = re.sub(r'the " ', 'the "', line)  # With "the"
+                line = re.sub(
+                    r"([.,!]) ([\"'] )", r"\1\2", line
+                )  # Punctuation, space, quote, space
+                # Curly quotes
+                line = re.sub(r"“ +", "“", line)
+                line = re.sub(r"‘ +", "‘", line)
+                line = re.sub(r" +”", "”", line)
+                # Only remove space around apostrophe or close-single quote
+                # if beginning/end of line since unsure if apostrophe/quote
+                line = re.sub(r" +’ *$", "’", line)
+                line = re.sub(r"^ *’ +", "’", line)
+
+            # Spaced apostrophes within words
+            if preferences.get(PrefKey.CP_SPACED_APOSTROPHES):
+                line = re.sub(r" 'll\b", "'ll", line)
+                line = re.sub(r" 've\b", "'ve", line)
+                line = re.sub(r" 's\b", "'s", line)
+                line = re.sub(r" 'd\b", "'d", line)
+                line = re.sub(r" n't\b", "n't", line)
+                line = re.sub(r"\bI 'm\b", "I'm", line)
+
+            # Only modify line in file if it has changed
+            if line != orig_line:
+                maintext().delete(f"{linenum}.0", f"{linenum}.end")
+                maintext().insert(f"{linenum}.0", line)
+        Busy.unbusy()
+
+
+def cp_fix_common_scannos() -> None:
+    """Fix common CP scannos."""
+    # Load dictionary of scannos
+    scannos_dict = load_dict_from_json(CP_SCANNOS)
+    if scannos_dict is None:
+        return
+    maintext().undo_block_begin()
+    Busy.busy()
+
+    slurp_text = maintext().get_text()
+
+    for scanno, correction in scannos_dict.items():
+        # Much quicker to search in slurped text before doing search in maintext()
+        # Better search also available with negative lookbehind which Tcl doesn't support.
+        if not re.search(rf"(?<![-\w']){scanno}(?![-\w'])", slurp_text):
+            continue
+        start = maintext().start().index()
+        while start := maintext().search(
+            rf"\y{scanno}(?![-\w'])", start, tk.END, regexp=True
+        ):
+            maintext().delete(start, f"{start}+{len(scanno)}c")
+            maintext().insert(start, correction)
+            start = f"{start}+{len(correction)}c"
+    Busy.unbusy()
+
+
+def cp_fix_englifh() -> None:
+    """Fix Englifh-->English."""
+    # Load dictionary of changes
+    englifh_dict = load_dict_from_json(CP_ENGLIFH)
+    if englifh_dict is None:
+        return
+    maintext().undo_block_begin()
+    Busy.busy()
+
+    def match_case(word: str, template: str) -> str:
+        """
+        Return 'word' modified to match the capitalization pattern of 'template'.
+        """
+        if len(word) != len(template):
+            return template
+        if template.isupper():
+            return word.upper()
+        if template.islower():
+            return word.lower()
+        # Mixed case: build letter by letter, transferring case
+        return "".join(
+            c.upper() if t.isupper() else c.lower() for c, t in zip(word, template)
+        )
+
+    slurp_text = maintext().get_text().lower()
+
+    for englifh, english in englifh_dict.items():
+        # Much quicker to search in slurped text before doing search in maintext()
+        if not re.search(rf"\b{englifh}\b", slurp_text):
+            continue
+        start = maintext().start().index()
+        while start := maintext().search(
+            rf"\y{englifh}\y", start, tk.END, regexp=True, nocase=True
+        ):
+            end = f"{start}+{len(englifh)}c"
+            original = maintext().get(start, end)
+            # Ensure we preserve the case of the original
+            replacement = match_case(english, original)
+            maintext().delete(start, end)
+            maintext().insert(start, replacement)
+            start = f"{start}+{len(replacement)}c"
+    Busy.unbusy()
+
+
+def cp_fix_empty_pages() -> None:
+    """Add "[Blank Page]" to empty pages."""
+
+    maintext().mark_set("cp_next_page", maintext().start().index())
+    while start := maintext().search(r"-----File:", "cp_next_page", tk.END):
+        # Find next page separator or end of line
+        nextl = maintext().search(r"-----File:", f"{start} lineend", tk.END)
+        if not nextl:
+            nextl = tk.END
+        # Mark next page start
+        maintext().mark_set("cp_next_page", nextl)
+        # If page text is nothing but whitespace, replace with [Blank Page]
+        page_text = maintext().get(f"{start} +1l linestart", "cp_next_page")
+        if re.fullmatch(r"\s*", page_text):
+            maintext().delete(f"{start} +1l linestart", "cp_next_page")
+            maintext().insert(f"{start} lineend", "\n[Blank Page]")
 
 
 def import_tia_ocr_file() -> None:
