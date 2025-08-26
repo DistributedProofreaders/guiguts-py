@@ -26,6 +26,7 @@ from guiguts.content_providing import (
     cp_fix_common_scannos,
     cp_fix_englifh,
     cp_fix_empty_pages,
+    cp_compress_pngs,
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -680,6 +681,9 @@ class Guiguts:
         preferences.set_default(PrefKey.CP_MULTI_BLANK_LINES, True)
         preferences.set_default(PrefKey.CP_DUBIOUS_SPACED_QUOTES, True)
         preferences.set_default(PrefKey.CP_SPACED_APOSTROPHES, True)
+        preferences.set_default(
+            PrefKey.CP_PNG_CRUSH_COMMAND, "pngcrush -q -reduce $in $out"
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -786,6 +790,7 @@ class Guiguts:
             "Fix ~Olde Englifh",
             cp_fix_englifh,
         )
+        cp_menu.add_button("Compress ~PNG files", cp_compress_pngs)
         cp_menu.add_button(
             "~Export As Prep Text Files...",
             export_prep_text_files,

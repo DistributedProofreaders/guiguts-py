@@ -213,6 +213,7 @@ class PrefKey(StrEnum):
     CP_MULTI_BLANK_LINES = auto()
     CP_DUBIOUS_SPACED_QUOTES = auto()
     CP_SPACED_APOSTROPHES = auto()
+    CP_PNG_CRUSH_COMMAND = auto()
 
 
 class Preferences:

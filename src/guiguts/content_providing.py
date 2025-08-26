@@ -4,10 +4,13 @@ import gzip
 import importlib.resources
 import logging
 from pathlib import Path
+import shutil
+import subprocess
 import tkinter as tk
 from tkinter import filedialog, ttk
 from typing import Any, Final
 
+from PIL import Image, UnidentifiedImageError
 import regex as re
 
 from guiguts.checkers import (
@@ -968,6 +971,94 @@ def cp_fix_empty_pages() -> None:
         if re.fullmatch(r"\s*", page_text):
             maintext().delete(f"{start} +1l linestart", "cp_next_page")
             maintext().insert(f"{start} lineend", "\n[Blank Page]")
+
+
+def compress_png_file(command: list[str], src: Path, dest: Path) -> bool:
+    """
+    Compress a single PNG from src → dest.
+    Returns True if successful, False otherwise.
+    """
+    command = [s.replace("$in", str(src)).replace("$out", str(dest)) for s in command]
+    if command[0]:
+        try:
+            subprocess.run(command, check=True)
+        except FileNotFoundError:
+            logger.error(f"Failed to compress {src}: Unable to run {command[0]}")
+            return False
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to compress {src}: {e}")
+            return False
+    else:  # Use Pillow
+        try:
+            im = Image.open(src)
+            im.save(dest, optimize=True)
+        except UnidentifiedImageError:
+            logger.error(f"Failed to compress {src}: Unable to identify image")
+            return False
+    if not dest.is_file():
+        logger.error(f"Failed to create compressed file {dest}")
+        return False
+    return True
+
+
+def cp_compress_pngs() -> None:
+    """Compress the PNG files."""
+    fd_str = folder_dir_str(lowercase=True)
+    if not the_file().filename:
+        logger.error(
+            f"Save current file in parent {fd_str} before compressing files in pngs {fd_str}"
+        )
+        return
+    base = Path(the_file().filename).parent
+    src_dir = base / "pngs"
+    new_dir = base / "pngs_temp"
+    old_dir = base / "pngs_old"
+    if not src_dir.is_dir():
+        logger.error(f"{src_dir} is not a valid {fd_str}")
+        return
+    if old_dir.exists():
+        logger.error(f"Error: backup {fd_str} {old_dir} already exists. Aborting.")
+        return
+    if new_dir.exists():
+        shutil.rmtree(new_dir)  # clean up any previous run
+    new_dir.mkdir()
+
+    total_before = 0
+    total_after = 0
+    n_files = 0
+    command: list[str] = preferences.get(PrefKey.CP_PNG_CRUSH_COMMAND).strip().split()
+    Busy.busy()
+    for src_file in src_dir.glob("*.png"):
+        size_before = src_file.stat().st_size
+        total_before += size_before
+        dest_file = new_dir / src_file.name
+        if not compress_png_file(command, src_file, dest_file):
+            Busy.unbusy()
+            return
+        size_after = dest_file.stat().st_size
+        # If "compressed" file is no better, keep the old one
+        if size_after >= size_before:
+            shutil.copy2(src_file, dest_file)
+            total_after += size_before
+            logger.info(f"{src_file.name} not compressed")
+        else:
+            total_after += size_after
+            saved = size_before - size_after
+            logger.info(
+                f"{src_file.name} compressed, saving {saved}B ({100*saved/size_before:.1f}%)"
+            )
+        root().update()
+        n_files += 1
+
+    src_dir.rename(old_dir)
+    new_dir.rename(src_dir)
+
+    total_saved = total_before - total_after
+    percent_saved = 100 * total_saved / total_before if total_before > 0 else 0
+    logger.info(
+        f"{n_files} files compressed, saving {total_saved/1024:.1f}KB ({percent_saved:.1f}%)"
+    )
+    Busy.unbusy()
 
 
 def import_tia_ocr_file() -> None:
