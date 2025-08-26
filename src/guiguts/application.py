@@ -27,6 +27,7 @@ from guiguts.content_providing import (
     cp_fix_englifh,
     cp_fix_empty_pages,
     cp_compress_pngs,
+    cp_renumber_pngs,
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -758,48 +759,21 @@ class Guiguts:
     def init_file_content_menu(self, parent: MenuMetadata) -> None:
         """Create the File->Content Providing menu."""
         cp_menu = parent.add_submenu("Co~ntent Providing")
+        cp_menu.add_button("~Import Prep Text Files...", import_prep_text_files)
+        cp_menu.add_button("CP Character ~Substitutions", cp_character_substitutions)
         cp_menu.add_button(
-            "~Import Prep Text Files...",
-            import_prep_text_files,
+            "Remove ~Headers/Footers...", lambda: HeadFootChecker().run()
         )
-        cp_menu.add_button(
-            "CP Character ~Substitutions",
-            cp_character_substitutions,
-        )
-        cp_menu.add_button(
-            "Remove ~Headers/Footers...",
-            lambda: HeadFootChecker().run(),
-        )
-        cp_menu.add_button(
-            "Run ~Dehyphenator...",
-            lambda: DehyphenatorChecker().run(),
-        )
-        cp_menu.add_button(
-            "~Filter File...",
-            CPProcessingDialog.show_dialog,
-        )
-        cp_menu.add_button(
-            "Fix ~Common Scannos",
-            cp_fix_common_scannos,
-        )
-        cp_menu.add_button(
-            "Add [~Blank Page] to Empty Pages",
-            cp_fix_empty_pages,
-        )
-        cp_menu.add_button(
-            "Fix ~Olde Englifh",
-            cp_fix_englifh,
-        )
+        cp_menu.add_button("Run ~Dehyphenator...", lambda: DehyphenatorChecker().run())
+        cp_menu.add_button("~Filter File...", CPProcessingDialog.show_dialog)
+        cp_menu.add_button("Fix ~Common Scannos", cp_fix_common_scannos)
+        cp_menu.add_button("Add [~Blank Page] to Empty Pages", cp_fix_empty_pages)
+        cp_menu.add_button("Fix ~Olde Englifh", cp_fix_englifh)
         cp_menu.add_button("Compress ~PNG files", cp_compress_pngs)
-        cp_menu.add_button(
-            "~Export As Prep Text Files...",
-            export_prep_text_files,
-        )
+        cp_menu.add_button("~Renumber PNG files", cp_renumber_pngs)
+        cp_menu.add_button("~Export As Prep Text Files...", export_prep_text_files)
         cp_menu.add_separator()
-        cp_menu.add_button(
-            "Import ~TIA Abbyy OCR File...",
-            import_tia_ocr_file,
-        )
+        cp_menu.add_button("Import ~TIA Abbyy OCR File...", import_tia_ocr_file)
 
     def init_file_project_menu(self, parent: MenuMetadata) -> None:
         """Create the File->Project menu."""

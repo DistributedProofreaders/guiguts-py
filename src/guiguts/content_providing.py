@@ -1006,7 +1006,7 @@ def cp_compress_pngs() -> None:
     fd_str = folder_dir_str(lowercase=True)
     if not the_file().filename:
         logger.error(
-            f"Save current file in parent {fd_str} before compressing files in pngs {fd_str}"
+            f'Save current file in parent {fd_str} before compressing files in "pngs" {fd_str}'
         )
         return
     base = Path(the_file().filename).parent
@@ -1058,6 +1058,77 @@ def cp_compress_pngs() -> None:
     logger.info(
         f"{n_files} files compressed, saving {total_saved/1024:.1f}KB ({percent_saved:.1f}%)"
     )
+    Busy.unbusy()
+
+
+def cp_renumber_pngs() -> None:
+    """Renumber PNGs to 001.png, 002.png,... or 0001.png, 0002.png,..."""
+    fd_str = folder_dir_str(lowercase=True)
+    if not the_file().filename:
+        logger.error(
+            f'Save current file in parent {fd_str} before renumbering files in "pngs"'
+        )
+        return
+
+    # Find all .png files
+    src_dir = Path(the_file().filename).parent / "pngs"
+    files = sorted(src_dir.glob("*.png"))
+    if not files:
+        logger.error(f"No PNG files found in {src_dir}")
+        return
+
+    # Get all files referred to in `-----File:` separator lines
+    fnames: list[str] = []
+    start = maintext().start().index()
+    while start := maintext().search(r"-----File:", start, tk.END):
+        end = f"{start} lineend"
+        line = maintext().get(start, end)
+        fname = re.sub("-----File: *", "", line)
+        fname = re.sub("-+$", "", fname)
+        fnames.append(fname)
+        start = end
+
+    # Sanity checks
+    if len(files) != len(fnames):
+        logger.error(
+            f'Number of "-----File:" lines does not match number of PNG files in {src_dir}'
+        )
+        return
+    for idx, fname in enumerate(fnames):
+        if fname != files[idx].name:
+            logger.error(
+                f'Filename mismatch: "-----File: {fname}" and {src_dir}/{files[idx].name}'
+            )
+            return
+
+    # Determine zero-padding based on file count
+    width = 3 if len(files) <= 999 else 4
+
+    Busy.busy()
+    # To avoid overwriting, rename to temporary names first
+    # First pass: rename to temporary names to avoid collisions
+    temp_files: list[Path] = []
+    for idx, file in enumerate(files, start=1):
+        temp_name = src_dir / f"__temp_{file.name}"
+        file.rename(temp_name)
+        temp_files.append(temp_name)
+
+    # Second pass: rename to final names
+    for idx, temp_name in enumerate(temp_files, start=1):
+        new_name = src_dir / f"{idx:0{width}d}.png"
+        temp_name.rename(new_name)
+
+    # Finally, edit page separator lines
+    tail = "-" * (60 - width)
+    start = maintext().start().index()
+    idx = 1
+    while start := maintext().search(r"-----File:", start, tk.END):
+        end = f"{start} lineend"
+        maintext().delete(start, end)
+        maintext().insert(start, f"-----File: {idx:0{width}d}.png{tail}")
+        idx += 1
+        start = end
+
     Busy.unbusy()
 
 
@@ -1176,6 +1247,8 @@ def cp_character_substitutions() -> None:
     ]
 
     maintext().undo_block_begin()
+    Busy.busy()
     for search_char, replacement in fixes:
         maintext().replace_all(search_char, replacement)
+    Busy.unbusy()
     maintext().undo_block_end()
