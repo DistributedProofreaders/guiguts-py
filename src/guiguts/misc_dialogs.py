@@ -41,7 +41,6 @@ from guiguts.widgets import (
     mouse_bind,
     Combobox,
     Notebook,
-    Busy,
     TreeviewList,
     ScrollableFrame,
     themed_style,
@@ -1825,9 +1824,7 @@ class CommandPaletteDialog(ToplevelDialog):
         self.add_to_history(entry.label, entry.parent_label)
         command = entry.get_command()
         self.destroy()
-        Busy.busy()  # In case it's a slow command
         command()
-        Busy.unbusy()  # In case it's a slow command
 
     def get_selected_entry(self) -> Optional[EntryMetadata]:
         """Return EntryMetadata associated with selected entry in list (or None)."""
