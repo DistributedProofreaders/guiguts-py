@@ -209,7 +209,7 @@ def do_html_autogenerate() -> None:
     html_convert_sidenotes()
     html_add_chapter_divs()
     html_wrap_long_lines()
-    maintext().replace_all("\n\n\n+", "\n\n", regexp=True)  # No multi-blank lines
+    html_tidy_up()
     maintext().set_insert_index(maintext().start())
 
 
@@ -1485,3 +1485,8 @@ def html_wrap_long_lines() -> None:
         ):
             # Insert a newline and three extra spaces before the space that was found
             maintext().insert(f"{insert_point}+{count.get() - 1}c", "\n   ")
+
+def html_tidy_up() -> None:
+    """"""
+    maintext().replace_all("<p></p>", "")  # No empty paragraphs
+    maintext().replace_all("\n\n\n+", "\n\n", regexp=True)  # No multi-blank lines
