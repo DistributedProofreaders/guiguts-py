@@ -46,7 +46,6 @@ def export_prep_text_files() -> None:
     """Export the current file as separate prep text files."""
     prep_dir = filedialog.askdirectory(
         parent=root(),
-        mustexist=True,
         title=f"Select {folder_dir_str(True)} to export prep text files to",
     )
     if not prep_dir:
