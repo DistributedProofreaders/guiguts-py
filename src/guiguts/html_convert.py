@@ -1497,4 +1497,6 @@ def html_wrap_long_lines() -> None:
 def html_tidy_up() -> None:
     """Tidy up generated HTML."""
     maintext().replace_all("<p></p>", "")  # No empty paragraphs
-    maintext().replace_all("\n\n\n+", "\n\n", regexp=True)  # No multi-blank lines
+    maintext().replace_all(
+        "\n\n\n\n+", "\n\n\n", regexp=True
+    )  # No triple-blank lines (doubles allowed)
