@@ -1267,20 +1267,27 @@ def html_convert_page_anchors() -> None:
                 move = len(re.sub(r"[\s<].*", "", check_str)) - 1
                 if move > 0:
                     pnum_index = maintext().index(f"{pnum_index}+{move}c")
+        else:  # At beginning of line - check it's in suitable place if within index
+            line = maintext().get(pnum_index, f"{pnum_index} lineend")
+            if re.match(' *<li class="i', line):
+                col = line.index(">")
+                if col >= 0:
+                    pnum_rowcol.col = col + 1
+                    pnum_index = pnum_rowcol.index()
         return pnum_index
 
     def outside_paragraph(index: str) -> bool:
         """Return True if given index is not within `<p>` markup, and
         also not within poetry (best guess)."""
         prev_pl_markup = maintext().find_match(
-            r"(<(p|ol|ul)[> ]|</(p|ol|ul)>)",
+            r"(<(p|li)[> ]|</(p|li)>)",
             IndexRange(index, "1.0"),
             regexp=True,
             backwards=True,
         )
         needs_p_markup = bool(
             prev_pl_markup is None
-            or re.fullmatch(r"</(p|ol|ul)>", maintext().get_match_text(prev_pl_markup))
+            or re.fullmatch(r"</(p|li)>", maintext().get_match_text(prev_pl_markup))
         )
         # If not in above markup, check if it's inside poetry.
         if needs_p_markup:
@@ -1486,7 +1493,8 @@ def html_wrap_long_lines() -> None:
             # Insert a newline and three extra spaces before the space that was found
             maintext().insert(f"{insert_point}+{count.get() - 1}c", "\n   ")
 
+
 def html_tidy_up() -> None:
-    """"""
+    """Tidy up generated HTML."""
     maintext().replace_all("<p></p>", "")  # No empty paragraphs
     maintext().replace_all("\n\n\n+", "\n\n", regexp=True)  # No multi-blank lines
