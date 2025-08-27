@@ -1128,6 +1128,7 @@ def cp_renumber_pngs() -> None:
         idx += 1
         start = end
 
+    the_file().mark_page_boundaries()
     Busy.unbusy()
 
 
