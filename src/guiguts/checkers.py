@@ -414,6 +414,7 @@ class CheckerDialog(ToplevelDialog):
         copy_button.grid(row=0, column=3, sticky="NSE")
 
         def rerunner() -> None:
+            Busy.busy()
             self.selection_on_clear[self.get_dlg_name()] = None
             self.rerun_command()
             self.refresh_view_options()
