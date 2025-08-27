@@ -979,7 +979,7 @@ def compress_png_file(command: list[str], src: Path, dest: Path) -> bool:
     Returns True if successful, False otherwise.
     """
     command = [s.replace("$in", str(src)).replace("$out", str(dest)) for s in command]
-    if command[0]:
+    if command and command[0]:
         try:
             subprocess.run(command, check=True)
         except FileNotFoundError:
