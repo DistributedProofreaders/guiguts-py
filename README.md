@@ -312,7 +312,7 @@ are used to document modules, classes, functions, etc.
 [Sphinx](https://www.sphinx-doc.org/en/master/index.html) will be installed by
 poetry (above) and can be used to create HTML documentation by running the following command:
 ```bash
-poetry run python -m sphinx -b html docs docs/build`
+poetry run python -m sphinx -q -b html docs docs/build
 ```
 
 HTML docs will appear in the `docs/build` directory.
@@ -320,7 +320,7 @@ HTML docs will appear in the `docs/build` directory.
 Sphinx can also be used to check coverage, i.e. that docstrings have been used everywhere
 appropriate:
 ```bash
-poetry run python -m sphinx -M coverage docs docs/build`
+poetry run python -m sphinx -q -M coverage docs docs/build
 ```
 
 This project uses Github Actions to ensure running sphinx does not report an error, and
