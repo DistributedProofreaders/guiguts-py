@@ -71,8 +71,8 @@
 "hint": "Find a comma at the end of a paragraph and replace it with a period"
 },
 {
-"match": ",(?= \\p{IsUpper}\\S)|,(?= [A-HJ-Z] )",
-"replacement": ".",
+"match": ",(\\s\\p{IsUpper}(?=\\S)|\\s[A-HJ-Z](?=\\s))",
+"replacement": ".\\1",
 "hint": "Find a comma followed by a space and an upper-case character (except I) and replace with a period."
 },
 {
