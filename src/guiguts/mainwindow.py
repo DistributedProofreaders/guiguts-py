@@ -985,13 +985,15 @@ class MainImage(tk.Frame):
         return True
 
     def is_it_grayscale(self, image: Image.Image) -> bool:
-        """Return True if image is grayscale."""
+        """Return True if image is grayscale (or at least invertable)."""
         if image.mode in ("1", "L"):  # True grayscale
             return True
         if image.mode == "P":  # Palette - are all colors gray?
             palette = image.getpalette()
             if palette is None:
                 return False  # No palette defined
+            if len(palette) == 2 * 3:
+                return True  # Two color palette, OK to invert
             for idx in range(len(palette) // 3):
                 r = palette[idx * 3]
                 g = palette[idx * 3 + 1]
