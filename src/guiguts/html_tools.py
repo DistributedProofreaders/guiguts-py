@@ -1251,9 +1251,16 @@ class EbookmakerChecker:
             logger.error(
                 f"Use 'Browse' button to select Ebookmaker 'pipenv install' {folder_dir_str(lowercase=True)}"
             )
+            Busy.unbusy()
+            self.dialog.lift()
             return
         if not os.path.isdir(cwd):
-            logger.error(f"{folder_dir_str()} {cwd} does not exist")
+            logger.error(
+                f"{folder_dir_str()} {cwd} does not exist\n"
+                f"Use 'Browse' button to select Ebookmaker 'pipenv install' {folder_dir_str(lowercase=True)}"
+            )
+            Busy.unbusy()
+            self.dialog.lift()
             return
 
         # Don't use an existing virtualenv for pipenv; create a new one.
@@ -1275,6 +1282,8 @@ class EbookmakerChecker:
         venv_dir = result.stdout.rstrip()
         if not os.path.isdir(venv_dir):
             logger.error(f"{folder_dir_str()} {venv_dir} does not exist")
+            Busy.unbusy()
+            self.dialog.lift()
             return
 
         if is_windows():
@@ -1307,6 +1316,7 @@ class EbookmakerChecker:
                 "To create Kindle files, install Calibre and ensure the ebook-convert command is on your PATH"
             )
             Busy.unbusy()
+            self.dialog.lift()
             return
         if "--make=" not in command[-1]:
             logger.error("You must select at least one format to be built")
