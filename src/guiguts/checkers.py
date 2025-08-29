@@ -1334,8 +1334,8 @@ class CheckerDialog(ToplevelDialog):
         """
         if not event.char or not event.char.isprintable():
             return ""
-        # If modifiers other than Shift & Caps Lock, don't goto word - allow default processing
-        if int(event.state) & ~(0x0001 | 0x0002) != 0:
+        # If modifiers other than Shift, Caps Lock, Num Lock, ScrollLock don't goto word - allow default processing
+        if int(event.state) & ~(0x0001 | 0x0002 | 0x0010 | 0x0080 | 0x0100) != 0:
             return ""
         low_char = event.char.lower()
 
