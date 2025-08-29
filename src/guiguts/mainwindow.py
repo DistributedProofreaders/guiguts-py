@@ -992,8 +992,8 @@ class MainImage(tk.Frame):
             palette = image.getpalette()
             if palette is None:
                 return False  # No palette defined
-            if len(palette) == 2 * 3:
-                return True  # Two color palette, OK to invert
+            if len(palette) <= 2 * 3:
+                return True  # One- or two-color palette, OK to invert
             for idx in range(len(palette) // 3):
                 r = palette[idx * 3]
                 g = palette[idx * 3 + 1]
