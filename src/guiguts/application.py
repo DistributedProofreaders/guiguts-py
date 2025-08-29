@@ -18,11 +18,11 @@ from guiguts.checkers import CheckerDialog
 from guiguts.content_providing import (
     export_prep_text_files,
     import_prep_text_files,
-    cp_character_substitutions,
     import_tia_ocr_file,
     DehyphenatorChecker,
     HeadFootChecker,
     CPProcessingDialog,
+    CPCharacterSubsChecker,
     cp_fix_common_scannos,
     cp_fix_englifh,
     cp_fix_empty_pages,
@@ -760,7 +760,9 @@ class Guiguts:
         """Create the File->Content Providing menu."""
         cp_menu = parent.add_submenu("Co~ntent Providing")
         cp_menu.add_button("~Import Prep Text Files...", import_prep_text_files)
-        cp_menu.add_button("CP Character ~Substitutions", cp_character_substitutions)
+        cp_menu.add_button(
+            "CP Character ~Substitutions...", lambda: CPCharacterSubsChecker().run()
+        )
         cp_menu.add_button(
             "Remove ~Headers/Footers...", lambda: HeadFootChecker().run()
         )
@@ -790,6 +792,10 @@ class Guiguts:
         project_menu.add_separator()
         project_menu.add_button(
             "~Configure Page Labels...", self.show_page_details_dialog
+        )
+        project_menu.add_separator()
+        project_menu.add_button(
+            "Reset ~Page Markers From Page Separators", self.file.reset_page_marks
         )
         project_menu.add_separator()
         project_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)

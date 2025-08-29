@@ -666,6 +666,16 @@ class File:
             assert img in page_details
             page_details[img]["index"] = maintext().index(mark)
 
+    def reset_page_marks(self) -> None:
+        """Reset all page marks"""
+        if not maintext().search(
+            PAGE_SEPARATOR_REGEX, maintext().start().index(), regexp=True
+        ):
+            logger.error("No page separators in file: unable to reset page marks")
+            return
+        self.remove_page_marks()
+        self.mark_page_boundaries()
+
     def mark_page_boundaries(self) -> None:
         """Loop through whole file, ensuring all page separator lines
         are in standard format, and setting page marks at the

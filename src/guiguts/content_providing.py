@@ -1213,50 +1213,113 @@ def import_tia_ocr_file() -> None:
     the_file().save_as_file()
 
 
-def cp_character_substitutions() -> None:
-    """Apply standard character substitutions."""
+class CPCharacterSubsCheckerDialog(CheckerDialog):
+    """CP Character Substitutions Checker dialog."""
 
-    # List of (search_char, replacement_string) pairs
-    fixes = [
-        ("\u0009", " "),  # horizontal tab
-        ("\u000b", "\n"),  # vertical tab
-        ("\u000c", "\n"),  # form feed
-        ("\u0085", "\n"),  # next line
-        ("\u00a0", " "),  # no-break space
-        ("\u1680", " "),  # ogham space mark
-        ("\u2000", " "),  # en quad
-        ("\u2001", " "),  # em quad
-        ("\u2002", " "),  # en space
-        ("\u2003", " "),  # em space
-        ("\u2004", " "),  # three-per-em space
-        ("\u2005", " "),  # four-per-em space
-        ("\u2006", " "),  # six-per-em space
-        ("\u2007", " "),  # figure space
-        ("\u2008", " "),  # punctuation space
-        ("\u2009", " "),  # thin space
-        ("\u200a", " "),  # hair space
-        ("\u2010", "-"),  # hyphen
-        ("\u2011", "-"),  # non-breaking hyphen
-        ("\u2012", "--"),  # figure dash
-        ("\u2013", "-"),  # en-dash
-        ("\u2014", "--"),  # em-dash
-        ("\u2015", "--"),  # horizontal bar
-        ("\u2018", "'"),  # open curly single quote
-        ("\u2019", "'"),  # close curly single quote
-        ("\u201c", '"'),  # open curly double quote
-        ("\u201d", '"'),  # close curly double quote
-        ("\u2026", "..."),  # horizontal ellipsis
-        ("\u2028", "\n"),  # line separator
-        ("\u2029", "\n"),  # paragraph separator
-        ("\u202f", " "),  # narrow no-break space
-        ("\u205f", " "),  # medium mathematical space
-        ("\u2212", "-"),  # minus sign
-        ("\u3000", " "),  # ideographic space
-    ]
+    manual_page = "Content_Providing_Menu#CP_Character_Substitutions"
 
-    maintext().undo_block_begin()
-    Busy.busy()
-    for search_char, replacement in fixes:
-        maintext().replace_all(search_char, replacement)
-    Busy.unbusy()
-    maintext().undo_block_end()
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Character Substitutions dialog."""
+        super().__init__(
+            "CP Character Substitutions",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find occurrence",
+                    "Right click: Hide occurrence from list",
+                    f"{cmd_ctrl_string()} left click: Fix this occurrence",
+                    f"{cmd_ctrl_string()} right click: Fix this occurrence and remove from list",
+                    f"Shift {cmd_ctrl_string()} left click: Fix all occurrences of this character",
+                    f"Shift {cmd_ctrl_string()} right click: Fix all occurrences of this character and remove from list",
+                ]
+            ),
+            **kwargs,
+        )
+
+
+class CPCharacterSubsChecker:
+    """Header/Footer checker."""
+
+    fixes = {
+        "\u0009": (" ", "Whitespace"),  # horizontal tab
+        "\u000b": ("\n", "Whitespace"),  # vertical tab
+        "\u000c": ("\n", "Whitespace"),  # form feed
+        "\u0085": ("\n", "Whitespace"),  # next line
+        "\u00a0": (" ", "Whitespace"),  # no-break space
+        "\u00ac": ("-", "Hyphen"),  # not sign
+        "\u1680": (" ", "Whitespace"),  # ogham space mark
+        "\u2000": (" ", "Whitespace"),  # en quad
+        "\u2001": (" ", "Whitespace"),  # em quad
+        "\u2002": (" ", "Whitespace"),  # en space
+        "\u2003": (" ", "Whitespace"),  # em space
+        "\u2004": (" ", "Whitespace"),  # three-per-em space
+        "\u2005": (" ", "Whitespace"),  # four-per-em space
+        "\u2006": (" ", "Whitespace"),  # six-per-em space
+        "\u2007": (" ", "Whitespace"),  # figure space
+        "\u2008": (" ", "Whitespace"),  # punctuation space
+        "\u2009": (" ", "Whitespace"),  # thin space
+        "\u200a": (" ", "Whitespace"),  # hair space
+        "\u2010": ("-", "Hyphen"),  # hyphen
+        "\u2011": ("-", "Hyphen"),  # non-breaking hyphen
+        "\u2012": ("--", "Emdash"),  # figure dash
+        "\u2013": ("-", "Hyphen"),  # en-dash
+        "\u2014": ("--", "Emdash"),  # em-dash
+        "\u2015": ("--", "Emdash"),  # horizontal bar
+        "\u2018": ("'", "Curly quote"),  # open curly single quote
+        "\u2019": ("'", "Curly quote"),  # close curly single quote
+        "\u201c": ('"', "Curly quote"),  # open curly double quote
+        "\u201d": ('"', "Curly quote"),  # close curly double quote
+        "\u2026": ("...", "Ellipsis"),  # horizontal ellipsis
+        "\u2028": ("\n", "Whitespace"),  # line separator
+        "\u2029": ("\n", "Whitespace"),  # paragraph separator
+        "\u202f": (" ", "Whitespace"),  # narrow no-break space
+        "\u205f": (" ", "Whitespace"),  # medium mathematical space
+        "\u2212": ("-", "Hyphen"),  # minus sign
+        "\u3000": (" ", "Whitespace"),  # ideographic space
+    }
+
+    def __init__(self) -> None:
+        """Initialize Character Substitutions checker."""
+
+        self.dialog = HeadFootCheckerDialog.show_dialog(
+            rerun_command=self.run,
+            process_command=self.do_sub,
+            match_on_highlight=CheckerMatchType.ERROR_PREFIX,
+        )
+
+    def run(self) -> None:
+        """Do the actual check and add messages to the dialog."""
+        self.dialog.reset()
+
+        for char, (_, desc) in self.fixes.items():
+            start = maintext().start().index()
+            while start := maintext().search(char, start, tk.END):
+                line = maintext().get(f"{start} linestart", f"{start} lineend")
+                beg = maintext().rowcol(start)
+                end = maintext().rowcol(f"{start}+1c")
+                self.dialog.add_entry(
+                    line,
+                    IndexRange(beg, end),
+                    hilite_start=beg.col,
+                    hilite_end=end.col,
+                    error_prefix=f"{desc}: ",
+                )
+                start = f"{start}+1c"
+        self.dialog.display_entries()
+
+    def do_sub(self, checker_entry: CheckerEntry) -> None:
+        """Do the CP substitution."""
+        maintext().undo_block_begin()
+        assert checker_entry.text_range is not None
+        start_idx = maintext().index(
+            self.dialog.mark_from_rowcol(checker_entry.text_range.start)
+        )
+        end_idx = maintext().index(
+            self.dialog.mark_from_rowcol(checker_entry.text_range.end)
+        )
+        char = checker_entry.text[checker_entry.hilite_start : checker_entry.hilite_end]
+        assert char in self.fixes
+        sub, _ = self.fixes[char]
+        if maintext().get(start_idx, end_idx) != char:
+            return
+        maintext().insert(start_idx, sub)
+        maintext().delete(f"{start_idx}+1c", f"{start_idx}+2c")
