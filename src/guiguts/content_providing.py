@@ -1026,6 +1026,12 @@ def cp_compress_pngs() -> None:
     total_after = 0
     n_files = 0
     command: list[str] = preferences.get(PrefKey.CP_PNG_CRUSH_COMMAND).strip().split()
+    if command and ("$in" not in command or "$out" not in command):
+        logger.error(
+            'Command must include "$in" and "$out" arguments to indicate in and out file names\n'
+            "Use the Settings dialog, Advanced Tab to configure the PNG compress command (examples in tooltip)"
+        )
+        return
     Busy.busy()
     for src_file in src_dir.glob("*.png"):
         size_before = src_file.stat().st_size
