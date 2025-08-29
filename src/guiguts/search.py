@@ -1074,14 +1074,15 @@ def get_regex_replacement(
 
     # Since below we do a sub on the match text, rather than the whole text, we need
     # to handle start/end word boundaries and look-behind/ahead by removing them.
-    # At some point the sub will be done manually, handing groups, execution of
-    # python code, etc., like in GG1. At that point, these fixes can probably go.
-    search_regex = re.sub(r"^\(\?<=.*?\)", "", search_regex)
-    search_regex = re.sub(r"\(\?=.*?\)$", "", search_regex)
-    search_regex = search_regex.removeprefix(r"\b").removesuffix(r"\b")
+    search_regex = re.sub(r"^\(\?<[=!].*?\)", "^", search_regex)
+    search_regex = re.sub(r"\(\?[=!].*?\)$", "$", search_regex)
+    search_regex = re.sub(r"^\\b", "^", search_regex)
+    search_regex = re.sub(r"\\b$", "$", search_regex)
 
     for ch in ("E", "C", "L", "U", "T", "A", "R", "N"):
         replace_regex = replace_regex.replace(rf"\{ch}", f"{temp_bs}{ch}")
+    # It's possible this should have `count=1`, but I don't think it matters, since
+    # we know that `search_regex` should match the whole of `match_text`
     replace_str = re.sub(search_regex, replace_regex, match_text, flags=flags)
 
     def do_extended_regex(cmd: str, func: Callable[[str], str], string: str) -> str:
