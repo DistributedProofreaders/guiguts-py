@@ -384,8 +384,11 @@ class File:
         root().after(Busy.BUSY_DELAY, Busy.unbusy)
         return self.filename
 
-    def save_as_file(self) -> str:
+    def save_as_file(self, initialdir: str = "") -> str:
         """Save current text as new file.
+
+        Args:
+            initialdir: Initial directory to open save dialog in
 
         Returns:
             Chosen filename or "" if save is cancelled
@@ -412,9 +415,11 @@ class File:
         initialfile = (
             os.path.basename(suggested_fn) if self.filename else f"untitled{extension}"
         )
+        if initialdir == "":
+            initialdir = os.path.dirname(suggested_fn)
         if fn := filedialog.asksaveasfilename(
             initialfile=initialfile,
-            initialdir=os.path.dirname(suggested_fn),
+            initialdir=initialdir,
             filetypes=[(file_type, f"*{extension}"), ("All files", "*")],
             title="Save As",
         ):
@@ -648,6 +653,16 @@ class File:
             img = img_from_page_mark(mark)
             assert img in page_details
             page_details[img]["index"] = maintext().index(mark)
+
+    def reset_page_marks(self) -> None:
+        """Reset all page marks"""
+        if not maintext().search(
+            PAGE_SEPARATOR_REGEX, maintext().start().index(), regexp=True
+        ):
+            logger.error("No page separators in file: unable to reset page marks")
+            return
+        self.remove_page_marks()
+        self.mark_page_boundaries()
 
     def mark_page_boundaries(self) -> None:
         """Loop through whole file, ensuring all page separator lines
