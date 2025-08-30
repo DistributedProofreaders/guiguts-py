@@ -1319,13 +1319,36 @@ class Guiguts:
         tk_menu = menu_metadata.tk_menu
         if tk_menu is None:
             return
-        offset = 1 if tk_menu.type(0) == "tearoff" else 0
-        for count, file in enumerate(preferences.get(PrefKey.RECENT_FILES)):
-            tk_menu.entryconfigure(
-                count + offset,
-                label=f"{count+1}: {file}",
-                command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
-            )
+        offset = 0 if not preferences.get(PrefKey.TEAROFF_MENUS) else 1
+        file_list = preferences.get(PrefKey.RECENT_FILES)
+        end_index = tk_menu.index(tk.END)
+        n_entries = (0 if end_index is None else end_index + 1) - offset
+        if n_entries > len(file_list):
+            assert n_entries <= len(file_list)
+            return  # Should never happen
+        for count, file in enumerate(file_list):
+            # May need to add an entry
+            if count >= n_entries:
+                self.recent_menu.add_button(
+                    f"~{count}: {file}",
+                    lambda fn=file: self.open_file(fn),  # type:ignore[misc]
+                    add_to_command_palette=False,
+                )
+                tk_menu.add_command(
+                    label=f"~{count}: {file}",
+                    command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
+                )
+            else:
+                # Or just reconfigure the metadata entry and the menu button
+                self.recent_menu.entries[count].label = f"~{count}: {file_list[count]}"
+                self.recent_menu.entries[count].command = (  # type:ignore[attr-defined]
+                    lambda fn=file: self.open_file(fn),
+                )  # type:ignore[misc]
+                tk_menu.entryconfigure(
+                    count + offset,
+                    label=f"{count+1}: {file}",
+                    command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
+                )
 
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
         """Add labels to initialize the statusbar.
