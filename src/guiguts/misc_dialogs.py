@@ -405,6 +405,7 @@ class PreferencesDialog(ToplevelDialog):
 
         # Advanced tab
         advance_frame = ttk.Frame(notebook, padding=10)
+        advance_frame.columnconfigure(2, weight=1)
         notebook.add(advance_frame, text="Advanced")
 
         add_label_spinbox(
@@ -477,11 +478,30 @@ class PreferencesDialog(ToplevelDialog):
             "Longest time a regex search is allowed to take.\n"
             "This can be increased, or the regex changed, if it keeps timing out.",
         )
+
+        ttk.Label(advance_frame, text="PNG compress command:").grid(
+            row=8, column=0, sticky="NSE", pady=5
+        )
+        png_crush_entry = ttk.Entry(
+            advance_frame,
+            textvariable=PersistentString(PrefKey.CP_PNG_CRUSH_COMMAND),
+            width=30,
+        )
+        png_crush_entry.grid(
+            row=8, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
+        )
+        ToolTip(
+            png_crush_entry,
+            'Command to compress a png file, using "$in" and "$out" for the in and out file names.\n'
+            'E.g. "pngcrush -q -reduce $in $out", or "optipng -o7 -out=$out $in".\n'
+            "Clear the field completely to use built-in compression (quicker but less effective).",
+        )
+
         ttk.Button(
             advance_frame,
             text="Reset shortcuts to default (change requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
-        ).grid(column=0, row=8, sticky="NSW", pady=5, columnspan=3)
+        ).grid(row=9, column=0, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",
