@@ -260,7 +260,9 @@ class ToplevelDialog(tk.Toplevel):
     def close_all(cls) -> None:
         """Close all open ToplevelDialogs."""
         for dlg in ToplevelDialog.toplevel_dialogs.values():
-            if dlg.winfo_exists():
+            if dlg.winfo_exists() and not dlg.__class__.__name__.endswith(
+                "TearOffMenuDialog"
+            ):
                 dlg.destroy()
                 dlg.reset()
         ToplevelDialog.toplevel_dialogs.clear()

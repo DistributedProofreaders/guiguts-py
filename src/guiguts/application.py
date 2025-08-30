@@ -48,6 +48,8 @@ from guiguts.maintext import (
     ButtonMetadata,
     CheckbuttonMetadata,
     Menu,
+    create_tearoff,
+    CUSTOM_TEAROFF_PERFORATIONS,
 )
 from guiguts.mainwindow import (
     MainWindow,
@@ -354,7 +356,10 @@ class Guiguts:
         if focus_widget is None:
             return
         focus_tl = focus_widget.winfo_toplevel()
-        if focus_tl == maintext().winfo_toplevel():
+        if (
+            focus_tl == maintext().winfo_toplevel()
+            or focus_tl.__class__.__name__.endswith("TearOffMenuDialog")
+        ):
             self.close_file()
         else:
             focus_tl.destroy()
@@ -450,7 +455,9 @@ class Guiguts:
         preferences.set_default(PrefKey.PAGESEP_AUTO_TYPE, PageSepAutoType.AUTO_FIX)
         preferences.set_default(PrefKey.THEME_NAME, "Default")
         preferences.set_callback(PrefKey.THEME_NAME, self.theme_name_callback)
-        preferences.set_default(PrefKey.TEAROFF_MENUS, False)
+        preferences.set_default(
+            PrefKey.TEAROFF_MENU_TYPE, "custom" if is_mac() else "builtin"
+        )
         preferences.set_default(PrefKey.COMPOSE_HISTORY, [])
         preferences.set_default(PrefKey.COMPOSE_HELP_SORT, 1)
         preferences.set_default(PrefKey.COMPOSE_HELP_HISTORY, [])
@@ -1233,6 +1240,12 @@ class Guiguts:
         """Recursively add all entries to tk Menu corresponding to given menu_metadata."""
         tk_menu = menu_metadata.tk_menu
         assert tk_menu is not None
+        # Add custom tear-off if needed
+        if preferences.get(PrefKey.TEAROFF_MENU_TYPE) == "custom":
+            tk_menu.add_button(  # type:ignore[attr-defined]
+                CUSTOM_TEAROFF_PERFORATIONS, lambda: create_tearoff(menu_metadata)
+            )
+
         for entry in menu_metadata.entries:
             if isinstance(entry, MenuMetadata):
                 assert entry.tk_menu is None

@@ -41,7 +41,9 @@ class Root(tk.Tk):
         )
         self.allow_config_saves = False
 
-        self.option_add("*tearOff", preferences.get(PrefKey.TEAROFF_MENUS))
+        self.option_add(
+            "*tearOff", preferences.get(PrefKey.TEAROFF_MENU_TYPE) == "builtin"
+        )
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.set_tcl_word_characters()
