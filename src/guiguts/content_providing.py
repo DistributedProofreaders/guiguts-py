@@ -995,21 +995,6 @@ def cp_fix_englifh() -> None:
     maintext().undo_block_begin()
     Busy.busy()
 
-    def match_case(word: str, template: str) -> str:
-        """
-        Return 'word' modified to match the capitalization pattern of 'template'.
-        """
-        if len(word) != len(template):
-            return template
-        if template.isupper():
-            return word.upper()
-        if template.islower():
-            return word.lower()
-        # Mixed case: build letter by letter, transferring case
-        return "".join(
-            c.upper() if t.isupper() else c.lower() for c, t in zip(word, template)
-        )
-
     slurp_text = maintext().get_text().lower()
 
     for englifh, english in englifh_dict.items():
@@ -1022,8 +1007,11 @@ def cp_fix_englifh() -> None:
         ):
             end = f"{start}+{len(englifh)}c"
             original = maintext().get(start, end)
-            # Ensure we preserve the case of the original
-            replacement = match_case(english, original)
+            # Ensure we preserve the case of the original, e.g. Thanklefs --> Thankless
+            # but not for uppercase "F", e.g. "fire"-->"*ire", but "Fire" --> "Fire"
+            replacement = "".join(
+                o if o.isupper() else e for e, o in zip(english, original)
+            )
             maintext().delete(start, end)
             maintext().insert(start, replacement)
             start = f"{start}+{len(replacement)}c"
