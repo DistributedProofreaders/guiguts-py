@@ -272,7 +272,6 @@ class File:
             maintext().do_open(filename)
         except FileNotFoundError:
             logger.error(f"Unable to open {filename}")
-            self.remove_recent_file(filename)
             self.filename = ""
             return
         maintext().set_insert_index(IndexRowCol(1, 0))
@@ -605,23 +604,12 @@ class File:
         Args:
             filename: Name of new file to add to list.
         """
-        self.remove_recent_file(filename)
-        recents = preferences.get(PrefKey.RECENT_FILES)
+        recents: list[str] = preferences.get(PrefKey.RECENT_FILES)
+        if filename in recents:
+            recents.remove(filename)
         recents.insert(0, filename)
         del recents[NUM_RECENT_FILES:]
         preferences.set(PrefKey.RECENT_FILES, recents)
-        self._filename_callback()
-
-    def remove_recent_file(self, filename: str) -> None:
-        """Remove given filename from list of recent files.
-
-        Args:
-            filename: Name of new file to add to list.
-        """
-        recents = preferences.get(PrefKey.RECENT_FILES)
-        if filename in recents:
-            recents.remove(filename)
-            preferences.set(PrefKey.RECENT_FILES, recents)
         self._filename_callback()
 
     def set_page_marks(self, page_details: PageDetails) -> None:
