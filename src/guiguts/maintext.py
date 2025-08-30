@@ -62,6 +62,7 @@ RTL_ARABIC_RANGES = (
 RTL_SCRIPT_REGEX = re.compile(
     rf"[{RTL_HEBREW_RANGES}{RTL_ARABIC_RANGES}][\.,;:{RTL_HEBREW_RANGES}{RTL_ARABIC_RANGES} ]*[{RTL_HEBREW_RANGES}{RTL_ARABIC_RANGES}]"
 )
+CUSTOM_TEAROFF_PERFORATIONS = "- " * 15
 
 
 class FindMatch:
@@ -5549,3 +5550,105 @@ def menubar_metadata() -> MenubarMetadata:
         _MENUBAR_METADATA = MenubarMetadata()
     assert _MENUBAR_METADATA is not None
     return _MENUBAR_METADATA
+
+
+class TearOffMenuDialog(ToplevelDialog):
+    """Dialog to emulate a tear-off menu."""
+
+    manual_page = "Introduction#Tear-Off_Menus"
+
+    def __init__(self, title: str, menu_metadata: MenuMetadata) -> None:
+        super().__init__(f"{title} Menu", resize_x=False, resize_y=False)
+
+        self._submenu: Optional[Menu] = None
+
+        bg = themed_style().lookup("TFrame", "background")
+        themed_style().configure(
+            "TearOff.TButton", relief="flat", borderwidth=0, anchor=tk.W, background=bg
+        )
+        row = 0
+        for entry in menu_metadata.entries:
+            if isinstance(entry, MenuMetadata):
+                submenu_btn = ttk.Button(
+                    self.top_frame,
+                    text=f"{process_label(entry.label)[1]}   ▸",
+                    style="TearOff.TButton",
+                )
+                submenu_btn["command"] = (
+                    lambda btn=submenu_btn, data=entry: self.show_submenu(btn, data)
+                )
+                submenu_btn.grid(row=row, column=0, sticky="NSEW")
+                row += 1
+            elif isinstance(entry, ButtonMetadata):
+                ttk.Button(
+                    self.top_frame,
+                    text=process_label(entry.label)[1],
+                    command=entry.command,
+                    style="TearOff.TButton",
+                ).grid(row=row, column=0, sticky="NSEW")
+                row += 1
+            elif isinstance(entry, CheckbuttonMetadata):
+                ttk.Checkbutton(
+                    self.top_frame,
+                    text=process_label(entry.label.removesuffix(" (toggle)"))[1],
+                    variable=PersistentBoolean(entry.pref_key),
+                    command=lambda k=entry.pref_key, c_on=entry.command_on, c_off=entry.command_off: Menu.checkbox_clicked(  # type:ignore[misc]
+                        k, c_on, c_off
+                    ),
+                ).grid(row=row, column=0, sticky="NSEW")
+                row += 1
+            elif isinstance(entry, SeparatorMetadata):
+                ttk.Separator(self.top_frame, orient=tk.HORIZONTAL).grid(
+                    row=row, column=0, sticky="NSEW", pady=5
+                )
+                row += 1
+
+    def show_submenu(self, button: ttk.Button, menu_metadata: MenuMetadata) -> None:
+        """Create the submenu (destroy old one first to avoid stacking).
+        Assumes the submenu has no submenus."""
+
+        if self._submenu is not None and self._submenu.winfo_exists():
+            self._submenu.destroy()
+        self._submenu = Menu(button, "", tearoff=False)
+        self._submenu.add_button(
+            CUSTOM_TEAROFF_PERFORATIONS, lambda: create_tearoff(menu_metadata)
+        )
+        for entry in menu_metadata.entries:
+            if isinstance(entry, ButtonMetadata):
+                self._submenu.add_button(entry.label, entry.command)
+            elif isinstance(entry, CheckbuttonMetadata):
+                self._submenu.add_checkbox(
+                    entry.label,
+                    PersistentBoolean(entry.pref_key),
+                    entry.command_on,
+                    entry.command_off,
+                )
+            elif isinstance(entry, SeparatorMetadata):
+                self._submenu.add_separator()
+
+        # Position relative to button
+        x = button.winfo_rootx() + button.winfo_width()
+        y = button.winfo_rooty()
+        self._submenu.post(x, y)
+
+
+# Factory with cache to produce unique dialog for each tear-off.
+# It relies on the menu's name (i.e. label of button that opens it) being unique.
+_tearoff_class_cache: dict[str, type[TearOffMenuDialog]] = {}
+
+
+def get_tearoff_class(name: str) -> type[TearOffMenuDialog]:
+    """Return a unique TearOffMenuDialog subclass for the given menu name."""
+    if name not in _tearoff_class_cache:
+        _tearoff_class_cache[name] = type(
+            f"{name}TearOffMenuDialog", (TearOffMenuDialog,), {}
+        )
+    return _tearoff_class_cache[name]
+
+
+def create_tearoff(menu_metadata: MenuMetadata) -> None:
+    """Create a Tear-Off Menu dialog."""
+    name = menu_metadata.display_label()
+    dlg = get_tearoff_class(name).show_dialog(title=name, menu_metadata=menu_metadata)
+    if not dlg.is_pinned():
+        dlg.toggle_pin()
