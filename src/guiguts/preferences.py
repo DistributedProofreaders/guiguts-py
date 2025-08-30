@@ -207,12 +207,14 @@ class PrefKey(StrEnum):
     CP_SLASH_COMMA_APOSTROPHE = auto()
     CP_J_SEMICOLON = auto()
     CP_TO_HE_BE = auto()
-    CP_PUNCT_START = auto()
-    CP_PUNCT_END = auto()
+    CP_PUNCT_START_END = auto()
     CP_BLANK_LINES_TOP = auto()
     CP_MULTI_BLANK_LINES = auto()
     CP_DUBIOUS_SPACED_QUOTES = auto()
     CP_SPACED_APOSTROPHES = auto()
+    CP_WHITESPACE_TO_SPACE = auto()
+    CP_DASHES_TO_HYPHEN = auto()
+    CP_CURLY_QUOTES = auto()
     CP_PNG_CRUSH_COMMAND = auto()
 
 

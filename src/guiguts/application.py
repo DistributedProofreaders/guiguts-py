@@ -22,7 +22,6 @@ from guiguts.content_providing import (
     DehyphenatorChecker,
     HeadFootChecker,
     CPProcessingDialog,
-    CPCharacterSubsChecker,
     cp_fix_common_scannos,
     cp_fix_englifh,
     cp_fix_empty_pages,
@@ -676,12 +675,14 @@ class Guiguts:
         preferences.set_default(PrefKey.CP_SLASH_COMMA_APOSTROPHE, True)
         preferences.set_default(PrefKey.CP_J_SEMICOLON, True)
         preferences.set_default(PrefKey.CP_TO_HE_BE, True)
-        preferences.set_default(PrefKey.CP_PUNCT_START, True)
-        preferences.set_default(PrefKey.CP_PUNCT_END, True)
+        preferences.set_default(PrefKey.CP_PUNCT_START_END, True)
         preferences.set_default(PrefKey.CP_BLANK_LINES_TOP, True)
         preferences.set_default(PrefKey.CP_MULTI_BLANK_LINES, True)
         preferences.set_default(PrefKey.CP_DUBIOUS_SPACED_QUOTES, True)
         preferences.set_default(PrefKey.CP_SPACED_APOSTROPHES, True)
+        preferences.set_default(PrefKey.CP_WHITESPACE_TO_SPACE, True)
+        preferences.set_default(PrefKey.CP_DASHES_TO_HYPHEN, True)
+        preferences.set_default(PrefKey.CP_CURLY_QUOTES, True)
         preferences.set_default(
             PrefKey.CP_PNG_CRUSH_COMMAND, "pngcrush -q -reduce $in $out"
         )
@@ -760,9 +761,6 @@ class Guiguts:
         """Create the File->Content Providing menu."""
         cp_menu = parent.add_submenu("Co~ntent Providing")
         cp_menu.add_button("~Import Prep Text Files...", import_prep_text_files)
-        cp_menu.add_button(
-            "CP Character ~Substitutions...", lambda: CPCharacterSubsChecker().run()
-        )
         cp_menu.add_button(
             "Remove ~Headers/Footers...", lambda: HeadFootChecker().run()
         )

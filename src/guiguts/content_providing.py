@@ -485,10 +485,11 @@ class CPProcessingDialog(ToplevelDialog):
         """Initialize Prep Text Processing dialog."""
         super().__init__("Prep Text Filtering", resize_x=False, resize_y=False)
 
+        self.top_frame.columnconfigure(0, weight=0)
         center_frame = ttk.Frame(
             self.top_frame, borderwidth=1, relief=tk.GROOVE, padding=5
         )
-        center_frame.grid(row=0, column=0, sticky="NSEW")
+        center_frame.grid(row=0, column=0, sticky="NSEW", columnspan=2)
         center_frame.columnconfigure(0, pad=10)
 
         ttk.Checkbutton(
@@ -508,113 +509,163 @@ class CPProcessingDialog(ToplevelDialog):
         ).grid(row=1, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
+            text="Convert non-standard whitespace to space/newline",
+            variable=PersistentBoolean(PrefKey.CP_WHITESPACE_TO_SPACE),
+        ).grid(row=1, column=1, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Convert non-standard dashes to hyphen(s)",
+            variable=PersistentBoolean(PrefKey.CP_DASHES_TO_HYPHEN),
+        ).grid(row=2, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
             text="Remove space on either side of hyphens",
             variable=PersistentBoolean(PrefKey.CP_SPACED_HYPHENS),
-        ).grid(row=1, column=1, sticky="NSW")
+        ).grid(row=2, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert spaced hyphens to emdashes",
             variable=PersistentBoolean(PrefKey.CP_SPACED_HYPHEN_EMDASH),
-        ).grid(row=2, column=0, sticky="NSW")
+        ).grid(row=3, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Remove space before mid-word apostrophes",
             variable=PersistentBoolean(PrefKey.CP_SPACED_APOSTROPHES),
-        ).grid(row=2, column=1, sticky="NSW")
+        ).grid(row=3, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Remove space before  .  ,  !  ?  :  ;",
             variable=PersistentBoolean(PrefKey.CP_SPACE_BEFORE_PUNC),
-        ).grid(row=3, column=0, sticky="NSW")
+        ).grid(row=4, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
-            text="Ensure space before ellipsis (except after period)",
-            variable=PersistentBoolean(PrefKey.CP_SPACE_BEFORE_PUNC),
-        ).grid(row=3, column=1, sticky="NSW")
+            text="Convert, & ensure space before, ellipsis (except ....)",
+            variable=PersistentBoolean(PrefKey.CP_SPACE_BEFORE_ELLIPSIS),
+        ).grid(row=4, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Remove space after open- or before close-brackets",
             variable=PersistentBoolean(PrefKey.CP_SPACED_BRACKETS),
-        ).grid(row=4, column=0, sticky="NSW")
+        ).grid(row=5, column=0, sticky="NSW")
+        ttk.Checkbutton(
+            center_frame,
+            text="Remove suspect punctuation from start/end of line",
+            variable=PersistentBoolean(PrefKey.CP_PUNCT_START_END),
+        ).grid(row=5, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Remove suspect space around quotes",
             variable=PersistentBoolean(PrefKey.CP_DUBIOUS_SPACED_QUOTES),
-        ).grid(row=4, column=1, sticky="NSW")
+        ).grid(row=6, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
-            text="Remove suspect punctuation from start of line",
-            variable=PersistentBoolean(PrefKey.CP_PUNCT_START),
-        ).grid(row=5, column=0, sticky="NSW")
-        ttk.Checkbutton(
-            center_frame,
-            text="Remove suspect punctuation from end of line",
-            variable=PersistentBoolean(PrefKey.CP_PUNCT_END),
-        ).grid(row=5, column=1, sticky="NSW")
+            text="Convert curly quotes to straight",
+            variable=PersistentBoolean(PrefKey.CP_CURLY_QUOTES),
+        ).grid(row=6, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert two commas to one double quote",
             variable=PersistentBoolean(PrefKey.CP_COMMAS_DOUBLE_QUOTE),
-        ).grid(row=6, column=0, sticky="NSW")
+        ).grid(row=7, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert two single quotes to one double quote",
             variable=PersistentBoolean(PrefKey.CP_SINGLE_QUOTES_DOUBLE),
-        ).grid(row=6, column=1, sticky="NSW")
+        ).grid(row=7, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert consecutive underscores to emdashes",
             variable=PersistentBoolean(PrefKey.CP_UNDERSCORES_EMDASH),
-        ).grid(row=7, column=0, sticky="NSW")
+        ).grid(row=8, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert forward slash to comma apostrophe",
             variable=PersistentBoolean(PrefKey.CP_SLASH_COMMA_APOSTROPHE),
-        ).grid(row=7, column=1, sticky="NSW")
+        ).grid(row=8, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert solitary j to semicolon",
             variable=PersistentBoolean(PrefKey.CP_J_SEMICOLON),
-        ).grid(row=8, column=0, sticky="NSW")
+        ).grid(row=9, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Fix common 2/3 letter scannos (tii⇒th, wb⇒wh, etc.)",
             variable=PersistentBoolean(PrefKey.CP_COMMON_LETTER_SCANNOS),
-        ).grid(row=8, column=1, sticky="NSW")
+        ).grid(row=9, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert he to be if it follows to",
             variable=PersistentBoolean(PrefKey.CP_TO_HE_BE),
-        ).grid(row=9, column=0, sticky="NSW")
+        ).grid(row=10, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert solitary lowercase l to I",
             variable=PersistentBoolean(PrefKey.CP_L_TO_I),
-        ).grid(row=9, column=1, sticky="NSW")
+        ).grid(row=10, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert solitary 0 to O",
             variable=PersistentBoolean(PrefKey.CP_0_TO_O),
-        ).grid(row=10, column=0, sticky="NSW")
+        ).grid(row=11, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Convert solitary 1 to I",
             variable=PersistentBoolean(PrefKey.CP_1_TO_I),
-        ).grid(row=10, column=1, sticky="NSW")
+        ).grid(row=11, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Expand fractions, e.g. ½ to 1/2, 3¼ to 3-1/4",
             variable=PersistentBoolean(PrefKey.CP_FRACTIONS),
-        ).grid(row=11, column=0, sticky="NSW")
+        ).grid(row=12, column=0, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
             text="Expand super/subscripts, e.g. x³ to x^3, x₂ to x_{{2}}",
             variable=PersistentBoolean(PrefKey.CP_SUPER_SUB_SCRIPTS),
-        ).grid(row=11, column=1, sticky="NSW")
+        ).grid(row=12, column=1, sticky="NSW")
 
+        onoff_frame = ttk.Frame(self.top_frame)
+        onoff_frame.grid(row=1, column=0, sticky="NS")
+        ttk.Button(
+            onoff_frame, text="All On", command=lambda: self.all_on_off(True)
+        ).grid(row=0, column=0, sticky="NS", pady=(5, 0), padx=5)
+        ttk.Button(
+            onoff_frame, text="All Off", command=lambda: self.all_on_off(False)
+        ).grid(row=0, column=1, sticky="NS", pady=(5, 0), padx=5)
         ttk.Button(self.top_frame, text="Filter File", command=self.process).grid(
-            row=1, column=0, sticky="NS", pady=(5, 0)
+            row=1, column=1, sticky="NS", pady=(5, 0), padx=(10, 0)
         )
+
+    def all_on_off(self, value: bool) -> None:
+        """Set all checkboxes to given value."""
+        for key in (
+            PrefKey.CP_MULTIPLE_SPACES,
+            PrefKey.CP_SPACED_HYPHENS,
+            PrefKey.CP_SPACED_HYPHEN_EMDASH,
+            PrefKey.CP_SPACE_BEFORE_PUNC,
+            PrefKey.CP_SPACE_BEFORE_ELLIPSIS,
+            PrefKey.CP_SINGLE_QUOTES_DOUBLE,
+            PrefKey.CP_COMMON_LETTER_SCANNOS,
+            PrefKey.CP_1_TO_I,
+            PrefKey.CP_0_TO_O,
+            PrefKey.CP_L_TO_I,
+            PrefKey.CP_FRACTIONS,
+            PrefKey.CP_SUPER_SUB_SCRIPTS,
+            PrefKey.CP_UNDERSCORES_EMDASH,
+            PrefKey.CP_COMMAS_DOUBLE_QUOTE,
+            PrefKey.CP_SPACED_BRACKETS,
+            PrefKey.CP_SLASH_COMMA_APOSTROPHE,
+            PrefKey.CP_J_SEMICOLON,
+            PrefKey.CP_TO_HE_BE,
+            PrefKey.CP_PUNCT_START_END,
+            PrefKey.CP_BLANK_LINES_TOP,
+            PrefKey.CP_MULTI_BLANK_LINES,
+            PrefKey.CP_DUBIOUS_SPACED_QUOTES,
+            PrefKey.CP_SPACED_APOSTROPHES,
+            PrefKey.CP_WHITESPACE_TO_SPACE,
+            PrefKey.CP_DASHES_TO_HYPHEN,
+            PrefKey.CP_CURLY_QUOTES,
+        ):
+            preferences.set(key, value)
 
     def process(self) -> None:
         """Process file according to given options."""
@@ -698,8 +749,8 @@ class CPProcessingDialog(ToplevelDialog):
             digits = "".join(subscripts_map[ch] for ch in m.group(0))
             return "_{" + digits + "}"
 
-        maintext().undo_block_begin()
         Busy.busy()
+        maintext().undo_block_begin()
 
         next_linenum = 1
         all_blank_so_far = True
@@ -711,9 +762,24 @@ class CPProcessingDialog(ToplevelDialog):
             if orig_line.startswith("-----File:"):
                 all_blank_so_far = True
                 continue
+            line: str = orig_line
+
+            # Convert non-standard whitespace
+            if preferences.get(PrefKey.CP_WHITESPACE_TO_SPACE):
+                line = re.sub(
+                    "[\u0009\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000]",
+                    " ",
+                    line,
+                )
+                line = re.sub("[\u000b\u000c\u0085\u2028\u2029]", "\n", line)
+
+            # Convert non-standard dashes
+            if preferences.get(PrefKey.CP_DASHES_TO_HYPHEN):
+                line = re.sub("[\u00ac\u2010\u2011\u2013\u2212]", "-", line)
+                line = re.sub("[\u2012\u2014\u2015]", "--", line)
 
             # Strip trailing spaces
-            line = orig_line.rstrip()
+            line = line.rstrip()
             line = line.replace("\u000c", "")  # Tesseract (used to) add form feed
 
             # Remove blank lines at start of page
@@ -753,8 +819,10 @@ class CPProcessingDialog(ToplevelDialog):
             if preferences.get(PrefKey.CP_SPACE_BEFORE_PUNC):
                 line = re.sub(r" ([\.,!?:;])", r"\1", line)
 
+            # Convert single character ellipsis to 3-dot ellipsis
             # Ensure space before 3-dot ellipsis, but not if 4-dots due to period
             if preferences.get(PrefKey.CP_SPACE_BEFORE_ELLIPSIS):
+                line = line.replace("…", "...")
                 line = re.sub(r"(?<!\.)\.{3}(?!\.)", " ...", line)
 
             # Convert 2 single quotes to a double
@@ -841,12 +909,15 @@ class CPProcessingDialog(ToplevelDialog):
             if preferences.get(PrefKey.CP_TO_HE_BE):
                 line = re.sub(r"\bto he\b", "to be", line)
 
-            # Remove bad punctuation at start of line- just retain last one
-            if preferences.get(PrefKey.CP_PUNCT_START):
-                line = re.sub(r"^\p{Punct}+(\p{Punct})", r"\1", line)
-
-            # Remove bad punctuation at end of line
-            if preferences.get(PrefKey.CP_PUNCT_END):
+            # Remove bad punctuation at start of line:
+            #   If ellipsis, preserve it and remove extra punctuation
+            #   Otherwise, just keep last beg-of-line punctuation character
+            # Remove bad punctuation at end of line, i.e. after at least 3 spaces
+            if preferences.get(PrefKey.CP_PUNCT_START_END):
+                if line.startswith("..."):
+                    line = re.sub(r"^...\p{Punct}+", "...", line)
+                else:
+                    line = re.sub(r"^\p{Punct}+(\p{Punct})", r"\1", line)
                 line = re.sub(r"\s{3,}[\p{Punct}\s]+$", "", line)
 
             # Dubious spacing around quotes
@@ -867,6 +938,11 @@ class CPProcessingDialog(ToplevelDialog):
                 # if beginning/end of line since unsure if apostrophe/quote
                 line = re.sub(r" +’ *$", "’", line)
                 line = re.sub(r"^ *’ +", "’", line)
+
+            # Convert curly quotes to straight
+            if preferences.get(PrefKey.CP_CURLY_QUOTES):
+                line = re.sub(r"[‘’]", "'", line)
+                line = re.sub(r"[“”]", '"', line)
 
             # Spaced apostrophes within words
             if preferences.get(PrefKey.CP_SPACED_APOSTROPHES):
@@ -1211,115 +1287,3 @@ def import_tia_ocr_file() -> None:
     maintext().set_insert_index(maintext().start())
     # Give user chance to save immediately
     the_file().save_as_file()
-
-
-class CPCharacterSubsCheckerDialog(CheckerDialog):
-    """CP Character Substitutions Checker dialog."""
-
-    manual_page = "Content_Providing_Menu#CP_Character_Substitutions"
-
-    def __init__(self, **kwargs: Any) -> None:
-        """Initialize Character Substitutions dialog."""
-        super().__init__(
-            "CP Character Substitutions",
-            tooltip="\n".join(
-                [
-                    "Left click: Select & find occurrence",
-                    "Right click: Hide occurrence from list",
-                    f"{cmd_ctrl_string()} left click: Fix this occurrence",
-                    f"{cmd_ctrl_string()} right click: Fix this occurrence and remove from list",
-                    f"Shift {cmd_ctrl_string()} left click: Fix all occurrences of this character",
-                    f"Shift {cmd_ctrl_string()} right click: Fix all occurrences of this character and remove from list",
-                ]
-            ),
-            **kwargs,
-        )
-
-
-class CPCharacterSubsChecker:
-    """Header/Footer checker."""
-
-    fixes = {
-        "\u0009": (" ", "Whitespace"),  # horizontal tab
-        "\u000b": ("\n", "Whitespace"),  # vertical tab
-        "\u000c": ("\n", "Whitespace"),  # form feed
-        "\u0085": ("\n", "Whitespace"),  # next line
-        "\u00a0": (" ", "Whitespace"),  # no-break space
-        "\u00ac": ("-", "Hyphen"),  # not sign
-        "\u1680": (" ", "Whitespace"),  # ogham space mark
-        "\u2000": (" ", "Whitespace"),  # en quad
-        "\u2001": (" ", "Whitespace"),  # em quad
-        "\u2002": (" ", "Whitespace"),  # en space
-        "\u2003": (" ", "Whitespace"),  # em space
-        "\u2004": (" ", "Whitespace"),  # three-per-em space
-        "\u2005": (" ", "Whitespace"),  # four-per-em space
-        "\u2006": (" ", "Whitespace"),  # six-per-em space
-        "\u2007": (" ", "Whitespace"),  # figure space
-        "\u2008": (" ", "Whitespace"),  # punctuation space
-        "\u2009": (" ", "Whitespace"),  # thin space
-        "\u200a": (" ", "Whitespace"),  # hair space
-        "\u2010": ("-", "Hyphen"),  # hyphen
-        "\u2011": ("-", "Hyphen"),  # non-breaking hyphen
-        "\u2012": ("--", "Emdash"),  # figure dash
-        "\u2013": ("-", "Hyphen"),  # en-dash
-        "\u2014": ("--", "Emdash"),  # em-dash
-        "\u2015": ("--", "Emdash"),  # horizontal bar
-        "\u2018": ("'", "Curly quote"),  # open curly single quote
-        "\u2019": ("'", "Curly quote"),  # close curly single quote
-        "\u201c": ('"', "Curly quote"),  # open curly double quote
-        "\u201d": ('"', "Curly quote"),  # close curly double quote
-        "\u2026": ("...", "Ellipsis"),  # horizontal ellipsis
-        "\u2028": ("\n", "Whitespace"),  # line separator
-        "\u2029": ("\n", "Whitespace"),  # paragraph separator
-        "\u202f": (" ", "Whitespace"),  # narrow no-break space
-        "\u205f": (" ", "Whitespace"),  # medium mathematical space
-        "\u2212": ("-", "Hyphen"),  # minus sign
-        "\u3000": (" ", "Whitespace"),  # ideographic space
-    }
-
-    def __init__(self) -> None:
-        """Initialize Character Substitutions checker."""
-
-        self.dialog = HeadFootCheckerDialog.show_dialog(
-            rerun_command=self.run,
-            process_command=self.do_sub,
-            match_on_highlight=CheckerMatchType.ERROR_PREFIX,
-        )
-
-    def run(self) -> None:
-        """Do the actual check and add messages to the dialog."""
-        self.dialog.reset()
-
-        for char, (_, desc) in self.fixes.items():
-            start = maintext().start().index()
-            while start := maintext().search(char, start, tk.END):
-                line = maintext().get(f"{start} linestart", f"{start} lineend")
-                beg = maintext().rowcol(start)
-                end = maintext().rowcol(f"{start}+1c")
-                self.dialog.add_entry(
-                    line,
-                    IndexRange(beg, end),
-                    hilite_start=beg.col,
-                    hilite_end=end.col,
-                    error_prefix=f"{desc}: ",
-                )
-                start = f"{start}+1c"
-        self.dialog.display_entries()
-
-    def do_sub(self, checker_entry: CheckerEntry) -> None:
-        """Do the CP substitution."""
-        maintext().undo_block_begin()
-        assert checker_entry.text_range is not None
-        start_idx = maintext().index(
-            self.dialog.mark_from_rowcol(checker_entry.text_range.start)
-        )
-        end_idx = maintext().index(
-            self.dialog.mark_from_rowcol(checker_entry.text_range.end)
-        )
-        char = checker_entry.text[checker_entry.hilite_start : checker_entry.hilite_end]
-        assert char in self.fixes
-        sub, _ = self.fixes[char]
-        if maintext().get(start_idx, end_idx) != char:
-            return
-        maintext().insert(start_idx, sub)
-        maintext().delete(f"{start_idx}+1c", f"{start_idx}+2c")
