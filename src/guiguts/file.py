@@ -1162,6 +1162,7 @@ class File:
         except tk.TclError:
             sound_bell()  # Bookmark hasn't been set
             return
+        maintext().clear_selection()
         try:
             start = maintext().rowcol(f"{BOOKMARK_START}{bm_num}")
             end = maintext().rowcol(f"{BOOKMARK_END}{bm_num}")
