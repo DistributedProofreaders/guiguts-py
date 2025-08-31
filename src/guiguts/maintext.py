@@ -1085,6 +1085,57 @@ class MainText(tk.Text):
                 bind_peer=True,
             )
 
+        # Override page up/down behavior since it is not symmetrical,
+        # so PgUp then PgDn doesn't bring you back to where you were.
+        def get_page_lines(text: tk.Text) -> int:
+            """Return the number of visible lines in the Text widget."""
+            first_line = maintext().rowcol("@0,0").row
+            last_line = maintext().rowcol(f"@0,{text.winfo_height()-1}").row
+            return last_line - first_line
+
+        def page_down_up(idir: int) -> None:
+            """Scroll down by one page.
+
+            Args:
+                idir: 1 for down; -1 for up.
+            """
+            text = self.focus_widget()
+            text.see("insert")
+            n_lines = idir * (get_page_lines(text) - 1)
+            text.mark_set("insert", f"insert {n_lines:+}l")
+            text.yview_scroll(n_lines, "units")
+            text.tag_remove("sel", "1.0", "end")
+
+        def shift_page_down_up(idir: int) -> None:
+            """Extend selection and move down/up by one page.
+
+            Args:
+                idir: "+" for down; "-" for up.
+            """
+            text = self.focus_widget()
+            # anchor stores the index of the start/end of selection that will remain fixed
+            anchor = text.index("insert")  # Default to current insert position
+            # If there's a selection, move the edge where the insert cursor is
+            if sel_ranges := maintext().selected_ranges():
+                sel_rng = sel_ranges[0]
+                anchor = (
+                    sel_rng.end.index()
+                    if text.compare(anchor, "==", sel_rng.start.index())
+                    else sel_rng.start.index()
+                )
+            page_down_up(idir)
+            if text.compare(anchor, "<=", "insert"):
+                text.tag_add("sel", anchor, "insert")
+            else:
+                text.tag_add("sel", "insert", anchor)
+
+        self.bind_event("<Next>", lambda _: page_down_up(1), bind_peer=True)
+        self.bind_event("<Prior>", lambda _: page_down_up(-1), bind_peer=True)
+        self.bind_event("<Shift-Next>", lambda _: shift_page_down_up(1), bind_peer=True)
+        self.bind_event(
+            "<Shift-Prior>", lambda _: shift_page_down_up(-1), bind_peer=True
+        )
+
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.
 
