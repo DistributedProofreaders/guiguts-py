@@ -1799,7 +1799,9 @@ class HTMLAutoTableDialog(ToplevelDialog):
                 and rev_row_num < len(text_rows) - 1
                 and re.fullmatch(
                     r"[| \u00a0]*",
-                    maintext().get(f"{start_linenum}.0 -1l", f"{end_linenum - 2}.end"),
+                    maintext().get(
+                        f"{start_linenum}.0 -1l", f"{start_linenum}.0 -1l lineend"
+                    ),
                 )
             ):
                 start_linenum -= 1
