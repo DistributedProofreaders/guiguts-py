@@ -73,7 +73,7 @@ class PreferencesDialog(ToplevelDialog):
         theme_frame = ttk.Frame(appearance_frame)
         theme_frame.grid(column=0, row=0, sticky="NSEW")
         theme_frame.columnconfigure(1, weight=1)
-        ttk.Label(theme_frame, text="Theme (change requires restart): ").grid(
+        ttk.Label(theme_frame, text="Theme (requires restart): ").grid(
             column=0, row=0, sticky="NE"
         )
         cb = ttk.Combobox(
@@ -87,15 +87,32 @@ class PreferencesDialog(ToplevelDialog):
             text="High Contrast",
             variable=PersistentBoolean(PrefKey.HIGH_CONTRAST),
         ).grid(column=0, row=1, sticky="NEW", pady=5)
-        tearoff_check = ttk.Checkbutton(
-            appearance_frame,
-            text="Use Tear-Off Menus (change requires restart)",
-            variable=PersistentBoolean(PrefKey.TEAROFF_MENUS),
+
+        tearoff_frame = ttk.Frame(appearance_frame)
+        tearoff_frame.grid(column=0, row=2, sticky="NSEW")
+        ttk.Label(tearoff_frame, text="Tear-Off Menus (change requires restart)").grid(
+            row=0, column=0
         )
-        tearoff_check.grid(column=0, row=2, sticky="NEW", pady=5)
-        if is_mac():
-            tearoff_check["state"] = tk.DISABLED
-            ToolTip(tearoff_check, "Not available on macOS")
+        tearoff_textvariable = PersistentString(PrefKey.TEAROFF_MENU_TYPE)
+        ttk.Radiobutton(
+            tearoff_frame,
+            text="Off",
+            variable=tearoff_textvariable,
+            value="off",
+        ).grid(row=0, column=1, sticky="NW", padx=(10, 0))
+        ttk.Radiobutton(
+            tearoff_frame,
+            text="Custom",
+            variable=tearoff_textvariable,
+            value="custom",
+        ).grid(row=0, column=2, sticky="NW", padx=(10, 0))
+        if not is_mac():
+            ttk.Radiobutton(
+                tearoff_frame,
+                text="Built-in",
+                variable=tearoff_textvariable,
+                value="builtin",
+            ).grid(row=0, column=3, sticky="NW", padx=(10, 0))
 
         # Font
         def is_valid_font(new_value: str) -> bool:
@@ -499,7 +516,7 @@ class PreferencesDialog(ToplevelDialog):
 
         ttk.Button(
             advance_frame,
-            text="Reset shortcuts to default (change requires restart)",
+            text="Reset shortcuts to default (requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
         ).grid(row=9, column=0, sticky="NSW", pady=5, columnspan=3)
 
@@ -528,10 +545,6 @@ class PreferencesDialog(ToplevelDialog):
         menubar_metadata().add_checkbutton_orphan(
             "High Contrast", PrefKey.HIGH_CONTRAST
         )
-        if not is_mac():
-            menubar_metadata().add_checkbutton_orphan(
-                "Tear-Off Menus", PrefKey.TEAROFF_MENUS
-            )
         menubar_metadata().add_checkbutton_orphan("Line Numbers", PrefKey.LINE_NUMBERS)
         menubar_metadata().add_checkbutton_orphan(
             "Column Numbers", PrefKey.COLUMN_NUMBERS

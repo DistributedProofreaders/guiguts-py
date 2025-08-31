@@ -55,6 +55,8 @@ from guiguts.maintext import (
     ButtonMetadata,
     CheckbuttonMetadata,
     Menu,
+    create_tearoff,
+    CUSTOM_TEAROFF_PERFORATIONS,
 )
 from guiguts.mainwindow import (
     MainWindow,
@@ -361,7 +363,10 @@ class Guiguts:
         if focus_widget is None:
             return
         focus_tl = focus_widget.winfo_toplevel()
-        if focus_tl == maintext().winfo_toplevel():
+        if (
+            focus_tl == maintext().winfo_toplevel()
+            or focus_tl.__class__.__name__.endswith("TearOffMenuDialog")
+        ):
             self.close_file()
         else:
             focus_tl.destroy()
@@ -457,7 +462,9 @@ class Guiguts:
         preferences.set_default(PrefKey.PAGESEP_AUTO_TYPE, PageSepAutoType.AUTO_FIX)
         preferences.set_default(PrefKey.THEME_NAME, "Default")
         preferences.set_callback(PrefKey.THEME_NAME, self.theme_name_callback)
-        preferences.set_default(PrefKey.TEAROFF_MENUS, False)
+        preferences.set_default(
+            PrefKey.TEAROFF_MENU_TYPE, "custom" if is_mac() else "builtin"
+        )
         preferences.set_default(PrefKey.COMPOSE_HISTORY, [])
         preferences.set_default(PrefKey.COMPOSE_HELP_SORT, 1)
         preferences.set_default(PrefKey.COMPOSE_HELP_HISTORY, [])
@@ -1270,6 +1277,12 @@ class Guiguts:
         """Recursively add all entries to tk Menu corresponding to given menu_metadata."""
         tk_menu = menu_metadata.tk_menu
         assert tk_menu is not None
+        # Add custom tear-off if needed
+        if preferences.get(PrefKey.TEAROFF_MENU_TYPE) == "custom":
+            tk_menu.add_button(  # type:ignore[attr-defined]
+                CUSTOM_TEAROFF_PERFORATIONS, lambda: create_tearoff(menu_metadata)
+            )
+
         for entry in menu_metadata.entries:
             if isinstance(entry, MenuMetadata):
                 assert entry.tk_menu is None
@@ -1356,7 +1369,7 @@ class Guiguts:
         tk_menu = menu_metadata.tk_menu
         if tk_menu is None:
             return
-        offset = 0 if not preferences.get(PrefKey.TEAROFF_MENUS) else 1
+        offset = 0 if preferences.get(PrefKey.TEAROFF_MENU_TYPE) == "off" else 1
         file_list = preferences.get(PrefKey.RECENT_FILES)
         end_index = tk_menu.index(tk.END)
         n_entries = (0 if end_index is None else end_index + 1) - offset
@@ -1367,17 +1380,19 @@ class Guiguts:
             # May need to add an entry
             if count >= n_entries:
                 self.recent_menu.add_button(
-                    f"~{count}: {file}",
+                    f"~{count+1}: {file}",
                     lambda fn=file: self.open_file(fn),  # type:ignore[misc]
                     add_to_command_palette=False,
                 )
                 tk_menu.add_command(
-                    label=f"~{count}: {file}",
+                    label=f"~{count+1}: {file}",
                     command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
                 )
             else:
                 # Or just reconfigure the metadata entry and the menu button
-                self.recent_menu.entries[count].label = f"~{count}: {file_list[count]}"
+                self.recent_menu.entries[count].label = (
+                    f"~{count+1}: {file_list[count]}"
+                )
                 self.recent_menu.entries[count].command = (  # type:ignore[attr-defined]
                     lambda fn=file: self.open_file(fn),
                 )  # type:ignore[misc]
