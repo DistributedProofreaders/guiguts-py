@@ -3547,7 +3547,11 @@ class MainText(tk.Text):
             # Don't include pagemark pins in calculations, since removed after wrapping
             line_no_pin = line.replace(PAGEMARK_PIN, "")
             if length := len(line_no_pin):
-                if n_spaces < 0 and length >= -n_spaces:
+                if n_spaces < 0:
+                    # Don't remove more than number of leading spaces, or you will start
+                    # removing spaces between words
+                    n_leading_spaces = length - len(line_no_pin.lstrip())
+                    n_spaces = max(n_spaces, -n_leading_spaces)
                     # Can't just delete first few chars, since they may be pagemark pins, not spaces
                     # So, replace just spaces in the line, then replace whole line in text widget
                     line = line.replace(" ", "", -n_spaces)
