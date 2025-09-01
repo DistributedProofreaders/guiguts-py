@@ -1268,9 +1268,18 @@ def html_convert_page_anchors() -> None:
                 if move > 0:
                     pnum_index = maintext().index(f"{pnum_index}+{move}c")
         else:  # At beginning of line - check it's in suitable place if within index
-            line = maintext().get(pnum_index, f"{pnum_index} lineend")
-            if re.match(' *<li class="i', line):
+            # Skip blank lines and get potential index line
+            skip = pnum_index
+            line = ""
+            while maintext().compare(f"{skip} lineend", "<", tk.END):
+                line = maintext().get(skip, f"{skip} lineend")
+                if not re.fullmatch(r"\s*", line):
+                    break
+                skip = maintext().index(f"{skip} +1l")
+
+            if re.match(" *<li[> ]", line):
                 col = line.index(">")
+                pnum_rowcol = IndexRowCol(skip)
                 if col >= 0:
                     pnum_rowcol.col = col + 1
                     pnum_index = pnum_rowcol.index()
