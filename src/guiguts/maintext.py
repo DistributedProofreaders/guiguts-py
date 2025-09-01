@@ -3676,6 +3676,7 @@ class MainText(tk.Text):
         # If no Shift, just moving, so clear selection
         else:
             self.clear_selection()
+        self.see(tk.INSERT)
         return "break"
 
     def store_page_mark(self, mark: str) -> None:
