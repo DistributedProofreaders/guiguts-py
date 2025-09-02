@@ -1693,8 +1693,14 @@ class HTMLAutoTableDialog(ToplevelDialog):
             variable=PersistentBoolean(PrefKey.AUTOTABLE_MULTILINE),
         ).grid(row=0, column=0, sticky="NSEW", pady=3)
 
+        ttk.Checkbutton(
+            self.top_frame,
+            text='Wide Table (add "overflow-x" div)',
+            variable=PersistentBoolean(PrefKey.AUTOTABLE_WIDE_FLAG),
+        ).grid(row=1, column=0, sticky="NSEW", pady=3)
+
         align_frame = ttk.LabelFrame(self.top_frame, text="Alignment", padding=3)
-        align_frame.grid(row=1, column=0, sticky="NSEW")
+        align_frame.grid(row=2, column=0, sticky="NSEW")
 
         default_align_frame = ttk.Frame(align_frame)
         default_align_frame.grid(row=0, column=0, sticky="NSEW", pady=2)
@@ -1748,7 +1754,7 @@ class HTMLAutoTableDialog(ToplevelDialog):
         )
 
         ttk.Button(self.top_frame, text="Convert to HTML", command=self.convert).grid(
-            row=2, column=0, sticky="NS", pady=(5, 2)
+            row=3, column=0, sticky="NS", pady=(5, 2)
         )
 
     def convert(self) -> None:
@@ -1795,10 +1801,15 @@ class HTMLAutoTableDialog(ToplevelDialog):
 
         maintext().undo_block_begin()
         # Work backwards through table rows to avoid affecting later indexes into file,
-        # since typically replacement text will consist of more lines than origina.
+        # since typically replacement text will consist of more lines than original.
         # Also work a row at a time to avoid moving page markers.
         end_linenum = sel_ranges[-1].end.row
-        maintext().insert(f"{end_linenum}.0", "</table>\n")
+        close_row = (
+            "</table>\n</div>\n"
+            if preferences.get(PrefKey.AUTOTABLE_WIDE_FLAG)
+            else "</table>\n"
+        )
+        maintext().insert(f"{end_linenum}.0", close_row)
         for rev_row_num, text_row in enumerate(reversed(text_rows)):
             n_lines = text_row.count("\n") + 1  # No. of lines in original table row
             start_linenum = end_linenum - n_lines
@@ -1817,7 +1828,12 @@ class HTMLAutoTableDialog(ToplevelDialog):
                 start_linenum -= 1
             maintext().replace(f"{start_linenum}.0", f"{end_linenum - 1}.end", html)
             end_linenum = start_linenum
-        maintext().insert(f"{end_linenum}.0", '<table class="autotable">\n')
+        open_row = (
+            '<div style="overflow-x:auto;">\n<table class="autotable">\n'
+            if preferences.get(PrefKey.AUTOTABLE_WIDE_FLAG)
+            else '<table class="autotable">\n'
+        )
+        maintext().insert(f"{end_linenum}.0", open_row)
         maintext().clear_selection()
         maintext().set_insert_index(IndexRowCol(end_linenum, 0))
 

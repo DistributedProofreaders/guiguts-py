@@ -625,6 +625,7 @@ class Guiguts:
         preferences.set_default(PrefKey.COMMAND_PALETTE_HISTORY, [])
         preferences.set_default(PrefKey.KEYBOARD_SHORTCUTS_DICT, {})
         preferences.set_default(PrefKey.AUTOTABLE_MULTILINE, False)
+        preferences.set_default(PrefKey.AUTOTABLE_WIDE_FLAG, False)
         preferences.set_default(PrefKey.AUTOTABLE_DEFAULT_ALIGNMENT, "left")
         preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT, "")
         preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT_HISTORY, [])
