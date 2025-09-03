@@ -229,6 +229,7 @@ class IlloSNChecker:
             # Check if starting illo/SN markup. If on single line, flag is reset below
             if re.match(r"\*?\[(Illustration|Sidenote)", below_illosn_line_txt):
                 in_illo_sn = True
+                continue
             # If in illo/SN, keep on ignoring lines
             if in_illo_sn:
                 if "[" in below_illosn_line_txt:
