@@ -1293,7 +1293,6 @@ class Busy:
         for widget in list(Busy._busy_widget_cursors.keys()):
             if widget.winfo_exists():
                 widget["cursor"] = cursor or Busy._busy_widget_cursors[widget]
-                widget.update()
             else:
                 # Remove old widgets from register
                 try:
