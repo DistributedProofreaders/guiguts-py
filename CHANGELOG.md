@@ -16,7 +16,8 @@
 
 ### Bug fixes
 
-- Illos could sometimes be marked as mid-paragraph when they were not
+- Illos could sometimes be marked as mid-paragraph when they were not, or not
+  identified as mid-paragraph when they were
 - Commands sometimes experienced a delay when run on macOS systems, especially
   if run via the Command Palette
 - The Recent Files menu was not correctly updated if there were not already
