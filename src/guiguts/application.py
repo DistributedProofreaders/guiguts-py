@@ -27,6 +27,7 @@ from guiguts.content_providing import (
     cp_fix_empty_pages,
     cp_compress_pngs,
     cp_renumber_pngs,
+    CPCharSuitesDialog,
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -141,7 +142,12 @@ from guiguts.widgets import (
     ToplevelDialog,
     GLOBAL_FONT_NAME,
 )
-from guiguts.word_frequency import word_frequency, WFDisplayType, WFSortType
+from guiguts.word_frequency import (
+    word_frequency,
+    WFDisplayType,
+    WFSortType,
+    WordFrequencyDialog,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -694,6 +700,7 @@ class Guiguts:
         preferences.set_default(
             PrefKey.CP_PNG_CRUSH_COMMAND, "pngcrush -q -reduce $in $out"
         )
+        preferences.set_default(PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -782,6 +789,16 @@ class Guiguts:
         cp_menu.add_button("~Export As Prep Text Files...", export_prep_text_files)
         cp_menu.add_separator()
         cp_menu.add_button("Import ~TIA Abbyy OCR File...", import_tia_ocr_file)
+        cp_menu.add_separator()
+        cp_menu.add_checkbutton(
+            "Highlight ~WF Chars not in Selected Suites",
+            PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS,
+            WordFrequencyDialog.highlight_charsuite_refresh(),
+            WordFrequencyDialog.highlight_charsuite_refresh(),
+        )
+        cp_menu.add_button(
+            "Manage Character ~Suites...", CPCharSuitesDialog.show_dialog
+        )
 
     def init_file_project_menu(self, parent: MenuMetadata) -> None:
         """Create the File->Project menu."""

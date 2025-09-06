@@ -960,6 +960,46 @@ class CPProcessingDialog(ToplevelDialog):
         Busy.unbusy()
 
 
+class CPCharSuitesDialog(ToplevelDialog):
+    """Dialog to manage project's character suites."""
+
+    manual_page = "Content_Providing_Menu#Manage_Character_Suites"
+
+    def __init__(self) -> None:
+        """Initialize Character Suites dialog."""
+        super().__init__("Character Suites", resize_x=False, resize_y=False)
+
+        def update_charsuite_flag(suite: str, var: tk.BooleanVar) -> None:
+            """Update appropriate character suite flag when checkbutton is toggled."""
+            the_file().charsuites[suite] = var.get()
+            maintext().set_modified(True)
+
+        for row, suite in enumerate(character_suites):
+            bvar = tk.BooleanVar(value=the_file().charsuites.get(suite, False))
+            ttk.Checkbutton(
+                self.top_frame,
+                text=suite,
+                variable=bvar,
+                state=tk.DISABLED if suite == "Basic Latin" else tk.ACTIVE,
+                command=lambda s=suite, v=bvar: update_charsuite_flag(  # type:ignore[misc]
+                    s, v
+                ),
+            ).grid(row=row, column=0, sticky="NSW")
+
+    @classmethod
+    def selected_charsuite_check(cls, char: str) -> tuple[list[str], bool]:
+        """Return which charsuite(s) character is in (or []) and whether
+        any containing charsuite is enabled."""
+        suites: list[str] = []
+        enabled = False
+        for suite, chars in character_suites.items():
+            if char in chars:
+                if the_file().charsuites.get(suite, False):
+                    enabled = True
+                suites.append(suite)
+        return suites, enabled
+
+
 def cp_fix_common_scannos() -> None:
     """Fix common CP scannos."""
     # Load dictionary of scannos
@@ -1275,3 +1315,113 @@ def import_tia_ocr_file() -> None:
     maintext().set_insert_index(maintext().start())
     # Give user chance to save immediately
     the_file().save_as_file()
+
+
+# DP character suites (easier to copy and edit with regexes from the tables on
+# https://www.pgdp.net/c/tools/charsuites.php than from the DP code)
+# Note that combining characters are used in some of the character suites. They are
+# not included here since tools such as Character Count do not treat the characters
+# in a combined way, so allowing "s + combinining diaresis below" would inadvertently
+# allow "combinining diaresis below" and thus "x + combinining diaresis below"
+# where x is any other permitted letter.
+# Combining characters appear as standalone characters in Character Count, as they always
+# have, and will be flagged as not being in any character suite, thus warning the
+# user to check how they are used in the file.
+character_suites = {
+    "Basic Cyrillic": "\u0401\u0406\u0410\u0411\u0412\u0413\u0414\u0415\u0416\u0417"
+    "\u0418\u0419\u041a\u041b\u041c\u041d\u041e\u041f\u0420\u0421"
+    "\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042a\u042b"
+    "\u042c\u042d\u042e\u042f\u0430\u0431\u0432\u0433\u0434\u0435"
+    "\u0436\u0437\u0438\u0439\u043a\u043b\u043c\u043d\u043e\u043f"
+    "\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449"
+    "\u044a\u044b\u044c\u044d\u044e\u044f\u0451\u0456\u0462\u0463"
+    "\u0472\u0473",
+    "Basic Greek": "\u0391\u0392\u0393\u0394\u0395\u0396\u0397\u0398\u0399\u039a"
+    "\u039b\u039c\u039d\u039e\u039f\u03a0\u03a1\u03a3\u03a4\u03a5"
+    "\u03a6\u03a7\u03a8\u03a9\u03b1\u03b2\u03b3\u03b4\u03b5\u03b6"
+    "\u03b7\u03b8\u03b9\u03ba\u03bb\u03bc\u03bd\u03be\u03bf\u03c0"
+    "\u03c1\u03c2\u03c3\u03c4\u03c5\u03c6\u03c7\u03c8\u03c9",
+    "Basic Latin": "\u0020\u0021\u0022\u0023\u0024\u0025\u0026\u0027\u0028\u0029"
+    "\u002a\u002b\u002c\u002d\u002e\u002f\u0030\u0031\u0032\u0033"
+    "\u0034\u0035\u0036\u0037\u0038\u0039\u003a\u003b\u003c\u003d"
+    "\u003e\u003f\u0040\u0041\u0042\u0043\u0044\u0045\u0046\u0047"
+    "\u0048\u0049\u004a\u004b\u004c\u004d\u004e\u004f\u0050\u0051"
+    "\u0052\u0053\u0054\u0055\u0056\u0057\u0058\u0059\u005a\u005b"
+    "\u005c\u005d\u005e\u005f\u0060\u0061\u0062\u0063\u0064\u0065"
+    "\u0066\u0067\u0068\u0069\u006a\u006b\u006c\u006d\u006e\u006f"
+    "\u0070\u0071\u0072\u0073\u0074\u0075\u0076\u0077\u0078\u0079"
+    "\u007a\u007b\u007c\u007d\u007e\u00a1\u00a2\u00a3\u00a4\u00a5"
+    "\u00a6\u00a7\u00a8\u00a9\u00aa\u00ab\u00ac\u00ae\u00af\u00b0"
+    "\u00b1\u00b2\u00b3\u00b4\u00b5\u00b6\u00b7\u00b8\u00b9\u00ba"
+    "\u00bb\u00bc\u00bd\u00be\u00bf\u00c0\u00c1\u00c2\u00c3\u00c4"
+    "\u00c5\u00c6\u00c7\u00c8\u00c9\u00ca\u00cb\u00cc\u00cd\u00ce"
+    "\u00cf\u00d0\u00d1\u00d2\u00d3\u00d4\u00d5\u00d6\u00d7\u00d8"
+    "\u00d9\u00da\u00db\u00dc\u00dd\u00de\u00df\u00e0\u00e1\u00e2"
+    "\u00e3\u00e4\u00e5\u00e6\u00e7\u00e8\u00e9\u00ea\u00eb\u00ec"
+    "\u00ed\u00ee\u00ef\u00f0\u00f1\u00f2\u00f3\u00f4\u00f5\u00f6"
+    "\u00f7\u00f8\u00f9\u00fa\u00fb\u00fc\u00fd\u00fe\u00ff\u0152"
+    "\u0153\u0160\u0161\u017d\u017e\u0178\u0192\u2039\u203a",
+    "Extended European Latin A": "\u0102\u0103\u0108\u0109\u011c\u011d\u014a\u014b\u015c\u015d"
+    "\u016c\u016d\u0124\u0125\u0134\u0135\u0150\u0151\u0166\u0167"
+    "\u0170\u0171\u0174\u0175\u0176\u0177\u0218\u0219\u021a\u021b",
+    "Extended European Latin B": "\u0100\u0101\u010c\u010d\u010e\u010f\u0112\u0113\u011a\u011b"
+    "\u0122\u0123\u012a\u012b\u0136\u0137\u0139\u013a\u013b\u013c"
+    "\u013d\u013e\u0145\u0146\u0147\u0148\u014c\u014d\u0154\u0155"
+    "\u0156\u0157\u0158\u0159\u0160\u0161\u0164\u0165\u016a\u016b"
+    "\u016e\u016f\u017d\u017e",
+    "Extended European Latin C": "\u0104\u0105\u0106\u0107\u010a\u010b\u010c\u010d\u0110\u0111"
+    "\u0116\u0117\u0118\u0119\u0120\u0121\u0126\u0127\u012e\u012f"
+    "\u0141\u0142\u0143\u0144\u015a\u015b\u0160\u0161\u016a\u016b"
+    "\u0172\u0173\u0179\u017a\u017b\u017c\u017d\u017e",
+    "Math symbols": "\u2202\u2203\u2207\u2208\u2209\u221a\u221e\u2220\u2229\u222a"
+    "\u222b\u2234\u2235\u2237\u2248\u2260\u2261\u2264\u2265\u2282"
+    "\u2283\u2295\u2297",
+    "Medievalist supplement": "\u0100\u0101\u0102\u0103\u0111\u0112\u0113\u0114\u0115\u0118"
+    "\u0119\u0127\u012a\u012b\u012c\u012d\u014c\u014d\u014e\u014f"
+    "\u016a\u016b\u016c\u016d\u017f\u0180\u01bf\u01e2\u01e3\u01ea"
+    "\u01eb\u01f7\u01fc\u01fd\u021c\u021d\u0232\u0233\u204a\ua734"
+    "\ua735\ua751\ua753\ua755\ua75d\ua765\ua76b\ua76d\ua770",
+    "Polytonic Greek": "\u02b9\u0375\u0391\u0392\u0393\u0394\u0395\u0396\u0397\u0398"
+    "\u0399\u039a\u039b\u039c\u039d\u039e\u039f\u03a0\u03a1\u03a3"
+    "\u03a4\u03a5\u03a6\u03a7\u03a8\u03a9\u03aa\u03ab\u03b1\u03b2"
+    "\u03b3\u03b4\u03b5\u03b6\u03b7\u03b8\u03b9\u03ba\u03bb\u03bc"
+    "\u03bd\u03be\u03bf\u03c0\u03c1\u03c2\u03c3\u03c4\u03c5\u03c6"
+    "\u03c7\u03c8\u03c9\u03ca\u03cb\u03db\u03dc\u03dd\u03f2\u03f9"
+    "\u0386\u0388\u0389\u038a\u038c\u038e\u038f\u0390\u03ac\u03ad"
+    "\u03ae\u03af\u03b0\u03cc\u03cd\u03ce\u1f00\u1f01\u1f02\u1f03"
+    "\u1f04\u1f05\u1f06\u1f07\u1f08\u1f09\u1f0a\u1f0b\u1f0c\u1f0d"
+    "\u1f0e\u1f0f\u1f10\u1f11\u1f12\u1f13\u1f14\u1f15\u1f18\u1f19"
+    "\u1f1a\u1f1b\u1f1c\u1f1d\u1f20\u1f21\u1f22\u1f23\u1f24\u1f25"
+    "\u1f26\u1f27\u1f28\u1f29\u1f2a\u1f2b\u1f2c\u1f2d\u1f2e\u1f2f"
+    "\u1f30\u1f31\u1f32\u1f33\u1f34\u1f35\u1f36\u1f37\u1f38\u1f39"
+    "\u1f3a\u1f3b\u1f3c\u1f3d\u1f3e\u1f3f\u1f40\u1f41\u1f42\u1f43"
+    "\u1f44\u1f45\u1f48\u1f49\u1f4a\u1f4b\u1f4c\u1f4d\u1f50\u1f51"
+    "\u1f52\u1f53\u1f54\u1f55\u1f56\u1f57\u1f59\u1f5b\u1f5d\u1f5f"
+    "\u1f60\u1f61\u1f62\u1f63\u1f64\u1f65\u1f66\u1f67\u1f68\u1f69"
+    "\u1f6a\u1f6b\u1f6c\u1f6d\u1f6e\u1f6f\u1f70\u1f72\u1f74\u1f76"
+    "\u1f78\u1f7a\u1f7c\u1f80\u1f81\u1f82\u1f83\u1f84\u1f85\u1f86"
+    "\u1f87\u1f88\u1f89\u1f8a\u1f8b\u1f8c\u1f8d\u1f8e\u1f8f\u1f90"
+    "\u1f91\u1f92\u1f93\u1f94\u1f95\u1f96\u1f97\u1f98\u1f99\u1f9a"
+    "\u1f9b\u1f9c\u1f9d\u1f9e\u1f9f\u1fa0\u1fa1\u1fa2\u1fa3\u1fa4"
+    "\u1fa5\u1fa6\u1fa7\u1fa8\u1fa9\u1faa\u1fab\u1fac\u1fad\u1fae"
+    "\u1faf\u1fb0\u1fb1\u1fb2\u1fb3\u1fb4\u1fb6\u1fb7\u1fb8\u1fb9"
+    "\u1fba\u1fbc\u1fc2\u1fc3\u1fc4\u1fc6\u1fc7\u1fc8\u1fca\u1fcc"
+    "\u1fd0\u1fd1\u1fd2\u1fd6\u1fd7\u1fd8\u1fd9\u1fda\u1fe0\u1fe1"
+    "\u1fe2\u1fe4\u1fe5\u1fe6\u1fe7\u1fe8\u1fe9\u1fea\u1fec\u1ff2"
+    "\u1ff3\u1ff4\u1ff6\u1ff7\u1ff8\u1ffa\u1ffc",
+    "Semitic and Indic transcriptions": "\u0100\u0101\u0112\u0113\u012a\u012b\u014c\u014d\u015a\u015b"
+    "\u0160\u0161\u016a\u016b\u02be\u02bf\u1e0c\u1e0d\u1e24\u1e25"
+    "\u1e2a\u1e2b\u1e32\u1e33\u1e37\u1e39\u1e40\u1e41\u1e42\u1e43"
+    "\u1e44\u1e45\u1e46\u1e47\u1e5a\u1e5b\u1e5c\u1e5d\u1e62\u1e63"
+    "\u1e6c\u1e6d\u1e92\u1e93\u1e94\u1e95\u1e96",
+    # Characters s, t & z with combining diaresis below are in the Semitic/Indic charsuite
+    # They are not included for the reason explained in the comment above
+    # \u0053\u0324\u0054\u0324\u005a\u0324\u0073\u0324\u0074\u0324\u007a\u0324
+    "Symbols collection": "\u0292\u2108\u2114\u211e\u2125\u2609\u260a\u260b\u260c\u260d"
+    "\u263d\u263e\u263f\u2640\u2641\u2642\u2643\u2644\u2645\u2646"
+    # In the symbols charsuite, these 12 astrological signs are followed by \x{fe0e},
+    # a variation selector, to force them to be displayed in text rather than image form
+    # The variation selectors are omitted for the reason explained in the comment above
+    "\u2648\u2649\u264a\u264b\u264c\u264d\u264e\u264f\u2650\u2651\u2652\u2653"
+    "\u2669\u266a\u266d\u266e\u266f",
+}
