@@ -55,6 +55,7 @@ BINFILE_KEY_INSERTPOSPEER: Final = "insertpospeer"
 BINFILE_KEY_IMAGEDIR: Final = "imagedir"
 BINFILE_KEY_PROJECTID: Final = "projectid"
 BINFILE_KEY_LANGUAGES: Final = "languages"
+BINFILE_KEY_CHARSUITES: Final = "charsuites"
 BINFILE_KEY_BOOKMARKS: Final = "bookmarks"
 BINFILE_KEY_IMAGEROTATE: Final = "imagerotate"
 
@@ -91,6 +92,7 @@ class BinDict(TypedDict):
     imagedir: str
     projectid: str
     languages: str
+    charsuites: dict[str, bool]
     bookmarks: dict[str, str]
     imagerotate: dict[str, int]
 
@@ -122,6 +124,7 @@ class File:
         self._project_id = ""
         self._languages = "en"
         self._languages_callback = languages_callback
+        self.charsuites = {"Basic Latin": True}
         self.page_details = PageDetails()
         self.project_dict = ProjectDict()
         self.mainwindow: Optional[MainWindow] = None
@@ -276,6 +279,7 @@ class File:
             return
         maintext().set_insert_index(IndexRowCol(1, 0))
         self.languages = preferences.get(PrefKey.DEFAULT_LANGUAGES)
+        self.charsuites = {"Basic Latin": True}
         mainimage().reset_rotation_details()
         bin_matches_file = self.load_bin(filename)
         maintext().go_clear()
@@ -563,6 +567,8 @@ class File:
         self.image_dir = bin_dict.get(BINFILE_KEY_IMAGEDIR, "")
         self.project_id = bin_dict.get(BINFILE_KEY_PROJECTID, "")
         self.languages = bin_dict.get(BINFILE_KEY_LANGUAGES, "")
+        if charsuites := bin_dict.get(BINFILE_KEY_CHARSUITES):
+            self.charsuites = charsuites
         bookmarks: Optional[dict[str, str]]
         if bookmarks := bin_dict.get(BINFILE_KEY_BOOKMARKS):
             for key, value in bookmarks.items():
@@ -590,6 +596,7 @@ class File:
             BINFILE_KEY_IMAGEDIR: self.image_dir,
             BINFILE_KEY_PROJECTID: self.project_id,
             BINFILE_KEY_LANGUAGES: self.languages,
+            BINFILE_KEY_CHARSUITES: self.charsuites,
             BINFILE_KEY_BOOKMARKS: self.get_bookmarks(),
             BINFILE_KEY_IMAGEROTATE: mainimage().rotation_details,
         }

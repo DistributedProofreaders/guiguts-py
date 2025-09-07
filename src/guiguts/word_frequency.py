@@ -4,11 +4,12 @@ from enum import StrEnum, auto
 import logging
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import regex as re
 
-from guiguts.maintext import maintext
+from guiguts.content_providing import CPCharSuitesDialog
+from guiguts.maintext import maintext, HighlightTag
 from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.misc_tools import tool_save
 from guiguts.preferences import (
@@ -574,6 +575,13 @@ class WordFrequencyDialog(ToplevelDialog):
             case _ as bad_value:
                 assert False, f"Invalid WFSortType: {bad_value}"
 
+        hilite_orphan_chars = preferences.get(
+            PrefKey.WFDIALOG_DISPLAY_TYPE
+        ) == WFDisplayType.CHAR_COUNTS and preferences.get(
+            PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS
+        )
+        enabled = False
+        suites: list[str] = []
         # Sort stored list, rather than just displayed list, since later
         # we'll want to index into list based on index in display.
         self.entries.sort(key=key)
@@ -590,8 +598,24 @@ class WordFrequencyDialog(ToplevelDialog):
                 word = WordFrequencyDialog.CHAR_DISPLAY[entry.word]
             except KeyError:
                 word = entry.word
-            message = f"{entry.frequency:>{max_freq_len}}  {word}{suspect}\n"
-            self.text.insert(tk.END, message)
+            message = f"{entry.frequency:>{max_freq_len}}  {word}{suspect}"
+            if hilite_orphan_chars:
+                suites, enabled = CPCharSuitesDialog.selected_charsuite_check(
+                    entry.word
+                )
+                if not enabled:
+                    message += (
+                        f"  (In {', '.join(suites)})"
+                        if suites
+                        else "  (Not in any character suite)"
+                    )
+            self.text.insert(tk.END, f"{message}\n")
+            if hilite_orphan_chars and not enabled:
+                self.text.tag_add(
+                    HighlightTag.WF_CHAR_HIGHLIGHT,
+                    f"{tk.END} -2l linestart",
+                    f"{tk.END} -2l lineend",
+                )
 
     def whole_word_search(self, word: str) -> bool:
         """Return if a whole word search should be done for given word.
@@ -1222,6 +1246,16 @@ class WordFrequencyDialog(ToplevelDialog):
             )
         except re.error as exc:
             self.message.set("Bad regex: " + str(exc))
+
+    @classmethod
+    def highlight_charsuite_refresh(cls) -> None:
+        """Maybe redraw WF display due to charsuite highlight change."""
+        dlg: Optional[WordFrequencyDialog] = WordFrequencyDialog.get_dialog()
+        if dlg is None:
+            return
+        if preferences.get(PrefKey.WFDIALOG_SORT_TYPE) != WFDisplayType.CHAR_COUNTS:
+            return
+        dlg.display_entries()
 
 
 def word_frequency() -> None:

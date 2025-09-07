@@ -406,6 +406,7 @@ class HighlightTag(StrEnum):
     CHECKER_SELECTION = auto()
     CHECKER_HIGHLIGHT = auto()
     CHECKER_ERROR_PREFIX = auto()
+    WF_CHAR_HIGHLIGHT = auto()
 
 
 # Dictionary to map HTML tags to HighlightTags
@@ -532,6 +533,7 @@ class ColorKey(StrEnum):
     CHECKER_SELECTION = auto()
     CHECKER_HIGHLIGHT = auto()
     CHECKER_ERROR_PREFIX = auto()
+    WF_CHAR_HIGHLIGHT = auto()
 
 
 class ConfigurableColor:
@@ -4718,6 +4720,13 @@ class MainText(tk.Text):
                 {"background": "", "foreground": "red"},
                 update_checker_tag,
             ),
+            ColorKey.WF_CHAR_HIGHLIGHT: ConfigurableColor(
+                HighlightTag.WF_CHAR_HIGHLIGHT,
+                "WF Character highlight",
+                {"background": "#b23e0c", "foreground": "white"},
+                {"background": "yellow", "foreground": "black"},
+                update_checker_tag,
+            ),
         }
 
     def _autoscroll_start(self, _event: tk.Event) -> None:
@@ -4971,18 +4980,21 @@ class ScrolledReadOnlyText(tk.Text):
             line_col = maintext().colors[ColorKey.CHECKER_SELECTION]
             hil_col = maintext().colors[ColorKey.CHECKER_HIGHLIGHT]
             err_col = maintext().colors[ColorKey.CHECKER_ERROR_PREFIX]
+            wf_col = maintext().colors[ColorKey.WF_CHAR_HIGHLIGHT]
             if themed_style().is_dark_theme():
                 self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.dark)
                 self.tag_configure(HighlightTag.CHECKER_HIGHLIGHT, hil_col.dark)
                 s_dict = err_col.dark.copy()
                 del s_dict["background"]
                 self.tag_configure(HighlightTag.CHECKER_ERROR_PREFIX, s_dict)
+                self.tag_configure(HighlightTag.WF_CHAR_HIGHLIGHT, wf_col.dark)
             else:
                 self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.light)
                 self.tag_configure(HighlightTag.CHECKER_HIGHLIGHT, hil_col.light)
                 s_dict = err_col.light.copy()
                 del s_dict["background"]
                 self.tag_configure(HighlightTag.CHECKER_ERROR_PREFIX, s_dict)
+                self.tag_configure(HighlightTag.WF_CHAR_HIGHLIGHT, wf_col.light)
 
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.

@@ -217,6 +217,7 @@ class PrefKey(StrEnum):
     CP_DASHES_TO_HYPHEN = auto()
     CP_CURLY_QUOTES = auto()
     CP_PNG_CRUSH_COMMAND = auto()
+    CP_HIGHLIGHT_CHARSUITE_ORPHANS = auto()
 
 
 class Preferences:
