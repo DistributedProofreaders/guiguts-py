@@ -124,7 +124,7 @@ class File:
         self._project_id = ""
         self._languages = "en"
         self._languages_callback = languages_callback
-        self.charsuites: dict[str, bool] = {}
+        self.charsuites = {"Basic Latin": True}
         self.page_details = PageDetails()
         self.project_dict = ProjectDict()
         self.mainwindow: Optional[MainWindow] = None
