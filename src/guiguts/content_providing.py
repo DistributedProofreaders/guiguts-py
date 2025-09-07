@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import tkinter as tk
 from tkinter import filedialog, ttk
-from typing import Any, Final
+from typing import Any, Final, Iterator
 
 from PIL import Image, UnidentifiedImageError
 import regex as re
@@ -32,7 +32,7 @@ from guiguts.utilities import (
     IndexRange,
 )
 from guiguts.preferences import PersistentBoolean, PrefKey, preferences
-from guiguts.widgets import ToplevelDialog, Busy
+from guiguts.widgets import ToplevelDialog, Busy, ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -1000,6 +1000,194 @@ class CPCharSuitesDialog(ToplevelDialog):
         return suites, enabled
 
 
+class CPRenumberDialog(ToplevelDialog):
+    """Dialog to renumber pages & PNG files for Content Providers."""
+
+    manual_page = "Content_Providing_Menu#Renumber_PNG_files"
+
+    num_sections = 5
+
+    def __init__(self) -> None:
+        """Initialize CP Renumbering dialog."""
+        super().__init__("Page & File Renumbering", resize_x=False, resize_y=False)
+
+        self.top_frame.columnconfigure(0, weight=0)
+        center_frame = ttk.Frame(
+            self.top_frame, borderwidth=1, relief=tk.GROOVE, padding=5
+        )
+        center_frame.grid(row=0, column=0, sticky="NSEW")
+        for col in range(5):
+            center_frame.columnconfigure(col, pad=5)
+        center_frame.rowconfigure(0, pad=5)
+        ttk.Label(center_frame, text="Prefix").grid(row=0, column=1)
+        ttk.Label(center_frame, text="Start Number").grid(row=0, column=2)
+        ttk.Label(center_frame, text="End Number").grid(row=0, column=3)
+        ttk.Label(center_frame, text="Suffix(es)").grid(row=0, column=4)
+        self.prefixes: list[tk.StringVar] = []
+        self.starts: list[tk.StringVar] = []
+        self.ends: list[tk.StringVar] = []
+        self.suffixes: list[tk.StringVar] = []
+        for section in range(1, self.num_sections + 1):
+            center_frame.rowconfigure(section, pad=5)
+            self.prefixes.append(tk.StringVar(value=""))
+            self.starts.append(tk.StringVar(value=""))
+            self.ends.append(tk.StringVar(value=""))
+            self.suffixes.append(tk.StringVar(value=""))
+            ttk.Label(center_frame, text=f"Section {section}:").grid(
+                row=section, column=0
+            )
+            prefix_entry = tk.Entry(
+                center_frame,
+                width=3,
+                justify=tk.CENTER,
+                textvariable=self.prefixes[-1],
+            )
+            prefix_entry.grid(row=section, column=1)
+            ToolTip(
+                prefix_entry,
+                f'Prefix to use for section {section}, e.g. "a" for "a001", "a002",...',
+            )
+            start_entry = tk.Entry(
+                center_frame,
+                width=5,
+                justify=tk.CENTER,
+                textvariable=self.starts[-1],
+                validate=tk.ALL,
+                validatecommand=(
+                    self.register(lambda val: val.isdigit() or not val),
+                    "%P",
+                ),
+            )
+            start_entry.grid(row=section, column=2)
+            ToolTip(
+                start_entry,
+                f'Starting number to use for section {section}, e.g. "5" for "005", "006",...',
+            )
+            end_entry = tk.Entry(
+                center_frame,
+                width=5,
+                justify=tk.CENTER,
+                textvariable=self.ends[-1],
+                validate=tk.ALL,
+                validatecommand=(
+                    self.register(lambda val: val.isdigit() or not val),
+                    "%P",
+                ),
+            )
+            end_entry.grid(row=section, column=3)
+            ToolTip(
+                end_entry,
+                f'Ending number to use for section {section}, e.g. "27" for ..."026", "027"',
+            )
+            suffixes_entry = tk.Entry(
+                center_frame,
+                width=12,
+                justify=tk.CENTER,
+                textvariable=self.suffixes[-1],
+            )
+            suffixes_entry.grid(row=section, column=4)
+            ToolTip(
+                suffixes_entry,
+                f'Suffixes to use for section {section}, e.g. "l, r" for "015l", "015r", "016l", "016r",...',
+            )
+        ttk.Button(
+            self.top_frame, text="Renumber Pages & Files", command=self.renumber
+        ).grid(row=1, column=0, sticky="NS", pady=(5, 0))
+
+        self.num_width = 3
+
+    def renumber(self) -> None:
+        """Renumber PNGs to 001.png, 002.png,... based on dialog settings."""
+        fd_str = folder_dir_str(lowercase=True)
+        if not the_file().filename:
+            logger.error(
+                f'Save current file in parent {fd_str} before renumbering files in "pngs"'
+            )
+            return
+
+        # Find all .png files
+        src_dir = Path(the_file().filename).parent / "pngs"
+        files = sorted(src_dir.glob("*.png"))
+        if not files:
+            logger.error(f"No PNG files found in {src_dir}")
+            return
+
+        # Get all files referred to in `-----File:` separator lines
+        fnames: list[str] = []
+        start = maintext().start().index()
+        while start := maintext().search(r"-----File:", start, tk.END):
+            end = f"{start} lineend"
+            line = maintext().get(start, end)
+            fname = re.sub("-----File: *", "", line)
+            fname = re.sub("-+$", "", fname)
+            fnames.append(fname)
+            start = end
+
+        # Sanity checks
+        if len(files) != len(fnames):
+            logger.error(
+                f'Number of "-----File:" lines does not match number of PNG files in {src_dir}'
+            )
+            return
+
+        # Determine zero-padding based on file count
+        self.num_width = 3 if len(files) <= 999 else 4
+
+        Busy.busy()
+        # To avoid overwriting, rename to temporary names first
+        # First pass: rename to temporary names to avoid collisions
+        temp_files: list[Path] = []
+        for idx, file in enumerate(files, start=1):
+            temp_name = src_dir / f"__temp_{file.name}"
+            file.rename(temp_name)
+            temp_files.append(temp_name)
+
+        start = maintext().start().index()
+        names = self.generate_pages()
+        long_name = False
+        # Second pass: rename to final names
+        for idx, temp_name in enumerate(temp_files, start=1):
+            base_name = next(names)
+            if len(base_name) > 8:
+                long_name = True
+            new_name = src_dir / f"{base_name}.png"
+            temp_name.rename(new_name)
+            # Edit page separator lines
+            if start := maintext().search(r"-----File:", start, tk.END):
+                end = f"{start} lineend"
+                tail = "-" * (60 - len(base_name))
+                maintext().delete(start, end)
+                maintext().insert(start, f"-----File: {base_name}.png{tail}")
+                idx += 1
+                start = end
+
+        the_file().remove_page_marks()
+        the_file().mark_page_boundaries()
+        Busy.unbusy()
+        if long_name:
+            logger.error(
+                "PNG filenames longer than 12 characters cannot be used at PGDP"
+            )
+
+    def generate_pages(
+        self,
+    ) -> Iterator[str]:
+        """Yield page names from section parameters."""
+        for sec in range(self.num_sections):
+            prefix = self.prefixes[sec].get().strip()
+            start = int(self.starts[sec].get().strip() or "1")
+            end = int(self.ends[sec].get().strip() or "999999")
+            suffixes = re.split(r"[, ]+", self.suffixes[sec].get().strip())
+
+            for num in range(start, end + 1):
+                page_num = f"{num:0{self.num_width}d}"
+                if suffixes:
+                    for suf in suffixes:
+                        yield f"{prefix}{page_num}{suf}"
+                else:
+                    yield f"{prefix}{page_num}"
+
+
 def cp_fix_common_scannos() -> None:
     """Fix common CP scannos."""
     # Load dictionary of scannos
@@ -1168,79 +1356,6 @@ def cp_compress_pngs() -> None:
     logger.info(
         f"{n_files} files compressed, saving {total_saved/1024:.1f}KB ({percent_saved:.1f}%)"
     )
-    Busy.unbusy()
-
-
-def cp_renumber_pngs() -> None:
-    """Renumber PNGs to 001.png, 002.png,... or 0001.png, 0002.png,..."""
-    fd_str = folder_dir_str(lowercase=True)
-    if not the_file().filename:
-        logger.error(
-            f'Save current file in parent {fd_str} before renumbering files in "pngs"'
-        )
-        return
-
-    # Find all .png files
-    src_dir = Path(the_file().filename).parent / "pngs"
-    files = sorted(src_dir.glob("*.png"))
-    if not files:
-        logger.error(f"No PNG files found in {src_dir}")
-        return
-
-    # Get all files referred to in `-----File:` separator lines
-    fnames: list[str] = []
-    start = maintext().start().index()
-    while start := maintext().search(r"-----File:", start, tk.END):
-        end = f"{start} lineend"
-        line = maintext().get(start, end)
-        fname = re.sub("-----File: *", "", line)
-        fname = re.sub("-+$", "", fname)
-        fnames.append(fname)
-        start = end
-
-    # Sanity checks
-    if len(files) != len(fnames):
-        logger.error(
-            f'Number of "-----File:" lines does not match number of PNG files in {src_dir}'
-        )
-        return
-    for idx, fname in enumerate(fnames):
-        if fname != files[idx].name:
-            logger.error(
-                f'Filename mismatch: "-----File: {fname}" and {src_dir}/{files[idx].name}'
-            )
-            return
-
-    # Determine zero-padding based on file count
-    width = 3 if len(files) <= 999 else 4
-
-    Busy.busy()
-    # To avoid overwriting, rename to temporary names first
-    # First pass: rename to temporary names to avoid collisions
-    temp_files: list[Path] = []
-    for idx, file in enumerate(files, start=1):
-        temp_name = src_dir / f"__temp_{file.name}"
-        file.rename(temp_name)
-        temp_files.append(temp_name)
-
-    # Second pass: rename to final names
-    for idx, temp_name in enumerate(temp_files, start=1):
-        new_name = src_dir / f"{idx:0{width}d}.png"
-        temp_name.rename(new_name)
-
-    # Finally, edit page separator lines
-    tail = "-" * (60 - width)
-    start = maintext().start().index()
-    idx = 1
-    while start := maintext().search(r"-----File:", start, tk.END):
-        end = f"{start} lineend"
-        maintext().delete(start, end)
-        maintext().insert(start, f"-----File: {idx:0{width}d}.png{tail}")
-        idx += 1
-        start = end
-
-    the_file().remove_page_marks()
-    the_file().mark_page_boundaries()
     Busy.unbusy()
 
 

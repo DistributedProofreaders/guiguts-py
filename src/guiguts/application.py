@@ -26,8 +26,8 @@ from guiguts.content_providing import (
     cp_fix_englifh,
     cp_fix_empty_pages,
     cp_compress_pngs,
-    cp_renumber_pngs,
     CPCharSuitesDialog,
+    CPRenumberDialog,
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -784,8 +784,10 @@ class Guiguts:
         cp_menu.add_button("Fix ~Common Scannos", cp_fix_common_scannos)
         cp_menu.add_button("Add [~Blank Page] to Empty Pages", cp_fix_empty_pages)
         cp_menu.add_button("Fix ~Olde Englifh", cp_fix_englifh)
-        cp_menu.add_button("Compress ~PNG files", cp_compress_pngs)
-        cp_menu.add_button("~Renumber PNG files", cp_renumber_pngs)
+        cp_menu.add_button("Compress ~PNG Files", cp_compress_pngs)
+        cp_menu.add_button(
+            "~Renumber Pages And PNG Files...", CPRenumberDialog.show_dialog
+        )
         cp_menu.add_button("~Export As Prep Text Files...", export_prep_text_files)
         cp_menu.add_separator()
         cp_menu.add_button("Import ~TIA Abbyy OCR File...", import_tia_ocr_file)
