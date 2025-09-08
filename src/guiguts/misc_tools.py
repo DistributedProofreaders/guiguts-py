@@ -2726,3 +2726,15 @@ def align_indent(do_func: Callable[[int], None]) -> None:
             maintext().do_select(ranges[0])
     else:
         do_func(maintext().get_insert_index().row)
+
+
+def convert_sequential() -> None:
+    """Replace `[::]` with sequential numbers"""
+
+    maintext().undo_block_begin()
+    counter = 1
+    start = maintext().start().index()
+    while start := maintext().search("[::]", start, tk.END):
+        maintext().delete(start, f"{start}+4c")
+        maintext().insert(start, str(counter))
+        counter += 1

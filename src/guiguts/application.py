@@ -112,6 +112,7 @@ from guiguts.misc_tools import (
     right_align_numbers,
     ScannoCheckerDialog,
     RegexCheckerDialog,
+    convert_sequential,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
@@ -921,6 +922,11 @@ class Guiguts:
         search_menu.add_button(
             "Replace ~Match",
             replace_matched_string,
+        )
+        search_menu.add_separator()
+        search_menu.add_button(
+            "Replace [::] With ~Incremental Counter",
+            convert_sequential,
         )
         search_menu.add_separator()
         search_menu.add_button(
