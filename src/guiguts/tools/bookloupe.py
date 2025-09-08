@@ -816,13 +816,14 @@ class BookloupeChecker:
             )
 
     def check_unpunctuated_endquote(self, step: int, line: str) -> None:
-        """Check for letter followed by double quote.
+        """Check for letter followed by double quote, where double quote
+        is not followed by period/comma, e.g. `"dog".` is OK
 
         Args:
             step: Line number being checked.
             line: Text of line being checked.
         """
-        for match in re.finditer(r'(?<=\p{Letter})["”]', line):
+        for match in re.finditer(r'(?<=\p{Letter})["”](?![,.])', line):
             self.add_match_entry(
                 step,
                 match,
