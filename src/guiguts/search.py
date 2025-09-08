@@ -1118,11 +1118,20 @@ def get_regex_replacement(
 
     def cget(key: str) -> str | int:
         """Get value from lglobal[key]."""
+        if key not in lglobal:
+            lglobal[key] = ""
+        return lglobal[key]
+
+    def cinc(key: str) -> str | int:
+        """Increment and return value from lglobal[key]."""
+        if key not in lglobal:
+            lglobal[key] = 0
+        lglobal[key] = int(lglobal[key]) + 1
         return lglobal[key]
 
     def eval_python(python_in: str) -> str:
         """Evaluate string as python and return results as string."""
-        global_vars = {"lglobal": lglobal, "cset": cset, "cget": cget}
+        global_vars = {"lglobal": lglobal, "cset": cset, "cget": cget, "cinc": cinc}
         try:
             return str(eval(python_in, global_vars))  # pylint:disable=eval-used
         except Exception as exc:
