@@ -2306,8 +2306,14 @@ class MainText(tk.Text):
         end_index = event.widget.index(
             f"{self.drag_start_index} + {len(self.drag_text)}c"
         )
-        if self.compare("seldroptarget", ">", self.drag_start_index) and self.compare(
-            "seldroptarget", "<", end_index
+        copying = self._is_drag_copy_mode(event)
+        if (
+            self.compare("seldroptarget", ">", self.drag_start_index)
+            and self.compare("seldroptarget", "<", end_index)
+        ) or (
+            self.compare("seldroptarget", ">=", self.drag_start_index)
+            and self.compare("seldroptarget", "<=", end_index)
+            and not copying
         ):
             self.clear_selection()
             event.widget.mark_set(tk.INSERT, "seldroptarget")
@@ -2315,7 +2321,7 @@ class MainText(tk.Text):
 
         # Handle dropping - may need to delete text from original position
         self.undo_block_begin()
-        if not self._is_drag_copy_mode(event):
+        if not copying:
             self.delete(
                 self.drag_start_index,
                 f"{self.drag_start_index} + {len(self.drag_text)}c",
