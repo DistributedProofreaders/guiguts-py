@@ -2176,11 +2176,12 @@ class MainText(tk.Text):
         wgt: tk.Text = event.widget
         self.undo_block_begin()
         old_ins = wgt.index(tk.INSERT)
+        modifier = "Option" if is_mac() else "Control"
         if idir > 0:
-            wgt.event_generate("<Control-Right>")
+            wgt.event_generate(f"<{modifier}-Right>")
             wgt.delete(old_ins, tk.INSERT)
         else:
-            wgt.event_generate("<Control-Left>")
+            wgt.event_generate(f"<{modifier}-Left>")
             wgt.delete(tk.INSERT, old_ins)
 
     def column_select_click_action(self, start: IndexRowCol) -> None:
