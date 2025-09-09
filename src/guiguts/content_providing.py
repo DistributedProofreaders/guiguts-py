@@ -30,6 +30,7 @@ from guiguts.utilities import (
     cmd_ctrl_string,
     load_dict_from_json,
     IndexRange,
+    sing_plur,
 )
 from guiguts.preferences import PersistentBoolean, PrefKey, preferences
 from guiguts.widgets import ToplevelDialog, Busy, ToolTip
@@ -1194,11 +1195,12 @@ def cp_fix_common_scannos() -> None:
     scannos_dict = load_dict_from_json(CP_SCANNOS)
     if scannos_dict is None:
         return
-    maintext().undo_block_begin()
     Busy.busy()
+    maintext().undo_block_begin()
 
     slurp_text = maintext().get_text()
 
+    n_fixed = 0
     for scanno, correction in scannos_dict.items():
         # Much quicker to search in slurped text before doing search in maintext()
         # Better search also available with negative lookbehind which Tcl doesn't support.
@@ -1211,7 +1213,9 @@ def cp_fix_common_scannos() -> None:
             maintext().delete(start, f"{start}+{len(scanno)}c")
             maintext().insert(start, correction)
             start = f"{start}+{len(correction)}c"
+            n_fixed += 1
     Busy.unbusy()
+    logger.info(f"{sing_plur(n_fixed, 'common scanno')} fixed")
 
 
 def cp_fix_englifh() -> None:
@@ -1220,11 +1224,13 @@ def cp_fix_englifh() -> None:
     englifh_dict = load_dict_from_json(CP_ENGLIFH)
     if englifh_dict is None:
         return
-    maintext().undo_block_begin()
     Busy.busy()
+    maintext().undo_block_begin()
 
     slurp_text = maintext().get_text().lower()
 
+    n_fs = 0
+    n_ast = 0
     for englifh, english in englifh_dict.items():
         # Much quicker to search in slurped text before doing search in maintext()
         if not re.search(rf"\b{englifh}\b", slurp_text):
@@ -1240,16 +1246,34 @@ def cp_fix_englifh() -> None:
             replacement = "".join(
                 o if o.isupper() else e for e, o in zip(english, original)
             )
-            maintext().delete(start, end)
-            maintext().insert(start, replacement)
+            if replacement != original:
+                maintext().delete(start, end)
+                maintext().insert(start, replacement)
+                if "*" in replacement:
+                    n_ast += 1
+                else:
+                    n_fs += 1
             start = f"{start}+{len(replacement)}c"
     Busy.unbusy()
+    if n_ast + n_fs == 0:
+        logger.info("No Olde Englifh replacements made")
+    elif n_ast == 0:
+        logger.info(f"{sing_plur(n_fs, 'f→s replacement')} made")
+    elif n_fs == 0:
+        logger.info(f"{sing_plur(n_ast, 'f→* replacement')} made")
+    else:
+        logger.info(
+            f"{sing_plur(n_ast+n_fs, 'Olde Englifh replacement')} made ({n_fs} f→s; {n_ast} f→*)"
+        )
 
 
 def cp_fix_empty_pages() -> None:
     """Add "[Blank Page]" to empty pages."""
 
+    Busy.busy()
+    maintext().undo_block_begin()
     maintext().mark_set("cp_next_page", maintext().start().index())
+    n_fixed = 0
     while start := maintext().search(r"-----File:", "cp_next_page", tk.END):
         # Find next page separator or end of line
         nextl = maintext().search(r"-----File:", f"{start} lineend", tk.END)
@@ -1262,6 +1286,9 @@ def cp_fix_empty_pages() -> None:
         if re.fullmatch(r"\s*", page_text):
             maintext().delete(f"{start} +1l linestart", "cp_next_page")
             maintext().insert(f"{start} lineend", "\n[Blank Page]")
+            n_fixed += 1
+    Busy.unbusy()
+    logger.info(f"""{sing_plur(n_fixed, '"[Blank Page]" markup')} added""")
 
 
 def compress_png_file(command: list[str], src: Path, dest: Path) -> bool:
