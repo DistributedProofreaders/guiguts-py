@@ -789,27 +789,6 @@ class MainText(tk.Text):
             "<<Modified>>", lambda _event: self.modify_flag_changed_callback()
         )
 
-        # Set up callbacks when Undo/Redo is executed
-        self.undo_redo_callbacks: dict[str, Callable[[], None]] = {}
-        self.bind_event(
-            "<<Undo>>", lambda _event: self._call_undo_redo_callbacks(), add=True
-        )
-        self.bind_event(
-            "<<Redo>>", lambda _event: self._call_undo_redo_callbacks(), add=True
-        )
-
-        self.bind_event("<<Cut>>", lambda _event: self.smart_cut(), force_break=False)
-        self.bind_event("<<Copy>>", lambda _event: self.smart_copy(), force_break=False)
-        self.bind_event(
-            "<<Paste>>", lambda _event: self.smart_paste(), force_break=False
-        )
-        self.bind_event(
-            "<BackSpace>", lambda _event: self.smart_delete(), force_break=False
-        )
-        self.bind_event(
-            "<Delete>", lambda _event: self.smart_delete(), force_break=False
-        )
-
         # Register this widget to have its focus tracked for inserting special characters
         register_focus_widget(self)
 
@@ -1038,6 +1017,77 @@ class MainText(tk.Text):
             force_break=False,
             bind_peer=True,
         )
+
+        # Set up callbacks when Undo/Redo is executed
+        self.undo_redo_callbacks: dict[str, Callable[[], None]] = {}
+        self.bind_event(
+            "<<Undo>>",
+            lambda _event: self._call_undo_redo_callbacks(),
+            add=True,
+            bind_peer=True,
+        )
+        self.bind_event(
+            "<<Redo>>",
+            lambda _event: self._call_undo_redo_callbacks(),
+            add=True,
+            bind_peer=True,
+        )
+
+        self.bind_event(
+            "<<Cut>>",
+            lambda _event: self.smart_cut(),
+            force_break=False,
+            bind_peer=True,
+        )
+        self.bind_event(
+            "<<Copy>>",
+            lambda _event: self.smart_copy(),
+            force_break=False,
+            bind_peer=True,
+        )
+        self.bind_event(
+            "<<Paste>>",
+            lambda _event: self.smart_paste(),
+            force_break=False,
+            bind_peer=True,
+        )
+        self.bind_event(
+            "<BackSpace>",
+            lambda _event: self.smart_delete(),
+            force_break=False,
+            bind_peer=True,
+        )
+        self.bind_event(
+            "<Delete>",
+            lambda _event: self.smart_delete(),
+            force_break=False,
+            bind_peer=True,
+        )
+        self.bind_event(
+            "<Control-BackSpace>",
+            lambda evt: self.del_word(evt, -1),
+            force_break=True,
+            bind_peer=True,
+        )
+        self.bind_event(
+            "<Control-Delete>",
+            lambda evt: self.del_word(evt, 1),
+            force_break=True,
+            bind_peer=True,
+        )
+        if is_mac():
+            self.bind_event(
+                "<Option-BackSpace>",
+                lambda evt: self.del_word(evt, -1),
+                force_break=True,
+                bind_peer=True,
+            )
+            self.bind_event(
+                "<Option-Delete>",
+                lambda evt: self.del_word(evt, 1),
+                force_break=True,
+                bind_peer=True,
+            )
 
         # Bind line numbers update routine to all events that might
         # change which line numbers should be displayed in maintext and peer
@@ -2132,6 +2182,20 @@ class MainText(tk.Text):
             return ""  # Permit default behavior to happen
         self.column_delete()
         return "break"  # Skip default behavior
+
+    def del_word(self, event: tk.Event, idir: int) -> None:
+        """Delete word backward or forward.
+        For consistency, use Ctrl+arrow keys for "word" movement."""
+        wgt: tk.Text = event.widget
+        self.undo_block_begin()
+        old_ins = wgt.index(tk.INSERT)
+        modifier = "Option" if is_mac() else "Control"
+        if idir > 0:
+            wgt.event_generate(f"<{modifier}-Right>")
+            wgt.delete(old_ins, tk.INSERT)
+        else:
+            wgt.event_generate(f"<{modifier}-Left>")
+            wgt.delete(tk.INSERT, old_ins)
 
     def column_select_click_action(self, start: IndexRowCol) -> None:
         """Do what needs to be done when the user clicks to start column selection.
