@@ -2370,8 +2370,14 @@ class MainText(tk.Text):
         end_index = event.widget.index(
             f"{self.drag_start_index} + {len(self.drag_text)}c"
         )
-        if self.compare("seldroptarget", ">", self.drag_start_index) and self.compare(
-            "seldroptarget", "<", end_index
+        copying = self._is_drag_copy_mode(event)
+        if (
+            self.compare("seldroptarget", ">", self.drag_start_index)
+            and self.compare("seldroptarget", "<", end_index)
+        ) or (
+            self.compare("seldroptarget", ">=", self.drag_start_index)
+            and self.compare("seldroptarget", "<=", end_index)
+            and not copying
         ):
             self.clear_selection()
             event.widget.mark_set(tk.INSERT, "seldroptarget")
@@ -2379,7 +2385,7 @@ class MainText(tk.Text):
 
         # Handle dropping - may need to delete text from original position
         self.undo_block_begin()
-        if not self._is_drag_copy_mode(event):
+        if not copying:
             self.delete(
                 self.drag_start_index,
                 f"{self.drag_start_index} + {len(self.drag_text)}c",
@@ -2458,9 +2464,8 @@ class MainText(tk.Text):
 
     def _is_drag_copy_mode(self, event: tk.Event) -> bool:
         """Return whether select drag should be copying."""
-        ignored_bits = 0x0100 | 0x0200 | 0x0400  # B1/2/3
-        check_state = int(event.state) & ~ignored_bits
-        return check_state != 0
+        # Shift, Ctrl, Cmd
+        return bool(int(event.state) & (0x0001 | 0x0004 | 0x0008 | 0x0010))
 
     def _get_truncated_drag_preview(self, text: str) -> str:
         """Get a truncated version of the drag text."""
