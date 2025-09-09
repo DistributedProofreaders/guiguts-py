@@ -118,7 +118,10 @@ def import_prep_text_files() -> None:
     # Insert each file into maintext, with separator lines
     for file_path in txt_files:
         try:
-            file_text = file_path.read_text(encoding="utf-8")
+            try:
+                file_text = file_path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                file_text = file_path.read_text(encoding="iso-8859-1")
         except OSError as e:
             logger.error(f"Error reading file '{file_path}': {e}")
             maintext().undo_block_end()
