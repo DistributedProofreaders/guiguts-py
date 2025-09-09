@@ -1075,6 +1075,19 @@ class MainText(tk.Text):
             force_break=True,
             bind_peer=True,
         )
+        if is_mac():
+            self.bind_event(
+                "<Option-BackSpace>",
+                lambda evt: self.del_word(evt, -1),
+                force_break=True,
+                bind_peer=True,
+            )
+            self.bind_event(
+                "<Option-Delete>",
+                lambda evt: self.del_word(evt, 1),
+                force_break=True,
+                bind_peer=True,
+            )
 
         # Bind line numbers update routine to all events that might
         # change which line numbers should be displayed in maintext and peer
