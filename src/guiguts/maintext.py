@@ -2401,6 +2401,7 @@ class MainText(tk.Text):
     def _is_drag_copy_mode(self, event: tk.Event) -> bool:
         """Return whether select drag should be copying."""
         # Shift, Ctrl, Cmd
+        print(f"{int(event.state):x}", flush=True)
         return bool(int(event.state) & (0x0001 | 0x0004 | 0x0010))
 
     def _get_truncated_drag_preview(self, text: str) -> str:
