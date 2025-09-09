@@ -868,9 +868,8 @@ class MainText(tk.Text):
 
         self.paned_text_window.add(maintext().frame, minsize=PEER_MIN_SIZE)
 
-        # Column selection uses Alt key on Windows/Linux, Option key on macOS
-        # Key Release is reported as Alt_L on all platforms
-        modifier = "Option" if is_mac() else "Alt"
+        # Column selection uses Alt key on Windows, Option key on macOS, Ctrl key on Linux
+        modifier = "Option" if is_mac() else "Control" if is_x11() else "Alt"
         self.bind_event(
             f"<{modifier}-ButtonPress-1>", self.column_select_click, bind_peer=True
         )
@@ -883,7 +882,18 @@ class MainText(tk.Text):
             bind_peer=True,
             add=True,
         )
-        self.bind_event("<KeyRelease-Alt_L>", self.column_select_stop, bind_peer=True)
+        # Alt/Option Key Release is reported as Alt_L on Windows/Mac
+        if is_x11():
+            self.bind_event(
+                "<KeyRelease-Control_L>", self.column_select_stop, bind_peer=True
+            )
+            self.bind_event(
+                "<KeyRelease-Control_R>", self.column_select_stop, bind_peer=True
+            )
+        else:
+            self.bind_event(
+                "<KeyRelease-Alt_L>", self.column_select_stop, bind_peer=True
+            )
         # Make use of built-in Shift click functionality to extend selections,
         # but adapt for column select with Option/Alt key
         self.bind_event(
