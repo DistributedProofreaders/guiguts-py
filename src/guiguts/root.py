@@ -50,6 +50,19 @@ class Root(tk.Tk):
         self.save_config = False
         self.bind("<Configure>", self._handle_config)
 
+        # Make Ctrl-A select all in Entries/Comboboxes on Linux only
+        # Works by default on Windows/macOS (Cmd-A)
+        if is_x11():
+
+            def select_all(event: tk.Event) -> str:
+                event.widget.selection_range(0, tk.END)
+                return "break"
+
+            self.bind_class("Entry", "<Control-a>", select_all)
+            self.bind_class("Entry", "<Control-A>", select_all)
+            self.bind_class("TCombobox", "<Control-a>", select_all)
+            self.bind_class("TCombobox", "<Control-A>", select_all)
+
     def report_callback_exception(
         self, exc: type[BaseException], val: BaseException, tb: TracebackType | None
     ) -> None:
