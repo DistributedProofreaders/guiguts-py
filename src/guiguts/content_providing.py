@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import ttk
 from typing import Any, Final, Iterator
 
 from PIL import Image, UnidentifiedImageError
@@ -33,7 +33,7 @@ from guiguts.utilities import (
     sing_plur,
 )
 from guiguts.preferences import PersistentBoolean, PrefKey, preferences
-from guiguts.widgets import ToplevelDialog, Busy, ToolTip
+from guiguts.widgets import ToplevelDialog, Busy, ToolTip, FileDialog
 
 logger = logging.getLogger(__package__)
 
@@ -45,7 +45,7 @@ CP_ENGLIFH = str(importlib.resources.files(cp_files).joinpath("fcannos.json"))
 
 def export_prep_text_files() -> None:
     """Export the current file as separate prep text files."""
-    prep_dir = filedialog.askdirectory(
+    prep_dir = FileDialog.askdirectory(
         parent=root(),
         title=f"Select {folder_dir_str(True)} to export prep text files to",
     )
@@ -93,7 +93,7 @@ def import_prep_text_files() -> None:
     if not the_file().close_file():
         return
 
-    prep_dir = filedialog.askdirectory(
+    prep_dir = FileDialog.askdirectory(
         parent=root(),
         mustexist=True,
         title=f"Select {folder_dir_str(True)} to import prep text files from",
@@ -1396,7 +1396,7 @@ def import_tia_ocr_file() -> None:
     if not the_file().close_file():
         return
 
-    filename = filedialog.askopenfilename(
+    filename = FileDialog.askopenfilename(
         title="Open OCR file",
         filetypes=(
             ("Gzip files", "*.gz"),

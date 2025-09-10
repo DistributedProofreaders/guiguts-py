@@ -9,7 +9,7 @@ import shlex
 import subprocess
 import time
 import tkinter as tk
-from tkinter import ttk, messagebox, EventType, filedialog
+from tkinter import ttk, messagebox, EventType
 from typing import Any, Callable, Optional
 from pathlib import Path
 
@@ -47,6 +47,7 @@ from guiguts.widgets import (
     TreeviewList,
     bind_shift_tab,
     init_global_font,
+    FileDialog,
 )
 
 logger = logging.getLogger(__package__)
@@ -1169,7 +1170,7 @@ class MainImage(tk.Frame):
             initial_dir = os.path.dirname(self.proj_filename)
         else:
             initial_dir = None
-        if filename := filedialog.askopenfilename(
+        if filename := FileDialog.askopenfilename(
             initialdir=initial_dir,
             title="Choose Image File",
             filetypes=(

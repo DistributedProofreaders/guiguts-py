@@ -7,7 +7,7 @@ import logging
 import os
 import subprocess
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk
 from typing import Optional, Any
 import xml.sax
 import shutil
@@ -43,6 +43,7 @@ from guiguts.widgets import (
     TreeviewList,
     mouse_bind,
     grab_focus,
+    FileDialog,
 )
 
 logger = logging.getLogger(__package__)
@@ -331,7 +332,7 @@ class HTMLImageDialog(ToplevelDialog):
 
     def choose_file(self) -> None:
         """Allow user to choose image file."""
-        if file_name := filedialog.askopenfilename(
+        if file_name := FileDialog.askopenfilename(
             filetypes=(
                 ("Image files", "*.jpg *.png *.gif"),
                 ("All files", "*.*"),
@@ -1171,7 +1172,7 @@ class EbookmakerCheckerDialog(CheckerDialog):
 
             def locate_ebookmaker() -> None:
                 """Prompt user to give path to where ebookmaker was installed using pipenv."""
-                if dir_name := filedialog.askdirectory(
+                if dir_name := FileDialog.askdirectory(
                     title=f"Select the Ebookmaker 'pipenv install' {folder_dir_str(lowercase=True)}",
                     parent=self,
                 ):
@@ -2245,7 +2246,7 @@ class HTMLLinksDialog(ToplevelDialog):
 
     def browse_elink(self) -> None:
         """Browse for file to link to."""
-        linkname = filedialog.askopenfilename(title="Choose File")
+        linkname = FileDialog.askopenfilename(title="Choose File")
         grab_focus(self, self.e_entry)
         self.e_entry.icursor(tk.END)
         if not linkname:

@@ -6,7 +6,7 @@ import logging
 import os.path
 from pathlib import Path
 import tkinter as tk
-from tkinter import filedialog, messagebox, simpledialog
+from tkinter import messagebox, simpledialog
 from typing import Any, Callable, Final, TypedDict, Literal, Optional, cast
 
 import regex as re
@@ -41,7 +41,7 @@ from guiguts.utilities import (
     folder_dir_str,
     is_test,
 )
-from guiguts.widgets import grab_focus, ToplevelDialog, Busy
+from guiguts.widgets import grab_focus, ToplevelDialog, Busy, FileDialog
 
 logger = logging.getLogger(__package__)
 
@@ -225,7 +225,7 @@ class File:
         """
         if self.check_save():
             if not filename:
-                filename = filedialog.askopenfilename(
+                filename = FileDialog.askopenfilename(
                     filetypes=(
                         ("Text files", "*.txt *.html *.htm"),
                         ("All files", "*.*"),
@@ -421,10 +421,10 @@ class File:
         )
         if initialdir == "":
             initialdir = os.path.dirname(suggested_fn)
-        if fn := filedialog.asksaveasfilename(
+        if fn := FileDialog.asksaveasfilename(
             initialfile=initialfile,
             initialdir=initialdir,
-            filetypes=[(file_type, f"*{extension}"), ("All files", "*")],
+            filetypes=((file_type, f"*{extension}"), ("All files", "*")),
             title="Save As",
         ):
             self.store_recent_file(fn)
@@ -436,10 +436,10 @@ class File:
     def save_copy_as_file(self) -> None:
         """Save copy of current text as new file, without affecting
         current filename or "modified" flag."""
-        if fn := filedialog.asksaveasfilename(
+        if fn := FileDialog.asksaveasfilename(
             initialfile=os.path.basename(self.filename),
             initialdir=os.path.dirname(self.filename),
-            filetypes=[("All files", "*")],
+            filetypes=(("All files", "*"),),
             title="Save a Copy As",
         ):
             self.save_copy(fn)
@@ -459,7 +459,7 @@ class File:
 
     def include_file(self) -> None:
         """Open and insert a file into the current file."""
-        filename = filedialog.askopenfilename(
+        filename = FileDialog.askopenfilename(
             filetypes=(
                 ("Text files", "*.txt *.html *.htm"),
                 ("All files", "*.*"),
@@ -755,7 +755,7 @@ class File:
 
     def choose_image_dir(self) -> None:
         """Allow user to select directory containing png image files"""
-        self.image_dir = filedialog.askdirectory(
+        self.image_dir = FileDialog.askdirectory(
             mustexist=True, title=f"Select {folder_dir_str(True)} containing scans"
         )
 
