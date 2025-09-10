@@ -1023,8 +1023,13 @@ class File:
         with path.open("a", encoding="utf-8") as fp:
             fp.write(f"{word}\n")
 
-    def rewrap_selection(self) -> None:
-        """Wrap selected text."""
+    def rewrap_selection(self, bq_depth: int = 0) -> None:
+        """Wrap selected text.
+
+        Args:
+            section_range: Range of text to be wrapped.
+            bq_depth: Starting blockquote depth (only 0 or 1 supported)
+        """
         ranges = maintext().selected_ranges()
         if not ranges:
             sound_bell()
@@ -1035,18 +1040,19 @@ class File:
             ranges[0].end.col = 0
             ranges[0].end.row += 1
         maintext().undo_block_begin()
-        self.rewrap_section(ranges[0])
+        self.rewrap_section(ranges[0], bq_depth)
 
     def rewrap_all(self) -> None:
         """Wrap whole text."""
         maintext().undo_block_begin()
         self.rewrap_section(IndexRange("1.0", maintext().index(tk.END)))
 
-    def rewrap_section(self, section_range: IndexRange) -> None:
+    def rewrap_section(self, section_range: IndexRange, bq_depth: int = 0) -> None:
         """Wrap a section of the text, preserving page mark locations.
 
         Args:
             section_range: Range of text to be wrapped.
+            bq_depth: Starting blockquote depth (only 0 or 1 supported)
         """
         maintext().selection_ranges_store_with_marks()
 
@@ -1059,7 +1065,7 @@ class File:
         maintext().strip_end_of_line_spaces()
         mark_list = self.pin_page_marks()
         maintext().rewrap_section(
-            section_range, lambda: self.unpin_page_marks(mark_list)
+            section_range, lambda: self.unpin_page_marks(mark_list), bq_depth
         )
         maintext().selection_ranges_restore_from_marks()
 

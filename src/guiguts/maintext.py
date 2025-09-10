@@ -3248,13 +3248,17 @@ class MainText(tk.Text):
         return self.languages.split("+")
 
     def rewrap_section(
-        self, section_range: IndexRange, tidy_function: Callable[[], None]
+        self,
+        section_range: IndexRange,
+        tidy_function: Callable[[], None],
+        bq_depth: int,
     ) -> None:
         """Wrap a section of the text.
 
         Args:
             section_range: Range of text to be wrapped.
             tidy_function: Function to call to tidy up before returning.
+            bq_depth: Block quote depth to start at - only 0 and 1 supported.
         """
         default_left = preferences.get(PrefKey.WRAP_LEFT_MARGIN)
         default_right = preferences.get(PrefKey.WRAP_RIGHT_MARGIN)
@@ -3263,7 +3267,6 @@ class MainText(tk.Text):
         bq_indent = preferences.get(PrefKey.WRAP_BLOCKQUOTE_INDENT)
         bq_right = preferences.get(PrefKey.WRAP_BLOCKQUOTE_RIGHT_MARGIN)
 
-        bq_depth = 0
         paragraph = ""
         paragraph_complete = False
         section_start = section_range.start.index()
@@ -3282,6 +3285,16 @@ class MainText(tk.Text):
         block_params_list: list[WrapParams] = [
             WrapParams(default_left, default_left, default_right)
         ]
+        # If operation is "block rewrap", also add the depth=1 parameters
+        assert bq_depth in (0, 1)  # Only non-zero initial depth supported is 1
+        if bq_depth > 0:
+            block_params_list.append(
+                WrapParams(
+                    block_params_list[-1].left + bq_indent,
+                    block_params_list[-1].left + bq_indent,
+                    block_params_list[-1].right,
+                )
+            )
         paragraph_complete = False
 
         # Loop until we reach the end of the whole section we want to rewrap
