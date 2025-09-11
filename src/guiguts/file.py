@@ -1067,6 +1067,13 @@ class File:
         maintext().rewrap_section(
             section_range, lambda: self.unpin_page_marks(mark_list), bq_depth
         )
+
+        # Dummy insert & delete, so that if user re-does the wrap, the insert
+        # cursor returns to its previous point, not the first pin page mark position.
+        insert_index = maintext().get_insert_index()
+        maintext().insert(insert_index.index(), " ")
+        maintext().delete(insert_index.index())
+
         maintext().selection_ranges_restore_from_marks()
 
     def rewrap_cleanup(self) -> None:
