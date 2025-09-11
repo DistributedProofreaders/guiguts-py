@@ -3,7 +3,7 @@
 import os.path
 import tkinter as tk
 from tkinter import ttk
-from tkinter import font as tk_font
+from tkinter import font as tk_font, filedialog
 from typing import Any, Optional, TypeVar, Callable
 import webbrowser
 
@@ -803,6 +803,90 @@ class TreeviewList(ttk.Treeview):
             row_id = ""
         col_id = self.identify_column(event.x)
         return row_id, col_id
+
+
+class FileDialog:
+    """Interface to file load/save convenience functions, to support persistence of
+    last directory used."""
+
+    @staticmethod
+    def goodinitialdir(initialdir: Optional[str]) -> str:
+        """Return a good initialdir, using Pref, or its (grand)parent or home dir.
+
+        Args:
+            initialdir: Candidate for initialdir, or None if unset.
+        """
+        if initialdir is not None and os.path.isdir(initialdir):  # Already good?
+            return initialdir
+        initialdir = preferences.get(PrefKey.INITIAL_DIR)
+        if not os.path.isdir(initialdir):  # Try parent
+            initialdir = os.path.dirname(initialdir)
+        if not os.path.isdir(initialdir):  # Try grandparent
+            initialdir = os.path.dirname(initialdir)
+        if not os.path.isdir(initialdir):  # Finally, try home dir
+            initialdir = preferences.get_default(PrefKey.INITIAL_DIR)
+        return initialdir
+
+    @staticmethod
+    def askopenfilename(
+        filetypes: Optional[tuple[tuple[str, str], ...]] = None,
+        initialdir: Optional[str] = None,
+        initialfile: Optional[str] = None,
+        parent: Optional[tk.Misc] = None,
+        title: Optional[str] = None,
+    ) -> str:
+        """Interface to tk.filedialog.askopenfilename with persistent initialdir."""
+        initialdir = FileDialog.goodinitialdir(initialdir)
+        file_name = filedialog.askopenfilename(
+            filetypes=filetypes,
+            initialdir=initialdir,
+            initialfile=initialfile,
+            parent=parent,
+            title=title,
+        )
+        if file_name:
+            preferences.set(PrefKey.INITIAL_DIR, os.path.dirname(file_name))
+        return file_name
+
+    @staticmethod
+    def asksaveasfilename(
+        filetypes: Optional[tuple[tuple[str, str], ...]] = None,
+        initialdir: Optional[str] = None,
+        initialfile: Optional[str] = None,
+        parent: Optional[tk.Misc] = None,
+        title: Optional[str] = None,
+    ) -> str:
+        """Interface to tk.filedialog.asksaveasfilename with persistent initialdir."""
+        initialdir = FileDialog.goodinitialdir(initialdir)
+        file_name = filedialog.asksaveasfilename(
+            filetypes=filetypes,
+            initialdir=initialdir,
+            initialfile=initialfile,
+            parent=parent,
+            title=title,
+        )
+        if file_name:
+            preferences.set(PrefKey.INITIAL_DIR, os.path.dirname(file_name))
+        return file_name
+
+    @staticmethod
+    def askdirectory(
+        initialdir: Optional[str] = None,
+        mustexist: Optional[bool] = False,
+        parent: Optional[tk.Misc] = None,
+        title: Optional[str] = None,
+    ) -> str:
+        """Interface to tk.filedialog.askdirectory with persistent initialdir."""
+        initialdir = FileDialog.goodinitialdir(initialdir)
+        file_name = filedialog.askdirectory(
+            initialdir=initialdir,
+            mustexist=mustexist,
+            parent=parent,
+            title=title,
+        )
+        if file_name:
+            preferences.set(PrefKey.INITIAL_DIR, os.path.dirname(file_name))
+        return file_name
 
 
 class ToolTip:

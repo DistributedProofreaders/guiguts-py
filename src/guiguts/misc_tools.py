@@ -5,7 +5,7 @@ import importlib.resources
 import logging
 import operator
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox
 from typing import Callable, Optional, Any, TypeVar
 import unicodedata
 
@@ -46,6 +46,7 @@ from guiguts.widgets import (
     PathnameCombobox,
     insert_in_focus_widget,
     ToolTip,
+    FileDialog,
 )
 
 logger = logging.getLogger(__package__)
@@ -1726,7 +1727,7 @@ class ScannoRegexCheckerDialog(CheckerDialog):
 
     def choose_file(self) -> None:
         """Choose & load a scannos file."""
-        filename = filedialog.askopenfilename(
+        filename = FileDialog.askopenfilename(
             filetypes=(
                 (f"{self.type_adj.capitalize()} files", "*.json"),
                 ("All files", "*.*"),

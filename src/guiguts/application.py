@@ -6,6 +6,7 @@ import argparse
 import logging
 import importlib.resources
 from importlib.metadata import version
+import os
 import sys
 import tkinter as tk
 from typing import Optional
@@ -702,6 +703,7 @@ class Guiguts:
             PrefKey.CP_PNG_CRUSH_COMMAND, "pngcrush -q -reduce $in $out"
         )
         preferences.set_default(PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS, False)
+        preferences.set_default(PrefKey.INITIAL_DIR, os.path.expanduser("~"))
 
         # Check all preferences have a default
         for pref_key in PrefKey:

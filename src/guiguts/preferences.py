@@ -218,6 +218,7 @@ class PrefKey(StrEnum):
     CP_CURLY_QUOTES = auto()
     CP_PNG_CRUSH_COMMAND = auto()
     CP_HIGHLIGHT_CHARSUITE_ORPHANS = auto()
+    INITIAL_DIR = auto()
 
 
 class Preferences:

@@ -5,7 +5,7 @@ import logging
 import platform
 import sys
 import tkinter as tk
-from tkinter import ttk, font, filedialog, messagebox, colorchooser
+from tkinter import ttk, font, messagebox, colorchooser
 from typing import Literal, Optional, Callable
 import unicodedata
 
@@ -45,6 +45,7 @@ from guiguts.widgets import (
     ScrollableFrame,
     themed_style,
     set_global_font,
+    FileDialog,
 )
 
 logger = logging.getLogger(__package__)
@@ -319,7 +320,7 @@ class PreferencesDialog(ToplevelDialog):
 
         def choose_external_viewer() -> None:
             """Choose program to view images."""
-            if filename := filedialog.askopenfilename(
+            if filename := FileDialog.askopenfilename(
                 parent=self, title="Choose Image Viewer"
             ):
                 preferences.set(PrefKey.IMAGE_VIEWER_EXTERNAL_PATH, filename)
