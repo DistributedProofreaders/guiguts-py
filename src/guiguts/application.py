@@ -1071,6 +1071,9 @@ class Guiguts:
         tools_menu.add_separator()
         tools_menu.add_button("~Rewrap All", self.file.rewrap_all)
         tools_menu.add_button("R~ewrap Selection", self.file.rewrap_selection)
+        tools_menu.add_button(
+            "Block Rewrap Selec~tion", lambda: self.file.rewrap_selection(bq_depth=1)
+        )
         tools_menu.add_button("C~lean Up Rewrap Markers", self.file.rewrap_cleanup)
         tools_menu.add_separator()
         curly_menu = tools_menu.add_submenu("Curly ~Quotes")
