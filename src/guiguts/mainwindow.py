@@ -1659,6 +1659,24 @@ class MainWindow:
                 btn.config(image=self.dark_photos[name])
             else:
                 btn.config(image=self.light_photos[name])
+        # Configure Entry widgets to match colors of Comboboxes
+        root().option_add(
+            "*Entry.background", themed_style().lookup("TCombobox", "fieldbackground")
+        )
+        root().option_add(
+            "*Entry.foreground", themed_style().lookup("TCombobox", "foreground")
+        )
+        root().option_add(
+            "*Entry.insertBackground", themed_style().lookup("TCombobox", "foreground")
+        )
+        root().option_add(
+            "*Entry.disabledBackground",
+            themed_style().lookup("TCombobox", "fieldbackground", state=("disabled",)),
+        )
+        root().option_add(
+            "*Entry.disabledForeground",
+            themed_style().lookup("TCombobox", "foreground", state=("disabled",)),
+        )
 
     def hide_image(self) -> None:
         """Stop showing the current image."""
