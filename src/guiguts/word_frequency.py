@@ -1,5 +1,6 @@
 """Store, analyze and report on word frequency and inconsistencies."""
 
+from collections import Counter
 from enum import StrEnum, auto
 import logging
 import tkinter as tk
@@ -1157,22 +1158,29 @@ class WordFrequencyDialog(ToplevelDialog):
         all_words = _THE_WORD_LISTS.get_all_words()
         suspect_cnt = 0
         total_cnt = 0
+        # For suspects check, remove accents from all words - then we will be able
+        # to find two words that differ only by accent.
+        num_accent_variants = Counter(
+            DiacriticRemover.remove_diacritics(word) for word in all_words
+        )
+        no_accents_added = set()  # So no-accent word only gets added once
         for word, freq in all_words.items():
             no_accent_word = DiacriticRemover.remove_diacritics(word)
-            if no_accent_word != word:
-                total_cnt += 1
-                word_output = False
-                if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
-                    self.add_entry(word, freq)
-                    word_output = True
-                # Check for suspect, i.e. also seen without accents
-                if no_accent_word in all_words:
-                    if not word_output:
-                        self.add_entry(word, freq)
-                    self.add_entry(
-                        no_accent_word, all_words[no_accent_word], suspect=True
-                    )
-                    suspect_cnt += 1
+            if no_accent_word == word:
+                continue
+            total_cnt += 1
+            # Check for suspect, i.e. seen without accent variation
+            suspect = num_accent_variants[no_accent_word] > 1
+            # Add to list if it's a suspect, or if we're showing all accented words
+            if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY) or suspect:
+                self.add_entry(word, freq, suspect=suspect)
+            # Also add no-accent word if in file and it hasn't been added before
+            if no_accent_word in all_words and no_accent_word not in no_accents_added:
+                self.add_entry(no_accent_word, all_words[no_accent_word], suspect=True)
+                no_accents_added.add(no_accent_word)
+                suspect_cnt += 1  # No-accent word is also a suspect
+            if suspect:
+                suspect_cnt += 1
         self.display_entries()
         self.message.set(
             f"{sing_plur(total_cnt, 'accented word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
