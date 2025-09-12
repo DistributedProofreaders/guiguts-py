@@ -97,24 +97,29 @@ class HTMLGeneratorDialog(ToplevelDialog):
         self.title_entry.bind("<<Paste>>", clean_entry)
 
         # Whether to display page numbers
-        self.display_page_numbers = ttk.Checkbutton(
+        ttk.Checkbutton(
             self.top_frame,
             text="Show Page Numbers in HTML",
             variable=PersistentBoolean(PrefKey.HTML_SHOW_PAGE_NUMBERS),
-        )
-        self.display_page_numbers.grid(row=1, column=0, sticky="NSEW", pady=5)
+        ).grid(row=1, column=0, sticky="NSEW", pady=5)
 
         # Whether h2 headings should include multiple lines
-        self.display_page_numbers = ttk.Checkbutton(
+        ttk.Checkbutton(
             self.top_frame,
             text="Multi-line Chapter Headings",
             variable=PersistentBoolean(PrefKey.HTML_MULTILINE_CHAPTER_HEADINGS),
-        )
-        self.display_page_numbers.grid(row=2, column=0, sticky="NSEW", pady=5)
+        ).grid(row=2, column=0, sticky="NSEW", pady=5)
+
+        # Whether h3 headings should be added
+        ttk.Checkbutton(
+            self.top_frame,
+            text="Mark Up Single-line Section Headings",
+            variable=PersistentBoolean(PrefKey.HTML_SECTION_HEADINGS),
+        ).grid(row=3, column=0, sticky="NSEW", pady=5)
 
         # Markup conversion
         markup_frame = ttk.LabelFrame(self.top_frame, text="Inline Markup", padding=2)
-        markup_frame.grid(row=3, column=0, sticky="NSEW")
+        markup_frame.grid(row=4, column=0, sticky="NSEW")
         for col, text in enumerate(
             ("Keep", "<em>", "<em class>", "<span class>"), start=1
         ):
@@ -148,7 +153,7 @@ class HTMLGeneratorDialog(ToplevelDialog):
             self.top_frame,
             text="Auto-generate HTML",
             command=html_autogenerate,
-        ).grid(row=4, column=0, pady=2)
+        ).grid(row=5, column=0, pady=2)
 
 
 def html_autogenerate() -> None:
@@ -332,7 +337,7 @@ def html_convert_body() -> None:
     contents_start = "1.0"
     in_chap_heading = False
     in_h1_heading = False
-    chap_id = ""
+    sec_chap_id = ""
     chap_heading = ""
     auto_toc = ""
     in_para = False
@@ -838,7 +843,7 @@ def html_convert_body() -> None:
                     next_step += 1
                 # Don't want footnote anchors in auto ToC
                 chap_heading = re.sub(r"\[.{1,5}\]", "", chap_heading)
-                auto_toc += f'<a href="#{chap_id}">{chap_heading}</a><br>\n'
+                auto_toc += f'<a href="#{sec_chap_id}">{chap_heading}</a><br>\n'
                 in_chap_heading = False
             continue
 
@@ -850,31 +855,60 @@ def html_convert_body() -> None:
             maintext().insert(f"{line_start} -1l lineend", "</p>")
             in_para = False
         else:
-            # blank line - not in paragraph, so might be chapter heading
-            chap_check = maintext().get(f"{line_start}-3l", f"{line_start}+1l lineend")
-            if re.match(r"\n\n\n\n[^\n]", chap_check):
+            # blank line - not in paragraph, so might be section or chapter heading
+            sec_chap_check = maintext().get(
+                f"{line_start}-3l", f"{line_start}+1l lineend"
+            )
+            is_chap = bool(re.match(r"\n\n\n\n[^\n]", sec_chap_check))
+            is_sec = False
+            if not is_chap and preferences.get(PrefKey.HTML_SECTION_HEADINGS):
+                sec_chap_check = maintext().get(
+                    f"{line_start}-1l", f"{line_start}+1l lineend"
+                )
+                single_line_check = (
+                    maintext()
+                    .get(f"{line_start}+2l", f"{line_start}+2l lineend")
+                    .strip()
+                    == ""
+                )
+                is_sec = single_line_check and bool(
+                    re.match(r"\n\n[^\n]", sec_chap_check)
+                )
+            if is_chap or is_sec:
                 # Look ahead to see what's coming next
-                # Don't want to treat h1, centered, poetry, etc as an h2 heading
-                # even if it has 4 blank lines before it.
-                chap_check = chap_check.lstrip("\n")
+                # Don't want to treat h1, centered, poetry, etc as a heading
+                # even if it has 2/4 blank lines before it.
+                sec_chap_check = sec_chap_check.lstrip("\n")
                 if re.match(
-                    r"<h1>|\[Illustration|\[Sidenote|\[Footnote|/[$*#cfilprx]",
-                    chap_check,
+                    r"<h1>|\[Illustration|\[Sidenote|\[Footnote|/[$*#cfilprx]|[$*#cfilprx]/|]",
+                    sec_chap_check,
                     flags=re.IGNORECASE,
                 ):
                     continue
-                chap_id = make_anchor_id(
+                sec_chap_id = make_anchor_id(
                     maintext().get(f"{line_start}+1l", f"{line_start}+1l lineend")
                 )
-                maintext().insert(
-                    f"{line_start}+1l linestart",
-                    f'  <h2 class="nobreak" id="{chap_id}">\n',
-                )
-                next_step += 1
-                in_chap_heading = True
-                chap_start = step
-                chap_head_blanks = 0
-                chap_heading = ""
+                if is_chap:
+                    maintext().insert(
+                        f"{line_start}+1l linestart",
+                        f'  <h2 class="nobreak" id="{sec_chap_id}">\n',
+                    )
+                    next_step += 1
+                    in_chap_heading = True
+                    chap_start = step
+                    chap_head_blanks = 0
+                    chap_heading = ""
+                elif is_sec:
+                    maintext().insert(
+                        f"{line_start}+1l lineend",
+                        "\n</h3>",
+                    )
+                    maintext().insert(
+                        f"{line_start}+1l linestart",
+                        f'<h3 id="{sec_chap_id}">\n  ',
+                    )
+                    next_step += 3
+
     # End of line-at-a-time loop
 
     # May hit end of file without a final blank line
