@@ -651,7 +651,7 @@ class HTMLValidator:
                     "Content-Encoding": "gzip",
                     "Accept-Encoding": "gzip",
                 },
-                timeout=15,
+                timeout=30,
             )
         except requests.exceptions.Timeout as exc:
             report_exception(f"Request to {validator_url} timed out.", exc)
@@ -796,7 +796,7 @@ class CSSValidator:
         }
         try:
             response = requests.post(
-                validator_url, data=params, files=files, timeout=15
+                validator_url, data=params, files=files, timeout=30
             )
         except requests.exceptions.Timeout as exc:
             report_exception(f"Request to {validator_url} timed out.", exc)
@@ -1392,7 +1392,7 @@ class EbookmakerCheckerAPI:
             self.dialog.display_entries()
             self.dialog.lift()
 
-        timeout = 300
+        timeout = 900
 
         build = []
         # Create list of formats to build
