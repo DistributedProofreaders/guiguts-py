@@ -1677,6 +1677,22 @@ class MainWindow:
             "*Entry.disabledForeground",
             themed_style().lookup("TCombobox", "foreground", state=("disabled",)),
         )
+        root().option_add(
+            "*Entry.borderWidth",
+            0,
+        )
+        root().option_add(
+            "*Entry.highlightThickness",
+            1,
+        )
+        root().option_add(
+            "*Entry.highlightBackground",
+            themed_style().lookup("TCombobox", "bordercolor"),
+        )
+        root().option_add(
+            "*Entry.highlightColor",
+            themed_style().lookup("TCombobox", "focuscolor"),
+        )
 
     def hide_image(self) -> None:
         """Stop showing the current image."""
