@@ -3584,7 +3584,7 @@ class MainText(tk.Text):
         Args:
             start_index: Beginning of first line to center.
             end_index: Beginning of line immediately after text block (the "i/" line).
-            left_margin: Left margin that long lines wrap to.
+            wrap_margin: Left margin that long lines wrap to.
             main_margin: Left margin for main index entries
             right_margin: Right margin to wrap between.
             wrapper: TextWrapper object to perform the wrapping - re-used for efficiency.
@@ -3595,6 +3595,22 @@ class MainText(tk.Text):
             IndexRowCol(end_index),
             tk.RIGHT,
         )
+        # Index may have been wrapped before, so first go through and find minimum indent
+        # within range, and ignore that number of spaces at the start of all lines.
+        min_indent = 999
+        line_start = start_index
+        while self.compare(line_start, "<", INDEX_END_MARK):
+            line_end = self.index(f"{line_start} lineend")
+            line = self.get(line_start, line_end).rstrip()
+            if line:
+                # Don't include pagemark pins in calculations, since removed after wrapping
+                line_no_pin = line.replace(PAGEMARK_PIN, "")
+                min_indent = min(
+                    min_indent, len(line_no_pin) - len(line_no_pin.lstrip())
+                )
+            line_start = self.index(f"{line_start}+1l")
+
+        # Now do actual wrapping
         line_start = start_index
         while self.compare(line_start, "<", INDEX_END_MARK):
             line_end = self.index(f"{line_start} lineend")
@@ -3605,9 +3621,8 @@ class MainText(tk.Text):
                 continue
             # Don't include pagemark pins in calculations, since removed after wrapping
             line_no_pin = line.replace(PAGEMARK_PIN, "")
-            match = re.match(r"( +)", line_no_pin)
-            indent = len(match[1]) if match else 0
-
+            # Remove min_indent (i.e. whole index had been indented by this previously)
+            indent = len(line_no_pin) - len(line_no_pin.lstrip()) - min_indent
             # Mark next line postion in case wrapping below changes line numbering
             self.set_mark_position(
                 INDEX_NEXT_LINE_MARK,
