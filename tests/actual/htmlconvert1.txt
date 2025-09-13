@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+      -----File: 001.png--------------------------------------------------------- | Project Gutenberg
+    </title>
+    <link rel="icon" href="images/cover.jpg" type="image/x-cover">
+    <style>
+
+body {
+    margin-left: 10%;
+    margin-right: 10%;
+}
+
+h1,h2,h3,h4,h5,h6 {
+    text-align: center; /* all headings centered */
+    clear: both;
+}
+
+p {
+    margin-top: .51em;
+    text-align: justify;
+    margin-bottom: .49em;
+}
+
+.p2       {margin-top: 2em;}
+.p4       {margin-top: 4em;}
+.p6       {margin-top: 6em;}
+
+hr {
+    width: 33%;
+    margin-top: 2em;
+    margin-bottom: 2em;
+    margin-left: 33.5%;
+    margin-right: 33.5%;
+    clear: both;
+}
+
+hr.tb   {width: 45%; margin-left: 27.5%; margin-right: 27.5%;}
+hr.chap {width: 65%; margin-left: 17.5%; margin-right: 17.5%;}
+@media print { hr.chap {display: none; visibility: hidden;} }
+hr.full {width: 95%; margin-left: 2.5%; margin-right: 2.5%;}
+
+hr.r5  {width: 5%; margin-top: 1em; margin-bottom: 1em; margin-left: 47.5%; margin-right: 47.5%;}
+hr.r65 {width: 65%; margin-top: 3em; margin-bottom: 3em; margin-left: 17.5%; margin-right: 17.5%;}
+ 
+div.chapter {page-break-before: always;}
+h2.nobreak  {page-break-before: avoid;}
+
+ul.index { list-style-type: none; }
+li.ifrst {
+    margin-top: 1em;
+    text-indent: -2em;
+    padding-left: 1em;
+}
+li.indx  {
+    margin-top: .5em;
+    text-indent: -2em;
+    padding-left: 1em;
+}
+li.isub1 {
+    text-indent: -2em;
+    padding-left: 2em;
+}
+li.isub2 {
+    text-indent: -2em;
+    padding-left: 3em;
+}
+li.isub3 {
+    text-indent: -2em;
+    padding-left: 4em;
+}
+li.isub4 {
+    text-indent: -2em;
+    padding-left: 5em;
+}
+
+table {
+    margin-left: auto;
+    margin-right: auto;
+}
+table.autotable    { border-collapse: collapse; }
+table.autotable td,
+table.autotable th { padding: 0.25em; }
+
+.tdl      {text-align: left;}
+.tdr      {text-align: right;}
+.tdc      {text-align: center;}
+
+.pagenum { /* uncomment the next line for invisible page numbers */
+    /*  visibility: hidden;  */
+    position: absolute;
+    left: 92%;
+    font-size: small;
+    text-align: right;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-indent: 0;
+} /* page numbers */
+
+.linenum {
+    position: absolute;
+    top: auto;
+    left: 4%;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+} /* poetry number */
+
+blockquote {
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 5%;
+    margin-right: 10%;
+}
+
+.sidenote {
+    width: 20%;
+    padding-bottom: .5em;
+    padding-top: .5em;
+    padding-left: .5em;
+    padding-right: .5em;
+    margin-left: 1em;
+    float: right;
+    clear: right;
+    margin-top: 1em;
+    font-size: small;
+    color: black;
+    background: #eeeeee;
+    border: 1px dashed;
+}
+
+.bb       {border-bottom: 2px solid;}
+
+.bl       {border-left: 2px solid;}
+
+.bt       {border-top: 2px solid;}
+
+.br       {border-right: 2px solid;}
+
+.bbox     {border: 2px solid;}
+
+.center   {text-align: center;}
+
+.right    {text-align: right;}
+
+.smcap    {font-variant: small-caps;}
+
+.allsmcap {font-variant: small-caps; text-transform: lowercase;}
+
+.u        {text-decoration: underline;}
+
+.gesperrt
+{
+    font-style: normal;
+    letter-spacing: 0.2em;
+    margin-right: -0.2em;
+}
+.x-ebookmaker-2 .gesperrt {
+    font-style: italic;
+    letter-spacing: normal;
+    margin-right: 0em;
+}
+
+figcaption   {font-weight: bold;}
+figcaption p {margin-top: 0; margin-bottom: .2em; text-align: inherit;}
+
+/* Images */
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+img.w100 {width: 100%;}
+
+
+.figcenter {
+    margin: auto;
+    text-align: center;
+    page-break-inside: avoid;
+    max-width: 100%;
+}
+
+.figleft {
+    float: left;
+    clear: left;
+    margin-left: 0;
+    margin-bottom: 1em;
+    margin-top: 1em;
+    margin-right: 1em;
+    padding: 0;
+    text-align: center;
+    page-break-inside: avoid;
+    max-width: 100%;
+}
+/* comment out next line and uncomment the following one for floating figleft on ebookmaker output */
+.x-ebookmaker .figleft {float: none; text-align: center; margin-right: 0;}
+/* .x-ebookmaker .figleft {float: left;} */
+
+.figright {
+    float: right;
+    clear: right;
+    margin-left: 1em;
+    margin-bottom: 1em;
+    margin-top: 1em;
+    margin-right: 0;
+    padding: 0;
+    text-align: center;
+    page-break-inside: avoid;
+    max-width: 100%;
+}
+/* comment out next line and uncomment the following one for floating figright on ebookmaker output */
+.x-ebookmaker .figright {float: none; text-align: center; margin-left: 0;}
+/* .x-ebookmaker .figright {float: right;} */
+
+/* Footnotes */
+.footnotes        {border: 1px dashed;}
+
+.footnote         {margin-left: 10%; margin-right: 10%; font-size: 0.9em;}
+
+.footnote .label  {position: absolute; right: 84%; text-align: right;}
+
+.fnanchor {
+    vertical-align: super;
+    font-size: .8em;
+    text-decoration:
+    none;
+}
+
+/* Poetry */
+/* uncomment the next line for centered poetry */
+/* .poetry-container {display: flex; justify-content: center;} */
+.poetry-container {text-align: center;}
+.poetry           {text-align: left; margin-left: 5%; margin-right: 5%;}
+.poetry .stanza   {margin: 1em auto;}
+.poetry .verse    {text-indent: -3em; padding-left: 3em;}
+
+/* Transcriber's notes */
+.transnote {background-color: #E6E6FA;
+    color: black;
+    font-size:small;
+    padding:0.5em;
+    margin-bottom:5em;
+    font-family:sans-serif, serif;
+}
+
+    </style>
+</head>
+<body>
+
+
+<!-- Autogenerated TOC. Modify or delete as required. -->
+<p>
+<a href="#NOTES_FROM_CALAIS_BASE">NOTES FROM CALAIS BASE ——-File: 002.png————————————————————————————- [Blank Page] ——-File: px003a.png——————————————————————————— /s p003a</a><br>
+<a href="#TRAINING_IN_FRANCE">TRAINING IN FRANCE</a><br>
+<a href="#THE_CARE_OF_THE">THE CARE OF THE WOUNDED</a><br>
+<a href="#THE_ARMYS_PETROL">THE ARMY'S PETROL SUPPLY</a><br>
+<a href="#A_GIANT_COBBLERS_SHOP">A GIANT COBBLER'S SHOP</a><br>
+<a href="#TRAINING_IN_FRANCE">TRAINING IN FRANCE ——-File: 034.png————————————————————————————-</a><br>
+<a href="#TRAINING_IN_FRANCE"><i>TRAINING IN FRANCE</i></a><br>
+<a href="#THE_CARE_OF_THE_WOUNDED">THE CARE OF THE WOUNDED ——-File: 046.png————————————————————————————-</a><br>
+<a href="#THE_CARE_OF_THE_WOUNDED"><i>THE CARE OF THE WOUNDED</i></a><br>
+<a href="#THE_ARMYS_PETROL_SUPPLY">THE ARMY'S PETROL SUPPLY ——-File: 060.png————————————————————————————-</a><br>
+<a href="#THE_ARMYS_PETROL_SUPPLY"><i>THE ARMY'S PETROL SUPPLY</i></a><br>
+<a href="#A_GIANT_COBBLERS_SHOP">A GIANT COBBLER'S SHOP ——-File: 074.png————————————————————————————-</a><br>
+<a href="#A_GIANT_COBBLERS_SHOP"><i>A GIANT COBBLER'S SHOP</i></a>
+</p>
+<!-- End Autogenerated TOC. -->
+
+<p>——-File: 001.png————————————————————————————-</p>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="NOTES_FROM_CALAIS_BASE">
+    NOTES FROM CALAIS BASE
+    ——-File: 002.png————————————————————————————-
+    [Blank Page]
+    ——-File: px003a.png———————————————————————————
+    <br>
+    /s p003a
+  </h2>
+</div>
+
+
+<p>
+  NOTES<br>
+  from CALAIS BASE<br>
+<span class="pagenum" id="Page_1">[Pg 1]</span>  .bn p003sa.png<br>
+  <br>
+  AND PICTURES OF ITS<br>
+  MANY ACTIVITIES<br>
+  <br>
+  By C. E. MONTAGUE<br>
+  <br>
+  LONDON: T. FISHER UNWIN, Ltd.<br>
+  1, ADELPHI TERRACE, W.C.<br>
+  1918
+</p>
+<p>——-File: 004.png————————————————————————————-</p>
+
+<hr class="chap x-ebookmaker-drop">
+
+<div class="chapter">
+<p>
+  Printed in Great Britain by<br>
+  <span class="smcap">The Avenue Press</span><br>
+  (<span class="smcap">L. Upcott Gill &amp; Son, Ltd.</span>),<br>
+  <span class="smcap">London</span>.
+</p>
+</div>
+<p>——-File: 005.png————————————————————————————-</p>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="TRAINING_IN_FRANCE">
+    TRAINING IN FRANCE
+  </h2>
+</div>
+
+
+<p>Of course all our troops are trained
+before they go to France,
+whether the individual soldier
+goes out with his battalion or in
+a draft sent from its reserve battalion
+at home to reinforce it.
+But when reinforcements are landed in France they
+are put through a further course of instruction,
+before they go up to join their regiments at the
+Front.</p>
+
+<p>This final period of instruction is very short; it
+is tightly packed with work; it assumes that the
+men already know their work and only need to do
+it with greater finish; and it is given by the best
+experts the British Army possesses in trench warfare
+as it is carried on to-day. That is, really
+to-day, and not as it was carried on six or even
+three months ago.</p>
+
+
+<h3 id="Training_Schools">
+  Training Schools.
+</h3>
+
+<p>For these infantry training schools at the base
+are in constant living contact with the Front.
+The instructors come fresh from the trenches,
+——-File: 006.png————————————————————————————-
+and if the latest experience gained by the Army
+on the Somme or before Cambrai leads to a
+change in the recognised technique of bomb-throwing
+or the cutting out of an unnecessary
+movement in the bayonet exercise, the officers and
+non-commissioned officers who instruct can show
+the young soldier, from their own experience, just
+how the improvement will help him at the crisis of
+a scrimmage.</p>
+
+<p>Thus the course may be compared with the short
+final period of very exacting coaching in which
+"racing polish" is put on a boat's crew which has
+already undergone a long training. Or it may be
+compared with the "post-graduate courses" in
+a university, at which the latest results of special
+research are imparted by original researchers to
+students whose previous ordinary training enables
+them to profit by this higher teaching.</p>
+
+
+<h3 id="Trench_Warfare">
+  Trench Warfare.
+</h3>
+
+<p>The men under instruction have to learn—or else
+show that they know already—everything that a
+soldier in trenches must know in order to protect
+himself and endanger the enemy. They are "put
+through it" in the ordinary parade movements in
+close order, in open order work, in bayonet fighting,
+musketry and bombing. There is not much
+time for each subject, but none is wasted; the men
+——-File: 007.png————————————————————————————-
+are intensely keen to get up to their regiments, and
+they know that they cannot go till they are
+passed as qualified; the instructors teach with
+the zest of veterans relating their own experiences
+to recruits.</p>
+
+
+<h3 id="No_Idle_Moments">
+  No Idle Moments.
+</h3>
+
+<p>There is not a vacant moment in which to be
+bored. Work is knocked off for an hour towards
+mid-day to let the men eat the rations which the
+drafts have brought in their haversacks from their
+quarters at the base depôt[**Add circumflex above o?] camp of the division to
+which their battalion belongs. But a band begins
+to play from the moment of dismissing, and it also
+gives priceless help in keeping up march discipline
+and smartness on the few route marches for which
+there is room in the course.</p>
+
+
+<h3 id="Defence_against_Gas">
+  Defence against Gas.
+</h3>
+
+<p>A detail, which needs care and gets it, is instruction
+in self-defence against gas. Lachrymatory gas
+is comparatively a trifle. The men are practised
+in walking through an open trench full of the
+heliotrope smell of the gas, and come out shedding
+tears and laughing at the far end. The more
+serious poison gas is let loose in a tunnel-like
+chamber through which every officer and man
+bound for the Front must pass. The foul stuff in
+——-File: 008.png————————————————————————————-
+the chamber is some hundred times as dense as any
+gas to be met in actual warfare. But if the man's
+gas mask is in order, and he uses it as he has been
+told, he suffers no inconvenience while passing
+through or afterwards, and thenceforward no
+German gas has any terrors for him.</p>
+
+
+<h3 id="Varied_Lessons">
+  Varied Lessons.
+</h3>
+
+<p>The photographs bring out many interesting
+details in the training course. One of them shows,
+in a night scene, how skilfully the general atmosphere
+of the Front, as well as the details of
+trenches and craters, is reproduced for purposes
+of instruction. Another shows non-commissioned
+officers receiving instruction by the help of
+"picture targets" in the indispensable art of
+describing any point in a landscape exactly and
+tersely. In a photograph of the bayonet-fighting
+course the Indian soldiers' firm balance of the body
+and excellent carriage of the head are noticeable.</p>
+
+
+<h3 id="Sandbag-Filling">
+  Sandbag-Filling.
+</h3>
+
+<p>Speed in sandbag-filling, for trench fortification
+purposes, is extremely important; in some
+battalions it is encouraged by systematic competitions,
+the competitors working in pairs. Note, in
+the photograph of men aiming or loading, in a lying
+position, the uniformity with which their heels are
+——-File: 009.png————————————————————————————-
+kept down. In a badly trained draft several heels
+would be sticking up, inviting enemy bullets.</p>
+
+
+<h3 id="Swedish_Drill">
+  Swedish Drill.
+</h3>
+
+<p>The photographs of Swedish drill or "physical
+exercise"—as one out of a soldier's many forms
+of physical exercise is formally called—do less than
+justice to that admirable part of our present
+military training. Its object is not to produce a
+rigid protrusion of the chest or a poker-like
+straightness of figure, but to give every separate
+muscle in the body its share of work and development,
+and also to give a free, easy balance and
+elasticity to the whole. There is still, in the New
+Army, so much of the tradition, or instinct, of the
+old one that the men will insist on "throwing
+a chest" when confronted with a camera on a
+parade ground. The value of Swedish drill is
+realised later when sterner conditions demand the
+"negotiation" of trenches, fences and breastworks.</p>
+
+
+<h3 id="En_Route">
+  En Route.
+</h3>
+
+<p>The photograph of troops disembarking in
+France, prior to boarding the train for "Somewhere
+in France," needs no explanation. Railway
+accommodation is not luxurious, but a good soldier
+is generally a great boy, and it is an unfailing
+——-File: 010.png————————————————————————————-
+source of boyish pleasure to our troops in France to
+be restrained by no railway bye-laws and to be
+allowed to travel, in adventurous discomfort, in
+or on every sort of closed or open truck except an
+ordinary passenger carriage.</p>
+
+<p>In the few cases where men who are not
+sick or wounded travel by passenger train,
+there is a noticeable tendency among the
+gayer spirits to travel on the footboard or on the
+roof. A genial array of smiling faces, indicative
+of high spirits, may generally be observed among
+the troops <i>en route</i> for the Front.
+——-File: 011.png————————————————————————————-</p>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="THE_CARE_OF_THE">
+    THE CARE OF THE
+    WOUNDED
+  </h2>
+</div>
+
+
+<p>The first thing to do with a
+wounded man is to "first-aid"
+him. This, of course, is done
+chiefly to check dangerous bleeding,
+prevent the aggravation of
+unset fractures, and, generally,
+to enable the patient to travel with as little risk
+and pain as possible to a place where his injuries
+can be more completely dealt with.</p>
+
+<p>The next thing to do is to get him out of the
+trench. (If he has been wounded in No Man's
+Land, he must first be got back into the trench.)
+If he can walk out, he does. During some of the
+chief engagements on the Somme in 1916 many
+seriously wounded men walked astonishing distances
+to dressing-stations in order to leave the
+ambulances and stretchers for others in still worse
+case.</p>
+
+
+<h3 id="Removal_from_the_Trench">
+  Removal from the Trench.
+</h3>
+
+<p>If a man wounded in or near the firing trench
+cannot walk, he may have to be carried on a
+stretcher for a mile or more along a deep, narrow
+communication trench with scores of right-angled
+——-File: 012.png————————————————————————————-
+turns and a few more irregular incidental twists.
+It may have an uneven and slippery floor, perhaps
+a foot or two under water at its lower-lying parts.</p>
+
+<p>Four strong men, used to the job, find it
+extremely hard work to carry a stretcher case
+along such a trench. They may repeatedly have
+to raise the stretcher well above their heads, almost
+at arm's length, so as to clear the walls of the
+trench at an awkward turning. To overcome this
+difficulty a trolley stretcher, suspended from a
+mono-rail running above the trench almost at the
+surface level, is used in such trenches as permit of
+its passage. It saves an immense amount of
+tedious labour and much lessens the discomfort of
+wounded men.</p>
+
+
+<h3 id="The_Advanced_Dressing-Station">
+  The Advanced Dressing-Station.
+</h3>
+
+<p>Arrived at an advanced dressing-station, a
+patient can be immediately operated upon, if this
+be necessary to save life. Or his wound may be
+one of those which, though grave, are likely to do
+better for some delay before operation. Just whatever
+is necessary at the moment is done; the
+recognised precautions against the states technically
+known as shock and collapse are taken; and
+then the patient is sent on at once to a casualty
+clearing station, with its ampler space and larger
+equipment. Probably he will ultimately pass from
+——-File: 013.png————————————————————————————-
+the C.C.S. to a general, or stationary, hospital
+more remote from the Front, and perhaps to a
+hospital in England.</p>
+
+
+<h3 id="The_Eye_Hospital">
+  The Eye Hospital.
+</h3>
+
+<p>If a case presents any special difficulty it will
+be sent to a specially equipped ward or to a
+specialist hospital. A typical hospital of the kind
+is the Army Eye Hospital, near the coast, commanded
+by a London oculist of distinction. Part
+of its equipment is a magnet of great power, which
+begins to draw out of the eye any fragments of
+metal that are in it as soon as the patient enters
+the room.</p>
+
+<p>By combining the use of instruments with this
+extricatory power of the magnet the sight of many
+men with severe eye-wounds is saved; the hospital
+possesses a remarkable collection of jagged fragments
+and sharp splinters of metal thus cut and
+coaxed out of eyes. Or a man with a rather intractable
+fracture of the thigh may be sent to one
+of the special wards photographed here, where the
+limb, and his whole body, can be slung at any angle
+that is convenient.</p>
+
+
+<h3 id="Ingenious_Aids">
+  Ingenious Aids.
+</h3>
+
+<p>In the British Hospital of St. John of Jerusalem,
+near the French coast, there was lying, throughout
+——-File: 014.png————————————————————————————-
+last winter, an Australian soldier whose life, in the
+opinion of the surgeons, had only just been saved
+by the perfection of a special kind of bed which
+someone had given to the hospital. The man had
+been deeply and very dangerously wounded in the
+back, in such a way that his wounds could not have
+been dressed in an ordinary bed without such
+changes of position as would themselves have been
+injurious.</p>
+
+<p>By an ingenious mechanism the special bed could
+be hoisted, tilted and inclined till it was in any
+desired plane and at any convenient height, and
+any portion of the patient's body could be reached
+without turning him over.</p>
+
+
+<h3 id="A_Perfect_Hospital">
+  A Perfect Hospital.
+</h3>
+
+<p>This Hospital of St. John is perhaps the most
+perfect we have in France. It is housed in good
+wooden huts, amply spaced out and admirably
+planned for convenience in working and administration;
+each wooden ward is light, airy, cheerful
+in colour and provided with every imaginable aid
+to cleanliness and good order. One of its special
+belongings is a cardiograph, or apparatus for
+recording on a chart, by the help of electricity, all
+the movements of the heart, so that in cases of
+irregular action of the heart the evenly serrated
+——-File: 015.png————————————————————————————-
+line produced on the paper by a normal heart action
+is varied with spasmodic upward leaps or downward
+collapses.</p>
+
+
+<h3 id="Varied_Conveyances">
+  Varied Conveyances.
+</h3>
+
+<p>Between the front and the base a wounded man
+may travel, for some part of the way, in any one
+of a large variety of conveyances. The ordinary
+stretcher and the overhead trolley have been mentioned.
+The wheeled stretcher, balancing like a
+dog-cart between two large bicycle wheels, or
+between two smaller ones with pneumatic tyres, is
+extremely useful for saving jolts and labour. Its
+chief sphere of action is between the rear ends of
+communication trenches and the points, perhaps
+a mile or two farther on, beyond which it is not
+advisable for motor ambulances to go. But of
+course it can only be used to advantage where
+the ground to be traversed is not completely
+broken up by shell fire, mines or bombs.</p>
+
+
+<h3 id="Narrow-Gauge_Railways">
+  Narrow-Gauge Railways.
+</h3>
+
+<p>An excellent way of transporting casualties—where
+it is available—is by the narrow-gauge
+Decauville railways which now carry stores and
+ammunition up from many of our full-gauge railheads
+to the front line, or near it. A photograph
+shows two ambulance trolleys accommodating
+——-File: 016.png————————————————————————————-
+four laden stretchers. A similar trolley is used at
+some casualty clearing stations to convey patients
+from the wards to the Red Cross train by which
+they are to be evacuated. Such contrivances are
+sometimes invented independently, in slightly
+different forms, by the staffs of different clearing
+stations or hospitals. Like the combatants, the
+medical officers are constantly devising new
+methods and new apparatus to meet the changing
+needs of active service.</p>
+
+
+<h3 id="Motor_Ambulances">
+  Motor Ambulances.
+</h3>
+
+<p>The motor ambulance, to carry four stretcher
+patients, is the regular means of conveyance from
+a few miles behind the front line to the casualty
+clearing stations at the railheads. "Sitting
+wounded" travel either in motor ambulances, with
+the interior arranged to receive them, or in motor
+lorries—usually in the former. From the casualty
+clearing stations the wounded go to the base, as a
+rule, either by train or by canal.</p>
+
+
+<h3 id="Water_Transport">
+  Water Transport.
+</h3>
+
+<p>For cases requiring special ease of movement
+and quiet the broad, square-built French canal
+boats make excellent travelling hospitals. Nearly
+all the rivers of Northern France are canalised, and
+these waterways are kept up free of toll by the
+——-File: 017.png————————————————————————————-
+State, so that water transport is almost as available
+as transport by rail. A photograph shows
+what roomy wards the ordinary French canal boat
+provides. The boats in British use are usually
+towed in pairs by small tugs. During the battle
+of 1916 the big red crosses on the boats' sides were
+to be seen everywhere on the Somme.</p>
+
+
+<h3 id="Red_Cross_Trains">
+  Red Cross Trains.
+</h3>
+
+<p>The equipment of Red Cross trains is more
+generally known and several improvements have
+been made in it during the war. With its operating
+theatre, kitchen, store-room and staff accommodation,
+a Red Cross train is now a travelling
+hospital rather than a vehicle plying between one
+hospital and another.
+——-File: 018.png————————————————————————————-
+[Blank Page]
+——-File: 019.png————————————————————————————-</p>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="THE_ARMYS_PETROL">
+    THE ARMY'S PETROL
+    SUPPLY
+  </h2>
+</div>
+
+
+<p>In the early part of the war the
+petrol needed for the motor
+transport of the British Expeditionary
+Force was shipped from
+England in tins, ready for use.
+When the growth of the Army
+made more exacting demands on shipping, it was
+decided to economise sea transport by making,
+filling and packing the tins in France.</p>
+
+
+<h3 id="Transplanting_a_Works">
+  Transplanting a Works.
+</h3>
+
+<p>To do this, it was necessary to transplant the
+existing works from England to France. But it
+was also necessary not to interrupt the supply;
+for, without petrol, a modern army would be like
+a modern nation without coal. So one half of the
+plant in England was dismantled and re-erected in
+France, the other half undertaking the whole work
+of supply until the first half was in working order
+in France. Then the second half followed across
+the Channel. The whole migration took twelve
+weeks.
+——-File: 020.png————————————————————————————-</p>
+
+
+<h3 id="Making_Receptacles">
+  Making Receptacles.
+</h3>
+
+<p>Of course, the Army does not run the risks of
+having only one base depôt of petrol. At each of
+its depôts every process is carried out that is
+needed for the transfer of a gallon of petrol from
+a tank steamer lying at a port to the divisional
+lorry or staff car by which it is used. The first
+thing to do is to make receptacles for its conveyance.
+At each depôt there is one factory for
+making tins and another for making the cases or
+boxes in which the tins are packed. A single
+depôt employs more than 200 men and boys on
+these two kinds of work.</p>
+
+<p>The photographs will suggest the power and precision
+of the machinery which they use—one
+machine for cutting out the tin, another for
+shaping the cans, a third for rolling the edges on,
+a fourth for soldering, a fifth for stamping, and so
+on. A leaky tin is, of course, worse than useless,
+so every can has to be tested by air.</p>
+
+
+<h3 id="Filling_the_Tins">
+  Filling the Tins.
+</h3>
+
+<p>The finished and tested can is placed on an endless
+belt at the factory, and travels upon the belt
+to the filling-house. A French woman, girl, or
+boy takes a tin in each hand and fills them with
+petrol, which has been conveyed in pipes from the
+tanks at the port to the tanks at the depôt, and
+——-File: 021.png————————————————————————————-
+thence flows by gravitation to the filling-house.
+These Frenchwomen are extremely industrious
+and cheerful workers, and deserve the good
+wages they get.</p>
+
+
+<h3 id="Packing">
+  Packing.
+</h3>
+
+<p>From their hands the filled tins pass to another
+endless belt to be packed in wooden boxes.
+The photographs show some of the men and
+machines employed in making these boxes. As
+soon as the boxes are filled with tins the covers are
+nailed down, an elevator transports the boxes to a
+"gravity conveyor," on which they descend to the
+"loading platform." Thence lorries take them
+to the store, where they are stacked until their time
+comes to go up by train to the front.</p>
+
+
+<h3 id="Returned_Empties">
+  Returned Empties.
+</h3>
+
+<p>The rule is that every empty tin or case must be
+returned to the depôt. About seven out of every
+ten do return. Of the rest, a few may have been
+lost or destroyed by accident; a few may have
+become casualties of war; a few may have been
+diverted by human frailty into some other service,
+as company water-jars; and a few may have found
+their way to some other part of the front and be
+still serving the cause there.</p>
+
+<p>Wherever they go, near the Front, the eye of
+desire is cast on the wooden cases.  Either as
+——-File: 022.png————————————————————————————-
+building material, as furniture, or as firewood,
+they are treasures that would tempt a saint.</p>
+
+
+<h3 id="Repairs">
+  Repairs.
+</h3>
+
+<p>When a tin returns from the Front it is first
+superficially inspected. If damaged past repair,
+it has the brass screw in the opening removed, and
+then the tin may be used for making paths or for
+building up tiers of seats in an outdoor lecture
+theatre at a training school, or in some other
+secondary occupation. If apparently sound, it is
+first cleaned by one more machine, and then filled
+and stacked upside-down for 10 minutes, with
+other returned tins, in order that small leaks may
+be detected.</p>
+
+<p>If it leaks it goes to the can-testing workshop,
+is tested under pressure, has the defective
+spot marked on it in white chalk, and goes
+forward to the soldering shop. After repair here
+it is tested again, and, when perfect, is issued for
+re-filling. A typical can-repairing shop employs
+26 men, 126 women, and 67 boys.</p>
+
+<p>The men who do the box-making and tin-making
+were, and still are, employees of the company who
+supply the petrol. They have been enrolled in the
+Army, and wear khaki, but are still paid piece
+rates. The women who fill the tins are also
+employees of the company.
+——-File: 023.png————————————————————————————-</p>
+
+
+<h3 id="Transfer_of_Stores">
+  Transfer of Stores.
+</h3>
+
+<p>The line across which the petrol passes from the
+company's hands into those of the Army is just
+outside the doors of the filling sheds. Here the
+Army Service Corps men take the full cases over,
+and give a receipt for each case, in the form of a
+brass disc, to the company's representatives.
+Conversely, the Army Service Corps hand in the
+empty cases and tins to the company's men, and
+receive similar receipts for them. A balance
+between these two sets of receipts is struck at the
+close of business by the officers on both sides.
+——-File: 024.png————————————————————————————-
+[Blank Page]
+——-File: 025.png————————————————————————————-</p>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="A_GIANT_COBBLERS_SHOP">
+    A GIANT COBBLER'S SHOP
+  </h2>
+</div>
+
+
+<p>The biggest cobbler's shop in the
+world is at one of the British
+Army's bases in France. It
+mends the boots of about as many
+persons as live in Liverpool or
+Glasgow. But nearly all the
+persons whose boots it mends are adult men living
+in the open, most of them using their feet on wet
+or rough ground for the greatest part of each day.
+So it has to mend 2,800 boots a day.</p>
+
+
+<h3 id="The_Worn_Boots_Departure">
+  The Worn Boots' Departure.
+</h3>
+
+<p>It would be too much to ask that, after the
+mending, every man should get his own boots back.
+Even if that could be done, he would have to wear
+strange boots meanwhile; for, unlike the soldiers
+of some other countries, the British soldier does
+not bring two pairs of boots into the field, and
+does not want to, having enough weight to carry
+without. So, when his boots need repair, he hands
+them in to his company quartermaster-sergeant
+and sees them no more.</p>
+
+<p>They depart from him into the general stock of
+——-File: 026.png————————————————————————————-
+still serviceable, though not new, army clothing,
+just as his shirt does when he comes out of
+trenches, has a hot shower-bath, and puts on
+somebody's[** possible typo - delete 's?] else's shirt which has been disinfected
+and washed at the Divisional Laundry.</p>
+
+
+<h3 id="The_Receiving_Room">
+  The Receiving Room.
+</h3>
+
+<p>The damaged boots go, higgledy-piggledy, into
+a sack, with others. The sack goes to the rail-head,
+with or without the help of a battalion
+transport cart and a divisional motor lorry. From
+the rail-head the sack goes, without trans-shipment,
+to a siding outside the back door of the base
+repair depôt, and the boots are emptied out on the
+floor of what may be called the receiving room.</p>
+
+<p>Here they are first roughly sorted out and
+cleaned of the mud which often encases them.
+This is done by women. Thence they are passed
+on to an expert shoemaker, to be tried for their life.
+He does nothing but diagnose the condition of boot
+after boot. He picks up each boot, looks it over
+for a couple of seconds with a swift, judicial glance
+at sole, heel, uppers and welt, and throws it down
+on his right or on his left.</p>
+
+
+<h3 id="Bootlaces">
+  Bootlaces.
+</h3>
+
+<p>The boots thrown on his right are not worth
+repair. But even they are worth something. They
+——-File: 027.png————————————————————————————-
+go to another room where women cut out of each
+boot two round pieces of the leather over ankle
+bone on each side. The women do this all day.
+Everybody here does some one special thing all
+day. These discs of leather are passed on to
+another sub-workshop, full of women, who lay
+each disc on a board, stick a kind of awl through
+its middle, put a very sharp knife to its edge, and
+then make it revolve round the awl in such a way
+that the knife cuts an excellent bootlace—a quite
+straight one, too, strange to see—out of the circle
+of leather, paring it down and down till nothing
+of it is left.</p>
+
+
+<h3 id="Nothing_Wasted">
+  Nothing Wasted.
+</h3>
+
+<p>Of what remains of the boot itself the softer
+parts are combined with other ingredients to form
+a useful manure. The more intractable and less
+succulent heel is carried to the furnace room where
+the power needed for the machinery is generated.
+A boot heel has been found to make excellent fuel,
+a large furnace not being particular about its food.
+Thus no part, even of the most decrepit boots, goes
+to waste. It is like the drowned man in the
+<i>Tempest</i>—</p>
+
+<p>
+  Nothing of it that doth fade,<br>
+  But all doth suffer a sea change<br>
+  Into something rich and strange.
+</p>
+<p>——-File: 028.png————————————————————————————-</p>
+
+
+<h3 id="Expert_Assessors">
+  Expert Assessors.
+</h3>
+
+<p>From the judgment chamber those boots which
+are not despaired of pass to a place where another
+body of experts assess the amount of repair required
+by each boot. To each boot one of them
+attaches the kind and quantity of leather required
+to mend it—perhaps a new sole, or a sole and a
+heel, or what not. The boot, together with this
+allowance of material, is then placed in a pigeon
+hole, one out of a great case of pigeon holes. From
+this it is taken, in its turn, by another shoemaker—a
+soldier in khaki, like all the other men here—who
+goes to work on it.</p>
+
+
+<h3 id="Division_of_Labour">
+  Division of Labour.
+</h3>
+
+<p>But he does not do the whole job. One man
+pares down the new sole or heel to the dimensions
+of the particular boot in hand. Another man,
+or woman, holds the boot and the sole in contact
+with a machine which sews on the sole in about the
+time in which you could sprint 100 yards. Another
+person and another machine drive in nails all
+round the sole almost as fast as you could
+draw your finger along the line of nail-heads
+that they trace.</p>
+
+<p>It would be tedious to go through all the other
+stages of repair. But one may hark back to men-*
+——-File: 029.png————————————————————————————-
+*tion one which was forgotten in its place. Just
+after leaving the seat of judgment where, as it
+were, the sheep were separated from the goats,
+each boot to be mended was handed over to an expert
+who put it on a last and simply banged it back,
+with a heavy hammer, into the original shape of
+a new boot.</p>
+
+<p>The effect of this skilful violence seems miraculous
+to the layman. Boots which for months
+have been taking a heavy list to port or starboard
+emerge from the ordeal, to all appearance,
+absolutely upright, although anyone who has
+worn a boot down to one side until the lower part
+of the upper is in contact on one side with the
+ground knows how incorrigible the deformity
+seems.</p>
+
+
+<h3 id="Return_of_the_Renewed_Boots">
+  Return of the Renewed Boots.
+</h3>
+
+<p>The end of it all is that the boots, completely
+mended and re-shod with iron heels, go to a woman
+who bathes them in oil till the leather has drunk
+its fill. Thus they are both softened and re-armed
+against the wet. They are now ready for reissue
+to troops. They go again into a sack, are
+carried back to the railway siding and make the
+return journey to the Front, where the sack will be
+opened by some quartermaster-sergeant, and an
+——-File: 030.png————————————————————————————-
+order will go round some company for any men
+in need of new boots to report at the quartermaster's
+stores.</p>
+
+
+<h3 id="The_Employees">
+  The Employees.
+</h3>
+
+<p>Of the 2,400 persons employed in this huge
+cobbler's shop, 1,500 are women and girls, all
+French. It thus helps to absorb the labour displaced
+in France by the derangement of the cotton,
+linen and woollen industries at and near the seat
+of war in the North. The women and girls earn
+higher wages than they did before the war. They
+are extremely cheerful workers, sing most of the
+time, and look up at the occasional British visitors
+to the place with amused curiosity. To each group
+of them there is assigned as a friend and adviser
+some educated and motherly Englishwoman, a
+volunteer.</p>
+
+
+<h3 id="A_Model_Organisation">
+  A Model Organisation.
+</h3>
+
+<p>The workmen are all British and shoemakers by
+trade. They have either enlisted specially for the
+work or been combed out of ordinary battalions on
+account of their special usefulness here. The
+officers were experts in boot trade management
+before joining the New Army. The whole place is
+a model of industrial organisation. There is
+nowhere in it any trace of the makeshift and rough-*
+——-File: 031.png————————————————————————————-
+*and-ready methods for which the difficulties of war
+are sometimes made an excuse elsewhere. The
+minute economies that are practised in all the
+processes of repair are enough to put to shame any
+visitor who has not done his very utmost to save
+his country money.</p>
+
+<p>The place described is not the only one of its
+kind at the British bases in France. Great as it is,
+it could not mend all the boots of more than two
+million men. But in each of the Army's giant
+cobbler's shops the same methods prevail.
+——-File: 032.png————————————————————————————-
+[Blank Page]
+——-File: 033.png————————————————————————————-</p>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="TRAINING_IN_FRANCE">
+    TRAINING IN FRANCE
+    ——-File: 034.png————————————————————————————-
+  </h2>
+</div>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="TRAINING_IN_FRANCE">
+    <i>TRAINING IN FRANCE</i>
+  </h2>
+</div>
+
+
+<blockquote>
+<p>AMIDST DEADLY FUMES OF GAS—ON[**FF: hanging indent here and below when multi-line]
+THE TRAINING GROUND</p>
+
+<p>GOING THROUGH THE LACHRYMATORY
+DUG-OUT</p>
+
+<p>NIGHT DRILL UNDER  FIRST-LINE
+CONDITIONS</p>
+
+<p>AN  INSTRUCTION  CLASS  AT  THE
+LANDSCAPE TARGET</p>
+
+<p>INDIAN TROOPS AT BAYONET EXERCISE</p>
+
+<p>A LESSON IN SANDBAG-FILLING</p>
+
+<p>AT  MUSKETRY  PRACTICE—PRONE
+POSITION</p>
+
+<p>PREPARING FOR PHYSICAL EXERCISE</p>
+
+<p>PHYSICAL EXERCISE</p>
+
+<p>TROOPS DISEMBARKING</p>
+</blockquote>
+<p>——-File: 035.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>AMIDST DEADLY
+FUMES OF GAS—ON
+THE
+TRAINING GROUND</p>
+</blockquote>
+
+<p>EMERGENCY
+ENTRANCE
+ONLY]
+——-File: 036.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>GOING THROUGH
+THE LACHRYMATORY
+DUG-OUT</p>
+</blockquote>
+<p>]
+——-File: 037.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>NIGHT DRILL
+UNDER FIRST LINE
+CONDITIONS</p>
+</blockquote>
+<p>]
+——-File: 038.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>AN INSTRUCTION
+CLASS AT THE
+LANDSCAPE TARGET</p>
+</blockquote>
+<p>]
+——-File: 039.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>INDIAN TROOPS
+AT
+BAYONET EXERCISE</p>
+</blockquote>
+<p>]
+——-File: 040.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>A LESSON IN
+SANDBAG-FILLING</p>
+</blockquote>
+<p>]
+——-File: 041.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>AT MUSKETRY
+PRACTICE—PRONE
+POSITION</p>
+</blockquote>
+<p>]
+——-File: 042.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>PREPARING FOR
+PHYSICAL EXERCISE</p>
+</blockquote>
+<p>]
+——-File: 043.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>PHYSICAL
+EXERCISE</p>
+</blockquote>
+<p>]
+——-File: 044.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>TROOPS
+DISEMBARKING</p>
+</blockquote>
+<p>]
+——-File: 045.png————————————————————————————-</p>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="THE_CARE_OF_THE_WOUNDED">
+    THE CARE OF THE WOUNDED
+    ——-File: 046.png————————————————————————————-
+  </h2>
+</div>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="THE_CARE_OF_THE_WOUNDED">
+    <i>THE CARE OF THE WOUNDED</i>
+  </h2>
+</div>
+
+
+<blockquote>
+<p>THE OVERHEAD TROLLEY FOR BRINGING[**F1: hanging indent here and below when multi-line]
+WOUNDED THROUGH THE
+TRENCHES</p>
+
+<p>CARRYING WOUNDED IN A TRENCH:
+A DIFFICULT TURN</p>
+
+<p>OUTSIDE AN ADVANCED DRESSING-STATION</p>
+
+<p>THE VENTILATING TUNNELS OF AN
+ADVANCED DRESSING-STATION</p>
+
+<p>SPECIAL WARD OF A HOSPITAL FOR
+FRACTURES OF THE THIGH</p>
+
+<p>A WARD OF ST. JOHN'S AMBULANCE
+BRIGADE HOSPITAL</p>
+
+<p>A WHEELED STRETCHER</p>
+
+<p>A WHEELED STRETCHER WITH
+PNEUMATIC TYRES</p>
+
+<p>AMBULANCE TROLLEYS USED IN THE
+OPEN</p>
+
+<p>AN AMBULANCE BARGE FOR CONVEYANCE
+OF VERY BADLY
+WOUNDED TO THE COAST</p>
+
+<p>INTERIOR OF A HOSPITAL BARGE</p>
+
+<p>AN AMBULANCE WITH HEATING-PIPE
+UNDER SEAT</p>
+</blockquote>
+<p>——-File: 047.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>THE OVERHEAD TROLLEY
+FOR BRINGING WOUNDED
+THROUGH THE TRENCHES</p>
+</blockquote>
+<p>]
+——-File: 048.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>CARRYING WOUNDED
+IN A TRENCH:
+A DIFFICULT TURN</p>
+</blockquote>
+<p>]
+——-File: 049.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>OUTSIDE
+AN ADVANCED
+DRESSING-STATION</p>
+</blockquote>
+<p>]
+——-File: 050.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>THE VENTILATING
+TUNNELS OF AN
+ADVANCED
+DRESSING-STATION</p>
+</blockquote>
+<p>]
+——-File: 051.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>SPECIAL WARD
+OF A HOSPITAL
+FOR FRACTURES
+OF THE THIGH</p>
+</blockquote>
+<p>]
+——-File: 052.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>A WARD
+OF ST. JOHN'S
+AMBULANCE
+BRIGADE HOSPITAL</p>
+</blockquote>
+<p>]
+——-File: 053.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>A WHEELED
+STRETCHER</p>
+</blockquote>
+<p>]
+——-File: 054.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>A WHEELED
+STRETCHER WITH
+PNEUMATIC TYRES</p>
+</blockquote>
+<p>]
+——-File: 055.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>AMBULANCE
+TROLLEYS USED
+IN THE OPEN</p>
+</blockquote>
+<p>]
+——-File: 056.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>AMBULANCE BARGE
+FOR CONVEYANCE
+OF VERY BADLY
+WOUNDED
+TO THE COAST</p>
+</blockquote>
+<p>]
+——-File: 057.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>INTERIOR OF A
+HOSPITAL BARGE</p>
+</blockquote>
+<p>]
+——-File: 058.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>AN AMBULANCE
+WITH HEATING-PIPE[**dash clear on 046.png]
+UNDER SEAT</p>
+</blockquote>
+<p>]
+——-File: 059.png————————————————————————————-</p>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="THE_ARMYS_PETROL_SUPPLY">
+    THE ARMY'S PETROL SUPPLY
+    ——-File: 060.png————————————————————————————-
+  </h2>
+</div>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="THE_ARMYS_PETROL_SUPPLY">
+    <i>THE ARMY'S PETROL SUPPLY</i>
+  </h2>
+</div>
+
+
+<blockquote>
+<p>CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
+CONTAINERS</p>
+
+<p>MAKING THE ROUGH TIN INTO CANS</p>
+
+<p>ROLLING-ON THE EDGES</p>
+
+<p>SOLDERING TINS BY MACHINERY</p>
+
+<p>BUSY AT THE STAMPING MACHINES</p>
+
+<p>TESTING THE CANS BY AIR</p>
+
+<p>INTERIOR OF A FILLING-HOUSE</p>
+
+<p>AN ENDLESS BELT CONVEYING THE
+FILLED TINS</p>
+
+<p>FRENCH WORKPEOPLE PACKING THE
+PETROL TINS INTO BOXES</p>
+
+<p>SOME FRENCH EMPLOYEES OUTSIDE
+THE FILLING-HOUSE</p>
+
+<p>MAKING BOXES BY MACHINERY</p>
+
+<p>IN THE BOX-MAKING DEPARTMENT</p>
+</blockquote>
+<p>——-File: 061.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>CUTTING SHEET
+TIN FOR
+MAKING CONTAINERS</p>
+</blockquote>
+<p>]
+——-File: 062.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>MAKING THE
+ROUGH TIN
+INTO CANS</p>
+</blockquote>
+<p>]
+——-File: 063.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>ROLLING-ON
+THE EDGES</p>
+</blockquote>
+<p>]
+——-File: 064.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>SOLDERING TINS
+BY MACHINERY</p>
+</blockquote>
+<p>]
+——-File: 065.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>BUSY AT THE
+STAMPING MACHINES</p>
+</blockquote>
+<p>]
+——-File: 066.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>TESTING THE
+CANS BY AIR</p>
+</blockquote>
+<p>]
+——-File: 067.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>INTERIOR OF A
+FILLING-HOUSE</p>
+</blockquote>
+<p>]
+——-File: 068.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>AN ENDLESS BELT
+CONVEYING
+THE FILLED TINS</p>
+</blockquote>
+<p>]
+——-File: 069.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>FRENCH
+WORKPEOPLE
+PACKING THE
+PETROL TINS
+INTO BOXES</p>
+</blockquote>
+<p>]
+——-File: 070.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>SOME FRENCH
+EMPLOYEES
+OUTSIDE THE
+FILLING-HOUSE</p>
+</blockquote>
+<p>]
+——-File: 071.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>MAKING BOXES
+BY MACHINERY</p>
+</blockquote>
+<p>]
+——-File: 072.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>IN THE BOX-MAKING
+DEPARTMENT</p>
+</blockquote>
+<p>]
+——-File: 073.png————————————————————————————-</p>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="A_GIANT_COBBLERS_SHOP">
+    A GIANT COBBLER'S SHOP
+    ——-File: 074.png————————————————————————————-
+  </h2>
+</div>
+
+
+<hr class="chap x-ebookmaker-drop">
+<div class="chapter">
+  <h2 class="nobreak" id="A_GIANT_COBBLERS_SHOP">
+    <i>A GIANT COBBLER'S SHOP</i>
+  </h2>
+</div>
+
+
+<blockquote>
+<p>SORTING THE BOOTS</p>
+
+<p>CUTTING OFF TOPS OF OLD BOOTS TO
+MAKE INTO LACES</p>
+
+<p>NAILING SOLES BY MACHINERY</p>
+
+<p>REPAIRING RUBBER BOOTS</p>
+
+<p>GIRLS IN THE RUBBER-BOOT REPAIRING
+SHOP</p>
+
+<p>ROLLING-BOILERS FOR WASHING
+WATERPROOF SHEETS</p>
+</blockquote>
+<p>——-File: 075.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>SORTING
+THE BOOTS</p>
+</blockquote>
+<p>]
+——-File: 076.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>CUTTING OFF TOPS
+OF OLD BOOTS TO
+MAKE INTO LACES</p>
+</blockquote>
+<p>]
+——-File: 077.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>NAILING SOLES
+BY MACHINERY</p>
+</blockquote>
+<p>]
+——-File: 078.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>REPAIRING
+RUBBER BOOTS</p>
+</blockquote>
+<p>]
+——-File: 079.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>GIRLS IN THE
+RUBBER-BOOT
+REPAIRING SHOP</p>
+</blockquote>
+<p>]
+——-File: 080.png————————————————————————————-</p>
+
+<p>[Illustration:</p>
+
+<blockquote>
+<p>ROLLING-BOILERS
+FOR WASHING
+WATERPROOF
+SHEETS</p>
+</blockquote>
+<p>]</p>
+
+</body>
+</html>

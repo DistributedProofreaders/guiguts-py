@@ -115,6 +115,7 @@ class PrefKey(StrEnum):
     HTML_UNDERLINE_MARKUP = auto()
     HTML_SHOW_PAGE_NUMBERS = auto()
     HTML_MULTILINE_CHAPTER_HEADINGS = auto()
+    HTML_SECTION_HEADINGS = auto()
     HTML_IMAGE_UNIT = auto()
     HTML_IMAGE_OVERRIDE_EPUB = auto()
     HTML_IMAGE_ALIGNMENT = auto()
