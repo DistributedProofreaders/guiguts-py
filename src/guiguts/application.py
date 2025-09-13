@@ -1673,7 +1673,6 @@ class Guiguts:
             elif os_mode == "Dark" and tk_theme != "awdark":
                 themed_style().theme_use("awdark")
                 self.mainwindow.toolbar_theme_update()
-        else:
             root().after(2500, self.update_theme)
 
     def high_contrast_callback(self, _value: bool) -> None:
