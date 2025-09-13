@@ -18,6 +18,8 @@ from guiguts.checkers import (
     CheckerEntry,
     CheckerMatchType,
     CheckerEntrySeverity,
+    CheckerViewOptionsDialog,
+    CheckerFilterErrorPrefix,
 )
 from guiguts.data import cp_files
 from guiguts.file import the_file
@@ -41,6 +43,13 @@ CP_NOHYPH = str(importlib.resources.files(cp_files).joinpath("no_hyphen.json"))
 NOH_KEY = "no_hyphen"
 CP_SCANNOS = str(importlib.resources.files(cp_files).joinpath("scannos.json"))
 CP_ENGLIFH = str(importlib.resources.files(cp_files).joinpath("fcannos.json"))
+
+HEAD_FOOT_CHECKER_FILTERS = [
+    CheckerFilterErrorPrefix("Odd Headers", "Odd Header.*"),
+    CheckerFilterErrorPrefix("Even Headers", "Even Header.*"),
+    CheckerFilterErrorPrefix("Odd Footers", "Odd Footer.*"),
+    CheckerFilterErrorPrefix("Even Footers", "Even Footer.*"),
+]
 
 
 def export_prep_text_files() -> None:
@@ -172,6 +181,16 @@ class DehyphenatorCheckerDialog(CheckerDialog):
         ttk.Button(
             self.custom_frame, text="Keep⇔Remove", command=self.checker.swap_keep_remove
         ).grid(row=0, column=1, padx=(20, 0))
+        ttk.Button(
+            self.custom_frame,
+            text="All⇒Remove",
+            command=lambda: self.checker.all_keep_remove(remove=True),
+        ).grid(row=0, column=2, padx=(10, 0))
+        ttk.Button(
+            self.custom_frame,
+            text="All⇒Keep",
+            command=lambda: self.checker.all_keep_remove(remove=False),
+        ).grid(row=0, column=3, padx=(10, 0))
 
 
 class DehyphenatorChecker:
@@ -217,6 +236,8 @@ class DehyphenatorChecker:
         # Combine into a single set
         no_hyphens = set(always_noh[NOH_KEY]) | set(words)
 
+        # Some tests are English-only
+        english = any(lang.startswith("en") for lang in maintext().get_language_list())
         # For every end-of-line hyphen, check if the potentially-joined word
         # is in our set of good non-hyphenated words
         start = maintext().start().index()
@@ -252,25 +273,26 @@ class DehyphenatorChecker:
             start_rowcol = maintext().rowcol(f"{start} lineend -{lf1}c")
             end_rowcol = maintext().rowcol(f"{start} +1l linestart +{lf2}c")
             remove = f"{frag1}{frag2}" in no_hyphens
-            if not remove:
-                remove = bool(
-                    re.match(
-                        r"\b([\w]?ing|[ts]ion|est|er|[mst]?ent|[\w]?ie)[s]?$", frag2
+            if english:
+                if not remove:
+                    remove = bool(
+                        re.match(
+                            r"\b([\w]?ing|[ts]ion|est|er|[mst]?ent|[\w]?ie)[s]?$", frag2
+                        )
                     )
-                )
-            if not remove:
-                remove = bool(re.match(r"\b([dt]?ed|[\w]?ly)$", frag2))
-            if not remove:
-                remove = frag2 == "ness" or frag1 in (
-                    "con",
-                    "ad",
-                    "as",
-                    "en",
-                    "un",
-                    "re",
-                    "de",
-                    "im",
-                )
+                if not remove:
+                    remove = bool(re.match(r"\b([dt]?ed|[\w]?ly)$", frag2))
+                if not remove:
+                    remove = frag2 == "ness" or frag1 in (
+                        "con",
+                        "ad",
+                        "as",
+                        "en",
+                        "un",
+                        "re",
+                        "de",
+                        "im",
+                    )
             if not remove and use_dict:
                 remove = (
                     spell_checker.spell_check_word(f"{frag1}{frag2}", dummy_proj_dict)
@@ -295,7 +317,6 @@ class DehyphenatorChecker:
         end_mark = DehyphenatorCheckerDialog.mark_from_rowcol(
             checker_entry.text_range.end
         )
-        maintext().undo_block_begin()
         # Fetch and delete second half of word
         part2 = maintext().get(f"{end_mark} linestart", end_mark)
         maintext().delete(f"{end_mark} linestart", end_mark)
@@ -341,6 +362,45 @@ class DehyphenatorChecker:
         self.dialog.text.delete(ep_index, ep_end)
         self.dialog.select_entry_by_index(entry_index)
 
+    def all_keep_remove(self, remove: bool) -> None:
+        """Swap keep/remove prefix for the selected message."""
+        entry_index = self.dialog.current_entry_index()
+        old_prefix = (
+            DehyphenatorChecker.keep_prefix
+            if remove
+            else DehyphenatorChecker.remove_prefix
+        )
+        new_prefix = (
+            DehyphenatorChecker.remove_prefix
+            if remove
+            else DehyphenatorChecker.keep_prefix
+        )
+        for idx, entry in enumerate(self.dialog.entries):
+            if remove == (entry.error_prefix == DehyphenatorChecker.remove_prefix):
+                continue
+            entry.error_prefix = new_prefix
+            linenum = self.dialog.linenum_from_entry_index(idx)
+            ep_index = self.dialog.text.search(
+                old_prefix, f"{linenum}.0", f"{linenum}.end"
+            )
+            if not ep_index:
+                continue
+            ep_end = f"{ep_index}+{len(old_prefix)}c"
+            self.dialog.text.insert(
+                ep_end, entry.error_prefix, HighlightTag.CHECKER_ERROR_PREFIX
+            )
+            self.dialog.text.delete(ep_index, ep_end)
+        if entry_index is not None:
+            self.dialog.select_entry_by_index(entry_index)
+
+
+class HeadFootViewOptionsDialog(CheckerViewOptionsDialog):
+    """Minimal class to identify dialog type.
+
+    This dialog is never displayed."""
+
+    manual_page = "Content_Providing_Menu#Header/Footer_Removal"
+
 
 class HeadFootCheckerDialog(CheckerDialog):
     """Header/Footer Checker dialog."""
@@ -364,6 +424,57 @@ class HeadFootCheckerDialog(CheckerDialog):
             **kwargs,
         )
 
+        self.view_options_frame.grid_remove()
+
+        # Odd/Even page flags don't warrant View Options, so simulate
+        # using checkbuttons in this dialog instead
+        def btn_clicked(
+            idx: int,
+            var: tk.BooleanVar,
+            wgt: ttk.Checkbutton,
+        ) -> None:
+            """Called when even/odd settings are changed."""
+            self.view_options_filters[idx].on = var.get()
+            self.display_entries()
+            wgt.focus()  # Or focus gets pulled to list
+
+        odd_head_var = tk.BooleanVar(value=True)
+        odd_head_btn = ttk.Checkbutton(
+            self.custom_frame,
+            text="Odd Headers",
+            variable=odd_head_var,
+        )
+        odd_head_btn["command"] = lambda: btn_clicked(0, odd_head_var, odd_head_btn)
+        odd_head_btn.grid(row=0, column=0, padx=5)
+        self.view_options_filters[0].on = True
+        even_head_var = tk.BooleanVar(value=True)
+        even_head_btn = ttk.Checkbutton(
+            self.custom_frame,
+            text="Even Headers",
+            variable=even_head_var,
+        )
+        even_head_btn["command"] = lambda: btn_clicked(1, even_head_var, even_head_btn)
+        even_head_btn.grid(row=0, column=1, padx=5)
+        self.view_options_filters[1].on = True
+        odd_foot_var = tk.BooleanVar(value=True)
+        odd_foot_btn = ttk.Checkbutton(
+            self.custom_frame,
+            text="Odd Footers",
+            variable=odd_foot_var,
+        )
+        odd_foot_btn["command"] = lambda: btn_clicked(2, odd_foot_var, odd_foot_btn)
+        odd_foot_btn.grid(row=0, column=2, padx=5)
+        self.view_options_filters[2].on = True
+        even_foot_var = tk.BooleanVar(value=True)
+        even_foot_btn = ttk.Checkbutton(
+            self.custom_frame,
+            text="Even Footers",
+            variable=even_foot_var,
+        )
+        even_foot_btn["command"] = lambda: btn_clicked(3, even_foot_var, even_foot_btn)
+        even_foot_btn.grid(row=0, column=3, padx=5)
+        self.view_options_filters[3].on = True
+
 
 class HeadFootChecker:
     """Header/Footer checker."""
@@ -372,6 +483,8 @@ class HeadFootChecker:
     footer_prefix = "Footer: "
     pagenum_prefix = "Page Number"
     posspg_prefix = "Page Num?"
+    num_allcap_prefix = "Num & Allcap"
+    newline_prefix = "Blank lines"
 
     def __init__(self) -> None:
         """Initialize Header/Footer checker."""
@@ -393,6 +506,8 @@ class HeadFootChecker:
             process_command=self.delete_head_foot,
             sort_key_alpha=sort_key_error,
             match_on_highlight=CheckerMatchType.ERROR_PREFIX,
+            view_options_dialog_class=HeadFootViewOptionsDialog,
+            view_options_filters=HEAD_FOOT_CHECKER_FILTERS,
         )
 
     def run(self) -> None:
@@ -400,7 +515,9 @@ class HeadFootChecker:
         self.dialog.reset()
 
         start = maintext().start().index()
+        even_odd = "Even"
         while start := maintext().search(r"-----File:", start, tk.END):
+            even_odd = "Even" if even_odd == "Odd" else "Odd"
             # Find first non-blank line
             non_blank = maintext().search(
                 r"\S", f"{start} lineend", tk.END, regexp=True
@@ -408,12 +525,18 @@ class HeadFootChecker:
             if not non_blank:  # Hit end without a non-blank
                 break
             self.add_headfoot(
-                self.header_prefix, f"{start} +1l", f"{non_blank} linestart"
+                f"{even_odd} {HeadFootChecker.header_prefix}",
+                f"{start} +1l",
+                f"{non_blank} linestart",
             )
             end = maintext().search(r"-----File:", f"{start} lineend", tk.END) or tk.END
             # Don't add "footer" if it's the same line as "header"
             if maintext().compare(f"{end} linestart", ">", f"{non_blank} linestart"):
-                self.add_headfoot(self.footer_prefix, f"{end} -1l", f"{end} -1l")
+                self.add_headfoot(
+                    f"{even_odd} {HeadFootChecker.footer_prefix}",
+                    f"{end} -1l",
+                    f"{end} -1l",
+                )
             start = f"{end}-1c"
         self.dialog.display_entries()
 
@@ -429,23 +552,39 @@ class HeadFootChecker:
         nb_rowcol = maintext().rowcol(f"{non_blank} linestart")
         end_rowcol = maintext().rowcol(f"{non_blank} lineend")
         # Add prefix to signify blank lines before header line
-        newline_prefix = "⏎" * (nb_rowcol.row - start_rowcol.row)
+        nl_prefix = "⏎" * (nb_rowcol.row - start_rowcol.row)
         line = maintext().get(nb_rowcol.index(), end_rowcol.index()).strip()
         # Don't want to report blank lines or pages
         if not line or line.startswith(("-----File:", "[Blank Page]")):
             return
-        # Allow one substitution from an all-digit or all roman page number
-        if match := re.fullmatch("([0-9]+|[ivxl]+){s<=1}", line.replace(" ", "")):
-            if match.fuzzy_counts[0] == 0:  # No substitutions necessary
-                error_prefix = self.get_detailed_prefix(
-                    error_prefix, self.pagenum_prefix
-                )
-            else:  # One number was mis-OCRed
-                error_prefix = self.get_detailed_prefix(
-                    error_prefix, self.posspg_prefix
-                )
+        no_space = line.replace(" ", "")
+        # If 4-digit year (including up to one substitution), it's not a page number
+        # Only do in early part of book, since later it may be a page number
+        if start_rowcol.row < 10000 and re.fullmatch("[1IJl]([0-9]{3}){s<=1}", line):
+            pass
+        # At least one digit and remainder allcaps (not just one mis-OCRed number)
+        elif " " in line.strip() and re.search("[0-9]", line) and line == line.upper():
+            error_prefix = self.get_detailed_prefix(
+                error_prefix, HeadFootChecker.num_allcap_prefix
+            )
+        # Is it a valid page number?
+        elif re.fullmatch("([0-9]+|[ivxlc]+)", no_space):
+            error_prefix = self.get_detailed_prefix(
+                error_prefix, HeadFootChecker.pagenum_prefix
+            )
+        # Now allow one substitution from an all-digit or all roman page number
+        # Removing space will allow "123     ." (or other speck)
+        elif re.fullmatch("([0-9]+|[ivxlc]+){s<=1}", no_space):
+            error_prefix = self.get_detailed_prefix(
+                error_prefix, HeadFootChecker.posspg_prefix
+            )
+        # If blank line(s) before header, note it
+        elif nl_prefix:
+            error_prefix = self.get_detailed_prefix(
+                error_prefix, HeadFootChecker.newline_prefix
+            )
         self.dialog.add_entry(
-            newline_prefix + line,
+            nl_prefix + line,
             IndexRange(start_rowcol, end_rowcol),
             error_prefix=error_prefix,
         )
@@ -466,9 +605,7 @@ class HeadFootChecker:
         start_idx = maintext().index(f"{start_mark} linestart")
         end_idx = f"{end_mark}+1l linestart"
         # Also remove leading/trailing blank lines if they would be left behind
-        if checker_entry.error_prefix.startswith(
-            HeadFootChecker.header_prefix.replace(": ", "")
-        ):
+        if "Header" in checker_entry.error_prefix:
             while maintext().get(end_idx, f"{end_idx} lineend").strip() == "":
                 end_idx = maintext().index(f"{end_idx} +1l")
         else:
@@ -518,7 +655,7 @@ class CPProcessingDialog(ToplevelDialog):
         ).grid(row=1, column=1, sticky="NSW")
         ttk.Checkbutton(
             center_frame,
-            text="Convert non-standard dashes to hyphen(s)",
+            text="Convert non-standard dashes to (max 4) hyphen(s)",
             variable=PersistentBoolean(PrefKey.CP_DASHES_TO_HYPHEN),
         ).grid(row=2, column=0, sticky="NSW")
         ttk.Checkbutton(
@@ -891,6 +1028,10 @@ class CPProcessingDialog(ToplevelDialog):
             # Double underscore --> emdash
             if preferences.get(PrefKey.CP_UNDERSCORES_EMDASH):
                 line = line.replace("__", "--")
+
+            # Looong dashes to 4 hyphens (now all hyphen replaces have been done)
+            if preferences.get(PrefKey.CP_DASHES_TO_HYPHEN):
+                line = re.sub("-{5,}", "----", line)
 
             # Double comma --> double quote
             if preferences.get(PrefKey.CP_COMMAS_DOUBLE_QUOTE):

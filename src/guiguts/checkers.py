@@ -564,30 +564,32 @@ class CheckerDialog(ToplevelDialog):
         self.view_options_label = tk.StringVar(self, "")
         self.view_options_crit = tk.StringVar(self, "")
         if self.has_view_options:
-            view_options_frame = ttk.Frame(self.message_controls_frame)
-            view_options_frame.grid(row=1, column=0, sticky="NSW", columnspan=8)
+            self.view_options_frame = ttk.Frame(self.message_controls_frame)
+            self.view_options_frame.grid(row=1, column=0, sticky="NSW", columnspan=8)
             ttk.Button(
-                view_options_frame,
+                self.view_options_frame,
                 text="View Options",
                 command=show_view_options,
             ).grid(row=0, column=0, sticky="NS")
             ttk.Button(
-                view_options_frame,
+                self.view_options_frame,
                 text="Prev. Option",
                 command=lambda: self.prev_next_view_option(-1),
             ).grid(row=0, column=1, sticky="NS", padx=(10, 0))
             ttk.Button(
-                view_options_frame,
+                self.view_options_frame,
                 text="Next Option",
                 command=lambda: self.prev_next_view_option(1),
             ).grid(row=0, column=2, sticky="NS", padx=(0, 10))
-            ttk.Label(view_options_frame, textvariable=self.view_options_label).grid(
+            ttk.Label(
+                self.view_options_frame, textvariable=self.view_options_label
+            ).grid(
                 row=0,
                 column=3,
                 sticky="NS",
             )
             ttk.Label(
-                view_options_frame,
+                self.view_options_frame,
                 textvariable=self.view_options_crit,
                 foreground="red",
             ).grid(row=0, column=4, sticky="NS")
@@ -1158,8 +1160,11 @@ class CheckerDialog(ToplevelDialog):
         maxcollen = len(str(maxcol)) + 2  # Always colon & at least 1 space after col
 
         # If exactly one View Option enabled, hide error prefix,
-        # since it will be displayed in the View Options label
-        hide_ep = self.get_view_options_count_index()[0] == 1
+        # since it will be displayed in the View Options label, if View Options frame visible
+        hide_ep = (
+            self.get_view_options_count_index()[0] == 1
+            and self.view_options_frame.winfo_ismapped()
+        )
 
         for entry in self.entries:
             if self.skip_entry(entry):
