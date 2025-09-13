@@ -2474,8 +2474,9 @@ class MainText(tk.Text):
 
     def _is_drag_copy_mode(self, event: tk.Event) -> bool:
         """Return whether select drag should be copying."""
-        # Shift, Ctrl, Cmd
-        return bool(int(event.state) & (0x0001 | 0x0004 | 0x0008 | 0x0010))
+        # Shift, Ctrl, (Cmd)
+        mods = 0x0001 | 0x0004 | 0x0008 if is_mac() else 0x0001 | 0x0004
+        return bool(int(event.state) & mods)
 
     def _get_truncated_drag_preview(self, text: str) -> str:
         """Get a truncated version of the drag text."""
