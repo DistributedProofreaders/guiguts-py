@@ -515,9 +515,9 @@ class HeadFootChecker:
         self.dialog.reset()
 
         start = maintext().start().index()
-        even_odd = "Even"
+        page_num = 0
         while start := maintext().search(r"-----File:", start, tk.END):
-            even_odd = "Even" if even_odd == "Odd" else "Odd"
+            page_num += 1
             # Find first non-blank line
             non_blank = maintext().search(
                 r"\S", f"{start} lineend", tk.END, regexp=True
@@ -525,7 +525,8 @@ class HeadFootChecker:
             if not non_blank:  # Hit end without a non-blank
                 break
             self.add_headfoot(
-                f"{even_odd} {HeadFootChecker.header_prefix}",
+                page_num,
+                HeadFootChecker.header_prefix,
                 f"{start} +1l",
                 f"{non_blank} linestart",
             )
@@ -533,21 +534,27 @@ class HeadFootChecker:
             # Don't add "footer" if it's the same line as "header"
             if maintext().compare(f"{end} linestart", ">", f"{non_blank} linestart"):
                 self.add_headfoot(
-                    f"{even_odd} {HeadFootChecker.footer_prefix}",
+                    page_num,
+                    HeadFootChecker.footer_prefix,
                     f"{end} -1l",
                     f"{end} -1l",
                 )
             start = f"{end}-1c"
         self.dialog.display_entries()
 
-    def add_headfoot(self, error_prefix: str, location: str, non_blank: str) -> None:
+    def add_headfoot(
+        self, page_num: int, hf_prefix: str, location: str, non_blank: str
+    ) -> None:
         """Add header or footer entry to dialog.
 
         Args:
+            page_num: Page number of this page (starting 1 at beginning of book).
             prefix: `HeadFootChecker.header_prefix` or `HeadFootChecker.footer_prefix`.
             location: Index of start of potential header/footer line(s)
             non_blank: Index of start of first non-blank header line (same as location for footers)
         """
+        even_odd = "Odd" if page_num % 2 else "Even"
+        error_prefix = f"{even_odd} {hf_prefix}"
         start_rowcol = maintext().rowcol(f"{location} linestart")
         nb_rowcol = maintext().rowcol(f"{non_blank} linestart")
         end_rowcol = maintext().rowcol(f"{non_blank} lineend")
@@ -559,8 +566,12 @@ class HeadFootChecker:
             return
         no_space = line.replace(" ", "")
         # If 4-digit year (including up to one substitution), it's not a page number
-        # Only do in early part of book, since later it may be a page number
-        if start_rowcol.row < 10000 and re.fullmatch("[1IJl]([0-9]{3}){s<=1}", line):
+        # Only do on footers in first 10 pages of book, since later it may be a page number
+        if (
+            page_num <= 10
+            and hf_prefix == HeadFootChecker.footer_prefix
+            and re.fullmatch("[1IJl]([0-9]{3}){s<=1}", line)
+        ):
             pass
         # At least one digit and remainder allcaps (not just one mis-OCRed number)
         elif " " in line.strip() and re.search("[0-9]", line) and line == line.upper():
