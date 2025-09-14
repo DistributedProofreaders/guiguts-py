@@ -216,6 +216,8 @@ class DehyphenatorChecker:
         use_dict = preferences.get(PrefKey.CP_DEHYPH_USE_DICT)
         spell_checker = get_spell_checker()
         if spell_checker is None:
+            self.dialog.display_entries()
+            self.dialog.lift()
             return
         dummy_proj_dict = ProjectDict()
 
