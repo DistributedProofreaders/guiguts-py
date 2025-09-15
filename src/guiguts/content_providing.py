@@ -1011,6 +1011,7 @@ class CPProcessingDialog(ToplevelDialog):
                     .replace("hompipe", "hornpipe")
                 )
                 line = line.replace("'11", "'ll")  # '11 to 'll
+                line = line.replace("'!!", "'ll")  # '!! to 'll
                 line = re.sub(r"!!(?=\w)", "H", line)  # !! to H if not at end of word
                 line = re.sub(r"(?<=\w)!(?=\w)", "l", line)  # ! to l if midword
 
