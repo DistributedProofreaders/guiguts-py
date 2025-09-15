@@ -653,7 +653,7 @@ class HTMLValidator:
                 },
                 timeout=30,
             )
-        except requests.exceptions.Timeout as exc:
+        except (requests.exceptions.Timeout, TimeoutError) as exc:
             report_exception(f"Request to {validator_url} timed out.", exc)
             return
         except ConnectionError as exc:
@@ -798,7 +798,7 @@ class CSSValidator:
             response = requests.post(
                 validator_url, data=params, files=files, timeout=30
             )
-        except requests.exceptions.Timeout as exc:
+        except (requests.exceptions.Timeout, TimeoutError) as exc:
             report_exception(f"Request to {validator_url} timed out.", exc)
             return
         except ConnectionError as exc:
@@ -1466,7 +1466,7 @@ class EbookmakerCheckerAPI:
                 },
                 timeout=timeout,
             )
-        except requests.exceptions.Timeout as exc:
+        except (requests.exceptions.Timeout, TimeoutError) as exc:
             report_exception(f"Initial request to {url} timed out.", exc)
             return
         except ConnectionError as exc:
@@ -1489,7 +1489,7 @@ class EbookmakerCheckerAPI:
         # Get output.txt
         try:
             response = requests.get(output_txt_url, timeout=timeout)
-        except requests.exceptions.Timeout as exc:
+        except (requests.exceptions.Timeout, TimeoutError) as exc:
             report_exception("Download request for output.txt timed out.", exc)
             return
         except ConnectionError as exc:
@@ -1517,7 +1517,7 @@ class EbookmakerCheckerAPI:
             put_name = f"{file_base}-{ftype}"
             try:
                 response = requests.get(f"{output_dir}/{get_name}", timeout=timeout)
-            except requests.exceptions.Timeout as exc:
+            except (requests.exceptions.Timeout, TimeoutError) as exc:
                 report_exception(f"Download request for {put_name} timed out.", exc)
                 break
             except ConnectionError as exc:
