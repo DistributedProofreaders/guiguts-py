@@ -462,7 +462,7 @@ def html_convert_body() -> None:
             continue
 
         # "/x" is replaced with "<pre>", then leave lines unchanged until "/x"-->"</pre>"
-        if selection_lower == "/x":  # open
+        if selection_lower.startswith("/x"):  # open
             maintext().replace(line_start, line_end, "<pre>")
             pre_flag = True
             markup_start = step
@@ -478,7 +478,7 @@ def html_convert_body() -> None:
         maintext().delete(line_start, f"{line_start}+{n_spaces}c")
 
         # "/f" --> center all paragraphs until we get "f/"
-        if selection_lower == "/f":  # open
+        if selection_lower.startswith("/f"):  # open
             check_valid_open_markup()
             maintext().delete(line_start, line_end)
             front_flag = True
@@ -503,7 +503,7 @@ def html_convert_body() -> None:
         # "/p" --> poetry until we get "p/"
         # Don't process here if we're in chapter heading - allow the "/p"
         # to signal the end of chapter heading - code will loop round again
-        if selection_lower == "/p" and not in_chap_heading:  # open
+        if selection_lower.startswith("/p") and not in_chap_heading:  # open
             check_valid_open_markup()
             p_chapter_div_open = maybe_insert_chapter_div(line_start)
             poetry_flag = True
@@ -562,7 +562,7 @@ def html_convert_body() -> None:
             continue
 
         # "/l" --> list until we get "l/"
-        if selection_lower == "/l":  # open
+        if selection_lower.startswith("/l"):  # open
             check_valid_open_markup()
             l_chapter_div_open = maybe_insert_chapter_div(line_start)
             maintext().replace(
@@ -618,7 +618,7 @@ def html_convert_body() -> None:
             continue
 
         # "/$" --> nowrap until we get "$/"
-        if selection == "/$":  # open
+        if selection.startswith("/$"):  # open
             check_valid_open_markup()
             d_chapter_div_open = maybe_insert_chapter_div(line_start)
             dollar_nowrap_flag = True
@@ -640,7 +640,7 @@ def html_convert_body() -> None:
             )
             continue
         # "/*" --> nowrap until we get "*/"
-        if selection == "/*":  # open
+        if selection.startswith("/*"):  # open
             check_valid_open_markup()
             a_chapter_div_open = maybe_insert_chapter_div(line_start)
             asterisk_nowrap_flag = True
@@ -728,7 +728,7 @@ def html_convert_body() -> None:
             continue
 
         # "/c" --> center until we get "c/"
-        if selection_lower == "/c":  # open
+        if selection_lower.startswith("/c"):  # open
             check_valid_open_markup()
             c_chapter_div_open = maybe_insert_chapter_div(line_start)
             center_nowrap_flag = True
@@ -756,7 +756,7 @@ def html_convert_body() -> None:
             continue
 
         # "/r" --> right-align block until we get "r/"
-        if selection_lower == "/r":  # open
+        if selection_lower.startswith("/r"):  # open
             check_valid_open_markup()
             r_chapter_div_open = maybe_insert_chapter_div(line_start)
             right_nowrap_flag = True
@@ -1159,7 +1159,7 @@ def replace_header_keywords(header: str) -> str:
 
 
 def make_anchor_id(string: str) -> str:
-    """Make a valid HTML id from string which may contain HTML markup,
+    """Make a valid unique HTML id from string which may contain HTML markup,
     accented characters, punctuation, etc.
 
     Args:
@@ -1182,7 +1182,13 @@ def make_anchor_id(string: str) -> str:
     string = re.sub(r"\p{Separator}+", "_", string)
     # Replace multiple underscores with single
     string = re.sub(r"__+", "_", string)
-    return string
+    # IDs must be unique, so append counter if already exists
+    counter = 1
+    uniq_string = string
+    while maintext().search(f'id="{uniq_string}"', "1.0", tk.END):
+        uniq_string = f"{string}_{counter}"
+        counter += 1
+    return uniq_string
 
 
 def get_title() -> str:
@@ -1464,9 +1470,12 @@ def html_convert_footnotes() -> None:
 def html_convert_footnote_landing_zones() -> None:
     """Add HTML markup around Landing Zones beginning with "FOOTNOTES"."""
     lz_end = "1.0"
-    while lz_start := maintext().search("<p>FOOTNOTES:</p>", lz_end, tk.END):
+    fnhead_regex = "(<p>|<h3.*>\n  )FOOTNOTES:(</p>|\n</h3)"
+    while lz_start := maintext().search(fnhead_regex, lz_end, tk.END, regexp=True):
         # Find next LZ (or end of file) to help find the end of this LZ
-        lz_next = maintext().search("<p>FOOTNOTES:</p>", f"{lz_start}+17c", tk.END)
+        lz_next = maintext().search(
+            fnhead_regex, f"{lz_start}+17c", tk.END, regexp=True
+        )
         if not lz_next:
             lz_next = tk.END
         # Find last footnote in this LZ by searching backwards from next LZ
@@ -1481,10 +1490,13 @@ def html_convert_footnote_landing_zones() -> None:
             # No FN in LZ
             lz_end = f"{lz_start}"
         lz_end += " lineend"
-        maintext().insert(lz_end, "</div>")
+        maintext().insert(lz_end, "\n</div>")
+        # FOOTNOTES heading may be marked with p or h3 markup
         # <p>FOOTNOTES:</p> ==> <div class="footnotes"><h3>FOOTNOTES:</h3>
-        maintext().replace(f"{lz_start}+15c", f"{lz_start}+16c", "h3")
-        maintext().replace(lz_start, f"{lz_start}+3c", '<div class="footnotes"><h3>')
+        if maintext().get(lz_start, f"{lz_start}+2c") == "<p":
+            maintext().replace(f"{lz_start}+15c", f"{lz_start}+16c", "h3")
+            maintext().replace(f"{lz_start}+1c", f"{lz_start}+2c", "h3")
+        maintext().insert(lz_start, '<div class="footnotes">\n')
 
 
 def html_add_chapter_divs() -> None:
