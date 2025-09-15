@@ -909,6 +909,7 @@ class CPProcessingDialog(ToplevelDialog):
         next_linenum = 1
         all_blank_so_far = True
         prev_line_blank = False
+        n_changes = 0
         while maintext().compare(f"{next_linenum}.end", "<", tk.END):
             linenum = next_linenum
             next_linenum += 1
@@ -942,6 +943,7 @@ class CPProcessingDialog(ToplevelDialog):
             if preferences.get(PrefKey.CP_BLANK_LINES_TOP) and all_blank_so_far:
                 maintext().delete(f"{linenum}.0", f"{linenum+1}.0")
                 next_linenum -= 1  # Compensate for deleted line
+                n_changes += 1
                 continue
 
             # Compress multiple blank lines into one
@@ -952,6 +954,7 @@ class CPProcessingDialog(ToplevelDialog):
             ):
                 maintext().delete(f"{linenum}.0", f"{linenum+1}.0")
                 next_linenum -= 1  # Compensate for deleted line
+                n_changes += 1
                 continue
             prev_line_blank = this_line_blank
 
@@ -1116,6 +1119,8 @@ class CPProcessingDialog(ToplevelDialog):
             if line != orig_line:
                 maintext().delete(f"{linenum}.0", f"{linenum}.end")
                 maintext().insert(f"{linenum}.0", line)
+                n_changes += 1
+        logger.info(f"{sing_plur(n_changes, 'line')} changed/deleted during filtering")
         Busy.unbusy()
 
 
