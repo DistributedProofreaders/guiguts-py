@@ -1336,6 +1336,8 @@ class ErrorHandler(logging.Handler):
             record: Record containing error message.
         """
         messagebox.showerror(title=record.levelname, message=record.getMessage())
+        # Since this will have interrupted processing, restore the cursor to be non-busy
+        Busy.unbusy()
 
 
 class MessageLog(logging.Handler):
