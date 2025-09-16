@@ -524,10 +524,13 @@ class SearchDialog(ToplevelDialog):
         Returns:
             List of FindMatch objects (None if error).
         """
-        search_string = self.search_box.get()
-        if not search_string:
-            return None
-        self.search_box.add_to_history(search_string)
+        if self.winfo_exists():
+            search_string = self.search_box.get()
+            if not search_string:
+                return None
+            self.search_box.add_to_history(search_string)
+        else:
+            search_string = preferences.get(PrefKey.SEARCH_HISTORY)[0]
 
         find_ranges, range_name = get_search_ranges()
         if find_ranges is None:
@@ -580,14 +583,19 @@ class SearchDialog(ToplevelDialog):
         checker_dialog = FindAllCheckerDialog.show_dialog(
             rerun_command=self.findall_clicked,
         )
-        if not checker_dialog.winfo_exists() or not self.winfo_exists():
+        if not checker_dialog.winfo_exists():
             Busy.unbusy()
             return
 
         # Construct opening line describing the search
         desc_reg = "regex" if preferences.get(PrefKey.SEARCHDIALOG_REGEX) else "string"
         prefix = f'Search for {desc_reg} "'
-        desc = f'{prefix}{self.search_box.get()}"'
+        search_string = (
+            self.search_box.get()
+            if self.winfo_exists()
+            else preferences.get(PrefKey.SEARCH_HISTORY)[0]
+        )
+        desc = f'{prefix}{search_string}"'
         if preferences.get(PrefKey.SEARCHDIALOG_MATCH_CASE):
             desc += ", matching case"
         if preferences.get(PrefKey.SEARCHDIALOG_WHOLE_WORD):
@@ -676,7 +684,7 @@ class SearchDialog(ToplevelDialog):
         maintext().mark_unset(MARK_FOUND_START, MARK_FOUND_END)
         maintext().clear_selection()
         if search_again:
-            find_next(backwards=backwards)
+            find_next(previous=opposite_dir)
         return "break"
 
     def replaceall_clicked(self, box_num: int, identicals_only: bool = False) -> str:
@@ -856,16 +864,15 @@ def show_search_dialog() -> None:
     dlg.display_message()
 
 
-def find_next(backwards: bool = False) -> None:
+def find_next(previous: bool = False) -> None:
     """Find next occurrence of most recent search string.
 
-    Takes account of current wrap, matchcase, regex & wholeword flag settings
-    in Search dialog. If dialog hasn't been shown previously or there is
+    Takes account of current reverse, wrap, matchcase, regex & wholeword flag
+    settings in Search dialog. If dialog hasn't been shown previously or there is
     no recent search string sounds bell and returns.
 
     Args:
-        backwards: True to search backwards (not dependent on "Reverse"
-            setting in dialog).
+        previous: True to return to previous match, i.e. opposite direction of "Reverse" flag.
     """
     try:
         SearchDialog.selection
@@ -887,10 +894,12 @@ def find_next(backwards: bool = False) -> None:
             sound_bell()
             return  # No Search History
 
-    start_rowcol = get_search_start(backwards)
-    stop_rowcol = maintext().start() if backwards else maintext().end()
+    # Reverse depends on dialog setting and `previous` argument
+    reverse = preferences.get(PrefKey.SEARCHDIALOG_REVERSE) ^ previous
+    start_rowcol = get_search_start(reverse)
+    stop_rowcol = maintext().start() if reverse else maintext().end()
     try:
-        _do_find_next(search_string, backwards, IndexRange(start_rowcol, stop_rowcol))
+        _do_find_next(search_string, reverse, IndexRange(start_rowcol, stop_rowcol))
     except TclRegexCompileError as exc:
         logger.error(str(exc))
     except NoMatchFoundError:

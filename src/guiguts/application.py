@@ -919,7 +919,7 @@ class Guiguts:
         )
         search_menu.add_button(
             "Find Pre~vious",
-            lambda: find_next(backwards=True),
+            lambda: find_next(previous=True),
             "Cmd+Shift+G" if is_mac() else "Shift+F3",
         )
         search_menu.add_button(
