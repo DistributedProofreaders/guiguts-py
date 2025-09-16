@@ -17,6 +17,7 @@
 - Replace [::] With Incremental Counter (like GG1) added to Search menu
 - Optionally, `h3` markup can be added to section headings during HTML
   autogeneration
+- "/L[3]", for example, is now accepted as list markup during HTML conversion
 - Block Rewrap Selection has been added to Tools menu
 - Directory used to load/save files or choose directories is remembered
   between uses of the load/save/choose dialog
@@ -38,12 +39,16 @@
 - Ctrl+A did not work in some text entry fields on Linux
 - Using Redo after rewrapping moved the cursor to the start of the file
 - Rewrapping an index multiple times caused cumulative indentation
+- Find Next/Previous did not respect the "Reverse" flag in the SR dialog
 - Word Frequency did not search correctly for italic words in underscores
 - Some combinations of accented words were not reported correctly as suspetts
   by Word Frequency Diacritics check
 - Some text entry widgets did not follow the Dark/Light theme setting if the
   OS theme was different
 - Automatic theme changing to match the OS theme was broken
+- If Find All was re-run with S/R dialog not shown an exception occurred
+- If an internal error gave an exception, the busy cursor remained on
+- IDs on h2/h3 headings were not necessarily unique
 
 
 ## Version 2.0.2
