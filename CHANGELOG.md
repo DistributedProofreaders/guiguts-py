@@ -1,6 +1,56 @@
 # Changelog
 
 
+## Version 2.0.3
+
+- Manage Character Suites in the Content Providing menu allows the user
+  to select which DP char suites are used in the project
+- Highlight WF Chars not in Selected Suites in the Content Providing menu
+  highlights characters in the WF Character Count display if they are not
+  in selected character suites
+- CP Renumbering has been improved
+- CP Header/Footer reports are more detailed
+- "All⇒Remove" and "All⇒Keep" buttons have been added to Dehyphenation
+- CP Fix Common Scannos is now labelled "Fix Common English Scannos"
+- Several CP features now report how many changes were made
+- Ctrl+Delete/Backspace (Option+Delete on Macs) deletes a word
+- Replace [::] With Incremental Counter (like GG1) added to Search menu
+- Optionally, `h3` markup can be added to section headings during HTML
+  autogeneration
+- "/L[3]", for example, is now accepted as list markup during HTML conversion
+- Block Rewrap Selection has been added to Tools menu
+- Directory used to load/save files or choose directories is remembered
+  between uses of the load/save/choose dialog
+- PPhtml now reports unconverted italic words in underscores
+- Bookloupe no longer reports missing punctuation at end of quotes if there
+  is punctuation immediately following the close quote
+- Ebookmaker (API) timeout has been increased to give large books time to
+  be processed
+
+
+### Bug fixes
+
+- CP Dehyphenation used some tests that were specific to English, even when
+  English was not one of the project languages
+- Using "Undo" after Dehyphenation Fix All, only undid one at a time 
+- Import Prep Text Files gave an exception if files were Latin1-encoded
+- Drag selected text got confused if NumLock was turned on
+- Alt+drag did not work for column select on Linux (replaced with Ctrl+drag)
+- Ctrl+A did not work in some text entry fields on Linux
+- Using Redo after rewrapping moved the cursor to the start of the file
+- Rewrapping an index multiple times caused cumulative indentation
+- Find Next/Previous did not respect the "Reverse" flag in the SR dialog
+- Word Frequency did not search correctly for italic words in underscores
+- Some combinations of accented words were not reported correctly as suspetts
+  by Word Frequency Diacritics check
+- Some text entry widgets did not follow the Dark/Light theme setting if the
+  OS theme was different
+- Automatic theme changing to match the OS theme was broken
+- If Find All was re-run with S/R dialog not shown an exception occurred
+- If an internal error gave an exception, the busy cursor remained on
+- IDs on h2/h3 headings were not necessarily unique
+
+
 ## Version 2.0.2
 
 - A Content-Providing menu supplies functionality equivalent to that provided
