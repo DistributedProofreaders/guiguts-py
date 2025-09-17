@@ -8,6 +8,7 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk, Text, messagebox
 from tkinter import font as tk_font
+import traceback
 from typing import Any, Callable, Optional, Literal, Generator
 from enum import auto, StrEnum
 
@@ -1190,6 +1191,7 @@ class MainText(tk.Text):
                 text.tag_add("sel", anchor, "insert")
             else:
                 text.tag_add("sel", "insert", anchor)
+            self.debug_traceback()
 
         self.bind_event("<Next>", lambda _: page_down_up(1), bind_peer=True)
         self.bind_event("<Prior>", lambda _: page_down_up(-1), bind_peer=True)
@@ -1288,6 +1290,11 @@ class MainText(tk.Text):
 
         # Initialize highlighting tags
         self.after_idle(self.highlight_configure_tags)
+
+    def debug_traceback(self) -> None:
+        """Debug"""
+        print("===============================", flush=True)
+        traceback.print_stack()
 
     def switch_text_peer(self) -> None:
         """Switch focus between main text and peer widget"""
@@ -1860,6 +1867,7 @@ class MainText(tk.Text):
             beg = IndexRowCol(line, min_col).index()
             end = IndexRowCol(line, max_col).index()
             self.focus_widget().tag_add("sel", beg, end)
+        self.debug_traceback()
 
     def clear_selection(self) -> None:
         """Clear any current text selection."""
@@ -1874,6 +1882,7 @@ class MainText(tk.Text):
         self.focus_widget().tag_add(
             "sel", sel_range.start.index(), sel_range.end.index()
         )
+        self.debug_traceback()
 
     def selected_ranges(self) -> list[IndexRange]:
         """Get the ranges of text marked with the `sel` tag.
@@ -1996,6 +2005,7 @@ class MainText(tk.Text):
                 assert start_mark
                 self.focus_widget().tag_add("sel", start_mark, mark)
             next_mark = self.mark_next(mark)
+        self.debug_traceback()
 
     def current_character(self) -> str:
         """Return "current" character, i.e. the selected char if just one
@@ -2405,6 +2415,7 @@ class MainText(tk.Text):
         # Select newly dropped text instead
         self.tag_remove("sel", "1.0", "end")
         self.tag_add("sel", "seldroptarget", f"seldroptarget + {len(self.drag_text)}c")
+        self.debug_traceback()
         return "break"
 
     def cancel_drag_sel(self) -> None:
