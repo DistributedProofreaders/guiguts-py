@@ -751,12 +751,14 @@ class File:
             and os.path.isdir(self.image_dir)
             and os.path.isfile(self.get_current_image_path())
         ):
-            self.choose_image_dir()
+            self.choose_image_dir(os.path.dirname(self.filename))
 
-    def choose_image_dir(self) -> None:
+    def choose_image_dir(self, initialdir: Optional[str] = None) -> None:
         """Allow user to select directory containing png image files"""
         self.image_dir = FileDialog.askdirectory(
-            mustexist=True, title=f"Select {folder_dir_str(True)} containing scans"
+            initialdir=initialdir,
+            mustexist=True,
+            title=f"Select {folder_dir_str(True)} containing scans",
         )
 
     def auto_image_check(self) -> None:
