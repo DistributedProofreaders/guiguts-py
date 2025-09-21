@@ -783,11 +783,23 @@ class Guiguts:
         cp_menu.add_button(
             "Remove ~Headers/Footers...", lambda: HeadFootChecker().run()
         )
+        cp_menu.add_separator()
+        cp_menu.add_button(
+            "Manage Character ~Suites...", CPCharSuitesDialog.show_dialog
+        )
+        cp_menu.add_checkbutton(
+            "Highlight ~WF Char Counts if not in Selected Suites",
+            PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS,
+            WordFrequencyDialog.highlight_charsuite_refresh(),
+            WordFrequencyDialog.highlight_charsuite_refresh(),
+        )
+        cp_menu.add_separator()
         cp_menu.add_button("Run ~Dehyphenator...", lambda: DehyphenatorChecker().run())
         cp_menu.add_button("~Filter File...", CPProcessingDialog.show_dialog)
         cp_menu.add_button("Fix ~Common English Scannos", cp_fix_common_scannos)
         cp_menu.add_button("Add [~Blank Page] to Empty Pages", cp_fix_empty_pages)
         cp_menu.add_button("Fix ~Olde Englifh", cp_fix_englifh)
+        cp_menu.add_separator()
         cp_menu.add_button("Compress ~PNG Files", cp_compress_pngs)
         cp_menu.add_button(
             "~Renumber Pages And PNG Files...", CPRenumberDialog.show_dialog
@@ -795,16 +807,6 @@ class Guiguts:
         cp_menu.add_button("~Export As Prep Text Files...", export_prep_text_files)
         cp_menu.add_separator()
         cp_menu.add_button("Import ~TIA Abbyy OCR File...", import_tia_ocr_file)
-        cp_menu.add_separator()
-        cp_menu.add_checkbutton(
-            "Highlight ~WF Chars not in Selected Suites",
-            PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS,
-            WordFrequencyDialog.highlight_charsuite_refresh(),
-            WordFrequencyDialog.highlight_charsuite_refresh(),
-        )
-        cp_menu.add_button(
-            "Manage Character ~Suites...", CPCharSuitesDialog.show_dialog
-        )
 
     def init_file_project_menu(self, parent: MenuMetadata) -> None:
         """Create the File->Project menu."""
