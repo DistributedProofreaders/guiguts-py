@@ -23,7 +23,7 @@ from guiguts.checkers import (
 )
 from guiguts.data import cp_files
 from guiguts.file import the_file
-from guiguts.maintext import maintext, HighlightTag
+from guiguts.maintext import maintext
 from guiguts.project_dict import ProjectDict
 from guiguts.root import root
 from guiguts.spell import get_spell_checker, SPELL_CHECK_OK_YES
@@ -305,6 +305,7 @@ class DehyphenatorChecker:
                 f"{frag1}{punc1}{frag2}",
                 IndexRange(start_rowcol, end_rowcol),
                 error_prefix=self.remove_prefix if remove else self.keep_prefix,
+                ep_index=0 if remove else 1,
                 severity=CheckerEntrySeverity.INFO,
             )
         self.dialog.display_entries()
@@ -347,51 +348,49 @@ class DehyphenatorChecker:
         entry = self.dialog.entries[entry_index]
         # Get existing prefix & swap it
         old_prefix = entry.error_prefix
-        entry.error_prefix = (
-            DehyphenatorChecker.remove_prefix
-            if old_prefix == DehyphenatorChecker.keep_prefix
-            else DehyphenatorChecker.keep_prefix
-        )
+        if old_prefix == DehyphenatorChecker.keep_prefix:
+            entry.error_prefix = DehyphenatorChecker.remove_prefix
+            entry.ep_index = 0
+        else:
+            entry.error_prefix = DehyphenatorChecker.keep_prefix
+            entry.ep_index = 1
         # Also update the dialog
         linenum = self.dialog.linenum_from_entry_index(entry_index)
         ep_index = self.dialog.text.search(old_prefix, f"{linenum}.0", f"{linenum}.end")
         if not ep_index:
             return
         ep_end = f"{ep_index}+{len(old_prefix)}c"
-        self.dialog.text.insert(
-            ep_end, entry.error_prefix, HighlightTag.CHECKER_ERROR_PREFIX
-        )
+        self.dialog.text.insert(ep_end, entry.error_prefix, entry.error_prefix_tag())
         self.dialog.text.delete(ep_index, ep_end)
         self.dialog.select_entry_by_index(entry_index)
 
     def all_keep_remove(self, remove: bool) -> None:
-        """Swap keep/remove prefix for the selected message."""
+        """Set keep/remove prefix for all messages."""
         entry_index = self.dialog.current_entry_index()
-        old_prefix = (
-            DehyphenatorChecker.keep_prefix
-            if remove
-            else DehyphenatorChecker.remove_prefix
-        )
-        new_prefix = (
-            DehyphenatorChecker.remove_prefix
-            if remove
-            else DehyphenatorChecker.keep_prefix
-        )
+        if remove:
+            old_prefix = DehyphenatorChecker.keep_prefix
+            new_prefix = DehyphenatorChecker.remove_prefix
+            new_ep_index = 0
+        else:
+            old_prefix = DehyphenatorChecker.remove_prefix
+            new_prefix = DehyphenatorChecker.keep_prefix
+            new_ep_index = 1
         for idx, entry in enumerate(self.dialog.entries):
             if remove == (entry.error_prefix == DehyphenatorChecker.remove_prefix):
                 continue
             entry.error_prefix = new_prefix
+            entry.ep_index = new_ep_index
             linenum = self.dialog.linenum_from_entry_index(idx)
-            ep_index = self.dialog.text.search(
+            ep_loc = self.dialog.text.search(
                 old_prefix, f"{linenum}.0", f"{linenum}.end"
             )
-            if not ep_index:
+            if not ep_loc:
                 continue
-            ep_end = f"{ep_index}+{len(old_prefix)}c"
+            ep_end = f"{ep_loc}+{len(old_prefix)}c"
             self.dialog.text.insert(
-                ep_end, entry.error_prefix, HighlightTag.CHECKER_ERROR_PREFIX
+                ep_end, entry.error_prefix, entry.error_prefix_tag()
             )
-            self.dialog.text.delete(ep_index, ep_end)
+            self.dialog.text.delete(ep_loc, ep_end)
         if entry_index is not None:
             self.dialog.select_entry_by_index(entry_index)
 

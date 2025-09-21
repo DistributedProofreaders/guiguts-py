@@ -406,6 +406,7 @@ class HighlightTag(StrEnum):
     CHECKER_SELECTION = auto()
     CHECKER_HIGHLIGHT = auto()
     CHECKER_ERROR_PREFIX = auto()
+    CHECKER_ERROR_PREFIX_1 = auto()
     WF_CHAR_HIGHLIGHT = auto()
 
 
@@ -533,6 +534,7 @@ class ColorKey(StrEnum):
     CHECKER_SELECTION = auto()
     CHECKER_HIGHLIGHT = auto()
     CHECKER_ERROR_PREFIX = auto()
+    CHECKER_ERROR_PREFIX_1 = auto()
     WF_CHAR_HIGHLIGHT = auto()
 
 
@@ -4828,6 +4830,13 @@ class MainText(tk.Text):
                 {"background": "", "foreground": "red"},
                 update_checker_tag,
             ),
+            ColorKey.CHECKER_ERROR_PREFIX_1: ConfigurableColor(
+                HighlightTag.CHECKER_ERROR_PREFIX_1,
+                "Checker error prefix 2",
+                {"background": "", "foreground": "#009900"},
+                {"background": "", "foreground": "#009900"},
+                update_checker_tag,
+            ),
             ColorKey.WF_CHAR_HIGHLIGHT: ConfigurableColor(
                 HighlightTag.WF_CHAR_HIGHLIGHT,
                 "WF Character highlight",
@@ -5088,6 +5097,7 @@ class ScrolledReadOnlyText(tk.Text):
             line_col = maintext().colors[ColorKey.CHECKER_SELECTION]
             hil_col = maintext().colors[ColorKey.CHECKER_HIGHLIGHT]
             err_col = maintext().colors[ColorKey.CHECKER_ERROR_PREFIX]
+            err_col_1 = maintext().colors[ColorKey.CHECKER_ERROR_PREFIX_1]
             wf_col = maintext().colors[ColorKey.WF_CHAR_HIGHLIGHT]
             if themed_style().is_dark_theme():
                 self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.dark)
@@ -5095,6 +5105,9 @@ class ScrolledReadOnlyText(tk.Text):
                 s_dict = err_col.dark.copy()
                 del s_dict["background"]
                 self.tag_configure(HighlightTag.CHECKER_ERROR_PREFIX, s_dict)
+                s_dict = err_col_1.dark.copy()
+                del s_dict["background"]
+                self.tag_configure(HighlightTag.CHECKER_ERROR_PREFIX_1, s_dict)
                 self.tag_configure(HighlightTag.WF_CHAR_HIGHLIGHT, wf_col.dark)
             else:
                 self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.light)
@@ -5102,6 +5115,9 @@ class ScrolledReadOnlyText(tk.Text):
                 s_dict = err_col.light.copy()
                 del s_dict["background"]
                 self.tag_configure(HighlightTag.CHECKER_ERROR_PREFIX, s_dict)
+                s_dict = err_col_1.light.copy()
+                del s_dict["background"]
+                self.tag_configure(HighlightTag.CHECKER_ERROR_PREFIX_1, s_dict)
                 self.tag_configure(HighlightTag.WF_CHAR_HIGHLIGHT, wf_col.light)
 
         # Since Text widgets don't normally listen to theme changes,

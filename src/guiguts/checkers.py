@@ -75,8 +75,9 @@ class CheckerEntry:
         section: int,
         initial_pos: int,
         entry_type: CheckerEntryType,
-        severity: CheckerEntrySeverity,
         error_prefix: str,
+        ep_index: int,
+        severity: CheckerEntrySeverity,
     ) -> None:
         """Initialize CheckerEntry object.
 
@@ -89,6 +90,7 @@ class CheckerEntry:
             initial_pos: Position of entry during initial creation.
             entry_type: Type of entry: header, footer, content, etc.
             error_prefix: Prefix string indicating an error.
+            ep_index: Error prefix index (to control color) - must be 0 or 1
         """
         self.text = text
         self.text_range = text_range
@@ -97,8 +99,17 @@ class CheckerEntry:
         self.section = section
         self.initial_pos = initial_pos
         self.entry_type = entry_type
-        self.error_prefix = error_prefix
         self.severity = severity
+        self.error_prefix = error_prefix
+        assert ep_index in (0, 1)
+        self.ep_index = ep_index
+
+    def error_prefix_tag(self) -> HighlightTag:
+        """Return which tag to use to highlight error prefix."""
+        assert self.ep_index in (0, 1)
+        if self.ep_index == 1:
+            return HighlightTag.CHECKER_ERROR_PREFIX_1
+        return HighlightTag.CHECKER_ERROR_PREFIX
 
     def get_match_text(self, match_on_highlight: CheckerMatchType) -> str:
         """Return portion of message text for matching.
@@ -1052,6 +1063,7 @@ class CheckerDialog(ToplevelDialog):
         hilite_end: Optional[int] = None,
         entry_type: CheckerEntryType = CheckerEntryType.CONTENT,
         error_prefix: str = "",
+        ep_index: int = 0,
         severity: Optional[CheckerEntrySeverity] = None,
     ) -> None:
         """Add an entry ready to be displayed in the dialog.
@@ -1066,8 +1078,10 @@ class CheckerDialog(ToplevelDialog):
             hilite_end: Optional column to end higlighting entry in dialog.
             entry_type: Defaults to content.
             error_prefix: Prefix string indicating an error.
+            ep_index: Error prefix index (to control color) - must be 0 or 1
             severity: Optional severity of error to override default determination.
         """
+        assert ep_index in (0, 1)
         # Default determination of severity
         if severity is None:
             if text_range is None:
@@ -1086,8 +1100,9 @@ class CheckerDialog(ToplevelDialog):
             self.section_count,
             len(self.entries),
             entry_type,
-            severity,
             error_prefix,
+            ep_index,
+            severity,
         )
         self.entries.append(entry)
 
@@ -1198,7 +1213,7 @@ class CheckerDialog(ToplevelDialog):
                 start_rowcol.col = len(rowcol_str)
                 end_rowcol = IndexRowCol(start_rowcol.row, len(rowcol_str) + len(ep))
                 self.text.tag_add(
-                    HighlightTag.CHECKER_ERROR_PREFIX,
+                    entry.error_prefix_tag(),
                     start_rowcol.index(),
                     end_rowcol.index(),
                 )
