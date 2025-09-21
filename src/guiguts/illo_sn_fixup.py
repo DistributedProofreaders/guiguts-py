@@ -242,7 +242,12 @@ class IlloSNChecker:
                 continue
             # Found "normal" text line - anomalous if previous line is not blank,
             # i.e. not a paragraph start, and ok if previous line is blank
-            return maintext().get(f"{line_num - 1}.0", f"{line_num - 1}.end") != ""
+            if maintext().get(f"{line_num - 1}.0", f"{line_num - 1}.end") != "":
+                return True
+            # Still at "normal" text line - anomalous if first non-blank is lowercase,
+            test_str = below_illosn_line_txt.strip()
+            test_str = test_str[0] if test_str else "X"
+            return test_str.islower()
 
         # Hit end of file before finding "normal" text, so not anomalous
         return False
@@ -745,7 +750,12 @@ def illosn_check(tag_type: str) -> None:
     checker_dialog.select_entry_after_undo_redo()
     # If that didn't cause anything to be selected, just select the first entry
     if checker_dialog.current_entry_index() is None:
-        checker_dialog.select_entry_by_index(0)
+        # Cope properly with suspects-only being on/off by using linenum
+        try:
+            entry_idx = checker_dialog.entry_index_from_linenum(1)
+        except IndexError:
+            entry_idx = 0
+        checker_dialog.select_entry_by_index(entry_idx)
 
 
 def display_illosn_entries(tag_type: str) -> None:
