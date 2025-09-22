@@ -484,7 +484,7 @@ class HeadFootChecker:
     footer_prefix = "Footer: "
     pagenum_prefix = "Page Number"
     posspg_prefix = "Page Num?"
-    num_allcap_prefix = "Num & Allcap"
+    num_cap_prefix = "Num/Upper"
     newline_prefix = "Blank lines"
 
     def __init__(self) -> None:
@@ -574,10 +574,14 @@ class HeadFootChecker:
             and re.fullmatch("[1IJl]([0-9]{3}){s<=1}", line)
         ):
             pass
-        # At least one digit and remainder allcaps (not just one mis-OCRed number)
-        elif " " in line.strip() and re.search("[0-9]", line) and line == line.upper():
+        # Footer: at least one digit and remainder allcaps (not just one mis-OCRed number)
+        # or header: digits-space-capital (or reverse - pagenum & chapter/book title header)
+        elif (
+            hf_prefix == HeadFootChecker.header_prefix
+            and re.search(r"^\d+ +[A-Z]|^[A-Z][\p{Letter}' ]* \d+$", line)
+        ) or (" " in line and re.search("[0-9]", line) and line == line.upper()):
             error_prefix = self.get_detailed_prefix(
-                error_prefix, HeadFootChecker.num_allcap_prefix
+                error_prefix, HeadFootChecker.num_cap_prefix
             )
         # Is it a valid page number?
         elif re.fullmatch("([0-9]+|[ivxlc]+)", no_space):
@@ -586,7 +590,7 @@ class HeadFootChecker:
             )
         # Now allow one substitution from an all-digit or all roman page number
         # Removing space will allow "123     ." (or other speck)
-        elif re.fullmatch("([0-9]+|[ivxlc]+){s<=1}", no_space):
+        elif re.fullmatch("([0-9]{1-4}|[ivxlc]+){s<=1}", no_space):
             error_prefix = self.get_detailed_prefix(
                 error_prefix, HeadFootChecker.posspg_prefix
             )
