@@ -110,7 +110,7 @@ class TextColumnNumbers(tk.Text):
             parent,
             font=self.font,
             height=1,
-            padx=3,
+            padx=text_widget["padx"] + 3,
             borderwidth=0,
             highlightthickness=0,
             takefocus=False,
