@@ -95,7 +95,7 @@ class IlloSNCheckerDialog(CheckerDialog):
             pg_btn = ttk.Checkbutton(
                 frame,
                 text="Preserve Illo's Page Number",
-                variable=PersistentBoolean(PrefKey.ILLO_SN_MOVE_PAGE_MARKS),
+                variable=PersistentBoolean(PrefKey.ILLO_MOVE_PAGE_MARKS),
             )
             pg_btn.grid(row=0, column=2, padx=(10, 0), sticky="NSW")
             ToolTip(
@@ -495,7 +495,9 @@ def move_selection_up(tag_type: str) -> None:
             # Gather information on page breaks if required
             page_marks: list[str] = []
             page_seps: list[str] = []
-            if preferences.get(PrefKey.ILLO_SN_MOVE_PAGE_MARKS):
+            if tag_type == "Illustration" and preferences.get(
+                PrefKey.ILLO_MOVE_PAGE_MARKS
+            ):
                 page_marks, page_seps = get_page_breaks(
                     line_num,
                     maintext().index(
@@ -612,7 +614,9 @@ def move_selection_down(tag_type: str) -> None:
         # If we are not in this situation, insert selected tag below the blank line we are at.
         # Otherwise look for next blank line below that one.
         if line_txt == "":
-            if preferences.get(PrefKey.ILLO_SN_MOVE_PAGE_MARKS):
+            if tag_type == "Illustration" and preferences.get(
+                PrefKey.ILLO_MOVE_PAGE_MARKS
+            ):
                 all_page_seps = True
                 for ln in range(
                     IndexRowCol(last_line_num).row + 1, IndexRowCol(line_num).row
@@ -632,7 +636,9 @@ def move_selection_down(tag_type: str) -> None:
                 # Gather information on page breaks if required
                 page_marks: list[str] = []
                 page_seps: list[str] = []
-                if preferences.get(PrefKey.ILLO_SN_MOVE_PAGE_MARKS):
+                if tag_type == "Illustration" and preferences.get(
+                    PrefKey.ILLO_MOVE_PAGE_MARKS
+                ):
                     page_marks, page_seps = get_page_breaks(
                         maintext().index(
                             f"{checker.updated_index(selected.last_line_num)} lineend"
