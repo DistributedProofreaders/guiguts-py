@@ -3042,10 +3042,11 @@ class MainText(tk.Text):
         else:
             search_string = re.escape(search_string)
         # Don't use \b for word boundary because it includes underscore
+        # Use non-capture group round user's regex to avoid `a|b` being split
         if wholeword:
             search_string = (
                 r"(?=[[:alnum:]])(?<![[:alnum:]])"
-                + search_string
+                + f"(?:{search_string})"
                 + r"(?<=[[:alnum:]])(?![[:alnum:]])"
             )
         # Preferable to use flags rather than prepending "(?i)", for example,
