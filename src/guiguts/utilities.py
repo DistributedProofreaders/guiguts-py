@@ -396,8 +396,8 @@ class DiacriticRemover:
     """Supports removal of diacritics from strings."""
 
     outliers: Mapping
-    source_outliers = "ä  æ  ǽ  đ ð ƒ ħ ı ł ø ǿ ö  œ  ß  ŧ ü  Ä  Æ  Ǽ  Đ Ð Ƒ Ħ I Ł Ø Ǿ Ö  Œ  ẞ  Ŧ Ü  Þ  þ"
-    target_outliers = "ae ae ae d d f h i l o o oe oe ss t ue AE AE AE D D F H I L O O OE OE SS T UE TH th"
+    source_outliers = "æ  ǽ  đ ð ƒ ħ ı ł ø ǿ œ  ß  ŧ Æ  Ǽ  Ð Ƒ Ħ I Ł Ø Ǿ Œ  ẞ  Ŧ Þ  þ"
+    target_outliers = "ae ae d d f h i l o o oe ss t AE AE D F H I L O O OE SS T TH th"
 
     @classmethod
     def setup_outliers(cls, source_outliers: str, target_outliers: str) -> None:
