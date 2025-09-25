@@ -78,6 +78,9 @@ versions up to 3.13. Fedora does not include the awthemes package (see step 2 be
 
 5. Type `guiguts` to run GG2.
 
+(Depending on your exact setup you may need to run `setxkbmap`, which will trigger Fedora to
+offer to install the `setxkbmap` package.)
+
 ### Chromebook (after enabling Linux)
 
 Check you have python3:
