@@ -40,7 +40,7 @@ previous version of GG2).
 
     c. Type `guiguts` or `~/.local/bin/guiguts` to run GG2.
 
-### Linux
+### Linux (Debian/Ubuntu)
 
 Python needs to be version 3.11 or above, and GG has been tested in
 versions up to 3.13.
@@ -56,6 +56,30 @@ versions up to 3.13.
 3. Add `$HOME/.local/bin` to your `$PATH` if it isn't already. Restart your shell / terminal window to refresh the path.
 
 4. Type `guiguts` to run GG2.
+
+### Linux (Fedora)
+
+Instructions tested on Fedora Linux 42 (Workstation Edition).
+
+Fedora already has python3 installed. Note that python needs to be version 3.11 or above, and GG has been tested in
+versions up to 3.13. Fedora does not include the awthemes package (see step 2 below)
+
+1. Install pip, pipx, Tk & idle: `sudo dnf install pip pipx python3-tkinter python3-idle`
+
+2. Install awthemes package:
+
+    a. Download tcl-awthemes from https://sourceforge.net/projects/tcl-awthemes
+
+    b. Extract awthemes-10.4.0 and from that directory: `sudo cp -r * /usr/share/tk8.6/`
+
+3. Type `pipx install guiguts` (or `pipx upgrade guiguts` to upgrade from a previous version of GG2).
+
+4. Type `pipx ensurepath` to ensure `guiguts` will be on your PATH.
+
+5. Type `guiguts` to run GG2.
+
+(Depending on your exact setup you may need to run `setxkbmap`, which will trigger Fedora to
+offer to install the `setxkbmap` package.)
 
 ### Chromebook (after enabling Linux)
 
