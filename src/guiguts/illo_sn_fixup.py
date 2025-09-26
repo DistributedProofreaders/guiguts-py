@@ -7,7 +7,7 @@ from typing import Optional, Any
 
 import regex as re
 
-from guiguts.checkers import CheckerDialog
+from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
 from guiguts.preferences import PrefKey, PersistentBoolean, preferences
@@ -322,13 +322,13 @@ class IlloSNChecker:
             search_range = IndexRange(end_point, maintext().end())
 
     def update_after_move(
-        self, tag_type: str, selected_illosn_index: int, mid_para_list: list[int]
+        self, tag_type: str, selected_checker_entry_index: int, mid_para_list: list[int]
     ) -> None:
         """Update Illo or SN records list, update dialog and reselect tag just moved.
 
         Args:
-            tag_type: either "Illustration" or "Sidenote"
-            selected_illosn_index: index of selected illo/sn
+            tag_type: Either "Illustration" or "Sidenote"
+            selected_checker_entry_index: Index of selected entry
             mid_para_list: List of mid-para flags of illos/sns before movement
         """
         # Update illosn_records list
@@ -342,7 +342,7 @@ class IlloSNChecker:
         # Update dialog
         display_illosn_entries(tag_type)
         # Select again the tag we have just moved so it is highlighted.
-        self.checker_dialog.select_entry_by_index(selected_illosn_index)
+        self.checker_dialog.select_entry_by_index(selected_checker_entry_index)
 
     def delete_illosn_record_from_file(self, selected: SelectedIlloSNRecord) -> None:
         """Delete the selected Illo/SN record from its original location in the file.
@@ -432,6 +432,9 @@ def move_selection_up(tag_type: str) -> None:
     if selected_illosn_index < 0:
         sound_bell()
         return  # No selection.
+    selected_checker_entry_index = checker.checker_dialog.current_entry_index()
+    if selected_checker_entry_index is None:
+        return
     # Get the record for the selected tag from the records array we
     # built in run_check().
     selected = checker.get_selected_illosn_record(selected_illosn_index)
@@ -539,7 +542,9 @@ def move_selection_up(tag_type: str) -> None:
             maintext().replace_all(TEMP_SPACE, "")
 
             mid_para_list = [item.mid_para for item in checker.illosn_records]
-            checker.update_after_move(tag_type, selected_illosn_index, mid_para_list)
+            checker.update_after_move(
+                tag_type, selected_checker_entry_index, mid_para_list
+            )
             break  # Moved successfully
         # If we have reached the top of the file, return.
         if line_num == "1.0":
@@ -564,6 +569,9 @@ def move_selection_down(tag_type: str) -> None:
     if selected_illosn_index < 0:
         sound_bell()
         return  # No selection
+    selected_checker_entry_index = checker.checker_dialog.current_entry_index()
+    if selected_checker_entry_index is None:
+        return
     # Get the record for the selected tag from the records array we
     # built in run_check().
     selected = checker.get_selected_illosn_record(selected_illosn_index)
@@ -690,7 +698,7 @@ def move_selection_down(tag_type: str) -> None:
 
                 mid_para_list = [item.mid_para for item in checker.illosn_records]
                 checker.update_after_move(
-                    tag_type, selected_illosn_index, mid_para_list
+                    tag_type, selected_checker_entry_index, mid_para_list
                 )
                 return  # Moved successfully
         # Increment line_num.
@@ -736,6 +744,7 @@ def illosn_check(tag_type: str) -> None:
         rerun_command=lambda: illosn_check(tag_type),
         show_suspects_only=True,
         clear_on_undo_redo=True,
+        sort_key_alpha=sort_key_type,
     )
     if tag_type == "Illustration":
         if _THE_ILLO_CHECKER is None:
@@ -777,16 +786,26 @@ def display_illosn_entries(tag_type: str) -> None:
     checker_dialog.reset()
     illosn_records = the_checker.get_illosn_records()
     for illosn_record in illosn_records:
-        error_prefix = ""
-        if illosn_record.mid_para > 0:
-            error_prefix = "MIDPARAGRAPH: "
-        elif illosn_record.mid_para < 0:
-            error_prefix = "PREV MIDPARA: "
+        error_prefix = "MIDPARAGRAPH: " if illosn_record.mid_para else ""
         checker_dialog.add_entry(
             illosn_record.text,
             IndexRange(illosn_record.start, illosn_record.end),
             illosn_record.hilite_start,
             illosn_record.hilite_end,
             error_prefix=error_prefix,
+            ep_index=0 if illosn_record.mid_para >= 0 else 1,
         )
     checker_dialog.display_entries(auto_select_line=False)
+
+
+def sort_key_type(
+    entry: CheckerEntry,
+) -> tuple[bool, str, int, int]:
+    """Sort key function to sort Illo/SN entries by error_prefix, then rowcol."""
+    assert entry.text_range is not None
+    return (
+        entry.error_prefix == "",  # non-prefixed go last
+        entry.error_prefix,
+        entry.text_range.start.row,
+        entry.text_range.start.col,
+    )
