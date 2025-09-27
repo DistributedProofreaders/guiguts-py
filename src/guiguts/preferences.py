@@ -220,6 +220,7 @@ class PrefKey(StrEnum):
     CP_PNG_CRUSH_COMMAND = auto()
     CP_HIGHLIGHT_CHARSUITE_ORPHANS = auto()
     INITIAL_DIR = auto()
+    RELEASE_NOTES_SHOWN = auto()
 
 
 class Preferences:
