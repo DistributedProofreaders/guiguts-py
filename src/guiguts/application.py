@@ -1301,11 +1301,19 @@ class Guiguts:
         tk_menu = menu_metadata.tk_menu
         if tk_menu is None:
             return
-        for submenu_metadata in menu_metadata.entries:
-            if isinstance(submenu_metadata, MenuMetadata):
-                self.remove_entries(submenu_metadata)
-                submenu_metadata.tk_menu = None
-        tk_menu.delete(0, tk_menu.index(tk.END))
+
+        # First, recursively destroy child submenus
+        for entry in menu_metadata.entries:
+            if isinstance(entry, MenuMetadata) and entry.tk_menu is not None:
+                self.remove_entries(entry)
+                entry.tk_menu.destroy()  # explicitly destroy the submenu widget
+                entry.tk_menu = None
+
+        # Now clear this menu’s items
+        try:
+            tk_menu.delete(0, tk_menu.index("end"))
+        except tk.TclError:
+            pass  # menu might already be empty from previous destroy
 
     def add_entries(self, menu_metadata: MenuMetadata) -> None:
         """Recursively add all entries to tk Menu corresponding to given menu_metadata."""
