@@ -162,7 +162,7 @@ class PrefKey(StrEnum):
     SURROUND_WITH_AFTER_HISTORY = auto()
     REGEX_TIMEOUT = auto()
     LEVENSHTEIN_DIGITS = auto()
-    ILLO_SN_MOVE_PAGE_MARKS = auto()
+    ILLO_MOVE_PAGE_MARKS = auto()
     CURLY_DOUBLE_QUOTE_EXCEPTION = auto()
     CURLY_SINGLE_QUOTE_STRICT = auto()
     CUSTOM_MARKUP_ATTRIBUTE_0 = auto()
