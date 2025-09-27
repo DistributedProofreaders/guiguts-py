@@ -2315,21 +2315,25 @@ class CurlyQuotesDialog(CheckerDialog):
             frame,
             text=DQUOTES[0],
             command=lambda: insert_in_focus_widget(DQUOTES[0]),
+            width=4,
         ).grid(column=5, row=0, sticky="NSE")
         ttk.Button(
             frame,
             text=DQUOTES[1],
             command=lambda: insert_in_focus_widget(DQUOTES[1]),
+            width=4,
         ).grid(column=6, row=0, sticky="NSE")
         ttk.Button(
             frame,
             text=SQUOTES[0],
             command=lambda: insert_in_focus_widget(SQUOTES[0]),
+            width=4,
         ).grid(column=7, row=0, sticky="NSE")
         ttk.Button(
             frame,
             text=SQUOTES[1],
             command=lambda: insert_in_focus_widget(SQUOTES[1]),
+            width=4,
         ).grid(column=8, row=0, sticky="NSE")
         ttk.Checkbutton(
             frame,
