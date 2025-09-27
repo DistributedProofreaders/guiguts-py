@@ -603,7 +603,14 @@ class Guiguts:
         preferences.set_default(
             PrefKey.CUSTOM_MENU_ENTRIES,
             [
-                ["View HTML in browser", 'start "$f"' if is_windows() else 'open "$f"' if is_mac() else 'xdg-open "$f"'],
+                [
+                    "View HTML in browser",
+                    (
+                        'start "$f"'
+                        if is_windows()
+                        else 'open "$f"' if is_mac() else 'xdg-open "$f"'
+                    ),
+                ],
                 ["Onelook.com (several dictionaries)", "https://www.onelook.com/?w=$t"],
                 [
                     "Google Books Ngram Viewer",
