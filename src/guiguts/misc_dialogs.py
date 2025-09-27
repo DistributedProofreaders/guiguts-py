@@ -1,5 +1,6 @@
 """Miscellaneous dialogs."""
 
+import importlib.resources
 from importlib.metadata import version
 import logging
 import platform
@@ -792,7 +793,7 @@ class HelpAboutDialog(ToplevelDialog):
     manual_page = ""  # Main manual page
 
     def __init__(self) -> None:
-        """Initialize preferences dialog."""
+        """Initialize "Help About" dialog."""
         super().__init__("Help About Guiguts", resize_x=False, resize_y=False)
 
         # Default font is monospaced. Helvetica is guaranteed to give a proportional font
@@ -862,6 +863,95 @@ Fifth Floor, Boston, MA 02110-1301 USA.""",
         self.text.tag_config("title_tag", font=(font_family, font_large))
         self.text.tag_add("version_tag", version_start, version_end)
         self.text.tag_config("version_tag", font=(font_family, font_medium))
+
+
+class ReleaseNotesDialog(ToplevelDialog):
+    """A "Release Notes" dialog."""
+
+    manual_page = ""  # Main manual page
+
+    def __init__(self, title: str, latest_only: bool = False) -> None:
+        """Initialize "Release Notes" dialog."""
+        super().__init__(title)
+        # f"Guiguts {version('guiguts')} Release Notes"
+
+        log = (importlib.resources.files("guiguts") / "CHANGELOG.md").read_text(
+            encoding="utf-8"
+        )
+        lines = log.splitlines()
+
+        # First line must be "# Changelog"
+        assert lines and lines[0].strip().lower().startswith("# changelog")
+        lines = lines[1:]  # discard the header line
+
+        # Assert first non-blank line is the expected version
+        i = 0
+        while i < len(lines) and not lines[i].strip():
+            i += 1
+        assert i < len(lines)
+
+        # Assert first section matches current version
+        first_line = lines[i].strip()
+        m = re.match(r"^##\s+Version\s+(\S+)", first_line, re.IGNORECASE)
+        assert m and m.group(1) == version("guiguts")
+        start = i
+
+        # Either just collect current version, or all versions
+        if latest_only:
+            # Current heading
+            collected = [lines[start]]
+            # Collect until the next version heading
+            for line in lines[start + 1 :]:
+                if re.match(r"^##\s+Version\s+", line.strip(), re.IGNORECASE):
+                    break
+                collected.append(line)
+        else:
+            collected = lines[start:]
+
+        # Reformat: merge wrapped bullets
+        bullets: list[str] = []
+        current: list[str] = []
+        for line in collected:
+            line = re.sub("^#* *", "", line.strip())
+            if line.startswith("-"):
+                if current:
+                    bullets.append(" ".join(current))
+                current = [f"• {line[1:]}"]
+            elif line.strip():
+                current.append(line)
+            else:
+                if current:
+                    bullets.append(" ".join(current))
+                    current = []
+                bullets.append("")
+        if current:
+            bullets.append(" ".join(current))
+
+        font_family = "Helvetica"
+        font_small = 11
+        font_medium = 12
+        font_large = 14
+        text = ScrolledReadOnlyText(
+            self.top_frame,
+            wrap=tk.WORD,
+            spacing3=5,
+            font=(font_family, font_small),
+            width=72,
+            height=25,
+        )
+        text.grid(row=0, column=0, sticky="NSEW")
+        text.insert(tk.END, "\n".join(bullets))
+
+        text.tag_config("version_tag", font=(font_family, font_large))
+        text.tag_config("bug_tag", font=(font_family, font_medium))
+        idx = "1.0"
+        while idx := text.search("^Version ", idx, tk.END, regexp=True):
+            text.tag_add("version_tag", idx, f"{idx} lineend")
+            idx = f"{idx} lineend"
+        idx = "1.0"
+        while idx := text.search("^Bug [Ff]ix", idx, tk.END, regexp=True):
+            text.tag_add("bug_tag", idx, f"{idx} lineend")
+            idx = f"{idx} lineend"
 
 
 _compose_dict: dict[str, str] = {}

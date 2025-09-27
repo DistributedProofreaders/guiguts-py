@@ -13,6 +13,7 @@ from typing import Optional
 import unicodedata
 import webbrowser
 import darkdetect  # type: ignore[import-untyped]
+from packaging.version import Version
 
 from guiguts.ascii_tables import JustifyStyle
 from guiguts.checkers import CheckerDialog
@@ -79,6 +80,7 @@ from guiguts.misc_dialogs import (
     UnicodeBlockDialog,
     UnicodeSearchDialog,
     HelpAboutDialog,
+    ReleaseNotesDialog,
     CommandPaletteDialog,
     SurroundWithDialog,
 )
@@ -137,6 +139,7 @@ from guiguts.utilities import (
     folder_dir_str,
     get_keyboard_layout,
     is_test,
+    is_debug,
 )
 from guiguts.widgets import (
     themed_style,
@@ -225,6 +228,18 @@ class Guiguts:
 
         # Start autodetect loop for OS dark mode, if appropriate
         self.update_theme()
+
+        # If user hasn't seen the current (or later!) release notes, show them
+        ver = version("guiguts")
+        if (
+            Version(ver) > Version(preferences.get(PrefKey.RELEASE_NOTES_SHOWN))
+            and not is_debug()
+        ):
+            dlg = ReleaseNotesDialog.show_dialog(
+                title=f"What's New in Guiguts v{ver}", latest_only=True
+            )
+            dlg.after_idle(dlg.lift)
+            preferences.set(PrefKey.RELEASE_NOTES_SHOWN, ver)
 
     def parse_args(self, args: Optional[list[str]] = None) -> None:
         """Parse command line args"""
@@ -712,6 +727,7 @@ class Guiguts:
         )
         preferences.set_default(PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS, False)
         preferences.set_default(PrefKey.INITIAL_DIR, os.path.expanduser("~"))
+        preferences.set_default(PrefKey.RELEASE_NOTES_SHOWN, "2.0.0")
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -1258,6 +1274,10 @@ class Guiguts:
             "~Dialog Manual Page (opens in browser)",
             ToplevelDialog.show_manual_page,
             "F1",
+        )
+        help_menu.add_button(
+            "Release ~Notes",
+            lambda: ReleaseNotesDialog.show_dialog(title="Guiguts Release Notes"),
         )
         help_menu.add_button("About ~Guiguts", HelpAboutDialog.show_dialog)
         help_menu.add_button(
