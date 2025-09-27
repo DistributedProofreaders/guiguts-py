@@ -928,7 +928,7 @@ class ReleaseNotesDialog(ToplevelDialog):
             bullets.append(" ".join(current))
 
         font_family = "Helvetica"
-        font_small = 10
+        font_small = 11
         font_medium = 12
         font_large = 14
         text = ScrolledReadOnlyText(
