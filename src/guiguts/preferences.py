@@ -221,6 +221,8 @@ class PrefKey(StrEnum):
     CP_HIGHLIGHT_CHARSUITE_ORPHANS = auto()
     INITIAL_DIR = auto()
     RELEASE_NOTES_SHOWN = auto()
+    DID_YOU_KNOW_SHOW = auto()
+    DID_YOU_KNOW_INDEX = auto()
 
 
 class Preferences:

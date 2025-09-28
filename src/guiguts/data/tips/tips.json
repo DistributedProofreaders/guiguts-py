@@ -1,0 +1,32 @@
+[
+  {
+    "text": [
+      "You can adjust many preferences using the [Settings Dialog](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Settings).",
+      "For example, you can enable or disable these \"Did You Know...?\" tips."
+    ]
+  },
+  {
+    "text": [
+      "You can use the [Command Palette](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#Command_Palette) to quickly find any menu command.",
+      "Just press Ctrl+Shift+P (or Cmd+Shift+P on Macs) to open it and start typing part of the command."
+    ]
+  },
+  {
+    "text": [
+      "Add your own shortcuts using the [Custom Menu](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Custom_Menu).",
+      "You can open webpages or run tools on your computer, as well as pass the selected text to the webpage or tool."
+    ]
+  },
+  {
+    "text": [
+      "You can [split the main text window](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/View_Menu#Split_Text_Window) to view two parts of your text at the same time.",
+      "Use Tab and Shift-Tab shortcuts to switch focus between the two views."
+    ]
+  },
+  {
+    "text": [
+      "Use [Undo/Redo](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Undo_and_Redo) to quickly revert changes in the text.",
+      "Keyboard shortcuts match your platform: Ctrl+Z/Cmd+Z for undo, Ctrl+Y/Cmd+Shift+Z for redo."
+    ]
+  }
+]

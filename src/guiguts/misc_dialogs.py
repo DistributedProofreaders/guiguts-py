@@ -2,6 +2,7 @@
 
 import importlib.resources
 from importlib.metadata import version
+import json
 import logging
 import platform
 import sys
@@ -9,10 +10,12 @@ import tkinter as tk
 from tkinter import ttk, font, messagebox, colorchooser
 from typing import Literal, Optional, Callable
 import unicodedata
+import webbrowser
 
 from rapidfuzz import process
 import regex as re
 
+from guiguts.data import tips
 from guiguts.file import the_file
 from guiguts.maintext import (
     maintext,
@@ -478,12 +481,17 @@ class PreferencesDialog(ToplevelDialog):
             text="Show Tooltips",
             variable=PersistentBoolean(PrefKey.SHOW_TOOLTIPS),
         ).grid(column=0, row=5, sticky="NEW", pady=5)
+        ttk.Checkbutton(
+            advance_frame,
+            text='Show "Did You Know...?" Tip at Start',
+            variable=PersistentBoolean(PrefKey.DID_YOU_KNOW_SHOW),
+        ).grid(column=0, row=6, sticky="NEW", pady=5)
         cqc = ttk.Checkbutton(
             advance_frame,
             text="Strict Single Curly Quote Conversion",
             variable=PersistentBoolean(PrefKey.CURLY_SINGLE_QUOTE_STRICT),
         )
-        cqc.grid(column=0, row=6, sticky="NEW", pady=5)
+        cqc.grid(column=0, row=7, sticky="NEW", pady=5)
         ToolTip(
             cqc,
             "On - only convert straight single quotes to curly if certain\n"
@@ -491,7 +499,7 @@ class PreferencesDialog(ToplevelDialog):
         )
         add_label_spinbox(
             advance_frame,
-            7,
+            8,
             "Regex timeout (seconds):",
             PrefKey.REGEX_TIMEOUT,
             "Longest time a regex search is allowed to take.\n"
@@ -499,7 +507,7 @@ class PreferencesDialog(ToplevelDialog):
         )
 
         ttk.Label(advance_frame, text="PNG compress command:").grid(
-            row=8, column=0, sticky="NSE", pady=5
+            row=9, column=0, sticky="NSE", pady=5
         )
         png_crush_entry = ttk.Entry(
             advance_frame,
@@ -507,7 +515,7 @@ class PreferencesDialog(ToplevelDialog):
             width=30,
         )
         png_crush_entry.grid(
-            row=8, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
+            row=9, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
         )
         ToolTip(
             png_crush_entry,
@@ -520,7 +528,7 @@ class PreferencesDialog(ToplevelDialog):
             advance_frame,
             text="Reset shortcuts to default (requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
-        ).grid(row=9, column=0, sticky="NSW", pady=5, columnspan=3)
+        ).grid(row=10, column=0, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",
@@ -868,7 +876,7 @@ Fifth Floor, Boston, MA 02110-1301 USA.""",
 class ReleaseNotesDialog(ToplevelDialog):
     """A "Release Notes" dialog."""
 
-    manual_page = ""  # Main manual page
+    manual_page = ""  # Main manual page TODO
 
     def __init__(self, title: str, latest_only: bool = False) -> None:
         """Initialize "Release Notes" dialog."""
@@ -952,6 +960,107 @@ class ReleaseNotesDialog(ToplevelDialog):
         while idx := text.search("^Bug [Ff]ix", idx, tk.END, regexp=True):
             text.tag_add("bug_tag", idx, f"{idx} lineend")
             idx = f"{idx} lineend"
+
+
+class DidYouKnowDialog(ToplevelDialog):
+    """A 'Did You Know...?' dialog."""
+
+    manual_page = ""  # Main manual page TODO
+
+    tips: list[dict] = []
+
+    def __init__(self) -> None:
+        """Initialize Did You Know...? dialog."""
+        super().__init__("Did You Know...?")
+
+        # Load tips from data file (once)
+        if not self.tips:
+            tips_file = importlib.resources.files(tips) / "tips.json"
+            self.tips = json.loads(tips_file.read_text(encoding="utf-8"))
+
+        self.top_frame.rowconfigure(0, weight=1)
+        self.top_frame.columnconfigure(0, weight=1)
+        self.top_frame.columnconfigure(1, weight=1)
+        self.top_frame.columnconfigure(2, weight=1)
+
+        self.tip_text = ScrolledReadOnlyText(
+            self.top_frame,
+            wrap=tk.WORD,
+            spacing3=5,
+            font=("Helvetica", 12),
+            width=50,
+            height=5,
+        )
+        self.tip_text.grid(row=0, column=0, columnspan=3, sticky="NSEW")
+
+        # Controls
+        ttk.Button(self.top_frame, text="◀ Previous", command=self.show_previous).grid(
+            row=1, column=0, sticky="NSW", padx=5, pady=5
+        )
+
+        ttk.Checkbutton(
+            self.top_frame,
+            text="Show tips at startup",
+            variable=PersistentBoolean(PrefKey.DID_YOU_KNOW_SHOW),
+        ).grid(row=1, column=1, sticky="NS", pady=5)
+
+        ttk.Button(self.top_frame, text="Next ▶", command=self.show_next).grid(
+            row=1, column=2, sticky="NSE", padx=5, pady=5
+        )
+
+        # Show next tip in sequence
+        self.show_next()
+
+    def show_tip(self, index: int) -> None:
+        """Display the tip at given index."""
+        if not self.tips:
+            return
+        index %= len(self.tips)
+        tip_text = "\n".join(self.tips[index]["text"])
+        preferences.set(PrefKey.DID_YOU_KNOW_INDEX, index)
+
+        self.tip_text.delete("1.0", "end")
+
+        last_end = 0
+        for count, match in enumerate(
+            re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", tip_text)
+        ):
+            # Plain text
+            self.tip_text.insert("end", tip_text[last_end : match.start()])
+            link_text, target = match.groups()
+
+            tagname = f"link_{count}"
+            self.tip_text.tag_config(tagname, foreground="blue", underline=True)
+            self.tip_text.tag_bind(
+                tagname,
+                "<Button-1>",
+                lambda e, t=target: webbrowser.open(t),  # type:ignore[misc]
+            )
+
+            def on_enter(_e: tk.Event) -> None:
+                """Change cursor when mouse enters tagged text."""
+                self.tip_text.configure(cursor="hand2")
+
+            def on_leave(_e: tk.Event) -> None:
+                """Change cursor when mouse leaves tagged text."""
+                self.tip_text.configure(cursor="arrow")
+
+            self.tip_text.tag_bind(tagname, "<Enter>", on_enter)
+            self.tip_text.tag_bind(tagname, "<Leave>", on_leave)
+
+            self.tip_text.insert("end", link_text, tagname)
+            last_end = match.end()
+
+        # Remainder
+        self.tip_text.insert("end", tip_text[last_end:])
+
+    def show_next(self) -> None:
+        """Display next tip."""
+        self.show_tip(preferences.get(PrefKey.DID_YOU_KNOW_INDEX) + 1)
+
+    def show_previous(self) -> None:
+        """Display previous tip."""
+        self.show_tip(preferences.get(PrefKey.DID_YOU_KNOW_INDEX) - 1)
 
 
 _compose_dict: dict[str, str] = {}

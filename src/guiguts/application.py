@@ -81,6 +81,7 @@ from guiguts.misc_dialogs import (
     UnicodeSearchDialog,
     HelpAboutDialog,
     ReleaseNotesDialog,
+    DidYouKnowDialog,
     CommandPaletteDialog,
     SurroundWithDialog,
 )
@@ -229,17 +230,22 @@ class Guiguts:
         # Start autodetect loop for OS dark mode, if appropriate
         self.update_theme()
 
-        # If user hasn't seen the current (or later!) release notes, show them
-        ver = version("guiguts")
-        if (
-            Version(ver) > Version(preferences.get(PrefKey.RELEASE_NOTES_SHOWN))
-            and not is_debug()
-        ):
-            dlg = ReleaseNotesDialog.show_dialog(
-                title=f"What's New in Guiguts v{ver}", latest_only=True
-            )
-            dlg.after_idle(dlg.lift)
-            preferences.set(PrefKey.RELEASE_NOTES_SHOWN, ver)
+        # Don't pop startup dialogs if debug flag given (for tester's sake!)
+        if not is_debug():
+            dlg: Optional[ToplevelDialog] = None
+            # If user hasn't seen the current (or later!) release notes, show them
+            ver = version("guiguts")
+            if Version(ver) > Version(preferences.get(PrefKey.RELEASE_NOTES_SHOWN)):
+                dlg = ReleaseNotesDialog.show_dialog(
+                    title=f"What's New in Guiguts v{ver}", latest_only=True
+                )
+                preferences.set(PrefKey.RELEASE_NOTES_SHOWN, ver)
+            elif preferences.get(PrefKey.DID_YOU_KNOW_SHOW):
+                dlg = DidYouKnowDialog.show_dialog()
+            # Dialog needs bringing to front because otherwise mainwindow will cover it
+            if dlg is not None:
+                dlg.after_idle(dlg.lift)
+                dlg.after_idle(dlg.focus_set)
 
     def parse_args(self, args: Optional[list[str]] = None) -> None:
         """Parse command line args"""
@@ -728,6 +734,8 @@ class Guiguts:
         preferences.set_default(PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS, False)
         preferences.set_default(PrefKey.INITIAL_DIR, os.path.expanduser("~"))
         preferences.set_default(PrefKey.RELEASE_NOTES_SHOWN, "2.0.0")
+        preferences.set_default(PrefKey.DID_YOU_KNOW_SHOW, True)
+        preferences.set_default(PrefKey.DID_YOU_KNOW_INDEX, -1)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -1279,7 +1287,12 @@ class Guiguts:
             "Release ~Notes",
             lambda: ReleaseNotesDialog.show_dialog(title="Guiguts Release Notes"),
         )
+        help_menu.add_button(
+            "Did You ~Know...?",
+            DidYouKnowDialog.show_dialog,
+        )
         help_menu.add_button("About ~Guiguts", HelpAboutDialog.show_dialog)
+        help_menu.add_separator()
         help_menu.add_button(
             "~Regex Quick Reference (opens in browser)", self.show_help_regex
         )
