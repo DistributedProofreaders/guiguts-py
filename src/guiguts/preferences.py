@@ -395,11 +395,17 @@ class Preferences:
 
         if is_older_than(week_backup, 7 * 86400):  # 7 days
             if os.path.exists(day_backup):
-                os.replace(day_backup, week_backup)
+                try:
+                    os.replace(day_backup, week_backup)
+                except FileNotFoundError:
+                    pass  # Nothing we can do
 
         if is_older_than(day_backup, 86400):  # 1 day
             if os.path.exists(self.prefsfile):
-                os.replace(self.prefsfile, day_backup)
+                try:
+                    os.replace(self.prefsfile, day_backup)
+                except FileNotFoundError:
+                    pass  # Nothing we can do
 
         try:
             with open(self.prefsfile, "w", encoding="utf-8") as fp:
