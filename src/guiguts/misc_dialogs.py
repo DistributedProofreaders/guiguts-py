@@ -967,16 +967,13 @@ class DidYouKnowDialog(ToplevelDialog):
 
     manual_page = ""  # Main manual page TODO
 
-    tips: list[dict] = []
-
     def __init__(self) -> None:
         """Initialize Did You Know...? dialog."""
         super().__init__("Did You Know...?")
 
-        # Load tips from data file (once)
-        if not self.tips:
-            tips_file = importlib.resources.files(tips) / "tips.json"
-            self.tips = json.loads(tips_file.read_text(encoding="utf-8"))
+        # Load tips from data file
+        tips_file = importlib.resources.files(tips) / "tips.json"
+        self.tips: list[dict] = json.loads(tips_file.read_text(encoding="utf-8"))
 
         self.top_frame.rowconfigure(0, weight=1)
         self.top_frame.columnconfigure(0, weight=1)
@@ -1010,6 +1007,7 @@ class DidYouKnowDialog(ToplevelDialog):
 
         # Show next tip in sequence
         self.show_next()
+        self.link_active = False  # Flag to avoid macOS bug
 
     def show_tip(self, index: int) -> None:
         """Display the tip at given index."""
@@ -1021,6 +1019,7 @@ class DidYouKnowDialog(ToplevelDialog):
 
         self.tip_text.delete("1.0", "end")
 
+        color = "dodger blue" if themed_style().is_dark_theme() else "blue"
         last_end = 0
         for count, match in enumerate(
             re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", tip_text)
@@ -1030,29 +1029,31 @@ class DidYouKnowDialog(ToplevelDialog):
             link_text, target = match.groups()
 
             tagname = f"link_{count}"
-            self.tip_text.tag_config(tagname, foreground="blue", underline=True)
+            self.tip_text.tag_config(tagname, foreground=color, underline=True)
             self.tip_text.tag_bind(
                 tagname,
                 "<Button-1>",
-                lambda e, t=target: webbrowser.open(t),  # type:ignore[misc]
+                lambda e, t=target: self.hyperlink(t),  # type:ignore[misc]
             )
 
-            def on_enter(_e: tk.Event) -> None:
-                """Change cursor when mouse enters tagged text."""
-                self.tip_text.configure(cursor="hand2")
-
-            def on_leave(_e: tk.Event) -> None:
-                """Change cursor when mouse leaves tagged text."""
-                self.tip_text.configure(cursor="arrow")
-
-            self.tip_text.tag_bind(tagname, "<Enter>", on_enter)
-            self.tip_text.tag_bind(tagname, "<Leave>", on_leave)
+            self.tip_text.tag_bind(tagname, "<Enter>", lambda _: self.on_enter())
+            self.tip_text.tag_bind(tagname, "<Leave>", lambda _: self.on_leave())
 
             self.tip_text.insert("end", link_text, tagname)
             last_end = match.end()
 
         # Remainder
         self.tip_text.insert("end", tip_text[last_end:])
+
+    def on_enter(self) -> None:
+        """Change cursor when mouse enters tagged text."""
+        self.tip_text.configure(cursor="hand2")
+        self.link_active = True
+
+    def on_leave(self) -> None:
+        """Change cursor when mouse leaves tagged text."""
+        self.tip_text.configure(cursor="arrow")
+        self.link_active = False
 
     def show_next(self) -> None:
         """Display next tip."""
@@ -1061,6 +1062,13 @@ class DidYouKnowDialog(ToplevelDialog):
     def show_previous(self) -> None:
         """Display previous tip."""
         self.show_tip(preferences.get(PrefKey.DID_YOU_KNOW_INDEX) - 1)
+
+    def hyperlink(self, target: str) -> None:
+        """Open hyperlink in browser."""
+        if not self.link_active:
+            return
+        self.on_leave()  # Force "leave" event or macOS sometimes misses it
+        webbrowser.open(target)
 
 
 _compose_dict: dict[str, str] = {}
