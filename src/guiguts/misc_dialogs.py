@@ -1,5 +1,6 @@
 """Miscellaneous dialogs."""
 
+from datetime import date
 import importlib.resources
 from importlib.metadata import version
 import json
@@ -49,6 +50,7 @@ from guiguts.widgets import (
     ScrollableFrame,
     themed_style,
     set_global_font,
+    get_global_font,
     FileDialog,
 )
 
@@ -481,11 +483,30 @@ class PreferencesDialog(ToplevelDialog):
             text="Show Tooltips",
             variable=PersistentBoolean(PrefKey.SHOW_TOOLTIPS),
         ).grid(column=0, row=5, sticky="NEW", pady=5)
-        ttk.Checkbutton(
-            advance_frame,
-            text='Show "Did You Know...?" Tip at Start',
-            variable=PersistentBoolean(PrefKey.DID_YOU_KNOW_SHOW),
-        ).grid(column=0, row=6, sticky="NEW", pady=5)
+
+        dyk_frame = ttk.Frame(advance_frame)
+        dyk_frame.grid(column=0, row=6, sticky="NSEW", columnspan=3, pady=5)
+        ttk.Label(dyk_frame, text="Did You Know...? Frequency:").grid(row=0, column=0)
+        dyk_textvariable = PersistentInt(PrefKey.DID_YOU_KNOW_INTERVAL)
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Daily",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.DAILY,
+        ).grid(row=0, column=1, sticky="NW", padx=(10, 0))
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Weekly",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.WEEKLY,
+        ).grid(row=0, column=2, sticky="NW", padx=(10, 0))
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Never",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.NEVER,
+        ).grid(row=0, column=3, sticky="NW", padx=(10, 0))
+
         cqc = ttk.Checkbutton(
             advance_frame,
             text="Strict Single Curly Quote Conversion",
@@ -805,10 +826,11 @@ class HelpAboutDialog(ToplevelDialog):
         super().__init__("Help About Guiguts", resize_x=False, resize_y=False)
 
         # Default font is monospaced. Helvetica is guaranteed to give a proportional font
-        font_family = "Helvetica"
-        font_small = 10
-        font_medium = 12
-        font_large = 14
+        global_font = get_global_font()
+        font_family = global_font.cget("family")
+        font_small = global_font.cget("size")
+        font_medium = font_small + 2
+        font_large = font_medium + 2
         title_start = "1.0"
         title_end = "2.0 lineend"
         version_start = "3.0"
@@ -935,10 +957,11 @@ class ReleaseNotesDialog(ToplevelDialog):
         if current:
             bullets.append(" ".join(current))
 
-        font_family = "Helvetica"
-        font_small = 11
-        font_medium = 12
-        font_large = 14
+        global_font = get_global_font()
+        font_family = global_font.cget("family")
+        font_small = global_font.cget("size")
+        font_medium = font_small + 2
+        font_large = font_medium + 2
         text = ScrolledReadOnlyText(
             self.top_frame,
             wrap=tk.WORD,
@@ -967,6 +990,11 @@ class DidYouKnowDialog(ToplevelDialog):
 
     manual_page = ""  # Main manual page TODO
 
+    # Interval in days between successive showings of dialog
+    DAILY = 1
+    WEEKLY = 7
+    NEVER = 999999
+
     def __init__(self) -> None:
         """Initialize Did You Know...? dialog."""
         super().__init__("Did You Know...?")
@@ -984,7 +1012,7 @@ class DidYouKnowDialog(ToplevelDialog):
             self.top_frame,
             wrap=tk.WORD,
             spacing3=5,
-            font=("Helvetica", 12),
+            font=get_global_font(),
             width=50,
             height=5,
         )
@@ -995,11 +1023,28 @@ class DidYouKnowDialog(ToplevelDialog):
             row=1, column=0, sticky="NSW", padx=5, pady=5
         )
 
-        ttk.Checkbutton(
-            self.top_frame,
-            text="Show tips at startup",
-            variable=PersistentBoolean(PrefKey.DID_YOU_KNOW_SHOW),
-        ).grid(row=1, column=1, sticky="NS", pady=5)
+        dyk_frame = ttk.Frame(self.top_frame)
+        dyk_frame.grid(column=1, row=1, pady=5)
+        ttk.Label(dyk_frame, text="Show Tips:").grid(row=0, column=0)
+        dyk_textvariable = PersistentInt(PrefKey.DID_YOU_KNOW_INTERVAL)
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Daily",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.DAILY,
+        ).grid(row=0, column=1, sticky="W", padx=(10, 0))
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Weekly",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.WEEKLY,
+        ).grid(row=0, column=2, sticky="W", padx=(10, 0))
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Never",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.NEVER,
+        ).grid(row=0, column=3, sticky="W", padx=(10, 0))
 
         ttk.Button(self.top_frame, text="Next ▶", command=self.show_next).grid(
             row=1, column=2, sticky="NSE", padx=5, pady=5
@@ -1015,7 +1060,9 @@ class DidYouKnowDialog(ToplevelDialog):
             return
         index %= len(self.tips)
         tip_text = "\n".join(self.tips[index]["text"])
+
         preferences.set(PrefKey.DID_YOU_KNOW_INDEX, index)
+        preferences.set(PrefKey.DID_YOU_KNOW_LAST_SHOWN, date.today().isoformat())
 
         self.tip_text.delete("1.0", "end")
 
@@ -1069,6 +1116,13 @@ class DidYouKnowDialog(ToplevelDialog):
             return
         self.on_leave()  # Force "leave" event or macOS sometimes misses it
         webbrowser.open(target)
+
+    @staticmethod
+    def show_on_startup() -> bool:
+        """Return whether OK to show DidYouKnowDialog on startup."""
+        last_date = date.fromisoformat(preferences.get(PrefKey.DID_YOU_KNOW_LAST_SHOWN))
+        days_since = (date.today() - last_date).days
+        return days_since >= preferences.get(PrefKey.DID_YOU_KNOW_INTERVAL)
 
 
 _compose_dict: dict[str, str] = {}

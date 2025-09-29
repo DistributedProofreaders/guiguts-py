@@ -240,7 +240,7 @@ class Guiguts:
                     title=f"What's New in Guiguts v{ver}", latest_only=True
                 )
                 preferences.set(PrefKey.RELEASE_NOTES_SHOWN, ver)
-            elif preferences.get(PrefKey.DID_YOU_KNOW_SHOW):
+            elif DidYouKnowDialog.show_on_startup():
                 dlg = DidYouKnowDialog.show_dialog()
             # Dialog needs bringing to front because otherwise mainwindow will cover it
             if dlg is not None:
@@ -734,7 +734,8 @@ class Guiguts:
         preferences.set_default(PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS, False)
         preferences.set_default(PrefKey.INITIAL_DIR, os.path.expanduser("~"))
         preferences.set_default(PrefKey.RELEASE_NOTES_SHOWN, "2.0.0")
-        preferences.set_default(PrefKey.DID_YOU_KNOW_SHOW, True)
+        preferences.set_default(PrefKey.DID_YOU_KNOW_INTERVAL, DidYouKnowDialog.DAILY)
+        preferences.set_default(PrefKey.DID_YOU_KNOW_LAST_SHOWN, "2025-09-01")
         preferences.set_default(PrefKey.DID_YOU_KNOW_INDEX, -1)
 
         # Check all preferences have a default

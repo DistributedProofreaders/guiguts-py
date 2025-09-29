@@ -1480,3 +1480,9 @@ def set_global_font() -> None:
             size=preferences.get(PrefKey.GLOBAL_FONT_SIZE),
             weight=default_font.cget("weight"),
         )
+
+
+def get_global_font() -> tk_font.Font:
+    """Return global font."""
+    assert global_font is not None
+    return global_font

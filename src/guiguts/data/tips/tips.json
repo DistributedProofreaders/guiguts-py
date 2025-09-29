@@ -12,7 +12,7 @@
   },
   {
     "text": [
-      "You can set up a [keyboard shortcut](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#User-defined_Keyboard_Shortcuts key for any menu entry and many dialog features. Use the [Command Palette](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#Command_Palette) \"Edit Shortcut\" button.",
+      "You can set up a [keyboard shortcut](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#User-defined_Keyboard_Shortcuts) key for any menu entry and many dialog features. Use the [Command Palette](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#Command_Palette) \"Edit Shortcut\" button.",
       "The shortcut key will be shown on the menu button."
     ]
   },
@@ -43,13 +43,13 @@
   {
     "text": [
       "[Column Selection](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Selecting_Columns) allows you to select a rectangle of text.",
-      "You can do this by dragging the mouse while holding down the Alt key  Option key on Macs). Alternatively, do a regular selection and convert it to a column selection using Edit-->Toggle Column/Regular Selection."
+      "You can do this by dragging the mouse while holding down the Alt key (Option key on Macs). Alternatively, do a regular selection and convert it to a column selection using Edit-->Toggle Column/Regular Selection."
     ]
   },
   {
     "text": [
       "Guiguts supports [light and dark themes](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Appearance).",
-      "With the \"Automatic\" setting, it will switch to match your computer's current setting."
+      "With the \"Default\" setting, it will switch to match your computer's current setting."
     ]
   },
   {
@@ -67,7 +67,7 @@
   {
     "text": [
       "[Highlight All](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Search_Menu#Highlight_All) in the Search/Replace dialog will highlight all occurrences of a string or regular expression using the current dialog settings.",
-      "If you prefer a list of the matches, use \"Find All\" instead."
+      "If you prefer a list of the matches, use [Find All](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Search_Menu#Find_All) instead."
     ]
   },
   {
@@ -111,7 +111,7 @@
   {
     "text": [
       "Messages that appear in [the message bar](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Introduction#Tool_Bar_and_Message_Bar) are also added to the [Message Log](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/View_Menu#Message_Log).",
-      "Use View-->Message Log to view past messages at any time."
+      "Use View-->Message Log to view past messages in the current session at any time."
     ]
   },
   {
