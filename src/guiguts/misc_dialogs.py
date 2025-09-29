@@ -735,9 +735,10 @@ class PreferencesDialog(ToplevelDialog):
                 widget.config(state="disabled")
                 self.update_color(key)
 
+            # Large white square needs VS15 on macOS
             border_btn = ttk.Checkbutton(
                 self.colors_frame,
-                text="⬜",
+                text="⬜\ufe0e",
                 command=border_callback,
                 variable=border_var,
                 state=tk.ACTIVE if self.color_settings[key].tag else tk.DISABLED,
