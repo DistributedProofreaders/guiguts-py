@@ -1,7 +1,9 @@
 """Miscellaneous dialogs."""
 
+from datetime import date
 import importlib.resources
 from importlib.metadata import version
+import json
 import logging
 import platform
 import sys
@@ -9,10 +11,12 @@ import tkinter as tk
 from tkinter import ttk, font, messagebox, colorchooser
 from typing import Literal, Optional, Callable
 import unicodedata
+import webbrowser
 
 from rapidfuzz import process
 import regex as re
 
+from guiguts.data import tips
 from guiguts.file import the_file
 from guiguts.maintext import (
     maintext,
@@ -46,6 +50,7 @@ from guiguts.widgets import (
     ScrollableFrame,
     themed_style,
     set_global_font,
+    get_global_font,
     FileDialog,
 )
 
@@ -478,12 +483,36 @@ class PreferencesDialog(ToplevelDialog):
             text="Show Tooltips",
             variable=PersistentBoolean(PrefKey.SHOW_TOOLTIPS),
         ).grid(column=0, row=5, sticky="NEW", pady=5)
+
+        dyk_frame = ttk.Frame(advance_frame)
+        dyk_frame.grid(column=0, row=6, sticky="NSEW", columnspan=3, pady=5)
+        ttk.Label(dyk_frame, text="Did You Know...? Frequency:").grid(row=0, column=0)
+        dyk_textvariable = PersistentInt(PrefKey.DID_YOU_KNOW_INTERVAL)
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Daily",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.DAILY,
+        ).grid(row=0, column=1, sticky="NW", padx=(10, 0))
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Weekly",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.WEEKLY,
+        ).grid(row=0, column=2, sticky="NW", padx=(10, 0))
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Never",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.NEVER,
+        ).grid(row=0, column=3, sticky="NW", padx=(10, 0))
+
         cqc = ttk.Checkbutton(
             advance_frame,
             text="Strict Single Curly Quote Conversion",
             variable=PersistentBoolean(PrefKey.CURLY_SINGLE_QUOTE_STRICT),
         )
-        cqc.grid(column=0, row=6, sticky="NEW", pady=5)
+        cqc.grid(column=0, row=7, sticky="NEW", pady=5)
         ToolTip(
             cqc,
             "On - only convert straight single quotes to curly if certain\n"
@@ -491,7 +520,7 @@ class PreferencesDialog(ToplevelDialog):
         )
         add_label_spinbox(
             advance_frame,
-            7,
+            8,
             "Regex timeout (seconds):",
             PrefKey.REGEX_TIMEOUT,
             "Longest time a regex search is allowed to take.\n"
@@ -499,7 +528,7 @@ class PreferencesDialog(ToplevelDialog):
         )
 
         ttk.Label(advance_frame, text="PNG compress command:").grid(
-            row=8, column=0, sticky="NSE", pady=5
+            row=9, column=0, sticky="NSE", pady=5
         )
         png_crush_entry = ttk.Entry(
             advance_frame,
@@ -507,7 +536,7 @@ class PreferencesDialog(ToplevelDialog):
             width=30,
         )
         png_crush_entry.grid(
-            row=8, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
+            row=9, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
         )
         ToolTip(
             png_crush_entry,
@@ -520,7 +549,7 @@ class PreferencesDialog(ToplevelDialog):
             advance_frame,
             text="Reset shortcuts to default (requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
-        ).grid(row=9, column=0, sticky="NSW", pady=5, columnspan=3)
+        ).grid(row=10, column=0, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",
@@ -798,10 +827,11 @@ class HelpAboutDialog(ToplevelDialog):
         super().__init__("Help About Guiguts", resize_x=False, resize_y=False)
 
         # Default font is monospaced. Helvetica is guaranteed to give a proportional font
-        font_family = "Helvetica"
-        font_small = 10
-        font_medium = 12
-        font_large = 14
+        global_font = get_global_font()
+        font_family = global_font.cget("family")
+        font_small = global_font.cget("size")
+        font_medium = font_small + 2
+        font_large = font_medium + 2
         title_start = "1.0"
         title_end = "2.0 lineend"
         version_start = "3.0"
@@ -869,7 +899,7 @@ Fifth Floor, Boston, MA 02110-1301 USA.""",
 class ReleaseNotesDialog(ToplevelDialog):
     """A "Release Notes" dialog."""
 
-    manual_page = ""  # Main manual page
+    manual_page = ""  # Main manual page TODO
 
     def __init__(self, title: str, latest_only: bool = False) -> None:
         """Initialize "Release Notes" dialog."""
@@ -928,10 +958,11 @@ class ReleaseNotesDialog(ToplevelDialog):
         if current:
             bullets.append(" ".join(current))
 
-        font_family = "Helvetica"
-        font_small = 11
-        font_medium = 12
-        font_large = 14
+        global_font = get_global_font()
+        font_family = global_font.cget("family")
+        font_small = global_font.cget("size")
+        font_medium = font_small + 2
+        font_large = font_medium + 2
         text = ScrolledReadOnlyText(
             self.top_frame,
             wrap=tk.WORD,
@@ -953,6 +984,146 @@ class ReleaseNotesDialog(ToplevelDialog):
         while idx := text.search("^Bug [Ff]ix", idx, tk.END, regexp=True):
             text.tag_add("bug_tag", idx, f"{idx} lineend")
             idx = f"{idx} lineend"
+
+
+class DidYouKnowDialog(ToplevelDialog):
+    """A 'Did You Know...?' dialog."""
+
+    manual_page = ""  # Main manual page TODO
+
+    # Interval in days between successive showings of dialog
+    DAILY = 1
+    WEEKLY = 7
+    NEVER = 999999
+
+    def __init__(self) -> None:
+        """Initialize Did You Know...? dialog."""
+        super().__init__("Did You Know...?")
+
+        # Load tips from data file
+        tips_file = importlib.resources.files(tips) / "tips.json"
+        self.tips: list[dict] = json.loads(tips_file.read_text(encoding="utf-8"))
+
+        self.top_frame.rowconfigure(0, weight=1)
+        self.top_frame.columnconfigure(0, weight=1)
+        self.top_frame.columnconfigure(1, weight=1)
+        self.top_frame.columnconfigure(2, weight=1)
+
+        self.tip_text = ScrolledReadOnlyText(
+            self.top_frame,
+            wrap=tk.WORD,
+            spacing3=5,
+            font=get_global_font(),
+            width=50,
+            height=5,
+        )
+        self.tip_text.grid(row=0, column=0, columnspan=3, sticky="NSEW")
+
+        # Controls
+        ttk.Button(self.top_frame, text="◀ Previous", command=self.show_previous).grid(
+            row=1, column=0, sticky="NSW", padx=5, pady=5
+        )
+
+        dyk_frame = ttk.Frame(self.top_frame)
+        dyk_frame.grid(column=1, row=1, pady=5)
+        ttk.Label(dyk_frame, text="Show Tips:").grid(row=0, column=0)
+        dyk_textvariable = PersistentInt(PrefKey.DID_YOU_KNOW_INTERVAL)
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Daily",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.DAILY,
+        ).grid(row=0, column=1, sticky="W", padx=(10, 0))
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Weekly",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.WEEKLY,
+        ).grid(row=0, column=2, sticky="W", padx=(10, 0))
+        ttk.Radiobutton(
+            dyk_frame,
+            text="Never",
+            variable=dyk_textvariable,
+            value=DidYouKnowDialog.NEVER,
+        ).grid(row=0, column=3, sticky="W", padx=(10, 0))
+
+        ttk.Button(self.top_frame, text="Next ▶", command=self.show_next).grid(
+            row=1, column=2, sticky="NSE", padx=5, pady=5
+        )
+
+        # Show next tip in sequence
+        self.show_next()
+        self.link_active = False  # Flag to avoid macOS bug
+
+    def show_tip(self, index: int) -> None:
+        """Display the tip at given index."""
+        if not self.tips:
+            return
+        index %= len(self.tips)
+        tip_text = "\n".join(self.tips[index]["text"])
+
+        preferences.set(PrefKey.DID_YOU_KNOW_INDEX, index)
+        preferences.set(PrefKey.DID_YOU_KNOW_LAST_SHOWN, date.today().isoformat())
+
+        self.tip_text.delete("1.0", "end")
+
+        color = "dodger blue" if themed_style().is_dark_theme() else "blue"
+        last_end = 0
+        for count, match in enumerate(
+            re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", tip_text)
+        ):
+            # Plain text
+            self.tip_text.insert("end", tip_text[last_end : match.start()])
+            link_text, target = match.groups()
+
+            tagname = f"link_{count}"
+            self.tip_text.tag_config(tagname, foreground=color, underline=True)
+            self.tip_text.tag_bind(
+                tagname,
+                "<Button-1>",
+                lambda e, t=target: self.hyperlink(t),  # type:ignore[misc]
+            )
+
+            self.tip_text.tag_bind(tagname, "<Enter>", lambda _: self.on_enter())
+            self.tip_text.tag_bind(tagname, "<Leave>", lambda _: self.on_leave())
+
+            self.tip_text.insert("end", link_text, tagname)
+            last_end = match.end()
+
+        # Remainder
+        self.tip_text.insert("end", tip_text[last_end:])
+
+    def on_enter(self) -> None:
+        """Change cursor when mouse enters tagged text."""
+        self.tip_text.configure(cursor="hand2")
+        self.link_active = True
+
+    def on_leave(self) -> None:
+        """Change cursor when mouse leaves tagged text."""
+        self.tip_text.configure(cursor="arrow")
+        self.link_active = False
+
+    def show_next(self) -> None:
+        """Display next tip."""
+        self.show_tip(preferences.get(PrefKey.DID_YOU_KNOW_INDEX) + 1)
+
+    def show_previous(self) -> None:
+        """Display previous tip."""
+        self.show_tip(preferences.get(PrefKey.DID_YOU_KNOW_INDEX) - 1)
+
+    def hyperlink(self, target: str) -> None:
+        """Open hyperlink in browser."""
+        if not self.link_active:
+            return
+        self.on_leave()  # Force "leave" event or macOS sometimes misses it
+        webbrowser.open(target)
+
+    @staticmethod
+    def show_on_startup() -> bool:
+        """Return whether OK to show DidYouKnowDialog on startup."""
+        last_date = date.fromisoformat(preferences.get(PrefKey.DID_YOU_KNOW_LAST_SHOWN))
+        days_since = (date.today() - last_date).days
+        return days_since >= preferences.get(PrefKey.DID_YOU_KNOW_INTERVAL)
 
 
 _compose_dict: dict[str, str] = {}

@@ -1,0 +1,135 @@
+[
+  {
+    "text": [
+      "You can adjust many preferences using the [Settings Dialog](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Settings).",
+      "For example, you can enable or disable these \"Did You Know...?\" tips."
+    ]
+  },
+  {
+    "text": [
+      "If you press the F1 function key or use Help-->Dialog Manual Page, the [relevant manual page](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#Dialog_Manual) for the dialog you are using will open in your browser."
+    ]
+  },
+  {
+    "text": [
+      "You can set up a [keyboard shortcut](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#User-defined_Keyboard_Shortcuts) key for any menu entry and many dialog features. Use the [Command Palette](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#Command_Palette) \"Edit Shortcut\" button.",
+      "The shortcut key will be shown on the menu button."
+    ]
+  },
+  {
+    "text": [
+      "You can use the [Command Palette](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#Command_Palette) to quickly find any menu command.",
+      "Just press Ctrl+Shift+P (or Cmd+Shift+P on Macs) to open it and start typing part of the command."
+    ]
+  },
+  {
+    "text": [
+      "The [Custom Menu](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Custom_Menu) lets you add your own menu entries.",
+      "These can open webpages or run tools on your computer, and can pass the selected text to the webpage or tool."
+    ]
+  },
+  {
+    "text": [
+      "You can [split the main text window](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/View_Menu#Split_Text_Window) to view two parts of your text at the same time.",
+      "Use Tab and Shift-Tab shortcuts to switch focus between the two views."
+    ]
+  },
+  {
+    "text": [
+      "You can add good/bad words files to the project dictionary using the [File-->Project menu](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/File_Menu#Add_Good/Bad_Words_to_Project_Dictionary).",
+      "Don't forget to check that the good words are correct before adding them."
+    ]
+  },
+  {
+    "text": [
+      "[Column Selection](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Selecting_Columns) allows you to select a rectangle of text.",
+      "You can do this by dragging the mouse while holding down the Alt key (Option key on Macs). Alternatively, do a regular selection and convert it to a column selection using Edit-->Toggle Column/Regular Selection."
+    ]
+  },
+  {
+    "text": [
+      "Guiguts supports [light and dark themes](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Appearance).",
+      "With the \"Default\" setting, it will switch to match your computer's current setting."
+    ]
+  },
+  {
+    "text": [
+      "Most foreground and background colors used in Guiguts can be configured in the [Settings Dialog-->Colors tab](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Colors).",
+      "You can also use underlined or bordered text for additional clarity."
+    ]
+  },
+  {
+    "text": [
+      "You can type a character or word to match the start of a message in order to search in any [tool checker dialog](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Tools_Menu#Checker_Dialogs).",
+      "Turn on \"Full\" search in the dialog to match any word in the message."
+    ]
+  },
+  {
+    "text": [
+      "[Highlight All](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Search_Menu#Highlight_All) in the Search/Replace dialog will highlight all occurrences of a string or regular expression using the current dialog settings.",
+      "If you prefer a list of the matches, use [Find All](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Search_Menu#Find_All) instead."
+    ]
+  },
+  {
+    "text": [
+      "[Bookmarks](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Search_Menu#Bookmarks) in Guiguts remember the current selection as well as the current cursor position.",
+      "If you have a section of text that you want to be able to select repeatedly, such as a long table, set a Bookmark to remember the selection, then return to it whenver you need to."
+    ]
+  },
+  {
+    "text": [
+      "You can create your own [scannos files](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Tools_Menu#Creating_Your_Own_Stealth_Scannos_Files).",
+      "Use the \"Load File\" button in the dialog to load it for the first time. From then on it will appear in the dropdown menu at the top of the dialog."
+    ]
+  },
+  {
+    "text": [
+      "[Compose Sequences](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#composekey) are a quick way to enter a Unicode character into the main text or the Search dialog.",
+      "After pressing Ctrl+i (Cmd+i on Macs) typing a couple of keys will generate the character you need, e.g. space-asterisk for a non-breaking space.",
+      "See [Help-->List of Compose Sequences](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#composekey) for a list of the valid sequences, or type the hex Unicode codepoint."
+    ]
+  },
+  {
+    "text": [
+      "You can run ebookmaker from a [local installation](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/HTML_Menu#Local_installation) if you have one. Or, [HTML-->Ebookmaker (online using API)](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/HTML_Menu#Online_using_API) will zip your files, upload them to PG, run the most up-to-date version of ebookmaker there, report any errors, and download the generated epub files.",
+      "The API version takes a bit longer, but doesn't require you to install anything to get it working."
+    ]
+  },
+  {
+    "text": [
+      "If you right click in a blank bit of any dialog, it will be \"[pinned](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/View_Menu#Pin_/_Unpin_Dialog)\".",
+      "A \"pinned\" dialog always stays on top of the main window.",
+      "Unpin the dialog by right clicking again, or use the View-->Pin/Unpin Dialog menu entry."
+    ]
+  },
+  {
+    "text": [
+      "The image viewer can be \"docked\" (part of the main window) or \"undocked/floating\" (in its own window).",
+      "Change this setting via [View-->Dock Image](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/View_Menu#Dock_Image) or using the Docked toggle in the image viewer."
+    ]
+  },
+  {
+    "text": [
+      "Messages that appear in [the message bar](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Introduction#Tool_Bar_and_Message_Bar) are also added to the [Message Log](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/View_Menu#Message_Log).",
+      "Use View-->Message Log to view past messages in the current session at any time."
+    ]
+  },
+  {
+    "text": [
+      "Guiguts now contains [Content Providing](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/File_Menu#The_Content_Providing_Sub-Menu) functionality.",
+      "You can use these features in place of using guiprep."
+    ]
+  },
+  {
+    "text": [
+      "Use [Undo/Redo](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Undo_and_Redo) to quickly revert changes in the text.",
+      "Keyboard shortcuts match your platform: Ctrl+Z/Cmd+Z for undo, Ctrl+Y/Cmd+Shift+Z for redo."
+    ]
+  },
+  {
+    "text": [
+      "You can load a file of regular expressions into the [Regex Library](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Tools_Menu#Regex_Library).",
+      "Use the \"Load File\" button in the dialog to load it for the first time, then the dropdown menu at the top of the dialog to find it later."
+    ]
+  }
+]
