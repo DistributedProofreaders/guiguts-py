@@ -62,6 +62,7 @@ DEFAULT_STEALTH_SCANNOS = "en-common.json"
 DEFAULT_MISSPELLED_SCANNOS = "misspelled.json"
 DEFAULT_REGEX_LIBRARY_DIR = importlib.resources.files(regex_library)
 DEFAULT_DASHES_REGEX_LIBRARY = "dashes.json"
+DEFAULT_ITALIC_SEMANTIC_REGEX_LIBRARY = "italic_semantic.json"
 
 CURLY_QUOTES_CHECKER_FILTERS = [
     CheckerFilterErrorPrefix("Double quote not converted", "DQ not converted: "),
@@ -1571,10 +1572,14 @@ class TextMarkupConvertorDialog(ToplevelDialog):
         preferences.set(PrefKey.SEARCHDIALOG_MATCH_CASE, False)
         preferences.set(PrefKey.SEARCHDIALOG_WHOLE_WORD, False)
         dlg = SearchDialog.show_dialog()
+        dlg.show_multi_replace()
         dlg.search_box.set(r"<sc>([^<]+)</sc>")
         dlg.replace_box[0].set(r"\1")
         dlg.replace_box[1].set(r"\U\1\E")
         dlg.replace_box[2].set(r"+\1+")
+        # Clear unused replace boxes to avoid confusion
+        for idx in range(3, preferences.get(PrefKey.SEARCHDIALOG_MULTI_ROWS)):
+            dlg.replace_box[idx].set("")
 
 
 class Scanno(dict):
@@ -1586,7 +1591,7 @@ class Scanno(dict):
     REPLACEMENT = "replacement"
     HINT = "hint"
 
-    def __init__(self, match: str, replacement: str, hint: str) -> None:
+    def __init__(self, match: str, replacement: list[str], hint: str) -> None:
         self[Scanno.MATCH] = match
         self[Scanno.REPLACEMENT] = replacement
         self[Scanno.HINT] = hint
@@ -1779,9 +1784,11 @@ class ScannoRegexCheckerDialog(CheckerDialog):
                 self.scanno_list = []
                 return
             try:
-                scanno[Scanno.REPLACEMENT]
+                # Single string is permitted in json - convert it to single-element list
+                if isinstance(scanno[Scanno.REPLACEMENT], str):
+                    scanno[Scanno.REPLACEMENT] = [scanno[Scanno.REPLACEMENT]]
             except KeyError:
-                scanno[Scanno.REPLACEMENT] = ""
+                scanno[Scanno.REPLACEMENT] = [""]
             try:
                 scanno[Scanno.HINT]
             except KeyError:
@@ -1852,7 +1859,7 @@ class ScannoRegexCheckerDialog(CheckerDialog):
         if update_fields:
             scanno = self.scanno_list[self.scanno_number]
             self.scanno_textvariable.set(scanno[Scanno.MATCH])
-            self.replacement_textvariable.set(scanno[Scanno.REPLACEMENT])
+            self.replacement_textvariable.set(scanno[Scanno.REPLACEMENT][0])
             self.hint_textvariable.set(f"Hint: {scanno[Scanno.HINT]}")
             self.count_textvariable.set(
                 f"{self.scanno_number + 1} / {len(self.scanno_list)}"
@@ -1939,9 +1946,30 @@ class ScannoRegexCheckerDialog(CheckerDialog):
         preferences.set(PrefKey.SEARCHDIALOG_REGEX, True)
         preferences.set(PrefKey.SEARCHDIALOG_WHOLE_WORD, False)
         preferences.set(PrefKey.SEARCHDIALOG_REVERSE, False)
+        # Populate S/R dialog with replacement string(s)
+        scanno = self.scanno_list[self.scanno_number]
+        # Limit number of replacements to max size of S/R dialog
+        n_replacements = min(
+            len(scanno[Scanno.REPLACEMENT]), SearchDialog.max_multi_rows
+        )
         dlg = SearchDialog.show_dialog()
         dlg.search_box.set(self.scanno_textvariable.get())
+        # First replacement string (may have been edited by user, so get from entry field)
         dlg.replace_box[0].set(self.replacement_textvariable.get())
+        # Expand S/R dialog if necessary
+        if n_replacements > 1:
+            preferences.set(PrefKey.SEARCHDIALOG_MULTI_REPLACE, True)
+            if preferences.get(PrefKey.SEARCHDIALOG_MULTI_ROWS) < n_replacements:
+                preferences.set(PrefKey.SEARCHDIALOG_MULTI_ROWS, n_replacements)
+            dlg.show_multi_replace()
+            for idx in range(1, n_replacements):
+                dlg.replace_box[idx].set(scanno[Scanno.REPLACEMENT][idx])
+        # Clear unused replace boxes to avoid confusion
+        for idx in range(
+            n_replacements, preferences.get(PrefKey.SEARCHDIALOG_MULTI_ROWS)
+        ):
+            dlg.replace_box[idx].set("")
+
         maintext().set_insert_index(
             maintext().rowcol(f"{maintext().get_insert_index().index()}-1c")
         )
