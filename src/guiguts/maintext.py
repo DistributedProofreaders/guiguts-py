@@ -3052,7 +3052,7 @@ class MainText(tk.Text):
         # Preferable to use flags rather than prepending "(?i)", for example,
         # because if we need to report bad regex to user, it's better if it's
         # the regex they typed.
-        flags = 0
+        flags = re.V1  # Use advanced version 1 behavior
         if backwards:
             flags |= re.REVERSE
         if nocase:
