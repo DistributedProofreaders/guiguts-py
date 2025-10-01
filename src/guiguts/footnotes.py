@@ -21,6 +21,7 @@ from guiguts.utilities import (
     IndexRowCol,
     IndexRange,
 )
+from guiguts.widgets import Busy
 
 logger = logging.getLogger(__package__)
 
@@ -680,6 +681,7 @@ def reindex() -> None:
 
     FOOTNOTE_INDEX_STYLE values are 'number', 'letter' or 'roman'.
     """
+    Busy.busy()
     assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     # Check index style used last time Footnotes Fixup was run or default if first run.
@@ -829,6 +831,7 @@ def move_footnotes_to_paragraphs() -> None:
     The third pass iterates through footnote records in reverse order removing
     any blank lines left behind when footnotes are deleted.
     """
+    Busy.busy()
     assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     # Check for any duplicate footnote labels and warn user that they should
@@ -1043,6 +1046,7 @@ def move_footnotes_to_lz() -> None:
     4-line chapter break and an added one at end of file. This means that all
     footnotes have a LZ below them.
     """
+    Busy.busy()
     assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     # Check for any duplicate footnote labels and warn user that they should
@@ -1162,6 +1166,7 @@ def tidy_footnotes() -> None:
     Copies and deletes the original footnote then reinserts edited
     version at the same place.
     """
+    Busy.busy()
     assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
     fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
