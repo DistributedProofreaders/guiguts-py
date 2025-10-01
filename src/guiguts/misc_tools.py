@@ -837,8 +837,8 @@ def unmatched_dp_markup() -> None:
 
 def unmatched_html_markup() -> None:
     """Check for unmatched HTML markup."""
-
     open_regex = "<([[:alnum:]]+)( [^>\n]+)?>"
+    open_regex_c = re.compile(open_regex)
     close_regex = "</([[:alnum:]]+)>"
 
     def get_tag_type_regex(markup_in: str) -> str:
@@ -846,7 +846,7 @@ def unmatched_html_markup() -> None:
 
         Escaped so suitable for use in a regex.
         """
-        return re.escape(re.sub(open_regex, r"\1", markup_in.replace("/", "")))
+        return re.escape(open_regex_c.sub(r"\1", markup_in.replace("/", "")))
 
     def matched_pair_html_markup(markup_in: str) -> tuple[str, bool]:
         """Get regex that matches open and close HTML markup.
@@ -882,8 +882,8 @@ def unmatched_html_markup() -> None:
         and both opening or both closing. This is to make `<p class="center">`
         match `<p>`, for example, which simple equality would not.
         """
-        s1 = re.sub(open_regex, r"<\1>", s1)
-        s2 = re.sub(open_regex, r"<\1>", s2)
+        s1 = open_regex_c.sub(r"<\1>", s1)
+        s2 = open_regex_c.sub(r"<\1>", s2)
         return s1 == s2
 
     unmatched_markup_check(
