@@ -688,6 +688,9 @@ def reindex() -> None:
     index_style = preferences.get(PrefKey.FOOTNOTE_INDEX_STYLE)
     an_records = _THE_FOOTNOTE_CHECKER.get_an_records()
     fn_records = _THE_FOOTNOTE_CHECKER.get_fn_records()
+    if len(an_records) > len(fn_records):
+        logger.error("Unable to reindex with unpaired anchors")
+        return
     for index in range(1, len(an_records) + 1):
         if index_style == "roman":
             label = roman.toRoman(index)
