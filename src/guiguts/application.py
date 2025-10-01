@@ -107,6 +107,7 @@ from guiguts.misc_tools import (
     DEFAULT_MISSPELLED_SCANNOS,
     DEFAULT_REGEX_LIBRARY_DIR,
     DEFAULT_DASHES_REGEX_LIBRARY,
+    DEFAULT_ITALIC_SEMANTIC_REGEX_LIBRARY,
     convert_to_curly_quotes,
     check_curly_quotes,
     protect_html_straight_quotes,
@@ -564,6 +565,11 @@ class Guiguts:
             PrefKey.REGEX_LIBRARY_HISTORY,
             [
                 str(DEFAULT_REGEX_LIBRARY_DIR.joinpath(DEFAULT_DASHES_REGEX_LIBRARY)),
+                str(
+                    DEFAULT_REGEX_LIBRARY_DIR.joinpath(
+                        DEFAULT_ITALIC_SEMANTIC_REGEX_LIBRARY
+                    )
+                ),
             ],
         )
         preferences.set_default(PrefKey.REGEX_LIBRARY_AUTO_ADVANCE, True)

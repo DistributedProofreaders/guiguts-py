@@ -663,6 +663,11 @@ class PathnameCombobox(Combobox):
         for path in preferences.get(self.prefs_key):
             if os.path.exists(path):
                 path_list.append(path)
+        # Ensure default files are included in list (in case new default is added
+        # in a later release after the user has customized the list)
+        for path in preferences.get_default(self.prefs_key):
+            if path not in path_list and os.path.exists(path):
+                path_list.append(path)
         preferences.set(self.prefs_key, path_list)
 
 
