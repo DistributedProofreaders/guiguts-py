@@ -2,7 +2,7 @@
   {
     "text": [
       "You can adjust many preferences using the [Settings Dialog](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Settings).",
-      "For example, you can enable or disable these \"Did You Know...?\" tips."
+      "For example, you can change how often you see these \"Did You Know...?\" tips."
     ]
   },
   {
@@ -24,14 +24,50 @@
   },
   {
     "text": [
+      "Most tools display their results in a [Checker Dialog](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Tools_Menu#Checker_Dialogs) with a common set of functions that you can access either via the buttons or by left/right clicking the message, optionally with the Control, Command, or Shift keys.",
+      "Clicking a message takes you to the correct place in the text; right-clicking hides that message from the list; holding Control (or Command on Macs) while clicking will attempt to fix or process the error in most tools; holding Shift while clicking will execute the operation on all messages that match the clicked message in some way."
+    ]
+  },
+  {
+    "text": [
       "The [Custom Menu](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Custom_Menu) lets you add your own menu entries.",
       "These can open webpages or run tools on your computer, and can pass the selected text to the webpage or tool."
     ]
   },
   {
     "text": [
+      "You can load any image into the [Image Viewer](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Introduction#Image_Viewer).",
+      "Using the \"<\" and \">\" buttons show the previous or next file in the directory."
+    ]
+  },
+  {
+    "text": [
+      "There is a wide variety of [rewrapping markup](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Tools_Menu#Rewrap_Markers).",
+      "You can mark a block to be centered, right-aligned, block quote, poetry, a list, an index, or not wrapped. Several of these allow custom margins to be used."
+    ]
+  },
+  {
+    "text": [
+      "[Search-->Alignment Column](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Search_Menu#Highlight_Alignment_Column) displays a vertical column of highlighting to help ensure tables are aligned consistently.",
+      "If you use it a lot, you may want to define a [keyboard shortcut](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#User-defined_Keyboard_Shortcuts) to turn it on and off."
+    ]
+  },
+  {
+    "text": [
       "You can [split the main text window](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/View_Menu#Split_Text_Window) to view two parts of your text at the same time.",
       "Use Tab and Shift-Tab shortcuts to switch focus between the two views."
+    ]
+  },
+  {
+    "text": [
+      "You can Shift-Click on [Replace All](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Search_Menu#Replacing) in the Search/Replace dialog to only replace matches that are identical to the current match.",
+      "For example, when searching for words in italic markup, if a particular LOTE word is found, all occurrences of that LOTE word can have a \"lang\" attribute added, without adding it to other words in italic markup."
+    ]
+  },
+  {
+    "text": [
+      "In addition to the line numbers on the left, you can turn on a [column ruler](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/File_Menu#Add_Good/Bad_Words_to_Project_Dictionary) across the top of the text.",
+      "Shift-right-click the Line/Column display in the left of the status bar or look in the Appearance Tab of the [Settings Dialog](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Appearance)."
     ]
   },
   {
@@ -72,6 +108,12 @@
   },
   {
     "text": [
+      "Shift-clicking \"See Img\" in the status bar turns on [Auto Image](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/View_Menu#Auto_Image).",
+      "This will display the correct scan image in the Image Viewer for your current location in the text."
+    ]
+  },
+  {
+    "text": [
       "[Bookmarks](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Search_Menu#Bookmarks) in Guiguts remember the current selection as well as the current cursor position.",
       "If you have a section of text that you want to be able to select repeatedly, such as a long table, set a Bookmark to remember the selection, then return to it whenver you need to."
     ]
@@ -87,6 +129,11 @@
       "[Compose Sequences](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#composekey) are a quick way to enter a Unicode character into the main text or the Search dialog.",
       "After pressing Ctrl+i (Cmd+i on Macs) typing a couple of keys will generate the character you need, e.g. space-asterisk for a non-breaking space.",
       "See [Help-->List of Compose Sequences](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Help_Menu#composekey) for a list of the valid sequences, or type the hex Unicode codepoint."
+    ]
+  },
+  {
+    "text": [
+      "If you prefer to use an external image viewer rather than the built-in one, you can configure this in the \"Image Viewer\" tab of the [Settings Dialog](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual/Edit_Menu#Image_Viewer)."
     ]
   },
   {
