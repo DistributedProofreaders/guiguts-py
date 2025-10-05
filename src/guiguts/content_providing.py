@@ -295,7 +295,8 @@ class DehyphenatorChecker:
                         "de",
                         "im",
                     )
-            if not remove and use_dict:
+
+            if not remove and use_dict and not (frag1.isdigit() and frag2.isdigit()):
                 remove = (
                     spell_checker.spell_check_word(f"{frag1}{frag2}", dummy_proj_dict)
                     == SPELL_CHECK_OK_YES
