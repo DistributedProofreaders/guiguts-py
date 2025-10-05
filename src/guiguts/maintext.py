@@ -3296,7 +3296,7 @@ class MainText(tk.Text):
                 WrapParams(
                     block_params_list[-1].left + bq_indent,
                     block_params_list[-1].left + bq_indent,
-                    block_params_list[-1].right,
+                    bq_right,
                 )
             )
         paragraph_complete = False
@@ -3322,6 +3322,7 @@ class MainText(tk.Text):
                     bq_depth_change = 1
                     # Default is to just indent left margins by block_indent
                     # Special case if block depth currently zero - use default block right margin not general right margin
+                    # If block depth > 0, use right margin of block level above
                     (
                         new_block_left,
                         new_block_first,
