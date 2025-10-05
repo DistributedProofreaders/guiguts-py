@@ -454,6 +454,7 @@ class FootnoteChecker:
 
             # Find previous occurrence of matching anchor, e.g. "[4]"
             # but not where used in context of block markup, e.g. "/#[4]"
+            # nor if PPer has used backslash to escape, e.g. "\[1928]"
             start_point = start
             while True:
                 anchor_match = maintext().find_match(
@@ -467,7 +468,7 @@ class FootnoteChecker:
                     f"{anchor_match.rowcol.index()}-2c", anchor_match.rowcol.index()
                 )
                 if not re.fullmatch(
-                    "/[#$*FILPXCR]", anchor_context, flags=re.IGNORECASE
+                    r"/[#$*FILPXCR]|.\\", anchor_context, flags=re.IGNORECASE
                 ):
                     break
                 start_point = anchor_match.rowcol
@@ -500,7 +501,7 @@ class FootnoteChecker:
         # Check for anchors that are not paired
         anchor_matches = maintext().find_all(
             maintext().start_to_end(),
-            r"(?<!/[#$*FfIiLlPpXxCcRr])\[([\d]+|[A-Z])]",
+            r"(?<!(/[#$*FfIiLlPpXxCcRr]|\\))\[([\d]+|[A-Z])]",
             regexp=True,
             wholeword=False,
             nocase=False,
