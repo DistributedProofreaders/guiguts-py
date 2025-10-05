@@ -93,7 +93,7 @@ class PreferencesDialog(ToplevelDialog):
             appearance_frame,
             text="High Contrast",
             variable=PersistentBoolean(PrefKey.HIGH_CONTRAST),
-        ).grid(column=0, row=1, sticky="NEW", pady=5)
+        ).grid(column=0, row=1, sticky="NW", pady=5)
 
         tearoff_frame = ttk.Frame(appearance_frame)
         tearoff_frame.grid(column=0, row=2, sticky="NSEW")
@@ -141,17 +141,17 @@ class PreferencesDialog(ToplevelDialog):
             appearance_frame,
             text="Display Line Numbers",
             variable=PersistentBoolean(PrefKey.LINE_NUMBERS),
-        ).grid(column=0, row=3, sticky="NEW", pady=5)
+        ).grid(column=0, row=3, sticky="NW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
             text="Display Column Numbers",
             variable=PersistentBoolean(PrefKey.COLUMN_NUMBERS),
-        ).grid(column=0, row=4, sticky="NEW", pady=5)
+        ).grid(column=0, row=4, sticky="NW", pady=5)
         ttk.Checkbutton(
             appearance_frame,
             text="Show Character Names in Status Bar",
             variable=PersistentBoolean(PrefKey.ORDINAL_NAMES),
-        ).grid(column=0, row=5, sticky="NEW", pady=5)
+        ).grid(column=0, row=5, sticky="NW", pady=5)
         bell_frame = ttk.Frame(appearance_frame)
         bell_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))
         ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
@@ -303,7 +303,7 @@ class PreferencesDialog(ToplevelDialog):
             text="Auto Img Reload Alert",
             variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_ALERT),
         )
-        iv_btn.grid(column=0, row=1, sticky="NEW", pady=5)
+        iv_btn.grid(column=0, row=1, sticky="NW", pady=5)
         ToolTip(
             iv_btn,
             "Whether to flash the border when Auto Img re-loads the\n"
@@ -313,7 +313,7 @@ class PreferencesDialog(ToplevelDialog):
             image_viewer_frame,
             text="Use External Viewer",
             variable=PersistentBoolean(PrefKey.IMAGE_VIEWER_EXTERNAL),
-        ).grid(column=0, row=2, sticky="NEW", pady=5)
+        ).grid(column=0, row=2, sticky="NW", pady=5)
         file_name_frame = ttk.Frame(image_viewer_frame)
         file_name_frame.grid(row=3, column=0, columnspan=2, sticky="NSEW")
         file_name_frame.columnconfigure(0, weight=1)
@@ -450,21 +450,21 @@ class PreferencesDialog(ToplevelDialog):
             advance_frame,
             text="Highlight Cursor Line",
             variable=PersistentBoolean(PrefKey.HIGHLIGHT_CURSOR_LINE),
-        ).grid(column=0, row=2, sticky="NEW", pady=5)
+        ).grid(column=0, row=2, sticky="NW", pady=5)
 
         backup_btn = ttk.Checkbutton(
             advance_frame,
             text="Keep Backup Before Saving",
             variable=PersistentBoolean(PrefKey.BACKUPS_ENABLED),
         )
-        backup_btn.grid(column=0, row=3, sticky="EW", pady=(10, 0))
+        backup_btn.grid(column=0, row=3, sticky="NW", pady=(10, 0))
         ToolTip(backup_btn, "Backup file will have '.bak' extension")
         ttk.Checkbutton(
             advance_frame,
             text="Enable Auto Save Every",
             variable=PersistentBoolean(PrefKey.AUTOSAVE_ENABLED),
             command=the_file().reset_autosave,
-        ).grid(column=0, row=4, sticky="EW")
+        ).grid(column=0, row=4, sticky="NW")
         spinbox = ttk.Spinbox(
             advance_frame,
             textvariable=PersistentInt(PrefKey.AUTOSAVE_INTERVAL),
@@ -482,7 +482,7 @@ class PreferencesDialog(ToplevelDialog):
             advance_frame,
             text="Show Tooltips",
             variable=PersistentBoolean(PrefKey.SHOW_TOOLTIPS),
-        ).grid(column=0, row=5, sticky="NEW", pady=5)
+        ).grid(column=0, row=5, sticky="NW", pady=5)
 
         dyk_frame = ttk.Frame(advance_frame)
         dyk_frame.grid(column=0, row=6, sticky="NSEW", columnspan=3, pady=5)
