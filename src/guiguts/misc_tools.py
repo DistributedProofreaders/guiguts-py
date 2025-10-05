@@ -1757,6 +1757,8 @@ class ScannoRegexCheckerDialog(CheckerDialog):
         scanno_dict = load_dict_from_json(path)
         if scanno_dict is None:
             logger.error(f"Unable to load {self.type_adj} file {path}")
+            self.display_entries()
+            self.lift()
             return
         # Some scannos files require whole-word searching
         try:
