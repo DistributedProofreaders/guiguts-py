@@ -101,21 +101,21 @@ class HTMLGeneratorDialog(ToplevelDialog):
             self.top_frame,
             text="Show Page Numbers in HTML",
             variable=PersistentBoolean(PrefKey.HTML_SHOW_PAGE_NUMBERS),
-        ).grid(row=1, column=0, sticky="NSEW", pady=5)
+        ).grid(row=1, column=0, sticky="NSW", pady=5)
 
         # Whether h2 headings should include multiple lines
         ttk.Checkbutton(
             self.top_frame,
             text="Multi-line Chapter Headings",
             variable=PersistentBoolean(PrefKey.HTML_MULTILINE_CHAPTER_HEADINGS),
-        ).grid(row=2, column=0, sticky="NSEW", pady=5)
+        ).grid(row=2, column=0, sticky="NSW", pady=5)
 
         # Whether h3 headings should be added
         ttk.Checkbutton(
             self.top_frame,
             text="Mark Up Single-line Section Headings",
             variable=PersistentBoolean(PrefKey.HTML_SECTION_HEADINGS),
-        ).grid(row=3, column=0, sticky="NSEW", pady=5)
+        ).grid(row=3, column=0, sticky="NSW", pady=5)
 
         # Markup conversion
         markup_frame = ttk.LabelFrame(self.top_frame, text="Inline Markup", padding=2)
