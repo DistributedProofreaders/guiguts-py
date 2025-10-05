@@ -15,8 +15,10 @@
   differences, e.g. `[a-z--c-t]`
 - Order of Content Providing menu switched to better match process order
 - Content Providing Dehyphenation has color coded Keep/Remove label
+- Dehyphenating number ranges Keeps rather than Removing hyphen
 - Content Providing header/footer detection improved to catch the case of a
   page number and book/chapter title
+- Footnote anchors can now be escaped with backslash, e.g. `\[1928]`
 - Curly Quote Fixup buttons made narrower to fit better into dialog
 - Unmatched HTML Tags check has been sped up
 - Instructions for installation on Fedora Linux were added to the README
@@ -43,6 +45,10 @@
 - Reindexing when there were unpaired footnote anchors could cause an exception
 - Some menu buttons were missing `...` to indicate that additional input is
   required before the operation can be completed
+- Hotzones of some checkboxes were too wide
+- Block Rewrap Selection didn't respect blockquote right margin
+- Missing Scanno/Regex Library file caused dialog to be lost behind main window
+- 
 
 
 ## Version 2.0.3
