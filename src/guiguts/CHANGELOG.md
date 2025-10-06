@@ -1,7 +1,58 @@
 # Changelog
 
 
-## Version 2.0.4
+## Version 2.0.5
+
+- Fix installation problem relating to `packaging` module
+- Display a "Did You Know...?" tip when Guiguts starts. Can be configured to
+  show once a day, once a week, or never - also accessible via Help menu
+- Display Release Notes when a new release of Guiguts is first started - also
+  accessible via Help menu
+- Multiple replacements can now be added for a regex in Regex Library - these
+  will be shown in the S/R dialog when Regex Library's Replace is Shift-clicked
+- Default directory when selecting the project's scan directory is now the
+  project directory
+- Regex handling defaults to permit advanced features such as character set
+  differences, e.g. `[a-z--c-t]`
+- Order of Content Providing menu switched to better match process order
+- Content Providing Dehyphenation has color coded Keep/Remove label
+- Dehyphenating number ranges Keeps rather than Removing hyphen
+- Content Providing header/footer detection improved to catch the case of a
+  page number and book/chapter title
+- Footnote anchors can now be escaped with backslash, e.g. `\[1928]`
+- Curly Quote Fixup buttons made narrower to fit better into dialog
+- Unmatched HTML Tags check has been sped up
+- Instructions for installation on Fedora Linux were added to the README
+
+### Bug fixes
+
+- Mid-paragraph illos were not detected when the text after the illo began
+  with a lower case letter
+- Re-run with Suspects in Illo/SN fixup did not re-select the correct message
+- Word Frequency Diacritics check did not spot suspects if the accented
+  character was `ä`, `ö`, or `ü`
+- Whole Word regexes involving `|` for alternation sometimes failed
+- Column ruler was not precisely aligned
+- `Preserve Illo's Page Number` setting was inadvertently being applied to
+  Sidenote Fixup
+- `View HTML in Browser` in Custom Menu had an incorrect command for some
+  flavors of Linux
+- On macOS, "border" icon in Settings-->Colors tab was a filled square instead
+  of a square border
+- Editing a Custom Menu entry could cause an exception
+- Slow footnote operations did not show the "Working" alert
+- `Text-->Convert <sc> Manually` sometimes did not set the number of
+  replacement fields correctly in the S/R dialog
+- Reindexing when there were unpaired footnote anchors could cause an exception
+- Some menu buttons were missing `...` to indicate that additional input is
+  required before the operation can be completed
+- Hotzones of some checkboxes were too wide
+- Block Rewrap Selection didn't respect blockquote right margin
+- Missing Scanno/Regex Library file caused dialog to be lost behind main window
+
+
+
+## Version 2.0.4 (Faulty)
 
 - Display a "Did You Know...?" tip when Guiguts starts. Can be configured to
   show once a day, once a week, or never - also accessible via Help menu
@@ -48,7 +99,6 @@
 - Hotzones of some checkboxes were too wide
 - Block Rewrap Selection didn't respect blockquote right margin
 - Missing Scanno/Regex Library file caused dialog to be lost behind main window
-- 
 
 
 ## Version 2.0.3

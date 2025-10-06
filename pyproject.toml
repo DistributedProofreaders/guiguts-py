@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "guiguts"
-version = "2.0.4"
+version = "2.0.5"
 description = "Guiguts version 2, Python/tkinter version"
 authors = ["DP Guiguts Dev Team <windymilla@users.noreply.github.com>"]
 readme = "README.md"
@@ -16,6 +16,7 @@ levenshtein = "^0.27.1"
 requests = "^2.32.3"
 darkdetect = "^0.8.0"
 rapidfuzz = "^3.13.0"
+packaging = "^25.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1"
