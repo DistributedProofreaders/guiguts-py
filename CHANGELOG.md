@@ -1,7 +1,12 @@
 # Changelog
 
 
-## Version 2.0.4
+## Version 2.0.5
+
+- Fix installation problem relating to `packaging` module
+
+
+## Version 2.0.4 (Faulty)
 
 - Display a "Did You Know...?" tip when Guiguts starts. Can be configured to
   show once a day, once a week, or never - also accessible via Help menu
@@ -48,7 +53,6 @@
 - Hotzones of some checkboxes were too wide
 - Block Rewrap Selection didn't respect blockquote right margin
 - Missing Scanno/Regex Library file caused dialog to be lost behind main window
-- 
 
 
 ## Version 2.0.3
