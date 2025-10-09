@@ -726,13 +726,22 @@ class Notebook(ttk.Notebook):
 class TreeviewList(ttk.Treeview):
     """Treeview to be used as a single-selection list."""
 
-    def __init__(self, parent: tk.Widget, *args: Any, **kwargs: Any) -> None:
-        """Initialize TreeviewList - standard ttk.Treeview in "browse" mode with extra bindings."""
+    def __init__(
+        self, parent: tk.Widget, sort_pref: Optional[PrefKey] = None, **kwargs: Any
+    ) -> None:
+        """Initialize TreeviewList - standard ttk.Treeview in "browse" mode with extra bindings.
+
+        Args:
+            parent: Parent widget.
+            sort_pref: PrefKey to hold which column sorted by (-ve for reverse sort).
+        """
         if "show" not in kwargs:
             kwargs["show"] = "headings"
         if "height" not in kwargs:
             kwargs["height"] = 10
         kwargs["selectmode"] = tk.BROWSE
+
+        self.sort_pref = sort_pref
 
         # Use background color of selected row as the focus border color
         bg_color = themed_style().lookup(
@@ -748,7 +757,7 @@ class TreeviewList(ttk.Treeview):
             relief=[("focus", "solid")],
         )
 
-        super().__init__(parent, style="Custom.Treeview", *args, **kwargs)
+        super().__init__(parent, style="Custom.Treeview", **kwargs)
         self.bind("<Home>", lambda _e: self.select_and_focus_by_index(0))
         self.bind("<End>", lambda _e: self.select_and_focus_by_index(-1))
         if is_mac():
@@ -808,6 +817,30 @@ class TreeviewList(ttk.Treeview):
             row_id = ""
         col_id = self.identify_column(event.x)
         return row_id, col_id
+
+    def process_click(self, event: Optional[tk.Event]) -> Optional[str]:
+        """Insert character corresponding to row clicked or change sort order
+
+        Args:
+            event: Event containing location of mouse click. If None, use focused row.
+
+        Returns:
+            ID of row clicked, or empty string if header clicked, None to abandon processing
+        """
+        if event is None:
+            row_id = self.focus()
+            if not row_id:
+                return None
+            col_id = "#1"
+        else:
+            row_id, col_id = self.identify_rowcol(event)
+        if self.sort_pref is not None and not row_id:
+            col = int(col_id[1])
+            cur = preferences.get(self.sort_pref)
+            if abs(cur) == col:
+                col = -cur
+            preferences.set(self.sort_pref, col)
+        return row_id
 
 
 class FileDialog:

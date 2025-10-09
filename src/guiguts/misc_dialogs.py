@@ -1499,6 +1499,7 @@ class ComposeHelpDialog(ToplevelDialog):
         widths = (70, 70, 600)
         self.help = TreeviewList(
             self.top_frame,
+            sort_pref=PrefKey.COMPOSE_HELP_SORT,
             columns=self.column_headings,
         )
         self.help.grid(row=0, column=0, sticky=tk.NSEW)
@@ -1600,13 +1601,8 @@ class ComposeHelpDialog(ToplevelDialog):
         Args:
             event: Event containing location of mouse click. If None, use focused row.
         """
-        if event is None:
-            row_id = self.help.focus()
-            if not row_id:
-                return
-            col_id = "#1"
-        else:
-            row_id, col_id = self.help.identify_rowcol(event)
+        row_id = self.help.process_click(event)
+        # If row clicked, insert the character
         if row_id:
             row = self.help.set(row_id)
             try:
@@ -1614,12 +1610,8 @@ class ComposeHelpDialog(ToplevelDialog):
             except KeyError:  # Shouldn't happen
                 return
             insert_in_focus_widget(char)
-        else:
-            col = int(col_id[1])
-            cur = preferences.get(PrefKey.COMPOSE_HELP_SORT)
-            if abs(cur) == col:
-                col = -cur
-            preferences.set(PrefKey.COMPOSE_HELP_SORT, col)
+        # If header clicked (to change sorting), refresh list
+        elif row_id == "":
             self.populate_list()
 
 
@@ -1897,7 +1889,11 @@ class CommandEditDialog(OkCancelDialog):
 
 
 class CommandPaletteDialog(ToplevelDialog):
-    """Command Palette Dialog."""
+    """Command Palette Dialog.
+
+    Commands are sorted alphabetically. User can click headings to sort by shortcut
+    or Menu. Click again for reverse sort. If user types search string, sorting is
+    by closeness of match with search string, not alphabetical."""
 
     manual_page = "Help_Menu#Command_Palette"
     NUM_HISTORY = 5
@@ -1936,18 +1932,19 @@ class CommandPaletteDialog(ToplevelDialog):
             command=self.edit_command,
         ).grid(row=0, column=2, sticky="NSEW", padx=(2, 0))
 
-        columns = ("Command", "Shortcut", "Menu")
+        self.columns = ("Command", "Shortcut", "Menu")
         widths = (250, 120, 100)
         self.list = TreeviewList(
             self.top_frame,
-            columns=columns,
+            sort_pref=PrefKey.COMMAND_PALETTE_SORT,
+            columns=self.columns,
         )
         ToolTip(
             self.list,
             "Type part of a command to filter the list\n"
             "Double click (or press Return) to execute command.",
         )
-        for col, column in enumerate(columns):
+        for col, column in enumerate(self.columns):
             self.list.heading(f"#{col + 1}", text=column)
             self.list.column(
                 f"#{col + 1}",
@@ -1969,6 +1966,7 @@ class CommandPaletteDialog(ToplevelDialog):
         self.list.bind("<Down>", lambda _: self.move_in_list(1))
         self.list.bind("<Up>", lambda _: self.move_in_list(-1))
         self.list.bind("<Key>", self.handle_list_typing)
+        mouse_bind(self.list, "1", self.process_click)
 
         self.entry.bind("<Down>", lambda _: self.move_in_list(1))
         self.entry.bind("<Up>", lambda _: self.move_in_list(-1))
@@ -1996,6 +1994,20 @@ class CommandPaletteDialog(ToplevelDialog):
         """Store function to be called to recreate menus."""
         cls.recreate_menus_callback = callback
 
+    def process_click(self, event: tk.Event) -> str:
+        """Select row (default) or change sort order
+
+        Args:
+            event: Event containing location of mouse click.
+        """
+        row_id = self.list.process_click(event)
+        # If header clicked (to change sorting), refresh list
+        if row_id == "":
+            self.update_list()
+            return "break"
+        # Else allow default behavior
+        return ""
+
     def grab_focus(self) -> None:
         """Override grabbing focus to set focus to Entry field."""
         super().grab_focus()
@@ -2005,6 +2017,7 @@ class CommandPaletteDialog(ToplevelDialog):
         """Update the command list based on search input."""
 
         search_text = self.search_var.get().lower().strip()
+        sort_idx = preferences.get(PrefKey.COMMAND_PALETTE_SORT)
 
         def score_command(cmd: EntryMetadata) -> int:
             """Return how well search text matches this command."""
@@ -2032,11 +2045,33 @@ class CommandPaletteDialog(ToplevelDialog):
                 recent_band = 1
             else:
                 recent_band = 2
+            if sort_idx in (1, -1):
+                alpha = recent_plus_entry.entry.display_label().lower()
+            elif sort_idx in (2, -2):
+                alpha = recent_plus_entry.entry.display_shortcut().lower()
+            else:
+                alpha = recent_plus_entry.entry.display_parent_label().lower()
+            # If reverse sort and not a recent command and no search text, then
+            # "subtract" string from a "big" string, so it sorts in reverse alphabetical order
+            if sort_idx < 0 and recent_band == 2 and not search_text:
+                alpha = "".join(chr(0x10000 - ord(c)) for c in alpha.ljust(20))
             return (
                 recent_band,
                 -score,
                 recent_plus_entry.recentness,
-                recent_plus_entry.entry.display_label().lower(),
+                alpha,
+            )
+
+        # Ensure column headings reflect sort, but only if no search text
+        for col, column in enumerate(self.columns, start=1):
+            if not search_text:
+                if col == sort_idx:
+                    column += " ▲"
+                elif col == -sort_idx:
+                    column += " ▼"
+            self.list.heading(
+                f"#{col}",
+                text=column,
             )
 
         # Filtered commands have an int to store recentness (-10 for non-recent)
@@ -2113,6 +2148,9 @@ class CommandPaletteDialog(ToplevelDialog):
         # Ignore if modifier key used: Shift, Ctrl, Cmd, Alt (platform-specific)
         bad_modifiers = 0x0001 | 0x0004 | 0x0008 | 0x0080 | 0x20000
         if event is not None and int(event.state) & bad_modifiers:
+            return
+        if event is not None and self.list.process_click(event) == "":
+            self.process_click(event)  # Treat double click in header like single click
             return
         entry = self.get_selected_entry()
         if entry is None:
