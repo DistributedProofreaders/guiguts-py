@@ -713,7 +713,7 @@ def reindex() -> None:
         fn_record = fn_records[index - 1]
         label_start = fn_record.hilite_start + 9
         label_end = fn_record.hilite_end
-        fn_start = f"{fn_record.start.index()} linestart"
+        fn_start = f"{fn_record.start.index()}"
         # Replace label in footnote with new label value.
         maintext().replace(
             f"{fn_start}+{label_start}c", f"{fn_start}+{label_end}c", label
