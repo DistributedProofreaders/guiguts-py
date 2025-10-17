@@ -6,6 +6,7 @@ import logging
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable, Optional
+import unicodedataplus as ud  # type: ignore[import-not-found]
 
 import regex as re
 
@@ -61,6 +62,7 @@ class WFDisplayType(StrEnum):
     LIGATURES = auto()
     MARKEDUP = auto()
     CHAR_COUNTS = auto()
+    MIXED_SCRIPT = auto()
     REGEXP = auto()
 
 
@@ -365,7 +367,7 @@ class WordFrequencyDialog(ToplevelDialog):
             validate=tk.ALL,
             validatecommand=(self.register(is_nonnegative_int), "%P"),
         )
-        self.threshold_box.grid(row=0, column=1, sticky="NSEW", padx=(0, 5))
+        self.threshold_box.grid(row=0, column=1, sticky="NSW", padx=(0, 5))
         self.threshold_box.display_latest_value()
         ToolTip(
             self.threshold_box,
@@ -384,8 +386,9 @@ class WordFrequencyDialog(ToplevelDialog):
         self.threshold_box.bind("<<ComboboxSelected>>", display_markedup)
 
         display_radio(4, 0, "Character Counts", WFDisplayType.CHAR_COUNTS)
+        display_radio(4, 1, "Mixed Scripts", WFDisplayType.MIXED_SCRIPT)
         regex_frame = ttk.Frame(display_frame)
-        regex_frame.grid(row=4, column=1, columnspan=2, sticky="NSEW")
+        regex_frame.grid(row=5, column=0, columnspan=3, sticky="NSEW")
         regex_frame.columnconfigure(index=1, weight=1)
         display_radio(0, 0, "Regular Expression", WFDisplayType.REGEXP, regex_frame)
         self.regex_box = Combobox(regex_frame, PrefKey.WFDIALOG_REGEX)
@@ -895,6 +898,8 @@ class WordFrequencyDialog(ToplevelDialog):
                 self.wf_populate_ligatures()
             case WFDisplayType.CHAR_COUNTS:
                 self.wf_populate_charcounts()
+            case WFDisplayType.MIXED_SCRIPT:
+                self.wf_populate_mixedscript()
             case WFDisplayType.REGEXP:
                 self.wf_populate_regexps()
             case _ as bad_value:
@@ -1239,6 +1244,20 @@ class WordFrequencyDialog(ToplevelDialog):
         self.display_entries()
         self.message.set(
             f"{sing_plur(total_cnt, 'character')}; {sing_plur(len(char_dict), 'distinct character')}"
+        )
+
+    def wf_populate_mixedscript(self) -> None:
+        """Populate the WF dialog with the list of all Mixed Script words, for
+        example a word made of Latin characters with a Greek character hidden inside.
+        """
+
+        def mixed_word(word: str) -> bool:
+            """Return whether word has mixed scripts."""
+            return len({ud.script(ch) for ch in word if ch.isalpha()}) > 1
+
+        self.wf_populate_by_match(
+            "mixed script",
+            mixed_word,
         )
 
     def wf_populate_regexps(self) -> None:
