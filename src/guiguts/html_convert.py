@@ -640,7 +640,9 @@ def html_convert_body() -> None:
             )
             continue
         # "/*" --> nowrap until we get "*/"
-        if selection.startswith("/*"):  # open
+        # Don't process here if we're in chapter heading - allow the "/*"
+        # to signal the end of chapter heading - code will loop round again
+        if selection.startswith("/*") and not in_chap_heading:  # open
             check_valid_open_markup()
             a_chapter_div_open = maybe_insert_chapter_div(line_start)
             asterisk_nowrap_flag = True
@@ -809,7 +811,9 @@ def html_convert_body() -> None:
         # In chapter heading - store lines in heading until we get 2 blank lines
         # (if HTML_MULTILINE_CHAPTER_HEADINGS is True) or 1 blank line if it's False
         if in_chap_heading:
-            if selection and not selection_lower.startswith(("/#", "/p", "[footnote")):
+            if selection and not selection_lower.startswith(
+                ("/#", "/p", "/*", "[footnote")
+            ):
                 chap_line = selection.strip()
                 maintext().replace(line_start, line_end, f"    {chap_line}")
                 chap_heading += (" " if chap_heading else "") + chap_line
@@ -839,7 +843,7 @@ def html_convert_body() -> None:
                     maintext().insert(line_start, "  </h2>\n")
                 # If stopping due to blockquote/poetry/footnote, don't advance through file
                 # Need to loop round again so the found markup is processed
-                if not selection_lower.startswith(("/#", "/p", "[footnote")):
+                if not selection_lower.startswith(("/#", "/p", "/*", "[footnote")):
                     next_step += 1
                 # Don't want footnote anchors in auto ToC
                 chap_heading = re.sub(r"\[.{1,5}\]", "", chap_heading)
