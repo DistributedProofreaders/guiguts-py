@@ -17,6 +17,7 @@ requests = "^2.32.3"
 darkdetect = "^0.8.0"
 rapidfuzz = "^3.13.0"
 packaging = "^25.0"
+unicodedataplus = "^16.0.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1"
@@ -70,3 +71,6 @@ enable = ["c-extension-no-member"]
 
 [tool.pylint.SIMILARITIES]
 min-similarity-lines = 0
+
+[tool.pylint.'TYPECHECK']
+extension-pkg-allow-list = ["unicodedataplus"]
