@@ -1057,6 +1057,47 @@ def get_search_start(backwards: bool) -> IndexRowCol:
     return start_rowcol
 
 
+def strip_outer_lookarounds(pattern: str) -> str:
+    """Remove leading/trailing lookahead/behind constructs from a regex pattern."""
+
+    def find_matching_paren(s: str, start: int) -> Optional[int]:
+        """Find index of matching ')' for '(' at index start, considering nesting."""
+        depth = 0
+        for i in range(start, len(s)):
+            if s[i] == "(":
+                depth += 1
+            elif s[i] == ")":
+                depth -= 1
+                if depth == 0:
+                    return i
+        return None  # unmatched
+
+    # Strip leading lookaround
+    if pattern.startswith("(?"):
+        m = re.match(r"^\(\?<?[=!]", pattern)
+        if m:
+            end = find_matching_paren(pattern, 0)
+            if end is not None:
+                pattern = "^" + pattern[end + 1 :].lstrip()
+
+    # Strip trailing lookaround
+    if pattern.endswith(")"):
+        # Find a trailing lookaround by searching backward for its start
+        m = re.search(r"\(\?<?[=!][^()]*\)$", pattern)
+        if not m:
+            # fallback for nested case
+            for i in range(len(pattern) - 1, -1, -1):
+                if pattern[i : i + 3] in ("(?=", "(?!", "(?<", "(?<!"):
+                    end = find_matching_paren(pattern, i)
+                    if end == len(pattern) - 1:
+                        pattern = pattern[:i] + "$"
+                    break
+        else:
+            pattern = re.sub(r"\(\?<?[=!][^()]*\)$", "$", pattern)
+
+    return pattern
+
+
 def get_regex_replacement(
     search_regex: str,
     replace_regex: str,
@@ -1083,8 +1124,7 @@ def get_regex_replacement(
 
     # Since below we do a sub on the match text, rather than the whole text, we need
     # to handle start/end word boundaries and look-behind/ahead by removing them.
-    search_regex = re.sub(r"^\(\?<[=!].*?\)", "^", search_regex)
-    search_regex = re.sub(r"\(\?[=!].*?\)$", "$", search_regex)
+    search_regex = strip_outer_lookarounds(search_regex)
     search_regex = re.sub(r"^\\b", "^", search_regex)
     search_regex = re.sub(r"\\b$", "$", search_regex)
 

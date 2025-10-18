@@ -56,7 +56,7 @@
 "hint": "Find initials without a space between them and add the space"
 },
 {
-"match": ",(\"?\\n *\"?\\p{Upper})",
+"match": ",(\"?\\n *\"?(\\p{IsUpper}(?!\\s)|\\s[A-HJ-Z](?!\\S)))",
 "replacement": ".\\1",
 "hint": "Find a comma at the end of a line with the next line starting with an upper case character"
 },
@@ -71,7 +71,7 @@
 "hint": "Find a comma at the end of a paragraph and replace it with a period"
 },
 {
-"match": ",(\\s\\p{IsUpper}(?=\\S)|\\s[A-HJ-Z](?=\\s))",
+"match": ",(\\s\\p{IsUpper}(?!\\s)|\\s[A-HJ-Z](?!\\S))",
 "replacement": ".\\1",
 "hint": "Find a comma followed by a space and an upper-case character (except I) and replace with a period."
 },
@@ -81,9 +81,9 @@
 "hint": "Find upper-case HTML markup and change it to lower-case"
 },
 {
-"match": "[b-df-hj-np-tv-xz]{5,}",
+"match": "\\b(?!(offsprings?|birthplaces?|lengths)\\b)\\p{L}*[b-df-hj-np-tv-xz]{5,}\\p{L}*\\b",
 "replacement": "",
-"hint": "Find a string containing at least 5 consonants in a row"
+"hint": "Find a word containing at least 5 consonants in a row"
 },
 {
 "match": "\\.(\"?\\n *\"?\\p{Lower})",
@@ -99,11 +99,6 @@
 "match": "(?<=[aeou])ii",
 "replacement": "ll",
 "hint": "Find the string ii preceded by a vowel and change it to ll"
-},
-{
-"match": "\\b([csw])li([aeiou])",
-"replacement": "\\1h\\2",
-"hint": "Find a string that starts with one of c, s or w, li, then a vowel and change the li to h"
 },
 {
 "match": "\\b(\\S+) \\1\\b",
@@ -156,7 +151,7 @@
 "hint": "Find a soft Hyphen and change it to a (hard) Hyphen"
 },
 {
-"match": "^-[^-]",
+"match": "^-(?!-)",
 "replacement": "",
 "hint": "Find a line starting with a single hyphen and remove the hyphen"
 },
@@ -196,8 +191,8 @@
 "hint": "Find a word containing pbt and change it to pht"
 },
 {
-"match": "rn([bmp])",
-"replacement": "m\\1",
+"match": "\\b(?![Gg]overnment\\b)(\\p{L}*)rn([bmp]\\p{L}*)\\b",
+"replacement": "\\1m\\2",
 "hint": "Find a word that contains rnb, rnm or rnp and change it to mb, mm or mp, respectively"
 },
 {
