@@ -344,6 +344,7 @@ class File:
                 # Don't autosave if nothing changed - just reschedule
                 if not maintext().is_modified():
                     self.reset_autosave()
+                    Busy.unbusy()
                     return ""
                 backup2_file, backup2_bin = get_backup_names(".bk2")
                 backup1_file, backup1_bin = get_backup_names(".bk1")
