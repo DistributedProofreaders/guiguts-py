@@ -843,7 +843,9 @@ def html_convert_body() -> None:
                     maintext().insert(line_start, "  </h2>\n")
                 # If stopping due to blockquote/poetry/footnote/etc, don't advance through file
                 # Need to loop round again so the found markup is processed
-                if not selection_lower.startswith(("/#", "/p", "/*", "/c", "/r", "[footnote")):
+                if not selection_lower.startswith(
+                    ("/#", "/p", "/*", "/c", "/r", "[footnote")
+                ):
                     next_step += 1
                 # Don't want footnote anchors in auto ToC
                 chap_heading = re.sub(r"\[.{1,5}\]", "", chap_heading)
