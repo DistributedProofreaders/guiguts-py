@@ -952,7 +952,10 @@ class ToolTip:
             self.widget_tl.register_tooltip(self)  # type: ignore[union-attr]
         self.use_pointer_pos = use_pointer_pos
 
-        self.delay = 0.5
+        self.open_delay = 0.5
+        self.close_delay = 7
+        self.open_id = ""
+        self.close_id = ""
         self.inside = False
         self.msg = msg
         self.width = self.height = 0
@@ -987,13 +990,24 @@ class ToolTip:
         assert self.tooltip_window is not None
         self.inside = True
         if preferences.get(PrefKey.SHOW_TOOLTIPS):
-            self.tooltip_window.after(int(self.delay * 1000), self._show)
+            # Store schedule ids to cancel if user clicks or leaves window before show/hide
+            self.open_id = self.tooltip_window.after(
+                int(self.open_delay * 1000), self._show
+            )
+            self.close_id = self.tooltip_window.after(
+                int(self.close_delay * 1000), self.on_leave
+            )
 
     def on_leave(self, _event: tk.Event | None = None) -> None:
         """Hides tooltip when mouse leaves, or button pressed."""
         self._create_tooltip()
         assert self.tooltip_window is not None
         self.inside = False
+        # Cancel scheduled show/hide - necessary because there are 3 ways to get here:
+        # timeout, click, or leave window, and we don't want to leave a scheduled hide,
+        # for example, in case pointer leaves and returns to window
+        self.tooltip_window.after_cancel(self.open_id)
+        self.tooltip_window.after_cancel(self.close_id)
         if self.tooltip_window.winfo_exists():
             self.tooltip_window.withdraw()
 
