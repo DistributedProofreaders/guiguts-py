@@ -380,7 +380,7 @@ class HTMLImageDialog(ToplevelDialog):
         self.illo_range = None
         # Find and go to start of first unconverted illo markup
         illo_match_start = maintext().find_match(
-            r"(<p>)?\[Illustration",
+            r"\[Illustration",
             IndexRange(maintext().start(), maintext().end()),
             regexp=True,
         )
@@ -402,7 +402,7 @@ class HTMLImageDialog(ToplevelDialog):
             start_index = illo_match_end.rowcol.index()
             match_text = maintext().get(start_index, f"{start_index} lineend")
             # Have we found the end of the illo markup (i.e. end of line bracket)
-            if not nested and re.fullmatch("] *(</p>|<br>)?$", match_text):
+            if not nested and re.fullmatch("] *(</p>|<br>|</div>)?$", match_text):
                 break
             # Keep track of whether there are nested brackets, e.g. [12] inside illo markup
             nested = match_text[0] == "["
@@ -412,15 +412,15 @@ class HTMLImageDialog(ToplevelDialog):
             return
         self.illo_range = IndexRange(
             illo_match_start.rowcol,
-            maintext().rowcol(f"{illo_match_end.rowcol.index()} lineend"),
+            maintext().rowcol(f"{illo_match_end.rowcol.index()} +1c"),
         )
         maintext().spotlight_range(self.illo_range)
         # Display caption in dialog
         caption = maintext().get(
             self.illo_range.start.index(), self.illo_range.end.index()
         )
-        caption = re.sub(r"(?<=(^<p.?>|^))\[Illustration:? ?", "", caption)
-        caption = re.sub(r"\](<br> *)?(?=(</p> *$| *$))", "", caption)
+        caption = re.sub(r"(?<=(^<(p|div).*?>|^))\[Illustration:? ?", "", caption)
+        caption = re.sub(r"\](<br> *)?(?=(</(p|div)> *$| *$))", "", caption)
         # Remove simple <p> markup and replace newlines with return_arrow character
         if caption:
             caption = re.sub("</?p>", "", caption)
@@ -445,13 +445,30 @@ class HTMLImageDialog(ToplevelDialog):
             auto_illus: True to convert selected [Illustration...], False to just insert.
         """
         filename = self.filename_textvariable.get()
-        if not auto_illus:
+        if not filename:
+            sound_bell()
+            return
+        # Adjust auto-illo range if surrounded by simple <p> markup (added by HTML gen)
+        # but not if user has surrounded it with their custom <p> or <div> markup
+        if auto_illus:
+            if self.illo_range is None:
+                sound_bell()
+                return
+            start = self.illo_range.start.index()
+            end = self.illo_range.end.index()
+            pre_markup = maintext().get(f"{start} linestart", start)
+            post_markup = maintext().get(end, f"{end} lineend")
+            if pre_markup == "<p>":
+                start = maintext().index(f"{start} linestart")
+                if re.fullmatch(" *</p>", post_markup):
+                    end = maintext().index(f"{end} lineend")
+            if re.fullmatch(" *<br>", post_markup):
+                end = maintext().index(f"{end} lineend")
+            self.illo_range = IndexRange(start, end)
+        else:
             self.illo_range = IndexRange(
                 maintext().get_insert_index(), maintext().get_insert_index()
             )
-        if self.illo_range is None or not filename:
-            sound_bell()
-            return
         # Get caption & add some space to prettify HTML
         caption = self.caption_textvariable.get()
         if caption:
