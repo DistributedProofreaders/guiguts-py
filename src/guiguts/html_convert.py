@@ -730,7 +730,7 @@ def html_convert_body() -> None:
             continue
 
         # "/c" --> center until we get "c/"
-        if selection_lower.startswith("/c"):  # open
+        if selection_lower.startswith("/c") and not in_chap_heading:  # open
             check_valid_open_markup()
             c_chapter_div_open = maybe_insert_chapter_div(line_start)
             center_nowrap_flag = True
@@ -758,7 +758,7 @@ def html_convert_body() -> None:
             continue
 
         # "/r" --> right-align block until we get "r/"
-        if selection_lower.startswith("/r"):  # open
+        if selection_lower.startswith("/r") and not in_chap_heading:  # open
             check_valid_open_markup()
             r_chapter_div_open = maybe_insert_chapter_div(line_start)
             right_nowrap_flag = True
@@ -812,7 +812,7 @@ def html_convert_body() -> None:
         # (if HTML_MULTILINE_CHAPTER_HEADINGS is True) or 1 blank line if it's False
         if in_chap_heading:
             if selection and not selection_lower.startswith(
-                ("/#", "/p", "/*", "[footnote")
+                ("/#", "/p", "/*", "/c", "/r", "[footnote")
             ):
                 chap_line = selection.strip()
                 maintext().replace(line_start, line_end, f"    {chap_line}")
@@ -841,9 +841,11 @@ def html_convert_body() -> None:
                     )
                 else:
                     maintext().insert(line_start, "  </h2>\n")
-                # If stopping due to blockquote/poetry/footnote, don't advance through file
+                # If stopping due to blockquote/poetry/footnote/etc, don't advance through file
                 # Need to loop round again so the found markup is processed
-                if not selection_lower.startswith(("/#", "/p", "/*", "[footnote")):
+                if not selection_lower.startswith(
+                    ("/#", "/p", "/*", "/c", "/r", "[footnote")
+                ):
                     next_step += 1
                 # Don't want footnote anchors in auto ToC
                 chap_heading = re.sub(r"\[.{1,5}\]", "", chap_heading)
