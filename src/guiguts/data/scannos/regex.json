@@ -56,7 +56,7 @@
 "hint": "Find initials without a space between them and add the space"
 },
 {
-"match": ",(\"?\\n *\"?(\\p{IsUpper}(?!\\s)|\\s[A-HJ-Z](?!\\S)))",
+"match": ",(\"?\\n *\"?(\\p{IsUpper}(?!\\s)| [A-HJ-Z](?!\\S)))",
 "replacement": ".\\1",
 "hint": "Find a comma at the end of a line with the next line starting with an upper case character"
 },
@@ -71,7 +71,7 @@
 "hint": "Find a comma at the end of a paragraph and replace it with a period"
 },
 {
-"match": ",(\\s\\p{IsUpper}(?!\\s)|\\s[A-HJ-Z](?!\\S))",
+"match": ",( \\p{IsUpper}(?!\\s)| [A-HJ-Z](?!\\S))",
 "replacement": ".\\1",
 "hint": "Find a comma followed by a space and an upper-case character (except I) and replace with a period."
 },
@@ -81,7 +81,7 @@
 "hint": "Find upper-case HTML markup and change it to lower-case"
 },
 {
-"match": "\\b(?!(offsprings?|birthplaces?|lengths)\\b)\\p{L}*[b-df-hj-np-tv-xz]{5,}\\p{L}*\\b",
+"match": "\\b(?!(offsprings?|birthplaces?|lengths|strengths|witchcraft)\\b)\\p{L}*[b-df-hj-np-tv-xz]{5,}\\p{L}*\\b",
 "replacement": "",
 "hint": "Find a word containing at least 5 consonants in a row"
 },
