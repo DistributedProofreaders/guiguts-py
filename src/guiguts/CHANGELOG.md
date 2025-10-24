@@ -10,6 +10,8 @@ sort the commands by Command name, Shortcut, or Menu - this could be useful to
 check which shortcuts have not been assigned yet
 - When a tooltip is shown, after a 7 second delay it is hidden again
 - Some Stealth Scanno regexes have been improved
+- Auto-Illustration now finds the first `[Illustration]` tag following the
+cursor, and `Find Next` finds the next tag following the cursor
 
 ### Bug fixes
 
