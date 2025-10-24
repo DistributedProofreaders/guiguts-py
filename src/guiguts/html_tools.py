@@ -20,7 +20,7 @@ import requests
 from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerEntrySeverity
 from guiguts.file import the_file
 from guiguts.html_convert import make_anchor_id
-from guiguts.maintext import maintext, menubar_metadata
+from guiguts.maintext import maintext, menubar_metadata, HighlightTag
 from guiguts.preferences import (
     PersistentString,
     PersistentBoolean,
@@ -270,7 +270,7 @@ class HTMLImageDialog(ToplevelDialog):
             ).grid(row=0, column=1, sticky="NSEW", padx=2)
             ttk.Button(
                 btn_frame,
-                text="Find [Illustration]",
+                text="Find Next [Illustration]",
                 command=self.find_illo_markup,
                 width=18,
             ).grid(row=0, column=2, sticky="NSEW", padx=2)
@@ -375,13 +375,13 @@ class HTMLImageDialog(ToplevelDialog):
         sound_bell()
 
     def find_illo_markup(self) -> None:
-        """Find first unconverted illo markup in file and
+        """Find next unconverted illo markup in file and
         advance to the next file."""
         self.illo_range = None
-        # Find and go to start of first unconverted illo markup
+        # Find and go to start of next unconverted illo markup
         illo_match_start = maintext().find_match(
             r"\[Illustration",
-            IndexRange(maintext().start(), maintext().end()),
+            IndexRange(maintext().get_insert_index().index(), maintext().end()),
             regexp=True,
         )
         if illo_match_start is None:
@@ -451,11 +451,12 @@ class HTMLImageDialog(ToplevelDialog):
         # Adjust auto-illo range if surrounded by simple <p> markup (added by HTML gen)
         # but not if user has surrounded it with their custom <p> or <div> markup
         if auto_illus:
-            if self.illo_range is None:
+            # Retrieve spotlit range in case user has moved it by editing text since illo was found
+            spotlit = maintext().tag_nextrange(HighlightTag.SPOTLIGHT, "1.0")
+            if not spotlit:
                 sound_bell()
                 return
-            start = self.illo_range.start.index()
-            end = self.illo_range.end.index()
+            start, end = spotlit
             pre_markup = maintext().get(f"{start} linestart", start)
             post_markup = maintext().get(end, f"{end} lineend")
             if pre_markup == "<p>":
