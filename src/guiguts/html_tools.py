@@ -381,7 +381,10 @@ class HTMLImageDialog(ToplevelDialog):
         # Find and go to start of next unconverted illo markup
         illo_match_start = maintext().find_match(
             r"\[Illustration",
-            IndexRange(maintext().get_insert_index().index(), maintext().end()),
+            IndexRange(
+                maintext().rowcol(f"{maintext().get_insert_index().index()}+1c"),
+                maintext().end(),
+            ),
             regexp=True,
         )
         if illo_match_start is None:
