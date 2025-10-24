@@ -1,55 +1,31 @@
 # Changelog
 
 
-## Version 2.0.5
+## Version 2.0.6
 
-- Fix installation problem relating to `packaging` module
-- Display a "Did You Know...?" tip when Guiguts starts. Can be configured to
-  show once a day, once a week, or never - also accessible via Help menu
-- Display Release Notes when a new release of Guiguts is first started - also
-  accessible via Help menu
-- Multiple replacements can now be added for a regex in Regex Library - these
-  will be shown in the S/R dialog when Regex Library's Replace is Shift-clicked
-- Default directory when selecting the project's scan directory is now the
-  project directory
-- Regex handling defaults to permit advanced features such as character set
-  differences, e.g. `[a-z--c-t]`
-- Order of Content Providing menu switched to better match process order
-- Content Providing Dehyphenation has color coded Keep/Remove label
-- Dehyphenating number ranges Keeps rather than Removing hyphen
-- Content Providing header/footer detection improved to catch the case of a
-  page number and book/chapter title
-- Footnote anchors can now be escaped with backslash, e.g. `\[1928]`
-- Curly Quote Fixup buttons made narrower to fit better into dialog
-- Unmatched HTML Tags check has been sped up
-- Instructions for installation on Fedora Linux were added to the README
+- Word Frequency now has a Mixed Script check that will report errors such as
+a word with Latin characters that also contains a Greek character
+- The headings in the Command Palette list of commands can now be clicked to
+sort the commands by Command name, Shortcut, or Menu - this could be useful to
+check which shortcuts have not been assigned yet
+- When a tooltip is shown, after a 7 second delay it is hidden again
+- Some Stealth Scanno regexes have been improved
 
 ### Bug fixes
 
-- Mid-paragraph illos were not detected when the text after the illo began
-  with a lower case letter
-- Re-run with Suspects in Illo/SN fixup did not re-select the correct message
-- Word Frequency Diacritics check did not spot suspects if the accented
-  character was `ä`, `ö`, or `ü`
-- Whole Word regexes involving `|` for alternation sometimes failed
-- Column ruler was not precisely aligned
-- `Preserve Illo's Page Number` setting was inadvertently being applied to
-  Sidenote Fixup
-- `View HTML in Browser` in Custom Menu had an incorrect command for some
-  flavors of Linux
-- On macOS, "border" icon in Settings-->Colors tab was a filled square instead
-  of a square border
-- Editing a Custom Menu entry could cause an exception
-- Slow footnote operations did not show the "Working" alert
-- `Text-->Convert <sc> Manually` sometimes did not set the number of
-  replacement fields correctly in the S/R dialog
-- Reindexing when there were unpaired footnote anchors could cause an exception
-- Some menu buttons were missing `...` to indicate that additional input is
-  required before the operation can be completed
-- Hotzones of some checkboxes were too wide
-- Block Rewrap Selection didn't respect blockquote right margin
-- Missing Scanno/Regex Library file caused dialog to be lost behind main window
+- Footnotes were not indexed correctly if a proofer note preceded the footnote
+- Some compose sequences for accented Greek letters with breathing were wrong
+- `/*`, `/c`, and `r` markup in a chapter heading caused HTML auto-generation
+to give an incorrect error
+- When AutoSave was turned on, the "Working" label sometimes changed to red,
+and didn't return to white
+- Auto-illustration did not detect `[Illustration]` markup if it was enclosed
+in `<div>` markup
 
+
+## Version 2.0.5
+
+- Fix installation problem relating to `packaging` module
 
 
 ## Version 2.0.4 (Faulty)
