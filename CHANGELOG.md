@@ -1,6 +1,30 @@
 # Changelog
 
 
+## Version 2.0.6
+
+- Word Frequency now has a Mixed Script check that will report errors such as
+a word with Latin characters that also contains a Greek character
+- The headings in the Command Palette list of commands can now be clicked to
+sort the commands by Command name, Shortcut, or Menu - this could be useful to
+check which shortcuts have not been assigned yet
+- When a tooltip is shown, after a 7 second delay it is hidden again
+- Some Stealth Scanno regexes have been improved
+- Auto-Illustration now finds the first `[Illustration]` tag following the
+cursor, and `Find Next` finds the next tag following the cursor
+
+### Bug fixes
+
+- Footnotes were not indexed correctly if a proofer note preceded the footnote
+- Some compose sequences for accented Greek letters with breathing were wrong
+- `/*`, `/c`, and `/r` markup in a chapter heading caused HTML auto-generation
+to give an incorrect error
+- When AutoSave was turned on, the "Working" label sometimes changed to red,
+and didn't return to white
+- Auto-illustration did not detect `[Illustration]` markup if it was enclosed
+in `<div>` markup
+
+
 ## Version 2.0.5
 
 - Fix installation problem relating to `packaging` module
