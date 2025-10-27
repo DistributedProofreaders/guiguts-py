@@ -17,7 +17,7 @@ cursor, and `Find Next` finds the next tag following the cursor
 
 - Footnotes were not indexed correctly if a proofer note preceded the footnote
 - Some compose sequences for accented Greek letters with breathing were wrong
-- `/*`, `/c`, and `r` markup in a chapter heading caused HTML auto-generation
+- `/*`, `/c`, and `/r` markup in a chapter heading caused HTML auto-generation
 to give an incorrect error
 - When AutoSave was turned on, the "Working" label sometimes changed to red,
 and didn't return to white
