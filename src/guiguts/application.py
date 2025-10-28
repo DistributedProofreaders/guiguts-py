@@ -474,6 +474,7 @@ class Guiguts:
             PrefKey.LEVENSHTEIN_DISTANCE, LevenshteinEditDistance.ONE
         )
         preferences.set_default(PrefKey.FOOTNOTE_INDEX_STYLE, FootnoteIndexStyle.NUMBER)
+        preferences.set_default(PrefKey.FOOTNOTE_PER_LZ, False)
         preferences.set_default(PrefKey.SHOW_TOOLTIPS, True)
         preferences.set_default(PrefKey.WRAP_LEFT_MARGIN, 0)
         preferences.set_default(PrefKey.WRAP_RIGHT_MARGIN, 72)
