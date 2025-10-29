@@ -226,9 +226,10 @@ class IlloSNChecker:
                 or below_illosn_line_txt.startswith(("-----File:", ".bn "))
             ):
                 continue
-            # Check if starting illo/SN markup. If on single line, flag is reset below
+            # Check if starting illo/SN markup and not on single line
             if re.match(r"\*?\[(Illustration|Sidenote)", below_illosn_line_txt):
-                in_illo_sn = True
+                if below_illosn_line_txt[-1] != "]":
+                    in_illo_sn = True
                 continue
             # If in illo/SN, keep on ignoring lines
             if in_illo_sn:
