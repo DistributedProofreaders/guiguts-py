@@ -14,6 +14,7 @@ from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
 from guiguts.preferences import (
     PersistentString,
+    PersistentBoolean,
     PrefKey,
     preferences,
 )
@@ -30,6 +31,7 @@ _THE_FOOTNOTE_CHECKER: Optional["FootnoteChecker"] = None
 INSERTION_MARK_PREFIX = "Shadow"
 UNPAIRED_ANCHOR_PREFIX = "UNPAIRED ANCHOR: "
 UNPAIRED_FLAG = -1
+FOOTNOTES_HEADER = "FOOTNOTES:"
 
 
 class FootnoteIndexStyle(StrEnum):
@@ -271,6 +273,9 @@ class FootnoteChecker:
 
     def ok_to_move_fns(self) -> bool:
         """Checks that file has been reindexed or has no duplicate FN labels."""
+        # If indexing is per LZ, then duplicates are OK
+        if preferences.get(PrefKey.FOOTNOTE_PER_LZ):
+            return True
         labels_dict = {}
         fn_records = self.get_fn_records()
         for fn_record in fn_records:
@@ -685,6 +690,7 @@ def reindex() -> None:
     Busy.busy()
     assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
+    perlz = preferences.get(PrefKey.FOOTNOTE_PER_LZ)
     # Check index style used last time Footnotes Fixup was run or default if first run.
     index_style = preferences.get(PrefKey.FOOTNOTE_INDEX_STYLE)
     an_records = _THE_FOOTNOTE_CHECKER.get_an_records()
@@ -692,14 +698,14 @@ def reindex() -> None:
     if len(an_records) > len(fn_records):
         logger.error("Unable to reindex with unpaired anchors")
         return
+    # If renumbering per LZ, build list of line numbers where LZs are located
+    lz_lines: list[int] = []
+    lz_num = 1
+    fn_idx = 0
+    if perlz:
+        lz_matches = maintext().find_all(maintext().start_to_end(), FOOTNOTES_HEADER)
+        lz_lines = [m.rowcol.row for m in lz_matches]
     for index in range(1, len(an_records) + 1):
-        if index_style == "roman":
-            label = roman.toRoman(index)
-            label = label + "."
-        elif index_style == "letter":
-            label = _THE_FOOTNOTE_CHECKER.alpha(index)
-        else:
-            label = str(index)
         an_record = an_records[index - 1]
 
         an_start = maintext().index(
@@ -708,6 +714,23 @@ def reindex() -> None:
         an_end = maintext().index(
             _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(an_record.end)
         )
+        fn_line = IndexRowCol(an_start).row
+        if perlz:
+            while lz_num <= len(lz_lines) and fn_line > lz_lines[lz_num - 1]:
+                lz_num += 1
+                fn_idx = 0
+            fn_idx += 1
+            new_index = fn_idx
+        else:
+            new_index = index
+        if index_style == "roman":
+            label = roman.toRoman(new_index)
+            label = label + "."
+        elif index_style == "letter":
+            label = _THE_FOOTNOTE_CHECKER.alpha(new_index)
+        else:
+            label = str(new_index)
+
         maintext().replace(an_start, an_end, f"[{label}]")
         #
         fn_record = fn_records[index - 1]
@@ -1074,7 +1097,6 @@ def move_footnotes_to_lz() -> None:
     fn_records_reversed = fn_records.copy()
     fn_records_reversed.reverse()
     an_records = _THE_FOOTNOTE_CHECKER.get_an_records()
-    footnotes_header = "FOOTNOTES:"
     for fn_record in fn_records_reversed:
         fn_cur_start = _THE_FOOTNOTE_CHECKER.checker_dialog.mark_from_rowcol(
             fn_record.start
@@ -1100,7 +1122,7 @@ def move_footnotes_to_lz() -> None:
         # If no LZ, create one and move footnote below it. Otherwise move footnote
         # below the LZ that was found
         search_range = IndexRange(an_cur_end, maintext().end())
-        if lz_match := maintext().find_match(footnotes_header, search_range):
+        if lz_match := maintext().find_match(FOOTNOTES_HEADER, search_range):
             # There is a LZ below the anchor of the footnote.
             lz_start = lz_match.rowcol.index()
             below_lz = f"{lz_start} lineend"
@@ -1145,7 +1167,7 @@ def move_footnotes_to_lz() -> None:
     _THE_FOOTNOTE_CHECKER.remove_unused_lz_headers()
     # Ensure correct number of lines after 'FOOTNOTES:' header. If 4 blank
     # lines before, then add extra blank line after to make 2 blank lines.
-    matches = maintext().find_matches(footnotes_header, maintext().start_to_end())
+    matches = maintext().find_matches(FOOTNOTES_HEADER, maintext().start_to_end())
     for match in reversed(matches):
         match_idx = match.rowcol.index()
         if (
@@ -1256,37 +1278,48 @@ class FootnoteCheckerDialog(CheckerDialog):
         self.anchor_button.grid(column=3, row=0, pady=2, sticky="NSEW")
 
         # Reindexing Footnotes
+        reindex_frame = ttk.Frame(fixit_frame)
+        reindex_frame.grid(column=0, row=1, columnspan=3)
         fn_index_style = PersistentString(PrefKey.FOOTNOTE_INDEX_STYLE)
         self.all_to_num = ttk.Radiobutton(
-            fixit_frame,
+            reindex_frame,
             text="All to Number",
             variable=fn_index_style,
             value=FootnoteIndexStyle.NUMBER,
         )
-        self.all_to_num.grid(column=0, row=1, pady=2, sticky="NSEW")
+        self.all_to_num.grid(column=0, row=0, pady=2, padx=5, sticky="W")
         # --
         self.all_to_let = ttk.Radiobutton(
-            fixit_frame,
+            reindex_frame,
             text="All to Letter",
             variable=fn_index_style,
             value=FootnoteIndexStyle.LETTER,
         )
-        self.all_to_let.grid(column=1, row=1, pady=2, sticky="NSEW")
+        self.all_to_let.grid(column=1, row=0, pady=2, padx=5, sticky="W")
         # --
         self.all_to_rom = ttk.Radiobutton(
-            fixit_frame,
+            reindex_frame,
             text="All to Roman",
             variable=fn_index_style,
             value=FootnoteIndexStyle.ROMAN,
         )
-        self.all_to_rom.grid(column=2, row=1, pady=2, sticky="NSEW")
+        self.all_to_rom.grid(column=2, row=0, pady=2, padx=5, sticky="W")
         # --
+        reindex_btn_frame = ttk.Frame(fixit_frame)
+        reindex_btn_frame.grid(column=3, row=1, sticky="NSEW")
+        reindex_btn_frame.columnconfigure(0, weight=1)
+        reindex_btn_frame.columnconfigure(1, weight=1)
         self.reindex_button = ttk.Button(
-            fixit_frame,
+            reindex_btn_frame,
             text="Reindex",
             command=reindex,
         )
-        self.reindex_button.grid(column=3, row=1, pady=2, sticky="NSEW")
+        self.reindex_button.grid(column=0, row=0, pady=2, sticky="NSEW")
+        ttk.Checkbutton(
+            reindex_btn_frame,
+            text="Per LZ",
+            variable=PersistentBoolean(PrefKey.FOOTNOTE_PER_LZ),
+        ).grid(column=1, row=0, pady=2, sticky="E")
 
         # Setting LZs, moving FNs, tidying FNs.
 
