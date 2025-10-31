@@ -296,6 +296,14 @@ class Preferences:
             for var in self.persistent_vars[key]:
                 var.set(value)
 
+    def reset(self, key: PrefKey) -> None:
+        """Reset a preference to its default.
+
+        Args:
+            key: Name of preference.
+        """
+        self.set(key, self.get_default(key))
+
     def toggle(self, key: PrefKey) -> None:
         """Toggle the value of a boolean preference.
 

@@ -181,6 +181,11 @@ class Guiguts:
         logger.info("Guiguts started")
 
         self.initialize_preferences()
+        if self.args.resetgeometry:
+            preferences.reset(PrefKey.ROOT_GEOMETRY)
+            preferences.reset(PrefKey.ROOT_GEOMETRY_FULL_SCREEN)
+            preferences.reset(PrefKey.ROOT_GEOMETRY_STATE)
+            preferences.reset(PrefKey.DIALOG_GEOMETRY)
 
         self.file = File(self.filename_changed, self.languages_changed)
         the_file(self.file)
@@ -287,6 +292,11 @@ class Guiguts:
             "--version",
             action="store_true",
             help="Display the version of Guiguts",
+        )
+        parser.add_argument(
+            "--resetgeometry",
+            action="store_true",
+            help="Reset layout of dialogs and main window to defaults",
         )
         self.args = parser.parse_args(args)
 
