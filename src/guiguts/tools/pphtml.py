@@ -85,6 +85,8 @@ class PPhtmlChecker:
         self.imagefiledata = {}
         self.musicfiledata = {}
         self.file_text = maintext().get_text()
+        # strip CSS comments
+        self.file_text = re.sub(r"/\*.*?\*/", "", self.file_text, flags=re.DOTALL)
         self.end_css = maintext().search("</style>", "end", "1.0", backwards=True)
         if not self.end_css:
             self.end_css = "1.0"
