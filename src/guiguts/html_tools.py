@@ -2037,9 +2037,9 @@ class HTMLMarkupDialog(ToplevelDialog):
         attr: str = preferences.get(attr_key)
         if cbx is not None:
             cbx.add_to_history(attr)
-        # If simple word given, it's a class name
-        if re.fullmatch(r"[-_\w]+", attr):
-            attr = f"class={attr}"
+        # If no equals sign, it's class name(s)
+        if attr and "=" not in attr:
+            attr = f'class="{attr}"'
         if attr:
             attr = f" {attr}"
         cls.add_markup(f"<{markup}{attr}>", f"</{markup}>")
