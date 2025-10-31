@@ -1006,8 +1006,11 @@ class ToolTip:
         # Cancel scheduled show/hide - necessary because there are 3 ways to get here:
         # timeout, click, or leave window, and we don't want to leave a scheduled hide,
         # for example, in case pointer leaves and returns to window
-        self.tooltip_window.after_cancel(self.open_id)
-        self.tooltip_window.after_cancel(self.close_id)
+        try:
+            self.tooltip_window.after_cancel(self.open_id)
+            self.tooltip_window.after_cancel(self.close_id)
+        except ValueError:
+            pass  # OK if scheduled hide/show have not been set up, e.g. tooltips are "off"
         if self.tooltip_window.winfo_exists():
             self.tooltip_window.withdraw()
 
