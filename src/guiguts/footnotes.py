@@ -108,7 +108,7 @@ class FootnoteChecker:
     def __init__(self, checker_dialog: "FootnoteCheckerDialog") -> None:
         """Initialize footnote checker."""
         self.fn_records: list[FootnoteRecord] = []
-        self.an_records: list[AnchorRecord] = []
+        self.an_records: list[list[AnchorRecord]] = []
         self.checker_dialog: "FootnoteCheckerDialog" = checker_dialog
         self.fn_check_errors = False
         self.fns_have_been_moved = False
@@ -122,7 +122,7 @@ class FootnoteChecker:
         """Return the list of footnote records."""
         return self.fn_records
 
-    def get_an_records(self) -> list[AnchorRecord]:
+    def get_an_records(self) -> list[list[AnchorRecord]]:
         """Return the list of anchor records."""
         return self.an_records
 
@@ -362,9 +362,10 @@ class FootnoteChecker:
             if fn_record.start == fn_start:
                 return fn_index
         # No footnote match, so try anchors
-        for an_record in self.get_an_records():
-            if an_record.start == fn_start:
-                return an_record.fn_index  # Return footnote for this anchor
+        for an_record_list in self.get_an_records():
+            for an_record in an_record_list:
+                if an_record.start == fn_start:
+                    return an_record.fn_index  # Return footnote for this anchor
         return -1
 
     def enable_disable_buttons(self) -> None:
@@ -499,37 +500,71 @@ class FootnoteChecker:
                     anchor_match.rowcol.col + anchor_match.count,
                     fn_index,
                 )
-                self.an_records.append(anr)
+                self.an_records.append([anr])
 
             search_range = IndexRange(end_point, maintext().end())
 
         # Check for anchors that are not paired
         anchor_matches = maintext().find_all(
             maintext().start_to_end(),
-            r"(?<!(/[#$*FfIiLlPpXxCcRr]|\\))\[([\d]+|[A-Z])]",
+            r"(?<!(/[#$*FfIiLlPpXxCcRr]|\\))\[([\d]+|[A-Z]|[ivx]+)]",
             regexp=True,
             wholeword=False,
             nocase=False,
         )
         for anchor_match in anchor_matches:
-            for an_record in self.an_records:
-                if an_record.start == anchor_match.rowcol:  # Already paired
+            paired = False
+            for an_record_list in self.an_records:
+                for an_record in an_record_list:
+                    if an_record.start == anchor_match.rowcol:  # Already paired
+                        paired = True
+                        break
+                if paired:
                     break
             else:
                 an_line = maintext().get(
                     f"{anchor_match.rowcol.row}.0", f"{anchor_match.rowcol.row}.end"
                 )
-                anr = AnchorRecord(
-                    an_line,
-                    anchor_match.rowcol,
-                    maintext().rowcol(
-                        f"{anchor_match.rowcol.index()}+{anchor_match.count}c",
-                    ),
-                    anchor_match.rowcol.col,
-                    anchor_match.rowcol.col + anchor_match.count,
-                    UNPAIRED_FLAG,
+                an_label = maintext().get(
+                    anchor_match.rowcol.index(),
+                    f"{anchor_match.rowcol.index()}+{anchor_match.count}c",
                 )
-                self.an_records.append(anr)
+                found = False
+                for an_record_list in self.an_records:
+                    for an_record in an_record_list:
+                        if an_record.text[
+                            an_record.hilite_start : an_record.hilite_end
+                        ] == an_label and maintext().compare(
+                            an_record.start.index(), ">", anchor_match.rowcol.index()
+                        ):
+                            anr = AnchorRecord(
+                                an_line,
+                                anchor_match.rowcol,
+                                maintext().rowcol(
+                                    f"{anchor_match.rowcol.index()}+{anchor_match.count}c",
+                                ),
+                                anchor_match.rowcol.col,
+                                anchor_match.rowcol.col + anchor_match.count,
+                                an_record.fn_index,
+                            )
+                            an_record_list.append(anr)
+                            found = True
+                            break
+                    if found:
+                        break
+
+                if not found:
+                    anr = AnchorRecord(
+                        an_line,
+                        anchor_match.rowcol,
+                        maintext().rowcol(
+                            f"{anchor_match.rowcol.index()}+{anchor_match.count}c",
+                        ),
+                        anchor_match.rowcol.col,
+                        anchor_match.rowcol.col + anchor_match.count,
+                        UNPAIRED_FLAG,
+                    )
+                    self.an_records.append([anr])
 
 
 def sort_key_type(
@@ -646,7 +681,7 @@ def set_anchor() -> None:
     # From that we can get the start index of the new anchor we created.
     an_records = _the_footnote_checker.get_an_records()
     assert fn_record.an_index is not None
-    an_record = an_records[fn_record.an_index]
+    an_record = an_records[fn_record.an_index][0]
     # Get index into dialog entries for this record.
     dialog_entry_index = _the_footnote_checker.map_an_record_to_dialog_index(an_record)
     if dialog_entry_index < 0:
@@ -701,46 +736,44 @@ def reindex() -> None:
     # If renumbering per LZ, build list of line numbers where LZs are located
     lz_lines: list[int] = []
     lz_num = 1
-    fn_idx = 0
+    idx_offset = 0  # Index at end of last LZ (used for restarting count)
     if perlz:
         lz_matches = maintext().find_all(maintext().start_to_end(), FOOTNOTES_HEADER)
         lz_lines = [m.rowcol.row for m in lz_matches]
-    for index in range(1, len(an_records) + 1):
-        an_record = an_records[index - 1]
+    for index, an_record_list in enumerate(an_records):
+        for an_record in an_record_list:
+            an_start = maintext().index(
+                _the_footnote_checker.checker_dialog.mark_from_rowcol(an_record.start)
+            )
+            an_end = maintext().index(
+                _the_footnote_checker.checker_dialog.mark_from_rowcol(an_record.end)
+            )
+            fn_line = IndexRowCol(an_start).row
+            if perlz:
+                # Skip past landing zones before the anchor, and note current value
+                # of index, so we can begin from 1 again
+                while lz_num <= len(lz_lines) and fn_line > lz_lines[lz_num - 1]:
+                    lz_num += 1
+                    idx_offset = index
+            new_index = index - idx_offset + 1
+            if index_style == "roman":
+                label = roman.toRoman(new_index)
+                label = label + "."
+            elif index_style == "letter":
+                label = _the_footnote_checker.alpha(new_index)
+            else:
+                label = str(new_index)
 
-        an_start = maintext().index(
-            _the_footnote_checker.checker_dialog.mark_from_rowcol(an_record.start)
-        )
-        an_end = maintext().index(
-            _the_footnote_checker.checker_dialog.mark_from_rowcol(an_record.end)
-        )
-        fn_line = IndexRowCol(an_start).row
-        if perlz:
-            while lz_num <= len(lz_lines) and fn_line > lz_lines[lz_num - 1]:
-                lz_num += 1
-                fn_idx = 0
-            fn_idx += 1
-            new_index = fn_idx
-        else:
-            new_index = index
-        if index_style == "roman":
-            label = roman.toRoman(new_index)
-            label = label + "."
-        elif index_style == "letter":
-            label = _the_footnote_checker.alpha(new_index)
-        else:
-            label = str(new_index)
-
-        maintext().replace(an_start, an_end, f"[{label}]")
-        #
-        fn_record = fn_records[index - 1]
-        label_start = fn_record.hilite_start + 9
-        label_end = fn_record.hilite_end
-        fn_start = f"{fn_record.start.index()}"
-        # Replace label in footnote with new label value.
-        maintext().replace(
-            f"{fn_start}+{label_start}c", f"{fn_start}+{label_end}c", label
-        )
+            maintext().replace(an_start, an_end, f"[{label}]")
+            #
+            fn_record = fn_records[index]
+            label_start = fn_record.hilite_start + 9
+            label_end = fn_record.hilite_end
+            fn_start = f"{fn_record.start.index()}"
+            # Replace label in footnote with new label value.
+            maintext().replace(
+                f"{fn_start}+{label_start}c", f"{fn_start}+{label_end}c", label
+            )
     # AN/FN file entries have changed. Update AN/FN records.
     _the_footnote_checker.run_check()
     # Maintain the order of function calls below.
@@ -787,7 +820,7 @@ def autoset_chapter_lz() -> None:
     # start of the first anchor rather than after the first 200 lines as
     # in GG1.
     an_records = _the_footnote_checker.get_an_records()
-    first_an = an_records[0]
+    first_an = an_records[0][0]
     search_range = IndexRange(first_an.start, maintext().end())
     # Loop, finding all chapter breaks; i.e. block of 4 blank lines. Method
     # used is to find next blank line then look ahead for 3 more blank lines.
@@ -894,7 +927,8 @@ def move_footnotes_to_paragraphs() -> None:
     )
     file_end = maintext().end().index()
     match_regex = r"^$"
-    for an_record_index, an_record in enumerate(an_records):
+    for an_record_index, an_record_list in enumerate(an_records):
+        an_record = an_record_list[0]
         # Find the end of the paragraph in which the footnote anchor is located.
         # Start searching from the line containing the anchor.
         search_range = IndexRange(
@@ -1107,7 +1141,7 @@ def move_footnotes_to_lz() -> None:
         fn_lines = maintext().get(fn_cur_start, fn_cur_end)
         # Get anchor record for this footnote.
         assert fn_record.an_index is not None
-        an_cur = an_records[fn_record.an_index]
+        an_cur = an_records[fn_record.an_index][0]
         an_cur_end = maintext().index(
             _the_footnote_checker.checker_dialog.mark_from_rowcol(an_cur.end)
         )
@@ -1439,8 +1473,7 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
             # Clear error_prefix string before looking for FN/AN context errors.
             error_prefix = ""
             # The footnote string is conformant now consider its context; does
-            # it have an anchor; is it a continuation footnote; is it out of
-            # sequence with its anchor, etc.
+            # it have an anchor; is it a continuation footnote, etc.
             if fn_record.an_index is None:
                 fn_start = fn_record.start
                 if maintext().get(f"{fn_start.index()}-1c", fn_start.index()) == "*":
@@ -1456,44 +1489,17 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
             ):
                 error_prefix = "NESTED/BROKEN MARKUP: "
             else:
-                an_record = an_records[fn_record.an_index]
-                # Check that no other footnote has the same anchor as this one
-                for fni2, fn2 in enumerate(fn_records):
-                    if fn2.an_index is None:
-                        continue
-                    an2 = an_records[fn2.an_index]
-                    if fn_index != fni2 and an_record.start == an2.start:
-                        error_prefix = "SAME ANCHOR: "
-                        break
-                # Check anchor of previous footnote and this one are in order (footnotes are always in order)
-                if (
-                    fn_index > 0
-                    and fn_record.an_index is not None
-                    and fn_records[fn_index - 1].an_index is not None
-                ):
-                    an_idx = fn_records[fn_index - 1].an_index
-                    assert an_idx is not None
-                    an_prev = an_records[an_idx]
-                    if an_prev.start.row > an_record.start.row or (
-                        an_prev.start.row == an_record.start.row
-                        and an_prev.start.col > an_record.start.col
-                    ):
-                        error_prefix += "SEQUENCE: "
-                # Check anchor of next footnote and this one are in order (footnotes are always in order)
-                if (
-                    "SEQUENCE: " not in error_prefix
-                    and fn_index < len(fn_records) - 1
-                    and fn_record.an_index is not None
-                    and fn_records[fn_index + 1].an_index is not None
-                ):
-                    an_idx = fn_records[fn_index + 1].an_index
-                    assert an_idx is not None
-                    an_next = an_records[an_idx]
-                    if an_next.start.row < an_record.start.row or (
-                        an_next.start.row == an_record.start.row
-                        and an_next.start.col < an_record.start.col
-                    ):
-                        error_prefix += "SEQUENCE: "
+                for an_record in an_records[fn_record.an_index]:
+                    # Check that no other footnote has the same anchor as this one
+                    for fni2, fn2 in enumerate(fn_records):
+                        if fn2.an_index is None:
+                            continue
+                        for an2 in an_records[fn2.an_index]:
+                            if fn_index != fni2 and an_record.start == an2.start:
+                                error_prefix = "SAME ANCHOR: "
+                                break
+                        if error_prefix == "SAME ANCHOR: ":
+                            break
         # If error_prefix string is not null then a context issue has been identified
         # above. The dialog entry will be prefixed with the highlighted error_prefix
         # such as "SAME ANCHOR", "NO ANCHOR" or "CONTINUATION". Note the last is not
@@ -1518,15 +1524,18 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
         _the_footnote_checker.fn_check_errors = True
     else:
         _the_footnote_checker.fn_check_errors = False
-    for an_record in _the_footnote_checker.get_an_records():
-        checker_dialog.add_entry(
-            an_record.text,
-            IndexRange(an_record.start, an_record.end),
-            an_record.hilite_start,
-            an_record.hilite_end,
-            error_prefix=(
-                UNPAIRED_ANCHOR_PREFIX if an_record.fn_index == UNPAIRED_FLAG else ""
-            ),
-        )
+    for an_record_list in _the_footnote_checker.get_an_records():
+        for an_record in an_record_list:
+            checker_dialog.add_entry(
+                an_record.text,
+                IndexRange(an_record.start, an_record.end),
+                an_record.hilite_start,
+                an_record.hilite_end,
+                error_prefix=(
+                    UNPAIRED_ANCHOR_PREFIX
+                    if an_record.fn_index == UNPAIRED_FLAG
+                    else ""
+                ),
+            )
     checker_dialog.display_entries(auto_select_line)
     _the_footnote_checker.enable_disable_buttons()
