@@ -2589,8 +2589,8 @@ def do_fix_quote(checker_entry: CheckerEntry) -> None:
     if (
         checker_entry.error_prefix
         in (
-            "DOUBLE QUOTE NOT CONVERTED: ",
-            "SINGLE QUOTE NOT CONVERTED: ",
+            "DQ not converted: ",
+            "SQ not converted: ",
         )
         and maintext().get(
             _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.start),
