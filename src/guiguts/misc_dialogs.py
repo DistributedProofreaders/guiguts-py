@@ -2031,7 +2031,9 @@ class CommandPaletteDialog(ToplevelDialog):
                 score = RecentPlusEntry.MENUMATCH  # strong menu prefix
             else:  # fallback to fuzzy match
                 score = int(
-                    process.extractOne(search_text, [f"{menu_lower} {label_lower}"])[1]
+                    process.extractOne(search_text, [f"{menu_lower} {label_lower}"])[
+                        1
+                    ]  # type:ignore[index]
                 )
             return score
 
