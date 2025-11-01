@@ -1026,35 +1026,20 @@ class PPhtmlChecker:
 
     def find_defined_css(self) -> None:
         """Find CSS classes user has defined."""
+        # Strip CSS comments first
+        stripped_text = re.sub(r"/\*.*?\*/", "", self.file_text, flags=re.DOTALL)
         # Find all <style> blocks and concatenate them
         css_content = "\n".join(
             match.group(1).strip()
             for match in re.finditer(
                 r"<style.*?>(.*?)</style>",
-                self.file_text,
+                stripped_text,
                 flags=re.DOTALL | re.IGNORECASE,
             )
         )
 
         self.defined_classes = {}
         split_content = css_content.split("\n")
-
-        # Strip out any comments in css
-        lnum = 0
-        while lnum < len(split_content):
-            # Single line
-            if split_content[lnum].strip().startswith("/*") and split_content[
-                lnum
-            ].strip().endswith("*/"):
-                del split_content[lnum]
-                continue
-            # Multi line
-            if split_content[lnum].strip().startswith("/*"):
-                del split_content[lnum]
-                while not split_content[lnum].strip().endswith("*/"):
-                    del split_content[lnum]
-                del split_content[lnum]
-            lnum += 1
 
         # Unwrap CSS to put whole of {...} on one line
         lnum = 0
