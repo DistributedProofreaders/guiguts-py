@@ -20,15 +20,15 @@ packaging = "^25.0"
 unicodedataplus = "^16.0.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1"
-flake8 = "^7.2"
-Sphinx = "^8.2.3"
-pytest = "^8.3"
-mypy = "^1.15"
-pylint = "^3.3.7"
-types-regex = "^2024.11.6"
+black = "^25.9"
+flake8 = "^7.3"
+Sphinx = "^8.2"
+pytest = "^8.4"
+mypy = "^1.18"
+pylint = "^4.0"
+types-regex = "^2025.10.23"
 types-requests = "^2.32"
-build = "^1.2.2"
+build = "^1.3"
 
 [tool.poetry.scripts]
 guiguts = "guiguts.application:main"

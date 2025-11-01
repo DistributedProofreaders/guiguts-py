@@ -32,7 +32,7 @@ SPELL_CHECK_OK_YES = 0
 SPELL_CHECK_OK_NO = 1
 SPELL_CHECK_OK_BAD = 2
 
-_THE_SPELL_CHECKER: Optional["SpellChecker"] = None
+_the_spell_checker: Optional["SpellChecker"] = None
 
 
 class DictionaryNotFoundError(Exception):
@@ -486,21 +486,21 @@ def get_spell_checker() -> SpellChecker | None:
         A SpellChecker object if required dictionary present, otherwise None
     """
 
-    global _THE_SPELL_CHECKER
+    global _the_spell_checker
 
     # If we already have a spell checker with the wrong languages, delete it
     if (
-        _THE_SPELL_CHECKER is not None
-        and _THE_SPELL_CHECKER.language_list != maintext().get_language_list()
+        _the_spell_checker is not None
+        and _the_spell_checker.language_list != maintext().get_language_list()
     ):
-        _THE_SPELL_CHECKER = None
-    if _THE_SPELL_CHECKER is None:
+        _the_spell_checker = None
+    if _the_spell_checker is None:
         try:
-            _THE_SPELL_CHECKER = SpellChecker()
+            _the_spell_checker = SpellChecker()
         except DictionaryNotFoundError as exc:
             logger.error(f"Dictionary not found for language: {exc.language}")
             return None
-    return _THE_SPELL_CHECKER
+    return _the_spell_checker
 
 
 def spell_check(

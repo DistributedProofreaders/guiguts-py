@@ -860,7 +860,7 @@ class MainText(tk.Text):
 
         # Track whether main text or peer most recently had focus
         def text_peer_focus_track(event: tk.Event) -> None:
-            assert event.widget in (self, self.peer)
+            assert isinstance(event.widget, (MainText, TextPeer))
             self._text_peer_focus = event.widget
 
         self.bind_event("<FocusIn>", text_peer_focus_track, add=True, bind_peer=True)
@@ -2198,7 +2198,8 @@ class MainText(tk.Text):
     def del_word(self, event: tk.Event, idir: int) -> None:
         """Delete word backward or forward.
         For consistency, use Ctrl+arrow keys for "word" movement."""
-        wgt: tk.Text = event.widget
+        assert isinstance(event.widget, tk.Text)
+        wgt = event.widget
         self.undo_block_begin()
         old_ins = wgt.index(tk.INSERT)
         modifier = "Option" if is_mac() else "Control"
@@ -2246,6 +2247,7 @@ class MainText(tk.Text):
         Args:
             event: Event containing mouse coordinates.
         """
+        assert isinstance(event.widget, tk.Text)
         self.cancel_drag_sel()
         cur_rowcol = self.rowcol(f"@{event.x},{event.y}")
         # In case we get here without ever having clicked (can happen if user tries
@@ -2305,6 +2307,7 @@ class MainText(tk.Text):
         Args:
             event: Event containing mouse coordinates.
         """
+        assert isinstance(event.widget, tk.Text)
         self.cancel_drag_sel()
         self._autoscroll_active = False
         self.column_select_motion(event)
@@ -2324,12 +2327,14 @@ class MainText(tk.Text):
 
     def column_select_stop(self, event: tk.Event) -> None:
         """Stop column selection."""
+        assert isinstance(event.widget, tk.Text)
         self.cancel_drag_sel()
         self.column_selecting = False
         event.widget.config(cursor="")
 
     def start_drag_sel(self, event: tk.Event) -> str:
         """Start dragging selected text."""
+        assert isinstance(event.widget, tk.Text)
         self._on_change()
         self.drag_start_click = (event.x, event.y)
         index = event.widget.index(f"@{event.x},{event.y}")
@@ -2349,6 +2354,7 @@ class MainText(tk.Text):
 
     def do_drag_sel(self, event: tk.Event) -> str:
         """Do the dragging of selected text."""
+        assert isinstance(event.widget, tk.Text)
         if not self.dragging:
             return ""
         # Return if mouse hasn't moved since initial click
@@ -2370,6 +2376,7 @@ class MainText(tk.Text):
 
     def end_drag_sel(self, event: tk.Event) -> str:
         """End dragging of text, dropping it if appropriate."""
+        assert isinstance(event.widget, tk.Text)
         if not self.dragging:
             return ""
         self.cancel_drag_sel()
@@ -2423,6 +2430,7 @@ class MainText(tk.Text):
     def _get_drag_index(self, event: tk.Event) -> str:
         """Get index from event with slight offset, or it feels as though
         it goes to the left of the character too soon."""
+        assert isinstance(event.widget, tk.Text)
         return event.widget.index(f"@{event.x+5},{event.y}")
 
     def _create_drag_window(self, event: tk.Event) -> None:
@@ -2453,6 +2461,7 @@ class MainText(tk.Text):
 
     def _move_drag_window(self, event: tk.Event) -> None:
         """Move the drag preview window with the cursor."""
+        assert isinstance(event.widget, tk.Text)
         if self.drag_window is None:
             return
         # Position drag preview window 10 pixels  south east of the cursor
@@ -3221,7 +3230,7 @@ class MainText(tk.Text):
                 "to",
             )
 
-        def capitalize_first_letter(match: re.regex.Match[str]) -> str:
+        def capitalize_first_letter(match: re.Match[str]) -> str:
             word = match.group()
             if word in exception_words:
                 return word
@@ -3759,6 +3768,7 @@ class MainText(tk.Text):
     def go_home(self, event: tk.Event) -> str:
         """Handle the Home key. Either move to start of line, or if
         already there, move to first non-space on line."""
+        assert isinstance(event.widget, tk.Text)
         if int(event.state) & 0x0004:
             return ""
         start = self.get_insert_index()
@@ -4863,6 +4873,7 @@ class MainText(tk.Text):
         a callback every (n) ms to watch mouse cursor position, scrolling
         the view as appropriate based on its current position.
         """
+        assert isinstance(event.widget, tk.Text)
         if not self._autoscroll_active:
             return
 
@@ -5734,16 +5745,16 @@ class MenubarMetadata:
         return None
 
 
-_MENUBAR_METADATA = None
+_menubar_metadata = None
 
 
 def menubar_metadata() -> MenubarMetadata:
     """Return single instance of menubar metadata."""
-    global _MENUBAR_METADATA
-    if _MENUBAR_METADATA is None:
-        _MENUBAR_METADATA = MenubarMetadata()
-    assert _MENUBAR_METADATA is not None
-    return _MENUBAR_METADATA
+    global _menubar_metadata
+    if _menubar_metadata is None:
+        _menubar_metadata = MenubarMetadata()
+    assert _menubar_metadata is not None
+    return _menubar_metadata
 
 
 class TearOffMenuDialog(ToplevelDialog):

@@ -82,6 +82,7 @@ class HTMLGeneratorDialog(ToplevelDialog):
 
         def clean_entry(event: tk.Event) -> None:
             """Schedule cleanup after paste has occurred"""
+            assert isinstance(event.widget, ttk.Entry)
             widget = event.widget
             widget.after_idle(lambda: sanitize_entry(widget))
 

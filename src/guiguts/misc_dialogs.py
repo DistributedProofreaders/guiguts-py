@@ -2422,6 +2422,7 @@ class UnicodeBlockDialog(ToplevelDialog):
 
     def combo_key(self, event: tk.Event) -> str:
         """Handle key press in combo box."""
+        assert isinstance(event.widget, ttk.Combobox)
         if not event.char or not event.char.isalnum():
             return ""
         # If modifiers other than Shift & Caps Lock, don't goto word - allow default processing
@@ -2512,7 +2513,7 @@ class UnicodeBlockDialog(ToplevelDialog):
                 event.widget["relief"] = tk.RAISED
                 insert_in_focus_widget(char)
 
-            def show_name(wgt: tk.Label) -> None:
+            def show_name(wgt: ttk.Label) -> None:
                 char = str(wgt["text"])
                 name, new = unicode_char_to_name(char)
                 if name:
@@ -2526,6 +2527,7 @@ class UnicodeBlockDialog(ToplevelDialog):
                 self.bigchar_var.set("")
 
             def enter(event: tk.Event) -> None:
+                assert isinstance(event.widget, ttk.Label)
                 event.widget["relief"] = tk.RAISED
                 show_name(event.widget)
 
