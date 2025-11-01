@@ -14,7 +14,7 @@ also works with later versions of Python, and has been tested in versions up to 
 ### Windows
 
 1. Install Python 3.11 or above from [Python.org](https://www.python.org/downloads/windows/).
-GG has been tested in versions up to 4. Ensure the "Add Python to PATH" box is checked
+GG has been tested in versions up to 3.14. Ensure the "Add Python to PATH" box is checked
 during installation.
 2. In a command window, type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
 previous version of GG2).
