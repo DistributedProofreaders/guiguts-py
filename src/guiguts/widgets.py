@@ -1300,6 +1300,7 @@ def register_focus_widget(widget: tk.Entry | tk.Text) -> None:
     def set_focus_widget(event: tk.Event) -> None:
         """Store the widget that triggered the event."""
         global _text_focus_widget
+        assert isinstance(event.widget, tk.Widget)
         _text_focus_widget = event.widget
 
     widget.bind("<FocusIn>", set_focus_widget, add=True)
@@ -1331,13 +1332,17 @@ def insert_in_focus_widget(string: str) -> None:
 
 def focus_next_widget(event: tk.Event) -> str:
     """Focus on next widget, as a <Tab> keystroke would."""
-    event.widget.tk_focusNext().focus_set()
+    next_w = event.widget.tk_focusNext()
+    if next_w is not None:
+        next_w.focus_set()
     return "break"
 
 
 def focus_prev_widget(event: tk.Event) -> str:
     """Focus on previous widget, as a <Shift-Tab> keystroke would."""
-    event.widget.tk_focusPrev().focus_set()
+    prev_w = event.widget.tk_focusPrev()
+    if prev_w is not None:
+        prev_w.focus_set()
     return "break"
 
 

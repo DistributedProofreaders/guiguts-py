@@ -4,6 +4,7 @@ from enum import StrEnum, auto
 import logging
 import traceback
 import tkinter as tk
+from tkinter import ttk
 
 from types import TracebackType
 from typing import Any
@@ -13,7 +14,7 @@ from guiguts.utilities import is_x11
 
 logger = logging.getLogger(__package__)
 
-_THE_ROOT = None
+_the_root = None
 
 
 class RootWindowState(StrEnum):
@@ -28,9 +29,9 @@ class Root(tk.Tk):
     """Inherits from Tk root window"""
 
     def __init__(self, **kwargs: Any) -> None:
-        global _THE_ROOT
-        assert _THE_ROOT is None
-        _THE_ROOT = self
+        global _the_root
+        assert _the_root is None
+        _the_root = self
 
         super().__init__(**kwargs)
         self.geometry(preferences.get(PrefKey.ROOT_GEOMETRY))
@@ -55,6 +56,7 @@ class Root(tk.Tk):
         if is_x11():
 
             def select_all(event: tk.Event) -> str:
+                assert isinstance(event.widget, (tk.Entry, ttk.Entry, ttk.Combobox))
                 event.widget.selection_range(0, tk.END)
                 return "break"
 
@@ -142,5 +144,5 @@ class Root(tk.Tk):
 
 def root() -> Root:
     """Return the single instance of Root"""
-    assert _THE_ROOT is not None
-    return _THE_ROOT
+    assert _the_root is not None
+    return _the_root
