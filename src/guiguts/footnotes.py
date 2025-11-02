@@ -1539,3 +1539,35 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
             )
     checker_dialog.display_entries(auto_select_line)
     _the_footnote_checker.enable_disable_buttons()
+
+
+def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
+    """Mask/Unmask FN/anchors of given style by replacing open bracket."""
+    Busy.busy()
+    maintext().undo_block_begin()
+    if style == FootnoteIndexStyle.NUMBER:
+        label_regex = r"\d+"
+    elif style == FootnoteIndexStyle.LETTER:
+        label_regex = r"[A-Z]+"
+    else:
+        label_regex = r"[IVXLC]+"
+    in_bracket = re.escape("[" if mask else "{")
+    out_bracket = "{" if mask else "["
+
+    # Replace open bracket of footnotes
+    match_regex = rf"{in_bracket} *footnote *{label_regex}:"
+    start = "1.0"
+    while start := maintext().search(
+        match_regex, start, tk.END, regexp=True, nocase=True
+    ):
+        maintext().replace(start, f"{start}+1c", out_bracket)
+
+    # Replace open bracket of anchors
+    match_regex = rf"{in_bracket}{label_regex}]"
+    start = "1.0"
+    while start := maintext().search(
+        match_regex, start, tk.END, regexp=True, nocase=True
+    ):
+        maintext().replace(start, f"{start}+1c", out_bracket)
+
+    Busy.unbusy()
