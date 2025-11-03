@@ -1648,7 +1648,8 @@ class CheckerDialog(ToplevelDialog):
         and jump to the line in the main text widget that corresponds to it.
 
         Args:
-            event: Event object containing mouse click position.
+            entry_index: Index of chosen entry.
+            focus: Whether to switch focus to text window.
         """
         if not self.text.winfo_exists():
             return
@@ -1671,11 +1672,6 @@ class CheckerDialog(ToplevelDialog):
             start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
             maintext().spotlight_range(IndexRange(start, end))
-            maintext().set_insert_index(
-                IndexRowCol(start),
-                focus=(focus and self.switch_focus_when_clicked),
-                see_end_rowcol=IndexRowCol(end),
-            )
             maintext().clear_selection()
         self.lift()
         if (
@@ -1683,6 +1679,21 @@ class CheckerDialog(ToplevelDialog):
             and self.view_options_dialog.winfo_exists()
         ):
             self.view_options_dialog.lift()
+        self.set_insert_from_entry(entry_index, focus)
+
+    def set_insert_from_entry(self, entry_index: int, focus: bool) -> None:
+        """Set insert position in text window based on selected entry."""
+        entry = self.entries[entry_index]
+        if entry.text_range is None:
+            return
+        start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
+        end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
+        if entry.text_range is not None:
+            maintext().set_insert_index(
+                IndexRowCol(start),
+                focus=(focus and self.switch_focus_when_clicked),
+                see_end_rowcol=IndexRowCol(end),
+            )
 
     @classmethod
     def mark_from_rowcol(cls, rowcol: IndexRowCol) -> str:

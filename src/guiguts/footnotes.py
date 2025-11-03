@@ -659,7 +659,7 @@ def set_anchor() -> None:
     assert _the_footnote_checker is not None
     maintext().undo_block_begin()
     insert_index = maintext().get_insert_index().index()
-    # Get label to use  for anchor from the selected FN.
+    # Get label to use for anchor from the selected FN.
     fn_index = _the_footnote_checker.get_selected_fn_index()
     if fn_index < 0:
         logger.error("No footnote selected")  # No selection
@@ -1398,6 +1398,74 @@ class FootnoteCheckerDialog(CheckerDialog):
             command=tidy_footnotes,
         )
         self.fn_tidy_button.grid(column=3, row=3, pady=2, sticky="NSEW")
+
+    def set_insert_from_entry(self, entry_index: int, focus: bool) -> None:
+        """Set insert position in text window based on selected entry.
+
+        Displays anchor in top half and footnote in bottom half if text window is split,
+        and preference is turned on.
+        """
+        assert _the_footnote_checker is not None
+        # Default behavior if special split window behavior is not required
+        if not preferences.get(PrefKey.FOOTNOTE_SPLIT_WINDOW) or not preferences.get(
+            PrefKey.SPLIT_TEXT_WINDOW
+        ):
+            super().set_insert_from_entry(entry_index, focus)
+            return
+        entry = self.entries[entry_index]
+        if entry.text_range is None:
+            return
+        fn_index = _the_footnote_checker.get_selected_fn_index()
+        if fn_index < 0:
+            return  # No selection
+        fn_records = _the_footnote_checker.get_fn_records()
+        fn_record = fn_records[fn_index]
+        start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
+        end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
+        # Save whether main/peer text have focus so we can switch between them
+        # (without actually changing focus) then restore
+        save_focus = maintext().text_peer_focus
+        # Check if the selected entry is a footnote entry or an anchor entry
+        if entry.text_range.start == fn_record.start:
+            # Set index at footnote in peer
+            maintext().text_peer_focus = maintext().peer
+            maintext().set_insert_index(
+                IndexRowCol(start),
+                focus=(focus and self.switch_focus_when_clicked),
+                see_end_rowcol=IndexRowCol(end),
+            )
+            # Spotlight & set index at anchor in maintext
+            an_records = _the_footnote_checker.get_an_records()
+            if fn_record.an_index is not None:
+                an_record = an_records[fn_record.an_index][0]
+                maintext().text_peer_focus = maintext()
+                maintext().spotlight_range(
+                    IndexRange(an_record.start, an_record.end), add=True
+                )
+                maintext().set_insert_index(
+                    an_record.start,
+                    focus=(focus and self.switch_focus_when_clicked),
+                    see_end_rowcol=IndexRowCol(end),
+                )
+        else:
+            # Set index at anchor in maintext
+            maintext().text_peer_focus = maintext()
+            maintext().set_insert_index(
+                IndexRowCol(start),
+                focus=(focus and self.switch_focus_when_clicked),
+                see_end_rowcol=IndexRowCol(end),
+            )
+            # Spotlight & set index at footnote in peer
+            maintext().text_peer_focus = maintext().peer
+            maintext().spotlight_range(
+                IndexRange(fn_record.start, fn_record.end), add=True
+            )
+            maintext().set_insert_index(
+                fn_record.start,
+                focus=(focus and self.switch_focus_when_clicked),
+                see_end_rowcol=IndexRowCol(end),
+            )
+        maintext().text_peer_focus = save_focus
 
 
 def footnote_check() -> None:

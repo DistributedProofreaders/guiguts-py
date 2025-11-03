@@ -55,6 +55,7 @@ class PrefKey(StrEnum):
     LEVENSHTEIN_DISTANCE = auto()
     FOOTNOTE_INDEX_STYLE = auto()
     FOOTNOTE_PER_LZ = auto()
+    FOOTNOTE_SPLIT_WINDOW = auto()
     SHOW_TOOLTIPS = auto()
     WRAP_LEFT_MARGIN = auto()
     WRAP_RIGHT_MARGIN = auto()
