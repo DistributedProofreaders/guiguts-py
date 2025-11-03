@@ -1550,7 +1550,7 @@ def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
     elif style == FootnoteIndexStyle.LETTER:
         label_regex = r"[A-Z]+"
     else:
-        label_regex = r"[IVXLC]+"
+        label_regex = r"[IVXLC]+\.?"
     in_bracket = re.escape("[" if mask else "{")
     out_bracket = "{" if mask else "["
 
@@ -1570,4 +1570,7 @@ def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
     ):
         maintext().replace(start, f"{start}+1c", out_bracket)
 
+    # Refresh footnote list
+    if FootnoteCheckerDialog.get_dialog() is not None:
+        footnote_check()
     Busy.unbusy()
