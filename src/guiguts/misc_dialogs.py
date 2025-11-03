@@ -74,17 +74,36 @@ class PreferencesDialog(ToplevelDialog):
         notebook.grid(column=0, row=0, sticky="NSEW")
         notebook.enable_traversal()
 
+        def add_label_spinbox(
+            frame: ttk.Frame, row: int, label: str, key: PrefKey, tooltip: str
+        ) -> None:
+            """Add a label and spinbox to given frame.
+            Args:
+                frame: Frame to add label & spinbox to.
+                row: Which row in frame to add to.
+                label: Text for label.
+                key: Prefs key to use to store preference.
+                tooltip: Text for tooltip.
+            """
+            ttk.Label(frame, text=label).grid(column=0, row=row, sticky="NSE", pady=2)
+            spinbox = ttk.Spinbox(
+                frame,
+                textvariable=PersistentInt(key),
+                from_=0,
+                to=999,
+                width=5,
+            )
+            spinbox.grid(column=1, row=row, sticky="NW", padx=5, pady=2)
+            ToolTip(spinbox, tooltip)
+
         # Appearance
         appearance_frame = ttk.Frame(notebook, padding=10)
         notebook.add(appearance_frame, text="Appearance")
-        theme_frame = ttk.Frame(appearance_frame)
-        theme_frame.grid(column=0, row=0, sticky="NSEW")
-        theme_frame.columnconfigure(1, weight=1)
-        ttk.Label(theme_frame, text="Theme (requires restart): ").grid(
+        ttk.Label(appearance_frame, text="Theme (requires restart): ").grid(
             column=0, row=0, sticky="NE"
         )
         cb = ttk.Combobox(
-            theme_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
+            appearance_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
         )
         cb.grid(column=1, row=0, sticky="NEW")
         cb["values"] = ["Default", "Dark", "Light"]
@@ -95,11 +114,11 @@ class PreferencesDialog(ToplevelDialog):
             variable=PersistentBoolean(PrefKey.HIGH_CONTRAST),
         ).grid(column=0, row=1, sticky="NW", pady=5)
 
+        ttk.Label(
+            appearance_frame, text="Tear-Off Menus (change requires restart)"
+        ).grid(row=2, column=0)
         tearoff_frame = ttk.Frame(appearance_frame)
-        tearoff_frame.grid(column=0, row=2, sticky="NSEW")
-        ttk.Label(tearoff_frame, text="Tear-Off Menus (change requires restart)").grid(
-            row=0, column=0
-        )
+        tearoff_frame.grid(column=1, row=2, sticky="NSEW")
         tearoff_textvariable = PersistentString(PrefKey.TEAROFF_MENU_TYPE)
         ttk.Radiobutton(
             tearoff_frame,
@@ -121,22 +140,6 @@ class PreferencesDialog(ToplevelDialog):
                 value="builtin",
             ).grid(row=0, column=3, sticky="NW", padx=(10, 0))
 
-        # Font
-        def is_valid_font(new_value: str) -> bool:
-            """Validation routine for Combobox - if separator has been selected,
-            select Courier New instead.
-
-            Args:
-                new_value: New font family selected by user.
-
-            Returns:
-                True, because if invalid, it is fixed in this routine.
-            """
-            if new_value == self.COMBO_SEPARATOR:
-                preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier")
-                preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier New")
-            return True
-
         ttk.Checkbutton(
             appearance_frame,
             text="Display Line Numbers",
@@ -147,24 +150,48 @@ class PreferencesDialog(ToplevelDialog):
             text="Display Column Numbers",
             variable=PersistentBoolean(PrefKey.COLUMN_NUMBERS),
         ).grid(column=0, row=4, sticky="NW", pady=5)
+
+        add_label_spinbox(
+            appearance_frame,
+            5,
+            "Text Line Spacing:",
+            PrefKey.TEXT_LINE_SPACING,
+            "Additional line spacing in text windows",
+        )
+        add_label_spinbox(
+            appearance_frame,
+            6,
+            "Text Cursor Width:",
+            PrefKey.TEXT_CURSOR_WIDTH,
+            "Width of insert cursor in main text window",
+        )
+        ttk.Checkbutton(
+            appearance_frame,
+            text="Highlight Cursor Line",
+            variable=PersistentBoolean(PrefKey.HIGHLIGHT_CURSOR_LINE),
+        ).grid(column=0, row=7, sticky="NW", pady=5)
+
         ttk.Checkbutton(
             appearance_frame,
             text="Show Character Names in Status Bar",
             variable=PersistentBoolean(PrefKey.ORDINAL_NAMES),
-        ).grid(column=0, row=5, sticky="NW", pady=5)
+        ).grid(column=0, row=8, sticky="NW", pady=5)
+
+        ttk.Label(appearance_frame, text="Warning bell: ").grid(
+            column=0, row=9, pady=(5, 0), sticky="E"
+        )
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=0, row=6, sticky="NEW", pady=(5, 0))
-        ttk.Label(bell_frame, text="Warning bell: ").grid(column=0, row=0, sticky="NEW")
+        bell_frame.grid(column=1, row=9, sticky="EW", pady=(5, 0), columnspan=2)
         ttk.Checkbutton(
             bell_frame,
             text="Audible",
             variable=PersistentBoolean(PrefKey.BELL_AUDIBLE),
-        ).grid(column=1, row=0, sticky="NEW", padx=20)
+        ).grid(column=1, row=0, sticky="EW", padx=5)
         ttk.Checkbutton(
             bell_frame,
             text="Visual",
             variable=PersistentBoolean(PrefKey.BELL_VISUAL),
-        ).grid(column=2, row=0, sticky="NEW")
+        ).grid(column=2, row=0, sticky="EW")
 
         # Colors
         c_frame = ttk.Frame(notebook, padding=10)
@@ -185,6 +212,21 @@ class PreferencesDialog(ToplevelDialog):
         )
 
         # Fonts
+        def is_valid_font(new_value: str) -> bool:
+            """Validation routine for Combobox - if separator has been selected,
+            select Courier New instead.
+
+            Args:
+                new_value: New font family selected by user.
+
+            Returns:
+                True, because if invalid, it is fixed in this routine.
+            """
+            if new_value == self.COMBO_SEPARATOR:
+                preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier")
+                preferences.set(PrefKey.TEXT_FONT_FAMILY, "Courier New")
+            return True
+
         font_frame = ttk.Frame(notebook, padding=10)
         notebook.add(font_frame, text="Fonts")
         font_frame.columnconfigure(1, weight=1)
@@ -337,28 +379,6 @@ class PreferencesDialog(ToplevelDialog):
             command=choose_external_viewer,
         ).grid(row=0, column=1, sticky="NSEW")
 
-        def add_label_spinbox(
-            frame: ttk.Frame, row: int, label: str, key: PrefKey, tooltip: str
-        ) -> None:
-            """Add a label and spinbox to given frame.
-            Args:
-                frame: Frame to add label & spinbox to.
-                row: Which row in frame to add to.
-                label: Text for label.
-                key: Prefs key to use to store preference.
-                tooltip: Text for tooltip.
-            """
-            ttk.Label(frame, text=label).grid(column=0, row=row, sticky="NSE", pady=2)
-            spinbox = ttk.Spinbox(
-                frame,
-                textvariable=PersistentInt(key),
-                from_=0,
-                to=999,
-                width=5,
-            )
-            spinbox.grid(column=1, row=row, sticky="NW", padx=5, pady=2)
-            ToolTip(spinbox, tooltip)
-
         # Wrapping tab
         wrapping_frame = ttk.Frame(notebook, padding=10)
         notebook.add(wrapping_frame, text="Wrapping")
@@ -432,26 +452,6 @@ class PreferencesDialog(ToplevelDialog):
         advance_frame.columnconfigure(2, weight=1)
         notebook.add(advance_frame, text="Advanced")
 
-        add_label_spinbox(
-            advance_frame,
-            0,
-            "Text Line Spacing:",
-            PrefKey.TEXT_LINE_SPACING,
-            "Additional line spacing in text windows",
-        )
-        add_label_spinbox(
-            advance_frame,
-            1,
-            "Text Cursor Width:",
-            PrefKey.TEXT_CURSOR_WIDTH,
-            "Width of insert cursor in main text window",
-        )
-        ttk.Checkbutton(
-            advance_frame,
-            text="Highlight Cursor Line",
-            variable=PersistentBoolean(PrefKey.HIGHLIGHT_CURSOR_LINE),
-        ).grid(column=0, row=2, sticky="NW", pady=5)
-
         backup_btn = ttk.Checkbutton(
             advance_frame,
             text="Keep Backup Before Saving",
@@ -518,9 +518,21 @@ class PreferencesDialog(ToplevelDialog):
             "On - only convert straight single quotes to curly if certain\n"
             "Off - convert some straight single quotes inside double quotes to apostrophes",
         )
+
+        fns = ttk.Checkbutton(
+            advance_frame,
+            text="Show Anchor/Footnote in Split Window",
+            variable=PersistentBoolean(PrefKey.FOOTNOTE_SPLIT_WINDOW),
+        )
+        fns.grid(column=0, row=8, sticky="NEW", pady=5)
+        ToolTip(
+            fns,
+            "If split text window, show FN anchor in top, footnote in bottom",
+        )
+
         add_label_spinbox(
             advance_frame,
-            8,
+            9,
             "Regex timeout (seconds):",
             PrefKey.REGEX_TIMEOUT,
             "Longest time a regex search is allowed to take.\n"
@@ -528,7 +540,7 @@ class PreferencesDialog(ToplevelDialog):
         )
 
         ttk.Label(advance_frame, text="PNG compress command:").grid(
-            row=9, column=0, sticky="NSE", pady=5
+            row=10, column=0, sticky="NSE", pady=5
         )
         png_crush_entry = ttk.Entry(
             advance_frame,
@@ -536,7 +548,7 @@ class PreferencesDialog(ToplevelDialog):
             width=30,
         )
         png_crush_entry.grid(
-            row=9, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
+            row=10, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
         )
         ToolTip(
             png_crush_entry,
@@ -549,7 +561,7 @@ class PreferencesDialog(ToplevelDialog):
             advance_frame,
             text="Reset shortcuts to default (requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
-        ).grid(row=10, column=0, sticky="NSW", pady=5, columnspan=3)
+        ).grid(row=11, column=0, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",

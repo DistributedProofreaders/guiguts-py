@@ -111,27 +111,6 @@ class CheckerEntry:
             return HighlightTag.CHECKER_ERROR_PREFIX_1
         return HighlightTag.CHECKER_ERROR_PREFIX
 
-    def get_match_text(self, match_on_highlight: CheckerMatchType) -> str:
-        """Return portion of message text for matching.
-
-        Args:
-            match_on_highlight: Match type.
-
-        Returns:
-            Portion of message to match with
-        """
-        if match_on_highlight == CheckerMatchType.ALL_MESSAGES:
-            return "Match all"
-        if match_on_highlight == CheckerMatchType.ERROR_PREFIX:
-            return self.error_prefix
-        if (
-            match_on_highlight == CheckerMatchType.HIGHLIGHT
-            and self.hilite_start is not None
-            and self.hilite_end is not None
-        ):
-            return self.text[self.hilite_start : self.hilite_end]
-        return self.text
-
 
 class CheckerSortType(StrEnum):
     """Enum class to store Checker Dialog sort types."""
@@ -454,7 +433,7 @@ class CheckerDialog(ToplevelDialog):
         if match_on_highlight == CheckerMatchType.ALL_MESSAGES:
             all_string = "all listed problems"
         elif match_on_highlight == CheckerMatchType.ERROR_PREFIX:
-            all_string = "all with matching error type"
+            all_string = "all with matching type"
         elif match_on_highlight == CheckerMatchType.HIGHLIGHT:
             all_string = "all with matching highlighted portion of message"
         else:
@@ -1552,7 +1531,9 @@ class CheckerDialog(ToplevelDialog):
             return
         # Mark before starting so location can be selected later
         self.text.mark_set(MARK_ENTRY_TO_SELECT, f"{linenum}.0")
-        match_text = self.entries[entry_index].get_match_text(self.match_on_highlight)
+        match_text = self.get_match_text(
+            self.entries[entry_index], self.match_on_highlight
+        )
         if all_matching:
             # Work in reverse since may be deleting from list while iterating
             indices = range(len(self.entries) - 1, -1, -1)
@@ -1560,7 +1541,10 @@ class CheckerDialog(ToplevelDialog):
             indices = range(entry_index, entry_index + 1)
         count = 0
         for ii in indices:
-            if self.entries[ii].get_match_text(self.match_on_highlight) == match_text:
+            if (
+                self.get_match_text(self.entries[ii], self.match_on_highlight)
+                == match_text
+            ):
                 count += 1
                 if process and self.process_command:
                     self.process_command(self.entries[ii])
@@ -1648,7 +1632,8 @@ class CheckerDialog(ToplevelDialog):
         and jump to the line in the main text widget that corresponds to it.
 
         Args:
-            event: Event object containing mouse click position.
+            entry_index: Index of chosen entry.
+            focus: Whether to switch focus to text window.
         """
         if not self.text.winfo_exists():
             return
@@ -1671,11 +1656,6 @@ class CheckerDialog(ToplevelDialog):
             start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
             end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
             maintext().spotlight_range(IndexRange(start, end))
-            maintext().set_insert_index(
-                IndexRowCol(start),
-                focus=(focus and self.switch_focus_when_clicked),
-                see_end_rowcol=IndexRowCol(end),
-            )
             maintext().clear_selection()
         self.lift()
         if (
@@ -1683,6 +1663,21 @@ class CheckerDialog(ToplevelDialog):
             and self.view_options_dialog.winfo_exists()
         ):
             self.view_options_dialog.lift()
+        self.set_insert_from_entry(entry_index, focus)
+
+    def set_insert_from_entry(self, entry_index: int, focus: bool) -> None:
+        """Set insert position in text window based on selected entry."""
+        entry = self.entries[entry_index]
+        if entry.text_range is None:
+            return
+        start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
+        end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
+        if entry.text_range is not None:
+            maintext().set_insert_index(
+                IndexRowCol(start),
+                focus=(focus and self.switch_focus_when_clicked),
+                see_end_rowcol=IndexRowCol(end),
+            )
 
     @classmethod
     def mark_from_rowcol(cls, rowcol: IndexRowCol) -> str:
@@ -1695,3 +1690,26 @@ class CheckerDialog(ToplevelDialog):
             Name for mark, e.g. "Checker123.45"
         """
         return f"{cls.get_dlg_name()}{rowcol.index()}"
+
+    def get_match_text(
+        self, entry: CheckerEntry, match_on_highlight: CheckerMatchType
+    ) -> str:
+        """Return portion of message text for matching.
+
+        Args:
+            match_on_highlight: Match type.
+
+        Returns:
+            Portion of message to match with
+        """
+        if match_on_highlight == CheckerMatchType.ALL_MESSAGES:
+            return "Match all"
+        if match_on_highlight == CheckerMatchType.ERROR_PREFIX:
+            return entry.error_prefix
+        if (
+            match_on_highlight == CheckerMatchType.HIGHLIGHT
+            and entry.hilite_start is not None
+            and entry.hilite_end is not None
+        ):
+            return entry.text[entry.hilite_start : entry.hilite_end]
+        return entry.text

@@ -856,12 +856,12 @@ class MainText(tk.Text):
         self.peer_vscroll.grid(column=2, row=1, sticky="NS")
         self.peer["yscrollcommand"] = peer_vscroll_set
 
-        self._text_peer_focus: "MainText" | TextPeer = self
+        self.text_peer_focus: "MainText" | TextPeer = self
 
         # Track whether main text or peer most recently had focus
         def text_peer_focus_track(event: tk.Event) -> None:
             assert isinstance(event.widget, (MainText, TextPeer))
-            self._text_peer_focus = event.widget
+            self.text_peer_focus = event.widget
 
         self.bind_event("<FocusIn>", text_peer_focus_track, add=True, bind_peer=True)
 
@@ -1335,7 +1335,7 @@ class MainText(tk.Text):
         Returns:
             Main text widget or peer widget.
         """
-        return self._text_peer_focus
+        return self.text_peer_focus
 
     def bind_event(
         self,
@@ -3925,13 +3925,15 @@ class MainText(tk.Text):
         """Highlight double quotes (straight or curly) in current selection."""
         self.highlight_quotemarks('["“”]')
 
-    def spotlight_range(self, spot_range: IndexRange) -> None:
+    def spotlight_range(self, spot_range: IndexRange, add: bool = False) -> None:
         """Highlight the given range in the spotlight color.
 
         Args:
             spot_range: The range to be spotlighted.
+            add: Add spotlight, rather than replacing existing spotlights
         """
-        self.remove_spotlights()
+        if not add:
+            self.remove_spotlights()
         self.tag_add(
             HighlightTag.SPOTLIGHT, spot_range.start.index(), spot_range.end.index()
         )
