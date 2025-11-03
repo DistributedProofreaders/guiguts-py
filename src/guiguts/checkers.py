@@ -111,27 +111,6 @@ class CheckerEntry:
             return HighlightTag.CHECKER_ERROR_PREFIX_1
         return HighlightTag.CHECKER_ERROR_PREFIX
 
-    def get_match_text(self, match_on_highlight: CheckerMatchType) -> str:
-        """Return portion of message text for matching.
-
-        Args:
-            match_on_highlight: Match type.
-
-        Returns:
-            Portion of message to match with
-        """
-        if match_on_highlight == CheckerMatchType.ALL_MESSAGES:
-            return "Match all"
-        if match_on_highlight == CheckerMatchType.ERROR_PREFIX:
-            return self.error_prefix
-        if (
-            match_on_highlight == CheckerMatchType.HIGHLIGHT
-            and self.hilite_start is not None
-            and self.hilite_end is not None
-        ):
-            return self.text[self.hilite_start : self.hilite_end]
-        return self.text
-
 
 class CheckerSortType(StrEnum):
     """Enum class to store Checker Dialog sort types."""
@@ -454,7 +433,7 @@ class CheckerDialog(ToplevelDialog):
         if match_on_highlight == CheckerMatchType.ALL_MESSAGES:
             all_string = "all listed problems"
         elif match_on_highlight == CheckerMatchType.ERROR_PREFIX:
-            all_string = "all with matching error type"
+            all_string = "all with matching type"
         elif match_on_highlight == CheckerMatchType.HIGHLIGHT:
             all_string = "all with matching highlighted portion of message"
         else:
@@ -1552,7 +1531,9 @@ class CheckerDialog(ToplevelDialog):
             return
         # Mark before starting so location can be selected later
         self.text.mark_set(MARK_ENTRY_TO_SELECT, f"{linenum}.0")
-        match_text = self.entries[entry_index].get_match_text(self.match_on_highlight)
+        match_text = self.get_match_text(
+            self.entries[entry_index], self.match_on_highlight
+        )
         if all_matching:
             # Work in reverse since may be deleting from list while iterating
             indices = range(len(self.entries) - 1, -1, -1)
@@ -1560,7 +1541,10 @@ class CheckerDialog(ToplevelDialog):
             indices = range(entry_index, entry_index + 1)
         count = 0
         for ii in indices:
-            if self.entries[ii].get_match_text(self.match_on_highlight) == match_text:
+            if (
+                self.get_match_text(self.entries[ii], self.match_on_highlight)
+                == match_text
+            ):
                 count += 1
                 if process and self.process_command:
                     self.process_command(self.entries[ii])
@@ -1706,3 +1690,26 @@ class CheckerDialog(ToplevelDialog):
             Name for mark, e.g. "Checker123.45"
         """
         return f"{cls.get_dlg_name()}{rowcol.index()}"
+
+    def get_match_text(
+        self, entry: CheckerEntry, match_on_highlight: CheckerMatchType
+    ) -> str:
+        """Return portion of message text for matching.
+
+        Args:
+            match_on_highlight: Match type.
+
+        Returns:
+            Portion of message to match with
+        """
+        if match_on_highlight == CheckerMatchType.ALL_MESSAGES:
+            return "Match all"
+        if match_on_highlight == CheckerMatchType.ERROR_PREFIX:
+            return entry.error_prefix
+        if (
+            match_on_highlight == CheckerMatchType.HIGHLIGHT
+            and entry.hilite_start is not None
+            and entry.hilite_end is not None
+        ):
+            return entry.text[entry.hilite_start : entry.hilite_end]
+        return entry.text

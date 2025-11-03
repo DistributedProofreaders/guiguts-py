@@ -8,7 +8,7 @@ from typing import Optional, Any
 import regex as re
 import roman  # type: ignore[import-untyped]
 
-from guiguts.checkers import CheckerDialog, CheckerEntry
+from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerMatchType
 from guiguts.file import the_file
 from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
@@ -1268,9 +1268,10 @@ class FootnoteCheckerDialog(CheckerDialog):
                 [
                     "Left click: Select & find footnote",
                     "Right click: Hide item in list",
-                    "Shift-Right click: Also hide all matching items",
+                    "Shift-Right click: Also hide all items of same type (footnote/anchor)",
                 ]
             ),
+            match_on_highlight=CheckerMatchType.ERROR_PREFIX,
             **kwargs,
         )
 
@@ -1400,7 +1401,8 @@ class FootnoteCheckerDialog(CheckerDialog):
         self.fn_tidy_button.grid(column=3, row=3, pady=2, sticky="NSEW")
 
     def set_insert_from_entry(self, entry_index: int, focus: bool) -> None:
-        """Set insert position in text window based on selected entry.
+        """Set insert position in text window based on selected entry. Overridden
+        from CheckerDialog class.
 
         Displays anchor in top half and footnote in bottom half if text window is split,
         and preference is turned on.
@@ -1466,6 +1468,26 @@ class FootnoteCheckerDialog(CheckerDialog):
                 see_end_rowcol=IndexRowCol(end),
             )
         maintext().text_peer_focus = save_focus
+
+    def get_match_text(
+        self, entry: CheckerEntry, match_on_highlight: CheckerMatchType
+    ) -> str:
+        """Return portion of message text for matching. Overridden
+        from CheckerDialog class to just return "f" or "a".
+
+        Args:
+            match_on_highlight: Match type - unused
+
+        Returns:
+            "f" or "a"
+        """
+        if entry.hilite_start is not None and entry.hilite_end is not None:
+            return (
+                "f"
+                if "ootnote" in entry.text[entry.hilite_start : entry.hilite_end]
+                else "a"
+            )
+        return entry.text
 
 
 def footnote_check() -> None:
