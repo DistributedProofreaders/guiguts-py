@@ -33,7 +33,7 @@ from guiguts.content_providing import (
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
-from guiguts.footnotes import footnote_check, FootnoteIndexStyle
+from guiguts.footnotes import footnote_check, FootnoteIndexStyle, footnote_mask
 from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
 from guiguts.html_tools import (
     HTMLImageDialog,
@@ -1118,6 +1118,28 @@ class Guiguts:
         tools_menu.add_separator()
         tools_menu.add_button("~Page Separator Fixup...", page_separator_fixup)
         tools_menu.add_button("~Footnote Fixup...", footnote_check)
+        fn_mask_menu = tools_menu.add_submenu("M~ask/Unmask Footnote Styles")
+        fn_mask_menu.add_button(
+            "Mask ~Number", lambda: footnote_mask(FootnoteIndexStyle.NUMBER, True)
+        )
+        fn_mask_menu.add_button(
+            "Unmask N~umber", lambda: footnote_mask(FootnoteIndexStyle.NUMBER, False)
+        )
+        fn_mask_menu.add_separator()
+        fn_mask_menu.add_button(
+            "Mask ~Letter", lambda: footnote_mask(FootnoteIndexStyle.LETTER, True)
+        )
+        fn_mask_menu.add_button(
+            "Unmask L~etter", lambda: footnote_mask(FootnoteIndexStyle.LETTER, False)
+        )
+        fn_mask_menu.add_separator()
+        fn_mask_menu.add_button(
+            "Mask ~Roman", lambda: footnote_mask(FootnoteIndexStyle.ROMAN, True)
+        )
+        fn_mask_menu.add_button(
+            "Unmask R~oman", lambda: footnote_mask(FootnoteIndexStyle.ROMAN, False)
+        )
+
         tools_menu.add_button("Side~note Fixup...", lambda: illosn_check("Sidenote"))
         tools_menu.add_button(
             "~Illustration Fixup...", lambda: illosn_check("Illustration")
