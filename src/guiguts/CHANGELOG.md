@@ -1,6 +1,35 @@
 # Changelog
 
 
+## Version 2.0.7
+
+- Guiguts can now be run under Python versions from 3.11 to 3.14
+- Footnotes can now be reindexed beginning at 1 for each landing zone
+  (typically restarting for each chapter)
+- Footnote Fixup now detects if there are multiple anchors for the same
+  footnote, displaying them in the dialog and reindexing them correctly
+- New checkbox in Settings, Advanced tab, causes footnote anchor and footnote
+  text to be displayed in the two windows when Split Text Window is on
+- Support for multiple footnote styles in a file added, e.g. Numbered and
+  Roman: Mask/Unmask Footnote Styles submenu allows "masking" of one style
+  while another style is processed with Footnote Fixup (by changing the open
+  square bracket to curly); unmasking does the reverse
+- More than one class can now be entered in fields in HTML Markup
+- A new `--resetgeometry` command line argument has been added, which resets
+  the size and position of the main window and all dialogs to their default
+  values - primarily intended for when on-off use of multiple screens ends up
+  with dialogs being displayed "off-screen"
+
+### Bug fixes
+
+- Where two mid-paragraph illos followed one another, they were sometimes not
+  flagged as mid-paragraph, or the first of two illos might be flagged as
+  mid-paragraph when it wasn't
+- HTML Markup didn't add quotes round a single class name
+- PPhtml reported errors in CSS that was within comments
+- Control-clicking to fix quotes in Curly Quote check was broken
+
+
 ## Version 2.0.6
 
 - Word Frequency now has a Mixed Script check that will report errors such as
