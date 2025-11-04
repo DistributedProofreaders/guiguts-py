@@ -23,7 +23,8 @@
 ### Bug fixes
 
 - Where two mid-paragraph illos followed one another, they were sometimes not
-  flagged as mid-paragraph
+  flagged as mid-paragraph, or the first of two illos might be flagged as
+  mid-paragraph when it wasn't
 - HTML Markup didn't add quotes round a single class name
 - PPhtml reported errors in CSS that was within comments
 - Control-clicking to fix quotes in Curly Quote check was broken
