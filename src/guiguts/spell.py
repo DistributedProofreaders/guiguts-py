@@ -3,6 +3,7 @@
 import importlib.resources
 import logging
 from pathlib import Path
+import tkinter as tk
 from tkinter import ttk
 from typing import Callable, Optional, Any
 import regex as re
@@ -195,25 +196,30 @@ class SpellCheckerDialog(CheckerDialog):
 
         # When we add to global/project dict using (Shift+)Cmd/Ctrl click, we also want to
         # remove all entries from the list, so need to override default checker bindings.
+        def select_invoke_and_break(evt: tk.Event, button: ttk.Button) -> str:
+            """Select clicked message, then invoke given button and return "break"."""
+            self.select_entry_by_click(evt)
+            return invoke_and_break(button)
+
         mouse_bind(
             self.text,
             "Cmd/Ctrl+1",
-            lambda _: invoke_and_break(project_dict_button),
+            lambda evt: select_invoke_and_break(evt, project_dict_button),
         )
         mouse_bind(
             self.text,
             "Cmd/Ctrl+3",
-            lambda _: invoke_and_break(project_dict_button),
+            lambda evt: select_invoke_and_break(evt, project_dict_button),
         )
         mouse_bind(
             self.text,
             "Shift+Cmd/Ctrl+1",
-            lambda _: invoke_and_break(global_dict_button),
+            lambda evt: select_invoke_and_break(evt, global_dict_button),
         )
         mouse_bind(
             self.text,
             "Shift+Cmd/Ctrl+3",
-            lambda _: invoke_and_break(global_dict_button),
+            lambda evt: select_invoke_and_break(evt, global_dict_button),
         )
 
 
