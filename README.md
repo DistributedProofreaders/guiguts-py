@@ -298,6 +298,8 @@ poetry env use /usr/local/bin/python3
    * The last line above tests that Tk is working with Python. It should open a small
      window on your screen. Click the `Click me!` button to test mouse clicks, and
      `QUIT` to close the window, ending the test.
+   * Potentially useful workaround for poetry install problems on CachyOS (Arch Linux):
+     It may be necessary to run `poetry config keyring.enabled false`.
 2. Clone the [GG2 Github repo](https://github.com/DistributedProofreaders/guiguts-py)
    or a fork thereof.
 3. In the cloned GG2 directory, create a virtual environment using a version of
