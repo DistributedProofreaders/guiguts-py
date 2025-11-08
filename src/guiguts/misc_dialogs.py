@@ -519,20 +519,9 @@ class PreferencesDialog(ToplevelDialog):
             "Off - convert some straight single quotes inside double quotes to apostrophes",
         )
 
-        fns = ttk.Checkbutton(
-            advance_frame,
-            text="Show Anchor/Footnote in Split Window",
-            variable=PersistentBoolean(PrefKey.FOOTNOTE_SPLIT_WINDOW),
-        )
-        fns.grid(column=0, row=8, sticky="NEW", pady=5)
-        ToolTip(
-            fns,
-            "If split text window, show FN anchor in top, footnote in bottom",
-        )
-
         add_label_spinbox(
             advance_frame,
-            9,
+            8,
             "Regex timeout (seconds):",
             PrefKey.REGEX_TIMEOUT,
             "Longest time a regex search is allowed to take.\n"
@@ -540,7 +529,7 @@ class PreferencesDialog(ToplevelDialog):
         )
 
         ttk.Label(advance_frame, text="PNG compress command:").grid(
-            row=10, column=0, sticky="NSE", pady=5
+            row=9, column=0, sticky="NSE", pady=5
         )
         png_crush_entry = ttk.Entry(
             advance_frame,
@@ -548,7 +537,7 @@ class PreferencesDialog(ToplevelDialog):
             width=30,
         )
         png_crush_entry.grid(
-            row=10, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
+            row=9, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
         )
         ToolTip(
             png_crush_entry,
@@ -561,7 +550,7 @@ class PreferencesDialog(ToplevelDialog):
             advance_frame,
             text="Reset shortcuts to default (requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
-        ).grid(row=11, column=0, sticky="NSW", pady=5, columnspan=3)
+        ).grid(row=10, column=0, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",
