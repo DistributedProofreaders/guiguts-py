@@ -22,7 +22,7 @@ from guiguts.utilities import (
     IndexRowCol,
     IndexRange,
 )
-from guiguts.widgets import Busy
+from guiguts.widgets import Busy, ToolTip
 
 logger = logging.getLogger(__package__)
 
@@ -1393,6 +1393,17 @@ class FootnoteCheckerDialog(CheckerDialog):
         )
         self.move_to_para_button.grid(column=0, row=3, pady=2, sticky="NSEW")
         # --
+        fns = ttk.Checkbutton(
+            fixit_frame,
+            text="Show Anchor/FN in Split Window",
+            variable=PersistentBoolean(PrefKey.FOOTNOTE_SPLIT_WINDOW),
+        )
+        fns.grid(column=1, row=3, padx=2, columnspan=2)
+        ToolTip(
+            fns,
+            "If split text window, show anchor in top, footnote in bottom",
+        )
+
         self.fn_tidy_button = ttk.Button(
             fixit_frame,
             text="Tidy Footnotes",
@@ -1632,7 +1643,7 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
 
 
 def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
-    """Mask/Unmask FN/anchors of given style by replacing open bracket."""
+    """Mask/Unmask FN/anchors of given style by replacing brackets."""
     Busy.busy()
     maintext().undo_block_begin()
     if style == FootnoteIndexStyle.NUMBER:
@@ -1641,24 +1652,37 @@ def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
         label_regex = r"[A-Z]+"
     else:
         label_regex = r"[IVXLC]+\.?"
-    in_bracket = re.escape("[" if mask else "{")
-    out_bracket = "{" if mask else "["
+    in_bracket_open = re.escape("[" if mask else "{")
+    in_bracket_close = re.escape("]" if mask else "}")
+    out_bracket_open = "{" if mask else "["
+    out_bracket_close = "}" if mask else "]"
 
-    # Replace open bracket of footnotes
-    match_regex = rf"{in_bracket} *footnote *{label_regex}:"
+    # Replace brackets of footnotes
+    cvar = tk.IntVar()
+    match_regex = rf"{in_bracket_open} *footnote *{label_regex}:([^{in_bracket_close}]|\n)+?{in_bracket_close}"
     start = "1.0"
     while start := maintext().search(
-        match_regex, start, tk.END, regexp=True, nocase=True
+        match_regex, start, tk.END, regexp=True, nocase=True, count=cvar
     ):
-        maintext().replace(start, f"{start}+1c", out_bracket)
+        maintext().replace(start, f"{start}+1c", out_bracket_open)
+        maintext().replace(
+            f"{start}+{cvar.get()-1}c", f"{start}+{cvar.get()}c", out_bracket_close
+        )
 
-    # Replace open bracket of anchors
-    match_regex = rf"{in_bracket}{label_regex}]"
+    # Replace brackets of anchors
+    match_regex = rf"{in_bracket_open}{label_regex}{in_bracket_close}"
     start = "1.0"
     while start := maintext().search(
-        match_regex, start, tk.END, regexp=True, nocase=True
+        match_regex, start, tk.END, regexp=True, nocase=True, count=cvar
     ):
-        maintext().replace(start, f"{start}+1c", out_bracket)
+        illo_sn_check = maintext().get(f"{start}+1c", f"{start}+{cvar.get()-1}c")
+        if illo_sn_check in ("Illustration", "Sidenote"):
+            start = f"{start}+1c"
+            continue
+        maintext().replace(start, f"{start}+1c", out_bracket_open)
+        maintext().replace(
+            f"{start}+{cvar.get()-1}c", f"{start}+{cvar.get()}c", out_bracket_close
+        )
 
     # Refresh footnote list
     if FootnoteCheckerDialog.get_dialog() is not None:
