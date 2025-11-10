@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, Final, Iterator
+from typing import Any, Final, Iterator, Optional
 
 from PIL import Image, UnidentifiedImageError
 import regex as re
@@ -20,6 +20,7 @@ from guiguts.checkers import (
     CheckerEntrySeverity,
     CheckerViewOptionsDialog,
     CheckerFilterErrorPrefix,
+    MARK_ENTRY_TO_SELECT,
 )
 from guiguts.data import cp_files
 from guiguts.file import the_file
@@ -511,6 +512,8 @@ class HeadFootChecker:
             view_options_dialog_class=HeadFootViewOptionsDialog,
             view_options_filters=HEAD_FOOT_CHECKER_FILTERS,
         )
+        self.header_footer_list: list[tuple[int, str]] = []
+        self.saved_index: Optional[int] = 0
 
     def run(self) -> None:
         """Do the actual check and add messages to the dialog."""
@@ -605,6 +608,8 @@ class HeadFootChecker:
             IndexRange(start_rowcol, end_rowcol),
             error_prefix=error_prefix,
         )
+        # Store page number and head/foot string in entry custom data for later use
+        self.dialog.entries[-1].custom_data = (page_num, hf_prefix)
 
     def get_detailed_prefix(self, prefix: str, detail: str) -> str:
         """Add detail to header/footer prefix. Assumes valid arguments."""
@@ -632,6 +637,39 @@ class HeadFootChecker:
             ):
                 start_idx = maintext().index(f"{start_idx} -1l")
         maintext().delete(start_idx, end_idx)
+        # Save, then restore after re-run, which headers/footers are shown
+        self.save_header_footer_list()
+        self.dialog.rerun_command()
+        self.restore_header_footer_list()
+
+    def save_header_footer_list(self) -> None:
+        """Save list of headers/footers currently shown in dialog."""
+        self.header_footer_list = []
+        # Save which entry is currently selected
+        self.saved_index = self.dialog.current_entry_index()
+        # Save page and head/foot string for each visible entry
+        for entry in self.dialog.entries:
+            assert isinstance(entry.custom_data, tuple)
+            self.header_footer_list.append(entry.custom_data)
+
+    def restore_header_footer_list(self) -> None:
+        """Remove headers/footers from dialog so that list shows same
+        headers/footers as before re-run."""
+        idx_list = []
+        # Make list of indexes of entries to be removed
+        for idx, entry in enumerate(self.dialog.entries):
+            assert isinstance(entry.custom_data, tuple)
+            if entry.custom_data not in self.header_footer_list:
+                idx_list.append(idx)
+        # Remove entries and text from dialog in reverse order
+        for idx in reversed(idx_list):
+            linenum = self.dialog.linenum_from_entry_index(idx)
+            self.dialog.text.delete(f"{linenum}.0", f"{linenum + 1}.0")
+            del self.dialog.entries[idx]
+        # Move mark so that CheckerDialog code restores correct selection
+        if self.saved_index is not None:
+            linenum = self.dialog.linenum_from_entry_index(self.saved_index)
+            self.dialog.text.mark_set(MARK_ENTRY_TO_SELECT, f"{linenum}.0")
 
 
 class CPProcessingDialog(ToplevelDialog):
