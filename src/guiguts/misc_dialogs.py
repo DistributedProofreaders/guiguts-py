@@ -3330,6 +3330,7 @@ _common_characters: list[str] = [
     "¦",
     "º",
     "ª",
+    "\xad",
 ]
 
 _unicode_names: dict[str, list[str]] = {}
