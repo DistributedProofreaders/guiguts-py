@@ -985,16 +985,21 @@ class WordFrequencyDialog(ToplevelDialog):
             word_pair = re.sub(r"-\*?", " ", word)
             nohyp_word = re.sub(r"-\*?", "", word)
             twohyp_word = re.sub(r"-\*?", "--", word)
-            suspect = (
-                word_pair in word_pairs
-                or nohyp_word in all_words
-                or twohyp_word in emdash_words
-            )
+            # All-numeric hyphenated (1-13) is reported, but not variants (113, "1 13", 1--13)
+            if re.fullmatch("[0-9]+", nohyp_word):
+                wp_exists = False
+                nh_exists = False
+                th_exists = False
+            else:
+                wp_exists = word_pair in word_pairs
+                nh_exists = nohyp_word in all_words
+                th_exists = twohyp_word in emdash_words
+            suspect = wp_exists or nh_exists or th_exists
 
             if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
                 self.add_entry(word, freq, suspect=suspect)
                 word_output[word] = True
-            if word_pair in word_pairs:
+            if wp_exists:
                 if word not in word_output:
                     self.add_entry(word, freq, suspect=suspect)
                     word_output[word] = True
@@ -1003,7 +1008,7 @@ class WordFrequencyDialog(ToplevelDialog):
                     word_output[word_pair] = True
                     suspect_cnt += 1
             nohyp_word = re.sub(r"-\*?", "", word)
-            if nohyp_word in all_words:
+            if nh_exists:
                 if word not in word_output:
                     self.add_entry(word, freq, suspect=suspect)
                     word_output[word] = True
@@ -1012,7 +1017,7 @@ class WordFrequencyDialog(ToplevelDialog):
                     word_output[nohyp_word] = True
                     suspect_cnt += 1
             twohyp_word = re.sub(r"-\*?", "--", word)
-            if twohyp_word in emdash_words:
+            if th_exists:
                 if word not in word_output:
                     self.add_entry(word, freq, suspect=suspect)
                     word_output[word] = True
