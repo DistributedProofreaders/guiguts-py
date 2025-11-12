@@ -533,6 +533,7 @@ def spell_check(
         show_hide_buttons=False,
         show_process_buttons=False,
         switch_focus_when_clicked=False,
+        sort_custom_label="Freq",
         add_project_word_callback=add_project_word_callback,
         add_global_word_callback=add_global_word_callback,
     )
@@ -553,4 +554,6 @@ def spell_check(
             f"{spelling.word} ({spelling.frequency})" + bad_str,
             IndexRange(spelling.rowcol, end_rowcol),
         )
+        # Sort by frequency in descending order
+        checker_dialog.entries[-1].custom_data = -spelling.frequency
     checker_dialog.display_entries()
