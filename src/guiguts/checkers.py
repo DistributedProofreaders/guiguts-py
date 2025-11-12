@@ -103,6 +103,7 @@ class CheckerEntry:
         self.error_prefix = error_prefix
         assert ep_index in (0, 1)
         self.ep_index = ep_index
+        self.custom_data: Optional[Any] = None
 
     def error_prefix_tag(self) -> HighlightTag:
         """Return which tag to use to highlight error prefix."""

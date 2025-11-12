@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, Final, Iterator
+from typing import Any, Final, Iterator, Optional
 
 from PIL import Image, UnidentifiedImageError
 import regex as re
@@ -20,6 +20,7 @@ from guiguts.checkers import (
     CheckerEntrySeverity,
     CheckerViewOptionsDialog,
     CheckerFilterErrorPrefix,
+    MARK_ENTRY_TO_SELECT,
 )
 from guiguts.data import cp_files
 from guiguts.file import the_file
@@ -32,6 +33,7 @@ from guiguts.utilities import (
     cmd_ctrl_string,
     load_dict_from_json,
     IndexRange,
+    IndexRowCol,
     sing_plur,
 )
 from guiguts.preferences import PersistentBoolean, PrefKey, preferences
@@ -476,6 +478,61 @@ class HeadFootCheckerDialog(CheckerDialog):
         even_foot_btn["command"] = lambda: btn_clicked(3, even_foot_var, even_foot_btn)
         even_foot_btn.grid(row=0, column=3, padx=5)
         self.view_options_filters[3].on = True
+        self.header_footer_list: list[tuple[int, str]] = []
+        self.saved_index: Optional[int] = 0
+
+    def process_remove_entries(
+        self, process: bool, remove: bool, all_matching: bool
+    ) -> None:
+        """Overridden from CheckerDialog in order to facilitate re-run."""
+        super().process_remove_entries(process, remove, all_matching)
+        # Save, then restore after re-run, which headers/footers are shown
+        self.save_header_footer_list()
+        self.rerun_command()
+        self.restore_header_footer_list()
+        self.update_count_label()
+        # Select line that is now where the first processed/removed line was
+        entry_rowcol = IndexRowCol(self.text.index(MARK_ENTRY_TO_SELECT))
+        last_row = IndexRowCol(self.text.index(tk.END)).row - 1
+        if last_row > 0:
+            try:
+                entry_index = self.entry_index_from_linenum(
+                    min(entry_rowcol.row, last_row)
+                )
+            except IndexError:
+                return
+            self.select_entry_by_index(entry_index)
+
+    def save_header_footer_list(self) -> None:
+        """Save list of headers/footers currently shown in dialog."""
+        self.header_footer_list = []
+        # Save which entry is currently selected
+        self.saved_index = self.current_entry_index()
+        # Save page and head/foot string for each visible entry
+        for entry in self.entries:
+            assert isinstance(entry.custom_data, tuple)
+            self.header_footer_list.append(entry.custom_data)
+
+    def restore_header_footer_list(self) -> None:
+        """Remove headers/footers from dialog so that list shows same
+        headers/footers as before re-run."""
+        idx_list = []
+        # Make list of indexes of entries to be removed
+        for idx, entry in enumerate(self.entries):
+            assert isinstance(entry.custom_data, tuple)
+            if entry.custom_data not in self.header_footer_list:
+                idx_list.append(idx)
+        # Remove entries and text from dialog in reverse order
+        for idx in reversed(idx_list):
+            linenum = self.linenum_from_entry_index(idx)
+            self.text.delete(f"{linenum}.0", f"{linenum + 1}.0")
+            del self.entries[idx]
+            self.count_linked_entries -= 1
+            self.count_suspects -= 1
+        # Move mark so that CheckerDialog code restores correct selection
+        if self.saved_index is not None:
+            linenum = self.linenum_from_entry_index(self.saved_index)
+            self.text.mark_set(MARK_ENTRY_TO_SELECT, f"{linenum}.0")
 
 
 class HeadFootChecker:
@@ -605,6 +662,8 @@ class HeadFootChecker:
             IndexRange(start_rowcol, end_rowcol),
             error_prefix=error_prefix,
         )
+        # Store page number and head/foot string in entry custom data for later use
+        self.dialog.entries[-1].custom_data = (page_num, hf_prefix)
 
     def get_detailed_prefix(self, prefix: str, detail: str) -> str:
         """Add detail to header/footer prefix. Assumes valid arguments."""
