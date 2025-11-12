@@ -20,6 +20,7 @@ from guiguts.checkers import (
     CheckerEntrySeverity,
     CheckerViewOptionsDialog,
     CheckerFilterErrorPrefix,
+    CheckerSortType,
     MARK_ENTRY_TO_SELECT,
 )
 from guiguts.data import cp_files
@@ -1558,6 +1559,41 @@ def cp_fix_englifh() -> None:
                 checker_dialog.add_entry(line, IndexRange(start_rowcol, end_rowcol))
             start = f"{start}+{len(englifh)}c"
     checker_dialog.display_entries()
+    Busy.unbusy()
+
+
+def cp_list_good_words() -> None:
+    """List good words in project dictionary."""
+
+    class CPGoodWordsCheckerDialog(CheckerDialog):
+        """CP Good Words List Dialog."""
+
+        manual_page = "Content_Providing_Menu#List_Good_Words_in_Project_Dictionary"
+
+        def __init__(self, **kwargs: Any) -> None:
+            """Initialize CP Good Words List dialog."""
+            if self.get_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT) is None:
+                self.save_dialog_pref(
+                    PrefKey.CHECKERDIALOG_SORT_TYPE_DICT, CheckerSortType.ALPHABETIC
+                )
+
+            super().__init__(
+                "Good Words in Project Dictionary",
+                tooltip="Right click: Hide word",
+                **kwargs,
+            )
+            self.rowcol_radio["text"] = "Order added"
+
+    checker_dialog = CPGoodWordsCheckerDialog.show_dialog(
+        rerun_command=cp_list_good_words,
+    )
+    checker_dialog.reset()
+
+    for word in the_file().project_dict.good_words.keys():
+        checker_dialog.add_entry(word)
+    checker_dialog.display_entries()
+    # Remove "Check complete" message
+    checker_dialog.text.delete(f"{tk.END}-3l", tk.END)
     Busy.unbusy()
 
 

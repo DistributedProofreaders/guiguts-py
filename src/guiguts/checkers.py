@@ -379,13 +379,14 @@ class CheckerDialog(ToplevelDialog):
             self.save_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT, sort_type.get())
             self.display_entries()
 
-        ttk.Radiobutton(
+        self.rowcol_radio = ttk.Radiobutton(
             sort_frame,
             text="Line & Col",
             command=sort_type_changed,
             variable=sort_type,
             value=CheckerSortType.ROWCOL,
-        ).grid(row=0, column=1, sticky="NS", padx=2)
+        )
+        self.rowcol_radio.grid(row=0, column=1, sticky="NS", padx=2)
         ttk.Radiobutton(
             sort_frame,
             text="Alpha/Type",
