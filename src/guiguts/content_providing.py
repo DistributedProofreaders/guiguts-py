@@ -1358,6 +1358,45 @@ class CPRenumberDialog(ToplevelDialog):
 
 def cp_fix_common_scannos() -> None:
     """Fix common CP scannos."""
+
+    class CPScannosCheckerDialog(CheckerDialog):
+        """CP Common Scannos Checker Dialog."""
+
+        manual_page = "Content_Providing_Menu#Fix_Common_English_Scannos"
+
+        def __init__(self, **kwargs: Any) -> None:
+            """Initialize CP Common Scannos Checker dialog."""
+            super().__init__(
+                "CP Common English Scannos Check",
+                tooltip="\n".join(
+                    [
+                        "Left click: Select & find occurrence of scanno",
+                        "Right click: Hide message",
+                        f"{cmd_ctrl_string()} left click: Fix occurrence of scanno",
+                        f"{cmd_ctrl_string()} right click: Fix occurrence, then hide message",
+                        f"Shift {cmd_ctrl_string()} left click: Fix all scannos listed",
+                    ]
+                ),
+                **kwargs,
+            )
+
+    def fix_scanno(checker_entry: CheckerEntry) -> None:
+        """Fix the given scanno."""
+        if checker_entry.text_range is None:
+            return
+        start_mark = CPScannosCheckerDialog.mark_from_rowcol(
+            checker_entry.text_range.start
+        )
+        end_mark = CPScannosCheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
+        replacement = re.sub(".+→ ", "", checker_entry.text)
+        maintext().replace(start_mark, end_mark, replacement)
+
+    checker_dialog = CPScannosCheckerDialog.show_dialog(
+        rerun_command=cp_fix_common_scannos,
+        process_command=fix_scanno,
+        match_on_highlight=CheckerMatchType.ALL_MESSAGES,
+    )
+
     # Load dictionary of scannos
     scannos_dict = load_dict_from_json(CP_SCANNOS)
     if scannos_dict is None:
@@ -1367,7 +1406,7 @@ def cp_fix_common_scannos() -> None:
 
     slurp_text = maintext().get_text()
 
-    n_fixed = 0
+    checker_dialog.reset()
     for scanno, correction in scannos_dict.items():
         # Much quicker to search in slurped text before doing search in maintext()
         # Better search also available with negative lookbehind which Tcl doesn't support.
@@ -1377,16 +1416,58 @@ def cp_fix_common_scannos() -> None:
         while start := maintext().search(
             rf"\y{scanno}(?![-\w'])", start, tk.END, regexp=True
         ):
-            maintext().delete(start, f"{start}+{len(scanno)}c")
-            maintext().insert(start, correction)
-            start = f"{start}+{len(correction)}c"
-            n_fixed += 1
+            start_rowcol = maintext().rowcol(start)
+            end_rowcol = maintext().rowcol(f"{start}+{len(scanno)}c")
+            line = f"{scanno} → {correction}"
+            checker_dialog.add_entry(line, IndexRange(start_rowcol, end_rowcol))
+            start = f"{start}+{len(scanno)}c"
+    checker_dialog.display_entries()
     Busy.unbusy()
-    logger.info(f"{sing_plur(n_fixed, 'common scanno')} fixed")
 
 
 def cp_fix_englifh() -> None:
     """Fix Englifh-->English."""
+
+    class OldeEnglifhCheckerDialog(CheckerDialog):
+        """Olde Englifh Checker Dialog."""
+
+        manual_page = "Content_Providing_Menu#Fix_Olde_Englifh"
+
+        def __init__(self, **kwargs: Any) -> None:
+            """Initialize Olde Englifh Checker dialog."""
+            super().__init__(
+                "Olde Englifh Check",
+                tooltip="\n".join(
+                    [
+                        "Left click: Select & find occurrence of Englifh",
+                        "Right click: Hide message",
+                        f"{cmd_ctrl_string()} left click: Fix occurrence of Englifh",
+                        f"{cmd_ctrl_string()} right click: Fix occurrence, then hide message",
+                        f"Shift {cmd_ctrl_string()} left click: Fix all Englifh words listed",
+                    ]
+                ),
+                **kwargs,
+            )
+
+    def fix_englifh(checker_entry: CheckerEntry) -> None:
+        """Fix the given Englifh word."""
+        if checker_entry.text_range is None:
+            return
+        start_mark = OldeEnglifhCheckerDialog.mark_from_rowcol(
+            checker_entry.text_range.start
+        )
+        end_mark = OldeEnglifhCheckerDialog.mark_from_rowcol(
+            checker_entry.text_range.end
+        )
+        replacement = re.sub(".+→ ", "", checker_entry.text)
+        maintext().replace(start_mark, end_mark, replacement)
+
+    checker_dialog = OldeEnglifhCheckerDialog.show_dialog(
+        rerun_command=cp_fix_englifh,
+        process_command=fix_englifh,
+        match_on_highlight=CheckerMatchType.ALL_MESSAGES,
+    )
+
     # Load dictionary of changes
     englifh_dict = load_dict_from_json(CP_ENGLIFH)
     if englifh_dict is None:
@@ -1396,8 +1477,6 @@ def cp_fix_englifh() -> None:
 
     slurp_text = maintext().get_text().lower()
 
-    n_fs = 0
-    n_ast = 0
     for englifh, english in englifh_dict.items():
         # Much quicker to search in slurped text before doing search in maintext()
         if not re.search(rf"\b{englifh}\b", slurp_text):
@@ -1414,24 +1493,13 @@ def cp_fix_englifh() -> None:
                 o if o.isupper() else e for e, o in zip(english, original)
             )
             if replacement != original:
-                maintext().delete(start, end)
-                maintext().insert(start, replacement)
-                if "*" in replacement:
-                    n_ast += 1
-                else:
-                    n_fs += 1
-            start = f"{start}+{len(replacement)}c"
+                start_rowcol = maintext().rowcol(start)
+                end_rowcol = maintext().rowcol(f"{start}+{len(englifh)}c")
+                line = f"{englifh} → {replacement}"
+                checker_dialog.add_entry(line, IndexRange(start_rowcol, end_rowcol))
+            start = f"{start}+{len(englifh)}c"
+    checker_dialog.display_entries()
     Busy.unbusy()
-    if n_ast + n_fs == 0:
-        logger.info("No Olde Englifh replacements made")
-    elif n_ast == 0:
-        logger.info(f"{sing_plur(n_fs, 'f→s replacement')} made")
-    elif n_fs == 0:
-        logger.info(f"{sing_plur(n_ast, 'f→* replacement')} made")
-    else:
-        logger.info(
-            f"{sing_plur(n_ast+n_fs, 'Olde Englifh replacement')} made ({n_fs} f→s; {n_ast} f→*)"
-        )
 
 
 def cp_fix_empty_pages() -> None:

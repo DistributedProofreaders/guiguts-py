@@ -1526,8 +1526,12 @@ class CheckerDialog(ToplevelDialog):
         entry_index = self.current_entry_index()
         if entry_index is None:
             return
-        linenum = self.text.get_select_line_num()
-        if linenum is None:
+        linenum = (
+            self.linenum_from_entry_index(0)
+            if self.match_on_highlight == CheckerMatchType.ALL_MESSAGES
+            else self.text.get_select_line_num()
+        )
+        if not linenum:
             return
         # Mark before starting so location can be selected later
         self.text.mark_set(MARK_ENTRY_TO_SELECT, f"{linenum}.0")
