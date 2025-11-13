@@ -118,6 +118,7 @@ class CheckerSortType(StrEnum):
 
     ALPHABETIC = auto()
     ROWCOL = auto()
+    CUSTOM = auto()
 
 
 class CheckerFilter:
@@ -285,6 +286,8 @@ class CheckerDialog(ToplevelDialog):
         process_command: Optional[Callable[[CheckerEntry], None]] = None,
         sort_key_rowcol: Optional[Callable[[CheckerEntry], tuple]] = None,
         sort_key_alpha: Optional[Callable[[CheckerEntry], tuple]] = None,
+        sort_key_custom: Optional[Callable[[CheckerEntry], tuple]] = None,
+        sort_custom_label: str = "",
         show_suspects_only: bool = False,
         clear_on_undo_redo: bool = False,
         view_options_dialog_class: Optional[type[CheckerViewOptionsDialog]] = None,
@@ -306,6 +309,8 @@ class CheckerDialog(ToplevelDialog):
             process_command: Function to call to "process" the current error, e.g. swap he/be.
             sort_key_rowcol: Function to sort by row & column.
             sort_key_alpha: Function to sort by alpha/type.
+            sort_key_custom: Function to sort by custom values.
+            sort_custom_label: Label for custom sort radio button.
             show_suspects_only: True to show "Suspects only" checkbutton.
             clear_on_undo_redo: True to cause dialog to be cleared if Undo/Redo are used.
             view_options_dialog_class: Class to use for a View Options dialog.
@@ -393,6 +398,14 @@ class CheckerDialog(ToplevelDialog):
             variable=sort_type,
             value=CheckerSortType.ALPHABETIC,
         ).grid(row=0, column=2, sticky="NS", padx=2)
+        if sort_custom_label:
+            ttk.Radiobutton(
+                sort_frame,
+                text=sort_custom_label,
+                command=sort_type_changed,
+                variable=sort_type,
+                value=CheckerSortType.CUSTOM,
+            ).grid(row=0, column=3, sticky="NS", padx=2)
 
         def copy_errors() -> None:
             """Copy text messages to clipboard."""
@@ -658,6 +671,7 @@ class CheckerDialog(ToplevelDialog):
         self.process_command = process_command
         self.rowcol_key = sort_key_rowcol or CheckerDialog.sort_key_rowcol
         self.alpha_key = sort_key_alpha or CheckerDialog.sort_key_alpha
+        self.custom_key = sort_key_custom or CheckerDialog.sort_key_custom
 
         def do_clear_on_undo_redo() -> None:
             """If undo/redo operation should trigger user to Re-run tool, clear dialog."""
@@ -789,6 +803,16 @@ class CheckerDialog(ToplevelDialog):
             entry.text_range.start.row,
             entry.text_range.start.col,
         )
+
+    @classmethod
+    def sort_key_custom(
+        cls,
+        entry: CheckerEntry,
+    ) -> tuple[int, Any, str, str, int, int]:
+        """Default sort key function to sort entries by custom data, then same as
+        sort_key_alpha."""
+        (sec, low, txt, row, col) = CheckerDialog.sort_key_alpha(entry)
+        return (sec, entry.custom_data, low, txt, row, col)
 
     @classmethod
     def checker_orphan_wrapper(
@@ -1130,12 +1154,12 @@ class CheckerDialog(ToplevelDialog):
         """
 
         sort_key: Callable[[CheckerEntry], tuple]
-        if (
-            self.get_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT)
-            == CheckerSortType.ALPHABETIC
-        ):
+        sort_type = self.get_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT)
+        if sort_type == CheckerSortType.ALPHABETIC:
             sort_key = self.alpha_key
-        else:
+        elif sort_type == CheckerSortType.CUSTOM:
+            sort_key = self.custom_key
+        else:  # Default to ROWCOL (None if dialog has never changed its sort setting)
             sort_key = self.rowcol_key
         self.entries.sort(key=sort_key)
         self.text.delete("1.0", tk.END)
