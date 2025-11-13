@@ -30,6 +30,7 @@ from guiguts.content_providing import (
     cp_compress_pngs,
     CPCharSuitesDialog,
     CPRenumberDialog,
+    cp_list_good_words,
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -856,6 +857,8 @@ class Guiguts:
             "~Renumber Pages And PNG Files...", CPRenumberDialog.show_dialog
         )
         cp_menu.add_button("~Export As Prep Text Files...", export_prep_text_files)
+        cp_menu.add_separator()
+        cp_menu.add_button("~List Good Words in Project Dictionary", cp_list_good_words)
         cp_menu.add_separator()
         cp_menu.add_button("Import ~TIA Abbyy OCR File...", import_tia_ocr_file)
 
