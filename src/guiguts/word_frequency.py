@@ -13,7 +13,7 @@ import regex as re
 from guiguts.content_providing import CPCharSuitesDialog
 from guiguts.maintext import maintext, HighlightTag
 from guiguts.mainwindow import ScrolledReadOnlyText
-from guiguts.misc_tools import tool_save
+from guiguts.misc_tools import tool_save, do_open_ngram
 from guiguts.preferences import (
     preferences,
     PersistentBoolean,
@@ -422,6 +422,8 @@ class WordFrequencyDialog(ToplevelDialog):
         )
         _, event = process_accel("Cmd/Ctrl+1")
         self.text.bind(event, self.search_word)
+        _, event = process_accel("Shift+Cmd/Ctrl+1")
+        self.text.bind(event, self.open_ngram)
 
         # Bind keystrokes to search function
         self.text.bind("<Key>", self.goto_word_by_letters)
@@ -468,7 +470,8 @@ class WordFrequencyDialog(ToplevelDialog):
                 [
                     "Left click: Find first match; click again for next match",
                     "Shift Left click: Find last match; click again for previous match",
-                    f"{cmd_ctrl_string()}-left click: Find using Search dialog",
+                    f"{cmd_ctrl_string()} left click: Find using Search dialog",
+                    f"Shift {cmd_ctrl_string()} left click: Open in Google Books Ngram Viewer",
                 ]
             ),
             use_pointer_pos=True,
@@ -831,6 +834,35 @@ class WordFrequencyDialog(ToplevelDialog):
         dlg.search_box_set(match_word)
         dlg.display_message()
 
+        return "break"
+
+    def open_ngram(self, event: tk.Event) -> str:
+        """Open Google Ngram viewer with selected word."""
+        try:
+            entry_index = self.entry_index_from_click(event)
+        except IndexError:
+            return "break"
+        self.text.select_line(entry_index + 1)
+        word = self.entries[entry_index].word
+        content = word
+
+        # If in Hyphen display, add suspects to content
+        if preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.HYPHENS:
+            # If chosen word is a suspect, use the related suspects
+            if self.entries[entry_index].suspect:
+                testword = re.sub("[- ]+", "", word)
+                for entry in self.entries:
+                    if (
+                        entry.word != word
+                        and re.sub("[- ]+", "", entry.word) == testword
+                    ):
+                        content = f"{content},{entry.word}"
+            # If chosen word is hyphenated and non-hyphen version not in text,
+            # manually add the non-hyphen version to content
+            else:
+                content = f"{content},{word.replace('-','')}"
+
+        do_open_ngram(content)
         return "break"
 
     def entry_index_from_click(self, event: tk.Event) -> int:

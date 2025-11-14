@@ -546,11 +546,31 @@ class PreferencesDialog(ToplevelDialog):
             "Clear the field completely to use built-in compression (quicker but less effective).",
         )
 
+        ttk.Label(advance_frame, text="Google Ngram parameters:").grid(
+            row=10, column=0, sticky="NSE", pady=5
+        )
+        ngram_entry = ttk.Entry(
+            advance_frame,
+            textvariable=PersistentString(PrefKey.NGRAM_PARAMETERS),
+            width=30,
+        )
+        ngram_entry.grid(
+            row=10, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
+        )
+        ToolTip(
+            ngram_entry,
+            "Parameters to be added to the Google Books Ngram URL.\n"
+            'Each parameter must be preceded by "&", for example,\n'
+            '"&corpus=en-2019&year_start=1700&year_end=2000".\n'
+            'Corpus can be a supported language code, e.g. "de", "fr", "es", etc.\n'
+            'It can also include a year to select a specific dataset, e.g. "es-2019".',
+        )
+
         ttk.Button(
             advance_frame,
             text="Reset shortcuts to default (requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
-        ).grid(row=10, column=0, sticky="NSW", pady=5, columnspan=3)
+        ).grid(row=11, column=0, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",

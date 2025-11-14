@@ -227,6 +227,7 @@ class PrefKey(StrEnum):
     DID_YOU_KNOW_LAST_SHOWN = auto()
     DID_YOU_KNOW_INTERVAL = auto()
     DID_YOU_KNOW_INDEX = auto()
+    NGRAM_PARAMETERS = auto()
 
 
 class Preferences:
