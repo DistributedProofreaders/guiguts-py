@@ -230,7 +230,10 @@ class Guiguts:
 
         def check_save_and_destroy() -> None:
             if self.file.check_save():
-                root().destroy()
+                try:
+                    root().destroy()
+                except tk.TclError:
+                    pass  # Nothing we can do at this stage if Tcl/Tk fails to shut down nicely
 
         root().protocol("WM_DELETE_WINDOW", check_save_and_destroy)
 
