@@ -23,7 +23,6 @@ from guiguts.content_providing import (
     import_tia_ocr_file,
     DehyphenatorChecker,
     HeadFootChecker,
-    CPProcessingDialog,
     cp_fix_common_scannos,
     cp_fix_englifh,
     cp_fix_empty_pages,
@@ -31,6 +30,7 @@ from guiguts.content_providing import (
     CPCharSuitesDialog,
     CPRenumberDialog,
     cp_list_good_words,
+    cp_show_process_dialog,
 )
 from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
@@ -752,6 +752,7 @@ class Guiguts:
             PrefKey.CP_PNG_CRUSH_COMMAND, "pngcrush -q -reduce $in $out"
         )
         preferences.set_default(PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS, False)
+        preferences.set_default(PrefKey.CP_FILTER_VERBOSE, False)
         preferences.set_default(PrefKey.INITIAL_DIR, os.path.expanduser("~"))
         preferences.set_default(PrefKey.RELEASE_NOTES_SHOWN, "2.0.0")
         preferences.set_default(PrefKey.DID_YOU_KNOW_INTERVAL, DidYouKnowDialog.DAILY)
@@ -864,7 +865,7 @@ class Guiguts:
         )
         cp_menu.add_separator()
         cp_menu.add_button("Run ~Dehyphenator...", lambda: DehyphenatorChecker().run())
-        cp_menu.add_button("~Filter File...", CPProcessingDialog.show_dialog)
+        cp_menu.add_button("~Filter File...", cp_show_process_dialog)
         cp_menu.add_button("Fix ~Common English Scannos", cp_fix_common_scannos)
         cp_menu.add_button("Add [~Blank Page] to Empty Pages", cp_fix_empty_pages)
         cp_menu.add_button("Fix ~Olde Englifh", cp_fix_englifh)
