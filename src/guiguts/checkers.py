@@ -1552,11 +1552,14 @@ class CheckerDialog(ToplevelDialog):
         entry_index = self.current_entry_index()
         if entry_index is None:
             return
-        linenum = (
-            self.linenum_from_entry_index(0)
-            if self.match_on_highlight == CheckerMatchType.ALL_MESSAGES
-            else self.text.get_select_line_num()
-        )
+        linenum = self.text.get_select_line_num()
+        # If doing Fix All with an "ALL_MESSAGES" match, it's OK to not have a selection
+        if (
+            self.match_on_highlight == CheckerMatchType.ALL_MESSAGES
+            and all_matching
+            and not linenum
+        ):
+            linenum = self.linenum_from_entry_index(0)
         if not linenum:
             return
         # Mark before starting so location can be selected later
