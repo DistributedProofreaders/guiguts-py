@@ -222,6 +222,7 @@ class PrefKey(StrEnum):
     CP_CURLY_QUOTES = auto()
     CP_PNG_CRUSH_COMMAND = auto()
     CP_HIGHLIGHT_CHARSUITE_ORPHANS = auto()
+    CP_FILTER_VERBOSE = auto()
     INITIAL_DIR = auto()
     RELEASE_NOTES_SHOWN = auto()
     DID_YOU_KNOW_LAST_SHOWN = auto()
