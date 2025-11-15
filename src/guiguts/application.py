@@ -119,6 +119,7 @@ from guiguts.misc_tools import (
     ScannoCheckerDialog,
     RegexCheckerDialog,
     convert_sequential,
+    open_ngram,
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
@@ -656,10 +657,6 @@ class Guiguts:
                 ],
                 ["Onelook.com (several dictionaries)", "https://www.onelook.com/?w=$t"],
                 [
-                    "Google Books Ngram Viewer",
-                    "https://books.google.com/ngrams/graph?content=$t",
-                ],
-                [
                     "Shape Catcher (Unicode character finder)",
                     "https://shapecatcher.com",
                 ],
@@ -760,6 +757,9 @@ class Guiguts:
         preferences.set_default(PrefKey.DID_YOU_KNOW_INTERVAL, DidYouKnowDialog.DAILY)
         preferences.set_default(PrefKey.DID_YOU_KNOW_LAST_SHOWN, "2025-09-01")
         preferences.set_default(PrefKey.DID_YOU_KNOW_INDEX, -1)
+        preferences.set_default(
+            PrefKey.NGRAM_PARAMETERS, "&corpus=en-2019&year_start=1700&year_end=2000"
+        )
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -768,6 +768,20 @@ class Guiguts:
         # If `--nohome` argument given, Prefs are not loaded & saved in Prefs file
         preferences.set_permanent(not self.args.nohome)
         preferences.load(self.args.prefsfile)
+
+        # Deal with previous values that need to be overridden manually.
+        # It won't work to just change the defaults above for the custom menu, because
+        # if any custom menu entry has been changed, all custom menu entries will have
+        # been saved in the prefs file, thus overriding the above defaults.
+        # If user has not changed Ngrams entry from the default value, remove it
+        # since it is now available via the Tools menu, with improved flexibility.
+        custom_menu: list[list[str]] = preferences.get(PrefKey.CUSTOM_MENU_ENTRIES)
+        if len(custom_menu) >= 3 and custom_menu[2] == [
+            "Google Books Ngram Viewer",
+            "https://books.google.com/ngrams/graph?content=$t",
+        ]:
+            del custom_menu[2]
+        preferences.set(PrefKey.CUSTOM_MENU_ENTRIES, custom_menu)
 
     # Lay out menus
     def init_menus(self) -> None:
@@ -1211,6 +1225,10 @@ class Guiguts:
         tools_menu.add_button(
             "PP Wor~kbench (opens in browser)",
             lambda: webbrowser.open("https://www.pgdp.net/ppwb/"),
+        )
+        tools_menu.add_button(
+            "Google Books Ngram ~Viewer",
+            open_ngram,
         )
 
     def init_text_menu(self) -> None:

@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Callable, Optional, Any, TypeVar
 import unicodedata
+import webbrowser
 
 import regex as re
 
@@ -2773,3 +2774,22 @@ def convert_sequential() -> None:
         maintext().delete(start, f"{start}+4c")
         maintext().insert(start, str(counter))
         counter += 1
+
+
+def open_ngram() -> None:
+    """Open Google Books Ngram viewer, using selected text if any.
+    If a single hyphenated word, compare with unhyphenated."""
+    content = re.sub(r"\s+", " ", maintext().selected_text().strip())
+    # If single hyphenated word, add non-hyphenated version
+    if "-" in content and "," not in content and " " not in content:
+        content = f"{content},{content.replace('-','')}"
+    if not content:  # Default content to same as Ngram website
+        content = r"Albert%20Einstein,Sherlock%20Holmes,Frankenstein"
+    do_open_ngram(content)
+
+
+def do_open_ngram(content: str) -> None:
+    """Open Google Books Ngram viewer with given content."""
+    base_url = "https://books.google.com/ngrams/graph?content="
+    params = preferences.get(PrefKey.NGRAM_PARAMETERS)
+    webbrowser.open(f"{base_url}{content}{params}")
