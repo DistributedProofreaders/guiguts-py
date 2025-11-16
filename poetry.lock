@@ -1433,80 +1433,6 @@ files = [
 ]
 
 [[package]]
-name = "unicodedata2"
-version = "17.0.0"
-description = "Unicodedata backport updated to the latest Unicode version."
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "unicodedata2-17.0.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:3427d14be5a3511fa6b34017dce335bca4b4fadaab53a4c0269ca9f5e15a6341"},
-    {file = "unicodedata2-17.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:dd3a62a3e496043189c916eb391135f7d8ff5dbbd73dd455b1fef84142cabbd9"},
-    {file = "unicodedata2-17.0.0-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:55002bc45cfbbd4901d1c234aca68a1bce73a2bdd6f5ce747a93242fb25367f4"},
-    {file = "unicodedata2-17.0.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:361d421a383cd6e4147b8902938d5ff5b373ec89378c0f1d6bc87d04eb8efb05"},
-    {file = "unicodedata2-17.0.0-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:65e7041bb3bbb59d2424911c88da5f09741c232a0e7689d9554cf8b5a78f7b15"},
-    {file = "unicodedata2-17.0.0-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:bd4dc5e23ad1ebde78cd3c62acc995e4fd067eca58f0ae27bf8559109c301fab"},
-    {file = "unicodedata2-17.0.0-cp310-cp310-win32.whl", hash = "sha256:5b3ddff14895052b4e45a910e0626990e6cd6f26c5ec74998cf4286abbfa59e0"},
-    {file = "unicodedata2-17.0.0-cp310-cp310-win_amd64.whl", hash = "sha256:1f0fad1042e5231315a84bee3fafd650f3dd04794994af38582a0b0826869efc"},
-    {file = "unicodedata2-17.0.0-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:9e553de5378fb60d5bf426d5dd87038fff0b863376f57f59f9b57ab7bd37c126"},
-    {file = "unicodedata2-17.0.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b7c1ccfb4b17a762803d1f137b615e63c9d6c7b23a31945aab56265fd0f1c426"},
-    {file = "unicodedata2-17.0.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:50036b14ac5c53b607b0b98c67e0dfab5b1029e03735a7c2a0db6e563e0b0375"},
-    {file = "unicodedata2-17.0.0-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:6cf4361e6c0a3385d48ed07c0c2c8af96221b1c20f2b52ba6b3ecc3d8ebcfa4c"},
-    {file = "unicodedata2-17.0.0-cp311-cp311-win32.whl", hash = "sha256:640f2d91067338bbeac92eb9333f185d0ac293a65f2d2757ba4040f94582f1ef"},
-    {file = "unicodedata2-17.0.0-cp311-cp311-win_amd64.whl", hash = "sha256:25c336c7dc20fe4b4dea8ebe1e39304c2fd81cf61d1b979f9086c1d3f3b6be11"},
-    {file = "unicodedata2-17.0.0-cp312-cp312-macosx_10_13_universal2.whl", hash = "sha256:e5bc2dadc71f8f76909c9e97b37b07d27d4991d1f405d30fb87da4a667f3878c"},
-    {file = "unicodedata2-17.0.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:f288c7442e79ccf367f2b2fa06adf27c8de89a0b27aa714c631fbc84b19afa66"},
-    {file = "unicodedata2-17.0.0-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:3d53fe3ff1b8f472291f2c012aed6dcd6af61489fbeba69b57f53d3ffdb25fde"},
-    {file = "unicodedata2-17.0.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:95443d08ef6e6daf8d749f187d16c6ed90ab8bb47ad6f2fb616517fad0e6d5bf"},
-    {file = "unicodedata2-17.0.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:f944a84b08b8bd9bd322f2fc21778df0b04e1d5865ee54457f6de6e74496e8be"},
-    {file = "unicodedata2-17.0.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:348a74aed2a875192799f7a736a2429878f64f5f6c35730e72077fb5ca624c4a"},
-    {file = "unicodedata2-17.0.0-cp312-cp312-win32.whl", hash = "sha256:59f960aceda87b76dee8f03d993271dc9f7681a4f803d030e7737a0d0bb5c98e"},
-    {file = "unicodedata2-17.0.0-cp312-cp312-win_amd64.whl", hash = "sha256:2c49ca5ad45108129916f87baed27fb071e12e56f5f97b07798d6afa03519404"},
-    {file = "unicodedata2-17.0.0-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:d97766163de3e3997e0c3dc75009724871d966733952845f23c3aa69e3141b51"},
-    {file = "unicodedata2-17.0.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:8029da4a54b560e0545faff24d366a645bc069761f1480712256cb9b42c98a08"},
-    {file = "unicodedata2-17.0.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ba113dc83c15e5bed856d7b688e86399a9ba23a0bd148f847c2cdee6d7aaac72"},
-    {file = "unicodedata2-17.0.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:0349c46c626cd013d797c1745bf8bafc5fb7336269f823e1407382f26c47a83e"},
-    {file = "unicodedata2-17.0.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:e56e60e3ff872444fd1f22aeef0159ffa6c5b51011f34749cc5ff83d35168133"},
-    {file = "unicodedata2-17.0.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:c4de7df031ef4a02b4ba1fc197250154d7d11067ea0a8f4ccd1e64a7768a6aa1"},
-    {file = "unicodedata2-17.0.0-cp313-cp313-win32.whl", hash = "sha256:801a7eeb574ba124b1bde4205141bfdfa619e527cd0cc2113ae03d3c447032f6"},
-    {file = "unicodedata2-17.0.0-cp313-cp313-win_amd64.whl", hash = "sha256:7aa724d4c047ed9db91dda1aea49066db310adc5b4c48ad7e21bec8247196a22"},
-    {file = "unicodedata2-17.0.0-cp314-cp314-macosx_10_15_universal2.whl", hash = "sha256:00ac2ae8c5e963226f9859df353ba276bb0c042e26b9e27d5a186734a32ee832"},
-    {file = "unicodedata2-17.0.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:e712625945c927186c14ff108b829494d154c7de7cd3aa99f869c76056a60fa8"},
-    {file = "unicodedata2-17.0.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:f986dd95ef4174f7ea7c56e0c2fd0e65e2b1184f26c3bc072be564398eaff0ad"},
-    {file = "unicodedata2-17.0.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:f47be5cc0015ff7822d6a3a23f8b4581acebfe269ef1226a2ab7ee39f3fa62ab"},
-    {file = "unicodedata2-17.0.0-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:18a2a5e03d823f9c8aad3a9ca8dba03ecc44fd503146f5c5c9411e44bdc372b4"},
-    {file = "unicodedata2-17.0.0-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:3eb8b04e80a10bfad575915daec0bfce7dabcc7e9fc4a00361ee9f3ce439f1fd"},
-    {file = "unicodedata2-17.0.0-cp314-cp314-win32.whl", hash = "sha256:c2691a839ceb1947fc2834b50143c4b9e6b1fd4073492e5787508946138577a3"},
-    {file = "unicodedata2-17.0.0-cp314-cp314-win_amd64.whl", hash = "sha256:667fb88043dec67afa4eac98fcdaa8d10b50d7d69d3c410680628a68446062fb"},
-    {file = "unicodedata2-17.0.0-cp314-cp314t-macosx_10_15_universal2.whl", hash = "sha256:92944ead928b84b09840e3d4799a1b71d56f8f6e8082789a5baba93285bd0be9"},
-    {file = "unicodedata2-17.0.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:a05abd247f1f88c3c8225ccd9360f2211d8bcfd3e63bdcf14c9e1c0a6fd5625c"},
-    {file = "unicodedata2-17.0.0-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:2c67b5d4318ad95499e1bc9c69c8f4ffc6e313c711a2eb3c2b7c6b832b549401"},
-    {file = "unicodedata2-17.0.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:448ce2129763eee3c8cad7efa94cb1fce637fd2a32e59f74f9f4aca2fecfe349"},
-    {file = "unicodedata2-17.0.0-cp314-cp314t-win32.whl", hash = "sha256:fa7ab8f2e4502a780b4a569092c498e2e76ba212748f482fc19bc97f8cea88b4"},
-    {file = "unicodedata2-17.0.0-cp314-cp314t-win_amd64.whl", hash = "sha256:b1e3963e226bfcafd9870e03dc75435c46d65646b5b2968edc69018b1a12bd15"},
-    {file = "unicodedata2-17.0.0-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:bd241d5a2680b82ee71c753967f7938a55f2c650f81d9f8640dad8f9ca9f8f05"},
-    {file = "unicodedata2-17.0.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:457febec37cffc9f9022d20475ef234118b48bd95aeb954f9b1e10903133bde7"},
-    {file = "unicodedata2-17.0.0-cp38-cp38-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:cbf2b94a52d517bbd9e0d073cbc9ac72673cd8adf9354d34dac952530b7c8a52"},
-    {file = "unicodedata2-17.0.0-cp38-cp38-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:03219a985c9cfedd44570264c6453410197a08f64b5a7c5da28d71965a6d2923"},
-    {file = "unicodedata2-17.0.0-cp38-cp38-musllinux_1_2_aarch64.whl", hash = "sha256:3365d01b944e2f323293c789b112eab372d29a3a6257ab670ca7a6ad740c5954"},
-    {file = "unicodedata2-17.0.0-cp38-cp38-musllinux_1_2_x86_64.whl", hash = "sha256:7967e8df16afdf970e39363f9ac19662e601233caa1464625c8720cf8b3cb8fa"},
-    {file = "unicodedata2-17.0.0-cp38-cp38-win32.whl", hash = "sha256:4ac455d667ae1fe003be4b57843093de250ce6f9ba04ebe355b487d87980548e"},
-    {file = "unicodedata2-17.0.0-cp38-cp38-win_amd64.whl", hash = "sha256:3d5d9c011bbee415f9298100674239ce1d9cee7fac3a3dededd65939ca6b53f9"},
-    {file = "unicodedata2-17.0.0-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:f55414ca04e2dfadae10bc172b46e5ec8c6e29be0f98248c344fcccc02992c8a"},
-    {file = "unicodedata2-17.0.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:c84c0638e5f1c033eb84546db3bf3fa3732b9fd3d27944059ddc003f57ea6326"},
-    {file = "unicodedata2-17.0.0-cp39-cp39-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e661f55d53a5505116a83f3ac164ced6422cf00ce031eb8f322141eafd178882"},
-    {file = "unicodedata2-17.0.0-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ba6669c2d30998be86f36a24b203f371ef0f35e8e741b6b203af178e8fd00d51"},
-    {file = "unicodedata2-17.0.0-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:1b895c68ad4a675d732506f699088ada7cdf61ce4c9c29ef4702b1815e77f7dc"},
-    {file = "unicodedata2-17.0.0-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:0b8916faad283b55886d6495c97a310eb6d3258cd5ed4543624c713022f0f25b"},
-    {file = "unicodedata2-17.0.0-cp39-cp39-win32.whl", hash = "sha256:d04854bdf3d532aa90b125d77750dff65c4db86ba44526d6c381bf1add3a2569"},
-    {file = "unicodedata2-17.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:322c774914cb35dadf84f9c2b23463896f0a7eaf2a6b2b4836f5c004615149ab"},
-    {file = "unicodedata2-17.0.0.tar.gz", hash = "sha256:ffa2f0d6834642fe996d356e728da887201533bb540974ae7ac975e66ecc0e3a"},
-]
-
-[package.extras]
-testing = ["coverage", "pytest", "pytest-randomly", "pytest-xdist"]
-
-[[package]]
 name = "urllib3"
 version = "2.4.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -1527,4 +1453,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "a0f4b3a31ad782fca83da9f4bc522f5d35047dcd7df6f1f8f3d70d58d6ae52eb"
+content-hash = "3b037879880da086aab26853028fe62dcc45f8a0b5457d3d9b808ba68fcae9ab"

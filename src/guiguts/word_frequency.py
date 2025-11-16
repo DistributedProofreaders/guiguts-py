@@ -6,7 +6,6 @@ import logging
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable, Optional
-import unicodedataplus as ud  # type: ignore[import-not-found]
 
 import regex as re
 
@@ -186,6 +185,18 @@ class WordFrequencyDialog(ToplevelDialog):
         "\u00a0": "*nbsp*",
         "\n": RETURN_ARROW,
     }
+    SCRIPTS: list[str] = [
+        "Latin",
+        "Greek",
+        "Cyrillic",
+        "Arabic",
+        "Hebrew",
+        "Devanagari",
+        "Han",
+        "Hiragana",
+        "Katakana",
+        "Hangul",
+    ]
 
     def __init__(
         self,
@@ -1288,9 +1299,19 @@ class WordFrequencyDialog(ToplevelDialog):
         example a word made of Latin characters with a Greek character hidden inside.
         """
 
+        def get_script(ch: str) -> str:
+            """
+            Return the Unicode script of a character using the regex package, or
+            "Unknown" if not in list of common scripts.
+            """
+            for sc in self.SCRIPTS:
+                if re.match(rf"\p{{sc={sc}}}", ch):
+                    return sc
+            return "Unknown"
+
         def mixed_word(word: str) -> bool:
             """Return whether word has mixed scripts."""
-            return len({ud.script(ch) for ch in word if ch.isalpha()}) > 1
+            return len({get_script(ch) for ch in word if ch.isalpha()}) > 1
 
         self.wf_populate_by_match(
             "mixed script",
