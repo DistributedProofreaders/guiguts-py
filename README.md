@@ -19,6 +19,17 @@ during installation.
 2. In a command window, type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
 previous version of GG2).
 3. In a command window, Type `guiguts` to run GG2.
+4. If you prefer to have an icon that runs GG2,
+
+    a. Use Windows Notepad or another text editor to create a file containing one line: `guiguts %1`
+
+    b. Save the file under the name `run_guiguts2.cmd` (Note the cmd at the end!).
+
+    c. Put this cmd file in any folder you use for a DP project.
+
+    d. In Windows File Explorer, drag and drop any text/HTML file onto the cmd file to open it in GG2.
+    
+    e. Or you can double click this cmd file to start GG2 with no file loaded.
 
 ### macOS
 
