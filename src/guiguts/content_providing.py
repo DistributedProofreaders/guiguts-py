@@ -46,6 +46,7 @@ CP_NOHYPH = str(importlib.resources.files(cp_files).joinpath("no_hyphen.json"))
 NOH_KEY = "no_hyphen"
 CP_SCANNOS = str(importlib.resources.files(cp_files).joinpath("scannos.json"))
 CP_ENGLIFH = str(importlib.resources.files(cp_files).joinpath("fcannos.json"))
+CP_MARK_PREFIX = "cp_mark_"
 
 HEAD_FOOT_CHECKER_FILTERS = [
     CheckerFilterErrorPrefix("Odd Headers", "Odd Header.*"),
@@ -694,164 +695,177 @@ class HeadFootChecker:
         maintext().delete(start_idx, end_idx)
 
 
-class CPProcessingDialog(ToplevelDialog):
+class CPFilteringDialog(CheckerDialog):
     """Dialog to process files for Content Providers."""
 
     manual_page = "Content_Providing_Menu#Prep_Text_Filtering"
 
-    def __init__(self) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize Prep Text Processing dialog."""
-        super().__init__("Prep Text Filtering", resize_x=False, resize_y=False)
-
-        self.top_frame.columnconfigure(0, weight=0)
-        center_frame = ttk.Frame(
-            self.top_frame, borderwidth=1, relief=tk.GROOVE, padding=5
+        super().__init__(
+            "Prep Text Filtering",
+            rerun_command=self.process,
+            tooltip="Test tooltip",
+            show_process_buttons=False,
         )
-        center_frame.grid(row=0, column=0, sticky="NSEW", columnspan=2)
-        center_frame.columnconfigure(0, pad=10)
 
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert multiple blank lines to single",
             variable=PersistentBoolean(PrefKey.CP_MULTI_BLANK_LINES),
         ).grid(row=0, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Remove blank lines from top of page",
             variable=PersistentBoolean(PrefKey.CP_BLANK_LINES_TOP),
         ).grid(row=0, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert multiple spaces to single space",
             variable=PersistentBoolean(PrefKey.CP_MULTIPLE_SPACES),
         ).grid(row=1, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert non-standard whitespace to space/newline",
             variable=PersistentBoolean(PrefKey.CP_WHITESPACE_TO_SPACE),
         ).grid(row=1, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert non-standard dashes to (max 4) hyphen(s)",
             variable=PersistentBoolean(PrefKey.CP_DASHES_TO_HYPHEN),
         ).grid(row=2, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Remove space on either side of hyphens",
             variable=PersistentBoolean(PrefKey.CP_SPACED_HYPHENS),
         ).grid(row=2, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert spaced hyphens to emdashes",
             variable=PersistentBoolean(PrefKey.CP_SPACED_HYPHEN_EMDASH),
         ).grid(row=3, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Remove space before mid-word apostrophes",
             variable=PersistentBoolean(PrefKey.CP_SPACED_APOSTROPHES),
         ).grid(row=3, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Remove space before  .  ,  !  ?  :  ;",
             variable=PersistentBoolean(PrefKey.CP_SPACE_BEFORE_PUNC),
         ).grid(row=4, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert, & ensure space before, ellipsis (except ....)",
             variable=PersistentBoolean(PrefKey.CP_SPACE_BEFORE_ELLIPSIS),
         ).grid(row=4, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Remove space after open- or before close-brackets",
             variable=PersistentBoolean(PrefKey.CP_SPACED_BRACKETS),
         ).grid(row=5, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Remove suspect punctuation from start/end of line",
             variable=PersistentBoolean(PrefKey.CP_PUNCT_START_END),
         ).grid(row=5, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Remove suspect space around quotes",
             variable=PersistentBoolean(PrefKey.CP_DUBIOUS_SPACED_QUOTES),
         ).grid(row=6, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert curly quotes to straight",
             variable=PersistentBoolean(PrefKey.CP_CURLY_QUOTES),
         ).grid(row=6, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert two commas to one double quote",
             variable=PersistentBoolean(PrefKey.CP_COMMAS_DOUBLE_QUOTE),
         ).grid(row=7, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert two single quotes to one double quote",
             variable=PersistentBoolean(PrefKey.CP_SINGLE_QUOTES_DOUBLE),
         ).grid(row=7, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert consecutive underscores to emdashes",
             variable=PersistentBoolean(PrefKey.CP_UNDERSCORES_EMDASH),
         ).grid(row=8, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert forward slash to comma apostrophe",
             variable=PersistentBoolean(PrefKey.CP_SLASH_COMMA_APOSTROPHE),
         ).grid(row=8, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert solitary j to semicolon",
             variable=PersistentBoolean(PrefKey.CP_J_SEMICOLON),
         ).grid(row=9, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Fix common 2/3 letter scannos (tii⇒th, wb⇒wh, etc.)",
             variable=PersistentBoolean(PrefKey.CP_COMMON_LETTER_SCANNOS),
         ).grid(row=9, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert he to be if it follows to",
             variable=PersistentBoolean(PrefKey.CP_TO_HE_BE),
         ).grid(row=10, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert solitary lowercase l to I",
             variable=PersistentBoolean(PrefKey.CP_L_TO_I),
         ).grid(row=10, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert solitary 0 to O",
             variable=PersistentBoolean(PrefKey.CP_0_TO_O),
         ).grid(row=11, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Convert solitary 1 to I",
             variable=PersistentBoolean(PrefKey.CP_1_TO_I),
         ).grid(row=11, column=1, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Expand fractions, e.g. ½ to 1/2, 3¼ to 3-1/4",
             variable=PersistentBoolean(PrefKey.CP_FRACTIONS),
         ).grid(row=12, column=0, sticky="NSW")
         ttk.Checkbutton(
-            center_frame,
+            self.custom_frame,
             text="Expand super/subscripts, e.g. x³ to x^3, x₂ to x_{{2}}",
             variable=PersistentBoolean(PrefKey.CP_SUPER_SUB_SCRIPTS),
         ).grid(row=12, column=1, sticky="NSW")
 
-        onoff_frame = ttk.Frame(self.top_frame)
-        onoff_frame.grid(row=1, column=0, sticky="NS")
+        onoff_frame = ttk.Frame(self.custom_frame)
+        onoff_frame.grid(row=13, column=0, sticky="NS")
         ttk.Button(
             onoff_frame, text="All On", command=lambda: self.all_on_off(True)
         ).grid(row=0, column=0, sticky="NS", pady=(5, 0), padx=5)
         ttk.Button(
             onoff_frame, text="All Off", command=lambda: self.all_on_off(False)
         ).grid(row=0, column=1, sticky="NS", pady=(5, 0), padx=5)
-        ttk.Button(self.top_frame, text="Filter File", command=self.process).grid(
-            row=1, column=1, sticky="NS", pady=(5, 0), padx=(10, 0)
-        )
+
+        def verbosity_changed() -> None:
+            if self.entries:
+                self.create_entries()
+
+        ttk.Checkbutton(
+            self.custom_frame,
+            text="Verbose",
+            variable=PersistentBoolean(PrefKey.CP_FILTER_VERBOSE),
+            command=verbosity_changed,
+        ).grid(row=13, column=1, sticky="NS")
+
+        self.rerun_button["text"] = "Run Filters"
+        self.count_label["text"] = ""
+
+        self.changes: dict[PrefKey, dict[str, list[int]]] = {}
+
+        Busy.unbusy()
 
     def all_on_off(self, value: bool) -> None:
         """Set all checkboxes to given value."""
@@ -970,6 +984,36 @@ class CPProcessingDialog(ToplevelDialog):
         Busy.busy()
         maintext().undo_block_begin()
 
+        # Dictionary of types containing dictionaries of subtypes containing line numbers
+        self.changes = {
+            PrefKey.CP_MULTI_BLANK_LINES: {},
+            PrefKey.CP_BLANK_LINES_TOP: {},
+            PrefKey.CP_MULTIPLE_SPACES: {},
+            PrefKey.CP_WHITESPACE_TO_SPACE: {},
+            PrefKey.CP_DASHES_TO_HYPHEN: {},
+            PrefKey.CP_SPACED_HYPHENS: {},
+            PrefKey.CP_SPACED_HYPHEN_EMDASH: {},
+            PrefKey.CP_SPACED_APOSTROPHES: {},
+            PrefKey.CP_SPACE_BEFORE_PUNC: {},
+            PrefKey.CP_SPACE_BEFORE_ELLIPSIS: {},
+            PrefKey.CP_SPACED_BRACKETS: {},
+            PrefKey.CP_PUNCT_START_END: {},
+            PrefKey.CP_DUBIOUS_SPACED_QUOTES: {},
+            PrefKey.CP_CURLY_QUOTES: {},
+            PrefKey.CP_COMMAS_DOUBLE_QUOTE: {},
+            PrefKey.CP_SINGLE_QUOTES_DOUBLE: {},
+            PrefKey.CP_UNDERSCORES_EMDASH: {},
+            PrefKey.CP_SLASH_COMMA_APOSTROPHE: {},
+            PrefKey.CP_J_SEMICOLON: {},
+            PrefKey.CP_COMMON_LETTER_SCANNOS: {},
+            PrefKey.CP_TO_HE_BE: {},
+            PrefKey.CP_L_TO_I: {},
+            PrefKey.CP_0_TO_O: {},
+            PrefKey.CP_1_TO_I: {},
+            PrefKey.CP_FRACTIONS: {},
+            PrefKey.CP_SUPER_SUB_SCRIPTS: {},
+        }
+
         next_linenum = 1
         all_blank_so_far = True
         prev_line_blank = False
@@ -983,201 +1027,332 @@ class CPProcessingDialog(ToplevelDialog):
                 continue
             line: str = orig_line
 
+            def add_to_changes(
+                cat: PrefKey, subcat: str, count: int, lnum: int
+            ) -> None:
+                """Add record to list of changes if needed."""
+                if count == 0:
+                    return
+                try:
+                    self.changes[cat][subcat].append(lnum)
+                except KeyError:
+                    self.changes[cat][subcat] = [lnum]
+
             # Convert non-standard whitespace
-            if preferences.get(PrefKey.CP_WHITESPACE_TO_SPACE):
-                line = re.sub(
+            key = PrefKey.CP_WHITESPACE_TO_SPACE
+            if preferences.get(key):
+                line, cnt = re.subn(
                     "[\u0009\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000]",
                     " ",
                     line,
                 )
-                line = re.sub("[\u000b\u000c\u0085\u2028\u2029]", "\n", line)
+                add_to_changes(key, "Horiz. space → Space", cnt, linenum)
+                line, cnt = re.subn("[\u000b\u000c\u0085\u2028\u2029]", "\n", line)
+                add_to_changes(key, "Vert. space → Newline", cnt, linenum)
 
             # Convert non-standard dashes
-            if preferences.get(PrefKey.CP_DASHES_TO_HYPHEN):
-                line = re.sub("[\u00ac\u2010\u2011\u2013\u2212]", "-", line)
-                line = re.sub("[\u2012\u2014\u2015]", "--", line)
+            key = PrefKey.CP_DASHES_TO_HYPHEN
+            if preferences.get(key):
+                line, cnt = re.subn("[\u00ac\u2010\u2011\u2013\u2212]", "-", line)
+                add_to_changes(key, "Dash → Hyphen", cnt, linenum)
+                line, cnt = re.subn("[\u2012\u2014\u2015]", "--", line)
+                add_to_changes(key, "Long dash → Double hyphen", cnt, linenum)
 
-            # Strip trailing spaces
+            # Strip trailing spaces (not reported)
+            orig_len = len(line)
             line = line.rstrip()
             line = line.replace("\u000c", "")  # Tesseract (used to) add form feed
+            if len(line) != orig_len:
+                add_to_changes(
+                    PrefKey.CP_WHITESPACE_TO_SPACE,
+                    "Trailing spaces removed",
+                    1,
+                    linenum,
+                )
 
             # Remove blank lines at start of page
+            key = PrefKey.CP_BLANK_LINES_TOP
             this_line_blank = len(line) == 0
             all_blank_so_far = all_blank_so_far and this_line_blank
-            if preferences.get(PrefKey.CP_BLANK_LINES_TOP) and all_blank_so_far:
+            if preferences.get(key) and all_blank_so_far:
                 maintext().delete(f"{linenum}.0", f"{linenum + 1}.0")
+                add_to_changes(key, "Top-of-page blank line deleted", 1, linenum)
                 next_linenum -= 1  # Compensate for deleted line
                 n_changes += 1
                 continue
 
             # Compress multiple blank lines into one
-            if (
-                preferences.get(PrefKey.CP_MULTI_BLANK_LINES)
-                and prev_line_blank
-                and this_line_blank
-            ):
+            key = PrefKey.CP_MULTI_BLANK_LINES
+            if preferences.get(key) and prev_line_blank and this_line_blank:
                 maintext().delete(f"{linenum}.0", f"{linenum + 1}.0")
+                add_to_changes(key, "Multiple blank lines → Single", 1, linenum)
                 next_linenum -= 1  # Compensate for deleted line
                 n_changes += 1
                 continue
             prev_line_blank = this_line_blank
 
             # Compress double spaces
-            if preferences.get(PrefKey.CP_MULTIPLE_SPACES):
-                line = re.sub("  ", " ", line)
+            key = PrefKey.CP_MULTIPLE_SPACES
+            if preferences.get(key):
+                line, cnt = re.subn("  ", " ", line)
+                add_to_changes(key, "Multiple spaces → Single", cnt, linenum)
 
             # Spaced single hyphen - convert to emdash (double hyphen)
-            if preferences.get(PrefKey.CP_SPACED_HYPHEN_EMDASH):
-                line = re.sub(" -( |$)", "--", line)
+            key = PrefKey.CP_SPACED_HYPHEN_EMDASH
+            if preferences.get(key):
+                line, cnt = re.subn(" -( |$)", "--", line)
+                add_to_changes(
+                    key, "Spaced hyphen → Emdash (double hyphen)", cnt, linenum
+                )
 
             # Spaced hyphens - remove spaces
             # Guiprep had a separate option for spaced "emdashes" (double hyphens), but
             # even if that was turned off, the spaced hyphens option would removed the spaces
-            if preferences.get(PrefKey.CP_SPACED_HYPHENS):
+            key = PrefKey.CP_SPACED_HYPHENS
+            if preferences.get(key):
+                orig_len = len(line)
                 line = line.replace(" -", "-").replace("- ", "-")
+                if len(line) != orig_len:
+                    add_to_changes(key, "Space around hyphen removed", 1, linenum)
 
             # Spaced punctuation - remove space
-            if preferences.get(PrefKey.CP_SPACE_BEFORE_PUNC):
-                line = re.sub(r" ([\.,!?:;])", r"\1", line)
+            key = PrefKey.CP_SPACE_BEFORE_PUNC
+            if preferences.get(key):
+                line, cnt = re.subn(r" ([\.,!?:;])", r"\1", line)
+                add_to_changes(key, "Space before punctuation removed", cnt, linenum)
 
             # Convert single character ellipsis to 3-dot ellipsis
             # Ensure space before 3-dot ellipsis, but not if 4-dots due to period
-            if preferences.get(PrefKey.CP_SPACE_BEFORE_ELLIPSIS):
+            key = PrefKey.CP_SPACE_BEFORE_ELLIPSIS
+            if preferences.get(key):
+                orig_len = len(line)
                 line = line.replace("…", "...")
-                line = re.sub(r"(?<!\.)\.{3}(?!\.)", " ...", line)
+                if len(line) != orig_len:
+                    add_to_changes(key, 'Ellipsis char → "..."', 1, linenum)
+                line, cnt = re.subn(r"(?<!\.)\.{3}(?!\.)", " ...", line)
+                add_to_changes(key, "Space added before ellipsis", cnt, linenum)
 
             # Convert 2 single quotes to a double
-            if preferences.get(PrefKey.CP_SINGLE_QUOTES_DOUBLE):
+            key = PrefKey.CP_SINGLE_QUOTES_DOUBLE
+            if preferences.get(key):
+                orig_len = len(line)
                 line = line.replace("''", '"')
+                if len(line) != orig_len:
+                    add_to_changes(key, "Two single quotes → Double", 1, linenum)
 
             # Various 2/3 letter scannos
-            if preferences.get(PrefKey.CP_COMMON_LETTER_SCANNOS):
+            key = PrefKey.CP_COMMON_LETTER_SCANNOS
+            if preferences.get(key):
                 # tli, tii, tb, Tli, Tii, Tb at start of word to th/Th
                 # and similar for w
-                line = re.sub(r"(?<=\b[tTw])([li]i|b)", "h", line)
-                line = re.sub(r"\brn", "m", line)  # rn at start of word to m
-                line = re.sub(
+                line, cnt = re.subn(r"(?<=\b[tT])([li]i|b)", "h", line)
+                add_to_changes(key, "Scanno tli/tii/tb → th", cnt, linenum)
+                line, cnt = re.subn(r"(?<=\bw)([li]i|b)", "h", line)
+                add_to_changes(key, "Scanno wli/wii/wb → wh", cnt, linenum)
+                line, cnt = re.subn(r"\brn", "m", line)  # rn at start of word to m
+                add_to_changes(key, "Scanno word-start rn → m", cnt, linenum)
+                line, cnt = re.subn(
                     r"\bh(?=[lr])", "b", line
                 )  # hl/hr at start of word to bl/br
-                line = re.sub(r"\bVV", "W", line)  # VV at start of word to W
-                line = re.sub(r"\b[vV]{2}", "w", line)  # Vv/vV/vv at start of word to w
-                line = re.sub(r"tb\b", "th", line)  # tb at end of word to th
-                line = re.sub(r"cl\b", "d", line)  # cl at end of word to d
-                line = re.sub(
+                add_to_changes(key, "Scanno word-start hl/hr → bl/br", cnt, linenum)
+                line, cnt = re.subn(r"\bVV", "W", line)  # VV at start of word to W
+                add_to_changes(key, "Scanno word-start VV → W", cnt, linenum)
+                line, cnt = re.subn(
+                    r"\b[vV]{2}", "w", line
+                )  # Vv/vV/vv at start of word to w
+                add_to_changes(key, "Scanno word-start vv → w", cnt, linenum)
+                line, cnt = re.subn(r"tb\b", "th", line)  # tb at end of word to th
+                add_to_changes(key, "Scanno word-end tb → th", cnt, linenum)
+                line, cnt = re.subn(r"cl\b", "d", line)  # cl at end of word to d
+                add_to_changes(key, "Scanno word-end cl → d", cnt, linenum)
+                line, cnt = re.subn(
                     r"(\bcb|cb\b)", "ch", line
                 )  # cb at start/end of word to ch
-                line = re.sub(r"(?<=[gp])bt", "ht", line)  # gbt/pbt to ght/pht
-                line = re.sub(r"\\[\\v]", "w", line)  # \v or \\ to w
-                line = re.sub(r"([ai])hle", "\1ble", line)  # ahle to able; ihle to ible
+                add_to_changes(key, "Scanno word-start/end cb → ch", cnt, linenum)
+                line, cnt = re.subn(r"(?<=[gp])bt", "ht", line)  # gbt/pbt to ght/pht
+                add_to_changes(key, "Scanno gbt/pbt → ght/pht", cnt, linenum)
+                line, cnt = re.subn(r"\\[\\v]", "w", line)  # \v or \\ to w
+                add_to_changes(key, "Scanno \\\\/\\v → w", cnt, linenum)
+                line, cnt = re.subn(
+                    r"([ai])hle", "\1ble", line
+                )  # ahle to able; ihle to ible
+                add_to_changes(key, "Scanno ahle/ihle → able/ible", cnt, linenum)
                 # variants of mrn to mm (not rnm or rmn which occur in words)
-                line = re.sub(r"mrn|mnr|nmr|nrm", "mm", line)
+                line, cnt = re.subn(r"mrn|mnr|nmr|nrm", "mm", line)
+                add_to_changes(key, "Scanno mrn/mnr/nmr/nrm → mm", cnt, linenum)
                 # rnp to mp (except turnpike, hornpipe & plurals, etc)
+                orig_len = len(line)
                 line = (
                     line.replace("rnp", "mp")
                     .replace("tumpike", "turnpike")
                     .replace("hompipe", "hornpipe")
                 )
-                line = line.replace("'11", "'ll")  # '11 to 'll
-                line = line.replace("'!!", "'ll")  # '!! to 'll
-                line = re.sub(r"!!(?=\w)", "H", line)  # !! to H if not at end of word
-                line = re.sub(r"(?<=\w)!(?=\w)", "l", line)  # ! to l if midword
+                if len(line) != orig_len:
+                    add_to_changes(key, '"rnp" → "mp"', 1, linenum)
+                line, cnt = re.subn(r"'11", "'ll", line)  # '11 to 'll
+                add_to_changes(key, "Scanno '11 → 'll", cnt, linenum)
+                line, cnt = re.subn(r"'!!", "'ll", line)  # '!! to 'll
+                add_to_changes(key, "Scanno '!! → 'll", cnt, linenum)
+                line, cnt = re.subn(
+                    r"!!(?=\w)", "H", line
+                )  # !! to H if not at end of word
+                add_to_changes(key, "Scanno non-word-end !! → H", cnt, linenum)
+                line, cnt = re.subn(r"(?<=\w)!(?=\w)", "l", line)  # ! to l if midword
+                add_to_changes(key, "Scanno mid-word ! → l", cnt, linenum)
 
             # Standalone 1 preceded by space or quote, not followed by period --> I
-            if preferences.get(PrefKey.CP_1_TO_I):
-                line = re.sub(r"(?<![^'\" ])1\b(?!\.)", "I", line)
+            key = PrefKey.CP_1_TO_I
+            if preferences.get(key):
+                line, cnt = re.subn(r"(?<![^'\" ])1\b(?!\.)", "I", line)
+                add_to_changes(key, "Standalone 1 → I", cnt, linenum)
 
             # Standalone 0 preceded by space or quote --> O
-            if preferences.get(PrefKey.CP_0_TO_O):
-                line = re.sub(r"(?<![^'\" ])0\b", "O", line)
+            key = PrefKey.CP_0_TO_O
+            if preferences.get(key):
+                line, cnt = re.subn(r"(?<![^'\" ])0\b", "O", line)
+                add_to_changes(key, "Standalone 0 → O", cnt, linenum)
 
             # Standalone l preceded by space or quote, not followed by apostrophe --> I
-            if preferences.get(PrefKey.CP_L_TO_I):
-                line = re.sub(r"(?<![^'\" ])l\b(?!')", "I", line)
+            key = PrefKey.CP_L_TO_I
+            if preferences.get(key):
+                line, cnt = re.subn(r"(?<![^'\" ])l\b(?!')", "I", line)
+                add_to_changes(key, "Standalone l → I", cnt, linenum)
                 # Or followed by apostrophe, but not a letter after that (e.g. preserve l'amie)
-                line = re.sub(r"(?<![^'\" ])l'(?!\p{Letter})", "I'", line)
+                line, cnt = re.subn(r"(?<![^'\" ])l'(?!\p{Letter})", "I'", line)
+                add_to_changes(key, "Standalone l' → I'", cnt, linenum)
 
             # Expand Unicode fraction characters, including mixed fractions
-            if preferences.get(PrefKey.CP_FRACTIONS):
-                line = re.sub(r"(\d+)(" + fractions_class + ")", repl_mixed_frac, line)
-                line = re.sub(fractions_class, repl_vulgar_frac, line)
+            key = PrefKey.CP_FRACTIONS
+            if preferences.get(key):
+                line, cnt = re.subn(
+                    r"(\d+)(" + fractions_class + ")", repl_mixed_frac, line
+                )
+                line, cnt2 = re.subn(fractions_class, repl_vulgar_frac, line)
+                add_to_changes(key, "Fraction char expanded", cnt + cnt2, linenum)
 
             # Expand super/subscripts
-            if preferences.get(PrefKey.CP_SUPER_SUB_SCRIPTS):
-                line = re.sub(superscripts_class, repl_sup, line)
-                line = re.sub(subscripts_class, repl_sub, line)
+            key = PrefKey.CP_SUPER_SUB_SCRIPTS
+            if preferences.get(key):
+                line, cnt = re.subn(superscripts_class, repl_sup, line)
+                add_to_changes(key, "Superscript expanded", cnt, linenum)
+                line, cnt = re.subn(subscripts_class, repl_sub, line)
+                add_to_changes(key, "Subscript expanded", cnt, linenum)
 
             # Double underscore --> emdash
-            if preferences.get(PrefKey.CP_UNDERSCORES_EMDASH):
-                line = line.replace("__", "--")
+            key = PrefKey.CP_UNDERSCORES_EMDASH
+            if preferences.get(key):
+                line, cnt = re.subn("__", "--", line)
+                add_to_changes(key, "Double underscore → Double hyphen", cnt, linenum)
 
             # Looong dashes to 4 hyphens (now all hyphen replaces have been done)
-            if preferences.get(PrefKey.CP_DASHES_TO_HYPHEN):
-                line = re.sub("-{5,}", "----", line)
+            key = PrefKey.CP_DASHES_TO_HYPHEN
+            if preferences.get(key):
+                line, cnt = re.subn("-{5,}", "----", line)
+                add_to_changes(key, "Hyphens reduced to 4", cnt, linenum)
 
             # Double comma --> double quote
-            if preferences.get(PrefKey.CP_COMMAS_DOUBLE_QUOTE):
+            key = PrefKey.CP_COMMAS_DOUBLE_QUOTE
+            if preferences.get(key):
+                orig_len = len(line)
                 line = line.replace(",,", '"')  # ,, to "
+                if len(line) != orig_len:
+                    add_to_changes(key, "Double comma → Double quote", cnt, linenum)
 
             # Remove bad space around brackets
-            if preferences.get(PrefKey.CP_SPACED_BRACKETS):
-                line = re.sub(r"(?<=[[({]) ", "", line)
-                line = re.sub(r" (?=[])}])", "", line)
+            key = PrefKey.CP_SPACED_BRACKETS
+            if preferences.get(key):
+                line, cnt = re.subn(r"(?<=[[({]) ", "", line)
+                line, cnt2 = re.subn(r" (?=[])}])", "", line)
+                add_to_changes(key, "Space around bracket removed", cnt + cnt2, linenum)
 
             # Convert slash to comma+apostrophe
-            if preferences.get(PrefKey.CP_SLASH_COMMA_APOSTROPHE):
-                line = re.sub(r"(?<!(\W))/(?=\W)", ",'", line)
+            key = PrefKey.CP_SLASH_COMMA_APOSTROPHE
+            if preferences.get(key):
+                line, cnt = re.subn(r"(?<!(\W))/(?=\W)", ",'", line)
+                add_to_changes(key, "Slash → ,'", cnt, linenum)
 
             # Convert solitary or end-of-word j to semicolon
-            if preferences.get(PrefKey.CP_J_SEMICOLON):
-                line = re.sub(r"(?<![ainu])j(?=\s)", ";", line)
+            key = PrefKey.CP_J_SEMICOLON
+            if preferences.get(key):
+                line, cnt = re.subn(r"(?<![ainu])j(?=\s)", ";", line)
+                add_to_changes(key, "End-of-word j → semicolon", cnt, linenum)
 
             # Convert he --> be if it follows "to"
-            if preferences.get(PrefKey.CP_TO_HE_BE):
-                line = re.sub(r"\bto he\b", "to be", line)
+            key = PrefKey.CP_TO_HE_BE
+            if preferences.get(key):
+                line, cnt = re.subn(r"\bto he\b", "to be", line)
+                add_to_changes(key, "to he → to be", cnt, linenum)
 
             # Remove bad punctuation at start of line:
             #   If ellipsis, preserve it and remove extra punctuation
             #   Otherwise, just keep last beg-of-line punctuation character
             # Remove bad punctuation at end of line, i.e. after at least 3 spaces
-            if preferences.get(PrefKey.CP_PUNCT_START_END):
+            key = PrefKey.CP_PUNCT_START_END
+            if preferences.get(key):
                 if line.startswith("..."):
-                    line = re.sub(r"^...\p{Punct}+", "...", line)
+                    line, cnt = re.subn(r"^...\p{Punct}+", "...", line)
                 else:
-                    line = re.sub(r"^\p{Punct}+(\p{Punct})", r"\1", line)
-                line = re.sub(r"\s{3,}[\p{Punct}\s]+$", "", line)
+                    line, cnt = re.subn(r"^\p{Punct}+(\p{Punct})", r"\1", line)
+                line, cnt2 = re.subn(r"\s{3,}[\p{Punct}\s]+$", "", line)
+                add_to_changes(
+                    key, "Bad line-start punctuation removed", cnt + cnt2, linenum
+                )
 
             # Dubious spacing around quotes
-            if preferences.get(PrefKey.CP_DUBIOUS_SPACED_QUOTES):
+            key = PrefKey.CP_DUBIOUS_SPACED_QUOTES
+            if preferences.get(key):
                 # Straight quotes
-                line = re.sub(r'^" +', '"', line)  # Beg line double quote
-                line = re.sub(r' +" *$', '"', line)  # End line double quote
-                line = re.sub(r' "-', '"-', line)  # With hyphen
-                line = re.sub(r'the " ', 'the "', line)  # With "the"
-                line = re.sub(
+                line, cnt = re.subn(r'^" +', '"', line)  # Beg line double quote
+                line, cnt2 = re.subn(r' +" *$', '"', line)  # End line double quote
+                line, cnt3 = re.subn(r' "-', '"-', line)  # With hyphen
+                line, cnt4 = re.subn(r'the " ', 'the "', line)  # With "the"
+                line, cnt5 = re.subn(
                     r"([.,!]) ([\"'] )", r"\1\2", line
                 )  # Punctuation, space, quote, space
+                add_to_changes(
+                    key,
+                    "Space around straight quotes removed",
+                    cnt + cnt2 + cnt3 + cnt4 + cnt5,
+                    linenum,
+                )
                 # Curly quotes
-                line = re.sub(r"“ +", "“", line)
-                line = re.sub(r"‘ +", "‘", line)
-                line = re.sub(r" +”", "”", line)
+                line, cnt = re.subn(r"“ +", "“", line)
+                line, cnt2 = re.subn(r"‘ +", "‘", line)
+                line, cnt3 = re.subn(r" +”", "”", line)
                 # Only remove space around apostrophe or close-single quote
                 # if beginning/end of line since unsure if apostrophe/quote
-                line = re.sub(r" +’ *$", "’", line)
-                line = re.sub(r"^ *’ +", "’", line)
+                line, cnt4 = re.subn(r" +’ *$", "’", line)
+                line, cnt5 = re.subn(r"^ *’ +", "’", line)
+                add_to_changes(
+                    key,
+                    "Space around curly quotes removed",
+                    cnt + cnt2 + cnt3 + cnt4 + cnt5,
+                    linenum,
+                )
 
             # Convert curly quotes to straight
-            if preferences.get(PrefKey.CP_CURLY_QUOTES):
-                line = re.sub(r"[‘’]", "'", line)
-                line = re.sub(r"[“”]", '"', line)
+            key = PrefKey.CP_CURLY_QUOTES
+            if preferences.get(key):
+                line, cnt = re.subn(r"[‘’]", "'", line)
+                add_to_changes(key, "Single curly quotes → Straight", cnt, linenum)
+                line, cnt = re.subn(r"[“”]", '"', line)
+                add_to_changes(key, "Double curly quotes → Straight", cnt, linenum)
 
             # Spaced apostrophes within words
-            if preferences.get(PrefKey.CP_SPACED_APOSTROPHES):
-                line = re.sub(r" 'll\b", "'ll", line)
-                line = re.sub(r" 've\b", "'ve", line)
-                line = re.sub(r" 's\b", "'s", line)
-                line = re.sub(r" 'd\b", "'d", line)
-                line = re.sub(r" n't\b", "n't", line)
-                line = re.sub(r"\bI 'm\b", "I'm", line)
+            key = PrefKey.CP_SPACED_APOSTROPHES
+            if preferences.get(key):
+                line, cnt = re.subn(r" 'll\b", "'ll", line)
+                add_to_changes(key, "Space before 'll removed", cnt, linenum)
+                line, cnt = re.subn(r" 've\b", "'ve", line)
+                add_to_changes(key, "Space before 've removed", cnt, linenum)
+                line, cnt = re.subn(r" 's\b", "'s", line)
+                add_to_changes(key, "Space before 's removed", cnt, linenum)
+                line, cnt = re.subn(r" 'd\b", "'d", line)
+                add_to_changes(key, "Space before 'd removed", cnt, linenum)
+                line, cnt = re.subn(r" n't\b", "n't", line)
+                add_to_changes(key, "Space before n't removed", cnt, linenum)
+                line, cnt = re.subn(r"\bI 'm\b", "I'm", line)
+                add_to_changes(key, "I 'm → I'm", cnt, linenum)
 
             # Only modify line in file if it has changed
             if line != orig_line:
@@ -1185,7 +1360,27 @@ class CPProcessingDialog(ToplevelDialog):
                 maintext().insert(f"{linenum}.0", line)
                 n_changes += 1
         logger.info(f"{sing_plur(n_changes, 'line')} changed/deleted during filtering")
-        Busy.unbusy()
+
+        self.create_entries()
+
+    def create_entries(self) -> None:
+        """Create entries from changes dictionary."""
+        self.reset()
+        verbose = preferences.get(PrefKey.CP_FILTER_VERBOSE)
+        for change_dict in self.changes.values():
+            for label, lnum_list in change_dict.items():
+                if verbose:
+                    for lnum in lnum_list:
+                        self.add_entry(label, IndexRange(f"{lnum}.0", f"{lnum}.0"))
+                elif lnum_list:
+                    self.add_entry(f"{label}: on {sing_plur(len(lnum_list), 'line')}")
+        self.display_entries()
+
+
+def cp_show_process_dialog() -> None:
+    """Show the Filter/Processing Dialog."""
+
+    CPFilteringDialog.show_dialog()
 
 
 class CPCharSuitesDialog(ToplevelDialog):
