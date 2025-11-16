@@ -1666,7 +1666,7 @@ def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
     ):
         maintext().replace(start, f"{start}+1c", out_bracket_open)
         maintext().replace(
-            f"{start}+{cvar.get()-1}c", f"{start}+{cvar.get()}c", out_bracket_close
+            f"{start}+{cvar.get() - 1}c", f"{start}+{cvar.get()}c", out_bracket_close
         )
 
     # Replace brackets of anchors
@@ -1675,13 +1675,13 @@ def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
     while start := maintext().search(
         match_regex, start, tk.END, regexp=True, nocase=True, count=cvar
     ):
-        illo_sn_check = maintext().get(f"{start}+1c", f"{start}+{cvar.get()-1}c")
+        illo_sn_check = maintext().get(f"{start}+1c", f"{start}+{cvar.get() - 1}c")
         if illo_sn_check in ("Illustration", "Sidenote"):
             start = f"{start}+1c"
             continue
         maintext().replace(start, f"{start}+1c", out_bracket_open)
         maintext().replace(
-            f"{start}+{cvar.get()-1}c", f"{start}+{cvar.get()}c", out_bracket_close
+            f"{start}+{cvar.get() - 1}c", f"{start}+{cvar.get()}c", out_bracket_close
         )
 
     # Refresh footnote list

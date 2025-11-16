@@ -2782,7 +2782,7 @@ def open_ngram() -> None:
     content = re.sub(r"\s+", " ", maintext().selected_text().strip())
     # If single hyphenated word, add non-hyphenated version
     if "-" in content and "," not in content and " " not in content:
-        content = f"{content},{content.replace('-','')}"
+        content = f"{content},{content.replace('-', '')}"
     if not content:  # Default content to same as Ngram website
         content = r"Albert%20Einstein,Sherlock%20Holmes,Frankenstein"
     do_open_ngram(content)

@@ -1682,9 +1682,9 @@ class HTMLAutoListDialog(ToplevelDialog):
             blank_line = len(maintext().get(f"{row}.0", f"{row}.end").strip()) == 0
             if blank_line and multiline:
                 if row != sel_ranges[0].start.row:
-                    maintext().insert(f"{row-1}.end", "</li>")
+                    maintext().insert(f"{row - 1}.end", "</li>")
                 if row != sel_ranges[-1].end.row - 1:
-                    maintext().insert(f"{row+1}.0", "<li>")
+                    maintext().insert(f"{row + 1}.0", "<li>")
             elif not blank_line and multiline:
                 if row == sel_ranges[-1].end.row - 1:
                     maintext().insert(f"{row}.end", "</li>")

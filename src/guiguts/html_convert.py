@@ -388,7 +388,7 @@ def html_convert_body() -> None:
             raise SyntaxError(f"Line {step}: Illegally nested block markup")
         if step == 1:  # OK if first line of file
             return
-        prev_line = maintext().get(f"{step-1}.0", f"{step-1}.end")
+        prev_line = maintext().get(f"{step - 1}.0", f"{step - 1}.end")
         # Previous line must be blank, or open block quote (div or blockquote)
         if prev_line and not prev_line.startswith(("<div", "<blockquote")):
             raise SyntaxError(

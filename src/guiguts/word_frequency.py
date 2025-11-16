@@ -860,7 +860,7 @@ class WordFrequencyDialog(ToplevelDialog):
             # If chosen word is hyphenated and non-hyphen version not in text,
             # manually add the non-hyphen version to content
             else:
-                content = f"{content},{word.replace('-','')}"
+                content = f"{content},{word.replace('-', '')}"
 
         do_open_ngram(content)
         return "break"

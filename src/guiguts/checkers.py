@@ -972,7 +972,7 @@ class CheckerDialog(ToplevelDialog):
         if count_on == 1:
             crit = re.sub("[ :]*$", "", self.view_options_filters[on_index].label)
             self.view_options_label.set(
-                f"Option {on_index+1} enabled (of {n_filters}): "
+                f"Option {on_index + 1} enabled (of {n_filters}): "
             )
             self.view_options_crit.set(crit)
         else:

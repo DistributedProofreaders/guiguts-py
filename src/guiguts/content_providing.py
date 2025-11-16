@@ -1005,7 +1005,7 @@ class CPProcessingDialog(ToplevelDialog):
             this_line_blank = len(line) == 0
             all_blank_so_far = all_blank_so_far and this_line_blank
             if preferences.get(PrefKey.CP_BLANK_LINES_TOP) and all_blank_so_far:
-                maintext().delete(f"{linenum}.0", f"{linenum+1}.0")
+                maintext().delete(f"{linenum}.0", f"{linenum + 1}.0")
                 next_linenum -= 1  # Compensate for deleted line
                 n_changes += 1
                 continue
@@ -1016,7 +1016,7 @@ class CPProcessingDialog(ToplevelDialog):
                 and prev_line_blank
                 and this_line_blank
             ):
-                maintext().delete(f"{linenum}.0", f"{linenum+1}.0")
+                maintext().delete(f"{linenum}.0", f"{linenum + 1}.0")
                 next_linenum -= 1  # Compensate for deleted line
                 n_changes += 1
                 continue
@@ -1700,7 +1700,7 @@ def cp_compress_pngs() -> None:
             total_after += size_after
             saved = size_before - size_after
             logger.info(
-                f"{src_file.name} compressed, saving {saved}B ({100*saved/size_before:.1f}%)"
+                f"{src_file.name} compressed, saving {saved}B ({100 * saved / size_before:.1f}%)"
             )
         root().update()
         n_files += 1
@@ -1711,7 +1711,7 @@ def cp_compress_pngs() -> None:
     total_saved = total_before - total_after
     percent_saved = 100 * total_saved / total_before if total_before > 0 else 0
     logger.info(
-        f"{n_files} files compressed, saving {total_saved/1024:.1f}KB ({percent_saved:.1f}%)"
+        f"{n_files} files compressed, saving {total_saved / 1024:.1f}KB ({percent_saved:.1f}%)"
     )
     Busy.unbusy()
 
