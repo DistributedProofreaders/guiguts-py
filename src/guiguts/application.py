@@ -1528,25 +1528,25 @@ class Guiguts:
             # May need to add an entry
             if count >= n_entries:
                 self.recent_menu.add_button(
-                    f"~{count+1}: {file}",
+                    f"~{count + 1}: {file}",
                     lambda fn=file: self.open_file(fn),  # type:ignore[misc]
                     add_to_command_palette=False,
                 )
                 tk_menu.add_command(
-                    label=f"~{count+1}: {file}",
+                    label=f"~{count + 1}: {file}",
                     command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
                 )
             else:
                 # Or just reconfigure the metadata entry and the menu button
                 self.recent_menu.entries[count].label = (
-                    f"~{count+1}: {file_list[count]}"
+                    f"~{count + 1}: {file_list[count]}"
                 )
                 self.recent_menu.entries[count].command = (  # type:ignore[attr-defined]
                     lambda fn=file: self.open_file(fn),
                 )  # type:ignore[misc]
                 tk_menu.entryconfigure(
                     count + offset,
-                    label=f"{count+1}: {file}",
+                    label=f"{count + 1}: {file}",
                     command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
                 )
 

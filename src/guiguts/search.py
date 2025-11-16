@@ -408,7 +408,7 @@ class SearchDialog(ToplevelDialog):
         )
         geometry = self.geometry()
         height = int(re.sub(r"\d+x(\d+).+", r"\1", geometry))
-        geometry = re.sub(r"(\d+x)\d+(.+)", rf"\g<1>{height+offset}\g<2>", geometry)
+        geometry = re.sub(r"(\d+x)\d+(.+)", rf"\g<1>{height + offset}\g<2>", geometry)
         self.geometry(geometry)
 
     def is_valid_regex(self, new_value: Optional[str] = None) -> bool:

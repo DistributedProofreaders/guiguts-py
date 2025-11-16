@@ -1154,7 +1154,7 @@ class MainText(tk.Text):
         def get_page_lines(text: tk.Text) -> int:
             """Return the number of visible lines in the Text widget."""
             first_line = maintext().rowcol("@0,0").row
-            last_line = maintext().rowcol(f"@0,{text.winfo_height()-1}").row
+            last_line = maintext().rowcol(f"@0,{text.winfo_height() - 1}").row
             return last_line - first_line
 
         def page_down_up(idir: int) -> None:
@@ -2431,7 +2431,7 @@ class MainText(tk.Text):
         """Get index from event with slight offset, or it feels as though
         it goes to the left of the character too soon."""
         assert isinstance(event.widget, tk.Text)
-        return event.widget.index(f"@{event.x+5},{event.y}")
+        return event.widget.index(f"@{event.x + 5},{event.y}")
 
     def _create_drag_window(self, event: tk.Event) -> None:
         """Create a window previewing the text being dragged."""
