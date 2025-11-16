@@ -1018,6 +1018,71 @@ class CPFilteringDialog(CheckerDialog):
         all_blank_so_far = True
         prev_line_blank = False
         n_changes = 0
+        re_hs = re.compile(
+            "[\u0009\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000]"
+        )
+        re_vs = re.compile("[\u000b\u000c\u0085\u2028\u2029]")
+        re_d1 = re.compile("[\u00ac\u2010\u2011\u2013\u2212]")
+        re_d2 = re.compile("[\u2012\u2014\u2015]")
+        re_2s = re.compile("  ")
+        re_sh = re.compile(" -( |$)")
+        re_ps = re.compile(r" ([\.,!?:;])")
+        re_el = re.compile(r"(?<!\.)\.{3}(?!\.)")
+        re_tli = re.compile(r"(?<=\b[tT])([li]i|b)")
+        re_wli = re.compile(r"(?<=\bw)([li]i|b)")
+        re_rn = re.compile(r"\brn")
+        re_hl = re.compile(r"\bh(?=[lr])")
+        re_vv = re.compile(r"\bVV")
+        re_vv2 = re.compile(r"\b[vV]{2}")
+        re_tb = re.compile(r"tb\b")
+        re_cl = re.compile(r"cl\b")
+        re_cb = re.compile(r"(\bcb|cb\b)")
+        re_bt = re.compile(r"(?<=[gp])bt")
+        re_vw = re.compile(r"\\[\\v]")
+        re_ahle = re.compile(r"([ai])hle")
+        re_mrn = re.compile(r"mrn|mnr|nmr|nrm")
+        re_11 = re.compile(r"'11")
+        re_exc2 = re.compile(r"'!!")
+        re_h = re.compile(r"!!(?=\w)")
+        re_exc = re.compile(r"(?<=\w)!(?=\w)")
+        re_1i = re.compile(r"(?<![^'\" ])1\b(?!\.)")
+        re_0o = re.compile(r"(?<![^'\" ])0\b")
+        re_li = re.compile(r"(?<![^'\" ])l\b(?!')")
+        re_la = re.compile(r"(?<![^'\" ])l'(?!\p{Letter})")
+        re_mf = re.compile(
+            r"(\d+)(" + fractions_class + ")",
+        )
+        re_vf = re.compile(fractions_class)
+        re_sp = re.compile(superscripts_class)
+        re_sb = re.compile(subscripts_class)
+        re_2u = re.compile("__")
+        re_4h = re.compile("-{5,}")
+        re_bs1 = re.compile(r"(?<=[[({]) ")
+        re_bs2 = re.compile(r" (?=[])}])")
+        re_sl = re.compile(r"(?<!(\W))/(?=\W)")
+        re_j = re.compile(r"(?<![ainu])j(?=\s)")
+        re_hebe = re.compile(r"\bto he\b")
+        re_pu1 = re.compile(r"^...\p{Punct}+")
+        re_pu2 = re.compile(r"^\p{Punct}+(\p{Punct})")
+        re_pu3 = re.compile(r"\s{3,}[\p{Punct}\s]+$")
+        re_q1 = re.compile(r'^" +')
+        re_q2 = re.compile(r' +" *$')
+        re_q3 = re.compile(r' "-')
+        re_q4 = re.compile(r'the " ')
+        re_q5 = re.compile(r"([.,!]) ([\"'] )")
+        re_c1 = re.compile(r"“ +")
+        re_c2 = re.compile(r"‘ +")
+        re_c3 = re.compile(r" +”")
+        re_c4 = re.compile(r" +’ *$")
+        re_c5 = re.compile(r"^ *’ +")
+        re_sq = re.compile(r"[‘’]")
+        re_dq = re.compile(r"[“”]")
+        re_sa1 = re.compile(r" 'll\b")
+        re_sa2 = re.compile(r" 've\b")
+        re_sa3 = re.compile(r" 's\b")
+        re_sa4 = re.compile(r" 'd\b")
+        re_sa5 = re.compile(r" n't\b")
+        re_sa6 = re.compile(r"\bI 'm\b")
         while maintext().compare(f"{next_linenum}.end", "<", tk.END):
             linenum = next_linenum
             next_linenum += 1
@@ -1041,21 +1106,20 @@ class CPFilteringDialog(CheckerDialog):
             # Convert non-standard whitespace
             key = PrefKey.CP_WHITESPACE_TO_SPACE
             if preferences.get(key):
-                line, cnt = re.subn(
-                    "[\u0009\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000]",
+                line, cnt = re_hs.subn(
                     " ",
                     line,
                 )
                 add_to_changes(key, "Horiz. space → Space", cnt, linenum)
-                line, cnt = re.subn("[\u000b\u000c\u0085\u2028\u2029]", "\n", line)
+                line, cnt = re_vs.subn("\n", line)
                 add_to_changes(key, "Vert. space → Newline", cnt, linenum)
 
             # Convert non-standard dashes
             key = PrefKey.CP_DASHES_TO_HYPHEN
             if preferences.get(key):
-                line, cnt = re.subn("[\u00ac\u2010\u2011\u2013\u2212]", "-", line)
+                line, cnt = re_d1.subn("-", line)
                 add_to_changes(key, "Dash → Hyphen", cnt, linenum)
-                line, cnt = re.subn("[\u2012\u2014\u2015]", "--", line)
+                line, cnt = re_d2.subn("--", line)
                 add_to_changes(key, "Long dash → Double hyphen", cnt, linenum)
 
             # Strip trailing spaces (not reported)
@@ -1094,13 +1158,13 @@ class CPFilteringDialog(CheckerDialog):
             # Compress double spaces
             key = PrefKey.CP_MULTIPLE_SPACES
             if preferences.get(key):
-                line, cnt = re.subn("  ", " ", line)
+                line, cnt = re_2s.subn(" ", line)
                 add_to_changes(key, "Multiple spaces → Single", cnt, linenum)
 
             # Spaced single hyphen - convert to emdash (double hyphen)
             key = PrefKey.CP_SPACED_HYPHEN_EMDASH
             if preferences.get(key):
-                line, cnt = re.subn(" -( |$)", "--", line)
+                line, cnt = re_sh.subn("--", line)
                 add_to_changes(
                     key, "Spaced hyphen → Emdash (double hyphen)", cnt, linenum
                 )
@@ -1118,7 +1182,7 @@ class CPFilteringDialog(CheckerDialog):
             # Spaced punctuation - remove space
             key = PrefKey.CP_SPACE_BEFORE_PUNC
             if preferences.get(key):
-                line, cnt = re.subn(r" ([\.,!?:;])", r"\1", line)
+                line, cnt = re_ps.subn(r"\1", line)
                 add_to_changes(key, "Space before punctuation removed", cnt, linenum)
 
             # Convert single character ellipsis to 3-dot ellipsis
@@ -1129,7 +1193,7 @@ class CPFilteringDialog(CheckerDialog):
                 line = line.replace("…", "...")
                 if len(line) != orig_len:
                     add_to_changes(key, 'Ellipsis char → "..."', 1, linenum)
-                line, cnt = re.subn(r"(?<!\.)\.{3}(?!\.)", " ...", line)
+                line, cnt = re_el.subn(" ...", line)
                 add_to_changes(key, "Space added before ellipsis", cnt, linenum)
 
             # Convert 2 single quotes to a double
@@ -1145,40 +1209,32 @@ class CPFilteringDialog(CheckerDialog):
             if preferences.get(key):
                 # tli, tii, tb, Tli, Tii, Tb at start of word to th/Th
                 # and similar for w
-                line, cnt = re.subn(r"(?<=\b[tT])([li]i|b)", "h", line)
+                line, cnt = re_tli.subn("h", line)
                 add_to_changes(key, "Scanno tli/tii/tb → th", cnt, linenum)
-                line, cnt = re.subn(r"(?<=\bw)([li]i|b)", "h", line)
+                line, cnt = re_wli.subn("h", line)
                 add_to_changes(key, "Scanno wli/wii/wb → wh", cnt, linenum)
-                line, cnt = re.subn(r"\brn", "m", line)  # rn at start of word to m
+                line, cnt = re_rn.subn("m", line)  # rn at start of word to m
                 add_to_changes(key, "Scanno word-start rn → m", cnt, linenum)
-                line, cnt = re.subn(
-                    r"\bh(?=[lr])", "b", line
-                )  # hl/hr at start of word to bl/br
+                line, cnt = re_hl.subn("b", line)  # hl/hr at start of word to bl/br
                 add_to_changes(key, "Scanno word-start hl/hr → bl/br", cnt, linenum)
-                line, cnt = re.subn(r"\bVV", "W", line)  # VV at start of word to W
+                line, cnt = re_vv.subn("W", line)  # VV at start of word to W
                 add_to_changes(key, "Scanno word-start VV → W", cnt, linenum)
-                line, cnt = re.subn(
-                    r"\b[vV]{2}", "w", line
-                )  # Vv/vV/vv at start of word to w
+                line, cnt = re_vv2.subn("w", line)  # Vv/vV/vv at start of word to w
                 add_to_changes(key, "Scanno word-start vv → w", cnt, linenum)
-                line, cnt = re.subn(r"tb\b", "th", line)  # tb at end of word to th
+                line, cnt = re_tb.subn("th", line)  # tb at end of word to th
                 add_to_changes(key, "Scanno word-end tb → th", cnt, linenum)
-                line, cnt = re.subn(r"cl\b", "d", line)  # cl at end of word to d
+                line, cnt = re_cl.subn("d", line)  # cl at end of word to d
                 add_to_changes(key, "Scanno word-end cl → d", cnt, linenum)
-                line, cnt = re.subn(
-                    r"(\bcb|cb\b)", "ch", line
-                )  # cb at start/end of word to ch
+                line, cnt = re_cb.subn("ch", line)  # cb at start/end of word to ch
                 add_to_changes(key, "Scanno word-start/end cb → ch", cnt, linenum)
-                line, cnt = re.subn(r"(?<=[gp])bt", "ht", line)  # gbt/pbt to ght/pht
+                line, cnt = re_bt.subn("ht", line)  # gbt/pbt to ght/pht
                 add_to_changes(key, "Scanno gbt/pbt → ght/pht", cnt, linenum)
-                line, cnt = re.subn(r"\\[\\v]", "w", line)  # \v or \\ to w
+                line, cnt = re_vw.subn("w", line)  # \v or \\ to w
                 add_to_changes(key, "Scanno \\\\/\\v → w", cnt, linenum)
-                line, cnt = re.subn(
-                    r"([ai])hle", "\1ble", line
-                )  # ahle to able; ihle to ible
+                line, cnt = re_ahle.subn("\1ble", line)  # ahle to able; ihle to ible
                 add_to_changes(key, "Scanno ahle/ihle → able/ible", cnt, linenum)
                 # variants of mrn to mm (not rnm or rmn which occur in words)
-                line, cnt = re.subn(r"mrn|mnr|nmr|nrm", "mm", line)
+                line, cnt = re_mrn.subn("mm", line)
                 add_to_changes(key, "Scanno mrn/mnr/nmr/nrm → mm", cnt, linenum)
                 # rnp to mp (except turnpike, hornpipe & plurals, etc)
                 orig_len = len(line)
@@ -1189,65 +1245,61 @@ class CPFilteringDialog(CheckerDialog):
                 )
                 if len(line) != orig_len:
                     add_to_changes(key, '"rnp" → "mp"', 1, linenum)
-                line, cnt = re.subn(r"'11", "'ll", line)  # '11 to 'll
+                line, cnt = re_11.subn("'ll", line)  # '11 to 'll
                 add_to_changes(key, "Scanno '11 → 'll", cnt, linenum)
-                line, cnt = re.subn(r"'!!", "'ll", line)  # '!! to 'll
+                line, cnt = re_exc2.subn("'ll", line)  # '!! to 'll
                 add_to_changes(key, "Scanno '!! → 'll", cnt, linenum)
-                line, cnt = re.subn(
-                    r"!!(?=\w)", "H", line
-                )  # !! to H if not at end of word
+                line, cnt = re_h.subn("H", line)  # !! to H if not at end of word
                 add_to_changes(key, "Scanno non-word-end !! → H", cnt, linenum)
-                line, cnt = re.subn(r"(?<=\w)!(?=\w)", "l", line)  # ! to l if midword
+                line, cnt = re_exc.subn("l", line)  # ! to l if midword
                 add_to_changes(key, "Scanno mid-word ! → l", cnt, linenum)
 
             # Standalone 1 preceded by space or quote, not followed by period --> I
             key = PrefKey.CP_1_TO_I
             if preferences.get(key):
-                line, cnt = re.subn(r"(?<![^'\" ])1\b(?!\.)", "I", line)
+                line, cnt = re_1i.subn("I", line)
                 add_to_changes(key, "Standalone 1 → I", cnt, linenum)
 
             # Standalone 0 preceded by space or quote --> O
             key = PrefKey.CP_0_TO_O
             if preferences.get(key):
-                line, cnt = re.subn(r"(?<![^'\" ])0\b", "O", line)
+                line, cnt = re_0o.subn("O", line)
                 add_to_changes(key, "Standalone 0 → O", cnt, linenum)
 
             # Standalone l preceded by space or quote, not followed by apostrophe --> I
             key = PrefKey.CP_L_TO_I
             if preferences.get(key):
-                line, cnt = re.subn(r"(?<![^'\" ])l\b(?!')", "I", line)
+                line, cnt = re_li.subn("I", line)
                 add_to_changes(key, "Standalone l → I", cnt, linenum)
                 # Or followed by apostrophe, but not a letter after that (e.g. preserve l'amie)
-                line, cnt = re.subn(r"(?<![^'\" ])l'(?!\p{Letter})", "I'", line)
+                line, cnt = re_la.subn("I'", line)
                 add_to_changes(key, "Standalone l' → I'", cnt, linenum)
 
             # Expand Unicode fraction characters, including mixed fractions
             key = PrefKey.CP_FRACTIONS
             if preferences.get(key):
-                line, cnt = re.subn(
-                    r"(\d+)(" + fractions_class + ")", repl_mixed_frac, line
-                )
-                line, cnt2 = re.subn(fractions_class, repl_vulgar_frac, line)
+                line, cnt = re_mf.subn(repl_mixed_frac, line)
+                line, cnt2 = re_vf.subn(repl_vulgar_frac, line)
                 add_to_changes(key, "Fraction char expanded", cnt + cnt2, linenum)
 
             # Expand super/subscripts
             key = PrefKey.CP_SUPER_SUB_SCRIPTS
             if preferences.get(key):
-                line, cnt = re.subn(superscripts_class, repl_sup, line)
+                line, cnt = re_sp.subn(repl_sup, line)
                 add_to_changes(key, "Superscript expanded", cnt, linenum)
-                line, cnt = re.subn(subscripts_class, repl_sub, line)
+                line, cnt = re_sb.subn(repl_sub, line)
                 add_to_changes(key, "Subscript expanded", cnt, linenum)
 
             # Double underscore --> emdash
             key = PrefKey.CP_UNDERSCORES_EMDASH
             if preferences.get(key):
-                line, cnt = re.subn("__", "--", line)
+                line, cnt = re_2u.subn("--", line)
                 add_to_changes(key, "Double underscore → Double hyphen", cnt, linenum)
 
             # Looong dashes to 4 hyphens (now all hyphen replaces have been done)
             key = PrefKey.CP_DASHES_TO_HYPHEN
             if preferences.get(key):
-                line, cnt = re.subn("-{5,}", "----", line)
+                line, cnt = re_4h.subn("----", line)
                 add_to_changes(key, "Hyphens reduced to 4", cnt, linenum)
 
             # Double comma --> double quote
@@ -1261,26 +1313,26 @@ class CPFilteringDialog(CheckerDialog):
             # Remove bad space around brackets
             key = PrefKey.CP_SPACED_BRACKETS
             if preferences.get(key):
-                line, cnt = re.subn(r"(?<=[[({]) ", "", line)
-                line, cnt2 = re.subn(r" (?=[])}])", "", line)
+                line, cnt = re_bs1.subn("", line)
+                line, cnt2 = re_bs2.subn("", line)
                 add_to_changes(key, "Space around bracket removed", cnt + cnt2, linenum)
 
             # Convert slash to comma+apostrophe
             key = PrefKey.CP_SLASH_COMMA_APOSTROPHE
             if preferences.get(key):
-                line, cnt = re.subn(r"(?<!(\W))/(?=\W)", ",'", line)
+                line, cnt = re_sl.subn(",'", line)
                 add_to_changes(key, "Slash → ,'", cnt, linenum)
 
             # Convert solitary or end-of-word j to semicolon
             key = PrefKey.CP_J_SEMICOLON
             if preferences.get(key):
-                line, cnt = re.subn(r"(?<![ainu])j(?=\s)", ";", line)
+                line, cnt = re_j.subn(";", line)
                 add_to_changes(key, "End-of-word j → semicolon", cnt, linenum)
 
             # Convert he --> be if it follows "to"
             key = PrefKey.CP_TO_HE_BE
             if preferences.get(key):
-                line, cnt = re.subn(r"\bto he\b", "to be", line)
+                line, cnt = re_hebe.subn("to be", line)
                 add_to_changes(key, "to he → to be", cnt, linenum)
 
             # Remove bad punctuation at start of line:
@@ -1290,10 +1342,10 @@ class CPFilteringDialog(CheckerDialog):
             key = PrefKey.CP_PUNCT_START_END
             if preferences.get(key):
                 if line.startswith("..."):
-                    line, cnt = re.subn(r"^...\p{Punct}+", "...", line)
+                    line, cnt = re_pu1.subn("...", line)
                 else:
-                    line, cnt = re.subn(r"^\p{Punct}+(\p{Punct})", r"\1", line)
-                line, cnt2 = re.subn(r"\s{3,}[\p{Punct}\s]+$", "", line)
+                    line, cnt = re_pu2.subn(r"\1", line)
+                line, cnt2 = re_pu3.subn("", line)
                 add_to_changes(
                     key, "Bad line-start punctuation removed", cnt + cnt2, linenum
                 )
@@ -1302,12 +1354,12 @@ class CPFilteringDialog(CheckerDialog):
             key = PrefKey.CP_DUBIOUS_SPACED_QUOTES
             if preferences.get(key):
                 # Straight quotes
-                line, cnt = re.subn(r'^" +', '"', line)  # Beg line double quote
-                line, cnt2 = re.subn(r' +" *$', '"', line)  # End line double quote
-                line, cnt3 = re.subn(r' "-', '"-', line)  # With hyphen
-                line, cnt4 = re.subn(r'the " ', 'the "', line)  # With "the"
-                line, cnt5 = re.subn(
-                    r"([.,!]) ([\"'] )", r"\1\2", line
+                line, cnt = re_q1.subn('"', line)  # Beg line double quote
+                line, cnt2 = re_q2.subn('"', line)  # End line double quote
+                line, cnt3 = re_q3.subn('"-', line)  # With hyphen
+                line, cnt4 = re_q4.subn('the "', line)  # With "the"
+                line, cnt5 = re_q5.subn(
+                    r"\1\2", line
                 )  # Punctuation, space, quote, space
                 add_to_changes(
                     key,
@@ -1316,13 +1368,13 @@ class CPFilteringDialog(CheckerDialog):
                     linenum,
                 )
                 # Curly quotes
-                line, cnt = re.subn(r"“ +", "“", line)
-                line, cnt2 = re.subn(r"‘ +", "‘", line)
-                line, cnt3 = re.subn(r" +”", "”", line)
+                line, cnt = re_c1.subn("“", line)
+                line, cnt2 = re_c2.subn("‘", line)
+                line, cnt3 = re_c3.subn("”", line)
                 # Only remove space around apostrophe or close-single quote
                 # if beginning/end of line since unsure if apostrophe/quote
-                line, cnt4 = re.subn(r" +’ *$", "’", line)
-                line, cnt5 = re.subn(r"^ *’ +", "’", line)
+                line, cnt4 = re_c4.subn("’", line)
+                line, cnt5 = re_c5.subn("’", line)
                 add_to_changes(
                     key,
                     "Space around curly quotes removed",
@@ -1333,25 +1385,25 @@ class CPFilteringDialog(CheckerDialog):
             # Convert curly quotes to straight
             key = PrefKey.CP_CURLY_QUOTES
             if preferences.get(key):
-                line, cnt = re.subn(r"[‘’]", "'", line)
+                line, cnt = re_sq.subn("'", line)
                 add_to_changes(key, "Single curly quotes → Straight", cnt, linenum)
-                line, cnt = re.subn(r"[“”]", '"', line)
+                line, cnt = re_dq.subn('"', line)
                 add_to_changes(key, "Double curly quotes → Straight", cnt, linenum)
 
             # Spaced apostrophes within words
             key = PrefKey.CP_SPACED_APOSTROPHES
             if preferences.get(key):
-                line, cnt = re.subn(r" 'll\b", "'ll", line)
+                line, cnt = re_sa1.subn("'ll", line)
                 add_to_changes(key, "Space before 'll removed", cnt, linenum)
-                line, cnt = re.subn(r" 've\b", "'ve", line)
+                line, cnt = re_sa2.subn("'ve", line)
                 add_to_changes(key, "Space before 've removed", cnt, linenum)
-                line, cnt = re.subn(r" 's\b", "'s", line)
+                line, cnt = re_sa3.subn("'s", line)
                 add_to_changes(key, "Space before 's removed", cnt, linenum)
-                line, cnt = re.subn(r" 'd\b", "'d", line)
+                line, cnt = re_sa4.subn("'d", line)
                 add_to_changes(key, "Space before 'd removed", cnt, linenum)
-                line, cnt = re.subn(r" n't\b", "n't", line)
+                line, cnt = re_sa5.subn("n't", line)
                 add_to_changes(key, "Space before n't removed", cnt, linenum)
-                line, cnt = re.subn(r"\bI 'm\b", "I'm", line)
+                line, cnt = re_sa6.subn("I'm", line)
                 add_to_changes(key, "I 'm → I'm", cnt, linenum)
 
             # Only modify line in file if it has changed
