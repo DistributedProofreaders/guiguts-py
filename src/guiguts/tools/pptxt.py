@@ -96,6 +96,38 @@ class MsgInfo:
     hilite_end: int
 
 
+re1 = re.compile(r"<!DOCTYPE")
+re2 = re.compile(r"<(?=[!\/a-z]).*?(?<=[\"A-Za-z0-9\/]|-)>")
+re3 = re.compile(r"&[a-z0-9#]+?;")
+re4 = re.compile(r"&(\p{L}+)(\.)")
+re5 = re.compile(r"&(\p{L}+)")
+re6 = re.compile(r"\b[0-9]+\/[0-9]+\b")
+re7 = re.compile(r"\[[0-9]+?\]|\[[0-9]+?[a-zA-Z]\]")
+re8 = re.compile(r"_([\p{L}\p{P}])")
+re9 = re.compile(r"([\p{L}\p{Nd}\p{P}])_\b")
+re10 = re.compile(r"(\p{L})-(\p{L})")
+re11 = re.compile(r"(\p{L})-(\p{L})")
+re12 = re.compile(r"(\p{L})-( |$)")
+re13 = re.compile(r"( |^)-(\p{L})")
+re14 = re.compile(r"(\p{L})’(\p{L})")
+re15 = re.compile(r"(\p{L})’(\p{L})")
+re16 = re.compile(r"(\p{L})^(\p{L})")
+re17 = re.compile(r"(\p{L})’-")
+re18 = re.compile(r"(\p{L})-’(\p{L})")
+re19 = re.compile(r"(?<=^| )’(\p{L})(?=$| )")
+re20 = re.compile(r"(?<=^’)(\p{L})")
+re21 = re.compile(r"(?<= ’)(\p{L})")
+re22 = re.compile(r"(?<=^| )(\p{L})’(?=$| )")
+re23 = re.compile(r"(\p{L})\.\-(\p{L})")
+re24 = re.compile(r"--")
+re25 = re.compile(r"[^\p{N}\p{L}]")
+re26 = re.compile(r"①")
+re27 = re.compile(r"②")
+re28 = re.compile(r"⑤")
+re29 = re.compile(r"⑥")
+re30 = re.compile(r"⑦")
+
+
 def get_words_on_line(line: str) -> list[str]:
     """Extract all the words on one line."""
     global found_long_doctype_declaration
@@ -117,7 +149,7 @@ def get_words_on_line(line: str) -> list[str]:
         found_long_doctype_declaration = False
         return []
 
-    if re.search(r"<!DOCTYPE", line, re.IGNORECASE) and ">" not in line:
+    if re1.search(line, re.IGNORECASE) and ">" not in line:
         # Looks like a two-line <!DOCTYPE declaration. Toss this 1st line.
         # and set flag to toss the 2nd line too.
         found_long_doctype_declaration = True
@@ -126,29 +158,29 @@ def get_words_on_line(line: str) -> list[str]:
     # A short HTML 5 <!DOCTYPE> declaration will not be detected
     # by the above tests. However it will be detected as an HTML
     # tag next and removed from line.
-    line = re.sub(r"<(?=[!\/a-z]).*?(?<=[\"A-Za-z0-9\/]|-)>", " ", line)
+    line = re2.sub(" ", line)
 
     # &amp; &#1234;, etc. (&[a-z0-9#]+?;)
     # Replace HTML entities (e.g. &amp;) and numeric character references
     # (&#8212, &#x2014) with a space.
-    line = re.sub(r"&[a-z0-9#]+?;", " ", line)
+    line = re3.sub(" ", line)
 
     # Protect '&' in other tokens starting with '&'.
     # Order of subs below important.
-    line = re.sub(r"&(\p{L}+)(\.)", r"⑦\1⑤", line)
-    line = re.sub(r"&(\p{L}+)", r"⑦\1", line)
+    line = re4.sub(r"⑦\1⑤", line)
+    line = re5.sub(r"⑦\1", line)
 
     # Replace 1/2-style fractions with space.
-    line = re.sub(r"\b[0-9]+\/[0-9]+\b", " ", line)
+    line = re6.sub(" ", line)
 
     # Replace [99], [99a], etc., footnote anchors.
-    line = re.sub(r"\[[0-9]+?\]|\[[0-9]+?[a-zA-Z]\]", " ", line)
+    line = re7.sub(" ", line)
 
     # Remove italic markup (_). Need to consider a two-line italic string.
     # _blah123... or _"blah123...
-    line = re.sub(r"_([\p{L}\p{P}])", r"\1", line)
+    line = re8.sub(r"\1", line)
     # ...blah_ or ...blah._ or ...blah"_ or ...blah."_, etc.
-    line = re.sub(r"([\p{L}\p{Nd}\p{P}])_\b", r"\1", line)
+    line = re9.sub(r"\1", line)
 
     # Protect other special cases by masking them temporarily:
     # E.g.
@@ -162,51 +194,49 @@ def get_words_on_line(line: str) -> list[str]:
     # E.g. fo’c’s’le
 
     # Newcastle-upon-Tyne
-    line = re.sub(r"(\p{L})-(\p{L})", r"\1①\2", line)
-    line = re.sub(r"(\p{L})-(\p{L})", r"\1①\2", line)
+    line = re10.sub(r"\1①\2", line)
+    line = re11.sub(r"\1①\2", line)
     # paring- or -in (hyphen followed/preceded by whitespace)
-    line = re.sub(r"(\p{L})-( |$)", r"\1①\2", line)
-    line = re.sub(r"( |^)-(\p{L})", r"\1①\2", line)
+    line = re12.sub(r"\1①\2", line)
+    line = re13.sub(r"\1①\2", line)
     # fo’c’s’le
-    line = re.sub(r"(\p{L})’(\p{L})", r"\1②\2", line)
-    line = re.sub(r"(\p{L})’(\p{L})", r"\1②\2", line)
+    line = re14.sub(r"\1②\2", line)
+    line = re15.sub(r"\1②\2", line)
     # House^d
-    line = re.sub(r"(\p{L})^(\p{L})", r"\1⑥\2", line)
+    line = re16.sub(r"\1⑥\2", line)
     # loupin’-on, frien’-o’-mine
-    line = re.sub(r"(\p{L})’-", r"\1②①", line)
+    line = re17.sub(r"\1②①", line)
     # by-’n-by
-    line = re.sub(r"(\p{L})-’(\p{L})", r"\1①②\2", line)
+    line = re18.sub(r"\1①②\2", line)
     # by ’n by
-    line = re.sub(r"(?<=^| )’(\p{L})(?=$| )", r"②\1", line)
+    line = re19.sub(r"②\1", line)
     # ’tis at start of line
-    line = re.sub(r"(?<=^’)(\p{L})", r"②\1", line)
+    line = re20.sub(r"②\1", line)
     # ’tis prefxed by a space
-    line = re.sub(r"(?<= ’)(\p{L})", r" ②\1", line)
+    line = re21.sub(r" ②\1", line)
     # Peep o’ Day (?<=^| )(\p{L})’(?=$| )
-    line = re.sub(r"(?<=^| )(\p{L})’(?=$| )", r"\1②", line)
+    line = re22.sub(r"\1②", line)
     # Lieut.-Col. (\p{L})\.\-(\p{L})
-    line = re.sub(r"(\p{L})\.\-(\p{L})", r"\1⑤①\2", line)
+    line = re23.sub(r"\1⑤①\2", line)
 
     # If user is using "--" in place of emdash convert
     # that to a space so it can be a word separator.
 
-    line = re.sub(r"--", " ", line)
+    line = re24.sub(" ", line)
 
     # Replace all characters with " " other than letters, digits
     # and protected characters. Note that ①, ①, ... are 'numeric'
     # characters and are matched by \p{N}.
 
-    line = re.sub(r"[^\p{N}\p{L}]", " ", line)
+    line = re25.sub(" ", line)
 
     # Restore protected characters
 
-    line = re.sub(r"①", r"-", line)
-    line = re.sub(r"①", r"-", line)
-    line = re.sub(r"②", r"’", line)
-    line = re.sub(r"②", r"’", line)
-    line = re.sub(r"⑤", r".", line)
-    line = re.sub(r"⑥", r"^", line)
-    line = re.sub(r"⑦", r"&", line)
+    line = re26.sub(r"-", line)
+    line = re27.sub(r"’", line)
+    line = re28.sub(r".", line)
+    line = re29.sub(r"^", line)
+    line = re30.sub(r"&", line)
 
     # Create a list of whole words from the line.
 
@@ -1819,19 +1849,37 @@ def dash_review_check() -> None:
     # of Unicode dash characters. This is the second of the initial passes.
     #
     # The order of execution of these replacements on a line is important!
-
+    reg1 = re.compile(r"—{8,}")
+    reg2 = re.compile(r"(?<=[ \p{L}])——(?!$|—)")
+    reg3 = re.compile(r"\p{L}-\p{L}")
+    reg4 = re.compile(r"\p{L}’-\p{L}")
+    reg5 = re.compile(r"\p{L}-’\p{L}")
+    reg6 = re.compile(r"(?<=\p{L}\.)-(?=\p{L})")
+    reg7 = re.compile(r"\p{L}‐\p{L}")  # U+2010 '‐'
+    reg8 = re.compile(r"-{8,}")
+    reg9 = re.compile(r"\p{L}-\p{L}")  # U+2011 '-'
+    reg10 = re.compile(r"\p{Nd}‒\p{Nd}")  # U+2012 '‒'
+    reg11 = re.compile(r"\p{Nd}–\p{Nd}")  # U+2013 '–'
+    reg12 = re.compile(r"\p{Nd}\s–\s\p{Nd}")
+    reg13 = re.compile(r"\p{L}—\p{L}")
+    reg14 = re.compile(r"[\p{Ll}I]—\p{P}")
+    reg15 = re.compile(r"[\._=+\)\]]—[\p{L}_=+\()]")
+    reg16 = re.compile(r"\p{Ll}— \p{Lu}")
+    reg17 = re.compile(r"—\s*$")
     # line number = line_index + 1
     line_index = 0
     while line_index < len(dbuf):
-        if non_text_line(dbuf[line_index]):  # Ignore page separators, etc
+        if non_text_line(dbuf[line_index]):
             line_index += 1
             continue
 
-        dbuf[line_index] = dbuf[line_index].replace("_", "")
+        line = dbuf[line_index].replace("_", "")
+
         # em-dash when 8 or more act as a separator
-        dbuf[line_index] = re.sub(r"—{8,}", "", dbuf[line_index])
+        line = reg1.sub("", line)
         # deleted words E.g. "as soon as Mr. —— had left the ship"
-        dbuf[line_index] = re.sub(r"(?<=[ \p{L}])——(?!$|—)", " QQ ", dbuf[line_index])
+        line = reg2.sub(" QQ ", line)
+
         # consider exactly two em-dashes as one - WHY?
         # dbuf[line_index] = re.sub(
         #     r"([^—])——([^—])", double_dash_replace, dbuf[line_index]
@@ -1841,42 +1889,43 @@ def dash_review_check() -> None:
         # sand-hill
         # Repeat to deal with lines like:
         #   "pur-r-rta-a-a-tu-ur? I b’long to the Twenty-secun’ Nor’ Ka-a-a-li-i-na"
-        dbuf[line_index] = re.sub(r"\p{L}-\p{L}", "QQ", dbuf[line_index])
-        dbuf[line_index] = re.sub(r"\p{L}-\p{L}", "QQ", dbuf[line_index])
+        line = reg3.sub("QQ", line)
+        line = reg3.sub("QQ", line)
         # Repeat to deal with lines like:
         #   "frien’-o’-mine", etc.
-        dbuf[line_index] = re.sub(r"\p{L}’-\p{L}", "QQ", dbuf[line_index])
-        dbuf[line_index] = re.sub(r"\p{L}’-\p{L}", "QQ", dbuf[line_index])
+        line = reg4.sub("QQ", line)
+        line = reg4.sub("QQ", line)
         # Repeat to deal with lines like:
         #   "by-’n-by", etc.
-        dbuf[line_index] = re.sub(r"\p{L}-’\p{L}", "QQ", dbuf[line_index])
-        dbuf[line_index] = re.sub(r"\p{L}-’\p{L}", "QQ", dbuf[line_index])
+        line = reg5.sub("QQ", line)
+        line = reg5.sub("QQ", line)
         # Hyphen-minus in Lieut.-Governor, etc.
-        dbuf[line_index] = re.sub(r"(?<=\p{L}\.)-(?=\p{L})", "QQ", dbuf[line_index])
+        line = reg6.sub("QQ", line)
         # Hyphen between two letters
-        dbuf[line_index] = re.sub(r"\p{L}‐\p{L}", "QQ", dbuf[line_index])
-        dbuf[line_index] = re.sub(r"\p{L}‐\p{L}", "QQ", dbuf[line_index])
+        line = reg7.sub("QQ", line)
+        line = reg7.sub("QQ", line)
         # hyphen-minus when 8 or more act as a separator
-        dbuf[line_index] = re.sub(r"-{8,}", "", dbuf[line_index])
+        line = reg8.sub("", line)
         # non-breaking hyphen between two letters
-        dbuf[line_index] = re.sub(r"\p{L}‑\p{L}", "", dbuf[line_index])
+        line = reg9.sub("", line)
         # figure dash between two digits
-        dbuf[line_index] = re.sub(r"\p{Nd}‒\p{Nd}", "", dbuf[line_index])
+        line = reg10.sub("", line)
         # en-dash between two digits
-        dbuf[line_index] = re.sub(r"\p{Nd}–\p{Nd}", "", dbuf[line_index])
+        line = reg11.sub("", line)
         # en-dash with spaces between two digits
-        dbuf[line_index] = re.sub(r"\p{Nd}\s–\s\p{Nd}", "", dbuf[line_index])
+        line = reg12.sub("", line)
         # em-dash between letters with no spacing
-        dbuf[line_index] = re.sub(r"\p{L}—\p{L}", "", dbuf[line_index])
+        line = reg13.sub("", line)
         # em-dash between lower-case letter or 'I' and punctuation
-        dbuf[line_index] = re.sub(r"[\p{Ll}I]—\p{P}", "", dbuf[line_index])
+        line = reg14.sub("", line)
         # em-dash between period or markup and letter
-        dbuf[line_index] = re.sub(r"[\._=+\)\]]—[\p{L}_=+\()]", "", dbuf[line_index])
+        line = reg15.sub("", line)
         # lower-case letter, em-dash, space, upper-case letter
-        dbuf[line_index] = re.sub(r"\p{Ll}— \p{Lu}", "", dbuf[line_index])
+        line = reg16.sub("", line)
         # em-dash should not end a line - may be exceptions
-        dbuf[line_index] = re.sub(r"—\s*$", "", dbuf[line_index])
+        line = reg17.sub("", line)
 
+        dbuf[line_index] = line
         line_index += 1
 
     # FINAL PASS: flag what remains.
@@ -1897,6 +1946,13 @@ def dash_review_check() -> None:
     counth2 = 0
     counth4 = 0
 
+    reg18 = re.compile(r"\p{Pd}")
+    reg19 = re.compile(r"(?<!-)--(?!-)")
+    reg20 = re.compile(r"(?<!-)----(?!-)")
+    reg21 = re.compile(
+        r"\p{Pd}\p{Pd}+",
+    )
+    reg22 = re.compile(r"\p{Pd}")
     while line_index < len(dbuf):
         if non_text_line(dbuf[line_index]):  # Ignore page separators, etc
             line_index += 1
@@ -1905,7 +1961,7 @@ def dash_review_check() -> None:
         line = dbuf[line_index]
 
         # Does line contain any dashes?
-        if re.search(r"\p{Pd}", line):
+        if reg18.search(line):
             # Line has dashes so generate output records to flag
             # each type of invalid dash types found.
 
@@ -1914,25 +1970,25 @@ def dash_review_check() -> None:
 
             # Look for pairs of hyphen-minus (keyboard "-") possibly being
             # used in place of em-dash. We will check and flag this later.
-            if re.search(r"(?<!-)--(?!-)", line):
-                resall = re.findall(r"(?<!-)--(?!-)", line)
+            if reg19.search(line):
+                resall = reg19.findall(line)
                 counth2 += len(resall)
                 a_h2.append((line_index + 1, book[line_index]))
                 # Delete all the pairs just found.
-                line = re.sub(r"(?<!-)--(?!-)", "", line)
+                line = reg19.sub("", line)
             # Look for quads of hyphen-minus (keyboard "-") possibly being
             # used in place of long em-dash. We will check and flag this later.
-            if re.search(r"(?<!-)----(?!-)", line):
-                resall = re.findall(r"(?<!-)----(?!-)", line)
+            if reg20.search(line):
+                resall = reg20.findall(line)
                 counth4 += len(resall)
                 a_h4.append((line_index + 1, book[line_index]))
                 # Delete all the quads just found.
-                line = re.sub(r"(?<!-)----(?!-)", "", line)
+                line = reg20.sub("", line)
             # Look for other consecutive dashes (of any kind).
-            if re.search(r"\p{Pd}\p{Pd}+", line):
+            if reg21.search(line):
                 a_hh.append((line_index + 1, book[line_index]))
                 # Delete consecutive dashes just found. Any left at final test are 'unrecognised'.
-                line = re.sub(r"\p{Pd}\p{Pd}+", "", line)
+                line = reg21.sub("", line)
                 not_consecutive_dashes = False
             # Look for hyphen-minus
             if ch_hm in line and not_consecutive_dashes:
@@ -1965,7 +2021,7 @@ def dash_review_check() -> None:
                 # Delete dash(es) just found. Any left at final test is 'unrecognised'.
                 line = line.replace(ch_em, "")
             # If any dashes left on line at this point treat them as unrecognised
-            if re.search(r"\p{Pd}", line):
+            if reg22.search(line):
                 a_un.append((line_index + 1, book[line_index]))
 
         line_index += 1
