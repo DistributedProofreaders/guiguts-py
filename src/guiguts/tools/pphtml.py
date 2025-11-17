@@ -718,16 +718,28 @@ class PPhtmlChecker:
         if title_cnt != 1 or h1_cnt != 1:
             return
 
+        errors: list[tuple[str, Optional[IndexRange]]] = []
         title_str = re.sub(r"\s+", " ", title_str.strip())
         h1_str = re.sub(r"<br.*?>", " ", h1_str.strip())
         h1_str = re.sub(r"<.*?>", "", h1_str)
         h1_str = re.sub(r"\s+", " ", h1_str)
-        test_passed = title_str.endswith(" | Project Gutenberg")
-        errors: list[tuple[str, Optional[IndexRange]]] = []
-        if not test_passed:
+        test_passed = True
+        fail_string = ""
+        if not title_str.endswith(" | Project Gutenberg"):
+            test_passed = False
+            fail_string = "*FAIL*"
             errors.append(
                 (
                     '    Title should be of the form "Alice’s Adventures in Wonderland | Project Gutenberg"',
+                    None,
+                )
+            )
+        elif h1_str.lower() != title_str.removesuffix(" | Project Gutenberg").lower():
+            test_passed = False
+            fail_string = "*WARN*"
+            errors.append(
+                (
+                    "    <title> and <h1> are different - please check",
                     None,
                 )
             )
@@ -736,7 +748,9 @@ class PPhtmlChecker:
         rowcol = IndexRowCol(maintext().search("<h1[ >]", "1.0", tk.END, regexp=True))
         errors.append((f"   h1: {h1_str}", IndexRange(rowcol, rowcol)))
 
-        self.output_subsection_errors(test_passed, "Title/h1 check", errors)
+        self.output_subsection_errors(
+            test_passed, "Title/h1 check", errors, fail_string=fail_string
+        )
 
     def pre_tags(self) -> None:
         """Check no pre tags in HTML."""
