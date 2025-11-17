@@ -23,13 +23,12 @@ previous version of GG2).
 
     a. Use Windows Notepad or another text editor to create a file containing one line: `guiguts %1`
 
-    b. Save the file under the name `run_guiguts2.cmd` (Note the cmd at the end!).
+    b. Save the file under the name `run_guiguts2.cmd` to any convenient location on your computer such as the
+    desktop or a project folder. (The `.cmd` at the end is important!)
 
-    c. Put this cmd file in any folder you use for a DP project.
-
-    d. In Windows File Explorer, drag and drop any text/HTML file onto the cmd file to open it in GG2.
+    c. In Windows File Explorer, drag and drop any text/HTML file onto the cmd file to open it in GG2.
     
-    e. Or you can double click this cmd file to start GG2 with no file loaded.
+    d. Or you can double click this cmd file to start GG2 with no file loaded.
 
 ### macOS
 
