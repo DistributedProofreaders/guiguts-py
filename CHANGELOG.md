@@ -7,6 +7,8 @@
 - Support for Google Books Ngram Viewer moved from Custom Menu to Tools menu,
   with support for additional parameters, and automatic inclusion of
   non-hyphenated version if hyphenated word is selected
+- Parameters to pass to Google Ngrams, such as language or corpus selection,
+  can be entered in the Settings Dialog, Advanced tab
 - Support for Google Books Ngram Viewer added to Word Frequency with inclusion
   of hyphenation variants: use Shift-Cmd-Click or Shift-Ctrl-Click
 - CP English Scannos now displays changes that will be made giving user chance
