@@ -1,6 +1,39 @@
 # Changelog
 
 
+## Version 2.0.8
+
+- Spelling dialog now supports Sort by Frequency
+- Support for Google Books Ngram Viewer moved from Custom Menu to Tools menu,
+  with support for additional parameters, and automatic inclusion of
+  non-hyphenated version if hyphenated word is selected
+- Support for Google Books Ngram Viewer added to Word Frequency with inclusion
+  of hyphenation variants: use Shift-Cmd-Click or Shift-Ctrl-Click
+- CP English Scannos now displays changes that will be made giving user chance
+  to review/remove unwanted changes before fixing remainder
+- CP Header/Footer tool allows multiple fixes to the same page to support
+  removal of multi-line headers/footers
+- CP Filter changes now reported in more detail, either as a summary or in
+  verbose mode listing every changed line
+- CP List Good Words feature added to support easy word entry at DP
+- CP Filter now runs about 5 times faster
+- PPtext now runs about 25% faster
+- PPhtml now warns if the `h1` and `<title>` forms of the title text differ
+- Improve masking support for nested footnotes of differing styles
+- Soft Hyphen added to Commonly Used Characters dialog
+- No longer report all numeric "words" as hyphenation suspects in WF
+- Documentation updated to describe use of icons in Windows user installation
+- Documentation updated for CachyOS developer installation 
+
+### Bug fixes
+
+- Cmd/Ctrl-clicking a word in Spelling dialog could add wrong word to project
+  dictionary
+- Regex library `italic_semantic` `cite` markup had a trailing space
+- GG2 occasionally displayed an exception when program was quit
+- GG2 did not install cleanly under Python 3.14 on Windows systems
+
+
 ## Version 2.0.7
 
 - Guiguts can now be run under Python versions from 3.11 to 3.14
