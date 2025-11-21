@@ -866,9 +866,9 @@ class Guiguts:
         cp_menu.add_separator()
         cp_menu.add_button("Run ~Dehyphenator...", lambda: DehyphenatorChecker().run())
         cp_menu.add_button("~Filter File...", cp_show_process_dialog)
-        cp_menu.add_button("Fix ~Common English Scannos", cp_fix_common_scannos)
+        cp_menu.add_button("Fix ~Common English Scannos...", cp_fix_common_scannos)
         cp_menu.add_button("Add [~Blank Page] to Empty Pages", cp_fix_empty_pages)
-        cp_menu.add_button("Fix ~Olde Englifh", cp_fix_englifh)
+        cp_menu.add_button("Fix ~Olde Englifh...", cp_fix_englifh)
         cp_menu.add_separator()
         cp_menu.add_button("Compress ~PNG Files", cp_compress_pngs)
         cp_menu.add_button(
