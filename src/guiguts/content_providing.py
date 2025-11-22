@@ -705,7 +705,7 @@ class CPFilteringDialog(CheckerDialog):
         super().__init__(
             "Prep Text Filtering",
             rerun_command=self.process,
-            tooltip="Test tooltip",
+            tooltip="Right click: Hide message",
             show_process_buttons=False,
         )
 
