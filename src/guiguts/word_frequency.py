@@ -975,13 +975,12 @@ class WordFrequencyDialog(ToplevelDialog):
         for emdash_word, freq in emdash_words.items():
             # Check for suspect, i.e. also seen with a single hyphen
             word = re.sub("(--|—)", "-", emdash_word)
-            word_output = False
-            if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
-                self.add_entry(emdash_word, freq)
-                word_output = True
-            if word in all_words:
-                if not word_output:
-                    self.add_entry(emdash_word, freq)
+            suspect = word in all_words
+            if suspect or not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
+                self.add_entry(emdash_word, freq, suspect=suspect)
+                if suspect:
+                    suspect_cnt += 1
+            if suspect:
                 self.add_entry(word, all_words[word], suspect=True)
                 suspect_cnt += 1
         self.display_entries()
@@ -1038,38 +1037,43 @@ class WordFrequencyDialog(ToplevelDialog):
                 nh_exists = nohyp_word in all_words
                 th_exists = twohyp_word in emdash_words
             suspect = wp_exists or nh_exists or th_exists
+            suspect_inc = 1 if suspect else 0
 
             if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
                 self.add_entry(word, freq, suspect=suspect)
                 word_output[word] = True
+                suspect_cnt += suspect_inc
             if wp_exists:
                 if word not in word_output:
                     self.add_entry(word, freq, suspect=suspect)
                     word_output[word] = True
+                    suspect_cnt += suspect_inc
                 if word_pair not in word_output:
                     self.add_entry(word_pair, word_pairs[word_pair], suspect=suspect)
                     word_output[word_pair] = True
-                    suspect_cnt += 1
+                    suspect_cnt += suspect_inc
             nohyp_word = re.sub(r"-\*?", "", word)
             if nh_exists:
                 if word not in word_output:
                     self.add_entry(word, freq, suspect=suspect)
                     word_output[word] = True
+                    suspect_cnt += suspect_inc
                 if nohyp_word not in word_output:
                     self.add_entry(nohyp_word, all_words[nohyp_word], suspect=suspect)
                     word_output[nohyp_word] = True
-                    suspect_cnt += 1
+                    suspect_cnt += suspect_inc
             twohyp_word = re.sub(r"-\*?", "--", word)
             if th_exists:
                 if word not in word_output:
                     self.add_entry(word, freq, suspect=suspect)
                     word_output[word] = True
+                    suspect_cnt += suspect_inc
                 if twohyp_word not in word_output:
                     self.add_entry(
                         twohyp_word, emdash_words[twohyp_word], suspect=suspect
                     )
                     word_output[twohyp_word] = True
-                    suspect_cnt += 1
+                    suspect_cnt += suspect_inc
         self.display_entries()
         self.message.set(
             f"{sing_plur(total_cnt, 'hyphenated word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
@@ -1248,15 +1252,32 @@ class WordFrequencyDialog(ToplevelDialog):
         suspect_cnt = 0
         total_cnt = 0
         suspects_only = preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY)
+        replacements = [
+            ("æ", "ae"),
+            ("Æ", "Ae"),
+            ("Æ", "AE"),
+            ("œ", "oe"),
+            ("Œ", "Oe"),
+            ("Œ", "OE"),
+        ]
         for word, freq in all_words.items():
-            if not re.search("(ae|AE|Ae|oe|OE|Oe|æ|Æ|œ|Œ)", word):
+            is_lig = re.search("(æ|Æ|œ|Œ)", word)
+            is_non_lig = re.search("(ae|AE|Ae|oe|OE|Oe)", word)
+            if not is_lig and not is_non_lig:
                 continue
             total_cnt += 1
-            # If actual ligature, only output it here if not suspects-only
-            if re.search("(æ|Æ|œ|Œ)", word):
-                if not suspects_only:
+            if is_lig:
+                for lig, non in replacements:
+                    if lig in word and word.replace(lig, non) in all_words:
+                        suspect = True
+                        break
+                else:
+                    suspect = False
+                if suspect:
+                    suspect_cnt += 1
+                    self.add_entry(word, freq, suspect=True)
+                elif not suspects_only:
                     self.add_entry(word, freq)
-            # Use the non-ligature version to check for suspects - because AE and Ae are both Æ
             else:
                 lig_word = re.sub("ae", "æ", word)
                 lig_word = re.sub("(AE|Ae)", "Æ", lig_word)
@@ -1264,8 +1285,6 @@ class WordFrequencyDialog(ToplevelDialog):
                 lig_word = re.sub("(OE|Oe)", "Œ", lig_word)
                 if lig_word in all_words:
                     suspect_cnt += 1
-                    if suspects_only:
-                        self.add_entry(lig_word, all_words[lig_word])
                     self.add_entry(word, freq, suspect=True)
                 elif not suspects_only:
                     self.add_entry(word, freq)
