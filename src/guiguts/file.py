@@ -7,7 +7,7 @@ import os.path
 from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, simpledialog
-from typing import Any, Callable, Final, TypedDict, Literal, Optional, cast
+from typing import Any, Callable, Final, Literal, Optional
 
 import regex as re
 
@@ -80,21 +80,6 @@ PAGE_SEPARATOR_REGEX = r"File:.+?([^/\\ ]+)\.(png|jpg)"
 BOOKMARK_BASE = "Bookmark"
 BOOKMARK_START = f"{BOOKMARK_BASE}Start"
 BOOKMARK_END = f"{BOOKMARK_BASE}End"
-
-
-class BinDict(TypedDict):
-    """Dictionary for saving to bin file."""
-
-    md5checksum: str
-    pagedetails: PageDetails
-    insertpos: str
-    insertpospeer: str
-    imagedir: str
-    projectid: str
-    languages: str
-    charsuites: dict[str, bool]
-    bookmarks: dict[str, str]
-    imagerotate: dict[str, int]
 
 
 class File:
@@ -528,7 +513,7 @@ class File:
         Returns:
             True if no bin, or bin matches main file; False otherwise
         """
-        bin_dict = cast(BinDict, load_dict_from_json(bin_name(basename)))
+        bin_dict = load_dict_from_json(bin_name(basename))
         if bin_dict is None:
             return True
         return self.interpret_bin(bin_dict)
@@ -544,7 +529,7 @@ class File:
         with open(binfile_name, "w", encoding="utf-8") as fp:
             json.dump(bin_dict, fp, indent=2, ensure_ascii=False)
 
-    def interpret_bin(self, bin_dict: BinDict) -> bool:
+    def interpret_bin(self, bin_dict: dict[str, Any]) -> bool:
         """Interpret bin file dictionary and set necessary variables, etc.
 
         Args:
@@ -581,7 +566,7 @@ class File:
         md5checksum = bin_dict.get(BINFILE_KEY_MD5CHECKSUM)
         return not md5checksum or md5checksum == self.get_md5_checksum()
 
-    def create_bin(self) -> BinDict:
+    def create_bin(self) -> dict[str, Any]:
         """From relevant variables, etc., create dictionary suitable for saving
         to bin file.
 
@@ -589,7 +574,7 @@ class File:
             Dictionary of settings to be saved in bin file
         """
         self.update_page_marks(self.page_details)
-        bin_dict: BinDict = {
+        bin_dict = {
             BINFILE_KEY_MD5CHECKSUM: self.get_md5_checksum(),
             BINFILE_KEY_INSERTPOS: maintext().index(tk.INSERT),
             BINFILE_KEY_INSERTPOSPEER: maintext().peer.index(tk.INSERT),
