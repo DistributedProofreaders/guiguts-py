@@ -117,11 +117,18 @@ class SpellCheckerDialog(CheckerDialog):
             **kwargs,
         )
         frame = ttk.Frame(self.custom_frame)
+        self.custom_frame.columnconfigure(0, weight=1)
         frame.grid(column=0, row=1, sticky="NSEW", pady=5)
+        frame.columnconfigure(0, weight=5)
+        frame.columnconfigure(1, weight=0)
+        frame.columnconfigure(2, weight=5)
+        frame.columnconfigure(3, weight=3)
+        frame.columnconfigure(4, weight=1)
+        frame.columnconfigure(5, weight=1)
         ttk.Label(
             frame,
             text="Threshold ≤ ",
-        ).grid(column=0, row=0, sticky="NSW")
+        ).grid(column=0, row=0, sticky="EW")
         threshold_spinbox = ttk.Spinbox(
             frame,
             textvariable=PersistentInt(PrefKey.SPELL_THRESHOLD),
@@ -129,7 +136,7 @@ class SpellCheckerDialog(CheckerDialog):
             to=999,
             width=4,
         )
-        threshold_spinbox.grid(column=1, row=0, sticky="NW", padx=(0, 10))
+        threshold_spinbox.grid(column=1, row=0, sticky="EW", padx=(0, 10))
         ToolTip(
             threshold_spinbox,
             "Do not show errors that appear more than this number of times",
@@ -146,7 +153,7 @@ class SpellCheckerDialog(CheckerDialog):
             text=f"Add to Global Dict ({lang})",
             command=add_to_global_dict,
         )
-        global_dict_button.grid(column=2, row=0, sticky="NSW")
+        global_dict_button.grid(column=2, row=0, sticky="EW")
         for accel in ("Cmd/Ctrl+a", "Cmd/Ctrl+A"):
             _, key_event = process_accel(accel)
             self.bind(key_event, lambda _: invoke_and_break(global_dict_button))
@@ -159,7 +166,7 @@ class SpellCheckerDialog(CheckerDialog):
             text="Add to Project Dict",
             command=add_to_project_dict,
         )
-        project_dict_button.grid(column=3, row=0, sticky="NSW")
+        project_dict_button.grid(column=3, row=0, sticky="EW")
         for accel in ("Cmd/Ctrl+p", "Cmd/Ctrl+P"):
             _, key_event = process_accel(accel)
             self.bind(key_event, lambda _: invoke_and_break(project_dict_button))
@@ -172,7 +179,7 @@ class SpellCheckerDialog(CheckerDialog):
             text="Skip",
             command=lambda: self.remove_entry_current(all_matching=False),
         )
-        skip_button.grid(column=4, row=0, sticky="NSW")
+        skip_button.grid(column=4, row=0, sticky="EW")
         for accel in ("Cmd/Ctrl+s", "Cmd/Ctrl+S"):
             _, key_event = process_accel(accel)
             self.bind(key_event, lambda _: invoke_and_break(skip_button))
@@ -185,7 +192,7 @@ class SpellCheckerDialog(CheckerDialog):
             text="Skip All",
             command=lambda: self.remove_entry_current(all_matching=True),
         )
-        skip_all_button.grid(column=5, row=0, sticky="NSW")
+        skip_all_button.grid(column=5, row=0, sticky="EW")
         for accel in ("Cmd/Ctrl+i", "Cmd/Ctrl+I"):
             _, key_event = process_accel(accel)
             self.bind(key_event, lambda _: invoke_and_break(skip_all_button))
