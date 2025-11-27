@@ -28,6 +28,7 @@ from guiguts.widgets import (
     register_focus_widget,
     Busy,
     themed_style,
+    ToolTip,
 )
 
 logger = logging.getLogger(__package__)
@@ -182,6 +183,7 @@ class SearchDialog(ToplevelDialog):
             command=self.search_clicked,
         )
         search_button.grid(row=2, column=1, padx=PADX, pady=PADY, sticky="NSEW")
+        ToolTip(search_button, "Shift-click to search in opposite direction")
         mouse_bind(
             search_button,
             "Shift+1",
@@ -238,6 +240,9 @@ class SearchDialog(ToplevelDialog):
             rands_button.grid(
                 row=rep_num + 3, column=2, padx=PADX, pady=PADY, sticky="NSEW"
             )
+            ToolTip(
+                rands_button, "Shift-click to replace and search in opposite direction"
+            )
             mouse_bind(
                 rands_button,
                 "Shift+1",
@@ -255,6 +260,7 @@ class SearchDialog(ToplevelDialog):
             repl_all_btn.grid(
                 row=rep_num + 3, column=4, padx=PADX, pady=PADY, sticky="NSEW"
             )
+            ToolTip(repl_all_btn, "Shift-click to replace all identical matches only")
             mouse_bind(
                 repl_all_btn,
                 "Shift+1",
@@ -284,13 +290,19 @@ class SearchDialog(ToplevelDialog):
             pady=(4, 2),
         )
 
-        self.highlight_all_btn = ttk.Button(
+        highlight_all_btn = ttk.Button(
             self.top_frame,
             text="Highlight All",
             command=self.highlightall_clicked,
         )
-        self.highlight_all_btn.grid(
+        highlight_all_btn.grid(
             row=self.max_multi_rows + 3, column=4, padx=PADX, pady=PADY, sticky="NSEW"
+        )
+        ToolTip(highlight_all_btn, "Shift-click to remove highlights")
+        mouse_bind(
+            highlight_all_btn,
+            "Shift+1",
+            self.highlightall_remove,
         )
         self.highlight_mark_prefix = self.get_dlg_name() + "Highlight"
 
@@ -816,8 +828,17 @@ class SearchDialog(ToplevelDialog):
         Busy.unbusy()
         return "break"
 
+    def highlightall_remove(self, _e: tk.Event) -> str:
+        """Remove.regex highlighting.
+
+        Returns:
+            "break" to stop further processing.
+        """
+        maintext().remove_highlights_regex()
+        return "break"
+
     def highlightall_clicked(self) -> None:
-        """Highlight all occurrences  of the string in the search box."""
+        """Highlight all occurrences of the string in the search box."""
         search_string = self.search_box.get()
         if not search_string:
             return
