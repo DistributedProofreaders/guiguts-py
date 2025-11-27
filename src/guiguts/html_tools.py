@@ -66,11 +66,7 @@ class HTMLImageDialog(ToplevelDialog):
         Args:
             auto_illus: True to work in Auto-Illustration mode
         """
-        super().__init__(
-            "HTML Images",
-            resize_x=False,
-            resize_y=False,
-        )
+        super().__init__("HTML Images")
 
         self.image: Optional[Image.Image] = None
         self.imagetk: Optional[ImageTk.PhotoImage] = None
@@ -78,18 +74,20 @@ class HTMLImageDialog(ToplevelDialog):
         self.height = 0
         self.illo_range: Optional[IndexRange] = None
 
+        self.top_frame.rowconfigure(0, weight=0)
+        self.top_frame.rowconfigure(1, weight=1)
+
         # File
         file_frame = ttk.LabelFrame(self.top_frame, text="File", padding=2)
         file_frame.grid(row=0, column=0, sticky="NSEW")
         file_frame.columnconfigure(0, weight=1)
         file_name_frame = ttk.Frame(file_frame)
-        file_name_frame.grid(row=0, column=0)
+        file_name_frame.grid(row=0, column=0, sticky="NSEW")
         file_name_frame.columnconfigure(0, weight=1)
         self.filename_textvariable = tk.StringVar(self, "")
         self.fn_entry = ttk.Entry(
             file_name_frame,
             textvariable=self.filename_textvariable,
-            width=30,
         )
         self.fn_entry.grid(row=0, column=0, sticky="EW", padx=(0, 2))
         ttk.Button(
@@ -114,8 +112,7 @@ class HTMLImageDialog(ToplevelDialog):
 
         # Label to display thumbnail of image - allocate a
         # square space the same width as the filename frame
-        file_name_frame.update_idletasks()
-        frame_width = file_name_frame.winfo_width()
+        frame_width = 300
         thumbnail_frame = ttk.LabelFrame(self.top_frame, text="Thumbnail")
         thumbnail_frame.grid(row=1, column=0, sticky="NSEW")
         thumbnail_frame.columnconfigure(0, minsize=frame_width, weight=1)
@@ -259,21 +256,20 @@ class HTMLImageDialog(ToplevelDialog):
             btn_frame,
             text="Convert to HTML" if auto_illus else "Insert Markup",
             command=lambda: self.convert_to_html(auto_illus),
-            width=18,
         ).grid(row=0, column=0, sticky="NSEW", padx=2)
         if auto_illus:
             ttk.Button(
                 btn_frame,
                 text="Convert & Find Next",
                 command=self.convert_and_advance,
-                width=18,
             ).grid(row=0, column=1, sticky="NSEW", padx=2)
             ttk.Button(
                 btn_frame,
                 text="Find Next [Illustration]",
                 command=self.find_illo_markup,
-                width=18,
             ).grid(row=0, column=2, sticky="NSEW", padx=2)
+            for col in range(0, 2):
+                btn_frame.columnconfigure(col, uniform="btn_frame")
 
         if auto_illus:
             self.find_illo_markup()
