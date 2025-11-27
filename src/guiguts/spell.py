@@ -1,5 +1,6 @@
 """Spell checking functionality"""
 
+import difflib
 import importlib.resources
 import logging
 from pathlib import Path
@@ -9,8 +10,8 @@ from typing import Callable, Optional, Any
 import regex as re
 
 from guiguts.data import dictionaries
-from guiguts.file import ProjectDict
-from guiguts.checkers import CheckerDialog
+from guiguts.file import ProjectDict, the_file
+from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.maintext import maintext, FindMatch
 from guiguts.misc_tools import tool_save
 from guiguts.preferences import preferences, PersistentInt, PrefKey
@@ -66,6 +67,8 @@ class SpellCheckerDialog(CheckerDialog):
     """Spell Checker dialog."""
 
     manual_page = "Tools_Menu#Spelling"
+
+    no_suggestions = "No suggestions"
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize Spell Checker dialog."""
@@ -228,6 +231,83 @@ class SpellCheckerDialog(CheckerDialog):
             "Shift+Cmd/Ctrl+3",
             lambda evt: select_invoke_and_break(evt, global_dict_button),
         )
+
+        sug_frame = ttk.Frame(frame)
+        sug_frame.grid(column=0, row=1, columnspan=6, pady=(5, 0), sticky="W")
+        ttk.Label(
+            sug_frame,
+            text="Suggestions: ",
+        ).grid(column=0, row=0, sticky="EW")
+        self.suggestion_var = tk.StringVar()
+        self.suggestion_cb = ttk.Combobox(sug_frame, textvariable=self.suggestion_var)
+        self.suggestion_cb.grid(column=1, row=0, sticky="EW", padx=(0, 5))
+
+        ttk.Button(
+            sug_frame,
+            text="Fix",
+            command=lambda: self.process_entry_current(all_matching=False),
+        ).grid(row=0, column=2, sticky="EW")
+        ttk.Button(
+            sug_frame,
+            text="Fix All",
+            command=lambda: self.process_entry_current(all_matching=True),
+        ).grid(row=0, column=3, sticky="EW")
+        ttk.Button(
+            sug_frame,
+            text="Fix&Hide",
+            command=lambda: self.process_remove_entry_current(all_matching=False),
+        ).grid(row=0, column=4, sticky="EW")
+        ttk.Button(
+            sug_frame,
+            text="Fix&Hide All",
+            command=lambda: self.process_remove_entry_current(all_matching=True),
+        ).grid(row=0, column=5, sticky="EW")
+
+    def select_entry_by_index(self, entry_index: int, focus: bool = True) -> None:
+        """Overridden to allow suggestions for good spellings."""
+        super().select_entry_by_index(entry_index, focus)
+
+        def apply_case_pattern(original: str, corrected: str) -> str:
+            """Apply original case pattern to corrected word, with one exception."""
+            # If dictionary entry is capitalized (proper noun), keep its case
+            if corrected[0].isupper() and corrected[1:].islower():
+                return corrected
+            # Otherwise apply the original case pattern
+            if original.islower():
+                return corrected.lower()
+            if original.isupper():
+                return corrected.upper()
+            if len(original) > 1 and original[0].isupper() and original[1:].islower():
+                return corrected.capitalize()
+            return corrected  # Unknown pattern
+
+        def suggest_with_case(word: str, word_list: list[str]) -> list[str]:
+            """Suggest list of matches for word."""
+
+            # Map lowercased version to cased version so can retrieve cased version
+            # after difflib has done a case-insensitive match
+            lower_map = {w.lower(): w for w in word_list}
+            lower_words = list(lower_map.keys())
+
+            # Find closest matches (case-insensitive)
+            matches = difflib.get_close_matches(
+                word.lower(), lower_words, n=10, cutoff=0.8
+            )
+
+            # Convert matches back to word's original case pattern
+            return [apply_case_pattern(word, lower_map[m]) for m in matches]
+
+        word = re.sub(r" \(.+\)$", "", self.selected_text)
+        assert _the_spell_checker is not None
+        word_list = list(_the_spell_checker.dictionary.keys()) + list(
+            the_file().project_dict.good_words.keys()
+        )
+        matches = suggest_with_case(word, word_list)
+        self.suggestion_cb["values"] = matches
+        if matches:
+            self.suggestion_var.set(matches[0])
+        else:
+            self.suggestion_var.set(self.no_suggestions)
 
 
 class SpellChecker:
@@ -516,6 +596,22 @@ def get_spell_checker() -> SpellChecker | None:
     return _the_spell_checker
 
 
+def process_suggestion(checker_entry: CheckerEntry) -> None:
+    """Process the Spellcheck suggestion."""
+    if checker_entry.text_range is None:
+        return
+    start_mark = SpellCheckerDialog.mark_from_rowcol(checker_entry.text_range.start)
+    end_mark = SpellCheckerDialog.mark_from_rowcol(checker_entry.text_range.end)
+    word = re.sub(r" \(.+\)$", "", checker_entry.text)
+    match_text = maintext().get(start_mark, end_mark)
+    dialog: Optional[SpellCheckerDialog] = SpellCheckerDialog.get_dialog()
+    assert dialog is not None
+    replacement_text = dialog.suggestion_var.get()
+    if word != match_text or replacement_text == dialog.no_suggestions:
+        return
+    maintext().replace(start_mark, end_mark, replacement_text)
+
+
 def spell_check(
     project_dict: ProjectDict,
     add_project_word_callback: Callable[[str], None],
@@ -537,6 +633,7 @@ def spell_check(
             add_project_word_callback,
             add_global_word_callback,
         ),
+        process_command=process_suggestion,
         show_hide_buttons=False,
         show_process_buttons=False,
         switch_focus_when_clicked=False,
