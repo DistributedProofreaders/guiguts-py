@@ -1099,7 +1099,7 @@ def strip_outer_lookarounds(pattern: str) -> str:
         if m:
             end = find_matching_paren(pattern, 0)
             if end is not None:
-                pattern = "^" + pattern[end + 1 :].lstrip()
+                pattern = "^" + pattern[end + 1 :]
 
     # Strip trailing lookaround
     if pattern.endswith(")"):
