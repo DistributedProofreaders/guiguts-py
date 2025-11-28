@@ -121,8 +121,8 @@ class SpellCheckerDialog(CheckerDialog):
         )
         frame = ttk.Frame(self.custom_frame)
         self.custom_frame.columnconfigure(0, weight=1)
-        frame.grid(column=0, row=1, sticky="NSEW", pady=5)
-        frame.columnconfigure(0, weight=5)
+        frame.grid(column=0, row=1, sticky="NSW", pady=5)
+        frame.columnconfigure(0, weight=10)
         frame.columnconfigure(1, weight=0)
         frame.columnconfigure(2, weight=5)
         frame.columnconfigure(3, weight=3)
@@ -234,6 +234,12 @@ class SpellCheckerDialog(CheckerDialog):
 
         sug_frame = ttk.Frame(frame)
         sug_frame.grid(column=0, row=1, columnspan=6, pady=(5, 0), sticky="W")
+        sug_frame.columnconfigure(0, weight=5)
+        sug_frame.columnconfigure(1, weight=0)
+        sug_frame.columnconfigure(2, weight=2)
+        sug_frame.columnconfigure(3, weight=2)
+        sug_frame.columnconfigure(4, weight=1)
+        sug_frame.columnconfigure(5, weight=1)
         ttk.Label(
             sug_frame,
             text="Suggestions: ",
