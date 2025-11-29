@@ -447,7 +447,7 @@ class File:
         """Open and insert a file into the current file."""
         filename = FileDialog.askopenfilename(
             filetypes=(
-                ("Text files", "*.txt *.html *.htm"),
+                ("Text files", "*.txt *.html *.htm *.css"),
                 ("All files", "*.*"),
             ),
             title="Include File",
