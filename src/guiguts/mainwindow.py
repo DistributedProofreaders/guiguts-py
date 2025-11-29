@@ -1473,10 +1473,22 @@ class MainWindow:
         self.light_photos: dict[str, ImageTk.PhotoImage] = {}
         self.dark_photos: dict[str, ImageTk.PhotoImage] = {}
 
-        def create_toolbar_btn(col: int, name: str, tooltip: str) -> None:
-            """Create a toolbar button."""
-            icon_path = str(importlib.resources.files(icons).joinpath(f"{name}.png"))
-            size = (20, 20)
+        def create_toolbar_btn(
+            col: int, name: str, tooltip: str, size: tuple[int, int] = (20, 20)
+        ) -> None:
+            """Create a toolbar button.
+
+            Args:
+                col: Column of toolbar; if <0, don't create button, just create image.
+                name: Name of image to create & file to use (stripping "_small" suffix).
+                tooltip: Tooltip for button.
+                size: Size of image to create.
+            """
+            icon_path = str(
+                importlib.resources.files(icons).joinpath(
+                    f"{name.removesuffix('_small')}.png"
+                )
+            )
             image_light = (
                 Image.open(icon_path)
                 .convert("RGBA")
@@ -1487,16 +1499,16 @@ class MainWindow:
             r, g, b, a = image_light.split()
             inverted_rgb = ImageOps.invert(Image.merge("RGB", (r, g, b)))
             inverted_image = Image.merge("RGBA", (*inverted_rgb.split(), a))
-            inverted_image = inverted_image.resize(size, Image.Resampling.LANCZOS)
             photo_dark = ImageTk.PhotoImage(inverted_image)
 
-            self.tool_btns[name] = ttk.Button(toolbar_frame)
-            if themed_style().is_dark_theme():
-                self.tool_btns[name].config(image=photo_dark)
-            else:
-                self.tool_btns[name].config(image=photo_light)
-            self.tool_btns[name].grid(row=0, column=col)
-            ToolTip(self.tool_btns[name], tooltip)
+            if col >= 0:
+                self.tool_btns[name] = ttk.Button(toolbar_frame)
+                if themed_style().is_dark_theme():
+                    self.tool_btns[name].config(image=photo_dark)
+                else:
+                    self.tool_btns[name].config(image=photo_light)
+                self.tool_btns[name].grid(row=0, column=col)
+                ToolTip(self.tool_btns[name], tooltip)
             # Save photo images or python will garbage collect them
             self.light_photos[name] = photo_light
             self.dark_photos[name] = photo_dark
@@ -1506,6 +1518,7 @@ class MainWindow:
             sep = ttk.Frame(toolbar_frame)  # Just some empty space
             sep.grid(row=0, column=col, sticky="NSEW", padx=3)
 
+        create_toolbar_btn(-1, "open_small", "", size=(14, 14))
         create_toolbar_btn(0, "open", "Open")
         create_toolbar_btn(1, "save", "Save")
         create_separator(2)
@@ -1661,6 +1674,13 @@ class MainWindow:
                 btn.config(image=self.dark_photos[name])
             else:
                 btn.config(image=self.light_photos[name])
+        # Also update browse button in image viewer toolbar
+        self.mainimage.browse_btn["image"] = (
+            self.dark_photos["open_small"]
+            if themed_style().is_dark_theme()
+            else self.light_photos["open_small"]
+        )
+
         # Configure Entry widgets to match colors of Comboboxes
         root().option_add(
             "*Entry.background", themed_style().lookup("TCombobox", "fieldbackground")
