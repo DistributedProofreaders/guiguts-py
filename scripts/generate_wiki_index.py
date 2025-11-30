@@ -1,5 +1,8 @@
 """Script to extract links from manual & create wiki index.
 
+Usage: From the repository root directory run
+    poetry run python scripts/generate_wiki_index.py
+
 For now, it just writes to "Guiguts_Index.wiki" in the current dir.
 """
 
@@ -63,8 +66,18 @@ for text, page, hid in all_headings:
         grouped[first_char] = []
     grouped[first_char].append((text, page, hid))
 
-# Generate MediaWiki text
-mw_lines = []
+# Generate MediaWiki text - A-Z contents links first
+mw_lines = [
+    "__NOTOC__",
+    "{{../Current_Version}}\n",
+    "==Contents==\n",
+    '<div style="font-size: 1.1em; border: thin solid gray; padding: .5em; background-color: #F8F9FA;">',
+]
+
+mw_lines.append(", ".join(f"[[#{let}|{let}]]" for let in sorted(grouped.keys())))
+mw_lines.append("</div>\n")
+
+
 for letter in sorted(grouped.keys()):
     mw_lines.append(f"=={letter}==\n")
     for text, page, hid in grouped[letter]:
@@ -75,6 +88,7 @@ for letter in sorted(grouped.keys()):
         link = f"[[../{page}#{hid}|{text}]]"
         mw_lines.append(link + "\n")
     mw_lines.append("")
+
 
 # Write to file
 with open("Guiguts_Index.wiki", "w", encoding="utf-8") as f:
