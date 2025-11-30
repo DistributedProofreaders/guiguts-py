@@ -1,6 +1,31 @@
 # Changelog
 
 
+## Version 2.0.9
+
+- Spellings dialog now suggests corrections for bad spellings. User can Fix
+  one occurrence, Fix All, or Fix & Hide (All) to fix the spelling(s) and
+  remove from the list
+- The Spellings dialog now resizes in such a way that buttons remain visible
+- Search/Replace dialog tooltips added to inform user about Shift-clicking 
+  buttons to search in opposite direction, and replace identical matches only
+- Shift-clicking Highlight All in Search/Replace dialog removes previously
+  added highlighting
+- When using File-->Include File, `.css` files are shown in the load dialog
+  as well as text and html files
+- The load file button icon in the image viewer has been improved 
+
+### Bug fixes
+
+- Word Frequency reporting of the number of hyphen and accent suspects was
+  inconsistent
+- A lookbehind followed by a space in a regex caused replacements based on
+  that regex to fail
+- The tooltip in the Content Providing Filter dialog was incorrect
+- On some Mac systems, the Image dialog was truncated - now resizable
+- Debugging using VSCode with Python 3.13/3.14 gave an error 
+
+
 ## Version 2.0.8
 
 - Spelling dialog now supports Sort by Frequency
