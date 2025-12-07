@@ -547,7 +547,7 @@ def consolidate_messages(repeat_msg: list[MsgInfo], limit: int = 0) -> None:
         ):
             # Output any combined message we've previously built up
             if build_msg is not None:
-                # No more than 5 of any type
+                # No more than 5 of any type unless verbose
                 n_messages += 1
                 if limit > 0 and n_messages >= limit + 1:
                     if n_messages == limit + 1:
@@ -629,7 +629,7 @@ def hyphenated_words_check() -> None:
                 checker_dialog.add_header(record)
 
                 # Under the header add to the dialog every line containing an instance of the
-                # hyphenated word. If there are more than 5 lines we stop reporting them and warn.
+                # hyphenated word. If more than 5 lines stop reporting them and warn, unless verbose.
                 # If there are multiple instances of a word on a line then the line will appear in
                 # the dialog multiple times, each time highlighting a different instance of word.
                 #
