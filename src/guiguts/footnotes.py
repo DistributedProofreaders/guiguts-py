@@ -765,15 +765,15 @@ def reindex() -> None:
                 label = str(new_index)
 
             maintext().replace(an_start, an_end, f"[{label}]")
-            #
-            fn_record = fn_records[index]
-            label_start = fn_record.hilite_start + 9
-            label_end = fn_record.hilite_end
-            fn_start = f"{fn_record.start.index()}"
-            # Replace label in footnote with new label value.
-            maintext().replace(
-                f"{fn_start}+{label_start}c", f"{fn_start}+{label_end}c", label
-            )
+        #
+        fn_record = fn_records[index]
+        label_start = fn_record.hilite_start + 9
+        label_end = fn_record.hilite_end
+        fn_start = f"{fn_record.start.index()}"
+        # Replace label in footnote with new label value.
+        maintext().replace(
+            f"{fn_start}+{label_start}c", f"{fn_start}+{label_end}c", label
+        )
     # AN/FN file entries have changed. Update AN/FN records.
     _the_footnote_checker.run_check()
     # Maintain the order of function calls below.
