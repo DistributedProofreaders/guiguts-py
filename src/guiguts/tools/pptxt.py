@@ -33,8 +33,14 @@ class PPtxtCheckerDialog(CheckerDialog):
         )
 
         self.custom_frame.columnconfigure(0, weight=1)
+        ttk.Checkbutton(
+            self.custom_frame,
+            text="Verbose",
+            variable=PersistentBoolean(PrefKey.PPTEXT_VERBOSE),
+        ).grid(row=0, column=0, sticky="NSW")
+
         frame = ttk.LabelFrame(self.custom_frame, text="Checks")
-        frame.grid(row=0, column=0, sticky="NSEW")
+        frame.grid(row=1, column=0, sticky="NSEW")
         for col in range(0, 5):
             frame.columnconfigure(col, weight=1)
 
@@ -60,7 +66,7 @@ class PPtxtCheckerDialog(CheckerDialog):
             ).grid(row=cnt // 5, column=cnt % 5, sticky="NSEW")
 
 
-REPORT_LIMIT = 5  # Max number of times to report same issue for some checks
+report_limit: int  # Max number of times to report same issue for some checks
 
 found_long_doctype_declaration: bool
 checker_dialog: PPtxtCheckerDialog
@@ -642,8 +648,8 @@ def hyphenated_words_check() -> None:
                     if line_number == prev_line_number:
                         prev_line_number = line_number
                         continue
-                    # Limit the length of the report by reporting only first 5 lines for a word ...
-                    if count == REPORT_LIMIT:
+                    # Maybe limit the length of the report by reporting only first 5 lines for a word ...
+                    if count == report_limit:
                         count = -1
                         break
                     # ... but note that a new dialog line is generated for each time the word appears
@@ -657,8 +663,8 @@ def hyphenated_words_check() -> None:
                     checker_dialog.add_footer("  ...more")
 
                 # We do the same for the non-hyphenated version of the word. Separate this
-                # list of lines from the ones above with a rule. Limit the number of lines
-                # reported to REPORT_LIMIT (5).
+                # list of lines from the ones above with a rule. Maybe limit the number of lines
+                # reported to report_limit (5 or 999999).
 
                 checker_dialog.add_header("-----")
 
@@ -675,8 +681,8 @@ def hyphenated_words_check() -> None:
                     if line_number == prev_line_number:
                         prev_line_number = line_number
                         continue
-                    # Limit the length of the report by reporting only first 5 lines for a word ...
-                    if count == REPORT_LIMIT:
+                    # Maybe limit the length of the report by reporting only first 5 lines for a word ...
+                    if count == report_limit:
                         count = -1
                         break
                     # ... but note that a new dialog line is generated for each time the word appears
@@ -801,8 +807,8 @@ def weird_characters_check() -> None:
                 if line_number == prev_line_number:
                     prev_line_number = line_number
                     continue
-                # Limit the length of the report by reporting only first 5 lines for a word ...
-                if count == REPORT_LIMIT:
+                # Maybe limit the length of the report by reporting only first 5 lines for a word ...
+                if count == report_limit:
                     count = -1
                     break
                 # ... but note that a new dialog line is generated for each time the word appears
@@ -1305,7 +1311,7 @@ def specials_check(project_dict: ProjectDict) -> None:
         checker_dialog.add_header(header_line)
         # Some checks have a limit for how many times to report
         limit = (
-            5
+            report_limit
             if header_line
             in (
                 "Comma after 'the'.",
@@ -2271,7 +2277,7 @@ def scanno_check() -> None:
         checker_dialog.add_header(scanno)
 
         for cnt, tple in enumerate(tple_list):
-            if cnt >= 5:
+            if cnt >= report_limit:
                 checker_dialog.add_footer("  ...more")
                 break
 
@@ -2741,9 +2747,12 @@ def pptxt(project_dict: ProjectDict) -> None:
     global found_long_doctype_declaration
     global ssq, sdq, csq, cdq
     global longest_line, shortest_line
+    global report_limit
 
     if not tool_save():
         return
+
+    report_limit = 999999 if preferences.get(PrefKey.PPTEXT_VERBOSE) else 5
 
     found_long_doctype_declaration = False
 

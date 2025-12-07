@@ -623,6 +623,7 @@ class Guiguts:
         preferences.set_default(PrefKey.ALIGN_COL_ACTIVE, False)
         preferences.set_default(PrefKey.CSS_VALIDATION_LEVEL, "css3")
         preferences.set_default(PrefKey.PPHTML_VERBOSE, False)
+        preferences.set_default(PrefKey.PPTEXT_VERBOSE, False)
         preferences.set_default(PrefKey.HIGHLIGHT_PROOFERCOMMENT, True)
         preferences.set_callback(
             PrefKey.HIGHLIGHT_PROOFERCOMMENT, self.highlight_proofercomment_callback
