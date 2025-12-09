@@ -10,7 +10,7 @@ from typing import Any, Tuple, Optional, Callable
 import regex as re
 import roman  # type: ignore[import-untyped]
 
-from guiguts.checkers import CheckerDialog
+from guiguts.checkers import CheckerDialog, CheckerMatchType
 from guiguts.maintext import maintext, TclRegexCompileError, FindMatch, menubar_metadata
 from guiguts.preferences import preferences, PersistentBoolean, PrefKey, PersistentInt
 from guiguts.utilities import (
@@ -585,10 +585,11 @@ class SearchDialog(ToplevelDialog):
                     tooltip="\n".join(
                         [
                             "Left click: Select & find string",
-                            "Right click: Hide string from this list",
-                            "Shift Right click: Hide all occurrences of string in this list",
+                            "Right click: Hide message from this list",
+                            "Shift Right click: Hide all messages for matching string in this list",
                         ]
                     ),
+                    match_on_highlight=CheckerMatchType.HIGHLIGHT,
                     **kwargs,
                 )
 
