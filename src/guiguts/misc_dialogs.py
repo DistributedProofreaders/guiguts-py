@@ -2536,11 +2536,10 @@ class UnicodeBlockDialog(ToplevelDialog):
 
             def show_name(wgt: ttk.Label) -> None:
                 char = str(wgt["text"])
-                name, new = unicode_char_to_name(char)
+                name, flag = unicode_char_to_name(char)
                 if name:
                     name = ": " + name
-                warning_flag = "⚠\ufe0f" if new else ""
-                self.charname_var.set(f"{warning_flag}U+{ord(char):04x}{name}")
+                self.charname_var.set(f"{flag}U+{ord(char):04x}{name}")
                 self.bigchar_var.set(char)
 
             def clear_name() -> None:
@@ -2661,6 +2660,7 @@ class UnicodeSearchDialog(ToplevelDialog):
                     f"Click in {UnicodeSearchDialog.CHAR_COL_HEAD},  {UnicodeSearchDialog.CODEPOINT_COL_HEAD} or {UnicodeSearchDialog.NAME_COL_HEAD} column (or press Space or Return) to insert character",
                     f"Click in {UnicodeSearchDialog.BLOCK_COL_HEAD} column (or press Shift+Space or Shift+Return) to open Unicode Block dialog",
                     "(⚠\ufe0f before a character's name means it was added more recently - use with caution)",
+                    "(☢\ufe0f means character is not in Basic Multilingual Plane - do not use)",
                 ]
             ),
             use_pointer_pos=True,
@@ -2720,7 +2720,7 @@ class UnicodeSearchDialog(ToplevelDialog):
         if len(match_words) > 0:
             for ordinal in range(0, sys.maxunicode + 1):
                 char = chr(ordinal)
-                name, new = unicode_char_to_name(char)
+                name, flag = unicode_char_to_name(char)
                 name_list = name.lower().split(" ")
                 hyphen_parts: list[str] = []
                 for word in name_list:
@@ -2728,7 +2728,7 @@ class UnicodeSearchDialog(ToplevelDialog):
                         hyphen_parts += word.split("-")
                 name_list += hyphen_parts
                 if name and all(word in name_list for word in match_words):
-                    self.add_row(char, new)
+                    self.add_row(char, flag)
                     found = True
 
         if not found:  # Maybe string was a hex codepoint?
@@ -2739,9 +2739,9 @@ class UnicodeSearchDialog(ToplevelDialog):
             except (OverflowError, ValueError):
                 pass
             if char:
-                name, new = unicode_char_to_name(char)
+                name, flag = unicode_char_to_name(char)
                 if name:
-                    self.add_row(char, new)
+                    self.add_row(char, flag)
                     found = True
 
         # Maybe string was a single character?
@@ -2751,9 +2751,9 @@ class UnicodeSearchDialog(ToplevelDialog):
             if len(string) == 0:
                 string = " "  # String was all spaces
             if len(string) == 1:
-                name, new = unicode_char_to_name(string)
+                name, flag = unicode_char_to_name(string)
                 if name:
-                    self.add_row(string, new)
+                    self.add_row(string, flag)
                     found = True
 
         if found:
@@ -2761,17 +2761,16 @@ class UnicodeSearchDialog(ToplevelDialog):
         else:
             sound_bell()
 
-    def add_row(self, char: str, new: bool) -> None:
+    def add_row(self, char: str, flag: str) -> None:
         """Add a row to the Unicode Search dialog.
 
         Args:
             count: Row to add.
             char: Character to display in row.
-            new: True if character was added to unicode since version 3.2 (March 2002)
+            flag: Warning flag if character new or in astral plane
         """
         ordinal = ord(char)
         block_name = ""
-        warning_flag = "⚠\ufe0f" if new else ""
         # Find block name
         for block, (beg, end, _) in _unicode_blocks.items():
             if beg <= ordinal <= end:
@@ -2781,7 +2780,7 @@ class UnicodeSearchDialog(ToplevelDialog):
         entry = (
             char,
             f"U+{ord(char):04x}",
-            warning_flag + unicodedata.name(char),
+            flag + unicodedata.name(char),
             block_name,
         )
         self.list.insert("", tk.END, values=entry)
@@ -2836,26 +2835,30 @@ class UnicodeSearchDialog(ToplevelDialog):
         dlg.block_selected()
 
 
-def unicode_char_to_name(char: str) -> tuple[str, bool]:
-    """Convert char to Unicode name, and note if it is "new".
+def unicode_char_to_name(char: str) -> tuple[str, str]:
+    """Convert char to Unicode name, and return a warning character.
 
     Args:
         char: Character to convert.
 
     Returns:
         Tuple containing name of character (empty if no name),
-        and bool flagging if character is new (Unicode version > 3.2).
+        and a warning character to flag if character is new (Unicode version > 3.2)
+        or an astral plane character (> U+FFFF).
+
     """
-    new = False
+    flag_char = ""
     try:
         name = unicodedata.name(char)
         try:
             unicodedata.ucd_3_2_0.name(char)
         except ValueError:
-            new = True
+            flag_char = "⚠\ufe0f"
     except ValueError:
         name = ""
-    return name, new
+    if ord(char) > 0xFFFF:
+        flag_char = "☢\ufe0f"
+    return name, flag_char
 
 
 # Somewhat arbitrarily, certain Unicode blocks are not displayed in the
