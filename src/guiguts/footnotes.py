@@ -1643,7 +1643,10 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
 
 
 def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
-    """Mask/Unmask FN/anchors of given style by replacing brackets."""
+    """Mask/Unmask FN/anchors of given style by replacing brackets.
+
+    Use double braces because single braces can be confused with subscripts `H_{2}O`.
+    """
     Busy.busy()
     maintext().undo_block_begin()
     if style == FootnoteIndexStyle.NUMBER:
@@ -1652,22 +1655,27 @@ def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
         label_regex = r"[A-Z]+"
     else:
         label_regex = r"[IVXLC]+\.?"
-    in_bracket_open = re.escape("[" if mask else "{")
-    in_bracket_close = re.escape("]" if mask else "}")
-    out_bracket_open = "{" if mask else "["
-    out_bracket_close = "}" if mask else "]"
+    in_bracket_open = re.escape("[" if mask else "{{")
+    in_bracket_close = re.escape("]" if mask else "}}")
+    in_len = 1 if mask else 2
+    out_bracket_open = "{{" if mask else "["
+    out_bracket_close = "}}" if mask else "]"
 
     # Replace brackets of footnotes
     cvar = tk.IntVar()
+    assert len(in_bracket_open) == len(in_bracket_close)
     match_regex = rf"{in_bracket_open} *footnote *{label_regex}:([^{in_bracket_close}]|\n)+?{in_bracket_close}"
     start = "1.0"
     while start := maintext().search(
         match_regex, start, tk.END, regexp=True, nocase=True, count=cvar
     ):
-        maintext().replace(start, f"{start}+1c", out_bracket_open)
+        # Replace close first, since replacement is 2 chars whereas original is 1
         maintext().replace(
-            f"{start}+{cvar.get() - 1}c", f"{start}+{cvar.get()}c", out_bracket_close
+            f"{start}+{cvar.get() - in_len}c",
+            f"{start}+{cvar.get()}c",
+            out_bracket_close,
         )
+        maintext().replace(start, f"{start}+{in_len}c", out_bracket_open)
 
     # Replace brackets of anchors
     match_regex = rf"{in_bracket_open}{label_regex}{in_bracket_close}"
@@ -1679,10 +1687,13 @@ def footnote_mask(style: FootnoteIndexStyle, mask: bool) -> None:
         if illo_sn_check in ("Illustration", "Sidenote"):
             start = f"{start}+1c"
             continue
-        maintext().replace(start, f"{start}+1c", out_bracket_open)
+        # Replace close first, since replacement is 2 chars whereas original is 1
         maintext().replace(
-            f"{start}+{cvar.get() - 1}c", f"{start}+{cvar.get()}c", out_bracket_close
+            f"{start}+{cvar.get() - in_len}c",
+            f"{start}+{cvar.get()}c",
+            out_bracket_close,
         )
+        maintext().replace(start, f"{start}+{in_len}c", out_bracket_open)
 
     # Refresh footnote list
     if FootnoteCheckerDialog.get_dialog() is not None:
