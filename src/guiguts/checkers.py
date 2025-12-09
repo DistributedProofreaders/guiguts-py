@@ -1548,6 +1548,7 @@ class CheckerDialog(ToplevelDialog):
             all_matching: If True, repeat for all entries that have the same
                 message as the current entry (e.g. same spelling error).
         """
+        Busy.busy()
         maintext().undo_block_begin()
         entry_index = self.current_entry_index()
         if entry_index is None:
@@ -1603,6 +1604,7 @@ class CheckerDialog(ToplevelDialog):
             except IndexError:
                 return
             self.select_entry_by_index(entry_index)
+        Busy.unbusy()
 
     def report_fix_removes(self, process: bool, remove: bool, num: int) -> None:
         """Report how many removals and fixes were made."""
