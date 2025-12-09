@@ -127,6 +127,7 @@ class PrefKey(StrEnum):
     HTML_LINKS_HIDE_FOOTNOTE = auto()
     ALIGN_COL_ACTIVE = auto()
     PPHTML_VERBOSE = auto()
+    PPTEXT_VERBOSE = auto()
     CSS_VALIDATION_LEVEL = auto()
     HIGHLIGHT_PROOFERCOMMENT = auto()
     IMAGE_AUTOFIT_WIDTH = auto()
