@@ -1755,6 +1755,76 @@ def cp_fix_englifh() -> None:
                 ),
                 **kwargs,
             )
+            self.custom_frame.columnconfigure(0, weight=1)
+            frame = ttk.Frame(self.custom_frame)
+            frame.grid(column=0, row=1, sticky="NSEW", pady=5)
+            for col in range(0, 6):
+                frame.columnconfigure(col, weight=1)
+            ttk.Button(
+                frame,
+                text="f ⇔ s",
+                command=lambda: self.swap_oe("f", "s", all_matching=False),
+            ).grid(column=0, row=0, sticky="NSEW")
+            ttk.Button(
+                frame,
+                text="f ⇔ s All Matches",
+                command=lambda: self.swap_oe("f", "s", all_matching=True),
+            ).grid(column=1, row=0, sticky="NSEW")
+            ttk.Button(
+                frame,
+                text="* ⇔ f",
+                command=lambda: self.swap_oe("*", "f", all_matching=False),
+            ).grid(column=2, row=0, sticky="NSEW")
+            ttk.Button(
+                frame,
+                text="* ⇔ f All Matches",
+                command=lambda: self.swap_oe("*", "f", all_matching=True),
+            ).grid(column=3, row=0, sticky="NSEW")
+            ttk.Button(
+                frame,
+                text="* ⇔ s",
+                command=lambda: self.swap_oe("*", "s", all_matching=False),
+            ).grid(column=4, row=0, sticky="NSEW")
+            ttk.Button(
+                frame,
+                text="* ⇔ s All Matches",
+                command=lambda: self.swap_oe("*", "s", all_matching=True),
+            ).grid(column=5, row=0, sticky="NSEW")
+
+        def swap_oe(self, cha: str, chb: str, all_matching: bool) -> None:
+            """Swap cha & chb in OE word.
+
+            Works by temporarily changing the "process" function and match algorithm
+            for the dialog, then leveraging the Fix/Fix All feature.
+            """
+
+            def do_swap_f_s(checker_entry: CheckerEntry) -> None:
+                """Fix the given Englifh word."""
+                if checker_entry.text_range is None:
+                    return
+                start_mark = OldeEnglifhCheckerDialog.mark_from_rowcol(
+                    checker_entry.text_range.start
+                )
+                end_mark = OldeEnglifhCheckerDialog.mark_from_rowcol(
+                    checker_entry.text_range.end
+                )
+                orig = maintext().get(start_mark, end_mark)
+                if cha in orig:
+                    maintext().replace(start_mark, end_mark, orig.replace(cha, chb))
+                elif chb in orig:
+                    maintext().replace(start_mark, end_mark, orig.replace(chb, cha))
+
+            # Use above routine as the process command temporarily
+            save_process_cmd = self.process_command
+            self.process_command = do_swap_f_s
+            # Only process matching words, not all remaining messages
+            self.match_on_highlight = CheckerMatchType.HIGHLIGHT
+
+            self.process_entry_current(all_matching)
+
+            # Restore process and match settings, so Fix buttons continue work
+            self.process_command = save_process_cmd
+            self.match_on_highlight = CheckerMatchType.ALL_MESSAGES
 
     def fix_englifh(checker_entry: CheckerEntry) -> None:
         """Fix the given Englifh word."""
@@ -1802,7 +1872,7 @@ def cp_fix_englifh() -> None:
             if replacement != original:
                 start_rowcol = maintext().rowcol(start)
                 end_rowcol = maintext().rowcol(f"{start}+{len(englifh)}c")
-                line = f"{englifh} → {replacement}"
+                line = f"{original} → {replacement}"
                 checker_dialog.add_entry(line, IndexRange(start_rowcol, end_rowcol))
             start = f"{start}+{len(englifh)}c"
     checker_dialog.display_entries()
