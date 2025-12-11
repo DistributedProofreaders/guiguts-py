@@ -838,7 +838,7 @@ def unmatched_dp_markup() -> None:
 
 def unmatched_html_markup() -> None:
     """Check for unmatched HTML markup."""
-    open_regex = "<([[:alnum:]]+)( [^>\n]+)?>"
+    open_regex = "<([[:alnum:]]+)( ([^>]|\n)+)?>"
     open_regex_c = re.compile(open_regex)
     close_regex = "</([[:alnum:]]+)>"
 
@@ -859,7 +859,7 @@ def unmatched_html_markup() -> None:
             Tuple with regex, True if markup_in was close markup.
         """
         mtype = get_tag_type_regex(markup_in)
-        return f"(<{mtype}( [^>\n]+)?>|</{mtype}>)", (markup_in[1] == "/")
+        return f"(<{mtype}( ([^>]|\n)+)?>|</{mtype}>)", (markup_in[1] == "/")
 
     def sort_key_html_markup(
         entry: CheckerEntry,
