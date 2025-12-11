@@ -1498,6 +1498,14 @@ class MainText(tk.Text):
         """Override ``grid``, so placing MainText widget actually places surrounding Frame"""
         return self.frame.grid(*args, **kwargs)
 
+    def change_wrap(self) -> None:
+        """Change the wrap mode for the text and peer."""
+        wrap: Literal["none", "char", "word"] = (
+            tk.WORD if preferences.get(PrefKey.SOFT_WRAP_WORD) else tk.NONE
+        )
+        maintext().config(wrap=wrap)
+        maintext().peer.config(wrap=wrap)
+
     def show_peer(self) -> None:
         """Show the peer text widget in the text's parent's paned window."""
         self.paned_text_window.add(maintext().peer_frame, minsize=PEER_MIN_SIZE)

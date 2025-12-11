@@ -90,6 +90,7 @@ class PrefKey(StrEnum):
     UNICODE_BLOCK = auto()
     UNICODE_SEARCH_HISTORY = auto()
     SPLIT_TEXT_WINDOW = auto()
+    SOFT_WRAP_WORD = auto()
     SPLIT_TEXT_SASH_COORD = auto()
     IMAGE_INVERT = auto()
     IMAGE_FLOAT_GEOMETRY = auto()

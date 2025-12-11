@@ -1605,7 +1605,7 @@ class MainWindow:
             self.paned_text_window,
             root(),
             undo=True,
-            wrap="none",
+            wrap=tk.WORD if preferences.get(PrefKey.SOFT_WRAP_WORD) else tk.NONE,
             autoseparators=True,
             maxundo=-1,
             highlightthickness=2,
