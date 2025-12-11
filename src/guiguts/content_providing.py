@@ -1842,7 +1842,7 @@ def cp_fix_englifh() -> None:
     checker_dialog = OldeEnglifhCheckerDialog.show_dialog(
         rerun_command=cp_fix_englifh,
         process_command=fix_englifh,
-        match_on_highlight=CheckerMatchType.ALL_MESSAGES,
+        match_on_highlight=CheckerMatchType.ERROR_PREFIX,
     )
 
     # Load dictionary of changes
@@ -1873,7 +1873,18 @@ def cp_fix_englifh() -> None:
                 start_rowcol = maintext().rowcol(start)
                 end_rowcol = maintext().rowcol(f"{start}+{len(englifh)}c")
                 line = f"{original} → {replacement}"
-                checker_dialog.add_entry(line, IndexRange(start_rowcol, end_rowcol))
+                if "*" in replacement:
+                    error_prefix = "*: "
+                    ep_index = 0
+                else:
+                    error_prefix = "s: "
+                    ep_index = 1
+                checker_dialog.add_entry(
+                    line,
+                    IndexRange(start_rowcol, end_rowcol),
+                    error_prefix=error_prefix,
+                    ep_index=ep_index,
+                )
             start = f"{start}+{len(englifh)}c"
     checker_dialog.display_entries()
     Busy.unbusy()
