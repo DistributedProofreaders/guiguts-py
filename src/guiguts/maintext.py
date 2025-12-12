@@ -3962,18 +3962,12 @@ class MainText(tk.Text):
             viewport: the viewport to inspect
             offscreen_lines: optional count of offscreen lines to inspect (default: 5)
         """
-        (top_frac, bot_frac) = viewport.yview()
-        # use maintext() here, not view - there is no TextPeer.rowcol()
-        end_index = self.rowcol("end")
+        toprow = IndexRowCol(viewport.index("@0,0")).row
+        botrow = IndexRowCol(viewport.index(f"@0,{viewport.winfo_height()}")).row
 
         # Don't try to go beyond the boundaries of the document.
-        #
-        # {top,bot}_frac contain a fractional number representing a percentage into
-        # the document; do some math to calculate what the top or bottom row in the
-        # viewport should be, then use min/max to make sure that value isn't less
-        # than 1 or more than the total row count.
-        top_line = max(int((top_frac * end_index.row) - offscreen_lines), 1)
-        bot_line = min(int((bot_frac * end_index.row) + offscreen_lines), end_index.row)
+        top_line = max(toprow - offscreen_lines, 1)
+        bot_line = min(botrow + offscreen_lines, self.rowcol("end").row)
 
         return IndexRange(f"{top_line}.0", f"{bot_line}.0")
 
