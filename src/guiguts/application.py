@@ -550,6 +550,7 @@ class Guiguts:
         )
         preferences.set_default(PrefKey.UNICODE_SEARCH_HISTORY, [])
         preferences.set_default(PrefKey.SPLIT_TEXT_WINDOW, False)
+        preferences.set_default(PrefKey.SOFT_WRAP_WORD, False)
         preferences.set_default(PrefKey.SPLIT_TEXT_SASH_COORD, 0)
         preferences.set_default(PrefKey.IMAGE_INVERT, False)
         preferences.set_default(PrefKey.IMAGE_FLOAT_GEOMETRY, "400x600+100+100")
@@ -1292,6 +1293,12 @@ class Guiguts:
             lambda: maintext().show_peer(),
             lambda: maintext().hide_peer(),
             "Cmd/Ctrl+Shift+T",
+        )
+        view_menu.add_checkbutton(
+            "Soft ~Wrap (Word)",
+            PrefKey.SOFT_WRAP_WORD,
+            lambda: maintext().change_wrap(),
+            lambda: maintext().change_wrap(),
         )
         if not is_x11():
             view_menu.add_button(
