@@ -1,6 +1,32 @@
 # Changelog
 
 
+## Version 2.0.10
+
+- View Menu now has Soft Wrap (Word) button which wraps the lines in the
+  file at a word boundary so that the whole line is visible - not related
+  to standard text wrapping
+- The Hide All button in the Find All dialog now hides all matching
+  occurrences of the match, rather than only matching lines 
+- PPtext now has a verbose flag, which doesn't restrict the number of reports
+  to 5 with a "more..." message
+- Astral plane characters (i.e. not in the Unicode Basic Multilingual Plane)
+  now get a warning icon in the Unicode dialogs
+- Content Providing, Olde Englifh dialog now has "swap" buttons to make it
+  easier to fix ambiguous or unknown cases
+- Script added to update GG2 manual index page (developer use only)
+
+### Bug fixes
+
+- When there were multiple anchors for a footnote, reindexing could corrupt
+  the footnote number with duplicate strings
+- Duplicate Roman footnote anchors were not detected correctly
+- Masking a footnote type could interfere with subscript markup - now uses
+  double curly braces
+- Unmatched HTML Tag check did not cope if there was a line break inside
+  the open tag
+- Hide All button didn't show "working" label
+
 ## Version 2.0.9
 
 - Spellings dialog now suggests corrections for bad spellings. User can Fix
