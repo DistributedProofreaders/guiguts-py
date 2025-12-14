@@ -270,7 +270,7 @@ class TextLineNumbers(tk.Canvas):
             text_color = cur_fg if linenum == cur_line else self.text_color
             text = self.create_text(
                 text_pos,
-                dline[1] + self.y_offset,
+                dline[1] + self.y_offset + line_spacing_adj,
                 anchor="ne",
                 font=self.font,
                 text=linenum,
