@@ -230,8 +230,6 @@ class TextLineNumbers(tk.Canvas):
         self.textwidget = text_widget
         self.font = tk_font.nametofont(self.textwidget.cget("font"))
         self.x_offset = 10
-        # Allow for non-zero additional line spacing in text widget
-        self.y_offset = self.textwidget["spacing1"]
         tk.Canvas.__init__(self, parent, *args, highlightthickness=0, **kwargs)
         # Canvas needs to listen for theme change
         self.bind("<<ThemeChanged>>", lambda event: self.theme_change())
@@ -270,7 +268,7 @@ class TextLineNumbers(tk.Canvas):
             text_color = cur_fg if linenum == cur_line else self.text_color
             text = self.create_text(
                 text_pos,
-                dline[1] + self.y_offset,
+                dline[1] + line_spacing_adj,
                 anchor="ne",
                 font=self.font,
                 text=linenum,
