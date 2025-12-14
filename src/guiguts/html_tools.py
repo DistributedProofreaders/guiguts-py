@@ -1786,13 +1786,19 @@ class HTMLAutoTableDialog(ToplevelDialog):
         if sel_ranges[-1].end.col != 0:
             sel_ranges[-1].end.row += 1
             sel_ranges[-1].end.col = 0
-        table_text = (
-            maintext()
-            .get(sel_ranges[0].start.index(), sel_ranges[-1].end.index())
-            .rstrip()
+        table_text = maintext().get(
+            sel_ranges[0].start.index(), sel_ranges[-1].end.index()
         )
+        # Trim blank lines at end of selected text
+        table_lines = table_text.splitlines()
+        for idx in range(len(table_lines) - 1, -1, -1):
+            if table_lines[idx].strip():
+                break
+            sel_ranges[-1].end.row -= 1  # Adjust end of selection range
+        table_text = table_text.rstrip()  # Remove blank lines from table_text
         if not table_text:
             return
+
         multiline = preferences.get(PrefKey.AUTOTABLE_MULTILINE)
         split_row_regex = r"\n[| \u00a0]*\n" if multiline else "\n"
         split_col_regex = r"\|" if "|" in table_text else r"[ \u00a0][ \u00a0]+"
