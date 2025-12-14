@@ -1552,6 +1552,7 @@ class CheckerDialog(ToplevelDialog):
         maintext().undo_block_begin()
         entry_index = self.current_entry_index()
         if entry_index is None:
+            Busy.unbusy()
             return
         linenum = self.text.get_select_line_num()
         # If doing Fix All with an "ALL_MESSAGES" match, it's OK to not have a selection
@@ -1562,6 +1563,7 @@ class CheckerDialog(ToplevelDialog):
         ):
             linenum = self.linenum_from_entry_index(0)
         if not linenum:
+            Busy.unbusy()
             return
         # Mark before starting so location can be selected later
         self.text.mark_set(MARK_ENTRY_TO_SELECT, f"{linenum}.0")
@@ -1602,6 +1604,7 @@ class CheckerDialog(ToplevelDialog):
                     min(entry_rowcol.row, last_row)
                 )
             except IndexError:
+                Busy.unbusy()
                 return
             self.select_entry_by_index(entry_index)
         Busy.unbusy()
