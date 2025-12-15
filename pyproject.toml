@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "guiguts"
-version = "2.0.10"
+version = "2.0.11"
 description = "Guiguts version 2, Python/tkinter version"
 authors = ["DP Guiguts Dev Team <windymilla@users.noreply.github.com>"]
 readme = "README.md"

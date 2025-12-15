@@ -1,6 +1,22 @@
 # Changelog
 
 
+## Version 2.0.11
+
+- Content Providing Dehyphenation tool automatically flags with asterisk if
+hyphen(s) appear at start of page, in addition to end-of-page hyphen(s)  
+
+### Bug fixes
+
+- Selecting blank lines beyond the end of a table caused HTML AutoTable to
+duplicate some of the lines of the table
+- Line spacing setting was not used correctly when drawing line numbers,
+meaning they could become misaligned with text
+- Busy cursor and "Working" label were left showing when last message was
+removed from a checker dialog
+- PPtext could give an exception if a line consisted solely of numbers
+
+
 ## Version 2.0.10
 
 - View Menu now has Soft Wrap (Word) button which wraps the lines in the
