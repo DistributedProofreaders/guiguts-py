@@ -6,7 +6,7 @@ import logging
 import os.path
 from pathlib import Path
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox
 from typing import Any, Callable, Final, Literal, Optional
 
 import regex as re
@@ -41,7 +41,14 @@ from guiguts.utilities import (
     folder_dir_str,
     is_test,
 )
-from guiguts.widgets import grab_focus, ToplevelDialog, Busy, FileDialog
+from guiguts.widgets import (
+    grab_focus,
+    ToplevelDialog,
+    Busy,
+    FileDialog,
+    askinteger,
+    askstring,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -781,9 +788,7 @@ class File:
         Multiple languages may be separated by any non-word character
         which will be converted to "+"
         """
-        languages = simpledialog.askstring(
-            "Set Language(s)", "Language(s)", parent=maintext()
-        )
+        languages = askstring(maintext(), "Set Language(s)", "Language(s)")
         if languages:
             lang_list = re.split(r"\W", languages)
             lang_list2 = [lang for lang in lang_list if lang]
@@ -792,17 +797,13 @@ class File:
 
     def goto_line(self) -> None:
         """Go to the line number the user enters"""
-        line_num = simpledialog.askinteger(
-            "Go To Line", "Line number", parent=maintext()
-        )
+        line_num = askinteger(maintext(), "Go To Line", "Line number")
         if line_num is not None:
             maintext().set_insert_index(IndexRowCol(line_num, 0))
 
     def goto_image(self) -> None:
         """Go to the image the user enters"""
-        image_num = simpledialog.askstring(
-            "Go To Page (png)", "Image number", parent=maintext()
-        )
+        image_num = askstring(maintext(), "Go To Page (png)", "Image number")
         if image_num is not None:
             image_num = re.sub(r"\.png$", "", image_num)
             self.do_goto_image(image_num)
@@ -828,9 +829,7 @@ class File:
 
     def goto_page(self) -> None:
         """Go to the page the user enters."""
-        page_num = simpledialog.askstring(
-            "Go To Page Label", "Page label", parent=maintext()
-        )
+        page_num = askstring(maintext(), "Go To Page Label", "Page label")
         if page_num is not None:
             # If user put "Pg" before label remove it, so correctly formatted prefix can be added
             page_num = re.sub(r"^ *(Pg)? *", "", page_num)
