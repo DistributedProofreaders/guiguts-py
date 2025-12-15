@@ -313,6 +313,15 @@ class DehyphenatorChecker:
                 ep_index=0 if remove else 1,
                 severity=CheckerEntrySeverity.INFO,
             )
+        # Flag start-of-page hyphens
+        start = maintext().start().index()
+        while start := maintext().search(r"^-----File:", start, tk.END, regexp=True):
+            start = maintext().index(f"{start} lineend")
+            next_line = maintext().get(f"{start} +1l linestart", f"{start} +1l lineend")
+            if next_line.startswith("-----File:"):
+                continue
+            if next_line.startswith("-"):
+                maintext().insert(f"{start} +1l linestart", "*")
         self.dialog.display_entries()
 
     def dehyphenate(self, checker_entry: CheckerEntry) -> None:
