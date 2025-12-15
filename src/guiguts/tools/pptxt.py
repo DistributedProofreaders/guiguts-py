@@ -412,6 +412,7 @@ def repeated_words_check() -> None:
         # eliminated at the same time; i.e. all-digit 'words'.
         no_numbers_words_on_line = []
         possibles = False
+        wordn1 = ""
         for i in range(len(words_on_line) - 1):
             word = words_on_line[i]
             if re.match(r"^[\p{Nd}]+$", word):
@@ -425,8 +426,6 @@ def repeated_words_check() -> None:
             if word == wordn1[: len(word)]:
                 possibles = True
         # Add last word on line to no_numbers_words_on_line if not a number.
-        # NB If no words on line or only a single word, for-loop will not be
-        #    executed so wordn1 is not bound to a value (i.e. is unassigned).
         if len(words_on_line) > 1 and not re.match(r"^[\p{Nd}]+$", wordn1):
             no_numbers_words_on_line.append(wordn1)
         # There may be possible repeats of words (non-numbers) on line.
