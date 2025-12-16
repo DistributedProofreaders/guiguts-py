@@ -1508,6 +1508,102 @@ class ScrollableFrame(ttk.Frame):
         self.canvas.yview_moveto(0.0)
 
 
+# Note this is not derived from our TopLevel dialog
+class AskStringDialog(tk.Toplevel):
+    """Replacement for simpledialog.askstring.
+
+    The simpledialog doesn't respect dark mode on Windows, and the integer
+    version of it interprets "010" as octal for "8"."""
+
+    def __init__(
+        self,
+        parent: tk.Widget | tk.Toplevel,
+        title: str,
+        prompt: str,
+        integer: bool = False,
+    ):
+        super().__init__(parent)
+        self.title(title)
+        self.transient(root())
+        self.resizable(False, False)
+
+        self.result: Optional[str] = None
+
+        # Modal behaviour
+        self.grab_set()
+
+        frame = ttk.Frame(self, padding=10)
+        frame.grid(sticky="nsew")
+
+        ttk.Label(frame, text=prompt).grid(row=0, column=0, sticky="w")
+
+        self.entry = ttk.Entry(
+            frame,
+            width=20,
+            validate="key" if integer else "none",
+            validatecommand=(
+                (self.register(self._validate_digits), "%P") if integer else ""
+            ),
+        )
+        self.entry.grid(row=1, column=0, pady=5)
+        self.entry.focus_set()
+
+        button_frame = ttk.Frame(frame)
+        button_frame.grid(row=2, column=0)
+
+        ttk.Button(button_frame, text="OK", command=self.ok).grid(
+            row=0, column=0, padx=(0, 5)
+        )
+        ttk.Button(button_frame, text="Cancel", command=self.cancel).grid(
+            row=0, column=1
+        )
+
+        self.bind("<Return>", lambda e: self.ok())
+        self.bind("<Escape>", lambda e: self.cancel())
+
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
+
+        # Centre over parent
+        self.update_idletasks()
+        x = parent.winfo_rootx() + (parent.winfo_width() - self.winfo_width()) // 2
+        y = parent.winfo_rooty() + (parent.winfo_height() - self.winfo_height()) // 2
+        self.geometry(f"+{x}+{y}")
+
+        self.wait_window(self)
+
+    def ok(self) -> None:
+        """Handle OK button."""
+        self.result = self.entry.get()
+        self.destroy()
+
+    def cancel(self) -> None:
+        """Handle Cancel button."""
+        self.result = None
+        self.destroy()
+
+    def _validate_digits(self, proposed: str) -> bool:
+        """Validate string - must be all digits, or empty."""
+        return proposed.isdigit() or proposed == ""
+
+
+def askstring(
+    parent: tk.Widget | tk.Toplevel, title: str, prompt: str
+) -> Optional[str]:
+    """Show dialog to get string from user."""
+    dialog = AskStringDialog(parent, title, prompt)
+    return dialog.result
+
+
+def askinteger(
+    parent: tk.Widget | tk.Toplevel, title: str, prompt: str
+) -> Optional[int]:
+    """Show dialog to get integer from user."""
+    dialog = AskStringDialog(parent, title, prompt, integer=True)
+    if dialog.result is None:
+        return None
+    return int(dialog.result)
+
+
 def init_global_font() -> None:
     """Initialize the global font to match the default system font for labels or
     the values from preferences."""

@@ -1,14 +1,20 @@
 """Store and manipulate page labels."""
 
 import tkinter as tk
-from tkinter import simpledialog, ttk
+from tkinter import ttk
 from typing import Optional, Any
 
 import roman  # type: ignore[import-untyped]
 
 from guiguts.maintext import maintext, page_mark_from_img
 from guiguts.utilities import cmd_ctrl_string, process_accel
-from guiguts.widgets import OkApplyCancelDialog, mouse_bind, ToolTip, TreeviewList
+from guiguts.widgets import (
+    OkApplyCancelDialog,
+    mouse_bind,
+    ToolTip,
+    TreeviewList,
+    askinteger,
+)
 
 STYLE_COLUMN = "#2"
 STYLE_ARABIC = "Arabic"
@@ -260,9 +266,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
                 )
             new_value: int | Any = NUMBERS[number_index]
             if new_value == NUMBER_PAGENUM:
-                pagenum = simpledialog.askinteger(
-                    "Set Number", "Enter page number", parent=self
-                )
+                pagenum = askinteger(self, "Set Number", "Enter page number")
                 new_value = pagenum if pagenum else value
             self.details[row[COL_HEAD_IMG]]["number"] = str(new_value)
 
