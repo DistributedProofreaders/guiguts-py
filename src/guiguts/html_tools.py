@@ -1874,7 +1874,7 @@ class HTMLAutoTableDialog(ToplevelDialog):
         html = ["<tr>"]
         for col_num, cell in enumerate(row_cells):
             col_align = self.get_align_class(col_num)
-            html.append(f'<td class="{col_align}">{cell}</td>')
+            html.append(f'<td class="{col_align}">\n{cell}\n</td>')
         html.append("</tr>")
         return "\n".join(html)
 
