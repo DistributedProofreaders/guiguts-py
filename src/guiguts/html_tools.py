@@ -1816,7 +1816,7 @@ class HTMLAutoTableDialog(ToplevelDialog):
                     if col >= len(the_table[-1]):
                         the_table[-1].append(strip_line)  # Start new cell
                     else:
-                        the_table[-1][col] += f" {strip_line}"  # Add to existing
+                        the_table[-1][col] += f"\n{strip_line}"  # Add to existing
         # "Square off" table, making all rows have max_cols columns
         max_cols = max(len(row) for row in the_table)
         for row in the_table:
@@ -1874,7 +1874,7 @@ class HTMLAutoTableDialog(ToplevelDialog):
         html = ["<tr>"]
         for col_num, cell in enumerate(row_cells):
             col_align = self.get_align_class(col_num)
-            html.append(f'<td class="{col_align}">{cell}</td>')
+            html.append(f'<td class="{col_align}">\n{cell}\n</td>')
         html.append("</tr>")
         return "\n".join(html)
 
