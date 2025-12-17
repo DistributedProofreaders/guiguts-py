@@ -1523,14 +1523,12 @@ class AskStringDialog(tk.Toplevel):
         integer: bool = False,
     ):
         super().__init__(parent)
+        self.withdraw()
         self.title(title)
         self.transient(root())
         self.resizable(False, False)
 
         self.result: Optional[str] = None
-
-        # Modal behaviour
-        self.grab_set()
 
         frame = ttk.Frame(self, padding=10)
         frame.grid(sticky="nsew")
@@ -1546,7 +1544,6 @@ class AskStringDialog(tk.Toplevel):
             ),
         )
         self.entry.grid(row=1, column=0, pady=5)
-        self.entry.focus_set()
 
         button_frame = ttk.Frame(frame)
         button_frame.grid(row=2, column=0)
@@ -1569,6 +1566,13 @@ class AskStringDialog(tk.Toplevel):
         y = parent.winfo_rooty() + (parent.winfo_height() - self.winfo_height()) // 2
         self.geometry(f"+{x}+{y}")
 
+        # Show dialog now it's centered & wait for it to be visible before grabbing
+        # because Linux doesn't like grabbing when it's not visible
+        self.deiconify()
+        self.wait_visibility()
+        self.grab_set()
+
+        self.entry.focus_set()
         self.wait_window(self)
 
     def ok(self) -> None:
