@@ -86,6 +86,7 @@ class PrefKey(StrEnum):
     TEXT_CURSOR_WIDTH = auto()
     PREF_TAB_CURRENT = auto()
     SPELL_THRESHOLD = auto()
+    SPELL_SUGGESTIONS = auto()
     UNMATCHED_NESTABLE = auto()
     UNICODE_BLOCK = auto()
     UNICODE_SEARCH_HISTORY = auto()

@@ -240,34 +240,40 @@ class SpellCheckerDialog(CheckerDialog):
         sug_frame.columnconfigure(3, weight=2)
         sug_frame.columnconfigure(4, weight=1)
         sug_frame.columnconfigure(5, weight=1)
-        ttk.Label(
-            sug_frame,
-            text="Suggestions: ",
-        ).grid(column=0, row=0, sticky="EW")
-        self.suggestion_var = tk.StringVar()
-        self.suggestion_cb = ttk.Combobox(sug_frame, textvariable=self.suggestion_var)
-        self.suggestion_cb.grid(column=1, row=0, sticky="EW", padx=(0, 5))
+        self.suggestion_cb = None
+        col = 0
+        if preferences.get(PrefKey.SPELL_SUGGESTIONS):
+            ttk.Label(
+                sug_frame,
+                text="Suggestions: ",
+            ).grid(column=col, row=0, sticky="EW")
+            self.suggestion_var = tk.StringVar()
+            self.suggestion_cb = ttk.Combobox(
+                sug_frame, textvariable=self.suggestion_var
+            )
+            self.suggestion_cb.grid(column=col + 1, row=0, sticky="EW", padx=(0, 5))
+            col += 2
 
         ttk.Button(
             sug_frame,
             text="Fix",
             command=lambda: self.process_entry_current(all_matching=False),
-        ).grid(row=0, column=2, sticky="EW")
+        ).grid(row=0, column=col, sticky="EW")
         ttk.Button(
             sug_frame,
             text="Fix All",
             command=lambda: self.process_entry_current(all_matching=True),
-        ).grid(row=0, column=3, sticky="EW")
+        ).grid(row=0, column=col + 1, sticky="EW")
         ttk.Button(
             sug_frame,
             text="Fix&Hide",
             command=lambda: self.process_remove_entry_current(all_matching=False),
-        ).grid(row=0, column=4, sticky="EW")
+        ).grid(row=0, column=col + 2, sticky="EW")
         ttk.Button(
             sug_frame,
             text="Fix&Hide All",
             command=lambda: self.process_remove_entry_current(all_matching=True),
-        ).grid(row=0, column=5, sticky="EW")
+        ).grid(row=0, column=col + 3, sticky="EW")
 
     def select_entry_by_index(self, entry_index: int, focus: bool = True) -> None:
         """Overridden to allow suggestions for good spellings."""
@@ -303,17 +309,19 @@ class SpellCheckerDialog(CheckerDialog):
             # Convert matches back to word's original case pattern
             return [apply_case_pattern(word, lower_map[m]) for m in matches]
 
-        word = re.sub(r" \(.+\)$", "", self.selected_text)
-        assert _the_spell_checker is not None
-        word_list = list(_the_spell_checker.dictionary.keys()) + list(
-            the_file().project_dict.good_words.keys()
-        )
-        matches = suggest_with_case(word, word_list)
-        self.suggestion_cb["values"] = matches
-        if matches:
-            self.suggestion_var.set(matches[0])
-        else:
-            self.suggestion_var.set(self.no_suggestions)
+        # Only show suggestions if combobox exists (i.e. setting was "on" when dlg was created)
+        if self.suggestion_cb is not None:
+            word = re.sub(r" \(.+\)$", "", self.selected_text)
+            assert _the_spell_checker is not None
+            word_list = list(_the_spell_checker.dictionary.keys()) + list(
+                the_file().project_dict.good_words.keys()
+            )
+            matches = suggest_with_case(word, word_list)
+            self.suggestion_cb["values"] = matches
+            if matches:
+                self.suggestion_var.set(matches[0])
+            else:
+                self.suggestion_var.set(self.no_suggestions)
 
 
 class SpellChecker:
