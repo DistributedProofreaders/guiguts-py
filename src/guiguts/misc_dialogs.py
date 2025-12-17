@@ -519,9 +519,15 @@ class PreferencesDialog(ToplevelDialog):
             "Off - convert some straight single quotes inside double quotes to apostrophes",
         )
 
+        ttk.Checkbutton(
+            advance_frame,
+            text="Show Spelling Suggestions",
+            variable=PersistentBoolean(PrefKey.SPELL_SUGGESTIONS),
+        ).grid(column=0, row=8, sticky="NEW", pady=(0, 5))
+
         add_label_spinbox(
             advance_frame,
-            8,
+            9,
             "Regex timeout (seconds):",
             PrefKey.REGEX_TIMEOUT,
             "Longest time a regex search is allowed to take.\n"
@@ -529,7 +535,7 @@ class PreferencesDialog(ToplevelDialog):
         )
 
         ttk.Label(advance_frame, text="PNG compress command:").grid(
-            row=9, column=0, sticky="NSE", pady=5
+            row=10, column=0, sticky="NSE", pady=5
         )
         png_crush_entry = ttk.Entry(
             advance_frame,
@@ -537,7 +543,7 @@ class PreferencesDialog(ToplevelDialog):
             width=30,
         )
         png_crush_entry.grid(
-            row=9, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
+            row=10, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
         )
         ToolTip(
             png_crush_entry,
@@ -547,7 +553,7 @@ class PreferencesDialog(ToplevelDialog):
         )
 
         ttk.Label(advance_frame, text="Google Ngram parameters:").grid(
-            row=10, column=0, sticky="NSE", pady=5
+            row=11, column=0, sticky="NSE", pady=5
         )
         ngram_entry = ttk.Entry(
             advance_frame,
@@ -555,7 +561,7 @@ class PreferencesDialog(ToplevelDialog):
             width=30,
         )
         ngram_entry.grid(
-            row=10, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
+            row=11, column=1, sticky="NSEW", padx=(5, 0), pady=5, columnspan=2
         )
         ToolTip(
             ngram_entry,
@@ -570,7 +576,7 @@ class PreferencesDialog(ToplevelDialog):
             advance_frame,
             text="Reset shortcuts to default (requires restart)",
             command=lambda: KeyboardShortcutsDict().reset(),
-        ).grid(row=11, column=0, sticky="NSW", pady=5, columnspan=3)
+        ).grid(row=12, column=0, sticky="NSW", pady=5, columnspan=3)
 
         notebook.bind(
             "<<NotebookTabChanged>>",
