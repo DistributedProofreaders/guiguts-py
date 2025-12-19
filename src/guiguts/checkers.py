@@ -4,7 +4,7 @@ from enum import Enum, IntEnum, StrEnum, auto
 import logging
 import math
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from typing import Any, Optional, Callable
 
 import regex as re
@@ -1575,14 +1575,31 @@ class CheckerDialog(ToplevelDialog):
             indices = range(len(self.entries) - 1, -1, -1)
         else:
             indices = range(entry_index, entry_index + 1)
-        count = 0
-        for ii in indices:
-            if (
-                self.get_match_text(self.entries[ii], self.match_on_highlight)
-                == match_text
-            ):
-                count += 1
-                if process and self.process_command:
+        match_indices = [
+            ii
+            for ii in indices
+            if self.get_match_text(self.entries[ii], self.match_on_highlight)
+            == match_text
+        ]
+        count = len(match_indices)
+        # Set up bool to hold whether processing is actually taking place
+        # A user might Cmd/Ctrl click an entry even when there is no process_command
+        # in which case process would be True, but we want process_bool to be False
+        process_bool = bool(process and self.process_command)
+        process_remove = (
+            "process & remove"
+            if process_bool and remove
+            else "process" if process_bool else "remove"
+        )
+        if count <= 1000 or messagebox.askyesno(
+            title="Bulk processing",
+            message=f"This will {process_remove} {count} dialog entries and may take more than a few seconds to complete.",
+            detail="Are you sure you want to continue?",
+            default=messagebox.NO,
+            icon=messagebox.WARNING,
+        ):
+            for ii in match_indices:
+                if process_bool:
                     self.process_command(self.entries[ii])
                 if remove:
                     if self.entries[ii].severity >= CheckerEntrySeverity.INFO:
@@ -1592,7 +1609,7 @@ class CheckerDialog(ToplevelDialog):
                     linenum = self.linenum_from_entry_index(ii)
                     self.text.delete(f"{linenum}.0", f"{linenum + 1}.0")
                     del self.entries[ii]
-        self.report_fix_removes(bool(process and self.process_command), remove, count)
+        self.report_fix_removes(process_bool, remove, count)
         self.update_count_label()
         self.refresh_view_options()
         # Select line that is now where the first processed/removed line was
