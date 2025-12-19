@@ -1,12 +1,13 @@
 """Spell checking functionality"""
 
-import difflib
 import importlib.resources
 import logging
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk
 from typing import Callable, Optional, Any
+from rapidfuzz import process
+from rapidfuzz.distance import Levenshtein
 import regex as re
 
 from guiguts.data import dictionaries
@@ -275,6 +276,16 @@ class SpellCheckerDialog(CheckerDialog):
             command=lambda: self.process_remove_entry_current(all_matching=True),
         ).grid(row=0, column=col + 3, sticky="EW")
 
+        # Create list of words to be used for suggestions
+        # Map lowercased version to cased version so can retrieve cased version
+        # after doing a case-insensitive match later
+        assert _the_spell_checker is not None
+        word_list = list(_the_spell_checker.dictionary.keys()) + list(
+            the_file().project_dict.good_words.keys()
+        )
+        self.suggest_map = {w.lower(): w for w in word_list}
+        self.suggest_words = list(self.suggest_map.keys())
+
     def select_entry_by_index(self, entry_index: int, focus: bool = True) -> None:
         """Overridden to allow suggestions for good spellings."""
         super().select_entry_by_index(entry_index, focus)
@@ -293,30 +304,24 @@ class SpellCheckerDialog(CheckerDialog):
                 return corrected.capitalize()
             return corrected  # Unknown pattern
 
-        def suggest_with_case(word: str, word_list: list[str]) -> list[str]:
+        def suggest_with_case(word: str) -> list[str]:
             """Suggest list of matches for word."""
-
-            # Map lowercased version to cased version so can retrieve cased version
-            # after difflib has done a case-insensitive match
-            lower_map = {w.lower(): w for w in word_list}
-            lower_words = list(lower_map.keys())
-
-            # Find closest matches (case-insensitive)
-            matches = difflib.get_close_matches(
-                word.lower(), lower_words, n=10, cutoff=0.8
-            )
+            matches = process.extract(
+                word.lower(),
+                self.suggest_words,
+                scorer=Levenshtein.distance,
+                limit=10,
+                score_cutoff=3,
+            )  # List of (match, score, index)
 
             # Convert matches back to word's original case pattern
-            return [apply_case_pattern(word, lower_map[m]) for m in matches]
+            return [apply_case_pattern(word, self.suggest_map[m[0]]) for m in matches]
 
         # Only show suggestions if combobox exists (i.e. setting was "on" when dlg was created)
         if self.suggestion_cb is not None:
             word = re.sub(r" \(.+\)$", "", self.selected_text)
-            assert _the_spell_checker is not None
-            word_list = list(_the_spell_checker.dictionary.keys()) + list(
-                the_file().project_dict.good_words.keys()
-            )
-            matches = suggest_with_case(word, word_list)
+
+            matches = suggest_with_case(word)
             self.suggestion_cb["values"] = matches
             if matches:
                 self.suggestion_var.set(matches[0])
