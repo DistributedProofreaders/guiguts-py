@@ -1600,6 +1600,7 @@ class CheckerDialog(ToplevelDialog):
         ):
             for ii in match_indices:
                 if process_bool:
+                    assert self.process_command is not None
                     self.process_command(self.entries[ii])
                 if remove:
                     if self.entries[ii].severity >= CheckerEntrySeverity.INFO:
