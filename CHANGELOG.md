@@ -1,6 +1,18 @@
 # Changelog
 
 
+## Version 2.0.12
+
+- Spelling check suggestions are displayed much more quickly
+- Spelling check suggestions can be turned off in Settings, Advanced tab
+- Newlines are preserved in HTML source after using Auto-Table 
+
+### Bug fixes
+
+- Goto Page and similar small dialogs interpreted leading-zero numbers as
+  octal. and didn't respect GG theme on some platforms
+
+
 ## Version 2.0.11
 
 - Content Providing Dehyphenation tool automatically flags with asterisk if
