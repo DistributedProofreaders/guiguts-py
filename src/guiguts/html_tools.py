@@ -479,6 +479,8 @@ class HTMLImageDialog(ToplevelDialog):
                 )
             caption = re.sub(RETURN_ARROW, "\n    ", f"      {caption}")
             caption = f"  <figcaption>\n{caption}\n  </figcaption>\n"
+            # If caption already had p markup, e.g. for right justify, avoid double markup
+            caption = caption.replace("<p><p", "<p")
         # Now alt text - escape any double quotes
         alt = self.alt_textvariable.get().replace('"', "&quot;")
         alt = f' alt="{alt}"'
