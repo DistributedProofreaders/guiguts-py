@@ -3244,11 +3244,14 @@ class MainText(tk.Text):
 
         # Look for word characters either at the start of the string, or which
         # immediately follow whitespace or punctuation; then apply capitalization.
-        s2 = re.sub(r"(?<=\s|^|\p{P}\s?)(\w+)", capitalize_first_letter, s.lower())
+        s2 = re.sub(
+            r"(?<=[\s\"“‘']|^|\p{P}\s?)(\w[\w'’]*)", capitalize_first_letter, s.lower()
+        )
 
         # Edge case: if the string started with a word found in exception_words, it
-        # will have been lowercased erroneously.
-        return s2[0].upper() + s2[1:]
+        # will have been lowercased erroneously. Also need to allow for leading quotes/apostrophe
+        # so uppercase first letter.
+        return re.sub(r"(\p{L})", lambda m: m.group(1).upper(), s2, count=1)
 
     def set_languages(self, languages: str) -> None:
         """Set languages used in text.
