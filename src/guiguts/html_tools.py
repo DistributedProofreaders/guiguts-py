@@ -425,7 +425,8 @@ class HTMLImageDialog(ToplevelDialog):
             caption = re.sub("</?p>", "", caption)
             caption = re.sub("^\n+", "", caption)
             caption = re.sub("\n$", "", caption)
-            caption = re.sub("\n", RETURN_ARROW, caption)
+            caption = re.sub("\n *", RETURN_ARROW, caption)
+            caption = re.sub("^ +", "", caption)
         self.caption_textvariable.set(caption)
         # Clear alt text, ready for user to type in required string
         self.alt_textvariable.set("")
@@ -475,10 +476,17 @@ class HTMLImageDialog(ToplevelDialog):
             if preferences.get(PrefKey.HTML_IMAGE_CAPTION_P):
                 caption = f"<p>{caption.lstrip()}</p>"
                 caption = re.sub(
-                    f"{RETURN_ARROW}{RETURN_ARROW} *", "</p>\n      <p>", caption
+                    f"{RETURN_ARROW}{RETURN_ARROW} *", "</p>\n<p>", caption
                 )
-            caption = re.sub(RETURN_ARROW, "\n    ", f"      {caption}")
+            caption = re.sub(RETURN_ARROW, "\n", f"    {caption}")
+            caption = re.sub("^ +", "", caption)
+            caption = re.sub("\n +", "\n", caption)
+            # Add space at start of each line
+            caption = re.sub("^", "    ", caption)
+            caption = re.sub("\n", "\n    ", caption)
             caption = f"  <figcaption>\n{caption}\n  </figcaption>\n"
+            # If caption already had p markup, e.g. for right justify, avoid double markup
+            caption = caption.replace("<p><p", "<p")
         # Now alt text - escape any double quotes
         alt = self.alt_textvariable.get().replace('"', "&quot;")
         alt = f' alt="{alt}"'
