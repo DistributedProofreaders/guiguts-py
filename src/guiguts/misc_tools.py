@@ -2394,21 +2394,26 @@ class CurlyQuotesDialog(CheckerDialog):
             lineend = maintext().index(f"{line_num}.end")
 
             def add_quote_entry(prefix: str) -> None:
-                """Add entry highlighting matched quote.
+                """Add entry highlighting matched quote. Only report any given quote once.
 
                 Args:
                     prefix: Message prefix.
                 """
-                self.add_entry(
-                    maintext().get(linebeg, lineend),
-                    IndexRange(
-                        match.rowcol,
-                        IndexRowCol(match.rowcol.row, match.rowcol.col + 1),
-                    ),
-                    hilite_start=match.rowcol.col,
-                    hilite_end=match.rowcol.col + 1,
-                    error_prefix=prefix,
+                text_range = IndexRange(
+                    match.rowcol,
+                    IndexRowCol(match.rowcol.row, match.rowcol.col + 1),
                 )
+                for entry in self.entries:
+                    if text_range == entry.text_range:
+                        break
+                else:
+                    self.add_entry(
+                        maintext().get(linebeg, lineend),
+                        text_range,
+                        hilite_start=match.rowcol.col,
+                        hilite_end=match.rowcol.col + 1,
+                        error_prefix=prefix,
+                    )
 
             if match_text == DQUOTES[0]:  # Open double
                 context = maintext().get(
@@ -2495,36 +2500,46 @@ class CurlyQuotesDialog(CheckerDialog):
                     or not preferences.get(PrefKey.CURLY_DOUBLE_QUOTE_EXCEPTION)
                 ):
                     hilite_start = IndexRowCol(last_open_double_idx).col
-                    self.add_entry(
-                        maintext().get(
-                            f"{last_open_double_idx} linestart",
-                            f"{last_open_double_idx} lineend",
-                        ),
-                        IndexRange(
-                            last_open_double_idx,
-                            maintext().rowcol(f"{last_open_double_idx}+1c"),
-                        ),
-                        hilite_start=hilite_start,
-                        hilite_end=hilite_start + 1,
-                        error_prefix="DQ not closed: ",
+                    text_range = IndexRange(
+                        last_open_double_idx,
+                        maintext().rowcol(f"{last_open_double_idx}+1c"),
                     )
+                    for entry in self.entries:
+                        if text_range == entry.text_range:
+                            break
+                    else:
+                        self.add_entry(
+                            maintext().get(
+                                f"{last_open_double_idx} linestart",
+                                f"{last_open_double_idx} lineend",
+                            ),
+                            text_range,
+                            hilite_start=hilite_start,
+                            hilite_end=hilite_start + 1,
+                            error_prefix="DQ not closed: ",
+                        )
                 dqtype = 0
                 # Expect sqtype == 0 unless next line starts with open single quote
                 if sqtype == 1 and maintext().get(f"{linebeg} +1l") != SQUOTES[0]:
                     hilite_start = IndexRowCol(last_open_single_idx).col
-                    self.add_entry(
-                        maintext().get(
-                            f"{last_open_single_idx} linestart",
-                            f"{last_open_single_idx} lineend",
-                        ),
-                        IndexRange(
-                            last_open_single_idx,
-                            maintext().rowcol(f"{last_open_single_idx}+1c"),
-                        ),
-                        hilite_start=hilite_start,
-                        hilite_end=hilite_start + 1,
-                        error_prefix="SQ not closed: ",
+                    text_range = IndexRange(
+                        last_open_single_idx,
+                        maintext().rowcol(f"{last_open_single_idx}+1c"),
                     )
+                    for entry in self.entries:
+                        if text_range == entry.text_range:
+                            break
+                    else:
+                        self.add_entry(
+                            maintext().get(
+                                f"{last_open_single_idx} linestart",
+                                f"{last_open_single_idx} lineend",
+                            ),
+                            text_range,
+                            hilite_start=hilite_start,
+                            hilite_end=hilite_start + 1,
+                            error_prefix="SQ not closed: ",
+                        )
                 sqtype = 0
         self.display_entries()
 
