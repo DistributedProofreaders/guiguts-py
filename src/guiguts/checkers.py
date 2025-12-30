@@ -90,7 +90,7 @@ class CheckerEntry:
             initial_pos: Position of entry during initial creation.
             entry_type: Type of entry: header, footer, content, etc.
             error_prefix: Prefix string indicating an error.
-            ep_index: Error prefix index (to control color) - must be 0 or 1
+            ep_index: Error prefix index (to control color) - must be 0, 1 or 2
         """
         self.text = text
         self.text_range = text_range
@@ -101,15 +101,17 @@ class CheckerEntry:
         self.entry_type = entry_type
         self.severity = severity
         self.error_prefix = error_prefix
-        assert ep_index in (0, 1)
+        assert ep_index in range(3)
         self.ep_index = ep_index
         self.custom_data: Optional[Any] = None
 
     def error_prefix_tag(self) -> HighlightTag:
         """Return which tag to use to highlight error prefix."""
-        assert self.ep_index in (0, 1)
+        assert self.ep_index in range(3)
         if self.ep_index == 1:
             return HighlightTag.CHECKER_ERROR_PREFIX_1
+        if self.ep_index == 2:
+            return HighlightTag.CHECKER_WARNING
         return HighlightTag.CHECKER_ERROR_PREFIX
 
 

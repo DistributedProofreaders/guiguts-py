@@ -13,7 +13,7 @@ import regex as re
 
 from guiguts.checkers import CheckerDialog, CheckerEntryType
 from guiguts.file import the_file
-from guiguts.maintext import maintext
+from guiguts.maintext import maintext, HighlightTag
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.utilities import IndexRange, IndexRowCol, sing_plur
 
@@ -56,6 +56,9 @@ class PPhtmlFileData:
 
 class PPhtmlChecker:
     """PPhtml checker"""
+
+    fail_flag = "*FAIL*"
+    warn_flag = "*WARN*"
 
     def __init__(self) -> None:
         """Initialize PPhtml checker."""
@@ -106,6 +109,12 @@ class PPhtmlChecker:
         self.misc_checks()
 
         self.dialog.display_entries()
+        self.colorize_errors(PPhtmlChecker.fail_flag, HighlightTag.CHECKER_ERROR_PREFIX)
+        self.colorize_errors("ERROR", HighlightTag.CHECKER_ERROR_PREFIX)
+        self.colorize_errors(
+            PPhtmlChecker.warn_flag, HighlightTag.CHECKER_WARNING
+        )
+        self.colorize_errors("WARNING", HighlightTag.CHECKER_WARNING)
         # Select first entry (which might not be one with a line number)
         self.dialog.select_entry_by_index(0)
 
@@ -610,7 +619,7 @@ class PPhtmlChecker:
                 test_passed,
                 "Check for IDs targeted by multiple links",
                 errors,
-                fail_string="*WARN*",
+                fail_string=PPhtmlChecker.warn_flag,
             )
         else:
             self.output_subsection_errors(
@@ -727,7 +736,7 @@ class PPhtmlChecker:
         fail_string = ""
         if not title_str.endswith(" | Project Gutenberg"):
             test_passed = False
-            fail_string = "*FAIL*"
+            fail_string = PPhtmlChecker.fail_flag
             errors.append(
                 (
                     '    Title should be of the form "Alice’s Adventures in Wonderland | Project Gutenberg"',
@@ -736,7 +745,7 @@ class PPhtmlChecker:
             )
         elif h1_str.lower() != title_str.removesuffix(" | Project Gutenberg").lower():
             test_passed = False
-            fail_string = "*WARN*"
+            fail_string = PPhtmlChecker.warn_flag
             errors.append(
                 (
                     "    <title> and <h1> are different - please check",
@@ -1172,7 +1181,7 @@ class PPhtmlChecker:
             len(difference) == 0,
             "Classes defined but not used",
             sorted(difference, key=class_sort_key),
-            fail_string="*WARN*",
+            fail_string=PPhtmlChecker.warn_flag,
         )
 
     # Miscellaneous checks
@@ -1331,7 +1340,7 @@ class PPhtmlChecker:
         test_passed: Optional[bool],
         title: str,
         errors: list[str] | list[tuple[str, Optional[IndexRange]]],
-        fail_string: str = "*FAIL*",
+        fail_string: str = "",
     ) -> None:
         """Output collected errors underneath subsection title.
 
@@ -1341,6 +1350,8 @@ class PPhtmlChecker:
             errors: List of errors to be output.
             fail_string: Defaults to "*FAIL*" but can be overridden to "*WARN*"
         """
+        if not fail_string:
+            fail_string = PPhtmlChecker.fail_flag
         if test_passed is None:
             pass_string = "[info]"
         else:
@@ -1374,6 +1385,15 @@ class PPhtmlChecker:
             IndexRowCol(line_num + 1, match.start()),
             IndexRowCol(line_num + 1, match.end()),
         )
+
+    def colorize_errors(self, flag: str, tag: HighlightTag) -> None:
+        """Add color tags to given string to flag error/warning."""
+        wgt = self.dialog.text
+        nch = len(flag)
+        start = "1.0"
+        while start := wgt.search(flag, start, tk.END):
+            wgt.tag_add(tag, start, f"{start}+{nch}c")
+            start = f"{start}+1c"
 
 
 def pphtml() -> None:
