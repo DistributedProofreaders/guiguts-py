@@ -1182,7 +1182,7 @@ def fraction_convert(conversion_type: FractionConvertType) -> None:
         "1/8": "⅛",
         "3/8": "⅜",
         "5/8": "⅝",
-        "7/8": "⅝",
+        "7/8": "⅞",
     }
     superscripts = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
