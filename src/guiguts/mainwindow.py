@@ -721,6 +721,14 @@ class MainImage(tk.Frame):
             "Image Browse",
             self.browse,
         )
+        menubar_metadata().add_button_orphan(
+            "Image Prev",
+            lambda: self.next_image(reverse=True),
+        )
+        menubar_metadata().add_button_orphan(
+            "Image Next",
+            self.next_image,
+        )
 
     def scroll_y(self, *args: Any, **kwargs: Any) -> None:
         """Scroll canvas vertically and redraw the image"""
@@ -1067,9 +1075,11 @@ class MainImage(tk.Frame):
 
     def handle_enter(self, _event: tk.Event) -> None:
         """Handle enter event."""
+        if self.auto_image_state() != AutoImageState.NORMAL:
+            mainimage().alert_user()
         self.auto_image_state(AutoImageState.NORMAL)
 
-    def handle_leave(self, _event: tk.Event) -> None:
+    def handle_leave(self, _event: Optional[tk.Event] = None) -> None:
         """Handle leave event."""
         # Restart auto img
         if self.auto_image_state() == AutoImageState.PAUSED:
