@@ -834,7 +834,7 @@ class TreeviewList(ttk.Treeview):
             col_id = "#1"
         else:
             row_id, col_id = self.identify_rowcol(event)
-        if self.sort_pref is not None and not row_id:
+        if self.sort_pref is not None and not row_id and col_id:
             col = int(col_id[1])
             cur = preferences.get(self.sort_pref)
             if abs(cur) == col:
