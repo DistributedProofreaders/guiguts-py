@@ -619,6 +619,7 @@ class Guiguts:
         preferences.set_default(PrefKey.HTML_IMAGE_OVERRIDE_EPUB, True)
         preferences.set_default(PrefKey.HTML_IMAGE_ALIGNMENT, "center")
         preferences.set_default(PrefKey.HTML_IMAGE_CAPTION_P, True)
+        preferences.set_default(PrefKey.HTML_IMAGE_DECORATIVE_ONLY, False)
         preferences.set_default(PrefKey.HTML_LINKS_ALPHABETIC, False)
         preferences.set_default(PrefKey.HTML_LINKS_HIDE_PAGE, False)
         preferences.set_default(PrefKey.HTML_LINKS_HIDE_FOOTNOTE, True)
