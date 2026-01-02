@@ -232,6 +232,7 @@ class PrefKey(StrEnum):
     DID_YOU_KNOW_INTERVAL = auto()
     DID_YOU_KNOW_INDEX = auto()
     NGRAM_PARAMETERS = auto()
+    TOOLBAR_ICON_SIZE = auto()
 
 
 class Preferences:

@@ -764,6 +764,7 @@ class Guiguts:
         preferences.set_default(
             PrefKey.NGRAM_PARAMETERS, "&corpus=en-2019&year_start=1700&year_end=2000"
         )
+        preferences.set_default(PrefKey.TOOLBAR_ICON_SIZE, 20)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
