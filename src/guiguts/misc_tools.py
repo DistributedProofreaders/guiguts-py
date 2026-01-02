@@ -461,7 +461,7 @@ class PageSeparatorDialog(ToplevelDialog):
         if mid_para_check.endswith("]") or mid_para_check.endswith("]*"):
             return
 
-        sep_range = self.fix_pagebreak_markup(sep_range)
+        sep_range, _ = self.fix_pagebreak_markup(sep_range)
         maintext().delete(start_index, sep_range.end.index())
         prev_eol = f"{start_index} -1l lineend"
         maybe_hyphen = maintext().get(f"{prev_eol}-1c", prev_eol)
@@ -586,7 +586,7 @@ class PageSeparatorDialog(ToplevelDialog):
         end_rowcol = IndexRowCol(match.rowcol.row + 1, match.rowcol.col)
         return IndexRange(match.rowcol, end_rowcol)
 
-    def fix_pagebreak_markup(self, sep_range: IndexRange) -> IndexRange:
+    def fix_pagebreak_markup(self, sep_range: IndexRange) -> tuple[IndexRange, str]:
         """Remove markup, e.g. italics or blockquote, if closed immediately before
         page break and same markup is reopened immediately afterwards.
 
@@ -595,6 +595,7 @@ class PageSeparatorDialog(ToplevelDialog):
 
         Returns:
             Updated page separator range (removal of markup may have affected page sep line number)
+            and type of block markup removed, if any, e.g. "#", "*", "P", etc.
         """
         # Remove all but one page sep lines at this location. As each is deleted
         # the next will be move up to lie at the same location.
@@ -609,6 +610,7 @@ class PageSeparatorDialog(ToplevelDialog):
         maintext().insert(sep_range.start.index(), line)
         ps_start = sep_range.start.index()
         ps_end = sep_range.end.index()
+        block_removed = ""
         maybe_more_to_remove = True
         while maybe_more_to_remove:
             maybe_more_to_remove = False
@@ -620,8 +622,8 @@ class PageSeparatorDialog(ToplevelDialog):
                 f"{ps_end}",
                 f"{ps_end} +4c",
             )
-            # Remove blockquote or nowrap markup
-            if match := re.search(r"(\*|#)/$", markup_prev):
+            # Remove blockquote or nowrap/poetry markup
+            if match := re.search(r"(\*|#|P|p)/$", markup_prev):
                 markup_type = re.escape(match[1])
                 if re.search(rf"^/{markup_type}", markup_next):
                     maintext().delete(
@@ -632,6 +634,7 @@ class PageSeparatorDialog(ToplevelDialog):
                         f"{ps_start}-1l",
                         ps_start,
                     )
+                    block_removed = match[1]  # Not escaped
                     # Compensate for having deleted a line before the page separator
                     ps_start = maintext().index(f"{ps_start}-1l")
                     ps_end = maintext().index(f"{ps_end}-1l")
@@ -651,7 +654,7 @@ class PageSeparatorDialog(ToplevelDialog):
                         f"{ps_start}-1l lineend -{len_punc}c",
                     )
                     maybe_more_to_remove = True
-        return IndexRange(ps_start, ps_end)
+        return (IndexRange(ps_start, ps_end), block_removed)
 
     def do_auto(self) -> None:
         """Do auto page separator fixing if allowed by settings."""
@@ -665,7 +668,7 @@ class PageSeparatorDialog(ToplevelDialog):
         while sep_range := self.find():
             # Fix markup across page break, even though the join function would fix it later,
             # because otherwise it would interfere with check for automated joining below.
-            sep_range = self.fix_pagebreak_markup(sep_range)
+            sep_range, removed = self.fix_pagebreak_markup(sep_range)
             line_prev = maintext().get(
                 f"{sep_range.start.index()}-1l lineend -10c",
                 f"{sep_range.start.index()}-1l lineend",
@@ -682,7 +685,7 @@ class PageSeparatorDialog(ToplevelDialog):
                 self.do_blank(1)
             elif line_next.startswith("-----File:"):
                 self.do_delete()
-            elif not (
+            elif not re.fullmatch("[*Pp]", removed) and not (
                 re.search(r"^\*?-(?!-)", line_next)
                 or re.search(r"(?<!-)-\*?$", line_prev)
                 or line_prev.endswith("]")
