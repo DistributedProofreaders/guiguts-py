@@ -1,6 +1,30 @@
 # Changelog
 
 
+## Version 2.0.13
+
+- HTML Image dialog now has "Decorative only" checkbox which adds
+  `data-role="presentation"` to the illustration HTML
+- Toolbar icon size can now be changed in the settings dialog
+- Image Prev/Next buttons in the image viewer are now available via the
+  Command Palette, and can thus have shortcut keys assigned
+- PPhtml tests that fail are now highlighted in red
+- Default CSS for the `center` class now forces `text-indent` to zero
+- Check if user wants to proceed if the current Fix/Remove action in a dialog
+  would affect over 1000 messages
+- Curly Quote Check now only reports one error per quote
+
+### Bug fixes
+
+- Unicode Fraction Convert changed `7/8` to `⅝`
+- Poetry lines ending with double-hyphen emdashes could be wrongly joined
+  across page boundaries
+- Title-casing words with apostrophes did not work correctly
+- Auto-Illustration would add an extra `<p>` to right-aligned captions
+- Pressing Return/Enter in Command Palette sometimes did nothing or gave
+  an exception
+
+
 ## Version 2.0.12
 
 - Spelling check suggestions are displayed much more quickly
