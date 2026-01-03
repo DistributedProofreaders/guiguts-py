@@ -114,9 +114,9 @@ class PreferencesDialog(ToplevelDialog):
             variable=PersistentBoolean(PrefKey.HIGH_CONTRAST),
         ).grid(column=0, row=1, sticky="NW", pady=5)
 
-        ttk.Label(
-            appearance_frame, text="Tear-Off Menus (change requires restart)"
-        ).grid(row=2, column=0)
+        ttk.Label(appearance_frame, text="Tear-Off Menus (requires restart)").grid(
+            row=2, column=0
+        )
         tearoff_frame = ttk.Frame(appearance_frame)
         tearoff_frame.grid(column=1, row=2, sticky="NSEW")
         tearoff_textvariable = PersistentString(PrefKey.TEAROFF_MENU_TYPE)
@@ -165,23 +165,30 @@ class PreferencesDialog(ToplevelDialog):
             PrefKey.TEXT_CURSOR_WIDTH,
             "Width of insert cursor in main text window",
         )
+        add_label_spinbox(
+            appearance_frame,
+            7,
+            "Toolbar Icon Size (requires restart):",
+            PrefKey.TOOLBAR_ICON_SIZE,
+            "Size of icons in toolbar",
+        )
         ttk.Checkbutton(
             appearance_frame,
             text="Highlight Cursor Line",
             variable=PersistentBoolean(PrefKey.HIGHLIGHT_CURSOR_LINE),
-        ).grid(column=0, row=7, sticky="NW", pady=5)
+        ).grid(column=0, row=8, sticky="NW", pady=5)
 
         ttk.Checkbutton(
             appearance_frame,
             text="Show Character Names in Status Bar",
             variable=PersistentBoolean(PrefKey.ORDINAL_NAMES),
-        ).grid(column=0, row=8, sticky="NW", pady=5)
+        ).grid(column=0, row=9, sticky="NW", pady=5)
 
         ttk.Label(appearance_frame, text="Warning bell: ").grid(
-            column=0, row=9, pady=(5, 0), sticky="E"
+            column=0, row=10, pady=(5, 0), sticky="E"
         )
         bell_frame = ttk.Frame(appearance_frame)
-        bell_frame.grid(column=1, row=9, sticky="EW", pady=(5, 0), columnspan=2)
+        bell_frame.grid(column=1, row=10, sticky="EW", pady=(5, 0), columnspan=2)
         ttk.Checkbutton(
             bell_frame,
             text="Audible",

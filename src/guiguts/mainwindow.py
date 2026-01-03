@@ -1467,14 +1467,14 @@ class MainWindow:
         status_row2_frame.grid(row=1, column=0, sticky="NSEW", pady=(2, 0))
         status_row2_frame.columnconfigure(1, weight=1)
         toolbar_frame = ttk.Frame(status_row2_frame)
-        toolbar_frame.grid(row=0, column=0, sticky="NSEW")
+        toolbar_frame.grid(row=0, column=0, sticky="EW")
 
         self.tool_btns: dict[str, ttk.Button] = {}
         self.light_photos: dict[str, ImageTk.PhotoImage] = {}
         self.dark_photos: dict[str, ImageTk.PhotoImage] = {}
 
         def create_toolbar_btn(
-            col: int, name: str, tooltip: str, size: tuple[int, int] = (20, 20)
+            col: int, name: str, tooltip: str, size: Optional[tuple[int, int]] = None
         ) -> None:
             """Create a toolbar button.
 
@@ -1484,6 +1484,9 @@ class MainWindow:
                 tooltip: Tooltip for button.
                 size: Size of image to create.
             """
+            if size is None:
+                default_size = max(preferences.get(PrefKey.TOOLBAR_ICON_SIZE), 1)
+                size = (default_size, default_size)
             icon_path = str(
                 importlib.resources.files(icons).joinpath(
                     f"{name.removesuffix('_small')}.png"
@@ -1553,9 +1556,9 @@ class MainWindow:
         status_label_frame.columnconfigure(0, weight=1)
         status_label_frame.columnconfigure(1, weight=0)
         self.status_label_widget = ttk.Label(
-            status_label_frame, borderwidth=1, relief=tk.SUNKEN, padding=1
+            status_label_frame, borderwidth=1, relief=tk.SUNKEN
         )
-        self.status_label_widget.grid(row=0, column=0, sticky="NSEW", padx=5, pady=2)
+        self.status_label_widget.grid(row=0, column=0, sticky="EW", padx=5)
         self.status_label_widget.bind(
             "<ButtonRelease-1>", lambda _: self.messagelog.show()
         )
@@ -1566,9 +1569,8 @@ class MainWindow:
             width=8,
             borderwidth=1,
             relief=tk.SUNKEN,
-            padding=1,
         )
-        self.busy_widget.grid(column=1, row=0, sticky="NSE", padx=(3, 0), pady=2)
+        self.busy_widget.grid(column=1, row=0, sticky="E", padx=(3, 0))
         Busy.busy_widget_setup(self.busy_widget)
 
         ttk.Separator(root()).grid(
