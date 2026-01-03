@@ -330,6 +330,7 @@ class Guiguts:
         """Show the image corresponding to current location."""
         self.file.image_dir_check()
         self.mainwindow.load_image(self.file.get_current_image_path())
+        mainimage().auto_image_state(AutoImageState.NORMAL)
 
     def show_image_viewer(self) -> None:
         """Show the image viewer."""
