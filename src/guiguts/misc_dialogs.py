@@ -1995,7 +1995,7 @@ class CommandPaletteDialog(ToplevelDialog):
         self.list.tag_configure(self.SEPARATOR_TAG, foreground="gray")
 
         # Bind events for list and entry
-        self.list.bind("<Return>", self.execute_command)
+        self.list.bind("<Return>", lambda _: self.execute_command())
         self.list.bind("<Double-Button-1>", self.execute_command)
         self.list.bind("<Down>", lambda _: self.move_in_list(1))
         self.list.bind("<Up>", lambda _: self.move_in_list(-1))
@@ -2004,7 +2004,7 @@ class CommandPaletteDialog(ToplevelDialog):
 
         self.entry.bind("<Down>", lambda _: self.move_in_list(1))
         self.entry.bind("<Up>", lambda _: self.move_in_list(-1))
-        self.entry.bind("<Return>", self.execute_command)
+        self.entry.bind("<Return>", lambda _: self.execute_command())
 
         self.update_list()
         self.entry.focus()
