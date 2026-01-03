@@ -96,19 +96,25 @@ class HTMLImageDialog(ToplevelDialog):
             command=self.choose_file,
         ).grid(row=0, column=1, sticky="NSEW")
 
-        # Buttons to see prev/next file
+        # Buttons to see prev/next file & whether decorative-only
         file_btn_frame = ttk.Frame(file_frame)
-        file_btn_frame.grid(row=1, column=0)
+        file_btn_frame.grid(row=1, column=0, sticky="EW", pady=(3, 0))
+        file_btn_frame.columnconfigure(0, weight=1)
+        ttk.Checkbutton(
+            file_btn_frame,
+            text="Decorative only",
+            variable=PersistentBoolean(PrefKey.HTML_IMAGE_DECORATIVE_ONLY),
+        ).grid(row=0, column=0, sticky="W")
         ttk.Button(
             file_btn_frame,
             text="Prev File",
             command=lambda: self.next_file(reverse=True),
-        ).grid(row=0, column=0, padx=2)
+        ).grid(row=0, column=1, padx=2, sticky="E")
         ttk.Button(
             file_btn_frame,
             text="Next File",
             command=lambda: self.next_file(reverse=False),
-        ).grid(row=0, column=1, padx=2)
+        ).grid(row=0, column=2, padx=(2, 0), sticky="E")
 
         # Label to display thumbnail of image - allocate a
         # square space the same width as the filename frame
@@ -517,10 +523,15 @@ class HTMLImageDialog(ToplevelDialog):
             fig_class += width.replace(".", "_")
             if unit_type == "%":  # Never want %-width image to exceed natural size
                 style = f' style="max-width: {self.image_width / EM_PX}em;"'
+        role = (
+            ' data-role="presentation"'
+            if preferences.get(PrefKey.HTML_IMAGE_DECORATIVE_ONLY)
+            else ""
+        )
 
         # Construct HTML
         html = f'<figure class="{alignment}{fig_class}" id="{image_id}"{style}>\n'
-        html += f'  <img{img_class} src="{filename}"{img_size}{alt}>\n'
+        html += f'  <img{img_class} src="{filename}"{img_size}{alt}{role}>\n'
         html += f"{caption}</figure>"
 
         maintext().undo_block_begin()

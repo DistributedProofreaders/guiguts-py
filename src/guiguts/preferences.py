@@ -124,6 +124,7 @@ class PrefKey(StrEnum):
     HTML_IMAGE_OVERRIDE_EPUB = auto()
     HTML_IMAGE_ALIGNMENT = auto()
     HTML_IMAGE_CAPTION_P = auto()
+    HTML_IMAGE_DECORATIVE_ONLY = auto()
     HTML_LINKS_ALPHABETIC = auto()
     HTML_LINKS_HIDE_PAGE = auto()
     HTML_LINKS_HIDE_FOOTNOTE = auto()
