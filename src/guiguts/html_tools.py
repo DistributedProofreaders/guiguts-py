@@ -55,10 +55,10 @@ LAND_X = 4  # Common landscape screen ratio
 LAND_Y = 3
 
 
-class HTMLImageDialog(ToplevelDialog):
+class HTMLImageBaseDialog(ToplevelDialog):
     """Dialog for inserting image markup into HTML."""
 
-    manual_page = "HTML_Menu#Auto-Illustrations"
+    manual_page = ""
 
     def __init__(self, auto_illus: bool) -> None:
         """Initialize HTML Image dialog.
@@ -66,7 +66,7 @@ class HTMLImageDialog(ToplevelDialog):
         Args:
             auto_illus: True to work in Auto-Illustration mode
         """
-        super().__init__("HTML Images")
+        super().__init__("Auto-Illustrations" if auto_illus else "HTML Images")
 
         self.image: Optional[Image.Image] = None
         self.imagetk: Optional[ImageTk.PhotoImage] = None
@@ -629,6 +629,26 @@ class HTMLImageDialog(ToplevelDialog):
             case "px":
                 return f"{width_fl * self.image_height / self.image_width:.0f}"
         return "--"
+
+
+class HTMLImageManualDialog(HTMLImageBaseDialog):
+    """Dialog for manually inserting image markup into HTML."""
+
+    manual_page = "HTML_Menu#HTML_Images"
+
+    def __init__(self) -> None:
+        """Initialize HTML Manual Image dialog."""
+        super().__init__(auto_illus=False)
+
+
+class HTMLImageAutoDialog(HTMLImageBaseDialog):
+    """Dialog for "Auto-Illus" inserting image markup into HTML."""
+
+    manual_page = "HTML_Menu#Auto-Illustrations"
+
+    def __init__(self) -> None:
+        """Initialize HTML Auto Image dialog."""
+        super().__init__(auto_illus=True)
 
 
 class HTMLValidatorDialog(CheckerDialog):
