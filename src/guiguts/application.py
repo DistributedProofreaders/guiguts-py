@@ -37,7 +37,8 @@ from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle, footnote_mask
 from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
 from guiguts.html_tools import (
-    HTMLImageDialog,
+    HTMLImageAutoDialog,
+    HTMLImageManualDialog,
     HTMLValidator,
     HTMLLinkChecker,
     CSSValidator,
@@ -1264,16 +1265,14 @@ class Guiguts:
         html_menu.add_button("HTML ~Generator...", HTMLGeneratorDialog.show_dialog)
         html_menu.add_button(
             "Auto-~Illustrations...",
-            lambda: HTMLImageDialog.show_dialog(auto_illus=True),
+            HTMLImageAutoDialog.show_dialog,
         )
         html_menu.add_button("Auto-~Table...", HTMLAutoTableDialog.show_dialog)
         html_menu.add_button("Auto-~List...", HTMLAutoListDialog.show_dialog)
         html_menu.add_separator()
         html_menu.add_button("HTML ~Markup...", HTMLMarkupDialog.show_dialog)
         html_menu.add_button("HTML Links/A~nchors...", HTMLLinksDialog.show_dialog)
-        html_menu.add_button(
-            "HTML Image~s...", lambda: HTMLImageDialog.show_dialog(auto_illus=False)
-        )
+        html_menu.add_button("HTML Image~s...", HTMLImageManualDialog.show_dialog)
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
         html_menu.add_button("HTML Lin~k Checker", lambda: HTMLLinkChecker().run())
