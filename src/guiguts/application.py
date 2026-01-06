@@ -1807,7 +1807,7 @@ class Guiguts:
     def high_contrast_callback(self, _value: bool) -> None:
         """Callback for when HIGH_CONTRAST preference is changed"""
         # re-display image
-        mainimage().show_image(internal_only=True)
+        mainimage().show_image()
         # change theme colors for text areas
         for _widget in (maintext(), maintext().peer):
             maintext().theme_set_tk_widget_colors(_widget)
