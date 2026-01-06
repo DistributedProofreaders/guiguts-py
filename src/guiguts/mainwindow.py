@@ -853,7 +853,11 @@ class MainImage(tk.Frame):
                     run_func = subprocess.Popen
                 else:
                     cmd = ["xdg-open"]
-            cmd.append(self.filename)
+            # IrfanView is sensitive to forward slashes in file path
+            if is_windows():
+                cmd.append(self.filename.replace("/", "\\"))
+            else:
+                cmd.append(self.filename)
 
             focus_widget = root().focus_get()
             try:
