@@ -13,6 +13,7 @@ from typing import Literal, Optional, Callable
 import unicodedata
 import webbrowser
 
+from packaging.version import Version
 from rapidfuzz import process
 import regex as re
 
@@ -955,10 +956,13 @@ class ReleaseNotesDialog(ToplevelDialog):
             i += 1
         assert i < len(lines)
 
-        # Assert first section matches current version
+        # Assert first section matches installed version
+        installed_version = Version(version("guiguts"))
         first_line = lines[i].strip()
         m = re.match(r"^##\s+Version\s+(\S+)", first_line, re.IGNORECASE)
-        assert m and m.group(1) == version("guiguts")
+        # Annoying for devs if check is run on a prerelease
+        if not installed_version.is_prerelease:
+            assert m and Version(m.group(1)) == installed_version
         start = i
 
         # Either just collect current version, or all versions
