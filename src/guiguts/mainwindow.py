@@ -813,7 +813,7 @@ class MainImage(tk.Frame):
         preferences.set(PrefKey.IMAGE_SCALE_FACTOR, self.image_scale)
         self.show_image()
 
-    def show_image(self, internal_only: bool = False) -> None:
+    def show_image(self, internal_only: bool = True) -> None:
         """Show image on the Canvas.
 
         Args:
@@ -853,7 +853,11 @@ class MainImage(tk.Frame):
                     run_func = subprocess.Popen
                 else:
                     cmd = ["xdg-open"]
-            cmd.append(self.filename)
+            # IrfanView is sensitive to forward slashes in file path
+            if is_windows():
+                cmd.append(self.filename.replace("/", "\\"))
+            else:
+                cmd.append(self.filename)
 
             focus_widget = root().focus_get()
             try:
@@ -984,7 +988,7 @@ class MainImage(tk.Frame):
                     self.image = self.image.rotate(
                         self.rotation_details[self.short_name], expand=True
                     )
-            self.show_image()
+            self.show_image(internal_only=False)
             if preferences.get(PrefKey.IMAGE_AUTOFIT_WIDTH):
                 mainimage().image_zoom_to_width()
             elif preferences.get(PrefKey.IMAGE_AUTOFIT_HEIGHT):

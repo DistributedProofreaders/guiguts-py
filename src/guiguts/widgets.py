@@ -867,7 +867,9 @@ class FileDialog:
 
     @staticmethod
     def askopenfilename(
-        filetypes: Optional[tuple[tuple[str, str], ...]] = None,
+        # Although docs say that `filetypes` can be `None`, actually get an exception
+        # in Python 3.14.2, so default to `()` instead.
+        filetypes: tuple[tuple[str, str], ...] = (),
         initialdir: Optional[str] = None,
         initialfile: Optional[str] = None,
         parent: Optional[tk.Misc] = None,
@@ -888,7 +890,9 @@ class FileDialog:
 
     @staticmethod
     def asksaveasfilename(
-        filetypes: Optional[tuple[tuple[str, str], ...]] = None,
+        # Although docs say that `filetypes` can be `None`, actually get an exception
+        # in Python 3.14.2, so default to `()` instead.
+        filetypes: tuple[tuple[str, str], ...] = (),
         initialdir: Optional[str] = None,
         initialfile: Optional[str] = None,
         parent: Optional[tk.Misc] = None,
