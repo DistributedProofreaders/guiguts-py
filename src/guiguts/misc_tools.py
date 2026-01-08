@@ -1950,6 +1950,7 @@ class ScannoRegexCheckerDialog(CheckerDialog):
     def sr_dialog(self) -> str:
         """Pop S/R dialog pre-populated to help user S/R scanno."""
         preferences.set(PrefKey.SEARCHDIALOG_REGEX, True)
+        preferences.set(PrefKey.SEARCHDIALOG_MATCH_CASE, True)
         preferences.set(PrefKey.SEARCHDIALOG_WHOLE_WORD, False)
         preferences.set(PrefKey.SEARCHDIALOG_REVERSE, False)
         # Populate S/R dialog with replacement string(s)
