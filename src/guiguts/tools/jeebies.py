@@ -612,6 +612,9 @@ class JeebiesChecker:
             hebe_start: The position on line of string 'he' or 'be'.
             checker_dialog: Where report text is written.
         """
+        # Don't report "he's" or similar, since "be" wouldn't appear in a word with apostrophe after it
+        if re.match(r"he['’]\p{Letter}", line[hebe_start:]):
+            return
         # Get start/end of 'he' or 'be' string in file.
         error_start = f"{line_number}.{hebe_start}"
         error_end = f"{line_number}.{hebe_start + 2}"
