@@ -854,7 +854,7 @@ class WordFrequencyDialog(ToplevelDialog):
         except IndexError:
             return "break"
         self.text.select_line(entry_index + 1)
-        word = self.entries[entry_index].word
+        word = self.entries[entry_index].word.replace("-*", "-")
         content = word
 
         # If in Hyphen display, add suspects to content
@@ -872,6 +872,8 @@ class WordFrequencyDialog(ToplevelDialog):
             # manually add the non-hyphen version to content
             else:
                 content = f"{content},{word.replace('-', '')}"
+        # Don't want asterisks passing to Ngram viewer
+        content = content.replace("-*", "-")
 
         do_open_ngram(content)
         return "break"
@@ -1007,7 +1009,7 @@ class WordFrequencyDialog(ToplevelDialog):
             )
             for word in all_words:
                 if "-" in word:
-                    pair = word.replace("-", " ")
+                    pair = re.sub(r"-\*?", " ", word)
                     # Find word pair not preceded/followed by a letter - this is so
                     # that space or punctuation surrounding the pair doesn't break things.
                     count = len(
@@ -1022,7 +1024,9 @@ class WordFrequencyDialog(ToplevelDialog):
         for word, freq in all_words.items():
             if "-" not in word:
                 continue
-            total_cnt += 1
+            # Avoid including both flash-*light and flash-light in total count
+            if not ("-*" in word and word.replace("-*", "-") in all_words):
+                total_cnt += 1
             # Check for suspects - given "w1-w2", then "w1w2", "w1 w2" and "w1--w2" are suspects.
             word_pair = re.sub(r"-\*?", " ", word)
             nohyp_word = re.sub(r"-\*?", "", word)
@@ -1036,7 +1040,7 @@ class WordFrequencyDialog(ToplevelDialog):
                 wp_exists = word_pair in word_pairs
                 nh_exists = nohyp_word in all_words
                 th_exists = twohyp_word in emdash_words
-            suspect = wp_exists or nh_exists or th_exists
+            suspect = wp_exists or nh_exists or th_exists or "-*" in word
             suspect_inc = 1 if suspect else 0
 
             if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
@@ -1074,6 +1078,10 @@ class WordFrequencyDialog(ToplevelDialog):
                     )
                     word_output[twohyp_word] = True
                     suspect_cnt += suspect_inc
+            if "-*" in word and word not in word_output:
+                self.add_entry(word, freq, suspect=suspect)
+                word_output[word] = True
+                suspect_cnt += suspect_inc
         self.display_entries()
         self.message.set(
             f"{sing_plur(total_cnt, 'hyphenated word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
