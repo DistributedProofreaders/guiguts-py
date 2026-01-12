@@ -2797,8 +2797,10 @@ def convert_sequential() -> None:
 
 def open_ngram() -> None:
     """Open Google Books Ngram viewer, using selected text if any.
-    If a single hyphenated word, compare with unhyphenated."""
+    If a single hyphenated word, compare with unhyphenated. Ignores
+    an asterisk following a hyphen and treats as just the hyphen."""
     content = re.sub(r"\s+", " ", maintext().selected_text().strip())
+    content = content.replace("-*", "-")
     # If single hyphenated word, add non-hyphenated version
     if "-" in content and "," not in content and " " not in content:
         content = f"{content},{content.replace('-', '')}"
