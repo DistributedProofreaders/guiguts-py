@@ -38,6 +38,7 @@ from guiguts.utilities import (
     IndexRange,
     cmd_ctrl_string,
     is_mac,
+    is_windows,
     sound_bell,
     load_dict_from_json,
     is_debug,
@@ -1650,6 +1651,23 @@ class ScannoRegexCheckerDialog(CheckerDialog):
         for row in range(4):
             frame.rowconfigure(row, uniform="equal height")
 
+        if is_windows():
+            fn_hist: list[str] = preferences.get(self.hist_pref)
+            changed = any("\\" in fn for fn in fn_hist)
+            fn_hist = [fn.replace("\\", "/") for fn in fn_hist]
+            len_hist = len(fn_hist)
+            fn_hist = list(dict.fromkeys(fn_hist))  # Uniquify preserving order
+            if len(fn_hist) != len_hist:
+                changed = True
+            if changed:
+                preferences.set(self.hist_pref, fn_hist)
+
+            fname: str = preferences.get(self.fn_pref)
+            changed = "\\" in fname
+            if changed:
+                fname = fname.replace("\\", "/")
+                preferences.set(self.fn_pref, fname)
+
         self.file_combo = PathnameCombobox(
             frame,
             self.hist_pref,
@@ -1743,6 +1761,8 @@ class ScannoRegexCheckerDialog(CheckerDialog):
             )
         )
         if filename:
+            if is_windows():
+                filename = filename.replace("\\", "/")
             self.focus()
             preferences.set(self.fn_pref, filename)
             self.load_scannos()
@@ -1750,9 +1770,6 @@ class ScannoRegexCheckerDialog(CheckerDialog):
     def select_file(self) -> None:
         """Handle selection of a scannos file."""
         self.load_scannos()
-
-    def prune_scannos(self) -> None:
-        """Remove files from history that no longer exist."""
 
     def load_scannos(self) -> None:
         """Load a scannos file."""

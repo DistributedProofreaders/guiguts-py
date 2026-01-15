@@ -567,30 +567,40 @@ class Guiguts:
         preferences.set_default(PrefKey.IMAGE_VIEWER_INTERNAL, False)
         preferences.set_default(
             PrefKey.SCANNOS_FILENAME,
-            str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)),
+            str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)).replace("\\", "/"),
         )
         preferences.set_default(
             PrefKey.SCANNOS_HISTORY,
             [
-                str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)),
-                str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_STEALTH_SCANNOS)),
-                str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_MISSPELLED_SCANNOS)),
+                str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_REGEX_SCANNOS)).replace(
+                    "\\", "/"
+                ),
+                str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_STEALTH_SCANNOS)).replace(
+                    "\\", "/"
+                ),
+                str(DEFAULT_SCANNOS_DIR.joinpath(DEFAULT_MISSPELLED_SCANNOS)).replace(
+                    "\\", "/"
+                ),
             ],
         )
         preferences.set_default(PrefKey.SCANNOS_AUTO_ADVANCE, True)
         preferences.set_default(
             PrefKey.REGEX_LIBRARY_FILENAME,
-            str(DEFAULT_REGEX_LIBRARY_DIR.joinpath(DEFAULT_DASHES_REGEX_LIBRARY)),
+            str(
+                DEFAULT_REGEX_LIBRARY_DIR.joinpath(DEFAULT_DASHES_REGEX_LIBRARY)
+            ).replace("\\", "/"),
         )
         preferences.set_default(
             PrefKey.REGEX_LIBRARY_HISTORY,
             [
-                str(DEFAULT_REGEX_LIBRARY_DIR.joinpath(DEFAULT_DASHES_REGEX_LIBRARY)),
+                str(
+                    DEFAULT_REGEX_LIBRARY_DIR.joinpath(DEFAULT_DASHES_REGEX_LIBRARY)
+                ).replace("\\", "/"),
                 str(
                     DEFAULT_REGEX_LIBRARY_DIR.joinpath(
                         DEFAULT_ITALIC_SEMANTIC_REGEX_LIBRARY
                     )
-                ),
+                ).replace("\\", "/"),
             ],
         )
         preferences.set_default(PrefKey.REGEX_LIBRARY_AUTO_ADVANCE, True)
