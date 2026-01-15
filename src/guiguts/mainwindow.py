@@ -1093,6 +1093,8 @@ class MainImage(tk.Frame):
         """Flash the image border if preference enabled."""
         if not preferences.get(PrefKey.IMAGE_VIEWER_ALERT):
             return
+        if not preferences.get(PrefKey.AUTO_IMAGE):
+            return
 
         def set_canvas_highlight(thickness: int) -> None:
             """Set highlightthickness for canvas"""
