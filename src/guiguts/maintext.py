@@ -929,6 +929,14 @@ class MainText(tk.Text):
             "<Escape>", lambda _: self.cancel_drag_sel(), add=True, bind_peer=True
         )
 
+        def set_anchor(_: tk.Event) -> str:
+            """Set anchor point at current position, then allow Shift-click to
+            execute its default behavior."""
+            self.mark_set(TK_ANCHOR_MARK, f"{self.index(tk.INSERT)}")
+            return ""
+
+        self.bind("<Shift-Button-1>", set_anchor)
+
         # Override default left/right/up/down arrow key behavior if there is a selection
         # Above behavior would affect Shift-Left/Right/Up/Down, so also bind those to
         # null functions and allow default class behavior to happen
