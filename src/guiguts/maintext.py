@@ -1256,13 +1256,20 @@ class MainText(tk.Text):
 
         self.bind_event("<Leave>", leave_event, add=True, bind_peer=True)
 
-        # Override "Home" behavior
+        # Override "Home" & "End" behavior
         self.bind_event("<Home>", self.go_home, add=True, bind_peer=True)
         self.bind_event("<Shift-Home>", self.go_home, add=True, bind_peer=True)
         if is_mac():
             self.bind_event("<Command-Left>", self.go_home, add=True, bind_peer=True)
             self.bind_event(
                 "<Shift-Command-Left>", self.go_home, add=True, bind_peer=True
+            )
+        self.bind_event("<End>", self.go_end, add=True, bind_peer=True)
+        self.bind_event("<Shift-End>", self.go_end, add=True, bind_peer=True)
+        if is_mac():
+            self.bind_event("<Command-Right>", self.go_end, add=True, bind_peer=True)
+            self.bind_event(
+                "<Shift-Command-Right>", self.go_end, add=True, bind_peer=True
             )
 
         # get the current bind tags
@@ -3798,6 +3805,37 @@ class MainText(tk.Text):
             new = IndexRowCol(start.row, len(line) - len(line.lstrip(" ")))
         else:
             new = IndexRowCol(start.row, 0)
+        event.widget.mark_set(tk.INSERT, new.index())
+        # If Shift key is held, need to adjust selection
+        if int(event.state) & 0x0001:
+            # If there's already a selection range with start index as one of
+            # its boundaries, adjust that boundary to the new position
+            if selns := self.selected_ranges():
+                sel = selns[0]
+                if sel.start == start:
+                    sel.start = new
+                elif sel.end == start:
+                    sel.end = new
+                # Ensure start of selection is before end
+                if self.compare(sel.start.index(), ">", sel.end.index()):
+                    sel.start, sel.end = sel.end, sel.start
+                self.do_select(sel)
+            # If no selection, select from start position to "Home"
+            else:
+                self.do_select(IndexRange(new, start))
+        # If no Shift, just moving, so clear selection
+        else:
+            self.clear_selection()
+        self.see(tk.INSERT)
+        return "break"
+
+    def go_end(self, event: tk.Event) -> str:
+        """Handle the End key. Move to end of line."""
+        assert isinstance(event.widget, tk.Text)
+        if int(event.state) & 0x0004:
+            return ""
+        start = self.get_insert_index()
+        new = self.rowcol(f"{start.row}.end")
         event.widget.mark_set(tk.INSERT, new.index())
         # If Shift key is held, need to adjust selection
         if int(event.state) & 0x0001:
