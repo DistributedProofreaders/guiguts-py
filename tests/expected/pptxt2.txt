@@ -477,8 +477,6 @@ Query double punctuation (excluding exceptions).
 
 Mixed case in word (excluding words in project dictionary).
 1289.11: also J. R. McCulloch’s plan in his “Literature of Political Economy”
-1990.41: 94. Lines addressed to prince Leopold of Saxe-Cobourg on the death of
-2274.60: A martyr to bibliography: a notice of the life and works of Joseph-Marie
 
 Line start with suspect punctuation.
 1426.0:  ... by Sampson Low, vol. 1. general alphabet, Lond. S. Low & son, 1853.
