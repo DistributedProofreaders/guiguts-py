@@ -1213,7 +1213,7 @@ def specials_check(project_dict: ProjectDict) -> None:
             # the good words list or occurs more than once in the book.
 
             if word_list_map_count[word] == 1 and word not in project_dict.good_words:
-                if re.search(r".\p{Ll}+[-]?\p{Lu}", word):
+                if re.search(r".\p{Ll}+(?<!-)\p{Lu}", word):
                     # NB word occurs only once in the book and isn't in good_words.
                     # Generate dialog tuples.
                     heading = (
@@ -1264,24 +1264,23 @@ def specials_check(project_dict: ProjectDict) -> None:
                 #    as group(0).
                 exceptions = []
                 # E.g. 191st
-                exceptions.append(r"\b\p{Nd}*[02-9]?1st\b")
+                exceptions.append(r"(?i)\b(\p{Nd}*[02-9]1st|1st)\b")
                 # E.g. 282nd
-                exceptions.append(r"\b\p{Nd}*[02-9]?2nd\b")
+                exceptions.append(r"(?i)\b(\p{Nd}*[02-9]2nd|2nd)\b")
                 # E.g. 373rd
-                exceptions.append(r"\b\p{Nd}*[02-9]?3rd\b")
+                exceptions.append(r"(?i)\b(\p{Nd}*[02-9]3rd|3rd)\b")
                 # E.g. 373d
-                exceptions.append(r"\b\p{Nd}*[23]d\b")
+                exceptions.append(r"(?i)\b\p{Nd}*[23]d\b")
                 # E.g. 65th
-                exceptions.append(r"\b\p{Nd}*[4567890]th\b")
-                # E.g. 10th
-                exceptions.append(r"\b\p{Nd}*[4567890]th\b")
+                exceptions.append(r"(?i)\b\p{Nd}*[4567890]th\b")
+                # E.g. 511th, 212th, 13th
+                exceptions.append(r"(?i)\b\p{Nd}*1[123]th\b")
                 # Make exceptions of references to amounts in shillings
                 # and pence. E.g. £1 9s. 11d. Note that parsing a line
                 # into words strips punctuation except curly apostrophe
                 # so value of 'word' here would be '9s' & '11d'. Hence
                 # possibility of occasional false negatives.
-                if re.match(r"\b\p{Nd}\p{Nd}?s|\b\p{Nd}\p{Nd}?d", word):
-                    word = word + "."
+                if re.fullmatch(r"\p{Nd}{1,2}[sd]", word):
                     exceptions.append(word)
                 # Generate dialog tuples only if not an exception.
                 heading = "Query mixed letters/digits in word (excluding exceptions)."

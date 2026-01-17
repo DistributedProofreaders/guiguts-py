@@ -642,13 +642,21 @@ class BookloupeChecker:
         ):
             # Trim any markup or footnote remnants left at start/end of word
             word = re.sub(r"^.+>|<.+$|\[.+$", "", match[1])
+            # Trim trailing underscores, punct with final apostrophe, e.g. "C_.’"
+            word = re.sub(r"[.,!?;:_']+[’']$", "", word)
             word_lower = word.lower()
             # Query standalone 0 or 1 except in `^[Footnote 1:`
-            if word in ("0", "1") and (
-                match.start() != 10
-                or maintext().get(f"{step}.0", f"{step}.12") != "[Footnote 1:"
-            ):
-                self.add_match_entry(step, match, f"Standalone {word}")
+            if word in ("0", "1"):
+                fn = maintext().get(f"{step}.0", f"{step}.12")
+                context = maintext().get(
+                    f"{step}.{match.start()}", f"{step}.{match.start()}+3c"
+                )
+                if (
+                    (match.start() != 10 or fn != "[Footnote 1:")
+                    and context != "[1]"
+                    and context[0] not in "£$"
+                ):
+                    self.add_match_entry(step, match, f"Standalone {word}")
                 continue
             # Check for mixed alpha & numeric (with some exceptions)
             if re.search(r"\p{Letter}", word_lower) and re.search(

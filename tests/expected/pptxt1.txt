@@ -140,11 +140,6 @@ Opening square bracket followed by other than I, G, M, S or digit.
 1115.17: WITH HEATING-PIPE[**dash clear on 046.png]
 1134.28: CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
 
-Mixed case in word (excluding words in project dictionary).
- 163.0:  Sandbag-Filling.
- 272.13: The Advanced Dressing-Station.
- 375.0:  Narrow-Gauge Railways.
-
 Single '1' in a word or a standalone '1' (excluding exceptions).
  961.37: THE OVERHEAD TROLLEY FOR BRINGING[**F1: hanging indent here and below when multi-line]
 1134.32: CUTTING SHEET TIN FOR MAKING[**F1: hanging indent here and below where multi-line]
