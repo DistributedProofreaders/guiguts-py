@@ -1,6 +1,40 @@
 # Changelog
 
 
+## Version 2.0.14
+
+- "Match Case" is turned on in S/R dialog when launched from Stealth Scannos
+or Regex Library
+- Jeebies no longer reports "he’s", "he’d", etc., as suspects
+- PPtxt no longer reports certain number/letter combinations, e.g. "12th",
+nor mixed-case hyphenated words, e.g. "Mary-Anne"
+- Bookloupe no longer reports standalone 1 for "£1" or "$1" or "[1]" , nor
+certain combinations of letters, punctuation, and apostrophe, e.g. "C.’".
+- Word Frequency Hyphens check has been upgraded to deal with asterisks,
+e.g. "to-*day": such words are always reported as Suspects; they are also
+passed correctly to the Google Ngrams viewer
+- Stealth Scanno checks relating to uppercase characters following commas,
+and lowercase characters following periods have been updated to select the
+whole of the word, thus improving alphabetical sorting
+- Auto-Illustrations and HTML Images dialogs are now separate dialogs,
+allowing both to be visible at the same time
+- Version number in this Changelog is not checked for pre-releases, which
+is useful for developers and bug-fixing
+
+### Bug fixes
+
+- The orange border round the Internal Image Viewer sometimes flashed even
+when Auto Img was turned off
+- Especially on Windows, filenames could end up appearing twice in the dropdown
+menus in Stealth Scannos and Regex Library
+- Keyboard navigation did not store selection anchor positions correctly,
+meaning Shift-Click did not select all the expected text
+- External Image Viewer was run twice for every image if Fit-to-Height/Width
+was turned on in the Internal Viewer
+- IrfanView on Windows would not work as an External Image Viewer due to a
+conflict between forward- and back-slashes
+
+
 ## Version 2.0.13
 
 - HTML Image dialog now has "Decorative only" checkbox which adds
