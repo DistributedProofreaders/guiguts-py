@@ -1247,7 +1247,10 @@ class PPhtmlChecker:
                 errors.append(("Blank Page", self.idx_range(line_num, match)))
             for match in re.finditer(r"\[[o|a]e\]", line):
                 errors.append(("Unconverted ligature", self.idx_range(line_num, match)))
-            for match in re.finditer(r"\b_[^_]+_|\b_[^_]+|[^_]+_\b", line):
+            # Skip HTML tags to avoid false positives with underscores
+            for match in re.finditer(
+                r"<[^>]*>(*SKIP)(*FAIL)|\b_[^_]+_|\b_[^_]+|[^_]+_\b", line
+            ):
                 errors.append(("Unconverted italics", self.idx_range(line_num, match)))
             if match := re.search(r"<hr style", line):
                 errors.append(("HR using 'style'", self.idx_range(line_num, match)))
