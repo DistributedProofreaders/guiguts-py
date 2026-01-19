@@ -2124,7 +2124,7 @@ def stealth_scannos() -> None:
     _the_stealth_scannos_dialog = ScannoCheckerDialog.show_dialog(
         rerun_command=stealth_scannos,
         process_command=do_replace_scanno,
-        match_on_highlight=CheckerMatchType.ALL_MESSAGES,
+        match_on_highlight=CheckerMatchType.HIGHLIGHT,
     )
     _the_stealth_scannos_dialog.load_scannos()
 
@@ -2144,7 +2144,7 @@ def library_regexes() -> None:
     _the_regex_library_dialog = RegexCheckerDialog.show_dialog(
         rerun_command=library_regexes,
         process_command=do_replace_regex,
-        match_on_highlight=CheckerMatchType.ALL_MESSAGES,
+        match_on_highlight=CheckerMatchType.HIGHLIGHT,
     )
     _the_regex_library_dialog.load_scannos()
 
