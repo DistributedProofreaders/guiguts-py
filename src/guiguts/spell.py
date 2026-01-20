@@ -151,6 +151,12 @@ class SpellCheckerDialog(CheckerDialog):
             button.invoke()
             return "break"
 
+        def unbind_shifted_shortcut(key: str) -> None:
+            """Unbind shifted version of dialog specific Cmd/Ctrl shortcut."""
+            for accel in (f"Shift+Cmd/Ctrl+{key}", f"Shift+Cmd/Ctrl+{key.upper()}"):
+                _, key_event = process_accel(accel)
+                self.bind(key_event, lambda _: None)
+
         lang = maintext().get_language_list()[0]
         global_dict_button = ttk.Button(
             frame,
@@ -161,6 +167,7 @@ class SpellCheckerDialog(CheckerDialog):
         for accel in ("Cmd/Ctrl+a", "Cmd/Ctrl+A"):
             _, key_event = process_accel(accel)
             self.bind(key_event, lambda _: invoke_and_break(global_dict_button))
+        unbind_shifted_shortcut("a")
         ToolTip(
             global_dict_button,
             f"{cmd_ctrl_string()}+A or Shift-{cmd_ctrl_string()}-click message",
@@ -174,6 +181,7 @@ class SpellCheckerDialog(CheckerDialog):
         for accel in ("Cmd/Ctrl+p", "Cmd/Ctrl+P"):
             _, key_event = process_accel(accel)
             self.bind(key_event, lambda _: invoke_and_break(project_dict_button))
+        unbind_shifted_shortcut("p")
         ToolTip(
             project_dict_button,
             f"{cmd_ctrl_string()}+P or {cmd_ctrl_string()}-click message",
@@ -187,6 +195,7 @@ class SpellCheckerDialog(CheckerDialog):
         for accel in ("Cmd/Ctrl+s", "Cmd/Ctrl+S"):
             _, key_event = process_accel(accel)
             self.bind(key_event, lambda _: invoke_and_break(skip_button))
+        unbind_shifted_shortcut("s")
         ToolTip(
             skip_button,
             f"{cmd_ctrl_string()}+S or right-click message",
@@ -200,6 +209,7 @@ class SpellCheckerDialog(CheckerDialog):
         for accel in ("Cmd/Ctrl+i", "Cmd/Ctrl+I"):
             _, key_event = process_accel(accel)
             self.bind(key_event, lambda _: invoke_and_break(skip_all_button))
+        unbind_shifted_shortcut("i")
         ToolTip(
             skip_all_button,
             f"{cmd_ctrl_string()}+I or Shift+right-click message",
