@@ -1723,11 +1723,16 @@ class ScannoRegexCheckerDialog(CheckerDialog):
         repl_btn.grid(column=1, row=2, sticky="NSEW", padx=(5, 0), pady=2)
         ToolTip(repl_btn, "Click to replace. Shift-click to open S/R dialog")
         repl_btn.bind("<Shift-ButtonPress-1>", lambda _: self.sr_dialog())
-        ttk.Button(
+        repl_all_btn = ttk.Button(
             frame,
             text="Replace All",
             command=lambda: self.process_entry_current(all_matching=True),
-        ).grid(column=2, row=2, sticky="NSEW", padx=(3, 0), pady=2)
+        )
+        repl_all_btn.grid(column=2, row=2, sticky="NSEW", padx=(3, 0), pady=2)
+        ToolTip(
+            repl_all_btn, "Click to replace all matches. Shift-click to open S/R dialog"
+        )
+        repl_all_btn.bind("<Shift-ButtonPress-1>", lambda _: self.sr_dialog())
 
         self.hint_textvariable = tk.StringVar(self, "Hint: ")
         ttk.Entry(frame, textvariable=self.hint_textvariable, state="readonly").grid(
