@@ -1635,6 +1635,7 @@ class ScannoRegexCheckerDialog(CheckerDialog):
                 [
                     f"Left click: Select & find occurrence of {dlg_type}",
                     f"Right click: Hide occurrence of {dlg_type} in list",
+                    f"Shift Right click: Hide all occurrences of {dlg_type} in list",
                     f"{cmd_ctrl_string()} left click: Fix this occurrence of {dlg_type}",
                     f"{cmd_ctrl_string()} right click: Fix this occurrence and remove from list",
                     f"Shift {cmd_ctrl_string()} left click: Fix all occurrences of {dlg_type}",
