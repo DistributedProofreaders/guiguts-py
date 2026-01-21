@@ -925,10 +925,10 @@ class MainImage(tk.Frame):
             scroll_amount = int(-1 * evt.delta)
         else:
             scroll_amount = int(-1 * (evt.delta / 120))
-        if evt.state == 0:
-            self.canvas.yview_scroll(scroll_amount, "units")
-        if evt.state == 1:
+        if int(evt.state) & 1:
             self.canvas.xview_scroll(scroll_amount, "units")
+        else:
+            self.canvas.yview_scroll(scroll_amount, "units")
 
     def touchpad_scroll(self, evt: tk.Event) -> None:
         """Scroll image using touchpad."""
