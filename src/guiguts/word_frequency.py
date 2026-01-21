@@ -1118,10 +1118,11 @@ class WordFrequencyDialog(ToplevelDialog):
         )
 
     def wf_populate_allcaps(self) -> None:
-        """Populate the WF dialog with the list of all ALLCAPS words."""
+        """Populate the WF dialog with the list of all ALLCAPS words, excluding single characters."""
         self.wf_populate_by_match(
             "ALLCAPS",
-            lambda word: re.search(r"\p{IsUpper}", word)
+            lambda word: len(word) > 1
+            and re.search(r"\p{IsUpper}", word)
             and not re.search(r"\p{IsLower}", word),
         )
 
