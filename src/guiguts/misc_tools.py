@@ -1635,6 +1635,7 @@ class ScannoRegexCheckerDialog(CheckerDialog):
                 [
                     f"Left click: Select & find occurrence of {dlg_type}",
                     f"Right click: Hide occurrence of {dlg_type} in list",
+                    f"Shift Right click: Hide all occurrences of {dlg_type} in list",
                     f"{cmd_ctrl_string()} left click: Fix this occurrence of {dlg_type}",
                     f"{cmd_ctrl_string()} right click: Fix this occurrence and remove from list",
                     f"Shift {cmd_ctrl_string()} left click: Fix all occurrences of {dlg_type}",
@@ -1723,11 +1724,16 @@ class ScannoRegexCheckerDialog(CheckerDialog):
         repl_btn.grid(column=1, row=2, sticky="NSEW", padx=(5, 0), pady=2)
         ToolTip(repl_btn, "Click to replace. Shift-click to open S/R dialog")
         repl_btn.bind("<Shift-ButtonPress-1>", lambda _: self.sr_dialog())
-        ttk.Button(
+        repl_all_btn = ttk.Button(
             frame,
             text="Replace All",
             command=lambda: self.process_entry_current(all_matching=True),
-        ).grid(column=2, row=2, sticky="NSEW", padx=(3, 0), pady=2)
+        )
+        repl_all_btn.grid(column=2, row=2, sticky="NSEW", padx=(3, 0), pady=2)
+        ToolTip(
+            repl_all_btn, "Click to replace all matches. Shift-click to open S/R dialog"
+        )
+        repl_all_btn.bind("<Shift-ButtonPress-1>", lambda _: self.sr_dialog())
 
         self.hint_textvariable = tk.StringVar(self, "Hint: ")
         ttk.Entry(frame, textvariable=self.hint_textvariable, state="readonly").grid(
@@ -2124,7 +2130,7 @@ def stealth_scannos() -> None:
     _the_stealth_scannos_dialog = ScannoCheckerDialog.show_dialog(
         rerun_command=stealth_scannos,
         process_command=do_replace_scanno,
-        match_on_highlight=CheckerMatchType.ALL_MESSAGES,
+        match_on_highlight=CheckerMatchType.HIGHLIGHT,
     )
     _the_stealth_scannos_dialog.load_scannos()
 
@@ -2144,7 +2150,7 @@ def library_regexes() -> None:
     _the_regex_library_dialog = RegexCheckerDialog.show_dialog(
         rerun_command=library_regexes,
         process_command=do_replace_regex,
-        match_on_highlight=CheckerMatchType.ALL_MESSAGES,
+        match_on_highlight=CheckerMatchType.HIGHLIGHT,
     )
     _the_regex_library_dialog.load_scannos()
 
