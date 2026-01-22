@@ -1239,6 +1239,8 @@ def get_title() -> str:
     # (may not be correct, but best we can do).
     if not re.search(r"\p{Lowercase_Letter}", complete_title):
         complete_title = complete_title.capitalize()
+    # Also convert double hyphens to emdashes, since that happens in HTML conversion, not yet
+    complete_title = complete_title.replace("--", "—")
     # Don't want trailing space, comma or period
     return complete_title.rstrip(" ,.")
 
