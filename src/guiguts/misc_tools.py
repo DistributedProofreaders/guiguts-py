@@ -49,6 +49,8 @@ from guiguts.widgets import (
     insert_in_focus_widget,
     ToolTip,
     FileDialog,
+    get_global_font,
+    themed_style,
 )
 
 logger = logging.getLogger(__package__)
@@ -2344,60 +2346,96 @@ class CurlyQuotesDialog(CheckerDialog):
         self.custom_frame.columnconfigure(0, weight=1)
         frame = ttk.Frame(self.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW", pady=5)
-        frame.columnconfigure(3, weight=1)
+        frame.columnconfigure(4, weight=1)
         ttk.Button(
             frame,
             text="Open⇔Close",
             command=self.swap_open_close,
-        ).grid(column=0, row=0, sticky="NSW")
+        ).grid(column=0, row=0, sticky="NSEW")
         ttk.Button(
             frame,
             text="Straight⇔Curly",
             command=self.swap_straight_curly,
-        ).grid(column=1, row=0, sticky="NSW")
+        ).grid(column=1, row=0, sticky="NSEW")
         ttk.Button(
             frame,
             text="Swap Quote/Space",
             command=self.swap_quote_space,
-        ).grid(column=2, row=0, sticky="NSW")
+        ).grid(column=2, row=0, sticky="NSEW")
         ttk.Button(
             frame,
             text="Delete Space",
             command=lambda: self.swap_quote_space(delete=True),
-        ).grid(column=3, row=0, sticky="NSW")
+        ).grid(column=3, row=0, sticky="NSEW")
+        ttk.Button(
+            frame,
+            text="Straight⇔Open",
+            command=self.swap_straight_open,
+        ).grid(column=0, row=1, sticky="NSEW")
+        ttk.Button(
+            frame,
+            text="Straight⇔Close",
+            command=self.swap_straight_close,
+        ).grid(column=1, row=1, sticky="NSEW")
+        ttk.Button(
+            frame,
+            text="Single⇔Double",
+            command=self.swap_single_double,
+        ).grid(column=2, row=1, sticky="NSEW")
+        ttk.Button(
+            frame,
+            text="Delete Quote",
+            command=self.delete_quote,
+        ).grid(column=3, row=1, sticky="NSEW")
         ttk.Label(
             frame,
             text="Insert:",
-        ).grid(column=4, row=0, sticky="NSE")
-        ttk.Button(
+        ).grid(column=4, row=0, sticky="NSE", rowspan=2)
+        gfont = get_global_font()
+        big_font = gfont.copy()
+        big_font.configure(size=gfont.cget("size") * 2)
+        themed_style().configure("Big.TButton", font=big_font)
+        ido = ttk.Button(
             frame,
             text=DQUOTES[0],
             command=lambda: insert_in_focus_widget(DQUOTES[0]),
-            width=4,
-        ).grid(column=5, row=0, sticky="NSE")
-        ttk.Button(
+            width=1,
+            style="Big.TButton",
+        )
+        ido.grid(column=5, row=0, sticky="NSE", rowspan=2)
+        ToolTip(ido, "Left/Open Double")
+        idc = ttk.Button(
             frame,
             text=DQUOTES[1],
             command=lambda: insert_in_focus_widget(DQUOTES[1]),
-            width=4,
-        ).grid(column=6, row=0, sticky="NSE")
-        ttk.Button(
+            width=1,
+            style="Big.TButton",
+        )
+        idc.grid(column=6, row=0, sticky="NSE", rowspan=2)
+        ToolTip(idc, "Right/Close Double")
+        iso = ttk.Button(
             frame,
             text=SQUOTES[0],
             command=lambda: insert_in_focus_widget(SQUOTES[0]),
-            width=4,
-        ).grid(column=7, row=0, sticky="NSE")
-        ttk.Button(
+            width=1,
+            style="Big.TButton",
+        )
+        iso.grid(column=7, row=0, sticky="NSE", rowspan=2)
+        ToolTip(iso, "Left/Open Single")
+        isc = ttk.Button(
             frame,
             text=SQUOTES[1],
             command=lambda: insert_in_focus_widget(SQUOTES[1]),
-            width=4,
-        ).grid(column=8, row=0, sticky="NSE")
+            width=1,
+            style="Big.TButton",
+        )
+        isc.grid(column=8, row=0, sticky="NSE", rowspan=2)
+        ToolTip(isc, "Right/Close Single\nor Apostrophe")
         ttk.Checkbutton(
             frame,
             text='Allow "Next paragraph begins with quotes" exception',
             variable=PersistentBoolean(PrefKey.CURLY_DOUBLE_QUOTE_EXCEPTION),
-        ).grid(column=0, row=1, columnspan=9, sticky="NSW", pady=(5, 0))
+        ).grid(column=0, row=2, columnspan=9, sticky="NSW", pady=(5, 0))
 
     def populate(self) -> None:
         """Populate list with suspect curly quotes."""
@@ -2620,6 +2658,59 @@ class CurlyQuotesDialog(CheckerDialog):
         if entry_index is None:
             return
         do_swap_straight_curly(self.entries[entry_index])
+
+    def swap_straight_open(self) -> None:
+        """Swap straight quote and open curly quote."""
+        entry_index = self.current_entry_index()
+        if entry_index is None:
+            return
+        do_process_with_dict(
+            self.entries[entry_index], {'"': "“", "'": "‘", "“": '"', "‘": "'"}
+        )
+
+    def swap_straight_close(self) -> None:
+        """Swap straight quote and close curly quote."""
+        entry_index = self.current_entry_index()
+        if entry_index is None:
+            return
+        do_process_with_dict(
+            self.entries[entry_index], {'"': "”", "'": "’", "”": '"', "’": "'"}
+        )
+
+    def swap_single_double(self) -> None:
+        """Swap single quote and double quote."""
+        entry_index = self.current_entry_index()
+        if entry_index is None:
+            return
+        do_process_with_dict(
+            self.entries[entry_index],
+            {'"': "'", "'": '"', "“": "‘", "‘": "“", "”": "’", "’": "”"},
+        )
+
+    def delete_quote(self) -> None:
+        """Delete quote."""
+        assert _the_curly_quotes_dialog is not None
+        entry_index = self.current_entry_index()
+        if entry_index is None:
+            return
+        checker_entry = self.entries[entry_index]
+        if not checker_entry.text_range:
+            return
+        start = _the_curly_quotes_dialog.mark_from_rowcol(
+            checker_entry.text_range.start
+        )
+        end = _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.end)
+        match_text = maintext().get(start, end)
+        if match_text not in ('"', "'", "“", "‘", "”", "’"):
+            return
+        maintext().undo_block_begin()
+        try:
+            maintext().delete(start, end)
+        except KeyError:
+            pass  # User has edited since tool was run
+        # Reselect to refresh highlighting
+        if cur_idx := _the_curly_quotes_dialog.current_entry_index():
+            _the_curly_quotes_dialog.select_entry_by_index(cur_idx)
 
 
 _the_curly_quotes_dialog: Optional[CurlyQuotesDialog] = None
