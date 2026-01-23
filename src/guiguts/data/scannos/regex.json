@@ -56,12 +56,12 @@
 "hint": "Find initials without a space between them and add the space"
 },
 {
-"match": ",(\"?\\n *\"?(\\p{IsUpper}\\p{IsLower}*| [A-HJ-Z](?!\\S)))",
+"match": ",(\"?\\n *\"?(\\p{IsUpper}\\p{Letter}+| [A-HJ-Z](?!\\S)))",
 "replacement": ".\\1",
 "hint": "Find a comma at the end of a line with the next line starting with an upper case character"
 },
 {
-"match": ",(\"?\\n{2,} *\"?\\p{Upper}\\p{IsLower}*)",
+"match": ",(\"?\\n{2,} *\"?\\p{Upper}\\p{Letter}*)",
 "replacement": ".\\1",
 "hint": "Find a paragraph that ends in a comma and change the comma to a period"
 },
@@ -71,7 +71,7 @@
 "hint": "Find a comma at the end of a paragraph and replace it with a period"
 },
 {
-"match": ",( \\p{IsUpper}\\p{IsLower}*| [A-HJ-Z](?!\\S))",
+"match": ",( \\p{IsUpper}\\p{Letter}+| [A-HJ-Z](?!\\S))",
 "replacement": ".\\1",
 "hint": "Find a comma followed by a space and an upper-case character (except I) and replace with a period."
 },
@@ -86,12 +86,12 @@
 "hint": "Find a word containing at least 5 consonants in a row"
 },
 {
-"match": "\\.(\"?\\n *\"?\\p{Lower}+)",
+"match": "(\\p{Letter}*\\.)(?=\"?\\n *\"?\\p{Lower}+)",
 "replacement": ",\\1",
-"hint": "Find a period with the following word starting with a lower case character and change the period to a comma"
+"hint": "Find a period with the following line starting with a lower case character and change the period to a comma"
 },
 {
-"match": "(?<!\\.\\.)\\.( \\p{IsLower}+)",
+"match": "(?<!\\.\\.)(\\p{Letter}*\\.)(?= \\p{IsLower}+)",
 "replacement": ",\\1",
 "hint": "Find a period followed by a space and a lower-case letter and replace it with a comma"
 },
