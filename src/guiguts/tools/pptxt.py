@@ -425,8 +425,10 @@ def repeated_words_check() -> None:
             # restrictive regex comparison below using word boundaries.
             if word == wordn1[: len(word)]:
                 possibles = True
+        if len(words_on_line) == 1:
+            wordn1 = words_on_line[-1]
         # Add last word on line to no_numbers_words_on_line if not a number.
-        if len(words_on_line) > 1 and not re.match(r"^[\p{Nd}]+$", wordn1):
+        if len(words_on_line) > 0 and wordn1 and not re.match(r"^[\p{Nd}]+$", wordn1):
             no_numbers_words_on_line.append(wordn1)
         # There may be possible repeats of words (non-numbers) on line.
         if possibles:
