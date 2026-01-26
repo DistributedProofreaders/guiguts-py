@@ -1072,7 +1072,7 @@ class CPFilteringDialog(CheckerDialog):
         re_j = re.compile(r"(?<![ainu])j(?=\s)")
         re_hebe = re.compile(r"\bto he\b")
         re_pu1 = re.compile(r"^...\p{Punct}+")
-        re_pu2 = re.compile(r"^\p{Punct}+(\p{Punct})")
+        re_pu2 = re.compile(r"^(?!--)\p{Punct}+(\p{Punct})")
         re_pu3 = re.compile(r"\s{3,}[\p{Punct}\s]+$")
         re_q1 = re.compile(r'^" +')
         re_q2 = re.compile(r' +" *$')
