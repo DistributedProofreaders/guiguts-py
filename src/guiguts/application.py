@@ -137,6 +137,7 @@ from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.pphtml import PPhtmlChecker
+from guiguts.tools.ppcomp import PPcompChecker
 from guiguts.utilities import (
     is_mac,
     is_windows,
@@ -778,6 +779,26 @@ class Guiguts:
             PrefKey.NGRAM_PARAMETERS, "&corpus=en-2019&year_start=1700&year_end=2000"
         )
         preferences.set_default(PrefKey.TOOLBAR_ICON_SIZE, 20)
+        preferences.set_default(PrefKey.PPCOMP_HTML_FILE, "")
+        preferences.set_default(PrefKey.PPCOMP_HTML_FILE_HISTORY, [])
+        preferences.set_default(PrefKey.PPCOMP_TEXT_FILE, "")
+        preferences.set_default(PrefKey.PPCOMP_TEXT_FILE_HISTORY, [])
+        preferences.set_default(PrefKey.PPCOMP_LINE_NUMBERS, "html")
+        preferences.set_default(PrefKey.PPCOMP_IGNORE_CASE, False)
+        preferences.set_default(PrefKey.PPCOMP_EXTRACT_FOOTNOTES, False)
+        preferences.set_default(PrefKey.PPCOMP_SUPPRESS_FOOTNOTES, False)
+        preferences.set_default(PrefKey.PPCOMP_SUPPRESS_ILLOS, False)
+        preferences.set_default(PrefKey.PPCOMP_SUPPRESS_SIDENOTES, False)
+        preferences.set_default(PrefKey.PPCOMP_CSS_ADD_ILLOS, False)
+        preferences.set_default(PrefKey.PPCOMP_CSS_ADD_SIDENOTES, False)
+        preferences.set_default(PrefKey.PPCOMP_CSS_SMCAP, False)
+        preferences.set_default(PrefKey.PPCOMP_CSS_BOLD, False)
+        preferences.set_default(PrefKey.PPCOMP_CSS_CUSTOM, False)
+        preferences.set_default(PrefKey.PPCOMP_CSS_NO_DEFAULT, False)
+        preferences.set_default(PrefKey.PPCOMP_SUPPRESS_NBSP, False)
+        preferences.set_default(PrefKey.PPCOMP_SUPPRESS_WJ, False)
+        preferences.set_default(PrefKey.PPCOMP_SUPPRESS_ZS, False)
+        preferences.set_default(PrefKey.PPCOMP_CSS_GREEK_TITLE, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:
@@ -1148,7 +1169,7 @@ class Guiguts:
             ),
         )
         tools_menu.add_button("~Jeebies", jeebies_check)
-        tools_menu.add_button("Stealth S~cannos", stealth_scannos)
+        tools_menu.add_button("Stealt~h Scannos", stealth_scannos)
         tools_menu.add_button("Regex Librar~y", library_regexes)
         tools_menu.add_button(
             "Word ~Distance Check", lambda: levenshtein_check(self.file.project_dict)
@@ -1240,6 +1261,7 @@ class Guiguts:
             "Cmd/Ctrl+I",
         )
         tools_menu.add_separator()
+        tools_menu.add_button("PP~comp", PPcompChecker)
         tools_menu.add_button(
             "PP Wor~kbench (opens in browser)",
             lambda: webbrowser.open("https://www.pgdp.net/ppwb/"),
