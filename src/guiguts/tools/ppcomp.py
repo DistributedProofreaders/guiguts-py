@@ -235,7 +235,7 @@ class PPcompCheckerDialog(CheckerDialog):
 class PPcompChecker:
     """PPcomp checker."""
 
-    files: list[PgdpFile] = []
+    files: list["PgdpFile"] = []
 
     def __init__(self) -> None:
         """Initialize PPcomp checker."""
