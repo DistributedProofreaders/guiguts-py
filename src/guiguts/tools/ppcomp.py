@@ -50,7 +50,6 @@ from guiguts.maintext import HighlightTag
 from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
-    PersistentString,
     preferences,
 )
 from guiguts.utilities import is_windows, IndexRowCol, IndexRange
