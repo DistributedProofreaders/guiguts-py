@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 import argparse
 from dataclasses import dataclass
 import difflib
+import logging
 import os
 import subprocess
 import tempfile
@@ -40,11 +41,11 @@ import warnings
 
 import cssselect
 import regex as re
-import tinycss  # type: ignore[import-untyped]
 from lxml import etree
 from lxml.html import html5parser
 
 from guiguts.checkers import CheckerDialog
+from guiguts.file import the_file
 from guiguts.maintext import HighlightTag
 from guiguts.preferences import (
     PrefKey,
@@ -55,6 +56,7 @@ from guiguts.preferences import (
 from guiguts.utilities import is_windows, IndexRowCol, IndexRange
 from guiguts.widgets import ToolTip, Busy, PathnameCombobox, FileDialog
 
+logger = logging.getLogger(__package__)
 
 ###############################################################
 
@@ -62,6 +64,8 @@ FLAG_CH_HTML_L = "⦓"
 FLAG_CH_HTML_R = "⦔"
 FLAG_CH_TEXT_L = "⦕"
 FLAG_CH_TEXT_R = "⦖"
+NO_SPACE_BEFORE = re.compile(r"^[])}.,:;!?]$")
+NO_SPACE_AFTER = re.compile(r"^[[({]$")
 
 
 class PPcompCheckerDialog(CheckerDialog):
@@ -181,26 +185,6 @@ class PPcompCheckerDialog(CheckerDialog):
             btn.grid(row=cnt // 5, column=cnt % 5, sticky="NSEW")
             ToolTip(btn, tooltip)
 
-        frame2 = ttk.Frame(self.custom_frame)
-        frame2.grid(row=2, column=0, sticky="NSEW", pady=(3, 0))
-        ttk.Label(frame2, text="Show Line Numbers for: ").grid(
-            row=0, column=0, sticky="NSW"
-        )
-        ln_var = PersistentString(PrefKey.PPCOMP_LINE_NUMBERS)
-        self.rowcol_radio = ttk.Radiobutton(
-            frame2,
-            text="HTML File",
-            variable=ln_var,
-            value="html",
-        )
-        self.rowcol_radio.grid(row=0, column=1, sticky="NSW", padx=2)
-        self.rowcol_radio = ttk.Radiobutton(
-            frame2,
-            text="Text File",
-            variable=ln_var,
-            value="text",
-        )
-        self.rowcol_radio.grid(row=0, column=2, sticky="NSW", padx=2)
         self.update_count_label()
         Busy.unbusy()
 
@@ -250,7 +234,11 @@ class PPcompChecker:
         fname = preferences.get(PrefKey.PPCOMP_HTML_FILE)
         if not (fname and os.path.isfile(fname)):
             return
-        PPcompChecker.files[0].load(fname)
+        try:
+            PPcompChecker.files[0].load(fname)
+        except (FileNotFoundError, SyntaxError) as exc:
+            logger.error(exc)
+            return
         fname = preferences.get(PrefKey.PPCOMP_TEXT_FILE)
         if not (fname and os.path.isfile(fname)):
             return
@@ -365,6 +353,28 @@ def aligned_words_with_lines(a_text, b_text):
         }
 
 
+def join_tokens(tokens: list[str]) -> str:
+    """Join tokens, but sticking punctuation to left/right as appropriate."""
+    out: list[str] = []
+    for tok in tokens:
+        if not out:
+            out.append(tok)
+            continue
+
+        prev = out[-1]
+
+        if NO_SPACE_BEFORE.match(tok):
+            # punctuation sticks to previous token
+            out[-1] = prev + tok
+        elif NO_SPACE_AFTER.match(prev):
+            # opening punctuation sticks to next token
+            out[-1] = prev + tok
+        else:
+            out.append(" " + tok)
+
+    return "".join(out)
+
+
 def render_marked_diff(dialog: PPcompCheckerDialog, a_text: str, b_text: str) -> None:
     """Render the diffs to the dialog."""
     rows = aligned_words_with_lines(a_text, b_text)
@@ -380,13 +390,17 @@ def render_marked_diff(dialog: PPcompCheckerDialog, a_text: str, b_text: str) ->
 
     def flush_changes():
         if new_buf:
-            cur_line.append(f"{FLAG_CH_TEXT_L}{' '.join(new_buf)}{FLAG_CH_TEXT_R}")
+            cur_line.append(f"{FLAG_CH_TEXT_L}{join_tokens(new_buf)}{FLAG_CH_TEXT_R}")
         if old_buf:
-            cur_line.append(f"{FLAG_CH_HTML_L}{' '.join(old_buf)}{FLAG_CH_HTML_R}")
+            cur_line.append(f"{FLAG_CH_HTML_L}{join_tokens(old_buf)}{FLAG_CH_HTML_R}")
         old_buf.clear()
         new_buf.clear()
 
-    html_ln = preferences.get(PrefKey.PPCOMP_LINE_NUMBERS) == "html"
+    html_ln = os.path.splitext(the_file().filename)[1].lower() in (
+        ".htm",
+        ".html",
+        "xhtml",
+    )
     line_has_change = False
     a_line = PPcompChecker.files[0].start_line + 1
     b_line = 1
@@ -400,7 +414,7 @@ def render_marked_diff(dialog: PPcompCheckerDialog, a_text: str, b_text: str) ->
         if (a_line, b_line) != (last_a, last_b):
             flush_changes()
             if cur_line and line_has_change:
-                lines.append((" ".join(cur_line), cur_linenum))
+                lines.append((join_tokens(cur_line), cur_linenum))
                 line_has_change = False
             cur_line = []
             cur_linenum = None
@@ -424,7 +438,7 @@ def render_marked_diff(dialog: PPcompCheckerDialog, a_text: str, b_text: str) ->
 
     flush_changes()
     if cur_line and line_has_change:
-        lines.append((" ".join(cur_line), cur_linenum))
+        lines.append((join_tokens(cur_line), cur_linenum))
 
     # ---- Send to the dialog ----
     dialog.reset()
@@ -995,10 +1009,9 @@ class PgdpFileHtml(PgdpFile):
 
     def parse_html5(self):
         """Parse an HTML5 doc"""
-        # ignore warning caused by "xml:lang"
-        warnings.filterwarnings("ignore", message="Coercing non-XML name: xml:lang")
         # don't include namespace in elements
-        myparser = html5parser.HTMLParser(namespaceHTMLElements=False)
+        # suppress stderr printed warnings - we report failure to parse via exception
+        myparser = html5parser.HTMLParser(namespaceHTMLElements=False, strict=True)
         # without parser this works for all html, but we have to remove namespace
         # & don't get the errors list
         tree = html5parser.document_fromstring(self.text, parser=myparser)
@@ -1213,6 +1226,12 @@ class PgdpFileHtml(PgdpFile):
 
     def process_css(self):
         """Process each rule from our transformation CSS"""
+        # tinycss is not maintained, so needs warnings filtering
+        warnings.filterwarnings(
+            "ignore", category=SyntaxWarning, module=r"tinycss(\.|$)"
+        )
+        import tinycss  # type: ignore[import-untyped] # pylint: disable=import-outside-toplevel
+
         stylesheet = tinycss.make_parser().parse_stylesheet(self.mycss)
         property_errors = []
 

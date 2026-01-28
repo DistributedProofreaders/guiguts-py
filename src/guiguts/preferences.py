@@ -238,7 +238,6 @@ class PrefKey(StrEnum):
     PPCOMP_HTML_FILE_HISTORY = auto()
     PPCOMP_TEXT_FILE = auto()
     PPCOMP_TEXT_FILE_HISTORY = auto()
-    PPCOMP_LINE_NUMBERS = auto()
     PPCOMP_IGNORE_CASE = auto()
     PPCOMP_EXTRACT_FOOTNOTES = auto()
     PPCOMP_SUPPRESS_FOOTNOTES = auto()

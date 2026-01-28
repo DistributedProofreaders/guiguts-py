@@ -783,7 +783,6 @@ class Guiguts:
         preferences.set_default(PrefKey.PPCOMP_HTML_FILE_HISTORY, [])
         preferences.set_default(PrefKey.PPCOMP_TEXT_FILE, "")
         preferences.set_default(PrefKey.PPCOMP_TEXT_FILE_HISTORY, [])
-        preferences.set_default(PrefKey.PPCOMP_LINE_NUMBERS, "html")
         preferences.set_default(PrefKey.PPCOMP_IGNORE_CASE, False)
         preferences.set_default(PrefKey.PPCOMP_EXTRACT_FOOTNOTES, False)
         preferences.set_default(PrefKey.PPCOMP_SUPPRESS_FOOTNOTES, False)
