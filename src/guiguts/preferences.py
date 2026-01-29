@@ -246,13 +246,11 @@ class PrefKey(StrEnum):
     PPCOMP_CSS_ADD_ILLOS = auto()
     PPCOMP_CSS_ADD_SIDENOTES = auto()
     PPCOMP_CSS_SMCAP = auto()
-    PPCOMP_CSS_BOLD = auto()
     PPCOMP_CSS_CUSTOM = auto()
+    PPCOMP_CSS_CUSTOM_VALUE = auto()
     PPCOMP_CSS_NO_DEFAULT = auto()
     PPCOMP_SUPPRESS_NBSP = auto()
     PPCOMP_SUPPRESS_WJ = auto()
-    PPCOMP_SUPPRESS_ZS = auto()
-    PPCOMP_CSS_GREEK_TITLE = auto()
 
 
 class Preferences:

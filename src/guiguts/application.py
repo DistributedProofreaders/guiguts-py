@@ -791,13 +791,18 @@ class Guiguts:
         preferences.set_default(PrefKey.PPCOMP_CSS_ADD_ILLOS, False)
         preferences.set_default(PrefKey.PPCOMP_CSS_ADD_SIDENOTES, False)
         preferences.set_default(PrefKey.PPCOMP_CSS_SMCAP, False)
-        preferences.set_default(PrefKey.PPCOMP_CSS_BOLD, False)
         preferences.set_default(PrefKey.PPCOMP_CSS_CUSTOM, False)
+        preferences.set_default(
+            PrefKey.PPCOMP_CSS_CUSTOM_VALUE,
+            """/* Add brackets around footnote anchor */
+/*   .fnanchor:before { content: "["; }
+     .fnanchor:after { content: "]"; } */
+
+/* .tb {display: none;} */""",
+        )
         preferences.set_default(PrefKey.PPCOMP_CSS_NO_DEFAULT, False)
         preferences.set_default(PrefKey.PPCOMP_SUPPRESS_NBSP, False)
         preferences.set_default(PrefKey.PPCOMP_SUPPRESS_WJ, False)
-        preferences.set_default(PrefKey.PPCOMP_SUPPRESS_ZS, False)
-        preferences.set_default(PrefKey.PPCOMP_CSS_GREEK_TITLE, False)
 
         # Check all preferences have a default
         for pref_key in PrefKey:

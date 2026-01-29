@@ -35,8 +35,8 @@ import os
 import subprocess
 import tempfile
 import tkinter as tk
-from tkinter import ttk
-from typing import Optional, Any
+from tkinter import ttk, font
+from typing import Optional, Any, cast
 import warnings
 
 import cssselect
@@ -46,7 +46,7 @@ from lxml.html import html5parser
 
 from guiguts.checkers import CheckerDialog
 from guiguts.file import the_file
-from guiguts.maintext import HighlightTag
+from guiguts.maintext import HighlightTag, maintext
 from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
@@ -109,11 +109,12 @@ class PPcompCheckerDialog(CheckerDialog):
             command=lambda: self.choose_file(html=False),
         ).grid(row=1, column=1, sticky="EW", padx=(5, 0))
 
-        frame = ttk.LabelFrame(self.custom_frame, text="Options")
+        frame = ttk.Frame(self.custom_frame)
         frame.grid(row=1, column=0, sticky="NSEW")
-        for col in range(0, 5):
-            frame.columnconfigure(col, weight=1)
+        frame.columnconfigure(2, weight=1)
 
+        frame_g = ttk.LabelFrame(frame, text="General")
+        frame_g.grid(row=0, column=0, sticky="NSEW")
         for cnt, (prefkey, (label, tooltip)) in enumerate(
             {
                 PrefKey.PPCOMP_IGNORE_CASE: (
@@ -122,69 +123,135 @@ class PPcompCheckerDialog(CheckerDialog):
                 ),
                 PrefKey.PPCOMP_EXTRACT_FOOTNOTES: (
                     "Extract Footnotes",
-                    "Extract and process footnotes separately",
+                    "Extract and process footnotes separately\n"
+                    "May cause line numbers to be incorrect",
                 ),
+            }.items()
+        ):
+            btn = ttk.Checkbutton(
+                frame_g, variable=PersistentBoolean(prefkey), text=label
+            )
+            btn.grid(row=cnt, column=0, sticky="NSW")
+            ToolTip(btn, tooltip)
+
+        frame_t = ttk.LabelFrame(frame, text="Text")
+        frame_t.grid(row=1, column=0, sticky="NSEW")
+        for cnt, (prefkey, (label, tooltip)) in enumerate(
+            {
                 PrefKey.PPCOMP_SUPPRESS_FOOTNOTES: (
                     "Suppress Footnote Tags",
                     'TXT: Suppress "[Footnote #:" marks',
                 ),
                 PrefKey.PPCOMP_SUPPRESS_ILLOS: (
-                    "Suppress Illustration Tags",
+                    "Suppress Illo Tags",
                     'TXT: Suppress "[Illustration:" marks',
                 ),
                 PrefKey.PPCOMP_SUPPRESS_SIDENOTES: (
                     "Suppress Sidenote Tags",
                     'TXT: Suppress "[Sidenote:" marks',
                 ),
-                PrefKey.PPCOMP_CSS_ADD_ILLOS: (
-                    "CSS Add Illustration",
-                    "HTML: Add [Illustration ] tag",
-                ),
-                PrefKey.PPCOMP_CSS_ADD_SIDENOTES: (
-                    "CSS Add Sidenote",
-                    "HTML: Add [Sidenote: ...]",
-                ),
-                PrefKey.PPCOMP_CSS_SMCAP: (
-                    "CSS Smcap",
-                    "HTML: Transform small caps into uppercase (U), lowercase (L) or title case (T)",
-                ),
-                PrefKey.PPCOMP_CSS_BOLD: (
-                    "CSS Bold",
-                    "HTML: Surround bold strings with this string",
-                ),
-                PrefKey.PPCOMP_CSS_CUSTOM: (
-                    "CSS Custom",
-                    "HTML: Insert transformation CSS",
-                ),
-                PrefKey.PPCOMP_CSS_NO_DEFAULT: (
-                    "CSS No Default",
-                    "HTML: do not use default transformation CSS",
-                ),
-                PrefKey.PPCOMP_SUPPRESS_NBSP: (
-                    "Suppress NBSP In Num",
-                    "HTML: Suppress non-breakable spaces between numbers",
-                ),
-                PrefKey.PPCOMP_SUPPRESS_WJ: (
-                    "Suppress Word Join",
-                    "HTML: Suppress word join (NoBreak) (U+2060)",
-                ),
-                PrefKey.PPCOMP_SUPPRESS_ZS: (
-                    "Ignore Zero Space",
-                    "HTML: suppress zero width space (U+200b)",
-                ),
-                PrefKey.PPCOMP_CSS_GREEK_TITLE: (
-                    "CSS Greek Title",
-                    "HTML: use greek transliteration in title attribute",
-                ),
             }.items()
         ):
             btn = ttk.Checkbutton(
-                frame, variable=PersistentBoolean(prefkey), text=label
+                frame_t, variable=PersistentBoolean(prefkey), text=label
             )
-            btn.grid(row=cnt // 5, column=cnt % 5, sticky="NSEW")
+            btn.grid(row=cnt, column=0, sticky="NSW")
             ToolTip(btn, tooltip)
 
-        self.update_count_label()
+        frame_h = ttk.LabelFrame(frame, text="HTML")
+        frame_h.grid(row=0, column=1, sticky="NSEW", rowspan=2, padx=5)
+        for cnt, (prefkey, (label, tooltip)) in enumerate(
+            {
+                PrefKey.PPCOMP_CSS_ADD_ILLOS: (
+                    "Add Illo Tags",
+                    "HTML: Add [Illustration ] tag",
+                ),
+                PrefKey.PPCOMP_CSS_ADD_SIDENOTES: (
+                    "Add Sidenote Tags",
+                    "HTML: Add [Sidenote: ...]",
+                ),
+                PrefKey.PPCOMP_SUPPRESS_NBSP: (
+                    "Suppress &nbsp; In Nos.",
+                    "HTML: Suppress non-breakable spaces between numbers",
+                ),
+                PrefKey.PPCOMP_SUPPRESS_WJ: (
+                    "Suppress Word Joiner",
+                    "HTML: Suppress Word join (&NoBreak;/&#x2060;)",
+                ),
+                PrefKey.PPCOMP_CSS_SMCAP: (
+                    "Smallcap ⇒ UPPERCASE",
+                    "HTML: Transform small caps into uppercase",
+                ),
+            }.items()
+        ):
+            frame_h.rowconfigure(cnt, weight=1)
+            btn = ttk.Checkbutton(
+                frame_h, variable=PersistentBoolean(prefkey), text=label
+            )
+            btn.grid(row=cnt, column=0, sticky="NSW")
+            ToolTip(btn, tooltip)
+
+        frame_c = ttk.LabelFrame(frame, text="CSS")
+        frame_c.grid(row=0, column=2, sticky="NSEW", rowspan=2)
+        for cnt, (prefkey, (label, tooltip)) in enumerate(
+            {
+                PrefKey.PPCOMP_CSS_NO_DEFAULT: (
+                    "Do Not Use Default CSS",
+                    "HTML: Do not use default transformation CSS",
+                ),
+                PrefKey.PPCOMP_CSS_CUSTOM: (
+                    "Add Custom CSS",
+                    "HTML: Add custom transformation CSS",
+                ),
+            }.items()
+        ):
+            frame_c.columnconfigure(cnt, weight=1)
+            btn = ttk.Checkbutton(
+                frame_c, variable=PersistentBoolean(prefkey), text=label
+            )
+            btn.grid(row=0, column=cnt, sticky="NSW")
+            ToolTip(btn, tooltip)
+
+        mono = font.nametofont("TkFixedFont")
+
+        text_frame = ttk.Frame(frame_c)
+        text_frame.grid(row=2, column=0, columnspan=2, sticky="NSEW")
+        frame_c.rowconfigure(2, weight=1)
+
+        text = tk.Text(
+            text_frame,
+            height=5,  # about 5 lines
+            width=40,  # in characters
+            background=maintext()["background"],
+            foreground=maintext()["foreground"],
+            insertbackground=maintext()["insertbackground"],
+            wrap="none",  # so horizontal scrollbar makes sense
+            relief=tk.SUNKEN,
+            font=mono,
+        )
+        text.grid(row=0, column=0, sticky="NSEW")
+        text.insert(tk.END, preferences.get(PrefKey.PPCOMP_CSS_CUSTOM_VALUE))
+
+        def on_text_focus_out(event: tk.Event):
+            widget = cast(tk.Text, event.widget)
+            contents = widget.get("1.0", "end-1c")
+            preferences.set(PrefKey.PPCOMP_CSS_CUSTOM_VALUE, contents)
+
+        text.bind("<FocusOut>", on_text_focus_out)
+
+        vscroll = ttk.Scrollbar(text_frame, orient="vertical", command=text.yview)
+        vscroll.grid(row=0, column=1, sticky="ns")
+
+        hscroll = ttk.Scrollbar(text_frame, orient="horizontal", command=text.xview)
+        hscroll.grid(row=1, column=0, sticky="ew")
+
+        text.configure(yscrollcommand=vscroll.set, xscrollcommand=hscroll.set)
+
+        # Make the text expand if the frame grows
+        text_frame.columnconfigure(0, weight=1)
+        text_frame.rowconfigure(0, weight=1)
+
+        self.update_count_label(False)
         Busy.unbusy()
 
     def choose_file(self, html: bool) -> None:
@@ -247,10 +314,42 @@ class PPcompChecker:
             # perform common cleanup for both files
             PPComp.check_characters(PPcompChecker.files)
 
-        a_text = PPcompChecker.files[0].text
-        b_text = PPcompChecker.files[1].text
+        self.dialog.reset()
+        render_marked_diff(
+            self.dialog,
+            PPcompChecker.files[0].text,
+            PPcompChecker.files[1].text,
+            PPcompChecker.files[0].start_line,
+        )
+        if preferences.get(PrefKey.PPCOMP_EXTRACT_FOOTNOTES):
+            render_marked_diff(
+                self.dialog,
+                PPcompChecker.files[0].footnotes,
+                PPcompChecker.files[1].footnotes,
+                0,
+            )
 
-        render_marked_diff(self.dialog, a_text, b_text)
+        self.dialog.display_entries()
+
+        # ---- Convert flag characters into Tk tags ----
+        for left, right, tag in [
+            (FLAG_CH_HTML_L, FLAG_CH_HTML_R, HighlightTag.PPCOMP_HTML),
+            (FLAG_CH_TEXT_L, FLAG_CH_TEXT_R, HighlightTag.PPCOMP_TEXT),
+        ]:
+            start = "1.0"
+            while True:
+                start_idx = self.dialog.text.search(left, start, tk.END)
+                if not start_idx:
+                    break
+                end_idx = self.dialog.text.search(right, f"{start_idx}+1c", tk.END)
+                if not end_idx:
+                    break
+
+                self.dialog.text.tag_add(tag, f"{start_idx}+1c", end_idx)
+                self.dialog.text.delete(end_idx, f"{end_idx}+1c")
+                self.dialog.text.delete(start_idx, f"{start_idx}+1c")
+
+                start = end_idx
 
 
 # ------------------------------------------------------------
@@ -374,7 +473,9 @@ def join_tokens(tokens: list[str]) -> str:
     return "".join(out)
 
 
-def render_marked_diff(dialog: PPcompCheckerDialog, a_text: str, b_text: str) -> None:
+def render_marked_diff(
+    dialog: PPcompCheckerDialog, a_text: str, b_text: str, html_file_start: int
+) -> None:
     """Render the diffs to the dialog."""
     rows = aligned_words_with_lines(a_text, b_text)
 
@@ -401,11 +502,11 @@ def render_marked_diff(dialog: PPcompCheckerDialog, a_text: str, b_text: str) ->
         "xhtml",
     )
     line_has_change = False
-    a_line = PPcompChecker.files[0].start_line + 1
+    a_line = html_file_start + 1
     b_line = 1
     for r in rows:
         if r["a_line"] is not None:
-            a_line = r["a_line"] + PPcompChecker.files[0].start_line
+            a_line = r["a_line"] + html_file_start
         if r["b_line"] is not None:
             b_line = r["b_line"]
 
@@ -440,7 +541,6 @@ def render_marked_diff(dialog: PPcompCheckerDialog, a_text: str, b_text: str) ->
         lines.append((join_tokens(cur_line), cur_linenum))
 
     # ---- Send to the dialog ----
-    dialog.reset()
     for text, line_pair in lines:
         if line_pair is None:
             continue
@@ -459,28 +559,6 @@ def render_marked_diff(dialog: PPcompCheckerDialog, a_text: str, b_text: str) ->
             sub_line = f"{a_line}.0: " if a_line else ""
 
         dialog.add_entry(f"{sub_line}{text}", index)
-
-    dialog.display_entries()
-
-    # ---- Convert flag characters into Tk tags ----
-    for left, right, tag in [
-        (FLAG_CH_HTML_L, FLAG_CH_HTML_R, HighlightTag.PPCOMP_HTML),
-        (FLAG_CH_TEXT_L, FLAG_CH_TEXT_R, HighlightTag.PPCOMP_TEXT),
-    ]:
-        start = "1.0"
-        while True:
-            start_idx = dialog.text.search(left, start, tk.END)
-            if not start_idx:
-                break
-            end_idx = dialog.text.search(right, f"{start_idx}+1c", tk.END)
-            if not end_idx:
-                break
-
-            dialog.text.tag_add(tag, f"{start_idx}+1c", end_idx)
-            dialog.text.delete(end_idx, f"{end_idx}+1c")
-            dialog.text.delete(start_idx, f"{start_idx}+1c")
-
-            start = end_idx
 
 
 ###############################################################
@@ -1083,15 +1161,14 @@ class PgdpFileHtml(PgdpFile):
     def css_smallcaps(self):
         """Transform small caps"""
         transforms = {"U": "uppercase", "L": "lowercase", "T": "capitalize"}
-        # NB needs more work to deal with different types
+        # PPWB only has option for uppercase
         smcap_type = "U" if preferences.get(PrefKey.PPCOMP_CSS_SMCAP) else "N"
         if smcap_type in transforms:
             self.mycss += f".smcap {{ text-transform:{transforms[smcap_type]}; }}"
 
     def css_bold(self):
         """Surround bold strings with this string"""
-        # NB needs more work to deal with different types
-        bold_str = "*" if preferences.get(PrefKey.PPCOMP_CSS_BOLD) else "="
+        bold_str = "="  # PPWB has no checkbox to change this
         self.mycss += 'b::before, b::after { content: "' + bold_str + '"; }'
 
     def css_illustration(self):
@@ -1111,16 +1188,15 @@ class PgdpFileHtml(PgdpFile):
 
     def css_greek_title_plus(self):
         """Greek: if there is a title, use it to replace the (grc=ancient) Greek."""
-        if preferences.get(PrefKey.PPCOMP_CSS_GREEK_TITLE):
-            self.mycss += '*[lang=grc] { content: "+" attr(title) "+"; }'
+        # if preferences.get(PrefKey.PPCOMP_CSS_GREEK_TITLE):
+        #     self.mycss += '*[lang=grc] { content: "+" attr(title) "+"; }'
 
     def css_custom_css(self):
         """--css can be present multiple times, so it's a list"""
-        # NB - needs to be a list, not a bool
         if not preferences.get(PrefKey.PPCOMP_CSS_CUSTOM):
             return
-        empty = []
-        for css in empty:
+        custom = [preferences.get(PrefKey.PPCOMP_CSS_CUSTOM_VALUE)]
+        for css in custom:
             self.mycss += css
 
     def remove_nbspaces(self):
