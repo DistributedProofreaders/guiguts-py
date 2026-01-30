@@ -230,6 +230,7 @@ class PPcompCheckerDialog(CheckerDialog):
             background=maintext()["background"],
             foreground=maintext()["foreground"],
             insertbackground=maintext()["insertbackground"],
+            highlightthickness=1,
             wrap="none",
             font=mono,
         )
