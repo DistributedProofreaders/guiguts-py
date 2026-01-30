@@ -286,6 +286,31 @@ class PPcompCheckerDialog(CheckerDialog):
                 preferences.set(PrefKey.PPCOMP_TEXT_FILE, filename)
                 self.text_combo.add_to_history(filename)
 
+    def display_entries(
+        self, auto_select_line: bool = True, complete_msg: bool = True
+    ) -> None:
+        """Display entries and convert flag chars to Tk tags"""
+        super().display_entries()
+
+        for left, right, tag in [
+            (FLAG_CH_HTML_L, FLAG_CH_HTML_R, HighlightTag.PPCOMP_HTML),
+            (FLAG_CH_TEXT_L, FLAG_CH_TEXT_R, HighlightTag.PPCOMP_TEXT),
+        ]:
+            start = "1.0"
+            while True:
+                start_idx = self.text.search(left, start, tk.END)
+                if not start_idx:
+                    break
+                end_idx = self.text.search(right, f"{start_idx}+1c", tk.END)
+                if not end_idx:
+                    break
+
+                self.text.tag_add(tag, f"{start_idx}+1c", end_idx)
+                self.text.delete(end_idx, f"{end_idx}+1c")
+                self.text.delete(start_idx, f"{start_idx}+1c")
+
+                start = end_idx
+
 
 class PPcompChecker:
     """PPcomp checker."""
@@ -327,6 +352,7 @@ class PPcompChecker:
             PPcompChecker.files[0].start_line,
         )
         if preferences.get(PrefKey.PPCOMP_EXTRACT_FOOTNOTES):
+            self.dialog.add_header("", "==== FOOTNOTES ====", "")
             render_marked_diff(
                 self.dialog,
                 PPcompChecker.files[0].footnotes,
@@ -335,26 +361,6 @@ class PPcompChecker:
             )
 
         self.dialog.display_entries()
-
-        # ---- Convert flag characters into Tk tags ----
-        for left, right, tag in [
-            (FLAG_CH_HTML_L, FLAG_CH_HTML_R, HighlightTag.PPCOMP_HTML),
-            (FLAG_CH_TEXT_L, FLAG_CH_TEXT_R, HighlightTag.PPCOMP_TEXT),
-        ]:
-            start = "1.0"
-            while True:
-                start_idx = self.dialog.text.search(left, start, tk.END)
-                if not start_idx:
-                    break
-                end_idx = self.dialog.text.search(right, f"{start_idx}+1c", tk.END)
-                if not end_idx:
-                    break
-
-                self.dialog.text.tag_add(tag, f"{start_idx}+1c", end_idx)
-                self.dialog.text.delete(end_idx, f"{end_idx}+1c")
-                self.dialog.text.delete(start_idx, f"{start_idx}+1c")
-
-                start = end_idx
 
 
 # ------------------------------------------------------------
