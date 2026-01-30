@@ -1,4 +1,9 @@
 """
+As far as possible, this file remains the same as ppcomp.py as used by the PP Workbench in
+January 2026 (https://github.com/DistributedProofreaders/ppcomp/blob/master/ppcomp/ppcomp.py).
+Thus there are unused sections of code. The purpose is to make it easier to port any later
+changes between the two versions.
+
 ppcomp.py - compare text from 2 files, ignoring html and formatting differences, for use by users
 of Distributed Proofreaders (https://www.pgdp.net)
 
@@ -63,8 +68,8 @@ FLAG_CH_HTML_L = "⦓"
 FLAG_CH_HTML_R = "⦔"
 FLAG_CH_TEXT_L = "⦕"
 FLAG_CH_TEXT_R = "⦖"
-NO_SPACE_BEFORE = re.compile(r"^[])}.,:;!?]$")
-NO_SPACE_AFTER = re.compile(r"^[[({]$")
+NO_SPACE_BEFORE = "])}.,:;!?"
+NO_SPACE_AFTER = "[({"
 
 
 class PPcompCheckerDialog(CheckerDialog):
@@ -459,16 +464,12 @@ def join_tokens(tokens: list[str]) -> str:
             out.append(tok)
             continue
 
-        prev = out[-1]
-
-        if NO_SPACE_BEFORE.match(tok):
-            # punctuation sticks to previous token
-            out[-1] = prev + tok
-        elif NO_SPACE_AFTER.match(prev):
-            # opening punctuation sticks to next token
-            out[-1] = prev + tok
+        # punctuation sticks to previous token or next token
+        # otherwise, space between tokens
+        if tok in NO_SPACE_BEFORE or out[-1][-1] in NO_SPACE_AFTER:
+            out.append(tok)
         else:
-            out.append(" " + tok)
+            out.append(f" {tok}")
 
     return "".join(out)
 
