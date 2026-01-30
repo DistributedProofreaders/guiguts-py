@@ -225,13 +225,12 @@ class PPcompCheckerDialog(CheckerDialog):
 
         text = tk.Text(
             text_frame,
-            height=5,  # about 5 lines
-            width=40,  # in characters
+            height=5,
+            width=40,
             background=maintext()["background"],
             foreground=maintext()["foreground"],
             insertbackground=maintext()["insertbackground"],
-            wrap="none",  # so horizontal scrollbar makes sense
-            relief=tk.SUNKEN,
+            wrap="none",
             font=mono,
         )
         text.grid(row=0, column=0, sticky="NSEW")
