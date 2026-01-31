@@ -323,6 +323,12 @@ class PPcompChecker:
 
     def run(self) -> None:
         """Run PPcomp."""
+        if preferences.get(PrefKey.PPCOMP_EXTRACT_FOOTNOTES) and preferences.get(
+            PrefKey.PPCOMP_SUPPRESS_FOOTNOTES
+        ):
+            logger.error("Cannot use both Extract Footnotes and Suppress Footnote Tags")
+            return
+
         empty_args: list[str] = []
         PPcompChecker.files = []
         PPcompChecker.files.append(PgdpFileHtml(empty_args))
