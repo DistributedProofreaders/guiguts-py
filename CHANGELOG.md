@@ -1,6 +1,44 @@
 # Changelog
 
 
+## Version 2.0.15
+
+- A version of the PPcomp tool has been added to the Tools Menu. This uses as
+much of the online PPcomp tool's code as possible, so in general has the same
+behavior and limitations. It only provides the capability to show differences
+between the finished HTML and finished Text files. The results are shown in a
+standard dialog, and the differences can be clicked in the usual way to jump
+to the correct place in whichever file is currently loaded into Guiguts. To
+make edits in the other file (Text or HTML), load that file then re-run the
+PPcomp tool. Note that, as mentioned in the tooltip (and just like the online
+version) if the Extract Footnotes feature is used, the line numbers reported
+will most likely not be correct. This is unavoidable with the current PPcomp
+code.
+- A `meta` tag was added to the default HTML header to stop browsers and ebook
+readers (primarily Apple-based) interpreting text as telephone numbers, email
+addresses, etc.
+- Small improvements have been made to some scanno regexes so they display and
+sort more helpfully
+- Curly quote buttons have been made larger with tooltips, and 3 additional
+buttons added to facilitate common quote operations
+- Fix All and Hide All in Stealth Scannos now work on all matching highlighted
+strings, rather than all messages
+
+### Bug fixes
+
+- Valid emdashes / double hyphens at the start of a line were processed by
+the Content Providing Filter code in such a way as to lose one of the hyphens
+- PPtext reported a false "repeated word" positive if all words on the line
+were in fact numbers
+- PPtext failed to report a "repeated word" error if just a single word
+appeared on a line
+- PPhtml reported title and h1 text were different if h1 contained an emdash
+- Scrolling the image viewer with the mouse wheel did not work if Caps Lock
+or Num Lock were on
+- Spell dialog stopped Cmd/Ctrl+Shift+P working as a shortcut
+- PPhtml reported the underscore in `_blank` as unconverted italics
+
+
 ## Version 2.0.14
 
 - "Match Case" is turned on in S/R dialog when launched from Stealth Scannos
