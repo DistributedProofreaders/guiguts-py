@@ -407,6 +407,8 @@ class HighlightTag(StrEnum):
     CHECKER_ERROR_PREFIX_1 = auto()
     CHECKER_WARNING = auto()
     WF_CHAR_HIGHLIGHT = auto()
+    PPCOMP_HTML = auto()
+    PPCOMP_TEXT = auto()
 
 
 # Dictionary to map HTML tags to HighlightTags
@@ -536,6 +538,8 @@ class ColorKey(StrEnum):
     CHECKER_ERROR_PREFIX_1 = auto()
     CHECKER_WARNING = auto()
     WF_CHAR_HIGHLIGHT = auto()
+    PPCOMP_HTML = auto()
+    PPCOMP_TEXT = auto()
 
 
 class ConfigurableColor:
@@ -4916,6 +4920,20 @@ class MainText(tk.Text):
                 {"background": "yellow", "foreground": "black"},
                 update_checker_tag,
             ),
+            ColorKey.PPCOMP_HTML: ConfigurableColor(
+                HighlightTag.PPCOMP_HTML,
+                "PPcomp HTML color",
+                {"background": "#061626", "foreground": "#d506e8"},
+                {"background": "#f1f1f1", "foreground": "#7b0285"},
+                update_checker_tag,
+            ),
+            ColorKey.PPCOMP_TEXT: ConfigurableColor(
+                HighlightTag.PPCOMP_TEXT,
+                "PPcomp Text color",
+                {"background": "#061626", "foreground": "#10a000"},
+                {"background": "#f1f1f1", "foreground": "#0d7501"},
+                update_checker_tag,
+            ),
         }
 
     def _autoscroll_start(self, _event: tk.Event) -> None:
@@ -5173,6 +5191,8 @@ class ScrolledReadOnlyText(tk.Text):
             err_col_1 = maintext().colors[ColorKey.CHECKER_ERROR_PREFIX_1]
             err_col_2 = maintext().colors[ColorKey.CHECKER_WARNING]
             wf_col = maintext().colors[ColorKey.WF_CHAR_HIGHLIGHT]
+            pp_html_col = maintext().colors[ColorKey.PPCOMP_HTML]
+            pp_text_col = maintext().colors[ColorKey.PPCOMP_TEXT]
             if themed_style().is_dark_theme():
                 self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.dark)
                 self.tag_configure(HighlightTag.CHECKER_HIGHLIGHT, hil_col.dark)
@@ -5186,6 +5206,8 @@ class ScrolledReadOnlyText(tk.Text):
                 del s_dict["background"]
                 self.tag_configure(HighlightTag.CHECKER_WARNING, s_dict)
                 self.tag_configure(HighlightTag.WF_CHAR_HIGHLIGHT, wf_col.dark)
+                self.tag_configure(HighlightTag.PPCOMP_HTML, pp_html_col.dark)
+                self.tag_configure(HighlightTag.PPCOMP_TEXT, pp_text_col.dark)
             else:
                 self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.light)
                 self.tag_configure(HighlightTag.CHECKER_HIGHLIGHT, hil_col.light)
@@ -5199,6 +5221,8 @@ class ScrolledReadOnlyText(tk.Text):
                 del s_dict["background"]
                 self.tag_configure(HighlightTag.CHECKER_WARNING, s_dict)
                 self.tag_configure(HighlightTag.WF_CHAR_HIGHLIGHT, wf_col.light)
+                self.tag_configure(HighlightTag.PPCOMP_HTML, pp_html_col.light)
+                self.tag_configure(HighlightTag.PPCOMP_TEXT, pp_text_col.light)
 
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.

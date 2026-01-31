@@ -639,7 +639,10 @@ class PathnameCombobox(Combobox):
         """Configure width of combo dropdown to be sufficient to
         display the widest entry, so all entries are visible.
         And show tail end of file path."""
-        long: str = max(self.cget("values"), key=len)
+        long = "1"
+        values = self.cget("values")
+        if values:
+            long = max(self.cget("values"), key=len)
 
         font = tk_font.nametofont(str(self.cget("font")))
         width = max(0, font.measure(long.strip() + "pad") - self.winfo_width())
