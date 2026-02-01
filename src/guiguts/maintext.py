@@ -3857,7 +3857,7 @@ class MainText(tk.Text):
                 self.do_select(sel)
             # If no selection, select from start position to "Home"
             else:
-                self.do_select(IndexRange(new, start))
+                self.do_select(IndexRange(start, new))
         # If no Shift, just moving, so clear selection
         else:
             self.clear_selection()
