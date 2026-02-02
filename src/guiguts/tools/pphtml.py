@@ -726,10 +726,10 @@ class PPhtmlChecker:
             return
 
         errors: list[tuple[str, Optional[IndexRange]]] = []
-        title_str = re.sub(r"\s+", " ", title_str.strip())
-        h1_str = re.sub(r"<br.*?>", " ", h1_str.strip())
+        title_str = re.sub(r"\s+", " ", title_str).strip()
+        h1_str = re.sub(r"<br.*?>", " ", h1_str)
         h1_str = re.sub(r"<.*?>", "", h1_str)
-        h1_str = re.sub(r"\s+", " ", h1_str)
+        h1_str = re.sub(r"\s+", " ", h1_str).strip()
         test_passed = True
         fail_string = ""
         if not title_str.endswith(" | Project Gutenberg"):
