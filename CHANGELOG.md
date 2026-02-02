@@ -1,6 +1,19 @@
 # Changelog
 
 
+## Version 2.0.16
+
+- Fix All and Hide All in Regex Library reverted to work on all messages
+rather than matching highlighted strings
+
+### Bug fixes
+
+- Shift+End (or Shift+Cmd+Right) only moved the cursor to the end of line,
+rather than selecting to end of line
+- If `h1` field ended in `<br>`, it was unable to match the `title` field in
+PPhtml check
+
+
 ## Version 2.0.15
 
 - A version of the PPcomp tool has been added to the Tools Menu. This uses as
