@@ -110,9 +110,9 @@ class PPhtmlChecker:
 
         self.dialog.display_entries()
         self.colorize_errors(PPhtmlChecker.fail_flag, HighlightTag.CHECKER_ERROR_PREFIX)
-        self.colorize_errors("ERROR", HighlightTag.CHECKER_ERROR_PREFIX)
+        self.colorize_errors("ERROR: ", HighlightTag.CHECKER_ERROR_PREFIX)
         self.colorize_errors(PPhtmlChecker.warn_flag, HighlightTag.CHECKER_WARNING)
-        self.colorize_errors("WARNING", HighlightTag.CHECKER_WARNING)
+        self.colorize_errors("WARNING: ", HighlightTag.CHECKER_WARNING)
         # Select first entry (which might not be one with a line number)
         self.dialog.select_entry_by_index(0)
 
