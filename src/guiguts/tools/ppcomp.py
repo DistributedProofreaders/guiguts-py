@@ -553,10 +553,46 @@ def render_marked_diff(
     if cur_line and line_has_change:
         lines.append((join_tokens(cur_line), cur_linenum))
 
+    underscore_reg = (
+        f"[{FLAG_CH_HTML_L}{FLAG_CH_TEXT_L}]_[{FLAG_CH_HTML_R}{FLAG_CH_TEXT_R}]"
+    )
     # ---- Send to the dialog ----
-    for text, line_pair in lines:
+    for lnum, (text, line_pair) in enumerate(lines):
         if line_pair is None:
             continue
+        # If there is another line after this one, look for the following circumstances:
+        # 1. Next line is also the next line in the text file
+        # 2. This line is just an underscore (plus flags)
+        # 3. Next line has an underscore at the end
+        if lnum < len(lines) - 1:
+            next_text, next_line_pair = lines[lnum + 1]
+            if (
+                next_line_pair is not None
+                and line_pair[1] + 1 == next_line_pair[1]  # Next line in text file?
+                and re.fullmatch(
+                    underscore_reg,  # Just an underscore
+                    text,
+                )
+                and re.search(f"{underscore_reg}$", next_text)  # Ends in underscore
+            ):
+                # Bring info up from next line onto this one
+                text = f"{text} {next_text}"
+                line_pair = next_line_pair
+                lines[lnum] = (text, line_pair)
+                # Nullify next line so it is ignore next time round loop
+                lines[lnum + 1] = (next_text, None)
+        # If there is a line before this one, look for the following circumstances:
+        # 1. This line is just an underscore (plus flags)
+        # 2. Next line has an underscore at the end
+        if lnum > 0:
+            prev_text = lines[lnum - 1][0]
+            if re.fullmatch(underscore_reg, text) and re.search(
+                f"{underscore_reg}$", prev_text
+            ):
+                # Increment text line number
+                line_pair = (line_pair[0], line_pair[1] + 1)
+                lines[lnum] = (text, line_pair)
+
         a_line, b_line = line_pair
         if html_ln:
             if a_line is not None:
