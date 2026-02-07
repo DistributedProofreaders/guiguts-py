@@ -2332,3 +2332,95 @@ class HTMLLinksDialog(ToplevelDialog):
         sel_text = make_anchor_id(maintext().selected_text())
         maintext().insert(sel_ranges[0].start.index(), f'<a id="{sel_text}"></a>')
         maintext().set_insert_index(sel_ranges[0].start, focus=False)
+
+
+def latex_svg_convert() -> None:
+    """Convert file using m2svg."""
+    filepath = the_file().filename
+    root, ext = os.path.splitext(filepath)
+    tmp_file = f"{root}_tempsvg{ext}"
+    err_file = f"{root}_svgerr.err"
+    err_base = os.path.basename(err_file)
+    svg_file = f"{root}_svg{ext}"
+
+    m2svg = shutil.which("m2svg")
+    if not m2svg:
+        logger.error("Unable to find m2svg on the PATH")
+        return
+
+    Busy.busy()
+    # Write to temp file in case user hasn't saved
+    with open(tmp_file, "w", encoding="utf-8") as f:
+        f.write(maintext().get_text())
+    # Run m2svg and capture stdout & stderr
+    with open(err_file, "w", encoding="utf-8") as err:
+        subprocess.run(
+            [m2svg, "-i", tmp_file, "-o", svg_file],
+            stdout=err,
+            stderr=subprocess.STDOUT,
+            cwd=os.path.dirname(filepath),
+            text=True,
+            shell=is_windows(),
+            check=False,
+        )
+    # Check if anything in err_file, except "...Finished"
+    try:
+        with open(err_file, "r", encoding="utf-8") as fh:
+            for line in fh:
+                if (
+                    line == ""
+                    or re.match("m2svg version", line)
+                    or re.fullmatch(r"\.+Finished\s*", line)
+                ):
+                    continue
+                logger.error(f"Errors during conversion - check details in {err_base}")
+                break
+    except OSError:
+        logger.error("Unable to read m2svg results")
+    try:
+        os.remove(tmp_file)
+    except OSError:
+        pass
+    Busy.unbusy()
+
+
+def latex_undo_autogen() -> None:
+    """Undo some of the changes that HTML autogen makes."""
+
+    changes = {
+        "&amp;": "&",
+        "&lt;": "<",
+        "&gt;": ">",
+        "<sub>": "_{",
+        "</sub>": "}",
+        "<sup>": "^{",
+        "</sup>": "}",
+    }
+
+    Busy.busy()
+    maintext().undo_block_begin()
+
+    endmark = "latex_undo_autogen"
+    start = "1.0"
+    while True:
+        # Find start/end of LaTeX markup: \[, \(, \], or \)
+        start_idx = maintext().search(r"\\[[(]", start, tk.END, regexp=True)
+        if not start_idx:
+            break
+        end_idx = maintext().search(r"\\[])]", start_idx, tk.END, regexp=True)
+        if not end_idx:
+            break
+        # Mark end, since edits will affect column numbers
+        maintext().mark_set(endmark, end_idx)
+
+        # Undo changes within the range
+        for key, replacement in changes.items():
+            search_start = start_idx
+            while idx := maintext().search(key, search_start, endmark):
+                maintext().replace(idx, f"{idx}+{len(key)}c", replacement)
+                search_start = f"{idx}+{len(replacement)}c"
+
+        # Start next search at the end of the previous markup
+        start = maintext().index(endmark)
+
+    Busy.unbusy()
