@@ -48,6 +48,8 @@ from guiguts.html_tools import (
     HTMLAutoListDialog,
     HTMLMarkupDialog,
     HTMLLinksDialog,
+    latex_svg_convert,
+    latex_undo_autogen,
 )
 from guiguts.illo_sn_fixup import illosn_check
 
@@ -869,6 +871,7 @@ class Guiguts:
         file_menu.add_separator()
         self.init_file_project_menu(file_menu)
         self.init_file_content_menu(file_menu)
+        self.init_file_latex_menu(file_menu)
         file_menu.add_separator()
         file_menu.add_button("~Quit", self.quit_program)
 
@@ -946,6 +949,18 @@ class Guiguts:
         project_menu.add_button("~Add Page Marker Flags", self.file.add_page_flags)
         project_menu.add_button(
             "~Remove Page Marker Flags", self.file.remove_page_flags
+        )
+
+    def init_file_latex_menu(self, parent: MenuMetadata) -> None:
+        """Create the File->LaTeX menu."""
+        project_menu = parent.add_submenu("LaTe~X")
+        project_menu.add_button(
+            "~Convert File (m2svg)",
+            latex_svg_convert,
+        )
+        project_menu.add_button(
+            "Undo Some HTML ~Autogen Changes",
+            latex_undo_autogen,
         )
 
     def init_edit_menu(self) -> None:
