@@ -667,6 +667,10 @@ def html_convert_body() -> None:
         # lines within "/$" or "/*" markup
         if dollar_nowrap_flag or asterisk_nowrap_flag:
             do_per_line_markup(selection, line_start, line_end, ibs_dict)
+            # Preserve mid-line multiple spaces for "/$"
+            if dollar_nowrap_flag:
+                nbsp_sel = re.sub("  ", "&nbsp; ", selection.lstrip())
+                maintext().replace(line_start, line_end, nbsp_sel)
             # Add 0.5em margin per space character
             if n_spaces > 0:
                 maintext().insert(
