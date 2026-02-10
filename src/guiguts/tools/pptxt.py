@@ -1213,9 +1213,11 @@ def specials_check(project_dict: ProjectDict) -> None:
 
             # Looks for mixed case within word but not if the word is in
             # the good words list or occurs more than once in the book.
-
+            # Also allow "MacDonald", "McARTHUR", etc.
             if word_list_map_count[word] == 1 and word not in project_dict.good_words:
-                if re.search(r".\p{Ll}+(?<!-)\p{Lu}", word):
+                if re.search(r".\p{Ll}+(?<!-)\p{Lu}", word) and not re.fullmatch(
+                    r"Ma?c\p{Uppercase_Letter}\p{Letter}+", word
+                ):
                     # NB word occurs only once in the book and isn't in good_words.
                     # Generate dialog tuples.
                     heading = (
@@ -1257,7 +1259,12 @@ def specials_check(project_dict: ProjectDict) -> None:
             #
             # GENERAL TEST
             pattern = r"\p{L}+\p{Nd}+|\p{Nd}+\p{L}+"
-            if re.search(pattern, word):
+            if re.search(pattern, word) and word.lower() not in (
+                "4to",
+                "8vo",
+                "12mo",
+                "16mo",
+            ):
                 # Here if possible issue.
                 #
                 # EXCEPTIONS
