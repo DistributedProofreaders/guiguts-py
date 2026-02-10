@@ -347,8 +347,6 @@ Query mixed letters/digits in word (excluding exceptions).
  535.35:   Barbier ... Paris, 1806, 4 vols, 8o. It is curious to note that
  684.8:    1839, 8o. A remarkable piece of criticism indispensable to every
  705.56:   Dictionnaire des ouvrages anonymes par A. A. Barbier, 3e. ed., 1872,
- 954.62:   Washington, published by the Smithsonian Institution, 1853, 8vo, pp.
- 977.0:  12mo, but when he compiles a bibliographical list he will describe it
 1095.60: Gurney’s shorthand notes. Edinb. James Gall and son [1842], 8o, pp.
 1358.54: Portman street, and Henry Mozley & sons, Derby, 1842, 12o, pp. 302.
 1376.13: [1829?], sm. 8o.—Portugal, or the young travellers, ... 1830.—The new
@@ -359,7 +357,6 @@ Query mixed letters/digits in word (excluding exceptions).
 1423.14: Hodgson 1853, 8o.
 1436.52: assistants], London, S. Low Son & Marston, 1864, r. 8o. And
 1451.47: interesting religious tale called Lily, and in 16o, 1825, a capital
-1480.62: young ladies, London (printed at Ryde), for the author, 1822, 12mo, pp.
 1488.36: Remarks, &c., Lond. J. Smith, 1823, 8o, pp. 115, 2s 6d, pseudon.
 1499.20: Smith, 1826 [1825], 18o, pp. xi and 200, 3s, auton.
 1545.16:           1834, 8o [he stopped with letter B].
@@ -383,7 +380,6 @@ Query mixed letters/digits in word (excluding exceptions).
 1803.47: Whittaker: Kendal (printed by) J. Hudson 1854, 8o, pp. 44, with an
 1814.61: clergyman of the church of England. Lond. Tabart 1802, small 12o, pp.
 1820.50: the use of young persons. Lond. John Murray 1828, 8o. pp. XI. and 1 and
-1832.30:       Lady, London, 1831, sm. 8vo, publ. at 5s. 6d. A series of
 1852.0:  12o, pp. XII. 200.
 1868.6:  1835, 16o, pp. 31, with illustrations.
 1874.68: and evening in the year: selected by a lady. Lond. J. F. Shaw 1858, 32o,
@@ -463,8 +459,6 @@ Query mixed letters/digits in word (excluding exceptions).
 2236.29: lady. London, Hatchard 1828, 12o, pp. VIII. 145.
 2239.7:  [1838] 16o, 1s. 6d.
 2242.65: and the public at large, by a lady [motto] London, Longman 1826, 24o,
-2247.59: made at home, etc. Lond. Simpkin, Birmingham, print. 1838, 4to.
-2249.28:     New edit. Simpkin 1840, 4to, 21s.
 2253.0:  12o, 4 edit. 1859.
 2256.0:  16o, pp. 128.
 

@@ -91,10 +91,10 @@ _noanywhere = [
 ]
 # Words that other tests will flag as typos
 _okwords = [
-    "mr", "mrs", "mss", "mssrs", "ft", "pm", "st", "dr", "hmm", "h'm", "hmmm",
-    "rd", "sh", "br", "pp", "hm", "cf", "jr", "sr", "vs", "lb", "lbs", "ltd",
+    "mr", "mrs", "mss", "mssrs", "ft", "pm", "st", "dr", "drs", "hmm", "h'm", "hmmm",
+    "rd", "sh", "br", "pp", "hm", "cf", "jr", "sr", "vs", "lb", "lbs", "ltd", "mt",
     "pompeii", "hawaii", "hawaiian", "hotbed", "heartbeat", "heartbeats",
-    "outbid", "outbids", "frostbite", "frostbitten", "s^t",
+    "outbid", "outbids", "frostbite", "frostbitten", "s^t", "wm", "ebook"
 ]
 # fmt: on
 checker_filters = [
@@ -634,11 +634,13 @@ class BookloupeChecker:
         """
         # Consider hyphenated (or emdashed) words as two separate words
         # but exclude DP-style fractions, e.g. 1-3/4)
-        line = re.sub(r"(?<!\d)[-—](?!\d)", " ", line)
+        s_line = re.sub(r"(?<!\d)[-—](?!\d)", " ", line)
+        # Treat nbsp as space
+        s_line = re.sub(r"\xa0", " ", s_line)
         # Split at spaces, ignoring leading/trailing non-word characters on words
         for match in re.finditer(
             r"(?<![^ ])[^\p{Letter}\p{Number}'’{}]*(.+?)[^\p{Letter}\p{Number}'’{}]*(?![^ ])",
-            line,
+            s_line,
         ):
             # Trim any markup or footnote remnants left at start/end of word
             word = re.sub(r"^.+>|<.+$|\[.+$", "", match[1])
@@ -667,7 +669,8 @@ class BookloupeChecker:
                 # If "L/l" followed by number, it's OK (English pounds)
                 prefix = re.sub(r"[\p{Number},]+$", "", word_lower)
                 if (
-                    suffix not in _alnum_suffixes
+                    word_lower not in ("4to", "8vo", "12mo", "16mo")
+                    and suffix not in _alnum_suffixes
                     and prefix != "l"
                     and re.search(r"\.(png|jpg)$", word) is None
                 ):
@@ -681,12 +684,10 @@ class BookloupeChecker:
             # and just do all the tests anyway - very little time wasted.
             typo = False
             # Check for mixed case (uppercase after lower case) (with some exceptions)
-            # Allow MacDonald and l'Abbe
+            # Allow MacDonald, McARTHUR and l'Abbe
             if (
                 re.search(r"\p{Lowercase_Letter}.*\p{Uppercase_Letter}", word)
-                and not re.fullmatch(
-                    r"Ma?c\p{Uppercase_Letter}\p{Lowercase_Letter}+", word
-                )
+                and not re.fullmatch(r"Ma?c\p{Uppercase_Letter}\p{Letter}+", word)
                 and not re.fullmatch(
                     r"\p{Letter}*{Lowercase_Letter}+['’]\p{Uppercase_Letter}{Lowercase_Letter}+",
                     word,
@@ -724,14 +725,23 @@ class BookloupeChecker:
                 # like "i.e" or "B.B.C" (trailing period already stripped)
                 if re.fullmatch(r"\p{Letter}(\.\p{Letter})+", word_lower):
                     typo = False
+                # Also permit "words" that consist of single letters with apostrophe,
+                # like "o'" or "'s"
+                if re.fullmatch(r"\p{Letter}['’]|['’]\p{Letter}", word_lower):
+                    typo = False
             # But certain words are always typos
             for typo_word in _typos:
                 if word_lower == typo_word:
                     typo = True
             # Also certain single lowercase letters: "s", "l", "i", "m" and
             # "j" = ";"; "d" in "he d" (missing apostrophe); "n" for "in"
+            # But don't report if hyphens/emdash, e.g. "d--n"
             if len(word) == 1 and word in "slimjdn":
-                typo = True
+                lbeg = max(match.start(1) - 2, 0)
+                lend = min(match.start(1) + 3, len(s_line))
+                test_str = line[lbeg:lend]
+                if not re.search(rf"^(--|.?—){word}|{word}(--|—.?)$", test_str):
+                    typo = True
             if typo:
                 self.add_match_entry(step, match, f"Query word {word}")
 
