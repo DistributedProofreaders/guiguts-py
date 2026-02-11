@@ -512,10 +512,11 @@ class HTMLImageBaseDialog(ToplevelDialog):
         # Set up classes & styles
         unit_type = preferences.get(PrefKey.HTML_IMAGE_UNIT)
         width = self.width_textvariable.get()
+        height = self.height_textvariable.get()
         img_size = img_class = fig_class = style = ""
         if unit_type == "px":
-            img_size = f' width="{self.image_width}" height="{self.image_height}"'
-            style = f' style="width: {self.image_width}px;"'
+            img_size = f' width="{width}" height="{height}"'
+            style = f' style="width: {width}px;"'
         else:
             img_class = ' class="w100"'
             fig_class = " illow"
