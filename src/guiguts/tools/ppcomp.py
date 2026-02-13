@@ -335,16 +335,26 @@ class PPcompChecker:
         PPcompChecker.files.append(PgdpFileText(empty_args))
         fname = preferences.get(PrefKey.PPCOMP_HTML_FILE)
         if not (fname and os.path.isfile(fname)):
+            Busy.unbusy()
+            logger.error(f"File {fname} does not exist")
             return
         try:
             PPcompChecker.files[0].load(fname)
         except (FileNotFoundError, SyntaxError) as exc:
+            Busy.unbusy()
             logger.error(exc)
             return
         fname = preferences.get(PrefKey.PPCOMP_TEXT_FILE)
         if not (fname and os.path.isfile(fname)):
+            Busy.unbusy()
+            logger.error(f"File {fname} does not exist")
             return
-        PPcompChecker.files[1].load(fname)
+        try:
+            PPcompChecker.files[1].load(fname)
+        except (FileNotFoundError, SyntaxError) as exc:
+            Busy.unbusy()
+            logger.error(exc)
+            return
         for f in PPcompChecker.files:
             f.cleanup()
             # perform common cleanup for both files
