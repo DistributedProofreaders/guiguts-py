@@ -171,6 +171,53 @@ class BasicFixup:
 
         self.dialog.reset()
 
+        # Dictionary of regexes:
+        # One or two capture groups in each regex, with the characters being checked
+        # captured by one of them - these will be highlighted in error message.
+        #
+        # Multiple spaces between non-space characters
+        # Space around single hyphen (not at start of line)
+        # Space before single period (not at start of line and not decimal point)
+        # Space before exclamation mark, question mark, comma, colon, or semicolon
+        # Space before close or after open quotes (where unambiguous)
+        # Space before close or after open brackets
+        # Trailing spaces
+        # Thought break (possibly poorly formed)
+        # 1/l scanno, e.g. llth
+        fixup_regexes: dict[str, re.Pattern] = {
+            "Multiple spaces: ": re.compile(
+                r"(\S\s{2,})(?=\S)"
+            ),  # Capture character before too
+            "Spaced hyphen: ": re.compile(r"\S( +- *)(?!-)|(?<!-)( *- +)"),
+            "Spaced period: ": re.compile(r"\S( +\.)(?![\d\.])"),
+            "Spaced exclamation mark: ": re.compile(r"( +!)"),
+            "Spaced question mark: ": re.compile(r"( +\?)"),
+            "Spaced comma: ": re.compile(r"( +,)"),
+            "Spaced colon: ": re.compile(r"( +:)"),
+            "Spaced semicolon: ": re.compile(r"( +;)"),
+            "Spaced open quote: ": re.compile(r'(^" +|[‘“] +)'),
+            "Spaced close quote: ": re.compile(r'( +"$| +”)'),
+            "Spaced open bracket: ": re.compile(r"([[({] )"),
+            "Spaced close bracket: ": re.compile(r"( [])}])"),
+            "Trailing spaces: ": re.compile(r"(.? +$)"),
+            "Thought break: ": re.compile(r"^(\s*(\*\s*){4,})$"),
+            "1/l scanno: ": re.compile(r"(?<!\p{Letter})(lst|llth)\b"),
+            "Ellipsis spacing: ": re.compile(
+                r"(?<=[^\.\!\? \"'‘“])(\.{3})(?![\.\!\?])"
+            ),
+            "Spaced guillemet: ": re.compile(r"(«\s+|\s+»)"),
+        }
+
+        # Some languages use inward pointing guillemets - catch most of them.
+        # Do inward check if first language is one of these, or English with one of these.
+        inward_langs = r"(de|hr|cs|da|hu|pl|sr|sk|sl|sv)"
+        languages = maintext().get_language_list()
+        if re.match(inward_langs, languages[0]) or (
+            re.match("en", languages[0])
+            and any(re.match(inward_langs, lang) for lang in languages)
+        ):
+            fixup_regexes["Spaced guillemet: "] = re.compile(r"(»\s+|\s+«)")
+
         # Check lines that aren't in block markup
         in_block = in_poem = False
         for line, line_num in maintext().get_lines():
@@ -191,50 +238,13 @@ class BasicFixup:
             if in_poem and (match := re.search(r"\s{2,}\d+\s*$", line)):
                 test_line = line[: match.start(0)]
 
-            # Dictionary of regexes:
-            # One or two capture groups in each regex, with the characters being checked
-            # captured by one of them - these will be highlighted in error message.
-            #
-            # Multiple spaces between non-space characters
-            # Space around single hyphen (not at start of line)
-            # Space before single period (not at start of line and not decimal point)
-            # Space before exclamation mark, question mark, comma, colon, or semicolon
-            # Space before close or after open quotes (where unambiguous)
-            # Space before close or after open brackets
-            # Trailing spaces
-            # Thought break (possibly poorly formed)
-            # 1/l scanno, e.g. llth
-            fixup_regexes = {
-                "Multiple spaces: ": r"(\S\s{2,})(?=\S)",  # Capture character before too
-                "Spaced hyphen: ": r"\S( +- *)(?!-)|(?<!-)( *- +)",
-                "Spaced period: ": r"\S( +\.)(?![\d\.])",
-                "Spaced exclamation mark: ": r"( +!)",
-                "Spaced question mark: ": r"( +\?)",
-                "Spaced comma: ": r"( +,)",
-                "Spaced colon: ": r"( +:)",
-                "Spaced semicolon: ": r"( +;)",
-                "Spaced open quote: ": r'(^" +|[‘“] +)',
-                "Spaced close quote: ": r'( +"$| +”)',
-                "Spaced open bracket: ": r"([[({] )",
-                "Spaced close bracket: ": r"( [])}])",
-                "Trailing spaces: ": r"(.? +$)",
-                "Thought break: ": r"^(\s*(\*\s*){4,})$",
-                "1/l scanno: ": r"(?<!\p{Letter})(lst|llth)\b",
-                "Ellipsis spacing: ": r"(?<=[^\.\!\? \"'‘“])(\.{3})(?![\.\!\?])",
-                "Spaced guillemet: ": r"(«\s+|\s+»)",
-            }
-            # Some languages use inward pointing guillemets - catch most of them.
-            # Do inward check if first language is one of these, or English with one of these.
-            inward_langs = r"(de|hr|cs|da|hu|pl|sr|sk|sl|sv)"
-            languages = maintext().get_language_list()
-            if re.match(inward_langs, languages[0]) or (
-                re.match("en", languages[0])
-                and any(re.match(inward_langs, lang) for lang in languages)
-            ):
-                fixup_regexes["Spaced guillemet: "] = r"(»\s+|\s+«)"
-
             for prefix, regex in fixup_regexes.items():
-                for match in re.finditer(regex, test_line):
+                # Skip "multiple space" check for thought breaks
+                if prefix == "Multiple spaces: " and fixup_regexes[
+                    "Thought break: "
+                ].fullmatch(test_line):
+                    continue
+                for match in regex.finditer(test_line):
                     group = 2 if match[1] is None else 1
                     self.dialog.add_entry(
                         line,
