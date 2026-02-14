@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
 import argparse
+import copy
 from dataclasses import dataclass
 import difflib
 import logging
@@ -113,6 +114,11 @@ class PPcompCheckerDialog(CheckerDialog):
             text="Choose Text File",
             command=lambda: self.choose_file(html=False),
         ).grid(row=1, column=1, sticky="EW", padx=(5, 0))
+        ttk.Button(
+            fn_frame,
+            text="Switch File",
+            command=self.switch_file,
+        ).grid(row=0, column=2, rowspan=2, sticky="NSEW", padx=(5, 0))
 
         frame = ttk.Frame(self.custom_frame)
         frame.grid(row=1, column=0, sticky="NSEW")
@@ -290,7 +296,7 @@ class PPcompCheckerDialog(CheckerDialog):
         self, auto_select_line: bool = True, complete_msg: bool = True
     ) -> None:
         """Display entries and convert flag chars to Tk tags"""
-        super().display_entries()
+        super().display_entries(auto_select_line, complete_msg)
 
         for left, right, tag in [
             (FLAG_CH_HTML_L, FLAG_CH_HTML_R, HighlightTag.PPCOMP_HTML),
@@ -310,6 +316,53 @@ class PPcompCheckerDialog(CheckerDialog):
                 self.text.delete(start_idx, f"{start_idx}+1c")
 
                 start = end_idx
+
+    def switch_file(self) -> None:
+        """Switch between text and HTML file, then re-display dialog."""
+        # Save entries, because loading file will clear this dialog & hence the entries
+        save_entries = copy.deepcopy(self.entries)
+        save_sel_idx = self.current_entry_index()
+        # Check if currently HTML loaded
+        html_loaded = os.path.splitext(the_file().filename)[1].lower() in (
+            ".htm",
+            ".html",
+            "xhtml",
+        )
+        new_file = preferences.get(
+            PrefKey.PPCOMP_TEXT_FILE if html_loaded else PrefKey.PPCOMP_HTML_FILE
+        )
+        if not (new_file and os.path.isfile(new_file)):
+            logger.error(f"File {new_file} does not exist")
+            return
+        the_file().open_file(new_file)
+
+        # Create a new checker, with its own dialog
+        checker = PPcompChecker()
+        for entry in save_entries:
+            # Is it a diff?
+            if entry.text_range:
+                # Swap text/HTML ranges
+                match = re.match(r"(\d+\.\d+)(:.+)", entry.text)
+                assert match is not None
+                entry.text = f"{entry.text_range.start.index()}{match.group(2)}"
+                entry.text_range = IndexRange(match.group(1), match.group(1))
+                # Add entry to new dialog using saved & modified entry from old dialog
+                checker.dialog.add_entry(
+                    entry.text,
+                    entry.text_range,
+                    entry.hilite_start,
+                    entry.hilite_end,
+                    entry.entry_type,
+                    entry.error_prefix,
+                    entry.ep_index,
+                    entry.severity,
+                )
+            else:
+                # Not a diff - must be a header ("FOOTNOTES")
+                checker.dialog.add_header(entry.text)
+        checker.dialog.display_entries()
+        if save_sel_idx is not None:
+            checker.dialog.select_entry_by_index(save_sel_idx)
 
 
 class PPcompChecker:
