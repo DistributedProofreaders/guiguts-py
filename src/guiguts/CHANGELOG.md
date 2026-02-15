@@ -1,6 +1,24 @@
 # Changelog
 
 
+## Version 2.0.17
+
+- PPcomp has a `Switch File` button to facilitate switching between editing
+  text and HTML files
+- PPcomp listing improved to consolidate some italic differences
+- Number of Bookloupe & PPtext false positives reduced 
+- Basic Fixup no longer reports multiple spaces in thought breaks
+- `LaTeX-->Convert using m2svg` entry added to File menu
+- `LaTeX-->Revert unwanted autogen changes` also added 
+
+### Bug fixes
+
+- In `/$` blocks, multiple spaces were not being preserved using `&nbsp;`
+- Auto-illus   dialog `px` mode was not using the correct pixel width value
+- PPcomp sometimes appeared busy/working, even when finished processing
+- PPhtml highlighted "ERROR" in the word "TERROR" in a chapter title
+
+
 ## Version 2.0.16
 
 - Fix All and Hide All in Regex Library reverted to work on all messages
