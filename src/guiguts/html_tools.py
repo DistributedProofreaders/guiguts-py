@@ -1606,7 +1606,9 @@ class EbookmakerCheckerAPI:
 
         # Get each generated file (e.g. 99999-epub.epub) & save in project folder (e.g. myfile-epub.epub)
         for key, ftype in ftypes.items():
-            if not preferences.get(PrefKey.EBOOKMAKER_ALL) and not preferences.get(key):  # Only get if user requested it
+            if not preferences.get(PrefKey.EBOOKMAKER_ALL) and not preferences.get(
+                key
+            ):  # Only get if user requested it
                 continue
 
             get_name = f"{ebooknum}-{ftype}"
