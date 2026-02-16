@@ -143,6 +143,7 @@ class PrefKey(StrEnum):
     EBOOKMAKER_EPUB3 = auto()
     EBOOKMAKER_KINDLE = auto()
     EBOOKMAKER_KF8 = auto()
+    EBOOKMAKER_ALL = auto()
     EBOOKMAKER_VERBOSE_OUTPUT = auto()
     BACKUPS_ENABLED = auto()
     AUTOSAVE_ENABLED = auto()

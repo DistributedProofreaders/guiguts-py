@@ -687,6 +687,7 @@ class Guiguts:
         preferences.set_default(PrefKey.EBOOKMAKER_EPUB3, True)
         preferences.set_default(PrefKey.EBOOKMAKER_KINDLE, False)
         preferences.set_default(PrefKey.EBOOKMAKER_KF8, False)
+        preferences.set_default(PrefKey.EBOOKMAKER_ALL, False)
         preferences.set_default(PrefKey.EBOOKMAKER_VERBOSE_OUTPUT, False)
         preferences.set_default(PrefKey.BACKUPS_ENABLED, True)
         preferences.set_default(PrefKey.AUTOSAVE_ENABLED, False)

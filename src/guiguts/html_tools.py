@@ -11,6 +11,7 @@ from tkinter import ttk
 from typing import Optional, Any
 import xml.sax
 import shutil
+import webbrowser
 import zipfile
 
 from PIL import Image, ImageTk, UnidentifiedImageError
@@ -1254,28 +1255,61 @@ class EbookmakerCheckerDialog(CheckerDialog):
         )
         format_frame = ttk.Frame(self.custom_frame)
         format_frame.grid(row=1, column=1, sticky="NSW", pady=5)
-        ttk.Checkbutton(
+        e2_btn = ttk.Checkbutton(
             format_frame,
             text="EPUB 2",
             variable=PersistentBoolean(PrefKey.EBOOKMAKER_EPUB2),
-        ).grid(column=0, row=0, sticky="NSW", padx=5)
-        ttk.Checkbutton(
+        )
+        e2_btn.grid(column=0, row=0, sticky="NSW", padx=5)
+        e3_btn = ttk.Checkbutton(
             format_frame,
             text="EPUB 3",
             variable=PersistentBoolean(PrefKey.EBOOKMAKER_EPUB3),
-        ).grid(column=1, row=0, sticky="NSW", padx=5)
-        ttk.Checkbutton(
+        )
+        e3_btn.grid(column=1, row=0, sticky="NSW", padx=5)
+        k_btn = ttk.Checkbutton(
             format_frame,
             text="Kindle",
             variable=PersistentBoolean(PrefKey.EBOOKMAKER_KINDLE),
-        ).grid(column=2, row=0, sticky="NSW", padx=5)
-        ttk.Checkbutton(
+        )
+        k_btn.grid(column=2, row=0, sticky="NSW", padx=5)
+        k8_btn = ttk.Checkbutton(
             format_frame,
             text="KF8",
             variable=PersistentBoolean(PrefKey.EBOOKMAKER_KF8),
-        ).grid(column=3, row=0, sticky="NSW", padx=5)
+        )
+        k8_btn.grid(column=3, row=0, sticky="NSW", padx=5)
 
-        if not api:
+        def toggle_all() -> None:
+            """Enable/disable format buttons based on "all" flag."""
+            state = (
+                tk.DISABLED if preferences.get(PrefKey.EBOOKMAKER_ALL) else tk.NORMAL
+            )
+            for btn in (e2_btn, e3_btn, k_btn, k8_btn):
+                btn["state"] = state
+
+        if api:
+            self.custom_frame.columnconfigure(2, weight=1)
+            all_btn = ttk.Checkbutton(
+                self.custom_frame,
+                text="All Formats",
+                variable=PersistentBoolean(PrefKey.EBOOKMAKER_ALL),
+                command=toggle_all,
+            )
+            all_btn.grid(column=2, row=1, sticky="NSW", padx=5)
+            ToolTip(
+                all_btn,
+                "Ignore format settings and create all online ebookmaker formats",
+            )
+            self.cache_btn = ttk.Button(
+                self.custom_frame,
+                text="Open Cache in Browser",
+                command=lambda: None,
+                state=tk.DISABLED,
+            )
+            self.cache_btn.grid(column=3, row=1, sticky="NSE")
+            toggle_all()
+        else:
             verbose_frame = ttk.Frame(self.custom_frame)
             verbose_frame.grid(row=1, column=2, sticky="NSE", pady=5)
             ttk.Checkbutton(
@@ -1434,6 +1468,8 @@ class EbookmakerCheckerAPI:
     def run(self) -> None:
         """Run ebookmaker using API."""
         self.dialog.reset()
+        self.dialog.cache_btn["command"] = lambda: None
+        self.dialog.cache_btn["state"] = tk.DISABLED
 
         def report_exception(message: str, exc: Exception | str) -> None:
             """Report exception to user and suggest manual conversion.
@@ -1451,16 +1487,19 @@ class EbookmakerCheckerAPI:
 
         timeout = 900
 
-        build = []
         # Create list of formats to build
-        if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
-            build.append("epub")
-        if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
-            build.append("epub3")
-        if preferences.get(PrefKey.EBOOKMAKER_KINDLE):
-            build.append("kindle")
-        if preferences.get(PrefKey.EBOOKMAKER_KF8):
-            build.append("kf8")
+        if preferences.get(PrefKey.EBOOKMAKER_ALL):
+            build = ["txt.utf-8", "epub", "epub3", "kindle", "kf8", "html"]
+        else:
+            build = []
+            if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
+                build.append("epub")
+            if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
+                build.append("epub3")
+            if preferences.get(PrefKey.EBOOKMAKER_KINDLE):
+                build.append("kindle")
+            if preferences.get(PrefKey.EBOOKMAKER_KF8):
+                build.append("kf8")
         if not build:
             logger.error("You must select at least one format to be built")
             self.dialog.display_entries()
@@ -1594,6 +1633,10 @@ class EbookmakerCheckerAPI:
 
             with open(os.path.join(proj_dir, put_name), mode="wb") as wfile:
                 wfile.write(response.content)
+
+        # Configure button to open cache in browser
+        self.dialog.cache_btn["command"] = lambda: webbrowser.open(output_dir)
+        self.dialog.cache_btn["state"] = tk.NORMAL
 
         self.dialog.display_entries()
 
