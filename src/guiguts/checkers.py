@@ -365,13 +365,13 @@ class CheckerDialog(ToplevelDialog):
         else:
             self.suspects_only_btn = None
 
-        sort_frame = ttk.Frame(count_header_frame)
-        sort_frame.grid(row=0, column=2, sticky="NS", pady=5)
-        sort_frame.rowconfigure(0, weight=1)
+        self.sort_frame = ttk.Frame(count_header_frame)
+        self.sort_frame.grid(row=0, column=2, sticky="NS", pady=5)
+        self.sort_frame.rowconfigure(0, weight=1)
         for cc in range(0, 2):
-            sort_frame.columnconfigure(cc, weight=1)
+            self.sort_frame.columnconfigure(cc, weight=1)
         ttk.Label(
-            sort_frame,
+            self.sort_frame,
             text="Sort:",
         ).grid(row=0, column=0, sticky="NS", padx=5)
 
@@ -387,7 +387,7 @@ class CheckerDialog(ToplevelDialog):
             self.display_entries()
 
         self.rowcol_radio = ttk.Radiobutton(
-            sort_frame,
+            self.sort_frame,
             text="Line & Col",
             command=sort_type_changed,
             variable=sort_type,
@@ -395,7 +395,7 @@ class CheckerDialog(ToplevelDialog):
         )
         self.rowcol_radio.grid(row=0, column=1, sticky="NS", padx=2)
         ttk.Radiobutton(
-            sort_frame,
+            self.sort_frame,
             text="Alpha/Type",
             command=sort_type_changed,
             variable=sort_type,
@@ -403,7 +403,7 @@ class CheckerDialog(ToplevelDialog):
         ).grid(row=0, column=2, sticky="NS", padx=2)
         if sort_custom_label:
             ttk.Radiobutton(
-                sort_frame,
+                self.sort_frame,
                 text=sort_custom_label,
                 command=sort_type_changed,
                 variable=sort_type,

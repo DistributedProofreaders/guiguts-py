@@ -687,6 +687,7 @@ class Guiguts:
         preferences.set_default(PrefKey.EBOOKMAKER_EPUB3, True)
         preferences.set_default(PrefKey.EBOOKMAKER_KINDLE, False)
         preferences.set_default(PrefKey.EBOOKMAKER_KF8, False)
+        preferences.set_default(PrefKey.EBOOKMAKER_ALL, False)
         preferences.set_default(PrefKey.EBOOKMAKER_VERBOSE_OUTPUT, False)
         preferences.set_default(PrefKey.BACKUPS_ENABLED, True)
         preferences.set_default(PrefKey.AUTOSAVE_ENABLED, False)
@@ -1280,13 +1281,13 @@ class Guiguts:
             "Cmd/Ctrl+I",
         )
         tools_menu.add_separator()
-        tools_menu.add_button("PP~comp", PPcompChecker)
+        tools_menu.add_button("PP~comp...", PPcompChecker)
         tools_menu.add_button(
             "PP Wor~kbench (opens in browser)",
             lambda: webbrowser.open("https://www.pgdp.net/ppwb/"),
         )
         tools_menu.add_button(
-            "Google Books Ngram ~Viewer",
+            "Google Books Ngram ~Viewer (opens in browser)",
             open_ngram,
         )
 
@@ -1331,12 +1332,8 @@ class Guiguts:
         html_menu.add_button("HTML5 ~Validator (online)", lambda: HTMLValidator().run())
         html_menu.add_button("~CSS Validator (online)", lambda: CSSValidator().run())
         html_menu.add_separator()
-        html_menu.add_button(
-            "~Ebookmaker (local installation)", lambda: EbookmakerChecker().run()
-        )
-        html_menu.add_button(
-            "Ebookmaker (online using ~API)", lambda: EbookmakerCheckerAPI().run()
-        )
+        html_menu.add_button("~Ebookmaker (local installation)...", EbookmakerChecker)
+        html_menu.add_button("Ebookmaker (online using ~API)...", EbookmakerCheckerAPI)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""
