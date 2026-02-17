@@ -1332,12 +1332,8 @@ class Guiguts:
         html_menu.add_button("HTML5 ~Validator (online)", lambda: HTMLValidator().run())
         html_menu.add_button("~CSS Validator (online)", lambda: CSSValidator().run())
         html_menu.add_separator()
-        html_menu.add_button(
-            "~Ebookmaker (local installation)", lambda: EbookmakerChecker().run()
-        )
-        html_menu.add_button(
-            "Ebookmaker (online using ~API)", lambda: EbookmakerCheckerAPI().run()
-        )
+        html_menu.add_button("~Ebookmaker (local installation)", EbookmakerChecker)
+        html_menu.add_button("Ebookmaker (online using ~API)", EbookmakerCheckerAPI)
 
     def init_view_menu(self) -> None:
         """Create the View menu."""

@@ -1225,6 +1225,7 @@ class EbookmakerCheckerDialog(CheckerDialog):
             ),
             **kwargs,
         )
+        self.rerun_button["text"] = "Run Ebookmaker"
 
         if not api:
 
@@ -1292,14 +1293,15 @@ class EbookmakerCheckerDialog(CheckerDialog):
             self.custom_frame.columnconfigure(2, weight=1)
             all_btn = ttk.Checkbutton(
                 self.custom_frame,
-                text="All Formats",
+                text="Create All Formats at PG",
                 variable=PersistentBoolean(PrefKey.EBOOKMAKER_ALL),
                 command=toggle_all,
             )
-            all_btn.grid(column=2, row=1, sticky="NSW", padx=5)
+            all_btn.grid(column=2, row=1, sticky="NS", padx=5)
             ToolTip(
                 all_btn,
-                "Ignore format settings and create all online ebookmaker formats",
+                "Create all formats in online ebookmaker cache.\n"
+                "Required files must be manually downloaded from cache.",
             )
             self.cache_btn = ttk.Button(
                 self.custom_frame,
@@ -1606,7 +1608,8 @@ class EbookmakerCheckerAPI:
 
         # Get each generated file (e.g. 99999-epub.epub) & save in project folder (e.g. myfile-epub.epub)
         for key, ftype in ftypes.items():
-            if not preferences.get(PrefKey.EBOOKMAKER_ALL) and not preferences.get(
+            # Don't download files if "All formats" flag is set - user can get them manually from cache
+            if preferences.get(PrefKey.EBOOKMAKER_ALL) or not preferences.get(
                 key
             ):  # Only get if user requested it
                 continue
