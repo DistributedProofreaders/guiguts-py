@@ -1320,6 +1320,11 @@ class EbookmakerCheckerDialog(CheckerDialog):
                 variable=PersistentBoolean(PrefKey.EBOOKMAKER_VERBOSE_OUTPUT),
             ).grid(column=0, row=0, sticky="NSE")
 
+        self.sort_frame.grid_forget()
+
+        self.update_count_label(False)
+        Busy.unbusy()
+
 
 class EbookmakerChecker:
     """Ebookmaker checker."""
