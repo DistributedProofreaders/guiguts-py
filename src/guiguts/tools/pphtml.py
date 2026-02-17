@@ -1294,7 +1294,7 @@ class PPhtmlChecker:
                         self.idx_range(line_num, match),
                     )
                 )
-            if match := re.search(r"\[\*\*([^]]|\n)*]", line):
+            for match in re.finditer(r"\[\*\*([^]])*]", line):
                 errors.append(
                     (
                         "Proofer comment",

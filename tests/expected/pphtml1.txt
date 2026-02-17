@@ -40,50 +40,56 @@
 --- [info] Number of h3 tags (usually sections): 0 ---
 --- [info] Number of tables: 0 ---
 --- *FAIL* Special checks ---
-   8.1: Blank Page
- 436.1: Blank Page
- 590.1: Blank Page
- 805.1: Blank Page
- 848.0: Unconverted illustration
- 862.0: Unconverted illustration
- 872.0: Unconverted illustration
- 882.0: Unconverted illustration
- 892.0: Unconverted illustration
- 902.0: Unconverted illustration
- 911.0: Unconverted illustration
- 921.0: Unconverted illustration
- 930.0: Unconverted illustration
- 939.0: Unconverted illustration
- 998.0: Unconverted illustration
-1008.0: Unconverted illustration
-1018.0: Unconverted illustration
-1028.0: Unconverted illustration
-1039.0: Unconverted illustration
-1050.0: Unconverted illustration
-1061.0: Unconverted illustration
-1070.0: Unconverted illustration
-1080.0: Unconverted illustration
-1090.0: Unconverted illustration
-1102.0: Unconverted illustration
-1111.0: Unconverted illustration
-1164.0: Unconverted illustration
-1174.0: Unconverted illustration
-1184.0: Unconverted illustration
-1193.0: Unconverted illustration
-1202.0: Unconverted illustration
-1211.0: Unconverted illustration
-1220.0: Unconverted illustration
-1229.0: Unconverted illustration
-1239.0: Unconverted illustration
-1251.0: Unconverted illustration
-1262.0: Unconverted illustration
-1271.0: Unconverted illustration
-1310.0: Unconverted illustration
-1319.0: Unconverted illustration
-1329.0: Unconverted illustration
-1338.0: Unconverted illustration
-1347.0: Unconverted illustration
-1357.0: Unconverted illustration
+   8.1:  Blank Page
+ 119.26: Proofer comment
+ 436.1:  Blank Page
+ 590.1:  Blank Page
+ 629.10: Proofer comment
+ 805.1:  Blank Page
+ 821.30: Proofer comment
+ 848.0:  Unconverted illustration
+ 862.0:  Unconverted illustration
+ 872.0:  Unconverted illustration
+ 882.0:  Unconverted illustration
+ 892.0:  Unconverted illustration
+ 902.0:  Unconverted illustration
+ 911.0:  Unconverted illustration
+ 921.0:  Unconverted illustration
+ 930.0:  Unconverted illustration
+ 939.0:  Unconverted illustration
+ 961.33: Proofer comment
+ 998.0:  Unconverted illustration
+1008.0:  Unconverted illustration
+1018.0:  Unconverted illustration
+1028.0:  Unconverted illustration
+1039.0:  Unconverted illustration
+1050.0:  Unconverted illustration
+1061.0:  Unconverted illustration
+1070.0:  Unconverted illustration
+1080.0:  Unconverted illustration
+1090.0:  Unconverted illustration
+1102.0:  Unconverted illustration
+1111.0:  Unconverted illustration
+1115.17: Proofer comment
+1134.28: Proofer comment
+1164.0:  Unconverted illustration
+1174.0:  Unconverted illustration
+1184.0:  Unconverted illustration
+1193.0:  Unconverted illustration
+1202.0:  Unconverted illustration
+1211.0:  Unconverted illustration
+1220.0:  Unconverted illustration
+1229.0:  Unconverted illustration
+1239.0:  Unconverted illustration
+1251.0:  Unconverted illustration
+1262.0:  Unconverted illustration
+1271.0:  Unconverted illustration
+1310.0:  Unconverted illustration
+1319.0:  Unconverted illustration
+1329.0:  Unconverted illustration
+1338.0:  Unconverted illustration
+1347.0:  Unconverted illustration
+1357.0:  Unconverted illustration
 --- [info] Styles used ---
 
 Check complete
