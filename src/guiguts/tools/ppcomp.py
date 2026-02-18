@@ -41,7 +41,7 @@ import os
 import subprocess
 import tempfile
 import tkinter as tk
-from tkinter import ttk, font
+from tkinter import ttk, font, messagebox
 from typing import Optional, Any, cast
 import warnings
 
@@ -262,9 +262,6 @@ class PPcompCheckerDialog(CheckerDialog):
         text_frame.columnconfigure(0, weight=1)
         text_frame.rowconfigure(0, weight=1)
 
-        self.update_count_label(False)
-        Busy.unbusy()
-
     def choose_file(self, html: bool) -> None:
         """Choose an HTML or text file."""
         if html:
@@ -373,40 +370,71 @@ class PPcompChecker:
     def __init__(self) -> None:
         """Initialize PPcomp checker."""
         self.dialog = PPcompCheckerDialog.show_dialog(rerun_command=self.run)
+        self.dialog.update_count_label(False)
+        Busy.unbusy()
 
     def run(self) -> None:
         """Run PPcomp."""
+
+        def lift_and_unbusy() -> None:
+            self.dialog.lift()
+            Busy.unbusy()
+
         if preferences.get(PrefKey.PPCOMP_EXTRACT_FOOTNOTES) and preferences.get(
             PrefKey.PPCOMP_SUPPRESS_FOOTNOTES
         ):
             logger.error("Cannot use both Extract Footnotes and Suppress Footnote Tags")
+            lift_and_unbusy()
             return
 
         empty_args: list[str] = []
         PPcompChecker.files = []
         PPcompChecker.files.append(PgdpFileHtml(empty_args))
         PPcompChecker.files.append(PgdpFileText(empty_args))
-        fname = preferences.get(PrefKey.PPCOMP_HTML_FILE)
-        if not (fname and os.path.isfile(fname)):
-            Busy.unbusy()
-            logger.error(f"File {fname} does not exist")
+        fname_h = preferences.get(PrefKey.PPCOMP_HTML_FILE)
+        fname_t = preferences.get(PrefKey.PPCOMP_TEXT_FILE)
+        if not (fname_h and fname_t):
+            lift_and_unbusy()
+            return
+        if not os.path.isfile(fname_h):
+            logger.error(f"File {fname_h} does not exist")
+            lift_and_unbusy()
+            return
+        if not os.path.isfile(fname_t):
+            logger.error(f"File {fname_t} does not exist")
+            lift_and_unbusy()
+            return
+        # If either of the files is being edited & is modified, allow user to save first
+        fname = the_file().filename
+        if maintext().is_modified() and (
+            os.path.samefile(fname, fname_h) or os.path.samefile(fname, fname_t)
+        ):
+            save = messagebox.askyesnocancel(
+                title="Save document?",
+                message="Save changes to document first?",
+                detail="Comparison will not include any unsaved changes.",
+                icon=messagebox.WARNING,
+            )
+            # If Cancel from messagebox, return & do nothing
+            # If No from messagebox, continue to run tool without saving file
+            # If Yes from messagebox, save file before running tool
+            # if Cancel from save-as dialog (probably can't happen since we have a filename), return & do nothing
+            if save is None or save and not the_file().save_file():
+                self.dialog.lift()
+                lift_and_unbusy()
+                return
+
+        try:
+            PPcompChecker.files[0].load(fname_h)
+        except (FileNotFoundError, SyntaxError) as exc:
+            logger.error(exc)
+            lift_and_unbusy()
             return
         try:
-            PPcompChecker.files[0].load(fname)
+            PPcompChecker.files[1].load(fname_t)
         except (FileNotFoundError, SyntaxError) as exc:
-            Busy.unbusy()
             logger.error(exc)
-            return
-        fname = preferences.get(PrefKey.PPCOMP_TEXT_FILE)
-        if not (fname and os.path.isfile(fname)):
-            Busy.unbusy()
-            logger.error(f"File {fname} does not exist")
-            return
-        try:
-            PPcompChecker.files[1].load(fname)
-        except (FileNotFoundError, SyntaxError) as exc:
-            Busy.unbusy()
-            logger.error(exc)
+            lift_and_unbusy()
             return
         for f in PPcompChecker.files:
             f.cleanup()

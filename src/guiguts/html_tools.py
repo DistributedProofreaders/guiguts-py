@@ -1322,9 +1322,6 @@ class EbookmakerCheckerDialog(CheckerDialog):
 
         self.sort_frame.grid_forget()
 
-        self.update_count_label(False)
-        Busy.unbusy()
-
 
 class EbookmakerChecker:
     """Ebookmaker checker."""
@@ -1340,6 +1337,8 @@ class EbookmakerChecker:
             sort_key_alpha=ebookmaker_sort_key_type,
             show_suspects_only=True,
         )
+        self.dialog.update_count_label(False)
+        Busy.unbusy()
 
     def run(self) -> None:
         """Run ebookmaker"""
@@ -1471,6 +1470,8 @@ class EbookmakerCheckerAPI:
             sort_key_alpha=ebookmaker_sort_key_type,
             show_suspects_only=True,
         )
+        self.dialog.update_count_label(False)
+        Busy.unbusy()
 
     def run(self) -> None:
         """Run ebookmaker using API."""
