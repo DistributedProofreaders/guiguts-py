@@ -1294,6 +1294,13 @@ class PPhtmlChecker:
                         self.idx_range(line_num, match),
                     )
                 )
+            for match in re.finditer(r"\[\*\*([^]])*]?", line):
+                errors.append(
+                    (
+                        "Proofer comment",
+                        self.idx_range(line_num, match),
+                    )
+                )
         self.output_subsection_errors(
             len(errors) == 0,
             "Special checks",
