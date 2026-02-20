@@ -71,6 +71,7 @@ FLAG_CH_TEXT_L = "⦕"
 FLAG_CH_TEXT_R = "⦖"
 NO_SPACE_BEFORE = "])}.,:;!?"
 NO_SPACE_AFTER = "[({"
+PAIR_RE = re.compile(r"⦕(.*?)⦖\s+⦓(.*?)⦔")
 
 
 class PPcompCheckerDialog(CheckerDialog):
@@ -490,8 +491,8 @@ def tokenize_with_lines(text: str) -> list[Token]:
     tokens: list[Token] = []
 
     for lineno, line in enumerate(text.splitlines(), start=1):
-        for m in TOKEN_RE.finditer(line):
-            tokens.append(Token(m.group(), lineno))
+        for word in line.split():
+            tokens.append(Token(word, lineno))
 
     return tokens
 
@@ -644,45 +645,10 @@ def render_marked_diff(
     if cur_line and line_has_change:
         lines.append((join_tokens(cur_line), cur_linenum))
 
-    underscore_reg = (
-        f"[{FLAG_CH_HTML_L}{FLAG_CH_TEXT_L}]_[{FLAG_CH_HTML_R}{FLAG_CH_TEXT_R}]"
-    )
     # ---- Send to the dialog ----
-    for lnum, (text, line_pair) in enumerate(lines):
+    for text, line_pair in lines:
         if line_pair is None:
             continue
-        # If there is another line after this one, look for the following circumstances:
-        # 1. Next line is also the next line in the text file
-        # 2. This line is just an underscore (plus flags)
-        # 3. Next line has an underscore at the end
-        if lnum < len(lines) - 1:
-            next_text, next_line_pair = lines[lnum + 1]
-            if (
-                next_line_pair is not None
-                and line_pair[1] + 1 == next_line_pair[1]  # Next line in text file?
-                and re.fullmatch(
-                    underscore_reg,  # Just an underscore
-                    text,
-                )
-                and re.search(f"{underscore_reg}$", next_text)  # Ends in underscore
-            ):
-                # Bring info up from next line onto this one
-                text = f"{text} {next_text}"
-                line_pair = next_line_pair
-                lines[lnum] = (text, line_pair)
-                # Nullify next line so it is ignore next time round loop
-                lines[lnum + 1] = (next_text, None)
-        # If there is a line before this one, look for the following circumstances:
-        # 1. This line is just an underscore (plus flags)
-        # 2. Next line has an underscore at the end
-        if lnum > 0:
-            prev_text = lines[lnum - 1][0]
-            if re.fullmatch(underscore_reg, text) and re.search(
-                f"{underscore_reg}$", prev_text
-            ):
-                # Increment text line number
-                line_pair = (line_pair[0], line_pair[1] + 1)
-                lines[lnum] = (text, line_pair)
 
         a_line, b_line = line_pair
         if html_ln:
@@ -698,7 +664,77 @@ def render_marked_diff(
                 index = None
             sub_line = f"{a_line}.0: " if a_line else ""
 
+        text = refine_punctuation_diffs(text)
         dialog.add_entry(f"{sub_line}{text}", index)
+
+
+def longest_common_prefix(a: str, b: str) -> int:
+    """Get longest common prefix"""
+    i = 0
+    maxlen = min(len(a), len(b))
+    while i < maxlen and a[i] == b[i]:
+        i += 1
+    return i
+
+
+def longest_common_suffix(a: str, b: str) -> int:
+    """Get longest common suffix"""
+    i = 0
+    maxlen = min(len(a), len(b))
+    while i < maxlen and a[-(i + 1)] == b[-(i + 1)]:
+        i += 1
+    return i
+
+
+def refine_punctuation_diffs(line: str) -> str:
+    """Refined diff output to avoid marking whole of "word" when it's
+    just leading/trailing punctuation."""
+
+    def replace(match: re.Match) -> str:
+        a = match.group(1)
+        b = match.group(2)
+
+        # Find common prefix
+        prefix_len = longest_common_prefix(a, b)
+
+        # Remove prefix for suffix comparison
+        a_rem = a[prefix_len:]
+        b_rem = b[prefix_len:]
+
+        # Find common suffix
+        suffix_len = longest_common_suffix(a_rem, b_rem)
+
+        # Avoid overlapping prefix/suffix
+        if suffix_len > len(a_rem) or suffix_len > len(b_rem):
+            suffix_len = 0
+
+        # Split parts
+        prefix = a[:prefix_len]
+        suffix = a[len(a) - suffix_len :] if suffix_len else ""
+
+        a_mid = a[prefix_len : len(a) - suffix_len if suffix_len else len(a)]
+        b_mid = b[prefix_len : len(b) - suffix_len if suffix_len else len(b)]
+
+        # If nothing refined, leave unchanged
+        if not prefix and not suffix:
+            return match.group(0)
+
+        parts = []
+        # Prefix stays unmarked
+        parts.append(prefix)
+
+        # Middle difference
+        if a_mid:
+            parts.append(f"⦕{a_mid}⦖")
+        if b_mid:
+            parts.append(f"⦓{b_mid}⦔")
+
+        # Suffix stays unmarked
+        parts.append(suffix)
+
+        return "".join(parts)
+
+    return PAIR_RE.sub(replace, line)
 
 
 ###############################################################
