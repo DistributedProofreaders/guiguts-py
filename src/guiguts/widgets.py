@@ -1532,7 +1532,7 @@ class AskStringDialog(tk.Toplevel):
         super().__init__(parent)
         self.withdraw()
         self.title(title)
-        self.transient(root())
+        self.transient(parent)  # type: ignore[arg-type]
         self.resizable(False, False)
 
         self.result: Optional[str] = None
