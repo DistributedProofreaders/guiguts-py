@@ -332,7 +332,7 @@ class PPcompCheckerDialog(CheckerDialog):
         html_loaded = os.path.splitext(the_file().filename)[1].lower() in (
             ".htm",
             ".html",
-            "xhtml",
+            ".xhtml",
         )
         new_file = preferences.get(
             PrefKey.PPCOMP_TEXT_FILE if html_loaded else PrefKey.PPCOMP_HTML_FILE
@@ -443,7 +443,7 @@ class PPcompChecker:
             if os.path.splitext(the_file().filename)[1].lower() in (
                 ".htm",
                 ".html",
-                "xhtml",
+                ".xhtml",
             ):
                 self.dialog.add_header(
                     "Fix the errors below before re-running ppcomp", ""
@@ -646,7 +646,7 @@ def render_marked_diff(
     html_ln = os.path.splitext(the_file().filename)[1].lower() in (
         ".htm",
         ".html",
-        "xhtml",
+        ".xhtml",
     )
     line_has_change = False
     a_line = html_file_start + 1
