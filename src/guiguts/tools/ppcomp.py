@@ -58,7 +58,7 @@ from guiguts.preferences import (
     PersistentBoolean,
     preferences,
 )
-from guiguts.utilities import is_windows, IndexRowCol, IndexRange, sing_plur
+from guiguts.utilities import is_windows, IndexRowCol, IndexRange
 from guiguts.widgets import ToolTip, Busy, PathnameCombobox, FileDialog
 
 logger = logging.getLogger(__package__)
@@ -75,8 +75,10 @@ PAIR_RE = re.compile(r"⦕(.*?)⦖\s+⦓(.*?)⦔")
 
 
 class HTMLSyntaxError(SyntaxError):
+    """Exception for when HTML file fails to parse."""
+
     def __init__(self, errors):
-        super().__init__(f"Failed to parse HTML file")
+        super().__init__("Failed to parse HTML file")
         self.parse_errors = errors
 
 
@@ -1327,7 +1329,7 @@ class PgdpFileHtml(PgdpFile):
         super().load(filename)
         if self.text.find("<!DOCTYPE html>", 0, 100) < 0:
             raise SyntaxError(
-                f'Only HTML5 supported - must begin with "<!DOCTYPE html>"'
+                'Only HTML5 supported - must begin with "<!DOCTYPE html>"'
             )
         try:
             self.tree, errors = self.parse_html5()
