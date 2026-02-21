@@ -349,9 +349,9 @@ class PPcompCheckerDialog(CheckerDialog):
             if entry.text_range:
                 # Swap text/HTML ranges
                 match = re.match(r"(\d+\.\d+)(:.+)", entry.text)
-                assert match is not None
-                entry.text = f"{entry.text_range.start.index()}{match.group(2)}"
-                entry.text_range = IndexRange(match.group(1), match.group(1))
+                if match:
+                    entry.text = f"{entry.text_range.start.index()}{match.group(2)}"
+                    entry.text_range = IndexRange(match.group(1), match.group(1))
                 # Add entry to new dialog using saved & modified entry from old dialog
                 checker.dialog.add_entry(
                     entry.text,
