@@ -58,7 +58,7 @@ from guiguts.preferences import (
     PersistentBoolean,
     preferences,
 )
-from guiguts.utilities import is_windows, IndexRowCol, IndexRange
+from guiguts.utilities import is_windows, IndexRowCol, IndexRange, sing_plur
 from guiguts.widgets import ToolTip, Busy, PathnameCombobox, FileDialog
 
 logger = logging.getLogger(__package__)
@@ -72,6 +72,12 @@ FLAG_CH_TEXT_R = "⦖"
 NO_SPACE_BEFORE = "])}.,:;!?"
 NO_SPACE_AFTER = "[({"
 PAIR_RE = re.compile(r"⦕(.*?)⦖\s+⦓(.*?)⦔")
+
+
+class HTMLSyntaxError(SyntaxError):
+    def __init__(self, errors):
+        super().__init__(f"Failed to parse HTML file")
+        self.parse_errors = errors
 
 
 class PPcompCheckerDialog(CheckerDialog):
@@ -427,6 +433,40 @@ class PPcompChecker:
 
         try:
             PPcompChecker.files[0].load(fname_h)
+        except HTMLSyntaxError as exc:
+            # Output parsing errors to dialog rather than logging an error
+            self.dialog.reset()
+            self.dialog.add_header(str(exc))
+            # Tailor header message to whether text or HTML file is loaded
+            if os.path.splitext(the_file().filename)[1].lower() in (
+                ".htm",
+                ".html",
+                "xhtml",
+            ):
+                self.dialog.add_header(
+                    "Fix the errors below before re-running ppcomp", ""
+                )
+            else:
+                self.dialog.add_header(
+                    'First, use "Switch File" to load HTML file.',
+                    "Then fix the errors below before re-running ppcomp",
+                    "",
+                )
+            # Extract line & column, message and optional supplementary data (dict)
+            # Display in dialog
+            for (line, col), msg, data in exc.parse_errors:
+                if data and isinstance(data, dict):
+                    extra = " (" + ", ".join(f"{k}={v}" for k, v in data.items()) + ")"
+                else:
+                    extra = ""
+                self.dialog.add_entry(
+                    f"{msg}{extra}",
+                    IndexRange(
+                        IndexRowCol(line, max(col - 1, 0)), IndexRowCol(line, col)
+                    ),
+                )
+            self.dialog.display_entries()
+            return
         except (FileNotFoundError, SyntaxError) as exc:
             logger.error(exc)
             lift_and_unbusy()
@@ -1263,8 +1303,7 @@ class PgdpFileHtml(PgdpFile):
     def parse_html5(self):
         """Parse an HTML5 doc"""
         # don't include namespace in elements
-        # suppress stderr printed warnings - we report failure to parse via exception
-        myparser = html5parser.HTMLParser(namespaceHTMLElements=False, strict=True)
+        myparser = html5parser.HTMLParser(namespaceHTMLElements=False)
         # without parser this works for all html, but we have to remove namespace
         # & don't get the errors list
         tree = html5parser.document_fromstring(self.text, parser=myparser)
@@ -1286,17 +1325,16 @@ class PgdpFileHtml(PgdpFile):
         if not filename.lower().endswith((".html", ".htm", ".xhtml")):
             raise SyntaxError("Not an html file: " + filename)
         super().load(filename)
+        if self.text.find("<!DOCTYPE html>", 0, 100) < 0:
+            raise SyntaxError(
+                f'Only HTML5 supported - must begin with "<!DOCTYPE html>"'
+            )
         try:
-            if 0 <= self.text.find("<!DOCTYPE html>", 0, 100):  # limit search
-                self.tree, errors = self.parse_html5()
-            else:
-                self.tree, errors = self.parse_html()
+            self.tree, errors = self.parse_html5()
         except Exception as ex:
-            raise SyntaxError("File cannot be parsed: " + filename) from ex
+            raise SyntaxError(f"HTML file cannot be parsed: \n{ex}") from ex
         if errors:
-            for error in errors:
-                print(error)
-            raise SyntaxError("Parsing errors in document: " + filename)
+            raise HTMLSyntaxError(errors)
 
         # save line number of <body> tag - actual text start
         # html5parser does not fill in the source line number
