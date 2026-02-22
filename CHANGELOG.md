@@ -1,6 +1,32 @@
 # Changelog
 
 
+## Version 2.0.18
+
+- Ebookmaker no longer runs immediately the dialog is opened, thus allowing
+  user to select the options they want before the process begins
+- `Create All Formats at PG` checkbox added to Ebookmaker dialog. When checked,
+  all file formats are created on the PG Ebookmaker website, but not downloaded
+  to the user's system
+- `Open Cache in Browser` button added to Ebookmaker dialog. This opens the
+  Ebookmaker cache for the run of Ebookmaker that has just completed, giving
+  access to `output.txt` as well as the file formats created during that run
+- PPcomp output improved to avoid spaces around punctuation, apostrophes
+  and markup. Same differences reported as online ppcomp, though format of
+  output may differ
+- If file has been edited, but not saved, PPcomp prompts user to save so that
+  the current version is used in the comparison
+- If HTML file cannot be parsed, PPcomp now gives detailed error messages 
+- PPhtml now reports if `[**...]` proofer notes remain in the HTML file 
+
+### Bug fixes
+
+- Busy cursor & Working label were wrongly displayed if Ebookmaker or
+  PPcomp menu buttons were used when dialog was already visible
+- On Windows, using the Set Page Number dialog to set the page label caused
+  Configure Page Label dialog to be left behind the main window  
+
+
 ## Version 2.0.17
 
 - PPcomp has a `Switch File` button to facilitate switching between editing
