@@ -1113,7 +1113,7 @@ def strip_outer_lookarounds(pattern: str) -> str:
                     end = find_matching_paren(pattern, i)
                     if end == len(pattern) - 1:
                         pattern = pattern[:i] + "$"
-                    break
+                        break
         else:
             pattern = re.sub(r"\(\?<?[=!][^()]*\)$", "$", pattern)
 

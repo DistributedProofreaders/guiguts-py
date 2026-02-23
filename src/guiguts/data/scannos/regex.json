@@ -86,13 +86,13 @@
 "hint": "Find a word containing at least 5 consonants in a row"
 },
 {
-"match": "(\\p{Letter}*\\.)(?=\"?\\n *\"?\\p{Lower}+)",
-"replacement": ",\\1",
+"match": "(\\p{Letter}*)\\.(?=\"?\\n *\"?(?![cfprx]/)\\p{Lower}+)",
+"replacement": "\\1,",
 "hint": "Find a period with the following line starting with a lower case character and change the period to a comma"
 },
 {
-"match": "(?<!\\.\\.)(\\p{Letter}*\\.)(?= \\p{IsLower}+)",
-"replacement": ",\\1",
+"match": "(?<!\\.\\.)(\\p{Letter}*)\\.(?= \\p{IsLower}+)",
+"replacement": "\\1,",
 "hint": "Find a period followed by a space and a lower-case letter and replace it with a comma"
 },
 {
