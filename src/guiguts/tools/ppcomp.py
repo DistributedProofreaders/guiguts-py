@@ -761,6 +761,10 @@ def refine_punctuation_diffs(line: str) -> str:
         if not prefix and not suffix:
             return match.group(0)
 
+        # If split between two parts is mid-word, e.g. "C⦕opyright⦖⦓OPYRIGHT⦔", leave unchanged
+        if re.search(r"\p{Letter}$", a_mid) and re.search(r"^\p{Letter}", b_mid):
+            return match.group(0)
+
         parts = []
         # Prefix stays unmarked
         parts.append(prefix)
