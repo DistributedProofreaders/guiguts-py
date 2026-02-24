@@ -407,8 +407,8 @@ class HighlightTag(StrEnum):
     CHECKER_ERROR_PREFIX_1 = auto()
     CHECKER_WARNING = auto()
     WF_CHAR_HIGHLIGHT = auto()
-    PPCOMP_HTML = auto()
-    PPCOMP_TEXT = auto()
+    PPCOMP_COL_1 = auto()
+    PPCOMP_COL_2 = auto()
 
 
 # Dictionary to map HTML tags to HighlightTags
@@ -538,8 +538,8 @@ class ColorKey(StrEnum):
     CHECKER_ERROR_PREFIX_1 = auto()
     CHECKER_WARNING = auto()
     WF_CHAR_HIGHLIGHT = auto()
-    PPCOMP_HTML = auto()
-    PPCOMP_TEXT = auto()
+    PPCOMP_COL_1 = auto()
+    PPCOMP_COL_2 = auto()
 
 
 class ConfigurableColor:
@@ -4920,16 +4920,16 @@ class MainText(tk.Text):
                 {"background": "yellow", "foreground": "black"},
                 update_checker_tag,
             ),
-            ColorKey.PPCOMP_HTML: ConfigurableColor(
-                HighlightTag.PPCOMP_HTML,
-                "PPcomp HTML color",
+            ColorKey.PPCOMP_COL_1: ConfigurableColor(
+                HighlightTag.PPCOMP_COL_1,
+                "PPcomp File 1 color",
                 {"background": "#061626", "foreground": "#d506e8"},
                 {"background": "#f1f1f1", "foreground": "#7b0285"},
                 update_checker_tag,
             ),
-            ColorKey.PPCOMP_TEXT: ConfigurableColor(
-                HighlightTag.PPCOMP_TEXT,
-                "PPcomp Text color",
+            ColorKey.PPCOMP_COL_2: ConfigurableColor(
+                HighlightTag.PPCOMP_COL_2,
+                "PPcomp File 2 color",
                 {"background": "#061626", "foreground": "#10a000"},
                 {"background": "#f1f1f1", "foreground": "#0d7501"},
                 update_checker_tag,
@@ -5191,8 +5191,8 @@ class ScrolledReadOnlyText(tk.Text):
             err_col_1 = maintext().colors[ColorKey.CHECKER_ERROR_PREFIX_1]
             err_col_2 = maintext().colors[ColorKey.CHECKER_WARNING]
             wf_col = maintext().colors[ColorKey.WF_CHAR_HIGHLIGHT]
-            pp_html_col = maintext().colors[ColorKey.PPCOMP_HTML]
-            pp_text_col = maintext().colors[ColorKey.PPCOMP_TEXT]
+            ppcomp_1 = maintext().colors[ColorKey.PPCOMP_COL_1]
+            ppcomp_2 = maintext().colors[ColorKey.PPCOMP_COL_2]
             if themed_style().is_dark_theme():
                 self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.dark)
                 self.tag_configure(HighlightTag.CHECKER_HIGHLIGHT, hil_col.dark)
@@ -5206,8 +5206,8 @@ class ScrolledReadOnlyText(tk.Text):
                 del s_dict["background"]
                 self.tag_configure(HighlightTag.CHECKER_WARNING, s_dict)
                 self.tag_configure(HighlightTag.WF_CHAR_HIGHLIGHT, wf_col.dark)
-                self.tag_configure(HighlightTag.PPCOMP_HTML, pp_html_col.dark)
-                self.tag_configure(HighlightTag.PPCOMP_TEXT, pp_text_col.dark)
+                self.tag_configure(HighlightTag.PPCOMP_COL_1, ppcomp_1.dark)
+                self.tag_configure(HighlightTag.PPCOMP_COL_2, ppcomp_2.dark)
             else:
                 self.tag_configure(HighlightTag.CHECKER_SELECTION, line_col.light)
                 self.tag_configure(HighlightTag.CHECKER_HIGHLIGHT, hil_col.light)
@@ -5221,8 +5221,8 @@ class ScrolledReadOnlyText(tk.Text):
                 del s_dict["background"]
                 self.tag_configure(HighlightTag.CHECKER_WARNING, s_dict)
                 self.tag_configure(HighlightTag.WF_CHAR_HIGHLIGHT, wf_col.light)
-                self.tag_configure(HighlightTag.PPCOMP_HTML, pp_html_col.light)
-                self.tag_configure(HighlightTag.PPCOMP_TEXT, pp_text_col.light)
+                self.tag_configure(HighlightTag.PPCOMP_COL_1, ppcomp_1.light)
+                self.tag_configure(HighlightTag.PPCOMP_COL_2, ppcomp_2.light)
 
         # Since Text widgets don't normally listen to theme changes,
         # need to do it explicitly here.

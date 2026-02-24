@@ -782,10 +782,10 @@ class Guiguts:
             PrefKey.NGRAM_PARAMETERS, "&corpus=en-2019&year_start=1700&year_end=2000"
         )
         preferences.set_default(PrefKey.TOOLBAR_ICON_SIZE, 20)
-        preferences.set_default(PrefKey.PPCOMP_HTML_FILE, "")
-        preferences.set_default(PrefKey.PPCOMP_HTML_FILE_HISTORY, [])
-        preferences.set_default(PrefKey.PPCOMP_TEXT_FILE, "")
-        preferences.set_default(PrefKey.PPCOMP_TEXT_FILE_HISTORY, [])
+        preferences.set_default(PrefKey.PPCOMP_FILE_1, "")
+        preferences.set_default(PrefKey.PPCOMP_FILE_HISTORY, [])
+        preferences.set_default(PrefKey.PPCOMP_FILE_2, "")
+        preferences.set_default(PrefKey.PPCOMP_FILE_HISTORY, [])
         preferences.set_default(PrefKey.PPCOMP_IGNORE_CASE, False)
         preferences.set_default(PrefKey.PPCOMP_EXTRACT_FOOTNOTES, False)
         preferences.set_default(PrefKey.PPCOMP_SUPPRESS_FOOTNOTES, False)
@@ -806,7 +806,10 @@ class Guiguts:
         preferences.set_default(PrefKey.PPCOMP_CSS_NO_DEFAULT, False)
         preferences.set_default(PrefKey.PPCOMP_SUPPRESS_NBSP, False)
         preferences.set_default(PrefKey.PPCOMP_SUPPRESS_WJ, False)
-
+        preferences.set_default(PrefKey.PPCOMP_ROUNDS_FORMAT, False)
+        preferences.set_default(PrefKey.PPCOMP_ROUNDS_PROOFERS, False)
+        preferences.set_default(PrefKey.PPCOMP_ROUNDS_REGROUP, False)
+        preferences.set_default(PrefKey.PPCOMP_ROUNDS_PAGE_BLOCK, False)
         # Check all preferences have a default
         for pref_key in PrefKey:
             assert preferences.get_default(pref_key) is not None

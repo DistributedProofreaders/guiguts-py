@@ -235,10 +235,9 @@ class PrefKey(StrEnum):
     DID_YOU_KNOW_INDEX = auto()
     NGRAM_PARAMETERS = auto()
     TOOLBAR_ICON_SIZE = auto()
-    PPCOMP_HTML_FILE = auto()
-    PPCOMP_HTML_FILE_HISTORY = auto()
-    PPCOMP_TEXT_FILE = auto()
-    PPCOMP_TEXT_FILE_HISTORY = auto()
+    PPCOMP_FILE_1 = auto()
+    PPCOMP_FILE_2 = auto()
+    PPCOMP_FILE_HISTORY = auto()
     PPCOMP_IGNORE_CASE = auto()
     PPCOMP_EXTRACT_FOOTNOTES = auto()
     PPCOMP_SUPPRESS_FOOTNOTES = auto()
@@ -252,6 +251,10 @@ class PrefKey(StrEnum):
     PPCOMP_CSS_NO_DEFAULT = auto()
     PPCOMP_SUPPRESS_NBSP = auto()
     PPCOMP_SUPPRESS_WJ = auto()
+    PPCOMP_ROUNDS_FORMAT = auto()
+    PPCOMP_ROUNDS_PROOFERS = auto()
+    PPCOMP_ROUNDS_REGROUP = auto()
+    PPCOMP_ROUNDS_PAGE_BLOCK = auto()
 
 
 class Preferences:
