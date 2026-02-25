@@ -4924,7 +4924,7 @@ class MainText(tk.Text):
                 HighlightTag.PPCOMP_COL_1,
                 "PPcomp File 1 color",
                 {"background": "#061626", "foreground": "#d506e8"},
-                {"background": "#f1f1f1", "foreground": "#7b0285"},
+                {"background": "#f1f1f1", "foreground": "#d506e8"},
                 update_checker_tag,
             ),
             ColorKey.PPCOMP_COL_2: ConfigurableColor(

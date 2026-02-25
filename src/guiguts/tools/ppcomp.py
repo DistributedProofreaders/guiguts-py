@@ -65,13 +65,15 @@ logger = logging.getLogger(__package__)
 
 ###############################################################
 
-FLAG_CH_HTML_L = "⦓"
-FLAG_CH_HTML_R = "⦔"
-FLAG_CH_TEXT_L = "⦕"
-FLAG_CH_TEXT_R = "⦖"
+FLAG_CH_1_L = "⦓"
+FLAG_CH_1_R = "⦔"
+FLAG_CH_2_L = "⦕"
+FLAG_CH_2_R = "⦖"
 NO_SPACE_BEFORE = "])}.,:;!?"
 NO_SPACE_AFTER = "[({"
-PAIR_RE = re.compile(r"⦕(.*?)⦖\s+⦓(.*?)⦔")
+PAIR_RE = re.compile(
+    rf"{FLAG_CH_1_L}(.*?){FLAG_CH_1_R}\s+{FLAG_CH_2_L}(.*?){FLAG_CH_2_R}"
+)
 
 
 class HTMLSyntaxError(SyntaxError):
@@ -331,8 +333,8 @@ class PPcompCheckerDialog(CheckerDialog):
         super().display_entries(auto_select_line, complete_msg)
 
         for left, right, tag in [
-            (FLAG_CH_HTML_L, FLAG_CH_HTML_R, HighlightTag.PPCOMP_COL_1),
-            (FLAG_CH_TEXT_L, FLAG_CH_TEXT_R, HighlightTag.PPCOMP_COL_2),
+            (FLAG_CH_1_L, FLAG_CH_1_R, HighlightTag.PPCOMP_COL_1),
+            (FLAG_CH_2_L, FLAG_CH_2_R, HighlightTag.PPCOMP_COL_2),
         ]:
             start = "1.0"
             while True:
@@ -493,11 +495,19 @@ class PPcompChecker:
             PPComp.check_characters(PPcompChecker.files)
 
         self.dialog.reset()
+        self.dialog.add_header(
+            f"Deleted words in first file but not in second will appear {FLAG_CH_1_L}like this{FLAG_CH_1_R}"
+        )
+        self.dialog.add_header(
+            f"Inserted words in second file but not in first will appear {FLAG_CH_2_L}like this{FLAG_CH_2_R}",
+            "",
+        )
         render_marked_diff(
             self.dialog,
             PPcompChecker.files[0].text,
             PPcompChecker.files[1].text,
             PPcompChecker.files[0].start_line,
+            PPcompChecker.files[1].start_line,
         )
         if preferences.get(PrefKey.PPCOMP_EXTRACT_FOOTNOTES):
             self.dialog.add_header("", "==== FOOTNOTES ====", "")
@@ -505,6 +515,7 @@ class PPcompChecker:
                 self.dialog,
                 PPcompChecker.files[0].footnotes,
                 PPcompChecker.files[1].footnotes,
+                0,
                 0,
             )
 
@@ -629,7 +640,11 @@ def join_tokens(tokens: list[str]) -> str:
 
 
 def render_marked_diff(
-    dialog: PPcompCheckerDialog, a_text: str, b_text: str, html_file_start: int
+    dialog: PPcompCheckerDialog,
+    a_text: str,
+    b_text: str,
+    a_file_start: int,
+    b_file_start: int,
 ) -> None:
     """Render the diffs to the dialog."""
     rows = aligned_words_with_lines(a_text, b_text)
@@ -644,24 +659,24 @@ def render_marked_diff(
     cur_linenum: tuple[int, int] | None = None
 
     def flush_changes():
-        if new_buf:
-            cur_line.append(f"{FLAG_CH_TEXT_L}{join_tokens(new_buf)}{FLAG_CH_TEXT_R}")
         if old_buf:
-            cur_line.append(f"{FLAG_CH_HTML_L}{join_tokens(old_buf)}{FLAG_CH_HTML_R}")
-        old_buf.clear()
-        new_buf.clear()
+            cur_line.append(f"{FLAG_CH_1_L}{join_tokens(old_buf)}{FLAG_CH_1_R}")
+            old_buf.clear()
+        if new_buf:
+            cur_line.append(f"{FLAG_CH_2_L}{join_tokens(new_buf)}{FLAG_CH_2_R}")
+            new_buf.clear()
 
     f1_loaded = os.path.samefile(
         the_file().filename, preferences.get(PrefKey.PPCOMP_FILE_1)
     )
     line_has_change = False
-    a_line = html_file_start + 1
-    b_line = 1
+    a_line = a_file_start + 1
+    b_line = b_file_start + 1
     for r in rows:
         if r["a_line"] is not None:
-            a_line = r["a_line"] + html_file_start
+            a_line = r["a_line"] + a_file_start
         if r["b_line"] is not None:
-            b_line = r["b_line"]
+            b_line = r["b_line"] + b_file_start
 
         # New source line → flush current output line
         if (a_line, b_line) != (last_a, last_b):
@@ -767,19 +782,15 @@ def refine_punctuation_diffs(line: str) -> str:
         if not prefix and not suffix:
             return match.group(0)
 
-        # If split between two parts is mid-word, e.g. "C⦕opyright⦖⦓OPYRIGHT⦔", leave unchanged
-        if re.search(r"\p{Letter}$", a_mid) and re.search(r"^\p{Letter}", b_mid):
-            return match.group(0)
-
         parts = []
         # Prefix stays unmarked
         parts.append(prefix)
 
         # Middle difference
         if a_mid:
-            parts.append(f"⦕{a_mid}⦖")
+            parts.append(f"{FLAG_CH_1_L}{a_mid}{FLAG_CH_1_R}")
         if b_mid:
-            parts.append(f"⦓{b_mid}⦔")
+            parts.append(f"{FLAG_CH_2_L}{b_mid}{FLAG_CH_2_R}")
 
         # Suffix stays unmarked
         parts.append(suffix)
@@ -980,9 +991,8 @@ class PgdpFile:
         self.args = args
         self.basename = ""
         self.text = ""  # file text
-        self.start_line = (
-            0  # line text started, before stripping boilerplate and/or head
-        )
+        # line text started, before stripping boilerplate and/or head
+        self.start_line = 0
         self.footnotes = ""  # footnotes text, if extracted
 
     def load(self, filename):
