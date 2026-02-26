@@ -1,6 +1,21 @@
 # Changelog
 
 
+## Version 2.0.19
+
+- PPcomp now accepts two text files, or two HTML files, or one of each
+- PPcomp text file can now be the original file from the rounds, and additional
+  checkboxes allow processing relevant to these files 
+
+### Bug fixes
+
+- PPcomp sometimes split purple/green mid-word where the start of the word was
+  the same in both files
+- Stealth Scanno regex 18 reported a period followed on the next line by the
+  end of lowercase block markup, e.g. `p/`
+- Stealth Scanno regexes 18 & 19 had incorrect replacement strings
+
+
 ## Version 2.0.18
 
 - Ebookmaker no longer runs immediately the dialog is opened, thus allowing
