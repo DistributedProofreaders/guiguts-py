@@ -200,10 +200,11 @@ class Guiguts:
         self.file.mainwindow = self.mainwindow
         self.update_title()
 
-        theme_path = THEMES_DIR.joinpath("awthemes-10.4.0")
-        root().tk.call("lappend", "auto_path", theme_path)
-        root().tk.call("package", "require", "awdark")
-        root().tk.call("package", "require", "awlight")
+        theme_root = THEMES_DIR.joinpath("awthemes-10.4.0")
+        with importlib.resources.as_file(theme_root) as theme_path:
+            root().tk.call("lappend", "auto_path", str(theme_path))
+            root().tk.call("package", "require", "awdark")
+            root().tk.call("package", "require", "awlight")
 
         # Recent menu is saved to allow deletion & re-creation when files loaded/saved
         self.recent_menu: Optional[MenuMetadata] = None
