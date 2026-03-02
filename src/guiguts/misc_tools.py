@@ -1002,7 +1002,7 @@ def unmatched_block_markup() -> None:
     unmatched_markup_check(
         UnmatchedBlockMarkupDialog,
         rerun_command=unmatched_block_markup,
-        match_reg=f"^(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/)",
+        match_reg=f"^(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/ *$)",
         match_pair_func=match_pair_block_markup,
         nest_reg="/#|#/",
         sort_key_alpha=sort_key_block_markup,
