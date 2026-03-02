@@ -1,6 +1,21 @@
 # Changelog
 
 
+## Version 2.0.20
+
+- HTML Footnotes use Word Joiners more intelligently to join to the word before
+  or after the footnote anchor
+- Two additional Stealth Scannos added to detect misplaced punctuation and/or
+  capitalization
+
+### Bug fixes
+
+- PPcomp sometimes split purple/green mid-word where the start of the word was
+  the same in both files - 2.0.19 fix not merged correctly
+- "c/o" at the start of a line triggered an Unmatched Block Markup report
+- Under some circumstances the awdark package couldn't be loaded
+
+
 ## Version 2.0.19
 
 - PPcomp now accepts two text files, or two HTML files, or one of each
