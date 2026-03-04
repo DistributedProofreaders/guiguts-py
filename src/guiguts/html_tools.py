@@ -1494,9 +1494,6 @@ class EbookmakerCheckerAPI:
         )
         self.dialog.display_entries(complete_msg=False)
 
-        # Optional: show busy state
-        # self.dialog.show_busy("Building via Ebookmaker…")
-
         thread = threading.Thread(target=self._run_worker, daemon=True)
         thread.start()
 
@@ -1511,11 +1508,13 @@ class EbookmakerCheckerAPI:
                 message: Initial part of message to user.
                 exc: Exception that was thrown, or a string describing the problem
             """
-            logger.error(
-                f"{message}\nConvert manually online at ebookmaker.pglaf.org\nError details:\n{exc}"
+            self._ui(
+                lambda: logger.error(
+                    f"{message}\nConvert manually online at ebookmaker.pglaf.org\nError details:\n{exc}"
+                )
             )
-            self.dialog.display_entries()
-            self.dialog.lift()
+            self._ui(self.dialog.display_entries)
+            self._ui(self.dialog.lift)
 
         timeout = 900
 
