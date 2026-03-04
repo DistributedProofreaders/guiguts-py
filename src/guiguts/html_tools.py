@@ -8,9 +8,10 @@ import os
 import subprocess
 import tkinter as tk
 from tkinter import ttk
-from typing import Optional, Any
+from typing import Optional, Any, Callable
 import xml.sax
 import shutil
+import threading
 import webbrowser
 import zipfile
 
@@ -1473,11 +1474,31 @@ class EbookmakerCheckerAPI:
         self.dialog.update_count_label(False)
         Busy.unbusy()
 
+    def _ui(self, func: Callable[[], None]) -> None:
+        """Execute func in Tk main thread."""
+        self.dialog.after(0, func)
+
     def run(self) -> None:
-        """Run ebookmaker using API."""
+        """Run ebookmaker using API asynchronously."""
         self.dialog.reset()
         self.dialog.cache_btn["command"] = lambda: None
         self.dialog.cache_btn["state"] = tk.DISABLED
+        self.dialog.rerun_button["text"] = "Running..."
+        self.dialog.rerun_button["state"] = tk.DISABLED
+        self.dialog.add_header(
+            "Running Ebookmaker in the background…",
+            "",
+            "When Ebookmaker processing completes, this message",
+            "will be replaced with the output.txt build info.",
+            "You can then look at any downloaded files or visit the cache.",
+        )
+        self.dialog.display_entries(complete_msg=False)
+
+        thread = threading.Thread(target=self._run_worker, daemon=True)
+        thread.start()
+
+    def _run_worker(self) -> None:
+        """Run ebookmaker using API."""
 
         def report_exception(message: str, exc: Exception | str) -> None:
             """Report exception to user and suggest manual conversion.
@@ -1487,11 +1508,13 @@ class EbookmakerCheckerAPI:
                 message: Initial part of message to user.
                 exc: Exception that was thrown, or a string describing the problem
             """
-            logger.error(
-                f"{message}\nConvert manually online at ebookmaker.pglaf.org\nError details:\n{exc}"
+            self._ui(
+                lambda: logger.error(
+                    f"{message}\nConvert manually online at ebookmaker.pglaf.org\nError details:\n{exc}"
+                )
             )
-            self.dialog.display_entries()
-            self.dialog.lift()
+            self._ui(self.dialog.display_entries)
+            self._ui(self.dialog.lift)
 
         timeout = 900
 
@@ -1509,9 +1532,11 @@ class EbookmakerCheckerAPI:
             if preferences.get(PrefKey.EBOOKMAKER_KF8):
                 build.append("kf8")
         if not build:
-            logger.error("You must select at least one format to be built")
-            self.dialog.display_entries()
-            self.dialog.lift()
+            self._ui(
+                lambda: logger.error("You must select at least one format to be built")
+            )
+            self._ui(self.dialog.display_entries)
+            self._ui(self.dialog.lift)
             return
 
         file_name = the_file().filename
@@ -1610,7 +1635,7 @@ class EbookmakerCheckerAPI:
             return
 
         # Process output.txt into messages in dialog
-        process_ebookmaker_messages(response.text, self.dialog)
+        self._ui(lambda: process_ebookmaker_messages(response.text, self.dialog))
 
         # Get each generated file (e.g. 99999-epub.epub) & save in project folder (e.g. myfile-epub.epub)
         for key, ftype in ftypes.items():
@@ -1645,11 +1670,16 @@ class EbookmakerCheckerAPI:
             with open(os.path.join(proj_dir, put_name), mode="wb") as wfile:
                 wfile.write(response.content)
 
-        # Configure button to open cache in browser
-        self.dialog.cache_btn["command"] = lambda: webbrowser.open(output_dir)
-        self.dialog.cache_btn["state"] = tk.NORMAL
+        # Configure button to open cache in browser & restore Run button
+        def tidy_up() -> None:
+            self.dialog.cache_btn["command"] = lambda: webbrowser.open(output_dir)
+            self.dialog.cache_btn["state"] = tk.NORMAL
+            self.dialog.rerun_button["text"] = "Run Ebookmaker"
+            self.dialog.rerun_button["state"] = tk.NORMAL
+            self.dialog.display_entries()
+            self.dialog.lift()
 
-        self.dialog.display_entries()
+        self._ui(tidy_up)
 
 
 def process_ebookmaker_messages(
@@ -1661,6 +1691,8 @@ def process_ebookmaker_messages(
         ebm_output:
 
     """
+    # Clear previous messages, but don't want complete reset
+    dialog.entries.clear()
     regex = re.compile(r"^(CRITICAL|ERROR|WARNING)(.*)")
     messages = ebm_output.split("\n")
     if any(message.strip() for message in messages):
