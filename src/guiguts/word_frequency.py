@@ -858,25 +858,26 @@ class WordFrequencyDialog(ToplevelDialog):
             return "break"
         self.text.select_line(entry_index + 1)
         word = self.entries[entry_index].word.replace("-*", "-")
-        content = word
+        content_list = [word]
 
         # If in Hyphen display, add suspects to content
         if preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) == WFDisplayType.HYPHENS:
-            # If chosen word is a suspect, use the related suspects
+            nohyp = re.sub("[-* ]+", "", word)
+            # If chosen word is a suspect, use the related words
             if self.entries[entry_index].suspect:
-                testword = re.sub("[- ]+", "", word)
                 for entry in self.entries:
+                    entry_word = entry.word.replace("-*", "-")
                     if (
-                        entry.word != word
-                        and re.sub("[- ]+", "", entry.word) == testword
+                        entry_word not in content_list
+                        and re.sub("[- ]+", "", entry_word) == nohyp
                     ):
-                        content = f"{content},{entry.word}"
-            # If chosen word is hyphenated and non-hyphen version not in text,
-            # manually add the non-hyphen version to content
-            else:
-                content = f"{content},{word.replace('-', '')}"
+                        content_list.append(entry_word)
+            # Ensure non-hyphen version is added, even if not in text,
+            # e.g. just "flash-*light" found
+            if nohyp not in content_list:
+                content_list.append(nohyp)
         # Don't want asterisks passing to Ngram viewer
-        content = content.replace("-*", "-")
+        content = ",".join(content_list).replace("-*", "-")
 
         do_open_ngram(content)
         return "break"
