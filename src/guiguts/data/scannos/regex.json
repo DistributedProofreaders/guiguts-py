@@ -201,7 +201,7 @@
 "hint": "Find a word containing pbt and change it to pht"
 },
 {
-"match": "\\b(?![Gg]overnment\\b)(\\p{L}*)rn([bmp]\\p{L}*)\\b",
+"match": "\\b(?![Gg]overnment(?:s|al)?\\b)(\\p{L}*)rn([bmp]\\p{L}*)\\b",
 "replacement": "\\1m\\2",
 "hint": "Find a word that contains rnb, rnm or rnp and change it to mb, mm or mp, respectively"
 },
