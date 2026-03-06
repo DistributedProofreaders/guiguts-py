@@ -741,7 +741,10 @@ class PPhtmlChecker:
                     None,
                 )
             )
-        elif h1_str.lower() != title_str.removesuffix(" | Project Gutenberg").lower():
+        elif (
+            h1_str.rstrip(".,;:").lower()
+            != title_str.removesuffix(" | Project Gutenberg").rstrip(".,;:").lower()
+        ):
             test_passed = False
             fail_string = PPhtmlChecker.warn_flag
             errors.append(
