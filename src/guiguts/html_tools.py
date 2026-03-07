@@ -1617,7 +1617,7 @@ class EbookmakerCheckerAPI:
 
         # Get output.txt
         try:
-            response = requests.get(output_txt_url, timeout=timeout)
+            output_response = requests.get(output_txt_url, timeout=timeout)
         except (requests.exceptions.Timeout, TimeoutError) as exc:
             report_exception("Download request for output.txt timed out.", exc)
             return
@@ -1626,16 +1626,13 @@ class EbookmakerCheckerAPI:
             return
         # Check if HTTP request was unsuccessful
         try:
-            response.raise_for_status()
+            output_response.raise_for_status()
         except (
             requests.exceptions.HTTPError,
             requests.exceptions.TooManyRedirects,
         ) as exc:
             report_exception("Download request for output.txt was unsuccessful.", exc)
             return
-
-        # Process output.txt into messages in dialog
-        self._ui(lambda: process_ebookmaker_messages(response.text, self.dialog))
 
         # Get each generated file (e.g. 99999-epub.epub) & save in project folder (e.g. myfile-epub.epub)
         for key, ftype in ftypes.items():
@@ -1672,6 +1669,14 @@ class EbookmakerCheckerAPI:
 
         # Configure button to open cache in browser & restore Run button
         def tidy_up() -> None:
+            if not self.dialog.winfo_exists():
+                self.dialog = EbookmakerCheckerAPIDialog.show_dialog(
+                    rerun_command=self.run,
+                    sort_key_alpha=ebookmaker_sort_key_type,
+                    show_suspects_only=True,
+                )
+            # Process output.txt into messages in dialog
+            process_ebookmaker_messages(output_response.text, self.dialog)
             self.dialog.cache_btn["command"] = lambda: webbrowser.open(output_dir)
             self.dialog.cache_btn["state"] = tk.NORMAL
             self.dialog.rerun_button["text"] = "Run Ebookmaker"
