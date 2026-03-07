@@ -140,7 +140,7 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=0, column=0, padx=2, sticky="NSW")
 
         def validate_multi_rows(new_value: str) -> bool:
-            """Validation to check number of multi-rows is between 2 and 10."""
+            """Validation to check number of multi-rows is between 1 and 10."""
             try:
                 n_rows = int(new_value)
             except ValueError:
