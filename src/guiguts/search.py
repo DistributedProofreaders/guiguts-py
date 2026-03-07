@@ -138,15 +138,27 @@ class SearchDialog(ToplevelDialog):
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_MULTI_REPLACE),
             command=self.show_multi_replace,
         ).grid(row=0, column=0, padx=2, sticky="NSW")
+
+        def validate_multi_rows(new_value: str) -> bool:
+            """Validation to check number of multi-rows is between 2 and 10."""
+            try:
+                n_rows = int(new_value)
+            except ValueError:
+                return new_value == ""
+            return 1 <= n_rows <= 10
+
         spinbox = ttk.Spinbox(
             multi_frame,
             textvariable=PersistentInt(PrefKey.SEARCHDIALOG_MULTI_ROWS),
-            from_=2,
-            to=10,
+            from_=1,
+            to=self.max_multi_rows,
             width=3,
             command=self.show_multi_replace,
+            validate=tk.ALL,
+            validatecommand=(self.register(validate_multi_rows), "%P"),
         )
         spinbox.grid(row=0, column=1, sticky="NSW")
+        spinbox.bind("<Return>", lambda e: self.show_multi_replace())
         self.count_btn = ttk.Button(
             self.top_frame,
             text="Count",
@@ -393,9 +405,12 @@ class SearchDialog(ToplevelDialog):
                 When dialog first created, its size is stored in prefs, so won't need resize
         """
         multi_flag = preferences.get(PrefKey.SEARCHDIALOG_MULTI_REPLACE)
-        num_multi_rows = (
-            preferences.get(PrefKey.SEARCHDIALOG_MULTI_ROWS) if multi_flag else 1
-        )
+        nrows = preferences.get(PrefKey.SEARCHDIALOG_MULTI_ROWS)
+        if nrows < 1:
+            preferences.set(PrefKey.SEARCHDIALOG_MULTI_ROWS, 1)
+        if nrows > 10:
+            preferences.set(PrefKey.SEARCHDIALOG_MULTI_ROWS, 10)
+        num_multi_rows = nrows if multi_flag else 1
         last_shown = 0
         for w_list in (
             self.replace_box,
