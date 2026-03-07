@@ -412,6 +412,7 @@ class SearchDialog(ToplevelDialog):
             preferences.set(PrefKey.SEARCHDIALOG_MULTI_ROWS, 10)
         num_multi_rows = nrows if multi_flag else 1
         last_shown = 0
+        self.update()
         for w_list in (
             self.replace_box,
             self.replace_btn,
