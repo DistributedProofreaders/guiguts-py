@@ -543,10 +543,15 @@ class WordFrequencyDialog(ToplevelDialog):
         """Display all the stored entries in the dialog according to
         the sort setting."""
 
+        display_type = preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
+
         def remove_diacritics_and_hyphens(word: str) -> str:
-            """Remove diacritics, and also convert hyphen to space so that
-            "a-b" and "a b" sort adjacently in hyphen check."""
-            return DiacriticRemover.remove_diacritics(word).replace("-", " ")
+            """Remove diacritics, and also hyphens, asterisks & spaces in
+            hyphen check so that "a-b", "ab" and "a b" sort adjacently."""
+            no_dia = DiacriticRemover.remove_diacritics(word)
+            if display_type == WFDisplayType.HYPHENS:
+                no_dia = re.sub(r"[-* ]+", "", no_dia)
+            return no_dia
 
         def sort_key_alpha(
             entry: WordFrequencyEntry,
@@ -582,8 +587,7 @@ class WordFrequencyDialog(ToplevelDialog):
             case WFSortType.ALPHABETIC:
                 key = (
                     sort_key_alpha_no_markup
-                    if preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
-                    == WFDisplayType.MARKEDUP
+                    if display_type == WFDisplayType.MARKEDUP
                     else sort_key_alpha
                 )
             case WFSortType.FREQUENCY:
@@ -593,10 +597,9 @@ class WordFrequencyDialog(ToplevelDialog):
             case _ as bad_value:
                 assert False, f"Invalid WFSortType: {bad_value}"
 
-        hilite_orphan_chars = preferences.get(
-            PrefKey.WFDIALOG_DISPLAY_TYPE
-        ) == WFDisplayType.CHAR_COUNTS and preferences.get(
-            PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS
+        hilite_orphan_chars = (
+            display_type == WFDisplayType.CHAR_COUNTS
+            and preferences.get(PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS)
         )
         enabled = False
         suites: list[str] = []
