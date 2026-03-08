@@ -204,7 +204,7 @@ class WordFrequencyDialog(ToplevelDialog):
         """Initialize the dialog."""
         super().__init__("Word Frequency")
         self.top_frame.rowconfigure(0, weight=0)
-        header_frame = ttk.Frame(self.top_frame, padding=2)
+        header_frame = ttk.Frame(self.top_frame)
         header_frame.grid(row=0, column=0, sticky="NSEW")
         header_frame.columnconfigure(0, weight=1)
 
@@ -219,7 +219,7 @@ class WordFrequencyDialog(ToplevelDialog):
 
         # Re-run buttons
         rerun_frame = ttk.Frame(header_frame, borderwidth=1, relief=tk.GROOVE)
-        rerun_frame.grid(row=0, column=1, rowspan=2, padx=(0, 15))
+        rerun_frame.grid(row=0, column=1, rowspan=2)
         ttk.Button(rerun_frame, text="Re-run", command=word_frequency).grid(
             row=0, column=0, sticky="NSEW", padx=5, pady=2
         )
@@ -291,7 +291,7 @@ class WordFrequencyDialog(ToplevelDialog):
         display_frame = ttk.Frame(
             header_frame, borderwidth=1, relief=tk.GROOVE, padding=2
         )
-        display_frame.grid(row=2, column=0, columnspan=2, sticky="NSEW", padx=(0, 15))
+        display_frame.grid(row=2, column=0, columnspan=2, sticky="NSEW")
         for col in range(0, 4):
             display_frame.columnconfigure(index=col, weight=1)
 
