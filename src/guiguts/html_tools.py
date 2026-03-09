@@ -36,6 +36,7 @@ from guiguts.utilities import (
     IndexRowCol,
     folder_dir_str,
     is_windows,
+    make_anchor,
 )
 from guiguts.widgets import (
     ToplevelDialog,
@@ -55,6 +56,7 @@ RETURN_ARROW = "⏎"
 EM_PX = 16.0  # 16 pixels per em
 LAND_X = 4  # Common landscape screen ratio
 LAND_Y = 3
+SEP_CHAR = "―"
 
 
 class HTMLImageBaseDialog(ToplevelDialog):
@@ -2342,6 +2344,8 @@ class HTMLLinksDialog(ToplevelDialog):
             ilink = row[self.ilist_cols[0]]
         except KeyError:
             return
+        if SEP_CHAR in ilink:  # Ignore separator
+            return
         sel_ranges = maintext().selected_ranges()
         if not sel_ranges:
             sel_ranges.append(
@@ -2363,7 +2367,7 @@ class HTMLLinksDialog(ToplevelDialog):
             wholeword=False,
             nocase=True,
         )
-        link_list: list = []
+        link_list: list[str] = []
         for match in matches:
             text = maintext().get_match_text(match)
             if preferences.get(PrefKey.HTML_LINKS_HIDE_PAGE) and text.startswith(
@@ -2376,11 +2380,27 @@ class HTMLLinksDialog(ToplevelDialog):
                 continue
             link_list.append(f"#{text}")
 
-        for link in (
-            sorted(link_list)
-            if preferences.get(PrefKey.HTML_LINKS_ALPHABETIC)
-            else link_list
-        ):
+        if preferences.get(PrefKey.HTML_LINKS_ALPHABETIC):
+            link_list.sort()
+
+        # If there's selected text, list links that contain words from
+        # the selection at the top
+        if sel_text := maintext().selected_text():
+            sel_text = make_anchor(sel_text)
+            search_words = [w.lower() for w in sel_text.split("_") if w]
+            matching_links = []
+            for link in link_list:
+                parts = link.lower().lstrip("#").split("_")
+                if any(word in parts for word in search_words):
+                    matching_links.append(link)
+            for link in matching_links:
+                self.internal_list.insert("", tk.END, values=(link,))
+            # Separate matching links from all links
+            if matching_links:
+                self.internal_list.insert("", tk.END, values=(SEP_CHAR * 100,))
+
+        # Now add all links at bottom of list
+        for link in link_list:
             self.internal_list.insert("", tk.END, values=(link,))
 
         self.internal_list.select_and_focus_by_index(0)
