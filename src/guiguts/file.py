@@ -319,9 +319,14 @@ class File:
         Returns:
             Current filename or "" if save is cancelled
         """
+        # We want to call "busy", partly to ensure everything has finished running
+        # and dialogs have been updated. However, we don't want it to be busy if
+        # we are going to do a Save As, because control returns to the user.
+        Busy.busy()
         # If there's no filename, need to do Save As, but if called
         # via autosave, do nothing
         if not self.filename:
+            Busy.unbusy()
             return "" if autosave else self.save_as_file()
         # If we have a filename, then need to do appropriate backups
 
@@ -329,7 +334,6 @@ class File:
             """Get backup names for filename and bin file."""
             return f"{self.filename}{ext}", f"{bin_name(self.filename)}{ext}"
 
-        Busy.busy()
         binfile_name = bin_name(self.filename)
         try:
             if autosave:
