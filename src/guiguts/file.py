@@ -1030,13 +1030,17 @@ class File:
         if ranges[0].end.col > 0:
             ranges[0].end.col = 0
             ranges[0].end.row += 1
+        Busy.busy()
         maintext().undo_block_begin()
         self.rewrap_section(ranges[0], bq_depth)
+        Busy.unbusy()
 
     def rewrap_all(self) -> None:
         """Wrap whole text."""
+        Busy.busy()
         maintext().undo_block_begin()
         self.rewrap_section(IndexRange("1.0", maintext().index(tk.END)))
+        Busy.unbusy()
 
     def rewrap_section(self, section_range: IndexRange, bq_depth: int = 0) -> None:
         """Wrap a section of the text, preserving page mark locations.
