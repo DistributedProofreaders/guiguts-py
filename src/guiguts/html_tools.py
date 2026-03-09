@@ -2383,21 +2383,32 @@ class HTMLLinksDialog(ToplevelDialog):
         if preferences.get(PrefKey.HTML_LINKS_ALPHABETIC):
             link_list.sort()
 
-        # If there's selected text, list links that contain words from
-        # the selection at the top
+        # If there's selected text, list exactly matching link(s) first, then
+        # any links that contain words from the selection at the top
+        separator = SEP_CHAR * 100
         if sel_text := maintext().selected_text():
             sel_text = make_anchor(sel_text)
-            search_words = [w.lower() for w in sel_text.split("_") if w]
             matching_links = []
             for link in link_list:
+                if f"#{sel_text}" == link:
+                    matching_links.append(link)
+            # Separate identical links from matching links
+            if matching_links:
+                matching_links.append(separator)
+
+            search_words = [w.lower() for w in sel_text.split("_") if w]
+            for link in link_list:
                 parts = link.lower().lstrip("#").split("_")
-                if any(word in parts for word in search_words):
+                if (
+                    any(word in parts for word in search_words)
+                    and link not in matching_links
+                ):
                     matching_links.append(link)
             for link in matching_links:
                 self.internal_list.insert("", tk.END, values=(link,))
             # Separate matching links from all links
-            if matching_links:
-                self.internal_list.insert("", tk.END, values=(SEP_CHAR * 100,))
+            if matching_links and matching_links[-1] != separator:
+                self.internal_list.insert("", tk.END, values=(separator,))
 
         # Now add all links at bottom of list
         for link in link_list:
