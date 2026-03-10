@@ -356,13 +356,11 @@ class PPcompCheckerDialog(CheckerDialog):
         # Save entries, because loading file will clear this dialog & hence the entries
         save_entries = copy.deepcopy(self.entries)
         save_sel_idx = self.current_entry_index()
+        f1 = preferences.get(PrefKey.PPCOMP_FILE_1)
         # Get opposite filename to currently loaded one
-        f1_loaded = os.path.samefile(
-            the_file().filename, preferences.get(PrefKey.PPCOMP_FILE_1)
-        )
-        new_file = preferences.get(
-            PrefKey.PPCOMP_FILE_2 if f1_loaded else PrefKey.PPCOMP_FILE_1
-        )
+        f1_loaded = os.path.isfile(f1) and os.path.samefile(the_file().filename, f1)
+        f2 = preferences.get(PrefKey.PPCOMP_FILE_2)
+        new_file = f2 if f1_loaded else f1
         if not (new_file and os.path.isfile(new_file)):
             logger.error(f"File {new_file} does not exist")
             return
