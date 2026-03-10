@@ -2391,7 +2391,7 @@ class HTMLLinksDialog(ToplevelDialog):
             l_test = f"#{sel_text}".lower()
             matching_links = []
             for link in link_list:
-                if  l_test == link.lower():
+                if l_test == link.lower():
                     matching_links.append(link)
             # Separate identical links from matching links
             if matching_links:
