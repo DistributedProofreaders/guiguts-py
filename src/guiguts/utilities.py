@@ -429,6 +429,14 @@ class DiacriticRemover:
         )
 
 
+def make_anchor(string: str) -> str:
+    """Convert string to string suitable for anchor."""
+    string = DiacriticRemover.remove_diacritics(string)
+    string = re.sub(r"[^-\p{Alnum}]", "_", string)
+    string = re.sub("_{2,}", "_", string)
+    return string
+
+
 class TextWrapper:
     """Provides Knuth-Plass rewrapping functionality.
 

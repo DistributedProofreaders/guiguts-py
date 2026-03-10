@@ -19,7 +19,7 @@ from guiguts.utilities import (
     IndexRange,
     sing_plur,
     process_accel,
-    DiacriticRemover,
+    make_anchor,
 )
 from guiguts.widgets import (
     ToplevelDialog,
@@ -1230,13 +1230,6 @@ def get_regex_replacement(
             )
             logger.error(tb)
             raise re.error("\\C...\\E error - see message log for details") from exc
-
-    def make_anchor(string: str) -> str:
-        """Convert string to string suitable for anchor."""
-        string = DiacriticRemover.remove_diacritics(string)
-        string = re.sub(r"[^-\p{Alnum}]", "_", string)
-        string = re.sub("_{2,}", "_", string)
-        return string
 
     def make_roman(string: str) -> str:
         """Convert string to uppercase Roman numerals."""
