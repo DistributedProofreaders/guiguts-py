@@ -412,7 +412,11 @@ class SearchDialog(ToplevelDialog):
             preferences.set(PrefKey.SEARCHDIALOG_MULTI_ROWS, 10)
         num_multi_rows = nrows if multi_flag else 1
         last_shown = 0
-        self.update()
+
+        # Avoid flicker from update if not resizing
+        if resize:
+            self.update()
+
         for w_list in (
             self.replace_box,
             self.replace_btn,
@@ -420,13 +424,15 @@ class SearchDialog(ToplevelDialog):
             self.repl_all_btn,
         ):
             for idx, widget in enumerate(w_list):
-                if widget.winfo_ismapped():
-                    last_shown = idx  # Track how many are currently shown
+                # Track how many are currently shown (only if resizing)
+                if resize and widget.winfo_ismapped():
+                    last_shown = idx
                 if idx < num_multi_rows:
                     widget.grid()
                 else:
                     widget.grid_remove()
 
+        # All done unless resizing
         if not resize:
             return
 
