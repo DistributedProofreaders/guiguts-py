@@ -1,6 +1,43 @@
 # Changelog
 
 
+## Version 2.0.21
+
+- Ebookmaker (online using API) now runs in the background. When the Run button
+  is pressed, a message is displayed in the dialog, and control returns to the
+  user. At this point you can continue to edit the file, or run other tools.
+  You can also close the ebookmaker dialog if you want to. When ebookmaker
+  finishes, which may be several minutes for large files with many
+  illustrations, the dialog will pop to the front again with the list of
+  ebookmaker messages, and any files downloaded will appear in the project
+  folder
+- Word Frequency, Hyphen display, now sorts words so that variations in
+  hyphenation, such as `flashlight`, `flash-light`, `flash-*light`, and 
+  `flash light` appear together in the list
+- HTML Internal Links dialog sorts the list of links more helpfully. If
+  text is selected when the list is refreshed (either on first opening
+  the dialog or by clicking one of the checkboxes) links that match the
+  selected text are shown near the top of the list
+- Word Frequency's Ngrams feature sends any hyphenation-variants from the
+  word list to Google Ngrams, and always includes the no-hyphen version
+- Search/Replace Multi-Replace field allows typing a new value and pressing
+  Enter/Return
+- PPhtml no longer reports a difference between the `<title>` and `<h1>`
+  versions of the book title, if the difference is just trailing punctuation
+- Rewrapping now shows the "Working" label while it is busy
+- Minor Stealth Scannos regex improvement added
+
+### Bug fixes
+
+- The Search/Replace dialog could allow illegal values to be typed into the
+  Multi-replace field
+- PPcomp's Switch File button could throw an exception if one of the files
+  did not exist
+- If a user quit the program while a tool was running, Guiguts could get
+  confused about saving any changes to the file, and sometimes throw an
+  exception
+
+
 ## Version 2.0.20
 
 - HTML Footnotes use Word Joiners more intelligently to join to the word before
