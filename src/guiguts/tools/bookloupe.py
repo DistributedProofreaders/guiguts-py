@@ -634,7 +634,8 @@ class BookloupeChecker:
         """
         # Consider hyphenated (or emdashed) words as two separate words
         # but exclude DP-style fractions, e.g. 1-3/4)
-        s_line = re.sub(r"(?<!\d)[-—](?!\d)", " ", line)
+        s_line = line.replace("—", " ")
+        s_line = re.sub(r"(?<!\d)-(?!\d)", " ", s_line)
         # Treat nbsp as space
         s_line = re.sub(r"\xa0", " ", s_line)
         # Split at spaces, ignoring leading/trailing non-word characters on words
