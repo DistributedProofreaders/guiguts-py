@@ -2570,8 +2570,12 @@ class CurlyQuotesDialog(CheckerDialog):
             elif match_text == "":  # Blank line
                 # Expect dqtype == 0 unless next line starts with open double quote
                 # AND user has enabled that exception
+                next_line = (
+                    maintext().get(f"{linebeg} +1l", f"{linebeg} +1l lineend").lstrip()
+                )
+                next_line_ch = next_line[0] if next_line else ""
                 if dqtype == 1 and (
-                    maintext().get(f"{linebeg} +1l") != DQUOTES[0]
+                    next_line_ch != DQUOTES[0]
                     or not preferences.get(PrefKey.CURLY_DOUBLE_QUOTE_EXCEPTION)
                 ):
                     hilite_start = IndexRowCol(last_open_double_idx).col
@@ -2595,7 +2599,7 @@ class CurlyQuotesDialog(CheckerDialog):
                         )
                 dqtype = 0
                 # Expect sqtype == 0 unless next line starts with open single quote
-                if sqtype == 1 and maintext().get(f"{linebeg} +1l") != SQUOTES[0]:
+                if sqtype == 1 and next_line_ch != SQUOTES[0]:
                     hilite_start = IndexRowCol(last_open_single_idx).col
                     text_range = IndexRange(
                         last_open_single_idx,
