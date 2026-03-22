@@ -45,6 +45,9 @@ INDEX_END_MARK = "IndexEnd"
 INDEX_NEXT_LINE_MARK = "IndexLineStart"
 WRAP_END_MARK = "WrapSectionEnd"
 PAGEMARK_PIN = "\x7f"  # Temp char to pin page mark locations
+# Temp chars to replace non-breaking space are from Unicode Private Use Area,
+# so we know they won't appear in any of our books
+NBS_DICT = {"\xa0": "\ue123", "\u2007": "\ue124", "\u202f": "\ue125"}
 PAGEMARK_PREFIX = "Pg"
 REPLACE_END_MARK = "ReplaceEnd"
 SELECTION_MARK_START = "SelectionMarkStart"
@@ -3570,12 +3573,13 @@ class MainText(tk.Text):
             wrap_params: Wrapping parameters.
             wrapper: TextWrapper object to perform the wrapping - re-used for efficiency.
         """
+
         if paragraph.startswith("       *" * 5):
             return
         # Remove leading/trailing space
         paragraph = paragraph.strip()
-        # Replace all multiple whitespace with single space
-        paragraph = re.sub(r"\s+", " ", paragraph)
+        # Replace all multiple space/newline with single space
+        paragraph = re.sub(r"[\n ]+", " ", paragraph)
         # Don't want pagemark pins to trap spaces around them, so...
         # Remove space between pagemark pins
         paragraph = re.sub(rf"(?<={PAGEMARK_PIN}) (?={PAGEMARK_PIN})", "", paragraph)
@@ -3583,12 +3587,21 @@ class MainText(tk.Text):
         paragraph = re.sub(rf"(( |^){PAGEMARK_PIN}+) ", r"\1", paragraph)
         # Remove space before pagemark pins if space (or lineend) after
         paragraph = re.sub(rf" ({PAGEMARK_PIN}+( |$)) ", r"\1", paragraph)
+        # Convert non-breaking spaces to temporary non-space characters
+        # to stop the wrapper from putting a break there
+        for nbs, temp in NBS_DICT.items():
+            paragraph = paragraph.replace(nbs, temp)
 
         wrapper.width = wrap_params.right
         wrapper.initial_indent = wrap_params.first * " "
         wrapper.subsequent_indent = wrap_params.left * " "
 
         wrapped = wrapper.fill(paragraph)
+
+        # Restore non-breaking spaces
+        for nbs, temp in NBS_DICT.items():
+            wrapped = wrapped.replace(temp, nbs)
+
         self.delete(paragraph_start, paragraph_end)
         self.insert(paragraph_start, wrapped + "\n")
 
