@@ -56,8 +56,61 @@ HEAD_FOOT_CHECKER_FILTERS = [
 ]
 
 
+def check_prep_text_order(importing: bool) -> Optional[list[str]]:
+    """Check the prep text file order matches sort order, both
+    case-sensitive and insensitive.
+
+    Args:
+        importing: True if checking after import. False if before export
+
+    Returns:
+        Sorted list of page marks from file, or None if sorting is incorrect
+    """
+    # Get sorted list of page marks
+    pg_mark_list = sorted(
+        [name for name in maintext().mark_names() if name.startswith("Pg")]
+    )
+    # Slightly different messages if user was importing/exporting
+    if importing:
+        quitstr = "Check filenames are correct, & retry import."
+        fnsep = "filenames"
+    else:
+        quitstr = (
+            "Check page separator lines are correct, then save file (not export)."
+            "Delete json file to clear any saved incorrect filenames. Finally, reload file before retrying export."
+        )
+        fnsep = "page separators"
+
+    # Check that case sensitive/insensitive sorting for filenames doesn't change the order
+    # If it did, it could cause unexpected behavior when uploaded to DP for proofing
+    if pg_mark_list != sorted(pg_mark_list, key=str.lower):
+        logger.error(
+            f"The current mix of upper/lower-case prefixes/suffixes in {fnsep} "
+            f"is not permitted due to different sort orders across operating systems.\n{quitstr}"
+        )
+        return None
+
+    for pg_idx, pg_mark in enumerate(pg_mark_list):
+        next_mark = (
+            "end" if pg_idx == len(pg_mark_list) - 1 else pg_mark_list[pg_idx + 1]
+        )
+        # Error if pg_marks are out of order
+        if maintext().compare(pg_mark, ">", next_mark):
+            logger.error(
+                f"Corrupt or badly-ordered page markers detected near {pg_mark}.\n{quitstr}"
+            )
+            return None
+    return pg_mark_list
+
+
 def export_prep_text_files() -> None:
     """Export the current file as separate prep text files."""
+
+    # Get sorted list of page marks & check the order is correct
+    pg_mark_list = check_prep_text_order(importing=False)
+    if pg_mark_list is None:
+        return
+
     prep_dir = FileDialog.askdirectory(
         parent=root(),
         title=f"Select {folder_dir_str(True)} to export prep text files to",
@@ -70,25 +123,12 @@ def export_prep_text_files() -> None:
         logger.error(f'Selected path "{prep_path}" is not a {folder_dir_str(True)}.')
         return
 
-    # Get sorted list of page marks
-    pg_mark_list = sorted(
-        [name for name in maintext().mark_names() if name.startswith("Pg")]
-    )
-
     for pg_idx, pg_mark in enumerate(pg_mark_list):
         next_mark = (
             "end" if pg_idx == len(pg_mark_list) - 1 else pg_mark_list[pg_idx + 1]
         )
         # Get the text to save to this file
-        if maintext().compare(pg_mark, "<=", next_mark):
-            file_text = maintext().get(pg_mark, next_mark)
-        else:
-            logger.error(
-                "Corrupt or badly-ordered page markers detected.\n"
-                "Quit, then delete json file and any prep text files written.\n"
-                "Restart, and check page separator lines are correct before retrying."
-            )
-            return
+        file_text = maintext().get(pg_mark, next_mark)
         # Strip leading page marker line and trailing blank lines
         file_text = re.sub(r"---+\s?File:.+?\.(png|jpg)---.+?\n", "", file_text)
         file_text = re.sub("\n+$", "", file_text)
@@ -147,6 +187,10 @@ def import_prep_text_files() -> None:
     maintext().undo_block_end()
 
     the_file().mark_page_boundaries()
+
+    if check_prep_text_order(importing=True) is None:
+        return
+
     maintext().set_insert_index(maintext().start())
     # Give user chance to save immediately to dir containing files dir
     the_file().save_as_file(str(prep_path.parent))
