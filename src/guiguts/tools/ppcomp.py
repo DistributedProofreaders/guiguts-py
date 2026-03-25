@@ -358,7 +358,11 @@ class PPcompCheckerDialog(CheckerDialog):
         save_sel_idx = self.current_entry_index()
         f1 = preferences.get(PrefKey.PPCOMP_FILE_1)
         # Get opposite filename to currently loaded one
-        f1_loaded = os.path.isfile(f1) and os.path.samefile(the_file().filename, f1)
+        f1_loaded = (
+            the_file().filename
+            and os.path.isfile(f1)
+            and os.path.samefile(the_file().filename, f1)
+        )
         f2 = preferences.get(PrefKey.PPCOMP_FILE_2)
         new_file = f2 if f1_loaded else f1
         if not (new_file and os.path.isfile(new_file)):
@@ -436,7 +440,11 @@ class PPcompChecker:
                 lift_and_unbusy()
                 return
             # If either of the files is being edited & is modified, allow user to save first
-            if maintext().is_modified() and os.path.samefile(cur_fname, fname):
+            if (
+                maintext().is_modified()
+                and cur_fname
+                and os.path.samefile(cur_fname, fname)
+            ):
                 save = messagebox.askyesnocancel(
                     title="Save document?",
                     message="Save changes to document first?",
@@ -664,7 +672,7 @@ def render_marked_diff(
             cur_line.append(f"{FLAG_CH_2_L}{join_tokens(new_buf)}{FLAG_CH_2_R}")
             new_buf.clear()
 
-    f1_loaded = os.path.samefile(
+    f1_loaded = the_file().filename and os.path.samefile(
         the_file().filename, preferences.get(PrefKey.PPCOMP_FILE_1)
     )
     line_has_change = False
