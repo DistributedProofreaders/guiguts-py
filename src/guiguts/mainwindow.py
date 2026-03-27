@@ -12,6 +12,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, EventType
 from typing import Any, Callable, Optional
 from pathlib import Path
+import urllib.parse
 
 from PIL import Image, ImageTk, ImageChops, ImageOps
 import regex as re
@@ -229,10 +230,14 @@ e.g. $(s+7) would give 12 for the 5th png.
             # Non-offset png sequence number
             token = token.replace("$s", str(sequence_number()))
             # Selected text, strip HTML tags, consolidate whitespace
-            token = token.replace(
-                "$t",
-                re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", maintext().selected_text())),
+            seltext = re.sub(
+                r"\s+", " ", re.sub(r"<[^>]+>", "", maintext().selected_text())
             )
+            # Escape URL special chars only if token is a URL
+            if token.startswith("http"):
+                seltext = urllib.parse.quote(seltext)
+            token = token.replace("$t", seltext)
+
             # Unicode codepoint of current char (single selected char, or char following cursor)
             cur = maintext().current_character()
             token = token.replace("$u", f"{ord(cur):04x}" if cur else "")
