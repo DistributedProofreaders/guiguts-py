@@ -323,7 +323,11 @@ class IlloSNChecker:
             search_range = IndexRange(end_point, maintext().end())
 
     def update_after_move(
-        self, tag_type: str, selected_checker_entry_index: int, mid_para_list: list[int]
+        self,
+        tag_type: str,
+        selected_checker_entry_index: int,
+        mid_para_list: list[int],
+        hidden_list: list[bool],
     ) -> None:
         """Update Illo or SN records list, update dialog and reselect tag just moved.
 
@@ -331,6 +335,7 @@ class IlloSNChecker:
             tag_type: Either "Illustration" or "Sidenote"
             selected_checker_entry_index: Index of selected entry
             mid_para_list: List of mid-para flags of illos/sns before movement
+            hidden_list: list of hiddenness of illos/sns before movement
         """
         # Update illosn_records list
         self.run_check(tag_type)
@@ -341,7 +346,7 @@ class IlloSNChecker:
                 if mid_para_flag != 0 and self.illosn_records[idx].mid_para == 0:
                     self.illosn_records[idx].mid_para = -1
         # Update dialog
-        display_illosn_entries(tag_type)
+        display_illosn_entries(tag_type, hidden_list=hidden_list)
         # Select again the tag we have just moved so it is highlighted.
         self.checker_dialog.select_entry_by_index(selected_checker_entry_index)
 
@@ -417,6 +422,26 @@ class IlloSNChecker:
             new_index = maintext().index(re.sub(r"\.0$", ".1", mark))
             new_index = re.sub(r"\.1$", ".0", new_index)
         return new_index
+
+
+def get_hidden_list(tag_type: str) -> list[bool]:
+    """Get list of whether each illo/sn is hidden."""
+    checker = _the_illo_checker if tag_type == "Illustration" else _the_sn_checker
+    assert checker is not None
+    illosn_records = checker.get_illosn_records()
+    entries = checker.checker_dialog.entries
+    hidden_list: list[bool] = []
+    for illosn_record in illosn_records:
+        for entry in entries:
+            if (
+                entry.text_range is not None
+                and illosn_record.start == entry.text_range.start
+            ):
+                hidden_list.append(False)
+                break
+        else:
+            hidden_list.append(True)
+    return hidden_list
 
 
 def move_selection_up(tag_type: str) -> None:
@@ -543,8 +568,9 @@ def move_selection_up(tag_type: str) -> None:
             maintext().replace_all(TEMP_SPACE, "")
 
             mid_para_list = [item.mid_para for item in checker.illosn_records]
+            hidden_list = get_hidden_list(tag_type)
             checker.update_after_move(
-                tag_type, selected_checker_entry_index, mid_para_list
+                tag_type, selected_checker_entry_index, mid_para_list, hidden_list
             )
             break  # Moved successfully
         # If we have reached the top of the file, return.
@@ -698,8 +724,9 @@ def move_selection_down(tag_type: str) -> None:
                 maintext().replace_all(TEMP_SPACE, "")
 
                 mid_para_list = [item.mid_para for item in checker.illosn_records]
+                hidden_list = get_hidden_list(tag_type)
                 checker.update_after_move(
-                    tag_type, selected_checker_entry_index, mid_para_list
+                    tag_type, selected_checker_entry_index, mid_para_list, hidden_list
                 )
                 return  # Moved successfully
         # Increment line_num.
@@ -761,7 +788,7 @@ def illosn_check(tag_type: str) -> None:
         the_checker = _the_sn_checker
 
     the_checker.run_check(tag_type)
-    display_illosn_entries(tag_type)
+    display_illosn_entries(tag_type, [])
     # Reselect correct entry in case this re-run was after an undo/redo
     checker_dialog.select_entry_after_undo_redo()
     # If that didn't cause anything to be selected, just select the first entry
@@ -774,7 +801,7 @@ def illosn_check(tag_type: str) -> None:
         checker_dialog.select_entry_by_index(entry_idx)
 
 
-def display_illosn_entries(tag_type: str) -> None:
+def display_illosn_entries(tag_type: str, hidden_list: list[bool]) -> None:
     """(Re-)display the requested Illo/SN tag types in the checker dialog.
 
     Args:
@@ -786,7 +813,9 @@ def display_illosn_entries(tag_type: str) -> None:
     checker_dialog = the_checker.checker_dialog
     checker_dialog.reset()
     illosn_records = the_checker.get_illosn_records()
-    for illosn_record in illosn_records:
+    for illosn_index, illosn_record in enumerate(illosn_records):
+        if len(hidden_list) == len(illosn_records) and hidden_list[illosn_index]:
+            continue
         error_prefix = "MIDPARAGRAPH: " if illosn_record.mid_para else ""
         checker_dialog.add_entry(
             illosn_record.text,
