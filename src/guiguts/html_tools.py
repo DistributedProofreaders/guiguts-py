@@ -262,22 +262,28 @@ class HTMLImageBaseDialog(ToplevelDialog):
         # Buttons to Find illos and Convert to HTML
         btn_frame = ttk.Frame(self.top_frame, padding=2)
         btn_frame.grid(row=6, column=0, pady=(5, 0))
+        if auto_illus:
+            ttk.Checkbutton(
+                btn_frame,
+                text="Always Find First [Illustration] in file",
+                variable=PersistentBoolean(PrefKey.HTML_IMAGE_FIND_FIRST),
+            ).grid(row=0, column=0, columnspan=3, pady=(0, 3))
         ttk.Button(
             btn_frame,
             text="Convert to HTML" if auto_illus else "Insert Markup",
             command=lambda: self.convert_to_html(auto_illus),
-        ).grid(row=0, column=0, sticky="NSEW", padx=2)
+        ).grid(row=1, column=0, sticky="NSEW", padx=2)
         if auto_illus:
             ttk.Button(
                 btn_frame,
                 text="Convert & Find Next",
                 command=self.convert_and_advance,
-            ).grid(row=0, column=1, sticky="NSEW", padx=2)
+            ).grid(row=1, column=1, sticky="NSEW", padx=2)
             ttk.Button(
                 btn_frame,
                 text="Find Next [Illustration]",
                 command=self.find_illo_markup,
-            ).grid(row=0, column=2, sticky="NSEW", padx=2)
+            ).grid(row=1, column=2, sticky="NSEW", padx=2)
             for col in range(0, 2):
                 btn_frame.columnconfigure(col, uniform="btn_frame")
 
@@ -384,13 +390,18 @@ class HTMLImageBaseDialog(ToplevelDialog):
         """Find next unconverted illo markup in file and
         advance to the next file."""
         self.illo_range = None
+        idxrng = (
+            maintext().start_to_end()
+            if preferences.get(PrefKey.HTML_IMAGE_FIND_FIRST)
+            else IndexRange(
+                maintext().rowcol(f"{maintext().get_insert_index().index()}+1c"),
+                maintext().end(),
+            )
+        )
         # Find and go to start of next unconverted illo markup
         illo_match_start = maintext().find_match(
             r"\[Illustration",
-            IndexRange(
-                maintext().rowcol(f"{maintext().get_insert_index().index()}+1c"),
-                maintext().end(),
-            ),
+            idxrng,
             regexp=True,
         )
         if illo_match_start is None:
