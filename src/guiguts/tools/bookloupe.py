@@ -122,6 +122,7 @@ checker_filters = [
     CheckerFilterText("Missing space", "Missing space.*"),
     CheckerFilterText("No punctuation at para end", "No punctuation at para end.*"),
     CheckerFilterText("Para starts with lower-case", "Para starts with lower-case.*"),
+    CheckerFilterText("Period comma", "Period comma.*"),
     CheckerFilterText("Punctuation after...", "Punctuation after .*"),
     CheckerFilterText("Query I/!", "Query I/!.*"),
     CheckerFilterText("Query had/bad", "Query had/bad.*"),
@@ -243,6 +244,7 @@ class BookloupeChecker:
             self.check_typos(step, line)
             self.check_misspaced_punctuation(step, line)
             self.check_double_punctuation(step, line)
+            self.check_period_comma(step, line)
             self.check_miscased_genitive(step, line)
             self.check_unspaced_bracket(step, line)
             self.check_unpunctuated_endquote(step, line)
@@ -788,21 +790,31 @@ class BookloupeChecker:
                     continue
 
     def check_double_punctuation(self, step: int, line: str) -> None:
-        """Check for double punctuation except "..", "!!" or "??".
+        """Check for double punctuation except ".,", "..", "!!" or "??".
 
         Args:
             step: Line number being checked.
             line: Text of line being checked.
         """
-        for match in re.finditer(r"(etc|&c|i\.e|e\.g)?([.?!,;:]{2,})", line):
-            if re.fullmatch(r"([.?!])\1+", match[2]) or match[0] in (
+        for match in re.finditer(r"([.?!,;:]{2,})", line):
+            if not re.fullmatch(r"([.?!])\1+|\.,", match[0]):
+                self.add_match_entry(step, match, "Double punctuation")
+
+    def check_period_comma(self, step: int, line: str) -> None:
+        """Check for ".,".
+
+        Args:
+            step: Line number being checked.
+            line: Text of line being checked.
+        """
+        for match in re.finditer(r"(?i)(etc|&c|i\.e|e\.g)?\.,(?![.?!,;:])", line):
+            if match[0].lower() not in (
                 "etc.,",
                 "&c.,",
                 "i.e.,",
                 "e.g.,",
             ):
-                continue
-            self.add_match_entry(step, match, "Double punctuation", group=2)
+                self.add_match_entry(step, match, "Period comma")
 
     def check_miscased_genitive(self, step: int, line: str) -> None:
         """Check for "lowercase'S".
