@@ -1338,8 +1338,19 @@ class WordFrequencyDialog(ToplevelDialog):
             return "Unknown"
 
         def mixed_word(word: str) -> bool:
-            """Return whether word has mixed scripts."""
-            return len({get_script(ch) for ch in word if ch.isalpha()}) > 1
+            """Return whether word has mixed scripts.
+            Treat digits as Latin to trap "7ΤΗ" (Greek).
+            """
+            return (
+                len(
+                    {
+                        get_script(ch)
+                        for ch in re.sub("[0-9]", "x", word)
+                        if ch.isalpha()
+                    }
+                )
+                > 1
+            )
 
         self.wf_populate_by_match(
             "mixed script",
