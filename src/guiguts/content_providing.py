@@ -1564,7 +1564,7 @@ class CPRenumberDialog(ToplevelDialog):
             ttk.Label(center_frame, text=f"Section {section}:").grid(
                 row=section, column=0
             )
-            prefix_entry = tk.Entry(
+            prefix_entry = ttk.Entry(
                 center_frame,
                 width=3,
                 justify=tk.CENTER,
@@ -1575,7 +1575,7 @@ class CPRenumberDialog(ToplevelDialog):
                 prefix_entry,
                 f'Prefix to use for section {section}, e.g. "a" for "a001", "a002",...',
             )
-            start_entry = tk.Entry(
+            start_entry = ttk.Entry(
                 center_frame,
                 width=5,
                 justify=tk.CENTER,
@@ -1591,7 +1591,7 @@ class CPRenumberDialog(ToplevelDialog):
                 start_entry,
                 f'Starting number to use for section {section}, e.g. "5" for "005", "006",...',
             )
-            end_entry = tk.Entry(
+            end_entry = ttk.Entry(
                 center_frame,
                 width=5,
                 justify=tk.CENTER,
@@ -1607,7 +1607,7 @@ class CPRenumberDialog(ToplevelDialog):
                 end_entry,
                 f'Ending number to use for section {section}, e.g. "27" for ..."026", "027"',
             )
-            suffixes_entry = tk.Entry(
+            suffixes_entry = ttk.Entry(
                 center_frame,
                 width=12,
                 justify=tk.CENTER,
