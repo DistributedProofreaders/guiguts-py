@@ -759,6 +759,7 @@ def html_convert_body() -> None:
                 )
             else:  # lines within "/c" markup
                 do_per_line_markup(selection, line_start, line_end, ibs_dict)
+                maintext().insert(line_start, "  ")  # Indent line to prettify
                 if next_lower != "c/":
                     maintext().insert(line_end, "<br>")
             continue
