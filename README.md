@@ -1,12 +1,12 @@
 # Guiguts
 
-Guiguts - an application to support creation of ebooks for PG
+Guiguts - an application to support creation of ebooks for PG. A complete [Guiguts version 2 user's manual](https://www.pgdp.net/wiki/PPTools/Guiguts/Guiguts_2_Manual) is available in the DP Wiki.
 
-**If you want to use Guiguts primarily for developing the code, see below for [Developer Installation Notes](#developer-installation-notes).**
+**If you want to use Guiguts primarily for developing the code, or just prefer to have the developer code so you can easily get the most recent code merges, see below for [Developer Installation Notes](#developer-installation-notes).**
 
 ## User Installation Notes
 
-This section contains notes from users who have installed Guiguts 2 on various platforms to use for PPing. **If you are a developer, you probably want the [Development Installation Notes](#common-development-setup).**
+This section contains notes from users who have installed Guiguts 2 on various platforms to use for PPing.
 
 Note that although some example installation commands specify Python 3.11, Guiguts 2
 also works with later versions of Python, and has been tested in versions up to 3.14.
