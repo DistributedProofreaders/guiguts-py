@@ -1104,8 +1104,11 @@ class PPhtmlChecker:
             )
 
         for line in split_content:
-            line = line.replace(".", " .")  # ".poem.apdx" becomes " .poem .apdx"
-            line = line.replace(",", " ")  # splits h1,h2,h3
+            line = re.sub(
+                r"(?<!\\)\.", " .", line
+            )  # ".poem.apdx" becomes " .poem .apdx" but backslash escapes dot
+            line = line.replace("\\", "")
+            line = re.sub(r"[,\(\)]", " ", line)  # splits h1,h2,h3 & :has(.abc)
             line = re.sub("  +", " ", line)
             line = line.strip()
             for a_class in line.split(" "):
@@ -1121,8 +1124,9 @@ class PPhtmlChecker:
 
     def find_defined_class(self, css_class: str) -> Optional[IndexRange]:
         """Return index range of first occurrence of css_class in file."""
+        esc_class = re.escape(css_class)
         if idx := maintext().search(
-            rf"\.{css_class}(?![-_a-zA-Z0-9])", "1.0", self.end_css, regexp=True
+            rf"\.{esc_class}(?![-_a-zA-Z0-9])", "1.0", self.end_css, regexp=True
         ):
             beg_idx = maintext().rowcol(f"{idx}+1c")
             end_idx = maintext().rowcol(f"{idx}+{len(css_class) + 1}c")
