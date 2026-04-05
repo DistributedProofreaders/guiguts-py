@@ -67,6 +67,7 @@ DEFAULT_MISSPELLED_SCANNOS = "misspelled.json"
 DEFAULT_REGEX_LIBRARY_DIR = importlib.resources.files(regex_library)
 DEFAULT_DASHES_REGEX_LIBRARY = "dashes.json"
 DEFAULT_ITALIC_SEMANTIC_REGEX_LIBRARY = "italic_semantic.json"
+DEFAULT_DIACRITICAL_MARKS_REGEX_LIBRARY = "diacritical_marks.json"
 
 CURLY_QUOTES_CHECKER_FILTERS = [
     CheckerFilterErrorPrefix("Double quote not converted", "DQ not converted: "),
