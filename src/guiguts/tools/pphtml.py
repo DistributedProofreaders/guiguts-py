@@ -284,7 +284,12 @@ class PPhtmlChecker:
                 )
                 test_passed = False
 
-        self.output_subsection_errors(test_passed, "Image Dimensions Check", errors)
+        self.output_subsection_errors(
+            test_passed,
+            "Image Dimensions Check",
+            errors,
+            fail_string=PPhtmlChecker.warn_flag,
+        )
 
     def image_summary(self) -> None:
         """Show information about image (verbose mode only)."""
@@ -478,7 +483,7 @@ class PPhtmlChecker:
         self.do_resolve()
 
     def external_links(self) -> None:
-        """Report and external href links."""
+        """Report any external href links."""
         errors: list[tuple[str, Optional[IndexRange]]] = []
         test_passed = True
         count_links = 0
@@ -487,12 +492,16 @@ class PPhtmlChecker:
                 # Don't report links to w3.org in the first few lines
                 if line_num < 5 and re.match(r"https?://www.w3.org/", match[0]):
                     continue
-                test_passed = False
+                if "gutenberg.org" in match[0]:
+                    fail_str = ""
+                else:
+                    fail_str = " ERROR"
+                    test_passed = False
                 if count_links <= 10:
                     start = IndexRowCol(line_num + 1, match.span()[0])
                     end = IndexRowCol(line_num + 1, match.span()[1])
                     errors.append(
-                        (f"External link: {match[0]}", IndexRange(start, end))
+                        (f"External link{fail_str}: {match[0]}", IndexRange(start, end))
                     )
                 if not preferences.get(PrefKey.PPHTML_VERBOSE):
                     count_links += 1
