@@ -492,13 +492,16 @@ class PPhtmlChecker:
                 # Don't report links to w3.org in the first few lines
                 if line_num < 5 and re.match(r"https?://www.w3.org/", match[0]):
                     continue
-                if "gutenberg.org/" not in match[0]:
+                if "gutenberg.org" in match[0]:
+                    fail_str = ""
+                else:
+                    fail_str = " ERROR"
                     test_passed = False
                 if count_links <= 10:
                     start = IndexRowCol(line_num + 1, match.span()[0])
                     end = IndexRowCol(line_num + 1, match.span()[1])
                     errors.append(
-                        (f"External link: {match[0]}", IndexRange(start, end))
+                        (f"External link{fail_str}: {match[0]}", IndexRange(start, end))
                     )
                 if not preferences.get(PrefKey.PPHTML_VERBOSE):
                     count_links += 1
