@@ -1295,14 +1295,14 @@ def theme_name_internal_from_user(user_theme: str) -> str:
 _text_focus_widget: Optional[tk.Widget] = None
 
 
-def register_focus_widget(widget: tk.Entry | tk.Text) -> None:
+def register_focus_widget(widget: ttk.Entry | tk.Text) -> None:
     """Register a widget as being "of interest", i.e. to track when it gets focus.
 
     Args:
         widget: The widget whose focus is to be tracked.
     """
     global _text_focus_widget
-    assert isinstance(widget, (tk.Entry, tk.Text))
+    assert isinstance(widget, (ttk.Entry, tk.Text))
 
     def set_focus_widget(event: tk.Event) -> None:
         """Store the widget that triggered the event."""
@@ -1323,7 +1323,7 @@ def insert_in_focus_widget(string: str) -> None:
     """
     if _text_focus_widget is None or not _text_focus_widget.winfo_exists():
         return
-    assert isinstance(_text_focus_widget, (tk.Entry, tk.Text))
+    assert isinstance(_text_focus_widget, (ttk.Entry, tk.Text))
 
     if isinstance(_text_focus_widget, tk.Text):
         sel_ranges = _text_focus_widget.tag_ranges("sel")
@@ -1331,7 +1331,7 @@ def insert_in_focus_widget(string: str) -> None:
             _text_focus_widget.mark_set(tk.INSERT, sel_ranges[0])
             _text_focus_widget.delete(sel_ranges[0], sel_ranges[1])
             _text_focus_widget.tag_remove("sel", "1.0", tk.END)
-    elif isinstance(_text_focus_widget, tk.Entry):
+    elif isinstance(_text_focus_widget, ttk.Entry):
         if _text_focus_widget.selection_present():
             _text_focus_widget.delete("sel.first", "sel.last")
     _text_focus_widget.insert(tk.INSERT, string)

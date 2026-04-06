@@ -313,7 +313,7 @@ class ASCIITableDialog(ToplevelDialog):
 
         self.label_indent = ttk.Label(adjust_col_row1_frame, text="Indent")
         self.label_indent.grid(row=0, column=5, padx=5, pady=2, sticky="NSEW")
-        self.indent_value_entry = tk.Entry(
+        self.indent_value_entry = ttk.Entry(
             adjust_col_row1_frame,
             width=5,
             textvariable=PersistentInt(PrefKey.ASCII_TABLE_INDENT),
@@ -379,7 +379,7 @@ class ASCIITableDialog(ToplevelDialog):
             "Replace leading and trailing spaces in column with following character",
         )
 
-        fill_entry = tk.Entry(
+        fill_entry = ttk.Entry(
             center_frame,
             width=2,
             justify=tk.CENTER,
@@ -409,7 +409,7 @@ class ASCIITableDialog(ToplevelDialog):
         ttk.Label(center_frame, text="Table Right Column").grid(
             row=0, column=0, pady=2, sticky="NSEW"
         )
-        right_entry = tk.Entry(
+        right_entry = ttk.Entry(
             center_frame,
             width=3,
             justify=tk.CENTER,

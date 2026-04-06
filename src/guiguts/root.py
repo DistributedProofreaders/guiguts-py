@@ -56,12 +56,12 @@ class Root(tk.Tk):
         if is_x11():
 
             def select_all(event: tk.Event) -> str:
-                assert isinstance(event.widget, (tk.Entry, ttk.Entry, ttk.Combobox))
+                assert isinstance(event.widget, (ttk.Entry, ttk.Combobox))
                 event.widget.selection_range(0, tk.END)
                 return "break"
 
-            self.bind_class("Entry", "<Control-a>", select_all)
-            self.bind_class("Entry", "<Control-A>", select_all)
+            self.bind_class("TEntry", "<Control-a>", select_all)
+            self.bind_class("TEntry", "<Control-A>", select_all)
             self.bind_class("TCombobox", "<Control-a>", select_all)
             self.bind_class("TCombobox", "<Control-A>", select_all)
 
