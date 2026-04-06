@@ -1309,7 +1309,10 @@ class WordFrequencyDialog(ToplevelDialog):
         char_dict: WFDict = WFDict()
 
         total_cnt = 0
+        lower = preferences.get(PrefKey.WFDIALOG_IGNORE_CASE)
         for line, _ in maintext().get_lines():
+            if lower:
+                line = line.lower()
             total_cnt += len(line)
             for char in line:
                 tally_word(char_dict, char)
