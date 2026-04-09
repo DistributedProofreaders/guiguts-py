@@ -112,6 +112,7 @@ from guiguts.misc_tools import (
     DEFAULT_REGEX_LIBRARY_DIR,
     DEFAULT_DASHES_REGEX_LIBRARY,
     DEFAULT_ITALIC_SEMANTIC_REGEX_LIBRARY,
+    DEFAULT_DIACRITICAL_MARKS_REGEX_LIBRARY,
     convert_to_curly_quotes,
     check_curly_quotes,
     protect_html_straight_quotes,
@@ -603,6 +604,11 @@ class Guiguts:
                 str(
                     DEFAULT_REGEX_LIBRARY_DIR.joinpath(
                         DEFAULT_ITALIC_SEMANTIC_REGEX_LIBRARY
+                    )
+                ).replace("\\", "/"),
+                str(
+                    DEFAULT_REGEX_LIBRARY_DIR.joinpath(
+                        DEFAULT_DIACRITICAL_MARKS_REGEX_LIBRARY
                     )
                 ).replace("\\", "/"),
             ],

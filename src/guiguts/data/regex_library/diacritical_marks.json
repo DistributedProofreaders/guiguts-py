@@ -1,0 +1,119 @@
+{
+"regexes": [
+{
+"match": "\\[=(.)\\]",
+"replacement": "\\1\\u0304",
+"hint": "Macron above"
+},
+{
+"match": "\\[(.)=\\]",
+"replacement": "\\1\\u0331",
+"hint": "Macron below"
+},
+{
+"match": "\\[:(.)\\]",
+"replacement": "\\1\\u0308",
+"hint": "Diaeresis above"
+},
+{
+"match": "\\[(.):\\]",
+"replacement": "\\1\\u0324",
+"hint": "Diaeresis below"
+},
+{
+"match": "\\[\\.(.)\\]",
+"replacement": "\\1\\u0307",
+"hint": "Dot above"
+},
+{
+"match": "\\[(.)\\.\\]",
+"replacement": "\\1\\u0323",
+"hint": "Dot below"
+},
+{
+"match": "\\[`(.)\\]",
+"replacement": "\\1\\u0300",
+"hint": "Grave accent above"
+},
+{
+"match": "\\[(.)`\\]",
+"replacement": "\\1\\u0316",
+"hint": "Grave accent below"
+},
+{
+"match": "\\['(.)\\]",
+"replacement": "\\1\\u0301",
+"hint": "Acute accent above"
+},
+{
+"match": "\\[(.)'\\]",
+"replacement": "\\1\\u0317",
+"hint": "Acute accent below"
+},
+{
+"match": "\\[\\^(.)\\]",
+"replacement": "\\1\\u0302",
+"hint": "Circumflex above"
+},
+{
+"match": "\\[(.)\\^\\]",
+"replacement": "\\1\\u032d",
+"hint": "Circumflex below"
+},
+{
+"match": "\\[v(.)\\]",
+"replacement": "\\1\\u030c",
+"hint": "Caron above"
+},
+{
+"match": "\\[(.)v\\]",
+"replacement": "\\1\\u032c",
+"hint": "Caron below"
+},
+{
+"match": "\\[\\)(.)\\]",
+"replacement": "\\1\\u0306",
+"hint": "Breve above"
+},
+{
+"match": "\\[(.)\\)\\]",
+"replacement": "\\1\\u032e",
+"hint": "Breve below"
+},
+{
+"match": "\\[\\((.)\\]",
+"replacement": "\\1\\u0311",
+"hint": "Inverted breve above"
+},
+{
+"match": "\\[(.)\\(\\]",
+"replacement": "\\1\\u032f",
+"hint": "Inverted breve below"
+},
+{
+"match": "\\[~(.)\\]",
+"replacement": "\\1\\u0303",
+"hint": "Tilde above"
+},
+{
+"match": "\\[(.)~\\]",
+"replacement": "\\1\\u0330",
+"hint": "Tilde below"
+},
+{
+"match": "\\[(.),\\]",
+"replacement": "\\1\\u0327",
+"hint": "Cedilla"
+},
+{
+"match": "\\[\\*(.)\\]",
+"replacement": "\\1\\u030a",
+"hint": "Ring above"
+},
+{
+"match": "\\[(.)\\*\\]",
+"replacement": "\\1\\u0325",
+"hint": "Ring below"
+}
+]
+}
