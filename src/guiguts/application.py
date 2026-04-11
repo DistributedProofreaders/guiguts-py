@@ -50,6 +50,7 @@ from guiguts.html_tools import (
     HTMLLinksDialog,
     latex_svg_convert,
     latex_undo_autogen,
+    latex_convert_pageseps,
 )
 from guiguts.illo_sn_fixup import illosn_check
 
@@ -966,6 +967,10 @@ class Guiguts:
     def init_file_latex_menu(self, parent: MenuMetadata) -> None:
         """Create the File->LaTeX menu."""
         project_menu = parent.add_submenu("LaTe~X")
+        project_menu.add_button(
+            "Convert LaTeX ~Page Separators",
+            latex_convert_pageseps,
+        )
         project_menu.add_button(
             "~Convert File (m2svg)",
             latex_svg_convert,

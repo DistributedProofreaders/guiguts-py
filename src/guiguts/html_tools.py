@@ -18,11 +18,18 @@ import zipfile
 from PIL import Image, ImageTk, UnidentifiedImageError
 import regex as re
 import requests
+import roman  # type: ignore[import-untyped]
 
 from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerEntrySeverity
 from guiguts.file import the_file
 from guiguts.html_convert import make_anchor_id
 from guiguts.maintext import maintext, menubar_metadata, HighlightTag
+from guiguts.page_details import (
+    PageDetail,
+    PageDetails,
+    STYLE_ARABIC,
+    STYLE_ROMAN,
+)
 from guiguts.preferences import (
     PersistentString,
     PersistentBoolean,
@@ -2557,5 +2564,73 @@ def latex_undo_autogen() -> None:
 
         # Start next search at the end of the previous markup
         start = maintext().index(endmark)
+
+    Busy.unbusy()
+
+
+def latex_convert_pageseps() -> None:
+    """Convert LaTeX page seps `\\PageSep{nnn}` to GG page seps."""
+    Busy.busy()
+    maintext().undo_block_begin()
+
+    page_details = PageDetails()
+    start_idx = "1.0"
+    png_num = 0
+    while True:
+        start_idx = maintext().search(
+            r"^\\(DP)?PageSep\{|^%+ *---+File:", start_idx, tk.END, regexp=True
+        )
+        if not start_idx:
+            break
+        latex_sep = maintext().get(start_idx, f"{start_idx} lineend")
+        # Try to deal with the most common LaTeX page sep formats
+        # \\DPPageSep{123.png}{89}
+        if match := re.match(
+            r"\\DPPageSep\{(.+?)\.png\}\{(.+?)\}", latex_sep, flags=re.IGNORECASE
+        ):
+            png_str = str(match.group(1))
+            folio_str = str(match.group(2))
+        # \\PageSep{89}
+        elif match := re.match(r"\\PageSep\{(.+?)\}", latex_sep, flags=re.IGNORECASE):
+            png_num += 1  # No PNG given, just use next in sequence
+            png_str = str(png_num)
+            folio_str = str(match.group(1))
+        # %% -----File: 123.png---Folio 89-------
+        elif match := re.match(
+            r"%+ *---+File: *(.+?)\.png[- ]+Folio +([^ -]+)",
+            latex_sep,
+            flags=re.IGNORECASE,
+        ):
+            png_str = str(match.group(1))
+            folio_str = str(match.group(2))
+        # Can't make sense of it - ignore
+        else:
+            continue
+        if len(png_str) < 4:
+            png_str = "0" * (4 - len(png_str)) + png_str
+        # Cope with Roman and Arabic folio numbers
+        try:
+            num = roman.fromRoman(folio_str.upper())
+            style = STYLE_ROMAN
+        except roman.InvalidRomanNumeralError:
+            try:
+                num = int(folio_str)
+                style = STYLE_ARABIC
+            except ValueError:
+                continue
+        page_details[png_str] = PageDetail(start_idx, style, str(num))
+        # Convert to a standard page sep line
+        standard_line = f"-----File: {png_str}.png"
+        standard_line += "-" * (75 - len(standard_line))
+        maintext().replace(start_idx, f"{start_idx} lineend", standard_line)
+        # Search from next line
+        start_idx = f"{start_idx} lineend"
+
+    # If any LaTeX page seps found, calculate the label strings, store in File class,
+    # and set up page marks at each position.
+    if page_details:
+        page_details.recalculate()
+        the_file().page_details = page_details
+        the_file().set_page_marks(page_details)
 
     Busy.unbusy()
