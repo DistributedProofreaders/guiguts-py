@@ -82,7 +82,7 @@ PAGE_FLAG_ROMAN = "R"
 # Label is calculated from other info after file load.
 PAGE_FLAG_REGEX = rf"{PAGE_FLAG_START_E}{PAGE_FLAG_PREFIX}(.+?){PAGE_FLAG_SEP_E}(.+?){PAGE_FLAG_SEP_E}(.+?){PAGE_FLAG_END_E}"
 
-PAGE_SEPARATOR_REGEX = r"File:.+?([^/\\ ]+)\.(png|jpg)"
+PAGE_SEPARATOR_REGEX = r"^File:.+?([^/\\ ]+)\.(png|jpg)"
 
 BOOKMARK_BASE = "Bookmark"
 BOOKMARK_START = f"{BOOKMARK_BASE}Start"
