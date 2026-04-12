@@ -1366,12 +1366,11 @@ class PgdpFileHtml(PgdpFile):
         if not filename.lower().endswith((".html", ".htm", ".xhtml")):
             raise SyntaxError("Not an html file: " + filename)
         super().load(filename)
-        if self.text.find("<!DOCTYPE html>", 0, 100) < 0:
-            raise SyntaxError(
-                'Only HTML5 supported - must begin with "<!DOCTYPE html>"'
-            )
         try:
-            self.tree, errors = self.parse_html5()
+            if 0 <= self.text.find("<!DOCTYPE html>", 0, 100):  # limit search
+                self.tree, errors = self.parse_html5()
+            else:
+                self.tree, errors = self.parse_html()
         except Exception as ex:
             raise SyntaxError(f"HTML file cannot be parsed: \n{ex}") from ex
         if errors:
