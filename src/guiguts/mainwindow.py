@@ -35,6 +35,7 @@ from guiguts.utilities import (
     bell_set_callback,
     process_accel,
     sound_bell,
+    folder_dir_str,
 )
 from guiguts.widgets import (
     ToplevelDialog,
@@ -174,6 +175,7 @@ browser via "{start_open}". To use a different browser, specify that browser as 
 Enclose commands or filenames that may contain spaces in "double quotes".
 
 The following variables are available for use in commands:
+$d: current project {folder_dir_str(lowercase=True)}
 $f: full pathname of the current File
 $p: Png name of current image, e.g. 007 for 007.png
 $s: Sequence number of current page, e.g. 7 for 7th png, regardless of numbering
@@ -219,6 +221,8 @@ e.g. $(s+7) would give 12 for the 5th png.
             token = token.replace("$p", maintext().get_current_image_name())
             # Text/HTML file name
             token = token.replace("$f", cls.filename)
+            # Current project directory name
+            token = token.replace("$d", os.path.dirname(cls.filename))
             # Offset png sequence number
             token = re.sub(
                 r"\$\(s(-|\+)(\d+)\)",
@@ -294,9 +298,12 @@ e.g. $(s+7) would give 12 for the 5th png.
                 if is_windows():
                     creationflags = subprocess.CREATE_NEW_CONSOLE  # type: ignore[attr-defined]
 
+            # Run from project directory if there is one
+            proj_dir = os.path.dirname(cls.filename)
+            cwd = proj_dir if os.path.isdir(proj_dir) else None
             try:
                 run_func(  # pylint: disable=subprocess-run-check
-                    cmd, shell=shell, creationflags=creationflags
+                    cmd, shell=shell, creationflags=creationflags, cwd=cwd
                 )
             except OSError:
                 logger.error(f"Unable to execute {cmd_string}")
