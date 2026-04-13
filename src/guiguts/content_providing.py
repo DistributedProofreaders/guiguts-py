@@ -1964,6 +1964,7 @@ def cp_list_good_words() -> None:
                 **kwargs,
             )
             self.rowcol_radio["text"] = "Order added"
+            self.count_label.grid_remove()
 
     checker_dialog = CPGoodWordsCheckerDialog.show_dialog(
         rerun_command=cp_list_good_words,
