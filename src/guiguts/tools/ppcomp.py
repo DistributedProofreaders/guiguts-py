@@ -1366,12 +1366,11 @@ class PgdpFileHtml(PgdpFile):
         if not filename.lower().endswith((".html", ".htm", ".xhtml")):
             raise SyntaxError("Not an html file: " + filename)
         super().load(filename)
-        if self.text.find("<!DOCTYPE html>", 0, 100) < 0:
-            raise SyntaxError(
-                'Only HTML5 supported - must begin with "<!DOCTYPE html>"'
-            )
         try:
-            self.tree, errors = self.parse_html5()
+            if 0 <= self.text.find("<!DOCTYPE html>", 0, 100):  # limit search
+                self.tree, errors = self.parse_html5()
+            else:
+                self.tree, errors = self.parse_html()
         except Exception as ex:
             raise SyntaxError(f"HTML file cannot be parsed: \n{ex}") from ex
         if errors:
@@ -1398,12 +1397,15 @@ class PgdpFileHtml(PgdpFile):
         start_found = False
         end_found = False
         for node in self.tree.find("body").iter():
-            if node.tag == "div" and node.text and node.text.startswith(PG_EBOOK_START):
-                start_found = True
-                node.text = ""
-                node.tail = ""
-            elif node.tag == "div" and node.text and node.text.startswith(PG_EBOOK_END):
-                end_found = True
+            # Edited to handle new and old PG headers in HTML
+            # New is in "div"; old in "pre" and not at start of pre text
+            if node.tag in ("div", "pre") and node.text:
+                if PG_EBOOK_START in node.text:
+                    start_found = True
+                    node.text = ""
+                    node.tail = ""
+                elif PG_EBOOK_END in node.text:
+                    end_found = True
             if end_found or not start_found:
                 node.text = ""
                 node.tail = ""
