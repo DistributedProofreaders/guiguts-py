@@ -111,7 +111,7 @@ class WFWordLists:
 
             def strip_punc(word: str) -> str:
                 """Strip relevant leading/trailing punctuation from word."""
-                return re.sub(r"^[\.,'’_-]+|[\.,'’_*-]+$", "", word)
+                return re.sub(r"^[\.,'’_*-]+|[\.,'’_*-]+$", "", word)
 
             # Build a list of emdash words, i.e. "word1--word2"
             words = re.split(r"\s+", line)
@@ -124,8 +124,6 @@ class WFWordLists:
 
             words = re.split(r"\s+", line)
             for word in words:
-                word = re.sub(r"(?<!\-)\*", "", word)  # * not preceded by hyphen
-                word = re.sub(r"^\*$", "", word)  # just *
                 word = strip_punc(word)
                 if re.fullmatch(r"[a-z0-9_]+\.(jpg|png)", word):
                     continue  # Don't want p027.png or i_002.jpg
@@ -780,17 +778,18 @@ class WordFrequencyDialog(ToplevelDialog):
             match_word = re.escape(newline_word)
         else:  # Do manual whole-word
             # Ensure apostrophes are handled correctly, i.e. "abc" doesn't match "l'abc" or "abc's"
+            # Similarly for hyphens, so "re" doesn't match "re-calculate"
             # Also, boundary for an emdash is any non-emdash, but for other non-word characters the
             # boundary is a word/space character
             emdash_bound = "—" if newline_word[0] == "—" else r"[^\w\s]"
             left_boundary = (
-                r"(?<!([^\W_]|\w['’]))"
+                r"(?<!([^\W_]|\w[-'’]))"
                 if newline_word[0].isalnum()
                 else rf"(?<!{emdash_bound})"
             )
             emdash_bound = "—" if newline_word[-1] == "—" else r"[^\w\s]"
             right_boundary = (
-                r"(?!([^\W_]|['’]\w))"
+                r"(?!([^\W_]|[-'’]\w))"
                 if newline_word[-1].isalnum()
                 else rf"(?!{emdash_bound})"
             )
