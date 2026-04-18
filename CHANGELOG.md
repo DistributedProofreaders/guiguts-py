@@ -1,6 +1,50 @@
 # Changelog
 
 
+## Version 2.0.22
+
+- New `diacritical_marks.json` Regex Library file facilitates converting DP
+  diacritical mark markup to base character and combining marks, which must
+  then be normalized using Tools->Unicode->Normalize Selected Characters
+- Re-wrapping now respects Non-breaking Spaces, Narrow Non-breaking Spaces
+  and Figure Spaces, and does not consider them as break points
+- Prep Text Import/Export checks that files are not named such that their 
+  order would depend on case-sensitivity to avoid cross-platform issues
+- Auto-Illustration now has a checkbutton to search from the start of the file
+  rather than the current cursor position
+- Bookloupe check for "Period comma" has been split from the main "Double
+  punctuation" check
+- File-->LaTeX-->Convert LaTeX Page Separators converts various forms of
+  LaTeX page separators to DP standard format
+- PPcomp now accepts non-HTML5 files, e.g. legacy X(HTML) DP files
+- WF Mixed Script check will now report a word containing digits and Greek
+  characters 
+- Minor improvements have been made to Stealth Scannos files
+- Custom commands are now run in the project directory
+- If a custom command begins with `http`, special characters in text included
+  using the `$t` variable will be escaped
+- `$d` variable can be used in custom commands to refer to the project
+  directory
+- README now contains a link to the GG2 manual
+
+### Bug fixes
+
+- `Next para begins with quote` curly quote exception failed within poetry
+- Bookloupe did not treat emdash as a word break if it was followed by digits
+- Several PPcomp operations could cause an exception if no file was loaded
+- Moving an illo/sidenote up/down caused entries that had been hidden to
+  re-appear in the list
+- HTML code for centered paragraphs was not indented, unlike right-aligned ones
+- PPhtml used a FAIL heading for image dimension warnings
+- PPhtml reported permitted external links to gutenberg.org as errors
+- On Linux, Ctrl-A did not select all text in Entry widgets
+- CSS such as `:has(.abc)` and `abc\.def` caused PPhtml exceptions
+- WF Char Count did not respect the Ignore Case flag
+- Good Words dialog always had unnecessary "0 Entries" label
+- WF searching did not work correctly for "words" containing an asterisk, or
+  words that also occurred as part of a hyphenated word
+
+
 ## Version 2.0.21
 
 - Ebookmaker (online using API) now runs in the background. When the Run button
