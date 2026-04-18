@@ -82,7 +82,7 @@ PAGE_FLAG_ROMAN = "R"
 # Label is calculated from other info after file load.
 PAGE_FLAG_REGEX = rf"{PAGE_FLAG_START_E}{PAGE_FLAG_PREFIX}(.+?){PAGE_FLAG_SEP_E}(.+?){PAGE_FLAG_SEP_E}(.+?){PAGE_FLAG_END_E}"
 
-PAGE_SEPARATOR_REGEX = r"^File:.+?([^/\\ ]+)\.(png|jpg)"
+PAGE_SEPARATOR_REGEX = r"File:.+?([^/\\ ]+)\.(png|jpg)"
 
 BOOKMARK_BASE = "Bookmark"
 BOOKMARK_START = f"{BOOKMARK_BASE}Start"
@@ -669,8 +669,7 @@ class File:
         self.mark_page_boundaries()
 
     def mark_page_boundaries(self) -> None:
-        """Loop through whole file, ensuring all page separator lines
-        are in standard format, and setting page marks at the
+        """Loop through whole file setting page marks at the
         start of each page separator line.
         """
         if not self.contains_page_marks():
@@ -688,13 +687,7 @@ class File:
             line = maintext().get(line_start, line_end)
             # Always matches since same regex as earlier search
             if match := pattern.search(line):
-                (page, ext) = match.group(1, 2)
-                standard_line = f"-----File: {page}.{ext}"
-                standard_line += "-" * (75 - len(standard_line))
-                # Don't standarize line if it has a page marker flag on it, or you'll delete the flag!
-                if line != standard_line and not re.search(PAGE_FLAG_REGEX, line):
-                    maintext().delete(line_start, line_end)
-                    maintext().insert(line_start, standard_line)
+                page = match.group(1)
                 page_mark = page_mark_from_img(page)
                 maintext().set_mark_position(page_mark, IndexRowCol(line_start))
                 try:
