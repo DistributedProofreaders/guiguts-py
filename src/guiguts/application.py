@@ -1690,7 +1690,7 @@ class Guiguts:
 
         the_statusbar.add(
             "see img",
-            tooltip="Click: View scan image for current location\nShift click: Toggle auto-image",
+            tooltip="Click: View proofing image for current location\nShift click: Toggle auto-image",
             text="See Img",
             width=9,
         )
