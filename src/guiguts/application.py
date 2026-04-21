@@ -1658,20 +1658,39 @@ class Guiguts:
         the_statusbar.set_first_tab_behavior("rowcol")
 
         the_statusbar.add(
+            "prev img",
+            tooltip="Click: Go to previous page in the text",
+            text="<",
+            width=1,
+        )
+        the_statusbar.add_binding("prev img", StatusBar.BTN_1, self.file.prev_page)
+
+        the_statusbar.add(
             "img",
-            tooltip="Click: Go to image",
+            tooltip="Click: Go to page by giving png name",
             update=lambda: "Img: " + maintext().get_current_image_name(),
         )
         the_statusbar.add_binding("img", StatusBar.BTN_1, self.file.goto_image)
 
         the_statusbar.add(
-            "prev img", tooltip="Click: Go to previous image", text="<", width=1
+            "next img", tooltip="Click: Go to next page in the text", text=">", width=1
         )
-        the_statusbar.add_binding("prev img", StatusBar.BTN_1, self.file.prev_page)
+        the_statusbar.add_binding("next img", StatusBar.BTN_1, self.file.next_page)
+
+        the_statusbar.add(
+            "page label",
+            tooltip="Click: Go to page by giving label\nShift click: Configure page labels",
+            text="Lbl: ",
+            update=lambda: "Lbl: " + self.file.get_current_page_label(),
+        )
+        the_statusbar.add_binding("page label", StatusBar.BTN_1, self.file.goto_page)
+        the_statusbar.add_binding(
+            "page label", StatusBar.SHIFT_BTN_1, self.show_page_details_dialog
+        )
 
         the_statusbar.add(
             "see img",
-            tooltip="Click: See image\nShift click: Toggle auto-image",
+            tooltip="Click: View scan image for current location\nShift click: Toggle auto-image",
             text="See Img",
             width=9,
         )
@@ -1684,22 +1703,6 @@ class Guiguts:
             "see img",
             StatusBar.SHIFT_BTN_1,
             lambda: preferences.toggle(PrefKey.AUTO_IMAGE),
-        )
-
-        the_statusbar.add(
-            "next img", tooltip="Click: Go to next image", text=">", width=1
-        )
-        the_statusbar.add_binding("next img", StatusBar.BTN_1, self.file.next_page)
-
-        the_statusbar.add(
-            "page label",
-            tooltip="Click: Go to page\nShift click: Configure page labels",
-            text="Lbl: ",
-            update=lambda: "Lbl: " + self.file.get_current_page_label(),
-        )
-        the_statusbar.add_binding("page label", StatusBar.BTN_1, self.file.goto_page)
-        the_statusbar.add_binding(
-            "page label", StatusBar.SHIFT_BTN_1, self.show_page_details_dialog
         )
 
         def selection_str() -> str:
