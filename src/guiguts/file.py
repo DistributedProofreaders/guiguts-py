@@ -1007,12 +1007,13 @@ class File:
         with path.open("a", encoding="utf-8") as fp:
             fp.write(f"{word}\n")
 
-    def rewrap_selection(self, bq_depth: int = 0) -> None:
+    def rewrap_selection(self, bq_depth: int = 0, skip_indented: bool = False) -> None:
         """Wrap selected text.
 
         Args:
             section_range: Range of text to be wrapped.
             bq_depth: Starting blockquote depth (only 0 or 1 supported)
+            skip_indented: If True, skip paragraphs that begin with a space
         """
         ranges = maintext().selected_ranges()
         if not ranges:
@@ -1025,7 +1026,7 @@ class File:
             ranges[0].end.row += 1
         Busy.busy()
         maintext().undo_block_begin()
-        self.rewrap_section(ranges[0], bq_depth)
+        self.rewrap_section(ranges[0], bq_depth, skip_indented)
         Busy.unbusy()
 
     def rewrap_all(self) -> None:
@@ -1035,12 +1036,15 @@ class File:
         self.rewrap_section(IndexRange("1.0", maintext().index(tk.END)))
         Busy.unbusy()
 
-    def rewrap_section(self, section_range: IndexRange, bq_depth: int = 0) -> None:
+    def rewrap_section(
+        self, section_range: IndexRange, bq_depth: int = 0, skip_indented: bool = False
+    ) -> None:
         """Wrap a section of the text, preserving page mark locations.
 
         Args:
             section_range: Range of text to be wrapped.
             bq_depth: Starting blockquote depth (only 0 or 1 supported)
+            skip_indented: If True, skip paragraphs that begin with a space
         """
         maintext().selection_ranges_store_with_marks()
 
@@ -1053,7 +1057,10 @@ class File:
         maintext().strip_end_of_line_spaces()
         mark_list = self.pin_page_marks()
         maintext().rewrap_section(
-            section_range, lambda: self.unpin_page_marks(mark_list), bq_depth
+            section_range,
+            lambda: self.unpin_page_marks(mark_list),
+            bq_depth,
+            skip_indented,
         )
 
         # Dummy insert & delete, so that if user re-does the wrap, the insert

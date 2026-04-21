@@ -3298,6 +3298,7 @@ class MainText(tk.Text):
         section_range: IndexRange,
         tidy_function: Callable[[], None],
         bq_depth: int,
+        skip_indented: bool = False,
     ) -> None:
         """Wrap a section of the text.
 
@@ -3305,6 +3306,7 @@ class MainText(tk.Text):
             section_range: Range of text to be wrapped.
             tidy_function: Function to call to tidy up before returning.
             bq_depth: Block quote depth to start at - only 0 and 1 supported.
+            skip_indented: If True, skip paragraphs that begin with a space
         """
         default_left = preferences.get(PrefKey.WRAP_LEFT_MARGIN)
         default_right = preferences.get(PrefKey.WRAP_RIGHT_MARGIN)
@@ -3399,6 +3401,7 @@ class MainText(tk.Text):
                             paragraph,
                             block_params_list[bq_depth],
                             wrapper,
+                            skip_indented,
                         )
                         paragraph = ""
                     # Reposition line_start in case above wrapping changed line numbering
@@ -3495,6 +3498,7 @@ class MainText(tk.Text):
                             index_main,
                             index_right,
                             wrapper,
+                            skip_indented,
                         )
 
                 # End blocks should have been dealt with by the begin block code
@@ -3521,6 +3525,7 @@ class MainText(tk.Text):
                     paragraph,
                     block_params_list[bq_depth],
                     wrapper,
+                    skip_indented,
                 )
                 paragraph = ""
 
@@ -3553,6 +3558,7 @@ class MainText(tk.Text):
                 paragraph,
                 block_params_list[bq_depth],
                 wrapper,
+                skip_indented,
             )
         tidy_function()
 
@@ -3563,6 +3569,7 @@ class MainText(tk.Text):
         paragraph: str,
         wrap_params: WrapParams,
         wrapper: TextWrapper,
+        skip_indented: bool = False,
     ) -> None:
         """Wrap a complete paragraph and replace it in the text.
 
@@ -3572,8 +3579,11 @@ class MainText(tk.Text):
             paragraph: Text of the paragraph to be wrapped.
             wrap_params: Wrapping parameters.
             wrapper: TextWrapper object to perform the wrapping - re-used for efficiency.
+            skip_indented: If True, skip paragraphs that begin with a space
         """
 
+        if skip_indented and paragraph.startswith(" "):
+            return
         if paragraph.startswith("       *" * 5):
             return
         # Remove leading/trailing space
@@ -3632,6 +3642,7 @@ class MainText(tk.Text):
         main_margin: int,
         right_margin: int,
         wrapper: TextWrapper,
+        skip_indented: bool = False,
     ) -> None:
         """Wrap the index section between start_index and end_index.
 
@@ -3645,6 +3656,7 @@ class MainText(tk.Text):
             main_margin: Left margin for main index entries
             right_margin: Right margin to wrap between.
             wrapper: TextWrapper object to perform the wrapping - re-used for efficiency.
+            skip_indented: If True, skip paragraphs that begin with a space
         """
         # Mark end_index in case wrapping below changes line numbering
         self.set_mark_position(
@@ -3692,6 +3704,7 @@ class MainText(tk.Text):
                 line,
                 WrapParams(wrap_margin, main_margin + indent, right_margin),
                 wrapper,
+                skip_indented,
             )
             line_start = self.index(INDEX_NEXT_LINE_MARK)
 
