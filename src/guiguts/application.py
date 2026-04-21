@@ -1211,7 +1211,7 @@ class Guiguts:
             "Word ~Distance Check", lambda: levenshtein_check(self.file.project_dict)
         )
         tools_menu.add_separator()
-        tools_menu.add_button("~Page Separator Fixup...", page_separator_fixup)
+        tools_menu.add_button("Pa~ge Separator Fixup...", page_separator_fixup)
         tools_menu.add_button("~Footnote Fixup...", footnote_check)
         fn_mask_menu = tools_menu.add_submenu("M~ask/Unmask Footnote Styles")
         fn_mask_menu.add_button(
@@ -1242,6 +1242,10 @@ class Guiguts:
         tools_menu.add_separator()
         tools_menu.add_button("~Rewrap All", self.file.rewrap_all)
         tools_menu.add_button("R~ewrap Selection", self.file.rewrap_selection)
+        tools_menu.add_button(
+            "Rewrap Selection Exce~pt Indented Text",
+            lambda: self.file.rewrap_selection(skip_indented=True),
+        )
         tools_menu.add_button(
             "Block Rewrap Selec~tion", lambda: self.file.rewrap_selection(bq_depth=1)
         )
