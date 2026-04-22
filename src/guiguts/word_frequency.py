@@ -783,13 +783,13 @@ class WordFrequencyDialog(ToplevelDialog):
             # boundary is a word/space character
             emdash_bound = "—" if newline_word[0] == "—" else r"[^\w\s]"
             left_boundary = (
-                r"(?<!([^\W_]|\w[-'’]))"
+                r"(?<!([^\W_]|[\p{L}\p{N}][-'’]))"
                 if newline_word[0].isalnum()
                 else rf"(?<!{emdash_bound})"
             )
             emdash_bound = "—" if newline_word[-1] == "—" else r"[^\w\s]"
             right_boundary = (
-                r"(?!([^\W_]|[-'’]\w))"
+                r"(?!([^\W_]|[-'’][\p{L}\p{N}]))"
                 if newline_word[-1].isalnum()
                 else rf"(?!{emdash_bound})"
             )
