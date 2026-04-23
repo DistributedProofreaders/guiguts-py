@@ -750,6 +750,7 @@ class File:
             mustexist=True,
             title=f"Select {folder_dir_str(True)} containing scans",
         )
+        self.save_bin(self.filename)
 
     def auto_image_check(self) -> None:
         """Function called repeatedly to check whether an image needs loading."""
