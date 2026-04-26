@@ -101,7 +101,7 @@
 "hint": "Find an exclamation/question mark followed by a space and a lower-case letter and change letter to upper-case"
 },
 {
-"match": "(\\p{IsLower})\\.(\\p{IsLower})",
+"match": "(?!(?<![\\p{Letter}\\p{Number}])(i\\.e\\.|e\\.g\\.))(\\p{IsLower})\\.(\\p{IsLower})",
 "replacement": "\\1 \\2",
 "hint": "Find an period between two lower-case letters and change it to a space"
 },
