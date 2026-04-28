@@ -540,6 +540,8 @@ class HeadFootCheckerDialog(CheckerDialog):
         self, process: bool, remove: bool, all_matching: bool
     ) -> None:
         """Overridden from CheckerDialog in order to facilitate re-run."""
+        for btn in self.fix_btn, self.fixall_btn, self.fixrem_btn, self.fixremall_btn:
+            btn["state"] = tk.DISABLED
         super().process_remove_entries(process, remove, all_matching)
         # Save, then restore after re-run, which headers/footers are shown
         self.save_header_footer_list()
@@ -554,9 +556,11 @@ class HeadFootCheckerDialog(CheckerDialog):
                 entry_index = self.entry_index_from_linenum(
                     min(entry_rowcol.row, last_row)
                 )
+                self.select_entry_by_index(entry_index)
             except IndexError:
-                return
-            self.select_entry_by_index(entry_index)
+                pass
+        for btn in self.fix_btn, self.fixall_btn, self.fixrem_btn, self.fixremall_btn:
+            btn["state"] = tk.NORMAL
 
     def save_header_footer_list(self) -> None:
         """Save list of headers/footers currently shown in dialog."""
