@@ -442,6 +442,10 @@ class Preferences:
                     os.replace(day_backup, week_backup)
                 except FileNotFoundError:
                     pass  # Nothing we can do
+                except PermissionError as exc:
+                    logger.error(
+                        f"Unable to back up GGPrefs file. Details:\n{str(exc)}"
+                    )
 
         if is_older_than(day_backup, 86400):  # 1 day
             if os.path.exists(self.prefsfile):
@@ -449,6 +453,10 @@ class Preferences:
                     os.replace(self.prefsfile, day_backup)
                 except FileNotFoundError:
                     pass  # Nothing we can do
+                except PermissionError as exc:
+                    logger.error(
+                        f"Unable to back up GGPrefs day file. Details:\n{str(exc)}"
+                    )
 
         try:
             with open(self.prefsfile, "w", encoding="utf-8") as fp:
