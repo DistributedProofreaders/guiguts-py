@@ -637,9 +637,11 @@ class PageSeparatorDialog(ToplevelDialog):
                 f"{ps_end} +4c",
             )
             # Remove blockquote or nowrap/poetry markup
-            if match := re.search(r"(\*|#|P|p)/$", markup_prev):
+            if match := re.search(
+                r"([*#$CFILPRX])/$", markup_prev, flags=re.IGNORECASE
+            ):
                 markup_type = re.escape(match[1])
-                if re.search(rf"^/{markup_type}", markup_next):
+                if re.search(rf"^/{markup_type}", markup_next, flags=re.IGNORECASE):
                     maintext().delete(
                         ps_end,
                         f"{ps_end} +1l",
