@@ -442,6 +442,10 @@ class Preferences:
                     os.replace(day_backup, week_backup)
                 except FileNotFoundError:
                     pass  # Nothing we can do
+                except PermissionError as exc:
+                    logger.error(
+                        f"Unable to back up GGPrefs file. Details:\n{str(exc)}"
+                    )
 
         if is_older_than(day_backup, 86400):  # 1 day
             if os.path.exists(self.prefsfile):
@@ -449,12 +453,18 @@ class Preferences:
                     os.replace(self.prefsfile, day_backup)
                 except FileNotFoundError:
                     pass  # Nothing we can do
+                except PermissionError as exc:
+                    logger.error(
+                        f"Unable to back up GGPrefs day file. Details:\n{str(exc)}"
+                    )
 
         try:
             with open(self.prefsfile, "w", encoding="utf-8") as fp:
                 json.dump(self.dict, fp, indent=2, ensure_ascii=False)
-        except OSError:
-            logger.error(f"Unable to save preferences to {self.prefsfile}")
+        except (PermissionError, OSError) as exc:
+            logger.error(
+                f"Unable to save preferences to GGPrefs file. Details:\n{str(exc)}"
+            )
 
     def load(self, prefs_basefile: Optional[str]) -> None:
         """Load dictionary from JSON file, and use PrefKeys
