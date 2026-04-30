@@ -461,8 +461,10 @@ class Preferences:
         try:
             with open(self.prefsfile, "w", encoding="utf-8") as fp:
                 json.dump(self.dict, fp, indent=2, ensure_ascii=False)
-        except OSError:
-            logger.error(f"Unable to save preferences to {self.prefsfile}")
+        except (PermissionError, OSError) as exc:
+            logger.error(
+                f"Unable to save preferences to GGPrefs file. Details:\n{str(exc)}"
+            )
 
     def load(self, prefs_basefile: Optional[str]) -> None:
         """Load dictionary from JSON file, and use PrefKeys
