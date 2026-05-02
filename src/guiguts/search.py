@@ -115,12 +115,6 @@ class SearchDialog(ToplevelDialog):
         ).grid(row=0, column=2, padx=2, sticky="NSW")
 
         ttk.Checkbutton(
-            self.top_frame,
-            text="In selection",
-            variable=SearchDialog.selection,
-        ).grid(row=0, column=4, sticky="NSw")
-
-        ttk.Checkbutton(
             options_frame,
             text="Whole word",
             variable=PersistentBoolean(PrefKey.SEARCHDIALOG_WHOLE_WORD),
@@ -159,12 +153,6 @@ class SearchDialog(ToplevelDialog):
         )
         spinbox.grid(row=0, column=1, sticky="NSW")
         spinbox.bind("<Return>", lambda e: self.show_multi_replace())
-        self.count_btn = ttk.Button(
-            self.top_frame,
-            text="Count",
-            command=self.count_clicked,
-        )
-        self.count_btn.grid(row=1, column=4, padx=PADX, pady=PADY, sticky="NSEW")
 
         # Search
         style = themed_style()
@@ -187,6 +175,21 @@ class SearchDialog(ToplevelDialog):
         # Register search box to have its focus tracked for inserting special characters
         register_focus_widget(self.search_box)
         self.search_box.focus()
+
+        # Replace
+        self.replace_box: list[Combobox] = []
+        self.replace_btn: list[ttk.Button] = []
+        self.rands_btn: list[ttk.Button] = []
+        self.repl_all_btn: list[ttk.Button] = []
+
+        for rep_num in range(self.max_multi_rows):
+            cbox = Combobox(
+                self.top_frame, PrefKey.REPLACE_HISTORY, width=30, font=self.font
+            )
+            cbox.grid(row=rep_num + 3, column=0, padx=PADX, pady=PADY, sticky="NSEW")
+            self.replace_box.append(cbox)
+            # Register replace box to have its focus tracked for inserting special characters
+            register_focus_widget(cbox)
 
         search_button = ttk.Button(
             self.top_frame,
@@ -214,26 +217,7 @@ class SearchDialog(ToplevelDialog):
         )
         self.first_button.grid(row=2, column=2, padx=PADX, pady=PADY, sticky="NSEW")
 
-        ttk.Button(
-            self.top_frame,
-            text="Find All",
-            command=self.findall_clicked,
-        ).grid(row=2, column=4, padx=PADX, pady=PADY, sticky="NSEW")
-
-        # Replace
-        self.replace_box: list[Combobox] = []
-        self.replace_btn: list[ttk.Button] = []
-        self.rands_btn: list[ttk.Button] = []
-        self.repl_all_btn: list[ttk.Button] = []
         for rep_num in range(self.max_multi_rows):
-            cbox = Combobox(
-                self.top_frame, PrefKey.REPLACE_HISTORY, width=30, font=self.font
-            )
-            cbox.grid(row=rep_num + 3, column=0, padx=PADX, pady=PADY, sticky="NSEW")
-            self.replace_box.append(cbox)
-            # Register replace box to have its focus tracked for inserting special characters
-            register_focus_widget(cbox)
-
             r_btn = ttk.Button(
                 self.top_frame,
                 text="Replace",
@@ -264,6 +248,26 @@ class SearchDialog(ToplevelDialog):
             )
             self.rands_btn.append(rands_button)
 
+        ttk.Checkbutton(
+            self.top_frame,
+            text="In selection",
+            variable=SearchDialog.selection,
+        ).grid(row=0, column=4, sticky="NSw")
+
+        self.count_btn = ttk.Button(
+            self.top_frame,
+            text="Count",
+            command=self.count_clicked,
+        )
+        self.count_btn.grid(row=1, column=4, padx=PADX, pady=PADY, sticky="NSEW")
+
+        ttk.Button(
+            self.top_frame,
+            text="Find All",
+            command=self.findall_clicked,
+        ).grid(row=2, column=4, padx=PADX, pady=PADY, sticky="NSEW")
+
+        for rep_num in range(self.max_multi_rows):
             repl_all_btn = ttk.Button(
                 self.top_frame,
                 text="Replace All",
