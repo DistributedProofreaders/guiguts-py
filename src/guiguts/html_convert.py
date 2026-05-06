@@ -409,7 +409,9 @@ def html_convert_body() -> None:
         """
         if maintext().get(f"{start_idx}-4l", start_idx) != "\n\n\n\n":
             return False
-        maintext().insert(f"{line_start}-3l", '<hr class="chap x-ebookmaker-drop">')
+        maintext().insert(
+            f"{line_start}-3l", '<hr class="chap x-ebookmaker-drop" aria-hidden="true">'
+        )
         maintext().insert(f"{line_start}-1l", '<div class="chapter">')
         return True
 
@@ -1543,7 +1545,7 @@ def html_add_chapter_divs() -> None:
         maintext().insert(h2_end, "\n</div>")
         maintext().insert(
             h2_start,
-            f'\n\n<hr class="chap x-ebookmaker-drop">\n<div class="chapter">\n{extra_nl}',
+            f'\n\n<hr class="chap x-ebookmaker-drop" aria-hidden="true">\n<div class="chapter">\n{extra_nl}',
         )
         h2_end = maintext().index(f"{h2_end}+5l")
 

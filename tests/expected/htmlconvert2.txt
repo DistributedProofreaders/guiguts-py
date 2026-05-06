@@ -279,7 +279,7 @@ CHERRY-BLOSSOMS
 </p>
 <p>]</p>
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 
 <div class="chapter">
 <p>
@@ -294,7 +294,7 @@ CHERRY-BLOSSOMS
 </p>
 </div>
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 
 <div class="chapter">
 <p>
@@ -307,7 +307,7 @@ CHERRY-BLOSSOMS
 <p>[Illustration: Clad in native costume]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="Many_have_been_before_me_and_the_theme">
     Many have been before me, and the theme
@@ -326,7 +326,7 @@ CHERRY-BLOSSOMS
 </div>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="CONTENTS">
     CONTENTS.
@@ -374,7 +374,7 @@ CHERRY-BLOSSOMS
 <p>[Illustration]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="FOREIGN_RESIDENTS">
     FOREIGN RESIDENTS.
@@ -1041,7 +1041,7 @@ of others.</p>
 <p>[Illustration]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="SHOPPING">
     SHOPPING.
@@ -1651,7 +1651,7 @@ home.</p>
 <p>[Illustration]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="OUR_DINNER_AT_KIOTO">
     OUR DINNER AT KIOTO.
@@ -2221,7 +2221,7 @@ lives.</p>
 <p>[Illustration]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="MIYAKO_ODORI">
     MIYAKO ODORI.
@@ -2817,7 +2817,7 @@ to the street.</p>
 <p>[Illustration]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="THE_RISE_AND_FALL_OF_THE">
     THE RISE AND FALL OF THE
@@ -3397,7 +3397,7 @@ to the teachings of their hearts.</p>
 <p>[Illustration]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="A_GLIMPSE_OF_ROYALTY">
     A GLIMPSE OF ROYALTY.
@@ -4101,7 +4101,7 @@ grain.”</p>
 <p>[Illustration]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="FIN_DE_SIECLE_JAPAN">
     FIN DE SIÈCLE JAPAN.
@@ -4734,7 +4734,7 @@ after a manner of his own.</p>
 <p>[Illustration]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="CHO_AND_EBA">
     CHO AND EBA.
@@ -5374,7 +5374,7 @@ away.</p>
 <p>[Illustration: SAYONARA]</p>
 
 
-<hr class="chap x-ebookmaker-drop">
+<hr class="chap x-ebookmaker-drop" aria-hidden="true">
 <div class="chapter">
   <h2 class="nobreak" id="Transcribers_Notes">
     Transcriber’s Notes
