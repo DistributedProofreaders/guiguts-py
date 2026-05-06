@@ -1324,13 +1324,25 @@ class EbookmakerCheckerDialog(CheckerDialog):
                 "Create all formats in online ebookmaker cache.\n"
                 "Required files must be manually downloaded from cache.",
             )
+            self.wave_btn = ttk.Button(
+                self.custom_frame,
+                text="WAVE report",
+                command=lambda: None,
+                state=tk.DISABLED,
+            )
+            self.wave_btn.grid(column=3, row=1, sticky="NSE")
+            ToolTip(
+                self.wave_btn,
+                "Run WAVE Accessibility Evaluation Tool on generated HTML file.\n"
+                "Display results in browser.",
+            )
             self.cache_btn = ttk.Button(
                 self.custom_frame,
                 text="Open Cache in Browser",
                 command=lambda: None,
                 state=tk.DISABLED,
             )
-            self.cache_btn.grid(column=3, row=1, sticky="NSE")
+            self.cache_btn.grid(column=4, row=1, sticky="NSE")
             toggle_all()
         else:
             verbose_frame = ttk.Frame(self.custom_frame)
@@ -1503,6 +1515,8 @@ class EbookmakerCheckerAPI:
         self.dialog.reset()
         self.dialog.cache_btn["command"] = lambda: None
         self.dialog.cache_btn["state"] = tk.DISABLED
+        self.dialog.wave_btn["command"] = lambda: None
+        self.dialog.wave_btn["state"] = tk.DISABLED
         self.dialog.rerun_button["text"] = "Running..."
         self.dialog.rerun_button["state"] = tk.DISABLED
         self.dialog.add_header(
@@ -1699,6 +1713,12 @@ class EbookmakerCheckerAPI:
             process_ebookmaker_messages(output_response.text, self.dialog)
             self.dialog.cache_btn["command"] = lambda: webbrowser.open(output_dir)
             self.dialog.cache_btn["state"] = tk.NORMAL
+            # Only enable WAVE button if all output formats (especially generated-HTML)
+            if preferences.get(PrefKey.EBOOKMAKER_ALL):
+                self.dialog.wave_btn["command"] = lambda: webbrowser.open(
+                    f"https://wave.webaim.org/report#/{output_dir}/out/99999-h.html"
+                )
+                self.dialog.wave_btn["state"] = tk.NORMAL
             self.dialog.rerun_button["text"] = "Run Ebookmaker"
             self.dialog.rerun_button["state"] = tk.NORMAL
             self.dialog.display_entries()
