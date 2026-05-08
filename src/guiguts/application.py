@@ -554,6 +554,7 @@ class Guiguts:
         preferences.set_default(PrefKey.SPELL_THRESHOLD, 3)
         preferences.set_default(PrefKey.SPELL_SUGGESTIONS, True)
         preferences.set_default(PrefKey.UNMATCHED_NESTABLE, False)
+        preferences.set_default(PrefKey.UNMATCHED_WITHIN_PARA, False)
         preferences.set_default(
             PrefKey.UNICODE_BLOCK, UnicodeBlockDialog.commonly_used_characters_name
         )
