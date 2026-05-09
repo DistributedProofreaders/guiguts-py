@@ -1,0 +1,21 @@
+{
+"regexes": [
+{
+"match": "<i>((.|\\n)*?)</i>",
+"replacement": [
+"<em>\\1</em>",
+"<cite>\\1</cite>",
+"<i lang=\"fr\">\\1</i>",
+"<i lang=\"la\">\\1</i>",
+"<i lang=\"de\">\\1</i>",
+"<q>\\1</q>"
+],
+"hint": "Mark italic <i> phrases with semantic tags using S/R dialog (Shift-click Replace)"
+},
+{
+"match": "<b>((.|\\n)*?)</b>",
+"replacement": "<strong>\\1</strong>",
+"hint": "Mark bold <b> phrases with semantic <strong> tag"
+}
+]
+}
