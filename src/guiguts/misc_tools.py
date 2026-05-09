@@ -1693,22 +1693,46 @@ class ScannoRegexCheckerDialog(CheckerDialog):
         for row in range(4):
             frame.rowconfigure(row, uniform="equal height")
 
+        list_changed = False
+        fn_changed = False
+        fn_hist: list[str] = preferences.get(self.hist_pref)
+        fname: str = preferences.get(self.fn_pref)
+        # Convert backslash to slash on Windows so we don't get "a/b" and "a\b"
         if is_windows():
-            fn_hist: list[str] = preferences.get(self.hist_pref)
-            changed = any("\\" in fn for fn in fn_hist)
+            # First the list of filenames
+            if any("\\" in fn for fn in fn_hist):
+                list_changed = True
             fn_hist = [fn.replace("\\", "/") for fn in fn_hist]
             len_hist = len(fn_hist)
             fn_hist = list(dict.fromkeys(fn_hist))  # Uniquify preserving order
             if len(fn_hist) != len_hist:
-                changed = True
-            if changed:
-                preferences.set(self.hist_pref, fn_hist)
-
-            fname: str = preferences.get(self.fn_pref)
-            changed = "\\" in fname
-            if changed:
-                fname = fname.replace("\\", "/")
-                preferences.set(self.fn_pref, fname)
+                list_changed = True
+            # Then the selected filename
+            if "\\" in fname:
+                fn_changed = True
+            fname = fname.replace("\\", "/")
+        # Replace `/italic_semantic.json` with `/semantic_fixup.json`
+        # Name changed, and it's annoying to users if the old name is left in list
+        # or it gives an error that it can't find the old-named file
+        # First the list of filenames
+        old_fn = "/italic_semantic.json"
+        new_fn = "/semantic_fixup.json"
+        if any(old_fn in fn for fn in fn_hist):
+            list_changed = True
+        fn_hist = [fn.replace(old_fn, new_fn) for fn in fn_hist]
+        len_hist = len(fn_hist)
+        fn_hist = list(dict.fromkeys(fn_hist))  # Uniquify preserving order
+        if len(fn_hist) != len_hist:
+            list_changed = True
+        # Then the selected filename
+        if old_fn in fname:
+            fn_changed = True
+        fname = fname.replace(old_fn, new_fn)
+        # Save the list & filename in prefs if changed
+        if list_changed:
+            preferences.set(self.hist_pref, fn_hist)
+        if fn_changed:
+            preferences.set(self.fn_pref, fname)
 
         self.file_combo = PathnameCombobox(
             frame,
