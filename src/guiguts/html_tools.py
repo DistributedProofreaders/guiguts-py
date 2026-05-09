@@ -2100,7 +2100,7 @@ class HTMLMarkupDialog(ToplevelDialog):
         ("<li>", "</li>"),
         ("<ins>", "</ins>"),
         ("<del>", "</del>"),
-        ("<blkq>", "</blkq>"),
+        ("<blockquote>", "</blockquote>"),
         ("<pre>", "</pre>"),
         ("<hr>", ""),
         ("<br>", ""),
@@ -2132,7 +2132,7 @@ class HTMLMarkupDialog(ToplevelDialog):
         for idx, (mopen, mclose) in enumerate(self.markup_types):
             ttk.Button(
                 markup_frame,
-                text=mopen,
+                text="<blkq>" if mopen == "<blockquote>" else mopen,  # too long
                 command=lambda mopen=mopen, mclose=mclose: self.add_markup(  # type:ignore[misc]
                     mopen,
                     mclose,
