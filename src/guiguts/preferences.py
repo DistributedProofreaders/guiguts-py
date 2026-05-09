@@ -88,6 +88,7 @@ class PrefKey(StrEnum):
     SPELL_THRESHOLD = auto()
     SPELL_SUGGESTIONS = auto()
     UNMATCHED_NESTABLE = auto()
+    UNMATCHED_WITHIN_PARA = auto()
     UNICODE_BLOCK = auto()
     UNICODE_SEARCH_HISTORY = auto()
     SPLIT_TEXT_WINDOW = auto()

@@ -808,6 +808,7 @@ def unmatched_brackets() -> None:
         rerun_command=unmatched_brackets,
         match_reg="[][}{)(]",
         match_pair_func=toggle_bracket,
+        within_para=True,
     )
 
 
@@ -1023,6 +1024,7 @@ def unmatched_markup_check(
     sort_key_alpha: Optional[Callable[[CheckerEntry], tuple]] = None,
     additional_check_command: Optional[Callable[[UnmatchedCheckerDialog], None]] = None,
     equiv_func: Optional[Callable[[str, str], bool]] = None,
+    within_para: bool = False,
 ) -> None:
     """Check the currently loaded file for unmatched markup errors.
 
@@ -1036,6 +1038,7 @@ def unmatched_markup_check(
         sort_key_alpha: Function to provide type/alphabetic sorting
         additional_check_command: Function to perform extra checks
         equiv_func: Function to check if items are equivalent - defaults to `==`
+        within_para: Whether to use a Pref to restrict matching to the current paragraph
     """
 
     if not tool_save():
@@ -1047,14 +1050,27 @@ def unmatched_markup_check(
     )
 
     # User can control nestability of some unmatched check types
-    if nest_reg is None:
+    if nest_reg is None or within_para:
         frame = ttk.Frame(checker_dialog.custom_frame)
         frame.grid(column=0, row=1, sticky="NSEW")
-        ttk.Checkbutton(
-            frame,
-            text="Allow nesting",
-            variable=PersistentBoolean(PrefKey.UNMATCHED_NESTABLE),
-        ).grid(row=0, column=0, sticky="NSEW")
+        col = 0
+        if nest_reg is None:
+            ttk.Checkbutton(
+                frame,
+                text="Allow nesting",
+                variable=PersistentBoolean(PrefKey.UNMATCHED_NESTABLE),
+            ).grid(row=0, column=col, sticky="NSEW")
+            col += 1
+        if within_para:
+            ttk.Checkbutton(
+                frame,
+                text="Restrict matches to same paragraph",
+                variable=PersistentBoolean(PrefKey.UNMATCHED_WITHIN_PARA),
+            ).grid(row=0, column=col, sticky="NSEW", padx=(5, 0))
+
+    restrict_within_para = within_para and preferences.get(
+        PrefKey.UNMATCHED_WITHIN_PARA
+    )
 
     search_range = maintext().start_to_end()
     # Find each piece of markup that matches the regex
@@ -1087,6 +1103,7 @@ def unmatched_markup_check(
             match_pair_reg,
             reverse,
             nestable,
+            restrict_within_para,
             equiv_func=equiv_func,
         ):
             checker_dialog.add_entry(
@@ -1107,6 +1124,7 @@ def find_match_pair(
     match_pair_reg: str,
     reverse: bool,
     nestable: bool,
+    restrict_within_para: bool,
     ignore_func: Optional[Callable[[str], bool]] = None,
     equiv_func: Optional[Callable[[str, str], bool]] = None,
 ) -> str:
@@ -1118,6 +1136,7 @@ def find_match_pair(
         pair_str: The pair string to search for.
         reverse: True to search backwards (i.e. given close, look for open).
         nestable: True if markup is allowed to nest.
+        restrict_within_para: True to restrict searches to current paragraph.
         ignore_func: Optional function that returns whether to ignore a potential match.
     """
     found = ""
@@ -1125,6 +1144,13 @@ def find_match_pair(
     depth = 1
     start = match_index if reverse else maintext().index(f"{match_index}+{match_len}c")
     end = maintext().start() if reverse else maintext().end()
+    # If matching is to be restricted within the same paragraph, find the next/prev
+    # para break, and use that as the end of the search instead of end/start-of-file
+    para_break = ""
+    if restrict_within_para:
+        para_break = maintext().search("\n\n", start, end.index(), backwards=reverse)
+    if para_break:
+        end = IndexRowCol(para_break)
 
     if equiv_func is None:
         equiv_func = operator.eq
