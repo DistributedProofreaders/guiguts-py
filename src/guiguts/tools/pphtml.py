@@ -736,6 +736,7 @@ class PPhtmlChecker:
 
         errors: list[tuple[str, Optional[IndexRange]]] = []
         title_str = re.sub(r"\s+", " ", title_str).strip()
+        h1_str = re.sub(r"&nbsp;", " ", h1_str)
         h1_str = re.sub(r"<br.*?>", " ", h1_str)
         h1_str = re.sub(r"<.*?>", "", h1_str)
         h1_str = re.sub(r"\s+", " ", h1_str).strip()
