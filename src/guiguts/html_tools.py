@@ -1552,11 +1552,11 @@ class EbookmakerCheckerAPI:
 
         timeout = 900
 
-        # Create list of formats to build
+        # Create list of formats to build - always generate HTML (for WAVE button)
+        build = ["html"]
         if preferences.get(PrefKey.EBOOKMAKER_ALL):
-            build = ["txt.utf-8", "epub", "epub3", "kindle", "kf8", "html"]
+            build.extend(["txt.utf-8", "epub", "epub3", "kindle", "kf8"])
         else:
-            build = []
             if preferences.get(PrefKey.EBOOKMAKER_EPUB2):
                 build.append("epub")
             if preferences.get(PrefKey.EBOOKMAKER_EPUB3):
@@ -1565,13 +1565,6 @@ class EbookmakerCheckerAPI:
                 build.append("kindle")
             if preferences.get(PrefKey.EBOOKMAKER_KF8):
                 build.append("kf8")
-        if not build:
-            self._ui(
-                lambda: logger.error("You must select at least one format to be built")
-            )
-            self._ui(self.dialog.display_entries)
-            self._ui(self.dialog.lift)
-            return
 
         file_name = the_file().filename
         proj_dir, file_base = os.path.split(file_name)
@@ -1713,12 +1706,10 @@ class EbookmakerCheckerAPI:
             process_ebookmaker_messages(output_response.text, self.dialog)
             self.dialog.cache_btn["command"] = lambda: webbrowser.open(output_dir)
             self.dialog.cache_btn["state"] = tk.NORMAL
-            # Only enable WAVE button if all output formats (especially generated-HTML)
-            if preferences.get(PrefKey.EBOOKMAKER_ALL):
-                self.dialog.wave_btn["command"] = lambda: webbrowser.open(
-                    f"https://wave.webaim.org/report#/{output_dir}/out/99999-h.html"
-                )
-                self.dialog.wave_btn["state"] = tk.NORMAL
+            self.dialog.wave_btn["command"] = lambda: webbrowser.open(
+                f"https://wave.webaim.org/report#/{output_dir}/out/99999-h.html"
+            )
+            self.dialog.wave_btn["state"] = tk.NORMAL
             self.dialog.rerun_button["text"] = "Run Ebookmaker"
             self.dialog.rerun_button["state"] = tk.NORMAL
             self.dialog.display_entries()
