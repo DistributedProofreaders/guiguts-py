@@ -1235,7 +1235,7 @@ class ThemedStyle(ttk.Style):
             # Above line fails with Tk9, since $ttk::currentTheme doesn't exist,
             # so replaced with line below as suggested in above comment.
             return self.tk.call(self._name, "theme", "use")  # type:ignore[attr-defined]
-        super().theme_use(themename)
+        # super().theme_use(themename)
         fg = self.lookup("TButton", "foreground")
         self.map("TButton", focuscolor=[("focus", fg)])
         self.map("TCheckbutton", focuscolor=[("focus", fg)])

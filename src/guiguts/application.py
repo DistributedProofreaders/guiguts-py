@@ -4,7 +4,8 @@
 
 import argparse
 import logging
-import importlib.resources
+
+# import importlib.resources
 from importlib.metadata import version
 import os
 import sys
@@ -14,6 +15,8 @@ import unicodedata
 import webbrowser
 import darkdetect  # type: ignore[import-untyped]
 from packaging.version import Version
+
+# import sv_ttk
 
 from guiguts.ascii_tables import JustifyStyle
 from guiguts.checkers import CheckerDialog
@@ -32,7 +35,8 @@ from guiguts.content_providing import (
     cp_list_good_words,
     cp_show_process_dialog,
 )
-from guiguts.data import themes
+
+# from guiguts.data import themes
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle, footnote_mask
 from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
@@ -168,7 +172,7 @@ logger = logging.getLogger(__package__)
 
 MESSAGE_FORMAT = "%(asctime)s: %(levelname)s - %(message)s"
 DEBUG_FORMAT = "%(asctime)s: %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
-THEMES_DIR = importlib.resources.files(themes)
+# THEMES_DIR = importlib.resources.files(themes)
 
 
 class Guiguts:
@@ -202,11 +206,13 @@ class Guiguts:
         self.file.mainwindow = self.mainwindow
         self.update_title()
 
-        theme_root = THEMES_DIR.joinpath("awthemes-10.4.0")
-        with importlib.resources.as_file(theme_root) as theme_path:
-            root().tk.call("lappend", "auto_path", str(theme_path))
-            root().tk.call("package", "require", "awdark")
-            root().tk.call("package", "require", "awlight")
+        # theme_root = THEMES_DIR.joinpath("awthemes-10.4.0")
+        # with importlib.resources.as_file(theme_root) as theme_path:
+        #     root().tk.call("lappend", "auto_path", str(theme_path))
+        #     root().tk.call("package", "require", "awdark")
+        #     root().tk.call("package", "require", "awlight")
+
+        # NBNB-uncomment sv_ttk.set_theme("dark")
 
         # Recent menu is saved to allow deletion & re-creation when files loaded/saved
         self.recent_menu: Optional[MenuMetadata] = None
