@@ -1121,7 +1121,7 @@ def mouse_bind(
 ) -> None:
     """Bind mouse button callback to event on widget.
 
-    If binding is to mouse button 3, then if on a Mac bind
+    If binding is to mouse button 3, then if on a Mac also bind
     to mouse-2 and Control-mouse-1 instead
 
     Args:
@@ -1138,8 +1138,7 @@ def mouse_bind(
         widget.bind(button2, callback)
         control1 = f"<Control-{match[1]}1>"
         widget.bind(control1, callback)
-    else:
-        widget.bind(event, callback)
+    widget.bind(event, callback)
 
 
 def handle_mouse_wheel(widget: tk.Widget, event: tk.Event, vertical: bool) -> None:
