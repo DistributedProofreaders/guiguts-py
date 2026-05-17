@@ -107,7 +107,34 @@ class PreferencesDialog(ToplevelDialog):
             appearance_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
         )
         cb.grid(column=1, row=0, sticky="NEW")
-        cb["values"] = ["Default", "Dark", "Light"]
+        cb["values"] = [
+            "adapta",
+            "aquativo",
+            "arc",
+            "black",
+            "blue",
+            "breeze",
+            "clearlooks",
+            "elegance",
+            "equilux",
+            "itft1",
+            "keramik",
+            "keramik_alt",
+            "kroc",
+            "plastik",
+            "radiance",
+            "scidblue",
+            "scidgreen",
+            "scidgrey",
+            "scidmint",
+            "scidpink",
+            "scidpurple",
+            "scidsand",
+            "smog",
+            "ubuntu",
+            "winxpblue",
+            "yaru",
+        ]
         cb["state"] = "readonly"
         ttk.Checkbutton(
             appearance_frame,

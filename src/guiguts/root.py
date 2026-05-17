@@ -34,7 +34,7 @@ class Root(ThemedTk):
         assert _the_root is None
         _the_root = self
 
-        super().__init__(theme="black", **kwargs)
+        super().__init__(**kwargs)
         self.geometry(preferences.get(PrefKey.ROOT_GEOMETRY))
 
         preferences.set(
