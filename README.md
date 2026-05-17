@@ -33,7 +33,8 @@ previous version of GG2).
 ### macOS
 
 1. Install Python 3.11 or above from [python.org](https://www.python.org/), not a Homebrew-installed Python.
-GG has been tested in versions up to 3.14.
+GG has been tested in versions up to 3.14.4. Using 3.14.5 or above is not recommended for Mac users at the
+moment, because Tcl/Tk 9.03 is bundled with it. Work is ongoing to support this version within GG2.
 
 2. In a terminal window, type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
 previous version of GG2).
