@@ -1245,6 +1245,9 @@ class ThemedStyle(ttk.Style):
             self.map("TRadiobutton", focuscolor=[("focus", fg)])
             self.map("TCombobox", focuscolor=[("focus", fg)])
             self.map("TEntry", focuscolor=[("focus", fg)])
+        # Some themes have no border on LabelFrames - force one
+        if not self.lookup("TLabelframe", "borderwidth"):
+            self.configure("TLabelframe", borderwidth="2", relief=tk.GROOVE)
         return None
 
     def is_dark_theme(self) -> bool:

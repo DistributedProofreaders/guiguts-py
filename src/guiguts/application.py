@@ -507,8 +507,12 @@ class Guiguts:
         preferences.set_default(PrefKey.TEXT_MARKUP_GESPERRT, "~")
         preferences.set_default(PrefKey.TEXT_MARKUP_FONT, "=")
         preferences.set_default(PrefKey.PAGESEP_AUTO_TYPE, PageSepAutoType.AUTO_FIX)
-        preferences.set_default(PrefKey.THEME_NAME, "arc")
+        preferences.set_default(PrefKey.THEME_NAME, "Default")
         preferences.set_callback(PrefKey.THEME_NAME, self.theme_name_callback)
+        preferences.set_default(PrefKey.THEME_NAME_DARK, "black")
+        preferences.set_callback(PrefKey.THEME_NAME_DARK, self.theme_dark_callback)
+        preferences.set_default(PrefKey.THEME_NAME_LIGHT, "default")
+        preferences.set_callback(PrefKey.THEME_NAME_LIGHT, self.theme_light_callback)
         preferences.set_default(
             PrefKey.TEAROFF_MENU_TYPE, "custom" if is_mac() else "builtin"
         )
@@ -1844,17 +1848,33 @@ class Guiguts:
 
         Responsible for starting auto-dark-detection loop for Default theme,
         if theme was not Default at startup."""
+        # This copes with old theme names (Dark ,Light, Default) as well as being
+        # the setting for which theme to use (selected dark theme, selected light
+        # theme, selected theme to match OS dark/light mode)
         if value == "Dark":
-            value = "black"
-            preferences.set(PrefKey.THEME_NAME, value)
-        if value == "Light":
-            value = "scidblue"
-            preferences.set(PrefKey.THEME_NAME, value)
-        if value == "Default":
+            themed_style().theme_use(preferences.get(PrefKey.THEME_NAME_DARK))
+        elif value == "Light":
+            themed_style().theme_use(preferences.get(PrefKey.THEME_NAME_LIGHT))
+        else:  # "Default"
             self.update_theme()
-        else:
-            themed_style().theme_use(value)
 
+        # After theme loaded, set font
+        themed_style().configure(".", font=GLOBAL_FONT_NAME)
+        self.mainwindow.toolbar_theme_update()
+
+    def theme_dark_callback(self, value: str) -> None:
+        """Callback for when THEME_NAME_DARK preference is changed."""
+        self.theme_common_callback(True, value)
+
+    def theme_light_callback(self, value: str) -> None:
+        """Callback for when THEME_NAME_LIGHT preference is changed."""
+        self.theme_common_callback(False, value)
+
+    def theme_common_callback(self, dark: bool, value: str) -> None:
+        """Callback for when THEME_NAME_DARK/LIGHT preference is changed."""
+        if themed_style().is_dark_theme() != dark:
+            return
+        themed_style().theme_use(value)
         # After theme loaded, set font
         themed_style().configure(".", font=GLOBAL_FONT_NAME)
         self.mainwindow.toolbar_theme_update()
@@ -1866,11 +1886,11 @@ class Guiguts:
             os_mode = darkdetect.theme()
             tk_theme = themed_style().theme_use()
 
-            if os_mode == "Light" and tk_theme == "black":
-                themed_style().theme_use("scidblue")
+            if os_mode == "Light" and tk_theme in ("black", "equilux"):
+                themed_style().theme_use(preferences.get(PrefKey.THEME_NAME_LIGHT))
                 self.mainwindow.toolbar_theme_update()
-            elif os_mode == "Dark" and tk_theme != "black":
-                themed_style().theme_use("black")
+            elif os_mode == "Dark" and tk_theme not in ("black", "equilux"):
+                themed_style().theme_use(preferences.get(PrefKey.THEME_NAME_DARK))
                 self.mainwindow.toolbar_theme_update()
             root().after(2500, self.update_theme)
 

@@ -73,6 +73,8 @@ class PrefKey(StrEnum):
     TEXT_MARKUP_FONT = auto()
     PAGESEP_AUTO_TYPE = auto()
     THEME_NAME = auto()
+    THEME_NAME_DARK = auto()
+    THEME_NAME_LIGHT = auto()
     TEAROFF_MENU_TYPE = auto()
     COMPOSE_HISTORY = auto()
     COMPOSE_HELP_SORT = auto()
