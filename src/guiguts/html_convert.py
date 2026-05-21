@@ -1151,7 +1151,7 @@ def insert_header_footer() -> None:
         if user_header:
             maintext().insert(end_of_css(), f"{user_header}\n")
     # Insert footer
-    maintext().insert(tk.END, "\n</body>\n</html>\n")
+    maintext().insert(tk.END, "\n</main>\n</body>\n</html>\n")
     # Restore mark gravity if changed above
     for page_mark in page_mark_list:
         maintext().mark_gravity(page_mark, tk.LEFT)
