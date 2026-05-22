@@ -491,11 +491,11 @@ class JeebiesChecker:
             hebe_form = paragraph_text[match_obj.start(0) : match_obj.end(0)]
             hebe_count = self.find_in_dictionary(hebe_form)
             # Avoid the "tribe be not" or "catastrophe he had" trap.
-            s_hebe = f" {hebe}"
+            s_hebe = f" {hebe} "
             hebe_start = match_obj.start(0) + hebe_form.index(s_hebe) + 1
             # Swap 'he' for 'be' (or vice versa) in 3-word form and lookup that.
             # Avoid the "tribe be not" or "catastrophe he had" trap.
-            s_behe = f" {behe}"
+            s_behe = f" {behe} "
             behe_form = re.sub(s_hebe, s_behe, hebe_form)
             behe_count = self.find_in_dictionary(behe_form)
 
