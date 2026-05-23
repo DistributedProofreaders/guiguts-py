@@ -207,10 +207,15 @@ class TextColumnNumbers(tk.Text):
 
     def theme_change(self) -> None:
         """Handle change of color theme"""
-        self.configure(
-            background=themed_style().lookup("TButton", "background"),
-            foreground=themed_style().lookup("TButton", "foreground"),
-        )
+        # Some themes do not set a plain color for
+        if tbg := themed_style().lookup("TButton", "background"):
+            self.configure(
+                background=tbg,
+            )
+        if tfg := themed_style().lookup("TButton", "foreground"):
+            self.configure(
+                foreground=tfg,
+            )
 
 
 class TextLineNumbers(tk.Canvas):
@@ -296,7 +301,8 @@ class TextLineNumbers(tk.Canvas):
     def theme_change(self) -> None:
         """Handle change of color theme"""
         self.configure(background=themed_style().lookup("TButton", "background"))
-        self.text_color = themed_style().lookup("TButton", "foreground")
+        if tfg := themed_style().lookup("TButton", "foreground"):
+            self.text_color = tfg
 
     def drag_handler_start(self, evt: tk.Event) -> None:
         """Handle initial click for drag-select operation."""

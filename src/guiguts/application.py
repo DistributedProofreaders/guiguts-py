@@ -4,7 +4,7 @@
 
 import argparse
 import logging
-import importlib.resources
+
 from importlib.metadata import version
 import os
 import sys
@@ -14,6 +14,7 @@ import unicodedata
 import webbrowser
 import darkdetect  # type: ignore[import-untyped]
 from packaging.version import Version
+
 
 from guiguts.ascii_tables import JustifyStyle
 from guiguts.checkers import CheckerDialog
@@ -32,7 +33,7 @@ from guiguts.content_providing import (
     cp_list_good_words,
     cp_show_process_dialog,
 )
-from guiguts.data import themes
+
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle, footnote_mask
 from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
@@ -153,7 +154,6 @@ from guiguts.utilities import (
 )
 from guiguts.widgets import (
     themed_style,
-    theme_name_internal_from_user,
     ToplevelDialog,
     GLOBAL_FONT_NAME,
 )
@@ -168,7 +168,6 @@ logger = logging.getLogger(__package__)
 
 MESSAGE_FORMAT = "%(asctime)s: %(levelname)s - %(message)s"
 DEBUG_FORMAT = "%(asctime)s: %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
-THEMES_DIR = importlib.resources.files(themes)
 
 
 class Guiguts:
@@ -201,12 +200,6 @@ class Guiguts:
         self.mainwindow = MainWindow()
         self.file.mainwindow = self.mainwindow
         self.update_title()
-
-        theme_root = THEMES_DIR.joinpath("awthemes-10.4.0")
-        with importlib.resources.as_file(theme_root) as theme_path:
-            root().tk.call("lappend", "auto_path", str(theme_path))
-            root().tk.call("package", "require", "awdark")
-            root().tk.call("package", "require", "awlight")
 
         # Recent menu is saved to allow deletion & re-creation when files loaded/saved
         self.recent_menu: Optional[MenuMetadata] = None
@@ -245,7 +238,6 @@ class Guiguts:
 
         root().protocol("WM_DELETE_WINDOW", check_save_and_destroy)
 
-        # Start autodetect loop for OS dark mode, if appropriate
         self.update_theme()
 
         # Don't pop startup dialogs if debug flag given (for tester's sake!)
@@ -517,6 +509,10 @@ class Guiguts:
         preferences.set_default(PrefKey.PAGESEP_AUTO_TYPE, PageSepAutoType.AUTO_FIX)
         preferences.set_default(PrefKey.THEME_NAME, "Default")
         preferences.set_callback(PrefKey.THEME_NAME, self.theme_name_callback)
+        preferences.set_default(PrefKey.THEME_NAME_DARK, "black")
+        preferences.set_callback(PrefKey.THEME_NAME_DARK, self.theme_dark_callback)
+        preferences.set_default(PrefKey.THEME_NAME_LIGHT, "default")
+        preferences.set_callback(PrefKey.THEME_NAME_LIGHT, self.theme_light_callback)
         preferences.set_default(
             PrefKey.TEAROFF_MENU_TYPE, "custom" if is_mac() else "builtin"
         )
@@ -1852,11 +1848,33 @@ class Guiguts:
 
         Responsible for starting auto-dark-detection loop for Default theme,
         if theme was not Default at startup."""
-        if value == "Default":
+        # This copes with old theme names (Dark ,Light, Default) as well as being
+        # the setting for which theme to use (selected dark theme, selected light
+        # theme, selected theme to match OS dark/light mode)
+        if value == "Dark":
+            themed_style().theme_use(preferences.get(PrefKey.THEME_NAME_DARK))
+        elif value == "Light":
+            themed_style().theme_use(preferences.get(PrefKey.THEME_NAME_LIGHT))
+        else:  # "Default"
             self.update_theme()
-        elif value in ("Light", "Dark"):
-            themed_style().theme_use(theme_name_internal_from_user(value))
 
+        # After theme loaded, set font
+        themed_style().configure(".", font=GLOBAL_FONT_NAME)
+        self.mainwindow.toolbar_theme_update()
+
+    def theme_dark_callback(self, value: str) -> None:
+        """Callback for when THEME_NAME_DARK preference is changed."""
+        self.theme_common_callback(True, value)
+
+    def theme_light_callback(self, value: str) -> None:
+        """Callback for when THEME_NAME_LIGHT preference is changed."""
+        self.theme_common_callback(False, value)
+
+    def theme_common_callback(self, dark: bool, value: str) -> None:
+        """Callback for when THEME_NAME_DARK/LIGHT preference is changed."""
+        if themed_style().is_dark_theme() != dark:
+            return
+        themed_style().theme_use(value)
         # After theme loaded, set font
         themed_style().configure(".", font=GLOBAL_FONT_NAME)
         self.mainwindow.toolbar_theme_update()
@@ -1868,11 +1886,11 @@ class Guiguts:
             os_mode = darkdetect.theme()
             tk_theme = themed_style().theme_use()
 
-            if os_mode == "Light" and tk_theme != "awlight":
-                themed_style().theme_use("awlight")
+            if os_mode == "Light" and tk_theme in ("black", "equilux"):
+                themed_style().theme_use(preferences.get(PrefKey.THEME_NAME_LIGHT))
                 self.mainwindow.toolbar_theme_update()
-            elif os_mode == "Dark" and tk_theme != "awdark":
-                themed_style().theme_use("awdark")
+            elif os_mode == "Dark" and tk_theme not in ("black", "equilux"):
+                themed_style().theme_use(preferences.get(PrefKey.THEME_NAME_DARK))
                 self.mainwindow.toolbar_theme_update()
             root().after(2500, self.update_theme)
 

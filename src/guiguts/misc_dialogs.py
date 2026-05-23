@@ -37,7 +37,7 @@ from guiguts.preferences import (
     preferences,
 )
 from guiguts.root import root
-from guiguts.utilities import is_mac, sound_bell, process_accel, IndexRange
+from guiguts.utilities import is_mac, is_windows, sound_bell, process_accel, IndexRange
 from guiguts.widgets import (
     ToplevelDialog,
     ToolTip,
@@ -100,15 +100,97 @@ class PreferencesDialog(ToplevelDialog):
         # Appearance
         appearance_frame = ttk.Frame(notebook, padding=10)
         notebook.add(appearance_frame, text="Appearance")
-        ttk.Label(appearance_frame, text="Theme (requires restart): ").grid(
-            column=0, row=0, sticky="NE"
+
+        tframe = ttk.LabelFrame(
+            appearance_frame, text="Themes (restart after changing)"
+        )
+        tframe.grid(column=0, row=0, sticky="NEW", columnspan=2)
+        ttk.Label(tframe, text="Light: ").grid(
+            column=0, row=0, sticky="NSW", padx=(5, 0)
         )
         cb = ttk.Combobox(
-            appearance_frame, textvariable=PersistentString(PrefKey.THEME_NAME)
+            tframe, textvariable=PersistentString(PrefKey.THEME_NAME_LIGHT)
         )
-        cb.grid(column=1, row=0, sticky="NEW")
-        cb["values"] = ["Default", "Dark", "Light"]
+        cb.grid(column=1, row=0, sticky="NSW")
+        themelist = [
+            "adapta",
+            "alt",
+            "aquativo",
+            "arc",
+            "blue",
+            "breeze",
+            "clam",
+            "classic",
+            "default",
+            "clearlooks",
+            "elegance",
+            "itft1",
+            "keramik",
+            "keramik_alt",
+            "kroc",
+            "plastik",
+            "radiance",
+            "scidblue",
+            "scidgreen",
+            "scidgrey",
+            "scidmint",
+            "scidpink",
+            "scidpurple",
+            "scidsand",
+            "smog",
+            "ubuntu",
+            "winxpblue",
+            "yaru",
+        ]
+        if is_mac():
+            themelist.append("aqua")
+        elif is_windows():
+            themelist.append("winnative")
+            themelist.append("xpnative")
+            themelist.append("vista")
+        themelist.sort()
+        cb["values"] = themelist
         cb["state"] = "readonly"
+        ttk.Label(tframe, text="Dark: ").grid(
+            column=2, row=0, sticky="NSW", padx=(5, 0)
+        )
+        cb = ttk.Combobox(
+            tframe, textvariable=PersistentString(PrefKey.THEME_NAME_DARK)
+        )
+        cb.grid(column=3, row=0, sticky="NSW")
+        dark_themes = [
+            "black",
+            # "equilux",    # Removed due to macOS performance issues and poor contrast
+        ]
+        if is_mac():
+            dark_themes.append("aqua")  # On Macs, aqua is dark if OS theme is dark
+        cb["values"] = dark_themes
+        cb["state"] = "readonly"
+        uframe = ttk.Frame(tframe)
+        uframe.grid(column=0, row=1, columnspan=4, pady=5, sticky="W")
+        ttk.Label(uframe, text="Use: ").grid(column=0, row=0)
+        use_textvariable = PersistentString(PrefKey.THEME_NAME)
+        ttk.Radiobutton(
+            uframe,
+            text="Light",
+            variable=use_textvariable,
+            value="Light",
+        ).grid(row=0, column=1, sticky="NW", padx=(10, 0))
+        ttk.Radiobutton(
+            uframe,
+            text="Dark",
+            variable=use_textvariable,
+            value="Dark",
+        ).grid(row=0, column=2, sticky="NW", padx=(10, 0))
+        ar = ttk.Radiobutton(
+            uframe,
+            text="Auto",
+            variable=use_textvariable,
+            value="Default",
+        )
+        ar.grid(row=0, column=3, sticky="NW", padx=(10, 0))
+        ToolTip(ar, "Use light or dark theme based on operating system setting")
+
         ttk.Checkbutton(
             appearance_frame,
             text="High Contrast",

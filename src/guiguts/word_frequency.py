@@ -292,6 +292,8 @@ class WordFrequencyDialog(ToplevelDialog):
         display_frame.grid(row=2, column=0, columnspan=2, sticky="NSEW")
         for col in range(0, 4):
             display_frame.columnconfigure(index=col, weight=1)
+        for row in range(0, 5):
+            display_frame.rowconfigure(index=row, uniform="wfequal")
 
         display_type = PersistentString(PrefKey.WFDIALOG_DISPLAY_TYPE)
 
@@ -334,6 +336,7 @@ class WordFrequencyDialog(ToplevelDialog):
         hyphen_frame = ttk.Frame(display_frame)
         hyphen_frame.grid(row=2, column=1, columnspan=2, sticky="NSEW")
         hyphen_frame.columnconfigure(index=3, weight=1)
+        hyphen_frame.rowconfigure(index=0, weight=1)
         ttk.Radiobutton(
             hyphen_frame,
             text='Hyphens  -  Including "two word" Matches?',
@@ -351,7 +354,7 @@ class WordFrequencyDialog(ToplevelDialog):
             hyphen_frame,
             command=hyphen_two_word_cmd,
             variable=PersistentBoolean(PrefKey.WFDIALOG_HYPHEN_TWO_WORDS),
-        ).grid(row=0, column=2, sticky="NSW")
+        ).grid(row=0, column=2, sticky="NSW", padx=(3, 0))
         display_radio(3, 0, "Alpha/Num", WFDisplayType.ALPHANUM)
         italic_frame = ttk.Frame(display_frame)
         italic_frame.grid(row=3, column=1, columnspan=2, sticky="NSEW")

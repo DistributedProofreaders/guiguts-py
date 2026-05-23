@@ -1422,7 +1422,7 @@ class MessageLog(logging.Handler):
             r, g, b = rgb
             return f"#{r:02x}{g:02x}{b:02x}"
 
-        fg_hex = themed_style().lookup("TLabel", "foreground")
+        fg_hex = rgb_to_hex(maintext().winfo_rgb(maintext()["foreground"]))
         lines = text.splitlines()
         msg = lines[-1] if lines else ""
         self.label_widget.config(text=msg, foreground=fg_hex)
@@ -1453,6 +1453,9 @@ class MessageLog(logging.Handler):
                 )
 
         self.label_fade_ids.append(self.label_widget.after(5000, error_fade))
+        self.label_fade_ids.append(
+            self.label_widget.after(10000, lambda: self.label_widget.config(text=""))
+        )
 
 
 class MainWindow:

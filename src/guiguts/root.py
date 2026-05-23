@@ -8,6 +8,7 @@ from tkinter import ttk
 
 from types import TracebackType
 from typing import Any
+from ttkthemes import ThemedTk
 
 from guiguts.preferences import preferences, PrefKey
 from guiguts.utilities import is_x11
@@ -25,7 +26,7 @@ class RootWindowState(StrEnum):
     FULLSCREEN = auto()
 
 
-class Root(tk.Tk):
+class Root(ThemedTk):
     """Inherits from Tk root window"""
 
     def __init__(self, **kwargs: Any) -> None:

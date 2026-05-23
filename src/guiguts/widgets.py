@@ -1235,18 +1235,31 @@ class ThemedStyle(ttk.Style):
             # Above line fails with Tk9, since $ttk::currentTheme doesn't exist,
             # so replaced with line below as suggested in above comment.
             return self.tk.call(self._name, "theme", "use")  # type:ignore[attr-defined]
-        super().theme_use(themename)
+        try:
+            super().theme_use(themename)
+        except tk.TclError:
+            super().theme_use(themename)  # Try again - it occasionally fails
         fg = self.lookup("TButton", "foreground")
-        self.map("TButton", focuscolor=[("focus", fg)])
-        self.map("TCheckbutton", focuscolor=[("focus", fg)])
-        self.map("TRadiobutton", focuscolor=[("focus", fg)])
-        self.map("TCombobox", focuscolor=[("focus", fg)])
-        self.map("TEntry", focuscolor=[("focus", fg)])
+        if fg:
+            self.map("TButton", focuscolor=[("focus", fg)])
+            self.map("TCheckbutton", focuscolor=[("focus", fg)])
+            self.map("TRadiobutton", focuscolor=[("focus", fg)])
+            self.map("TCombobox", focuscolor=[("focus", fg)])
+            self.map("TEntry", focuscolor=[("focus", fg)])
+        # Some themes have no border on LabelFrames - force one
+        if not self.lookup("TLabelframe", "borderwidth"):
+            self.configure("TLabelframe", borderwidth="2", relief=tk.GROOVE)
         return None
 
     def is_dark_theme(self) -> bool:
-        """Returns True if theme is set to awdark."""
-        if self.theme_use() == "awdark":
+        """Returns True if theme is a dark one."""
+        os_mode = darkdetect.theme()
+        tk_theme = self.theme_use()
+        if tk_theme in ("black", "equilux"):
+            return True
+        # Mac "aqua" theme reflects OS Dark/Light setting, so if OS
+        # is "Dark" then "aqua" theme is a dark theme.
+        if is_mac() and tk_theme == "aqua" and os_mode == "Dark":
             return True
         return False
 
@@ -1259,30 +1272,6 @@ def themed_style(style: Optional[ThemedStyle] = None) -> ThemedStyle:
         _SINGLE_STYLE = style
     assert _SINGLE_STYLE is not None
     return _SINGLE_STYLE
-
-
-def theme_name_internal_from_user(user_theme: str) -> str:
-    """Return the internal theme name given the name the user will see.
-
-    Args:
-        user_theme: Name user will see in Preferences dialog.
-
-    Returns:
-        Internal name for theme.
-    """
-    match user_theme:
-        case "Default":
-            if darkdetect.theme() == "Light":
-                return "awlight"
-            if darkdetect.theme() == "Dark":
-                return "awdark"
-            assert False, "Error detecting OS theme"
-        case "Dark":
-            return "awdark"
-        case "Light":
-            return "awlight"
-        case _:
-            assert False, "Bad user theme name"
 
 
 # Keep track of which Text/Entry widget of interest last had focus.
