@@ -158,10 +158,13 @@ class PreferencesDialog(ToplevelDialog):
             tframe, textvariable=PersistentString(PrefKey.THEME_NAME_DARK)
         )
         cb.grid(column=3, row=0, sticky="NSW")
-        cb["values"] = [
+        dark_themes = [
             "black",
-            "equilux",
+            # "equilux",    # Removed due to macOS performance issues and poor contrast
         ]
+        if is_mac():
+            dark_themes.append("aqua")  # On Macs, aqua is dark if OS theme is dark
+        cb["values"] = dark_themes
         cb["state"] = "readonly"
         uframe = ttk.Frame(tframe)
         uframe.grid(column=0, row=1, columnspan=4, pady=5, sticky="W")

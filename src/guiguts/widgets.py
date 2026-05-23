@@ -7,6 +7,7 @@ from tkinter import font as tk_font, filedialog
 from typing import Any, Optional, TypeVar, Callable
 import webbrowser
 
+import darkdetect  # type: ignore[import-untyped]
 import regex as re
 
 from guiguts.preferences import (
@@ -1252,7 +1253,13 @@ class ThemedStyle(ttk.Style):
 
     def is_dark_theme(self) -> bool:
         """Returns True if theme is a dark one."""
-        if self.theme_use() in ("black", "equilux"):
+        os_mode = darkdetect.theme()
+        tk_theme = self.theme_use()
+        if tk_theme in ("black", "equilux"):
+            return True
+        # Mac "aqua" theme reflects OS Dark/Light setting, so if OS
+        # is "Dark" then "aqua" theme is a dark theme.
+        if is_mac() and tk_theme == "aqua" and os_mode == "Dark":
             return True
         return False
 
