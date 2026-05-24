@@ -1317,25 +1317,45 @@ class MainText(tk.Text):
         self.theme_set_tk_widget_colors(self.peer)
 
         # On Tk9 macOS, trackpad gestures fire <TouchpadScroll> not <MouseWheel>.
-        # An instance-level binding is required; the Tk class-level binding alone
-        # does not engage correctly on this widget.
+        # Rate-limit scroll updates to ~60fps by accumulating deltas between frames.
         if is_mac():
 
-            def _touchpad_scroll(event: tk.Event) -> str:
-                def to_signed_16(n: int) -> int:
-                    return n if n < 0x8000 else n - 0x10000
+            def _make_touchpad_handler(
+                widget: tk.Text,
+            ) -> Callable[[tk.Event], str]:
+                pending_x: float = 0.0
+                pending_y: float = 0.0
+                after_id: Optional[str] = None
 
-                yscr = to_signed_16(event.delta & 0xFFFF)
-                xscr = to_signed_16((event.delta >> 16) & 0xFFFF)
-                if yscr:
-                    self.yview_scroll(-yscr, "pixels")
-                if xscr:
-                    self.xview_scroll(-xscr, "pixels")
-                return "break"
+                def _flush() -> None:
+                    nonlocal pending_x, pending_y, after_id
+                    after_id = None
+                    y_scroll = int(-pending_y)
+                    x_scroll = int(-pending_x)
+                    pending_y += y_scroll
+                    pending_x += x_scroll
+                    if y_scroll:
+                        widget.yview_scroll(y_scroll, "pixels")
+                    if x_scroll:
+                        widget.xview_scroll(x_scroll, "pixels")
+
+                def _handler(event: tk.Event) -> str:
+                    nonlocal pending_x, pending_y, after_id
+
+                    def to_signed_16(n: int) -> int:
+                        return n if n < 0x8000 else n - 0x10000
+
+                    pending_y += to_signed_16(event.delta & 0xFFFF)
+                    pending_x += to_signed_16((event.delta >> 16) & 0xFFFF)
+                    if after_id is None:
+                        after_id = self.after(16, _flush)
+                    return "break"
+
+                return _handler
 
             try:
-                self.bind("<TouchpadScroll>", _touchpad_scroll)
-                self.peer.bind("<TouchpadScroll>", _touchpad_scroll)
+                self.bind("<TouchpadScroll>", _make_touchpad_handler(self))
+                self.peer.bind("<TouchpadScroll>", _make_touchpad_handler(self.peer))
             except tk.TclError:
                 pass  # Tk < 9, TouchpadScroll not available
 
