@@ -695,8 +695,9 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                '<ul class="index">',
+                '<nav>\n<ul class="index">',
             )
+            next_step += 1
             reset_ibs_dict()
             index_blank_lines = 2  # Force first entry to be start of section
             continue
@@ -707,8 +708,9 @@ def html_convert_body() -> None:
                 maintext().replace(
                     line_start,
                     line_end,
-                    "</ul>",
+                    "</ul>\n</nav>",
                 )
+                next_step += 1
                 continue
             if selection == "":
                 index_blank_lines += 1
