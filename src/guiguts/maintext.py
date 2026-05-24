@@ -1316,6 +1316,29 @@ class MainText(tk.Text):
 
         self.theme_set_tk_widget_colors(self.peer)
 
+        # On Tk9 macOS, trackpad gestures fire <TouchpadScroll> not <MouseWheel>.
+        # An instance-level binding is required; the Tk class-level binding alone
+        # does not engage correctly on this widget.
+        if is_mac():
+
+            def _touchpad_scroll(event: tk.Event) -> str:
+                def to_signed_16(n: int) -> int:
+                    return n if n < 0x8000 else n - 0x10000
+
+                yscr = to_signed_16(event.delta & 0xFFFF)
+                xscr = to_signed_16((event.delta >> 16) & 0xFFFF)
+                if yscr:
+                    self.yview_scroll(-yscr, "pixels")
+                if xscr:
+                    self.xview_scroll(-xscr, "pixels")
+                return "break"
+
+            try:
+                self.bind("<TouchpadScroll>", _touchpad_scroll)
+                self.peer.bind("<TouchpadScroll>", _touchpad_scroll)
+            except tk.TclError:
+                pass  # Tk < 9, TouchpadScroll not available
+
         # Initialize highlighting tags
         self.after_idle(self.highlight_configure_tags)
 
