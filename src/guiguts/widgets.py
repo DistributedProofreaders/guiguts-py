@@ -435,7 +435,7 @@ class ToplevelDialog(tk.Toplevel):
     def toggle_pin_last_dialog(cls) -> None:
         """Toggle pinning for the most recently focused dialog."""
         if ToplevelDialog.recent_dialog and ToplevelDialog.recent_dialog.winfo_exists():
-            ToplevelDialog.recent_dialog.toggle_pin()  # type:ignore[attr-defined]
+            ToplevelDialog.recent_dialog.toggle_pin()  # type: ignore[attr-defined]
 
 
 class OkApplyCancelDialog(ToplevelDialog):
@@ -556,7 +556,7 @@ class Combobox(ttk.Combobox):
         except tk.TclError:  # Tk9 structure
             self.tk.call(f"{popdown}.menu", "configure", "-font", self["font"])
 
-    def configure(  # type:ignore[override] # pylint: disable=signature-differs
+    def configure(  # type: ignore[override] # pylint: disable=signature-differs
         self, cnf: dict[str, Any], **kw: dict[str, Any]
     ) -> None:
         """Configure resources of a widget. Overridden!
@@ -567,13 +567,13 @@ class Combobox(ttk.Combobox):
         """
 
         #   default configure behavior
-        self._configure("configure", cnf, kw)  # type:ignore[attr-defined]
+        self._configure("configure", cnf, kw)  # type: ignore[attr-defined]
         #   if font was configured - configure font for popdown as well
         if "font" in kw or "font" in cnf:
             self._handle_popdown_font()
 
     #   keep overridden shortcut
-    config = configure  # type:ignore[assignment]
+    config = configure  # type: ignore[assignment]
 
     def add_to_history(self, string: str) -> None:
         """Store given string in history list.
@@ -710,7 +710,7 @@ class Notebook(ttk.Notebook):
         if 1 <= tab <= 9:
             self.toplevel.bind(
                 f"<{cmd_ctrl_string()}-Key-{tab}>",
-                lambda _, tab=tab: self.select_tab(tab - 1),  # type:ignore[misc]
+                lambda _, tab=tab: self.select_tab(tab - 1),  # type: ignore[misc]
             )
 
     def select_tab(self, tab: int) -> str:
@@ -1238,7 +1238,7 @@ class ThemedStyle(ttk.Style):
             # NEW CODE
             # Above line fails with Tk9, since $ttk::currentTheme doesn't exist,
             # so replaced with line below as suggested in above comment.
-            return self.tk.call(self._name, "theme", "use")  # type:ignore[attr-defined]
+            return self.tk.call(self._name, "theme", "use")  # type: ignore[attr-defined]
         try:
             super().theme_use(themename)
         except tk.TclError:

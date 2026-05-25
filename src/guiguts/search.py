@@ -40,7 +40,7 @@ PADX = 2
 PADY = 2
 
 # Passed into eval call when `\C...\E` used in regex replacement
-lglobal = {}
+lglobal: dict[str, str | int] = {}
 
 
 class NoMatchFoundError(Exception):
@@ -1302,4 +1302,4 @@ def message_from_regex_exception(exc: re.error) -> str:
     """
     message = str(exc)
     message = message[0].upper() + message[1:]
-    return message + " in regex " + exc.pattern  # type:ignore[attr-defined]
+    return message + " in regex " + exc.pattern  # type: ignore[attr-defined]

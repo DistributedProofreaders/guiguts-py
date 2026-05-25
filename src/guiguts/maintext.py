@@ -4629,7 +4629,7 @@ class MainText(tk.Text):
             assert c_color.tag
             for dlg in ToplevelDialog.toplevel_dialogs.values():
                 try:
-                    dlg.text.tag_configure(  # type:ignore[attr-defined]
+                    dlg.text.tag_configure(  # type: ignore[attr-defined]
                         c_color.tag,
                         (
                             c_color.dark
@@ -5335,7 +5335,7 @@ class Menu(tk.Menu):
         command_args: dict[str, Any] = {"menu": self}
         label_txt = ""
         if label:
-            (label_tilde, label_txt) = process_label(label)
+            label_tilde, label_txt = process_label(label)
             command_args["label"] = label_txt
             if label_tilde >= 0:
                 command_args["underline"] = label_tilde
@@ -5365,7 +5365,7 @@ class Menu(tk.Menu):
         """
         Menu.bind_button(callback, accel, bind_all)
 
-        (label_tilde, label_txt) = process_label(label)
+        label_tilde, label_txt = process_label(label)
         accel = process_accel(accel)[0]
         command_args = {
             "label": label_txt,
@@ -5920,7 +5920,7 @@ class TearOffMenuDialog(ToplevelDialog):
                     self.top_frame,
                     text=process_label(entry.label.removesuffix(" (toggle)"))[1],
                     variable=PersistentBoolean(entry.pref_key),
-                    command=lambda k=entry.pref_key, c_on=entry.command_on, c_off=entry.command_off: Menu.checkbox_clicked(  # type:ignore[misc]
+                    command=lambda k=entry.pref_key, c_on=entry.command_on, c_off=entry.command_off: Menu.checkbox_clicked(  # type: ignore[misc]
                         k, c_on, c_off
                     ),
                 ).grid(row=row, column=0, sticky="NSEW")

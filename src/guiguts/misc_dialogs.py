@@ -773,10 +773,10 @@ class PreferencesDialog(ToplevelDialog):
             desc.grid(row=row, column=0, sticky="NSEW", padx=2, pady=2)
             desc.insert("1.0", self.color_settings[key].description)
             desc.bind(
-                "<Enter>", lambda _, desc=desc: desc.see("1.0")  # type:ignore[misc]
+                "<Enter>", lambda _, desc=desc: desc.see("1.0")  # type: ignore[misc]
             )
             desc.bind(
-                "<Leave>", lambda _, desc=desc: desc.see("1.0")  # type:ignore[misc]
+                "<Leave>", lambda _, desc=desc: desc.see("1.0")  # type: ignore[misc]
             )
             desc.tag_configure(sample_tag_name, style_dict)
             desc.tag_add(sample_tag_name, "1.0", "1.end")
@@ -816,17 +816,17 @@ class PreferencesDialog(ToplevelDialog):
             mouse_bind(
                 desc,
                 "1",
-                lambda _, cb=click_callback: cb("foreground"),  # type:ignore[misc]
+                lambda _, cb=click_callback: cb("foreground"),  # type: ignore[misc]
             )
             mouse_bind(
                 desc,
                 "3",
-                lambda _, cb=click_callback: cb("background"),  # type:ignore[misc]
+                lambda _, cb=click_callback: cb("background"),  # type: ignore[misc]
             )
             mouse_bind(
                 desc,
                 "Shift+1",
-                lambda _, cb=click_callback: cb("background"),  # type:ignore[misc]
+                lambda _, cb=click_callback: cb("background"),  # type: ignore[misc]
             )
 
             # Underline toggle
@@ -1201,7 +1201,7 @@ class DidYouKnowDialog(ToplevelDialog):
             self.tip_text.tag_bind(
                 tagname,
                 "<Button-1>",
-                lambda e, t=target: self.hyperlink(t),  # type:ignore[misc]
+                lambda e, t=target: self.hyperlink(t),  # type: ignore[misc]
             )
 
             self.tip_text.tag_bind(tagname, "<Enter>", lambda _: self.on_enter())
@@ -2153,7 +2153,7 @@ class CommandPaletteDialog(ToplevelDialog):
                 score = int(
                     process.extractOne(search_text, [f"{menu_lower} {label_lower}"])[
                         1
-                    ]  # type:ignore[index]
+                    ]  # type: ignore[index]
                 )
             return score
 

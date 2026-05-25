@@ -1513,7 +1513,7 @@ class CPCharSuitesDialog(ToplevelDialog):
                 text=suite,
                 variable=bvar,
                 state=tk.DISABLED if suite == "Basic Latin" else tk.ACTIVE,
-                command=lambda s=suite, v=bvar: update_charsuite_flag(  # type:ignore[misc]
+                command=lambda s=suite, v=bvar: update_charsuite_flag(  # type: ignore[misc]
                     s, v
                 ),
             ).grid(row=row, column=0, sticky="NSW")

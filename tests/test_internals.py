@@ -45,25 +45,25 @@ def test_preferences(guiguts_app: Guiguts) -> None:  # pylint: disable=unused-ar
 
 def test_mainwindow(guiguts_app: Guiguts) -> None:  # pylint: disable=unused-argument
     """Test mainwindow functions"""
-    (tilde, text) = process_label("~Save...")
+    tilde, text = process_label("~Save...")
     assert tilde == 0
     assert text == "Save..."
-    (tilde, text) = process_label("Save ~As...")
+    tilde, text = process_label("Save ~As...")
     assert tilde == 5
     assert text == "Save As..."
-    (accel, event) = process_accel("Ctrl+X")
+    accel, event = process_accel("Ctrl+X")
     assert accel == "Ctrl+X"
     assert event == "<Control-X>"
-    (accel, event) = process_accel("Cmd/Ctrl+y")
+    accel, event = process_accel("Cmd/Ctrl+y")
     if is_mac():
         assert accel == "Cmd+y"
         assert event == "<Command-y>"
-        (accel, event) = process_accel("Cmd+?")
+        accel, event = process_accel("Cmd+?")
         assert accel == "Cmd+?"
         assert event == "<Command-?>"
     else:
         assert accel == "Ctrl+y"
         assert event == "<Control-y>"
-    (accel, event) = process_accel("Shift+Ctrl+Z")
+    accel, event = process_accel("Shift+Ctrl+Z")
     assert accel == "Shift+Ctrl+Z"
     assert event == "<Shift-Control-Z>"
