@@ -74,6 +74,10 @@ class ToplevelDialog(tk.Toplevel):
 
         self.base_title = title
         self.resizable(resize_x, resize_y)
+        # Under Tk9, root menus need explicitly assigning to Toplevel dialogs
+        # Only needed on Macs, since menus are not contained within the main window
+        if is_mac():
+            self["menu"] = root()["menu"]
 
         if not is_x11():
             # Bind right-click context menu for pin/unpin anywhere in the dialog
