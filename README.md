@@ -216,7 +216,7 @@ environment, either exit the shell or run `deactivate`.
 
 1. Download Python 3.13 or above from [python.org](https://www.python.org/). GG has been
    tested in versions up to 3.14.
-2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python13`
+2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python313`
 3. Ensure this dir is in PATH variable
 
 ##### Using pyenv to install/use multiple Python versions
