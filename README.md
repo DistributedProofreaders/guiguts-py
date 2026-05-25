@@ -8,12 +8,12 @@ Guiguts - an application to support creation of ebooks for PG. A complete [Guigu
 
 This section contains notes from users who have installed Guiguts 2 on various platforms to use for PPing.
 
-Note that although some example installation commands specify Python 3.11, Guiguts 2
+Note that although some example installation commands specify Python 3.13, Guiguts 2
 also works with later versions of Python, and has been tested in versions up to 3.14.
 
 ### Windows
 
-1. Install Python 3.11 or above from [Python.org](https://www.python.org/downloads/windows/).
+1. Install Python 3.13 or above from [Python.org](https://www.python.org/downloads/windows/).
 GG has been tested in versions up to 3.14. Ensure the "Add Python to PATH" box is checked
 during installation.
 2. In a command window, type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
@@ -32,7 +32,7 @@ previous version of GG2).
 
 ### macOS
 
-1. Install Python 3.11 or above from [python.org](https://www.python.org/), not a Homebrew-installed Python.
+1. Install Python 3.13 or above from [python.org](https://www.python.org/), not a Homebrew-installed Python.
 GG has been tested in versions up to 3.14.4. Using 3.14.5 or above is not recommended for Mac users at the
 moment, because Tcl/Tk 9.03 is bundled with it. Work is ongoing to support this version within GG2.
 
@@ -53,8 +53,8 @@ previous version of GG2).
 
 ### Linux (Debian/Ubuntu)
 
-Python needs to be version 3.11 or above, and GG has been tested in
-versions up to 3.14.
+Python version 3.13 or above is recommended if possible, though GG has been tested in
+versions from 3.11 up to 3.14.
 
 1. Install python, pipx, and Tk. Note that on some Linux distributions, the version number for `idle-python3.12` may differ slightly, e.g. as of this writing Debian 12 would require `idle-python3.11`.
 
@@ -74,8 +74,8 @@ Instructions tested on Fedora Linux 42 (Workstation Edition). Note that Fedora L
 Python 3.14 and Tk 9.0 rather than Tk 8.6. Guiguts does not yet support Tk 9.0, so at the moment is not
 expected to run successfully on Fedora Linux 43. 
 
-Fedora already has python3 installed. Note that python needs to be version 3.11 or above, and GG has been tested in
-versions up to 3.13 (see note above regarding 3.14). Fedora does not include the awthemes package (see step 2 below)
+Fedora already has python3 installed. Version 3.13 is recommended, if available, and GG has been tested in
+versions 3.11 up to 3.13 (see note above regarding 3.14). Fedora does not include the awthemes package (see step 2 below)
 
 1. Install pip, pipx, Tk & idle: `sudo dnf install pip pipx python3-tkinter python3-idle`
 
@@ -134,7 +134,7 @@ You might come across this error:
         it may be easiest to use pipx install xyz, which will manage a
         virtual environment for you. Make sure you have pipx installed.
     
-        See /usr/share/doc/python3.11/README.venv for more information.
+        See /usr/share/doc/python3.13/README.venv for more information.
 
 Let's go with the third option, and see if you have pipx: 
 
@@ -214,9 +214,9 @@ environment, either exit the shell or run `deactivate`.
 
 ##### Single (system-wide) version
 
-1. Download Python 3.11 or above from [python.org](https://www.python.org/). GG has been
+1. Download Python 3.13 or above from [python.org](https://www.python.org/). GG has been
    tested in versions up to 3.14.
-2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python311`
+2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python13`
 3. Ensure this dir is in PATH variable
 
 ##### Using pyenv to install/use multiple Python versions
@@ -232,9 +232,9 @@ multiple versions of Python, if that would be useful for development/testing.
     [System.Environment]::SetEnvironmentVariable('PYENV_HOME',$env:USERPROFILE + "\.pyenv\pyenv-win\","User")
     [System.Environment]::SetEnvironmentVariable('path', $env:USERPROFILE + "\.pyenv\pyenv-win\bin;" + $env:USERPROFILE + "\.pyenv\pyenv-win\shims;" + [System.Environment]::GetEnvironmentVariable('path', "User"),"User")
     ```
-3. In a new shell, install version(s) of Python, e.g. `pyenv install 3.11.7`,
-`pyenv install 3.12.0`, etc.
-4. To set python version, use `pyenv global 3.11.7`, for example.
+3. In a new shell, install version(s) of Python, e.g. `pyenv install 3.13.1`,
+`pyenv install 3.14.4`, etc.
+4. To set python version, use `pyenv global 3.14.4`, for example.
 
 #### Install Poetry
 
@@ -255,7 +255,7 @@ In the cloned GG2 directory, create a virtual environment using a version of
 python you installed above.
    * Single python version (in git bash shell)
      ```bash
-     poetry env use ~/AppData/Local/Programs/Python/Python311/python.exe
+     poetry env use ~/AppData/Local/Programs/Python/Python313/python.exe
      ```
    * If using pyenv (in git bash shell)
      ```bash
@@ -270,7 +270,7 @@ python you installed above.
 
 #### Install Python
 
-Install python 3.11 or later from [python.org](https://www.python.org/). GG has been tested
+Install python 3.13 or later from [python.org](https://www.python.org/). GG has been tested
 in versions up to 3.14.
 
 Note that installing python and python-tk using Homebrew is not supported for GG development.
@@ -298,13 +298,13 @@ poetry env use /usr/local/bin/python3
 ### Linux Development Setup
 
 1. Install Python, Poetry, etc.
-   * Example from Ubuntu 22.04 -- adapt to your own Linux distro. Python should
-     be version 3.11 or above, and GG has been tested in versions up to 3.14.
+   * Example from Ubuntu 22.04 -- adapt to your own Linux distro. Python version 3.13 or above,
+     is recommended, and GG has been tested in versions 3.11 up to 3.14.
      ```bash
-     sudo apt install python3.11 python3-pip python3-tk idle-python3.11 git pipx
+     sudo apt install python3.13 python3-pip python3-tk idle-python3.13 git pipx
      sudo pipx install poetry
      ## Test that Tk will work
-     python3.11 -m tkinter
+     python3.13 -m tkinter
      ```
    * The last line above tests that Tk is working with Python. It should open a small
      window on your screen. Click the `Click me!` button to test mouse clicks, and
@@ -316,7 +316,7 @@ poetry env use /usr/local/bin/python3
 3. In the cloned GG2 directory, create a virtual environment using a version of
    python you installed above.
      ```bash
-     poetry env use $(which python3.11)
+     poetry env use $(which python3.13)
      ```
 
 ### Code style
