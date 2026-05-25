@@ -42,6 +42,7 @@
   three words, and the third word began with "he" or "be"
 - Mac two-finger tap did not act as right-mouse-click with Tk9
 - Mac menus vanished when focus was switched to a dialog with Tk9
+- Mac touchpad scrolling did not work correctly with Tk9 on some devices
 - PPhtml reported an h1/title mismatch when the only difference was the use
   of non-breaking spaces
 - HTML Markup dialog output `<blkq>` instead of `<blockquote>`
