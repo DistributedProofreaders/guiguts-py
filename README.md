@@ -75,21 +75,15 @@ Python 3.14 and Tk 9.0 rather than Tk 8.6. Guiguts does not yet support Tk 9.0, 
 expected to run successfully on Fedora Linux 43. 
 
 Fedora already has python3 installed. Version 3.13 is recommended, if available, and GG has been tested in
-versions 3.11 up to 3.13 (see note above regarding 3.14). Fedora does not include the awthemes package (see step 2 below)
+versions 3.11 up to 3.13 (see note above regarding 3.14).
 
 1. Install pip, pipx, Tk & idle: `sudo dnf install pip pipx python3-tkinter python3-idle`
 
-2. Install awthemes package:
+2. Type `pipx install guiguts` (or `pipx upgrade guiguts` to upgrade from a previous version of GG2).
 
-    a. Download tcl-awthemes from https://sourceforge.net/projects/tcl-awthemes
+3. Type `pipx ensurepath` to ensure `guiguts` will be on your PATH.
 
-    b. Extract awthemes-10.4.0 and from that directory: `sudo cp -r * /usr/share/tk8.6/`
-
-3. Type `pipx install guiguts` (or `pipx upgrade guiguts` to upgrade from a previous version of GG2).
-
-4. Type `pipx ensurepath` to ensure `guiguts` will be on your PATH.
-
-5. Type `guiguts` to run GG2.
+4. Type `guiguts` to run GG2.
 
 (Depending on your exact setup you may need to run `setxkbmap`, which will trigger Fedora to
 offer to install the `setxkbmap` package.)
