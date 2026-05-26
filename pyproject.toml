@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "guiguts"
-version = "2.0.22"
+version = "2.1.0"
 description = "Guiguts version 2, Python/tkinter version"
 authors = ["DP Guiguts Dev Team <windymilla@users.noreply.github.com>"]
 readme = "README.md"
@@ -8,34 +8,34 @@ packages = [{include = "guiguts", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-Pillow = "^12.0"
-pywin32 = {version = "^311", platform = "win32"}
-roman = "^5.1"
-regex = "^2025.10.23"
-levenshtein = "^0.27.1"
-requests = "^2.32.3"
+Pillow = "^12.2"
+pywin32 = {version = ">=311,<312", platform = "win32"}
+roman = "^5.2"
+regex = "^2026.5.9"
+levenshtein = "^0.27.3"
+requests = "^2.34.2"
 ttkthemes = "^3.3.0"
 darkdetect = "^0.8.0"
-rapidfuzz = "^3.14.2"
-packaging = "^25.0"
-lxml = "^6.0.2"
+rapidfuzz = "^3.14.5"
+packaging = "^26.2"
+lxml = "^6.1.1"
 tinycss = "^0.4"
-cssselect = "^1.3.0"
+cssselect = "^1.4.0"
 html5lib = "^1.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.9"
+black = "^26.5"
 flake8 = "^7.3"
 Sphinx = "^8.2"
-pytest = "^8.4"
-mypy = "^1.18"
+pytest = "^9.0"
+mypy = "^2.1"
 pylint = "^4.0"
 beautifulsoup4 = "^4.14"
-types-regex = "^2025.10.23"
-types-requests = "^2.32"
-types-lxml = "^2026.1.1"
+types-regex = "^2026.5.9"
+types-requests = "^2.33"
+types-lxml = "^2026.2.16"
 types-ttkthemes = "^3.3.0"
-build = "^1.3"
+build = "^1.5"
 
 [tool.poetry.scripts]
 guiguts = "guiguts.application:main"

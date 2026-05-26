@@ -2124,7 +2124,7 @@ class HTMLMarkupDialog(ToplevelDialog):
             ttk.Button(
                 markup_frame,
                 text="<blkq>" if mopen == "<blockquote>" else mopen,  # too long
-                command=lambda mopen=mopen, mclose=mclose: self.add_markup(  # type:ignore[misc]
+                command=lambda mopen=mopen, mclose=mclose: self.add_markup(  # type: ignore[misc]
                     mopen,
                     mclose,
                 ),
@@ -2150,7 +2150,7 @@ class HTMLMarkupDialog(ToplevelDialog):
                 ttk.Button(
                     markup_frame,
                     text=f"<{markup}>",
-                    command=lambda attr_key=attr_key, markup=markup, cbx=cbx: self.add_custom_markup(  # type:ignore[misc]
+                    command=lambda attr_key=attr_key, markup=markup, cbx=cbx: self.add_custom_markup(  # type: ignore[misc]
                         attr_key, markup, cbx
                     ),
                 ).grid(

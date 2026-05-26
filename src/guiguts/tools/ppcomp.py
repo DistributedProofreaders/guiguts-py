@@ -1993,13 +1993,11 @@ def output_html(html_content, filename1, filename2, css):
 """
     )
     print(DIFF_CSS)
-    print(
-        """
+    print("""
   </style>
 </head>
 <body>
-"""
-    )
+""")
     print(
         f'<h1>Diff of <span class="first">{filename1}</span> and'
         f' <span class="second">{filename2}</span></h1>'
@@ -2008,12 +2006,10 @@ def output_html(html_content, filename1, filename2, css):
     if css:
         print("<p>Custom CSS added on command line: " + " ".join(css) + "</p>")
     print(html_content)
-    print(
-        """
+    print("""
 </body>
 </html>
-"""
-    )
+""")
 
 
 def main():

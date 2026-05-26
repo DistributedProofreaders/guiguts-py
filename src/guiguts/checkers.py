@@ -814,7 +814,7 @@ class CheckerDialog(ToplevelDialog):
     ) -> tuple[int, Any, str, str, int, int]:
         """Default sort key function to sort entries by custom data, then same as
         sort_key_alpha."""
-        (sec, low, txt, row, col) = CheckerDialog.sort_key_alpha(entry)
+        sec, low, txt, row, col = CheckerDialog.sort_key_alpha(entry)
         return (sec, entry.custom_data, low, txt, row, col)
 
     @classmethod

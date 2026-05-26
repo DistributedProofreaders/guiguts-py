@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Guiguts - an application to support creation of ebooks for PG"""
 
-
 import argparse
 import logging
 
@@ -897,7 +896,7 @@ class Guiguts:
         for count, file in enumerate(preferences.get(PrefKey.RECENT_FILES), start=1):
             self.recent_menu.add_button(
                 f"~{count}: {file}",
-                lambda fn=file: self.open_file(fn),  # type:ignore[misc]
+                lambda fn=file: self.open_file(fn),  # type: ignore[misc]
                 add_to_command_palette=False,
             )
 
@@ -1175,14 +1174,14 @@ class Guiguts:
             bookmark_menu.add_button(
                 # Add tilde before one of the letters in "okmar"
                 "Set Bo" + "okmar"[: bm - 1] + "~" + "okmar"[bm - 1 :] + f"k ~{bm}",
-                lambda num=bm: self.file.set_bookmark(num),  # type:ignore[misc]
+                lambda num=bm: self.file.set_bookmark(num),  # type: ignore[misc]
                 f"Ctrl+Shift+Key-{keys[kbd]}",
             )
 
         for bm in range(1, len(shortcuts) + 1):
             bookmark_menu.add_button(
                 f"Go To Bookmark ~{bm}",
-                lambda num=bm: self.file.goto_bookmark(num),  # type:ignore[misc]
+                lambda num=bm: self.file.goto_bookmark(num),  # type: ignore[misc]
                 f"Ctrl+Key-{bm}",
             )
         bookmark_menu.add_separator()
@@ -1504,7 +1503,7 @@ class Guiguts:
         assert tk_menu is not None
         # Add custom tear-off if needed
         if preferences.get(PrefKey.TEAROFF_MENU_TYPE) == "custom":
-            tk_menu.add_button(  # type:ignore[attr-defined]
+            tk_menu.add_button(  # type: ignore[attr-defined]
                 CUSTOM_TEAROFF_PERFORATIONS, lambda: create_tearoff(menu_metadata)
             )
 
@@ -1514,12 +1513,12 @@ class Guiguts:
                 entry.tk_menu = Menu(tk_menu, entry.label)  # Create the tk menu
                 self.add_entries(entry)  # Add its entries
             elif isinstance(entry, ButtonMetadata):
-                tk_menu.add_button(  # type:ignore[attr-defined]
+                tk_menu.add_button(  # type: ignore[attr-defined]
                     entry.label, entry.command, entry.shortcut, bind_all=entry.bind_all
                 )
                 menubar_metadata().store_shortcut(entry.shortcut, entry.bind_all)
             elif isinstance(entry, CheckbuttonMetadata):
-                tk_menu.add_checkbox(  # type:ignore[attr-defined]
+                tk_menu.add_checkbox(  # type: ignore[attr-defined]
                     entry.label.removesuffix(" (toggle)"),
                     PersistentBoolean(entry.pref_key),
                     entry.command_on,
@@ -1606,25 +1605,25 @@ class Guiguts:
             if count >= n_entries:
                 self.recent_menu.add_button(
                     f"~{count + 1}: {file}",
-                    lambda fn=file: self.open_file(fn),  # type:ignore[misc]
+                    lambda fn=file: self.open_file(fn),  # type: ignore[misc]
                     add_to_command_palette=False,
                 )
                 tk_menu.add_command(
                     label=f"~{count + 1}: {file}",
-                    command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
+                    command=lambda fn=file: self.open_file(fn),  # type: ignore[misc]
                 )
             else:
                 # Or just reconfigure the metadata entry and the menu button
                 self.recent_menu.entries[count].label = (
                     f"~{count + 1}: {file_list[count]}"
                 )
-                self.recent_menu.entries[count].command = (  # type:ignore[attr-defined]
+                self.recent_menu.entries[count].command = (  # type: ignore[attr-defined]
                     lambda fn=file: self.open_file(fn),
-                )  # type:ignore[misc]
+                )  # type: ignore[misc]
                 tk_menu.entryconfigure(
                     count + offset,
                     label=f"{count + 1}: {file}",
-                    command=lambda fn=file: self.open_file(fn),  # type:ignore[misc]
+                    command=lambda fn=file: self.open_file(fn),  # type: ignore[misc]
                 )
 
     def init_statusbar(self, the_statusbar: StatusBar) -> None:
