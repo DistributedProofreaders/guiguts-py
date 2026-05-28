@@ -1243,7 +1243,11 @@ class ThemedStyle(ttk.Style):
         try:
             super().theme_use(themename)
         except tk.TclError:
-            super().theme_use(themename)  # Try again - it occasionally fails
+            try:
+                root().after(500, lambda: None)
+                super().theme_use(themename)  # Try again - it occasionally fails
+            except tk.TclError:
+                super().theme_use("default")
         fg = self.lookup("TButton", "foreground")
         if fg:
             self.map("TButton", focuscolor=[("focus", fg)])
