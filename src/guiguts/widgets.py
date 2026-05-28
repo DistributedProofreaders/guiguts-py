@@ -8,6 +8,7 @@ from typing import Any, Optional, TypeVar, Callable
 import webbrowser
 
 import darkdetect  # type: ignore[import-untyped]
+from packaging.version import Version
 import regex as re
 
 from guiguts.preferences import (
@@ -76,7 +77,7 @@ class ToplevelDialog(tk.Toplevel):
         self.resizable(resize_x, resize_y)
         # Under Tk9, root menus need explicitly assigning to Toplevel dialogs
         # Only needed on Macs, since menus are not contained within the main window
-        if is_mac():
+        if is_mac() and is_tk9():
             self["menu"] = root()["menu"]
 
         if not is_x11():
@@ -1645,3 +1646,8 @@ def get_global_font() -> tk_font.Font:
     """Return global font."""
     assert global_font is not None
     return global_font
+
+
+def is_tk9() -> bool:
+    """Return True if Tcl/Tk >= 9."""
+    return Version(root().call("info", "patchlevel")) >= Version("9")
