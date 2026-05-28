@@ -1,6 +1,13 @@
 # Changelog
 
 
+## Version 2.1.1
+
+### Bug fixes
+
+- Menus disappeared after closing dialogs, with some versions of Python on Macs
+- The "keramic_alt" theme sometimes failed to load, so has been removed
+
 ## Version 2.1.0
 
 - New color themes have been added to the Edit-->Settings dialog due to the
