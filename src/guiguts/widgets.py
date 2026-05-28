@@ -1243,7 +1243,7 @@ class ThemedStyle(ttk.Style):
             super().theme_use(themename)
         except tk.TclError:
             try:
-                root().after(500)
+                root().after(500, lambda: None)
                 super().theme_use(themename)  # Try again - it occasionally fails
             except tk.TclError:
                 super().theme_use("default")
