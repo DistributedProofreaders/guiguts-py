@@ -126,7 +126,6 @@ class PreferencesDialog(ToplevelDialog):
             "elegance",
             "itft1",
             "keramik",
-            "keramik_alt",
             "kroc",
             "plastik",
             "radiance",
@@ -320,7 +319,6 @@ class PreferencesDialog(ToplevelDialog):
         font_frame = ttk.Frame(notebook, padding=10)
         notebook.add(font_frame, text="Fonts")
         font_frame.columnconfigure(1, weight=1)
-        # font_frame.rowconfigure(0, weight=1)
 
         ttk.Label(font_frame, text="Text Window: ").grid(column=0, row=0, sticky="NEW")
         font_list = sorted(font.families(), key=str.lower)
