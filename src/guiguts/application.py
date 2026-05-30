@@ -1797,8 +1797,12 @@ class Guiguts:
         self.mainwindow.toolbar_button_virtual_event("paste", "<<Paste>>")
         self.mainwindow.toolbar_button_command("search", show_search_dialog)
         self.mainwindow.toolbar_button_command("back", lambda: maintext().go_back())
+        self.mainwindow.toolbar_button_right_menu("back", maintext().populate_back_menu)
         self.mainwindow.toolbar_button_command(
             "forward", lambda: maintext().go_forward()
+        )
+        self.mainwindow.toolbar_button_right_menu(
+            "forward", maintext().populate_forward_menu
         )
         self.mainwindow.toolbar_button_command("help", ToplevelDialog.show_manual_page)
 

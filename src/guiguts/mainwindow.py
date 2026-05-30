@@ -1694,6 +1694,19 @@ class MainWindow:
         """Set command to be executed by toolbar button."""
         self.tool_btns[name].config(command=command)
 
+    def toolbar_button_right_menu(
+        self, name: str, menu_builder: Callable[[tk.Menu], None]
+    ) -> None:
+        """Set command to be executed by right-click on toolbar button."""
+
+        def event_handler(event: tk.Event) -> None:
+            """Handle right-click event"""
+            menu = tk.Menu(self.tool_btns[name], tearoff=False)
+            menu_builder(menu)
+            menu.tk_popup(event.x_root, event.y_root)
+
+        mouse_bind(self.tool_btns[name], "3", event_handler)
+
     def toolbar_button_virtual_event(self, name: str, event: str) -> None:
         """Set virtual event to be executed by toolbar button."""
         self.toolbar_button_command(
