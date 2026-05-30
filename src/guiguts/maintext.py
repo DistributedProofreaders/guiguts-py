@@ -655,6 +655,16 @@ class LocationHistory:
         if cur_mark_idx := self._get_current_mark_index():
             maintext().set_insert_index(IndexRowCol(cur_mark_idx), store_location=False)
 
+    def goto_history_index(self, idx: int) -> None:
+        """Got to history location with given index."""
+        self.history_index = idx
+
+        if cur_mark_idx := self._get_current_mark_index():
+            maintext().set_insert_index(
+                IndexRowCol(cur_mark_idx),
+                store_location=False,
+            )
+
     def current_mark(self) -> str:
         """Get current location mark."""
         try:
@@ -1781,6 +1791,44 @@ class MainText(tk.Text):
         """Go back to previous history location."""
         self.clear_selection()
         self.focus_widget().location_history.back()
+
+    def populate_back_menu(self, menu: tk.Menu) -> None:
+        """Populate back history location menu."""
+        wgt = self.focus_widget()
+        menu.add_command(label="Back location history")
+        menu.add_separator()
+        start = max(0, wgt.location_history.history_index - 10)
+        for idx in range(wgt.location_history.history_index - 1, start - 1, -1):
+            self._populate_menu(menu, idx)
+
+    def populate_forward_menu(self, menu: tk.Menu) -> None:
+        """Populate forward history location menu."""
+        wgt = self.focus_widget()
+        menu.add_command(label="Forward location history")
+        menu.add_separator()
+        end = min(
+            len(wgt.location_history.history_marks),
+            self.location_history.history_index + 11,
+        )
+        for idx in range(wgt.location_history.history_index + 1, end):
+            self._populate_menu(menu, idx)
+
+    def _populate_menu(self, menu: tk.Menu, idx: int) -> None:
+        """Populate entry in history location menu."""
+        wgt = self.focus_widget()
+        mark = wgt.location_history.history_marks[idx]
+        mark_rowcol = maintext().rowcol(mark)
+        line, col = mark_rowcol.row, mark_rowcol.col
+
+        text = wgt.get(f"{line}.0", f"{line}.end")
+        if not text:
+            text = "⏎"
+        label = f"{line}.{col}:  {text[:50]}"
+
+        menu.add_command(
+            label=label,
+            command=lambda i=idx: wgt.location_history.goto_history_index(i),  # type: ignore[misc]
+        )
 
     def go_forward(self) -> None:
         """Go forward to next history location."""
