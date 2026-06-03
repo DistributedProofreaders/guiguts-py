@@ -764,6 +764,17 @@ class TreeviewList(ttk.Treeview):
             bordercolor=[("focus", bg_color)],
             relief=[("focus", "solid")],
         )
+        # Ensure rowheight is sufficient for font size
+        fnt = get_global_font()
+        rowheight = fnt.metrics("linespace") + 4
+        themed_style().configure(
+            "Custom.Treeview",
+            rowheight=rowheight,
+        )
+        themed_style().configure(
+            "Custom.Treeview.Heading",
+            rowheight=rowheight,
+        )
 
         super().__init__(parent, style="Custom.Treeview", **kwargs)
         self.bind("<Home>", lambda _e: self.select_and_focus_by_index(0))

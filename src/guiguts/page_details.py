@@ -145,7 +145,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
                 f"#{col + 1}",
                 minwidth=10,
                 width=widths[col],
-                stretch=False,
+                stretch=True,
                 anchor=tk.CENTER,
             )
             self.list.heading(f"#{col + 1}", text=column)
