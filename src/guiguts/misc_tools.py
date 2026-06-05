@@ -1591,9 +1591,7 @@ class TextMarkupConvertorDialog(ToplevelDialog):
             "<sc>", search_range, regexp=False, nocase=True
         ):
             match_index = match.rowcol.index()
-            search_range = IndexRange(
-                maintext().index(f"{match_index}+4c"), maintext().end()
-            )
+            search_range = IndexRange(match_index, maintext().end())
             end_match = maintext().find_match(
                 "</sc>", search_range, regexp=False, nocase=True
             )
