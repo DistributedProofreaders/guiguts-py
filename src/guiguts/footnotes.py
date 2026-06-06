@@ -507,7 +507,7 @@ class FootnoteChecker:
         # Check for anchors that are not paired
         anchor_matches = maintext().find_all(
             maintext().start_to_end(),
-            r"(?<!(/[#$*FfIiLlPpXxCcRr]|\\))\[([\d]+|[IiVvXxLlCc]+\.?|[A-Z])]",
+            r"(?<!(/[#$*FfIiLlPpXxCcRr]|\\))\[([\d]+|[IiVvXxLlCc]+\.?|[A-Za-z])]",
             regexp=True,
             wholeword=False,
             nocase=False,
