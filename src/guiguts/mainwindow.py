@@ -1286,31 +1286,41 @@ class StatusBar(ttk.Frame):
                 self.set(key, func())
         self.after(200, self._update)
 
-    def add_binding(self, key: str, event: str, callback: Callable[[], Any]) -> None:
+    def add_binding(
+        self, key: str, event: str, callback: Callable[[], Any], refocus: bool = True
+    ) -> None:
         """Add an action to be executed when the given event occurs
 
         Args:
             key: Key to refer to field.
-            callback: Function to be called when event occurs.
             event: Event to trigger action. Use button release to avoid
               clash with button activate appearance behavior.
               Also bind Space to do same as button 1;
               Cmd/Ctrl+button 1 and Cmd/Ctrl+space as button 3,
               all with optional Shift key modifier
+            callback: Function to be called when event occurs.
+            refocus: Set False if it should not refocus on main text after: defaults to True.
         """
-        mouse_bind(self.fields[key], event, lambda _: callback())
+
+        def callback_and_focus(_: tk.Event) -> Any:
+            result = callback()
+            if refocus:
+                maintext().focus_widget().focus_set()
+            return result
+
+        mouse_bind(self.fields[key], event, callback_and_focus)
         if event == StatusBar.BTN_1:
-            mouse_bind(self.fields[key], "space", lambda _: callback())
+            mouse_bind(self.fields[key], "space", callback_and_focus)
         elif event == StatusBar.SHIFT_BTN_1:
-            mouse_bind(self.fields[key], "Shift+space", lambda _: callback())
+            mouse_bind(self.fields[key], "Shift+space", callback_and_focus)
         if event == StatusBar.BTN_3:
-            mouse_bind(self.fields[key], "Ctrl+ButtonRelease-1", lambda _: callback())
-            mouse_bind(self.fields[key], "Ctrl+space", lambda _: callback())
+            mouse_bind(self.fields[key], "Ctrl+ButtonRelease-1", callback_and_focus)
+            mouse_bind(self.fields[key], "Ctrl+space", callback_and_focus)
         elif event == StatusBar.SHIFT_BTN_3:
             mouse_bind(
-                self.fields[key], "Shift+Ctrl+ButtonRelease-1", lambda _: callback()
+                self.fields[key], "Shift+Ctrl+ButtonRelease-1", callback_and_focus
             )
-            mouse_bind(self.fields[key], "Shift+Ctrl+space", lambda _: callback())
+            mouse_bind(self.fields[key], "Shift+Ctrl+space", callback_and_focus)
 
     def set_first_tab_behavior(self, key: str) -> None:
         """Set up tab bindings for first status bar button.
@@ -1690,9 +1700,23 @@ class MainWindow:
 
         bind_shift_tab(self.mainimage.prev_img_button, prev_img_focus_prev)
 
-    def toolbar_button_command(self, name: str, command: Callable) -> None:
-        """Set command to be executed by toolbar button."""
-        self.tool_btns[name].config(command=command)
+    def toolbar_button_command(
+        self, name: str, command: Callable, refocus: bool = True
+    ) -> None:
+        """Set command to be executed by toolbar button.
+
+        Args:
+            name: Name of button to set command for.
+            command: Function to be executed.
+            refocus: Set False if it should not refocus on main text after: defaults to True.
+        """
+
+        def callback_and_focus() -> None:
+            command()
+            if refocus:
+                maintext().focus_widget().focus_set()
+
+        self.tool_btns[name].config(command=callback_and_focus)
 
     def toolbar_button_right_menu(
         self, name: str, menu_builder: Callable[[tk.Menu], None]
@@ -1704,6 +1728,7 @@ class MainWindow:
             menu = tk.Menu(self.tool_btns[name], tearoff=False)
             menu_builder(menu)
             menu.tk_popup(event.x_root, event.y_root)
+            maintext().focus_widget().focus_set()
 
         mouse_bind(self.tool_btns[name], "3", event_handler)
 
