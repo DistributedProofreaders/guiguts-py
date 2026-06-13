@@ -1685,7 +1685,10 @@ class Guiguts:
         )
         the_statusbar.add_binding("page label", StatusBar.BTN_1, self.file.goto_page)
         the_statusbar.add_binding(
-            "page label", StatusBar.SHIFT_BTN_1, self.show_page_details_dialog
+            "page label",
+            StatusBar.SHIFT_BTN_1,
+            self.show_page_details_dialog,
+            refocus=False,
         )
 
         the_statusbar.add(
@@ -1780,10 +1783,16 @@ class Guiguts:
         )
         the_statusbar.add_binding("ordinal", StatusBar.BTN_1, ordinal_name_display)
         the_statusbar.add_binding(
-            "ordinal", StatusBar.SHIFT_BTN_1, UnicodeBlockDialog.show_common_dialog
+            "ordinal",
+            StatusBar.SHIFT_BTN_1,
+            UnicodeBlockDialog.show_common_dialog,
+            refocus=False,
         )
         the_statusbar.add_binding(
-            "ordinal", StatusBar.SHIFT_BTN_3, UnicodeBlockDialog.show_unicode_dialog
+            "ordinal",
+            StatusBar.SHIFT_BTN_3,
+            UnicodeBlockDialog.show_unicode_dialog,
+            refocus=False,
         )
 
     def init_toolbar(self) -> None:
@@ -1795,7 +1804,9 @@ class Guiguts:
         self.mainwindow.toolbar_button_virtual_event("cut", "<<Cut>>")
         self.mainwindow.toolbar_button_virtual_event("copy", "<<Copy>>")
         self.mainwindow.toolbar_button_virtual_event("paste", "<<Paste>>")
-        self.mainwindow.toolbar_button_command("search", show_search_dialog)
+        self.mainwindow.toolbar_button_command(
+            "search", show_search_dialog, refocus=False
+        )
         self.mainwindow.toolbar_button_command("back", lambda: maintext().go_back())
         self.mainwindow.toolbar_button_right_menu("back", maintext().populate_back_menu)
         self.mainwindow.toolbar_button_command(
@@ -1804,7 +1815,9 @@ class Guiguts:
         self.mainwindow.toolbar_button_right_menu(
             "forward", maintext().populate_forward_menu
         )
-        self.mainwindow.toolbar_button_command("help", ToplevelDialog.show_manual_page)
+        self.mainwindow.toolbar_button_command(
+            "help", ToplevelDialog.show_manual_page, refocus=False
+        )
 
     def logging_init(self) -> None:
         """Set up basic logger until GUI is ready."""
