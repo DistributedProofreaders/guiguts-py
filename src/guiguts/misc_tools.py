@@ -2247,34 +2247,36 @@ SAFE_APOS_RQUOTE_REGEXES = (
 
 
 def protect_html_straight_quotes() -> None:
-    """Convert straight quotes used within HTML tags to `∮` or `∯`, so they do not
-    interfere with Curly Quote conversion or checks.
+    """Convert straight quotes used within HTML tags or TeX markup to `∮` or `∯`,
+    so they do not interfere with Curly Quote conversion or checks.
 
     Adapted from https://github.com/DistributedProofreaders/ppwb/blob/master/bin/ppsmq.py
     """
     maintext().undo_block_begin()
-    count_var = tk.IntVar()
-    start = maintext().start().index()
-    while start:
-        if start := maintext().search(
-            # Trying to balance false positives and false negatives: PPers do sometimes
-            # wrap HTML files, thus breaking the tag across newlines.
-            # Tag begins with `<`, optionally has a space, then a-z or !, then some
-            # non-angle brackets, permitting newlines, then at least one quote, then
-            # more non-angle brackets and the final closing `>`.
-            r"<\s*[!a-z]([^<>]|\n)*['\"]([^<>]|\n)*>",
-            start,
-            tk.END,
-            count=count_var,
-            regexp=True,
-        ):
-            end = f"{start}+{count_var.get()}c"
-            # Within tag, replace quotes with contour/surface integral characters
-            while quote_idx := maintext().search("'", start, end):
-                maintext().replace(quote_idx, f"{quote_idx}+1c", "∮")
-            while quote_idx := maintext().search('"', start, end):
-                maintext().replace(quote_idx, f"{quote_idx}+1c", "∯")
-            start = end
+    regex = (
+        # HTML tag containing a quote
+        r"<\s*[!a-z]([^<>]|\n)*['\"]([^<>]|\n)*>"
+        # \( ... \) containing a quote
+        r"|\\\((?:(?!\\[()])[\s\S])*['\"](?:(?!\\[()])[\s\S])*\\\)"
+        # \[ ... \] containing a quote
+        r"|\\\[(?:(?!\\[\[\]])[\s\S])*['\"](?:(?!\\[\[\]])[\s\S])*\\\]"
+    )
+    matches = maintext().find_all(
+        maintext().start_to_end(),
+        # r"<\s*[!a-z]([^<>]|\n)*['\"]([^<>]|\n)*>|\\\((?:(?!\\[()])[\s\S])*\\\)|\\\[(?:(?!\\[\[\]])[\s\S])*\\\]",
+        regex,
+        regexp=True,
+        wholeword=False,
+        nocase=True,
+    )
+    for match in matches:
+        start = match.rowcol.index()
+        end = f"{start}+{match.count}c"
+        # Within tag, replace quotes with contour/surface integral characters
+        while quote_idx := maintext().search("'", start, end):
+            maintext().replace(quote_idx, f"{quote_idx}+1c", "∮")
+        while quote_idx := maintext().search('"', start, end):
+            maintext().replace(quote_idx, f"{quote_idx}+1c", "∯")
 
 
 def restore_html_straight_quotes() -> None:
