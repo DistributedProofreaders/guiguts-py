@@ -1252,10 +1252,10 @@ class Guiguts:
         curly_menu.add_button("~Check Curly Quotes", check_curly_quotes)
         curly_menu.add_separator()
         curly_menu.add_button(
-            "~Protect HTML Straight Quotes", protect_html_straight_quotes
+            "~Protect HTML/TeX Straight Quotes", protect_html_straight_quotes
         )
         curly_menu.add_button(
-            "~Restore HTML Straight Quotes", restore_html_straight_quotes
+            "~Restore HTML/TeX Straight Quotes", restore_html_straight_quotes
         )
 
         unmatched_menu = tools_menu.add_submenu("Un~matched")
