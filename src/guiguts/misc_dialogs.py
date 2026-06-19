@@ -42,6 +42,7 @@ from guiguts.widgets import (
     ToplevelDialog,
     ToolTip,
     insert_in_focus_widget,
+    focus_in_focus_widget,
     OkApplyCancelDialog,
     OkCancelDialog,
     mouse_bind,
@@ -2537,6 +2538,14 @@ class UnicodeBlockDialog(ToplevelDialog):
         dlg = UnicodeBlockDialog.show_dialog()
         dlg.combobox.set(UnicodeBlockDialog.commonly_used_characters_name)
         dlg.block_selected(update_pref=False)
+
+    def on_destroy(self) -> None:
+        """Tidy up when the dialog is destroyed.
+
+        Override to return focus into the focus widget.
+        """
+        super().on_destroy()
+        focus_in_focus_widget()
 
     def combo_key(self, event: tk.Event) -> str:
         """Handle key press in combo box."""

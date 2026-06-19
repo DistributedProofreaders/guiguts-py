@@ -1323,6 +1323,18 @@ def register_focus_widget(widget: ttk.Entry | tk.Text) -> None:
         _text_focus_widget = widget
 
 
+def focus_in_focus_widget() -> None:
+    """Return focus to the text/entry widget of interest where characters get inserted
+    by `insert_in_focus_widget`.
+
+    This is useful if a dialog was popped from the status/tool bar, rather than leaving
+    focus there.
+    """
+    if _text_focus_widget is None or not _text_focus_widget.winfo_exists():
+        return
+    _text_focus_widget.focus_set()
+
+
 def insert_in_focus_widget(string: str) -> None:
     """Insert given string in the text/entry widget of interest that most recently had focus.
 
