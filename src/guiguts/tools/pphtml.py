@@ -751,6 +751,15 @@ class PPhtmlChecker:
                     None,
                 )
             )
+        elif re.search(r"<[A-Za-z][^>]*>", title_str):
+            test_passed = False
+            fail_string = PPhtmlChecker.fail_flag
+            errors.append(
+                (
+                    "    Title must not contain HTML tags",
+                    None,
+                )
+            )
         elif (
             h1_str.rstrip(".,;:").lower()
             != title_str.removesuffix(" | Project Gutenberg").rstrip(".,;:").lower()
@@ -1231,6 +1240,7 @@ class PPhtmlChecker:
             count > 0,
             f"Number of h2 tags (usually chapters; should be > 0): {count}",
             [],
+            fail_string=PPhtmlChecker.warn_flag,
         )
         # h3 headings
         count = self.file_text.count("<h3")
