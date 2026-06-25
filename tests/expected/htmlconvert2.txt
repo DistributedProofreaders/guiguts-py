@@ -46,7 +46,16 @@ hr.full {width: 95%; margin-left: 2.5%; margin-right: 2.5%;}
 
 hr.r5  {width: 5%; margin-top: 1em; margin-bottom: 1em; margin-left: 47.5%; margin-right: 47.5%;}
 hr.r65 {width: 65%; margin-top: 3em; margin-bottom: 3em; margin-left: 17.5%; margin-right: 17.5%;}
- 
+hr.hrimage {
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    height: 2em;
+    width: 100%;
+    border: 0;
+    margin: 1em 0;
+}
+
 div.chapter {page-break-before: always;}
 h2.nobreak  {page-break-before: avoid;}
 
