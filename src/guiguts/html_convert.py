@@ -1458,11 +1458,11 @@ def html_convert_footnotes() -> None:
         else:
             fn_cutoff = fn_end
         # Add markup for footnote
-        maintext().replace(fn_cutoff, f"{fn_end} lineend", "</p></div>")
+        maintext().replace(fn_cutoff, f"{fn_end} lineend", "</p></aside>")
         maintext().replace(
             fn_start,
             f"{fn_label_end}+1c",
-            f'<div class="footnote"><p><a id="{fn_id}" href="#{an_id}" class="label">[{fn_label}]</a>',
+            f'<aside class="footnote" role="doc-footnote" data-epub-type="footnote"><p><a id="{fn_id}" href="#{an_id}" class="label" role="doc-backlink">[{fn_label}]</a>',
         )
 
         # Search backwards for another footnote with the same label (or start of file)
@@ -1479,7 +1479,7 @@ def html_convert_footnotes() -> None:
         id_markup = f'id="{an_id}" '
         while an_start := maintext().search(f"[{fn_label}]", an_search_start, fn_start):
             an_end = f"{an_start}+{len(fn_label) + 2}c"
-            open_markup = f'<a {id_markup}href="#{fn_id}" class="fnanchor">'
+            open_markup = f'<a {id_markup}href="#{fn_id}" class="fnanchor" role="doc-noteref" data-epub-type="noteref">'
             end_markup = "</a>"
             check_text = maintext().get(f"{an_start}-1c", f"{an_end}+1c")
             # Use Word Joiners to join to prev/next char if not space
@@ -1506,23 +1506,23 @@ def html_convert_footnote_landing_zones() -> None:
             lz_next = tk.END
         # Find last footnote in this LZ by searching backwards from next LZ
         lz_end = maintext().search(
-            '<div class="footnote">', lz_next, lz_start, backwards=True
+            '<aside class="footnote">', lz_next, lz_start, backwards=True
         )
         if lz_end:
             lz_end = maintext().search(
-                "</div>", lz_end, lz_next
+                "</aside>", lz_end, lz_next
             )  # End of last footnote
         else:
             # No FN in LZ
             lz_end = f"{lz_start}"
         lz_end += " lineend"
-        maintext().insert(lz_end, "\n</div>")
+        maintext().insert(lz_end, "\n</section>")
         # FOOTNOTES heading may be marked with p or h3 markup
-        # <p>FOOTNOTES:</p> ==> <div class="footnotes"><h3>FOOTNOTES:</h3>
+        # <p>FOOTNOTES:</p> ==> <section class="footnotes"><h3>FOOTNOTES:</h3>
         if maintext().get(lz_start, f"{lz_start}+2c") == "<p":
             maintext().replace(f"{lz_start}+15c", f"{lz_start}+16c", "h3")
             maintext().replace(f"{lz_start}+1c", f"{lz_start}+2c", "h3")
-        maintext().insert(lz_start, '<div class="footnotes">\n')
+        maintext().insert(lz_start, '<section class="footnotes" role="doc-endnotes">\n')
 
 
 def html_add_chapter_divs() -> None:
