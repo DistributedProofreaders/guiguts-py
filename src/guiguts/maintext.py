@@ -3205,16 +3205,18 @@ class MainText(tk.Text):
             logger.error(
                 "Regex timed out. Try changing the regex or flags;\n"
                 "or increase the timeout in the Preferences dialog, Advanced tab.\n\n"
-                "Search highlighting turned off temporarily."
+                "Search & regex highlighting turned off temporarily."
             )
             self.highlight_search_deactivate()
+            self.highlight_regex_deactivate()
             return None, 0
         except re.error as e:
             logger.error(
                 f"Regex error: {str(e)}\n\n"
-                "Search highlighting turned off temporarily."
+                "Search & regex highlighting turned off temporarily."
             )
             self.highlight_search_deactivate()
+            self.highlight_regex_deactivate()
             return None, 0
         if match is None:
             return None, 0

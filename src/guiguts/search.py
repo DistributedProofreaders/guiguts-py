@@ -462,7 +462,7 @@ class SearchDialog(ToplevelDialog):
             new_value = self.search_box.get()
         if preferences.get(PrefKey.SEARCHDIALOG_REGEX):
             try:
-                re.compile(new_value)
+                re.compile(new_value, flags=re.V1)
                 self.search_box["style"] = ""
             except re.error:
                 self.search_box["style"] = "BadRegex.TCombobox"
