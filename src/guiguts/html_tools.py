@@ -1,5 +1,6 @@
 """Tools relating to HTML."""
 
+from enum import StrEnum
 import gzip
 from html.parser import HTMLParser
 import io
@@ -66,27 +67,42 @@ LAND_Y = 3
 SEP_CHAR = "―"
 
 
+class ImageDialogType(StrEnum):
+    """Enum class to store image dialog types - use dialog title as value"""
+
+    AUTO_ILLUS = "Auto-Illustrations"
+    ADD_ILLUS = "HTML Images"
+    EDIT_ILLUS = "Edit Alt Text/Role"
+
+
 class HTMLImageBaseDialog(ToplevelDialog):
     """Dialog for inserting image markup into HTML."""
 
     manual_page = ""
 
-    def __init__(self, auto_illus: bool) -> None:
+    def __init__(self, dlg_type: ImageDialogType) -> None:
         """Initialize HTML Image dialog.
 
         Args:
-            auto_illus: True to work in Auto-Illustration mode
+            dlg_type: Which type of dialog this is
         """
-        super().__init__("Auto-Illustrations" if auto_illus else "HTML Images")
+        super().__init__(str(dlg_type))
 
         self.image: Optional[Image.Image] = None
         self.imagetk: Optional[ImageTk.PhotoImage] = None
         self.width = 0
         self.height = 0
         self.illo_range: Optional[IndexRange] = None
+        self.mark_img_start = HTMLImageEditDialog.get_dlg_name() + "ImgStart"
+        self.mark_img_end = HTMLImageEditDialog.get_dlg_name() + "ImgEnd"
+        self.mark_alt_start = HTMLImageEditDialog.get_dlg_name() + "AltStart"
+        self.mark_alt_end = HTMLImageEditDialog.get_dlg_name() + "AltEnd"
+        self.mark_pres_start = HTMLImageEditDialog.get_dlg_name() + "PresStart"
+        self.mark_pres_end = HTMLImageEditDialog.get_dlg_name() + "PresEnd"
 
-        self.top_frame.rowconfigure(0, weight=0)
-        self.top_frame.rowconfigure(1, weight=1)
+        for r in (0, 5):
+            self.top_frame.rowconfigure(r, weight=0)
+        self.top_frame.rowconfigure(3, weight=1)
 
         # File
         file_frame = ttk.LabelFrame(self.top_frame, text="File", padding=2)
@@ -101,11 +117,12 @@ class HTMLImageBaseDialog(ToplevelDialog):
             textvariable=self.filename_textvariable,
         )
         self.fn_entry.grid(row=0, column=0, sticky="EW", padx=(0, 2))
-        ttk.Button(
-            file_name_frame,
-            text="Browse...",
-            command=self.choose_file,
-        ).grid(row=0, column=1, sticky="NSEW")
+        if dlg_type != ImageDialogType.EDIT_ILLUS:
+            ttk.Button(
+                file_name_frame,
+                text="Browse...",
+                command=self.choose_file,
+            ).grid(row=0, column=1, sticky="NSEW")
 
         # Buttons to see prev/next file & whether decorative-only
         file_btn_frame = ttk.Frame(file_frame)
@@ -116,16 +133,17 @@ class HTMLImageBaseDialog(ToplevelDialog):
             text="Decorative only",
             variable=PersistentBoolean(PrefKey.HTML_IMAGE_DECORATIVE_ONLY),
         ).grid(row=0, column=0, sticky="W")
-        ttk.Button(
-            file_btn_frame,
-            text="Prev File",
-            command=lambda: self.next_file(reverse=True),
-        ).grid(row=0, column=1, padx=2, sticky="E")
-        ttk.Button(
-            file_btn_frame,
-            text="Next File",
-            command=lambda: self.next_file(reverse=False),
-        ).grid(row=0, column=2, padx=(2, 0), sticky="E")
+        if dlg_type != ImageDialogType.EDIT_ILLUS:
+            ttk.Button(
+                file_btn_frame,
+                text="Prev File",
+                command=lambda: self.next_file(reverse=True),
+            ).grid(row=0, column=1, padx=2, sticky="E")
+            ttk.Button(
+                file_btn_frame,
+                text="Next File",
+                command=lambda: self.next_file(reverse=False),
+            ).grid(row=0, column=2, padx=(2, 0), sticky="E")
 
         # Label to display thumbnail of image - allocate a
         # square space the same width as the filename frame
@@ -139,137 +157,160 @@ class HTMLImageBaseDialog(ToplevelDialog):
         self.thumbsize = frame_width - 10
 
         # Caption text
-        caption_frame = ttk.LabelFrame(self.top_frame, text="Caption text", padding=2)
-        caption_frame.grid(row=2, column=0, sticky="NSEW")
-        caption_frame.columnconfigure(0, weight=1)
-        self.caption_textvariable = tk.StringVar(self, "")
-        ttk.Entry(
-            caption_frame,
-            textvariable=self.caption_textvariable,
-        ).grid(row=0, column=0, sticky="NSEW")
-        ttk.Checkbutton(
-            caption_frame,
-            text="Use <p> markup for caption",
-            variable=PersistentBoolean(PrefKey.HTML_IMAGE_CAPTION_P),
-        ).grid(row=2, column=0, sticky="NS")
+        if dlg_type != ImageDialogType.EDIT_ILLUS:
+            caption_frame = ttk.LabelFrame(
+                self.top_frame, text="Caption text", padding=2
+            )
+            caption_frame.grid(row=2, column=0, sticky="NSEW")
+            caption_frame.columnconfigure(0, weight=1)
+            self.caption_textvariable = tk.StringVar(self, "")
+            ttk.Entry(
+                caption_frame,
+                textvariable=self.caption_textvariable,
+            ).grid(row=0, column=0, sticky="NSEW")
+            ttk.Checkbutton(
+                caption_frame,
+                text="Use <p> markup for caption",
+                variable=PersistentBoolean(PrefKey.HTML_IMAGE_CAPTION_P),
+            ).grid(row=2, column=0, sticky="NS")
 
         # Alt text
         alt_frame = ttk.LabelFrame(self.top_frame, text="Alt text", padding=2)
         alt_frame.grid(row=3, column=0, sticky="NSEW")
         alt_frame.columnconfigure(0, weight=1)
-        self.alt_textvariable = tk.StringVar(self, "")
-        ttk.Entry(
+        alt_frame.rowconfigure(0, weight=1)
+        scrollbar = ttk.Scrollbar(alt_frame, orient="vertical")
+        self.alt_text_wgt = tk.Text(
             alt_frame,
-            textvariable=self.alt_textvariable,
-        ).grid(row=0, column=0, sticky="NSEW")
+            yscrollcommand=scrollbar.set,
+            height=3,
+            width=20,
+            wrap="word",
+            background=maintext()["background"],
+            foreground=maintext()["foreground"],
+            font=maintext()["font"],
+            insertwidth=maintext().cget("insertwidth"),
+            insertbackground=maintext().cget("insertbackground"),
+            insertborderwidth=maintext().cget("insertborderwidth"),
+        )
+
+        scrollbar.config(command=self.alt_text_wgt.yview)
+        self.alt_text_wgt.grid(row=0, column=0, sticky="NSEW")
+        scrollbar.grid(row=0, column=1, sticky="NS")
 
         # Geometry
-        geom_frame = ttk.LabelFrame(self.top_frame, padding=2, text="Geometry")
-        geom_frame.grid(row=4, column=0, pady=(5, 0), sticky="NSEW")
-        geom_frame.columnconfigure(0, weight=1)
-        width_height_frame = ttk.Frame(geom_frame)
-        width_height_frame.grid(row=0, column=0)
-        width_height_frame.columnconfigure(0, weight=1)
-        self.image_width = 0
-        self.image_height = 0
+        if dlg_type != ImageDialogType.EDIT_ILLUS:
+            geom_frame = ttk.LabelFrame(self.top_frame, padding=2, text="Geometry")
+            geom_frame.grid(row=4, column=0, pady=(5, 0), sticky="NSEW")
+            geom_frame.columnconfigure(0, weight=1)
+            width_height_frame = ttk.Frame(geom_frame)
+            width_height_frame.grid(row=0, column=0)
+            width_height_frame.columnconfigure(0, weight=1)
+            self.image_width = 0
+            self.image_height = 0
 
-        def width_updated(new_value: str) -> bool:
-            """Use validation routine for width box to update height box."""
-            self.height_textvariable.set(self.get_height_from_width(new_value))
-            return True
+            def width_updated(new_value: str) -> bool:
+                """Use validation routine for width box to update height box."""
+                self.height_textvariable.set(self.get_height_from_width(new_value))
+                return True
 
-        ttk.Label(width_height_frame, text="Width").grid(row=0, column=0, padx=4)
-        self.width_textvariable = tk.StringVar(self, "")
-        ttk.Entry(
-            width_height_frame,
-            textvariable=self.width_textvariable,
-            width=8,
-            validate="all",
-            validatecommand=(self.register(width_updated), "%P"),
-        ).grid(row=0, column=1, sticky="NSEW", padx=(4, 10))
-        ttk.Label(width_height_frame, text="Height").grid(row=0, column=2, padx=(10, 4))
-        self.height_textvariable = tk.StringVar(self, "")
-        ttk.Entry(
-            width_height_frame,
-            textvariable=self.height_textvariable,
-            width=8,
-            state=tk.DISABLED,
-        ).grid(row=0, column=3, sticky="NSEW", padx=4)
+            ttk.Label(width_height_frame, text="Width").grid(row=0, column=0, padx=4)
+            self.width_textvariable = tk.StringVar(self, "")
+            ttk.Entry(
+                width_height_frame,
+                textvariable=self.width_textvariable,
+                width=8,
+                validate="all",
+                validatecommand=(self.register(width_updated), "%P"),
+            ).grid(row=0, column=1, sticky="NSEW", padx=(4, 10))
+            ttk.Label(width_height_frame, text="Height").grid(
+                row=0, column=2, padx=(10, 4)
+            )
+            self.height_textvariable = tk.StringVar(self, "")
+            ttk.Entry(
+                width_height_frame,
+                textvariable=self.height_textvariable,
+                width=8,
+                state=tk.DISABLED,
+            ).grid(row=0, column=3, sticky="NSEW", padx=4)
 
-        unit_frame = ttk.Frame(geom_frame)
-        unit_frame.grid(row=1, column=0, pady=5)
-        unit_textvariable = PersistentString(PrefKey.HTML_IMAGE_UNIT)
-        ttk.Radiobutton(
-            unit_frame,
-            text="%",
-            variable=unit_textvariable,
-            value="%",
-            command=self.update_geometry_fields,
-        ).grid(row=0, column=4, sticky="NSEW", padx=10)
-        ttk.Radiobutton(
-            unit_frame,
-            text="em",
-            variable=unit_textvariable,
-            value="em",
-            command=self.update_geometry_fields,
-        ).grid(row=0, column=5, sticky="NSEW", padx=10)
-        ttk.Radiobutton(
-            unit_frame,
-            text="px",
-            variable=unit_textvariable,
-            value="px",
-            command=self.update_geometry_fields,
-        ).grid(row=0, column=6, sticky="NSEW", padx=10)
+            unit_frame = ttk.Frame(geom_frame)
+            unit_frame.grid(row=1, column=0, pady=5)
+            unit_textvariable = PersistentString(PrefKey.HTML_IMAGE_UNIT)
+            ttk.Radiobutton(
+                unit_frame,
+                text="%",
+                variable=unit_textvariable,
+                value="%",
+                command=self.update_geometry_fields,
+            ).grid(row=0, column=4, sticky="NSEW", padx=10)
+            ttk.Radiobutton(
+                unit_frame,
+                text="em",
+                variable=unit_textvariable,
+                value="em",
+                command=self.update_geometry_fields,
+            ).grid(row=0, column=5, sticky="NSEW", padx=10)
+            ttk.Radiobutton(
+                unit_frame,
+                text="px",
+                variable=unit_textvariable,
+                value="px",
+                command=self.update_geometry_fields,
+            ).grid(row=0, column=6, sticky="NSEW", padx=10)
 
-        self.file_info_textvariable = tk.StringVar(self, "")
-        ttk.Label(geom_frame, text="", textvariable=self.file_info_textvariable).grid(
-            row=2, column=0
-        )
-        self.max_width_textvariable = tk.StringVar(self, "")
-        ttk.Label(geom_frame, text="", textvariable=self.max_width_textvariable).grid(
-            row=3, column=0
-        )
-        self.override_checkbutton = ttk.Checkbutton(
-            geom_frame,
-            text="Override % with 100% in epub",
-            variable=PersistentBoolean(PrefKey.HTML_IMAGE_OVERRIDE_EPUB),
-        )
-        self.override_checkbutton.grid(row=4, column=0, sticky="NS")
-        # Dummy placeholder label for when above checkbutton is ungridded
-        ttk.Label(geom_frame, width=0, text="").grid(
-            row=4, column=1, sticky="NS", pady=3
-        )
+            self.file_info_textvariable = tk.StringVar(self, "")
+            ttk.Label(
+                geom_frame, text="", textvariable=self.file_info_textvariable
+            ).grid(row=2, column=0)
+            self.max_width_textvariable = tk.StringVar(self, "")
+            ttk.Label(
+                geom_frame, text="", textvariable=self.max_width_textvariable
+            ).grid(row=3, column=0)
+            self.override_checkbutton = ttk.Checkbutton(
+                geom_frame,
+                text="Override % with 100% in epub",
+                variable=PersistentBoolean(PrefKey.HTML_IMAGE_OVERRIDE_EPUB),
+            )
+            self.override_checkbutton.grid(row=4, column=0, sticky="NS")
+            # Dummy placeholder label for when above checkbutton is ungridded
+            ttk.Label(geom_frame, width=0, text="").grid(
+                row=4, column=1, sticky="NS", pady=3
+            )
 
-        # Alignment
-        align_frame = ttk.LabelFrame(self.top_frame, padding=2, text="Alignment")
-        align_frame.grid(row=5, column=0, pady=(5, 0), sticky="NSEW")
-        align_frame.columnconfigure(0, weight=1)
-        align_frame.columnconfigure(1, weight=1)
-        align_frame.columnconfigure(2, weight=1)
-        align_textvariable = PersistentString(PrefKey.HTML_IMAGE_ALIGNMENT)
-        ttk.Radiobutton(
-            align_frame,
-            text="Left",
-            variable=align_textvariable,
-            value="left",
-        ).grid(row=0, column=0, sticky="NSW", padx=10)
-        ttk.Radiobutton(
-            align_frame,
-            text="Center",
-            variable=align_textvariable,
-            value="center",
-        ).grid(row=0, column=1, sticky="NSW", padx=10)
-        ttk.Radiobutton(
-            align_frame,
-            text="Right",
-            variable=align_textvariable,
-            value="right",
-        ).grid(row=0, column=2, sticky="NSW", padx=10)
+            # Alignment
+            align_frame = ttk.LabelFrame(self.top_frame, padding=2, text="Alignment")
+            align_frame.grid(row=5, column=0, pady=(5, 0), sticky="NSEW")
+            align_frame.columnconfigure(0, weight=1)
+            align_frame.columnconfigure(1, weight=1)
+            align_frame.columnconfigure(2, weight=1)
+            align_textvariable = PersistentString(PrefKey.HTML_IMAGE_ALIGNMENT)
+            ttk.Radiobutton(
+                align_frame,
+                text="Left",
+                variable=align_textvariable,
+                value="left",
+            ).grid(row=0, column=0, sticky="NSW", padx=10)
+            ttk.Radiobutton(
+                align_frame,
+                text="Center",
+                variable=align_textvariable,
+                value="center",
+            ).grid(row=0, column=1, sticky="NSW", padx=10)
+            ttk.Radiobutton(
+                align_frame,
+                text="Right",
+                variable=align_textvariable,
+                value="right",
+            ).grid(row=0, column=2, sticky="NSW", padx=10)
 
         # Buttons to Find illos and Convert to HTML
         btn_frame = ttk.Frame(self.top_frame, padding=2)
         btn_frame.grid(row=6, column=0, pady=(5, 0))
-        if auto_illus:
+        markup_string = (
+            "<img>" if dlg_type == ImageDialogType.EDIT_ILLUS else "[Illustration]"
+        )
+        if dlg_type in ImageDialogType.AUTO_ILLUS:
             ttk.Checkbutton(
                 btn_frame,
                 text="Always Find First [Illustration] in file",
@@ -277,10 +318,19 @@ class HTMLImageBaseDialog(ToplevelDialog):
             ).grid(row=0, column=0, columnspan=3, pady=(0, 3))
         ttk.Button(
             btn_frame,
-            text="Convert to HTML" if auto_illus else "Insert Markup",
-            command=lambda: self.convert_to_html(auto_illus),
+            text=(
+                "Convert to HTML"
+                if dlg_type == ImageDialogType.AUTO_ILLUS
+                else (
+                    "Insert Markup"
+                    if dlg_type == ImageDialogType.ADD_ILLUS
+                    else "Update Markup"
+                )
+            ),
+            command=self.do_markup,
         ).grid(row=1, column=0, sticky="NSEW", padx=2)
-        if auto_illus:
+
+        if dlg_type in (ImageDialogType.AUTO_ILLUS, ImageDialogType.EDIT_ILLUS):
             ttk.Button(
                 btn_frame,
                 text="Convert & Find Next",
@@ -288,14 +338,20 @@ class HTMLImageBaseDialog(ToplevelDialog):
             ).grid(row=1, column=1, sticky="NSEW", padx=2)
             ttk.Button(
                 btn_frame,
-                text="Find Next [Illustration]",
-                command=self.find_illo_markup,
+                text=f"Find Next {markup_string}",
+                command=self.generic_advance,
             ).grid(row=1, column=2, sticky="NSEW", padx=2)
             for col in range(0, 2):
                 btn_frame.columnconfigure(col, uniform="btn_frame")
 
-        if auto_illus:
+        self.generic_advance()
+
+    def generic_advance(self) -> None:
+        """Advance to next markup & load file appropriately for dialog type."""
+        if isinstance(self, HTMLImageAutoDialog):
             self.find_illo_markup()
+        elif isinstance(self, HTMLImageEditDialog):
+            self.find_html_img_markup(load=True)
         else:
             self.choose_file()
 
@@ -304,7 +360,7 @@ class HTMLImageBaseDialog(ToplevelDialog):
         assert file_name
         file_name = os.path.normpath(file_name)
         if not os.path.isfile(file_name):
-            logger.error(f"Unsuitable image file: {file_name}")
+            logger.error(f"Missing or unsuitable image file: {file_name}")
             self.clear_image()
             return
 
@@ -342,7 +398,8 @@ class HTMLImageBaseDialog(ToplevelDialog):
         self.thumbnail.config(image=self.imagetk)
         em_info = f"{self.image_width / EM_PX:.4f} x {self.image_height / EM_PX:.4f} em"
         px_info = f"({self.image_width} x {self.image_height} px)"
-        self.file_info_textvariable.set(f"File size: {em_info} {px_info}")
+        if not isinstance(self, HTMLImageEditDialog):
+            self.file_info_textvariable.set(f"File size: {em_info} {px_info}")
         self.lift()
 
     def reset(self) -> None:
@@ -457,28 +514,245 @@ class HTMLImageBaseDialog(ToplevelDialog):
             caption = re.sub("^ +", "", caption)
         self.caption_textvariable.set(caption)
         # Clear alt text, ready for user to type in required string
-        self.alt_textvariable.set("")
+        self.alt_text_wgt.delete("1.0", "end")
         self.next_file()
+        self.lift()
+
+    def find_html_img_markup(self, load: bool) -> None:
+        """Find next html img markup in file and
+        advance to the next file.
+
+        Args:
+            load: True if next file should be loaded. False to reload current img.
+        """
+        if load:
+            idxrng = IndexRange(
+                maintext().rowcol(f"{maintext().get_insert_index().index()}+1c"),
+                maintext().end(),
+            )
+            # Find and go to start of next markup
+            illo_match_start = maintext().find_match(
+                "<img",
+                idxrng,
+            )
+            if illo_match_start is None:
+                sound_bell()
+                return
+            maintext().mark_set(self.mark_img_start, illo_match_start.rowcol.index())
+
+        # If not loading, mark_img_start is already at the start of the img tag
+        maintext().set_insert_index(maintext().rowcol(self.mark_img_start), focus=False)
+        # Get a 20-line chunk of text that will include the whole `img` element
+        img_chunk = maintext().get(self.mark_img_start, f"{self.mark_img_start}+20l")
+
+        tag_end = -1  # End of img tag
+        alt_value_start = -1  # Start of the alt text value
+        alt_value_end = -1  # End of the alt text value
+        presentation_start = -1  # Start of data-role=presentation
+        presentation_end = -1  # End of data-role=presentation
+        filename = ""
+        i = 4
+        while True:
+            # Skip whitespace
+            while i < len(img_chunk) and img_chunk[i].isspace():
+                i += 1
+
+            if i >= len(img_chunk):
+                logger.error("Unterminated <img tag")
+                return
+
+            # End of tag?
+            if img_chunk[i] == ">":
+                tag_end = i + 1
+                break
+
+            if (
+                img_chunk[i] == "/"
+                and i + 1 < len(img_chunk)
+                and img_chunk[i + 1] == ">"
+            ):
+                tag_end = i + 2
+                break
+
+            # Read attribute name
+            attr_start = i
+
+            while i < len(img_chunk) and (
+                img_chunk[i].isalnum() or img_chunk[i] in "-_:."
+            ):
+                i += 1
+
+            if i == attr_start:
+                logger.error(f"Expected attribute name at index {i}")
+                return
+
+            attr_name = img_chunk[attr_start:i].lower()
+
+            # Skip whitespace before '='
+            while i < len(img_chunk) and img_chunk[i].isspace():
+                i += 1
+
+            if i >= len(img_chunk) or img_chunk[i] != "=":
+                logger.error(f"Expected '=' after attribute '{attr_name}'")
+                return
+
+            i += 1
+
+            # Skip whitespace after '='
+            while i < len(img_chunk) and img_chunk[i].isspace():
+                i += 1
+
+            if i >= len(img_chunk):
+                logger.error("Unexpected end of tag")
+                return
+
+            quote = img_chunk[i]
+            if quote not in "\"'":
+                logger.error("Expected quoted attribute value")
+                return
+
+            i += 1
+            value_start = i
+
+            while i < len(img_chunk):
+                if img_chunk[i] == quote:
+                    break
+                i += 1
+            else:
+                logger.error("Unterminated quoted attribute")
+                return
+
+            value_end = i
+            i += 1
+
+            if attr_name == "alt":
+                alt_value_start, alt_value_end = value_start, value_end
+            elif (
+                attr_name == "data-role"
+                and img_chunk[value_start:value_end] == "presentation"
+            ):
+                presentation_start = attr_start
+                presentation_end = i
+            elif attr_name == "src":
+                filename = img_chunk[value_start:value_end]
+
+        if tag_end < 0:
+            sound_bell()
+            return
+
+        # Mark start/end points in case user manually edits tag while dialog is up
+        # Absence of mark means value not set
+        maintext().mark_set(self.mark_img_end, f"{self.mark_img_start} +{tag_end}c")
+        if alt_value_start >= 0:
+            maintext().mark_set(
+                self.mark_alt_start,
+                f"{self.mark_img_start} +{alt_value_start}c",
+            )
+        else:
+            maintext().mark_unset(self.mark_alt_start)
+        if alt_value_end >= 0:
+            maintext().mark_set(
+                self.mark_alt_end,
+                f"{self.mark_img_start} +{alt_value_end}c",
+            )
+        else:
+            maintext().mark_unset(self.mark_alt_end)
+        if presentation_start >= 0:
+            maintext().mark_set(
+                self.mark_pres_start,
+                f"{self.mark_img_start} +{presentation_start}c",
+            )
+        else:
+            maintext().mark_unset(self.mark_pres_start)
+        if presentation_end >= 0:
+            maintext().mark_set(
+                self.mark_pres_end,
+                f"{self.mark_img_start} +{presentation_end}c",
+            )
+        else:
+            maintext().mark_unset(self.mark_pres_end)
+
+        # Spotlight img tag
+        maintext().spotlight_range(
+            IndexRange(
+                maintext().rowcol(self.mark_img_start),
+                maintext().rowcol(self.mark_img_end),
+            )
+        )
+
+        # Display alt text
+        self.alt_text_wgt.delete("1.0", "end")
+        if alt_value_start >= 0 and alt_value_end >= 0:
+            self.alt_text_wgt.insert("1.0", img_chunk[alt_value_start:alt_value_end])
+        # Display presentation flag
+        preferences.set(PrefKey.HTML_IMAGE_DECORATIVE_ONLY, presentation_start >= 0)
+        self.load_file(os.path.join(os.path.dirname(the_file().filename), filename))
+        self.filename_textvariable.set(filename)
         self.lift()
 
     def convert_and_advance(self) -> None:
         """Add markup to HTML & find next illo markup."""
-        self.convert_to_html(auto_illus=True)
-        self.find_illo_markup()
+        self.do_markup()
+        self.generic_advance()
 
-    def convert_to_html(self, auto_illus: bool) -> None:
-        """Add illustration markup to HTML.
+    def do_markup(self) -> None:
+        """Add/Edit/Convert illustration markup."""
+        if isinstance(self, HTMLImageEditDialog):
+            self.update_markup()
+        else:
+            self.convert_to_html()
 
-        Args:
-            auto_illus: True to convert selected [Illustration...], False to just insert.
-        """
+    def update_markup(self) -> None:
+        """Update HTML with new alt text & "decorative" flag."""
+
+        maintext().undo_block_begin()
+
+        # Update (or insert) alt text - escape any double quotes
+        alt = self.alt_text_wgt.get("1.0", "end").replace('"', "&quot;").strip()
+        try:
+            alt_start = maintext().index(self.mark_alt_start)
+            alt_end = maintext().index(self.mark_alt_end)
+        except tk.TclError:
+            alt_start = alt_end = f"{maintext().index(self.mark_img_end)}-1c"
+            alt = f' alt="{alt}"'
+        maintext().replace(alt_start, alt_end, alt)
+
+        # Update or insert presentation role
+        try:
+            pres_start = maintext().index(self.mark_pres_start)
+            pres_end = maintext().index(self.mark_pres_end)
+            # There but we don't want it
+            if not preferences.get(PrefKey.HTML_IMAGE_DECORATIVE_ONLY):
+                maintext().delete(pres_start, pres_end)
+                # Remove unwanted space if necessary
+                if re.fullmatch(
+                    r"  .|. [> ]",
+                    maintext().get(f"{pres_start}-2c", f"{pres_start}+1c"),
+                ):
+                    maintext().delete(f"{pres_start}-1c")
+        except tk.TclError:
+            # Not there but we do want it
+            if preferences.get(PrefKey.HTML_IMAGE_DECORATIVE_ONLY):
+                # Add space if needed
+                if maintext().get(f"{maintext().index(self.mark_img_end)}-2c") != " ":
+                    maintext().insert(f"{maintext().index(self.mark_img_end)}-1c", " ")
+                maintext().insert(
+                    f"{maintext().index(self.mark_img_end)}-1c",
+                    'data-role="presentation"',
+                )
+
+        # Re-analyze and spotlight
+        self.find_html_img_markup(load=False)
+
+    def convert_to_html(self) -> None:
+        """Add illustration markup to HTML."""
         filename = self.filename_textvariable.get()
         if not filename:
             sound_bell()
             return
         # Adjust auto-illo range if surrounded by simple <p> markup (added by HTML gen)
         # but not if user has surrounded it with their custom <p> or <div> markup
-        if auto_illus:
+        if isinstance(self, HTMLImageAutoDialog):
             # Retrieve spotlit range in case user has moved it by editing text since illo was found
             spotlit = maintext().tag_nextrange(HighlightTag.SPOTLIGHT, "1.0")
             if not spotlit:
@@ -516,7 +790,7 @@ class HTMLImageBaseDialog(ToplevelDialog):
             # If caption already had p markup, e.g. for right justify, avoid double markup
             caption = caption.replace("<p><p", "<p")
         # Now alt text - escape any double quotes
-        alt = self.alt_textvariable.get().replace('"', "&quot;")
+        alt = self.alt_text_wgt.get("1.0", "end").replace('"', "&quot;").strip()
         alt = f' alt="{alt}"'
         # Create a unique ID from the filename
         image_id = os.path.splitext(os.path.basename(filename))[0]
@@ -601,6 +875,9 @@ class HTMLImageBaseDialog(ToplevelDialog):
 
     def update_geometry_fields(self) -> None:
         """Update the width and height fields with data from the image."""
+        # Nothing to do for HTMLImageEdit dialogs
+        if isinstance(self, HTMLImageEditDialog):
+            return
         if self.image_width <= 0 or self.image_height <= 0:
             logger.error("Image file has illegal width/height")
             return
@@ -661,7 +938,7 @@ class HTMLImageManualDialog(HTMLImageBaseDialog):
 
     def __init__(self) -> None:
         """Initialize HTML Manual Image dialog."""
-        super().__init__(auto_illus=False)
+        super().__init__(dlg_type=ImageDialogType.ADD_ILLUS)
 
 
 class HTMLImageAutoDialog(HTMLImageBaseDialog):
@@ -671,7 +948,17 @@ class HTMLImageAutoDialog(HTMLImageBaseDialog):
 
     def __init__(self) -> None:
         """Initialize HTML Auto Image dialog."""
-        super().__init__(auto_illus=True)
+        super().__init__(dlg_type=ImageDialogType.AUTO_ILLUS)
+
+
+class HTMLImageEditDialog(HTMLImageBaseDialog):
+    """Dialog for editing existing HTML image markup, e.g. alt text."""
+
+    manual_page = "HTML_Menu#Edit_Image_HTML"
+
+    def __init__(self) -> None:
+        """Initialize HTML image edit dialog."""
+        super().__init__(dlg_type=ImageDialogType.EDIT_ILLUS)
 
 
 class HTMLValidatorDialog(CheckerDialog):
