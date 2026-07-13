@@ -1022,8 +1022,11 @@ class HTMLValidator:
         except (requests.exceptions.Timeout, TimeoutError) as exc:
             report_exception(f"Request to {validator_url} timed out.", exc)
             return
-        except ConnectionError as exc:
+        except (requests.exceptions.ConnectionError, ConnectionError) as exc:
             report_exception(f"Connection error to {validator_url}.", exc)
+            return
+        except requests.exceptions.RequestException as exc:
+            report_exception("Validator request failed.", exc)
             return
         # Check if HTTP request was unsuccessful
         try:
@@ -1167,8 +1170,11 @@ class CSSValidator:
         except (requests.exceptions.Timeout, TimeoutError) as exc:
             report_exception(f"Request to {validator_url} timed out.", exc)
             return
-        except ConnectionError as exc:
+        except (requests.exceptions.ConnectionError, ConnectionError) as exc:
             report_exception(f"Connection error to {validator_url}.", exc)
+            return
+        except requests.exceptions.RequestException as exc:
+            report_exception("Validator request failed.", exc)
             return
         # Check if HTTP request was unsuccessful
         try:
@@ -1912,8 +1918,11 @@ class EbookmakerCheckerAPI:
         except (requests.exceptions.Timeout, TimeoutError) as exc:
             report_exception(f"Initial request to {url} timed out.", exc)
             return
-        except ConnectionError as exc:
+        except (requests.exceptions.ConnectionError, ConnectionError) as exc:
             report_exception(f"Initial connection error to {url}.", exc)
+            return
+        except requests.exceptions.RequestException as exc:
+            report_exception("Ebookmaker request failed.", exc)
             return
         # Check if HTTP request was unsuccessful
         try:
