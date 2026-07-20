@@ -931,6 +931,7 @@ class PPhtmlChecker:
                 self.tag = ""
                 self.showh = False
                 self.tag_start = IndexRowCol(0, 0)
+                self.title: Optional[str] = None
 
             def handle_starttag(
                 self, tag: str, attrs: list[tuple[str, str | None]]
@@ -939,6 +940,7 @@ class PPhtmlChecker:
                 if tag in self.h1_6_tags:
                     self.tag = tag + ": "
                     self.showh = True
+                    self.title = dict(attrs).get("title")
                     tag_index = self.getpos()
                     self.tag_start = IndexRowCol(tag_index[0], tag_index[1])
 
@@ -955,6 +957,8 @@ class PPhtmlChecker:
                     self.tag = re.sub(r"\s+", " ", self.tag)
                     match = re.match(r"h(\d)", self.tag)
                     if match:
+                        if self.title is not None:
+                            self.tag += f" (title: {self.title})"
                         indent = "  " * (int(match.group(1)) - 1)
                         tag_index = self.getpos()
                         self.outline.append(
