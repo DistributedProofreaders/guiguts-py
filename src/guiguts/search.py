@@ -42,6 +42,59 @@ PADY = 2
 # Passed into eval call when `\C...\E` used in regex replacement
 lglobal: dict[str, str | int] = {}
 
+# Ordinal words for regnal numbers 1-19, used by `\M...\E` in regex replacement
+REGNAL_ONES = {
+    1: "First",
+    2: "Second",
+    3: "Third",
+    4: "Fourth",
+    5: "Fifth",
+    6: "Sixth",
+    7: "Seventh",
+    8: "Eighth",
+    9: "Ninth",
+    10: "Tenth",
+    11: "Eleventh",
+    12: "Twelfth",
+    13: "Thirteenth",
+    14: "Fourteenth",
+    15: "Fifteenth",
+    16: "Sixteenth",
+    17: "Seventeenth",
+    18: "Eighteenth",
+    19: "Nineteenth",
+}
+# Cardinal words for the tens, 20-90, used by `\M...\E` in regex replacement
+REGNAL_TENS = {
+    2: "Twenty",
+    3: "Thirty",
+    4: "Forty",
+    5: "Fifty",
+    6: "Sixty",
+    7: "Seventy",
+    8: "Eighty",
+    9: "Ninety",
+}
+
+
+def regnal_ordinal(number: int) -> str:
+    """Convert a number from 1 to 99 into its ordinal word form,
+    e.g. 2 --> "Second", 20 --> "Twentieth", 45 --> "Forty-fifth".
+
+    Args:
+        number: Number to convert; must be between 1 and 99 inclusive.
+
+    Returns:
+        Ordinal word form of number.
+    """
+    if number in REGNAL_ONES:
+        return REGNAL_ONES[number]
+    tens_word = REGNAL_TENS[number // 10]
+    ones = number % 10
+    if ones == 0:
+        return tens_word[:-1] + "ieth"
+    return f"{tens_word}-{REGNAL_ONES[ones].lower()}"
+
 
 class NoMatchFoundError(Exception):
     """Raised when no match is found for the search string."""
@@ -1176,7 +1229,7 @@ def get_regex_replacement(
     search_regex = re.sub(r"^\\b", "^", search_regex)
     search_regex = re.sub(r"\\b$", "$", search_regex)
 
-    for ch in ("E", "C", "L", "U", "T", "A", "R", "N"):
+    for ch in ("E", "C", "L", "U", "T", "A", "R", "N", "M"):
         replace_regex = replace_regex.replace(rf"\{ch}", f"{temp_bs}{ch}")
     # It's possible this should have `count=1`, but I don't think it matters, since
     # we know that `search_regex` should match the whole of `match_text`
@@ -1255,6 +1308,16 @@ def get_regex_replacement(
         except (ValueError, roman.InvalidRomanNumeralError) as exc:
             raise re.error(f"\\N...\\E error: {exc}") from exc
 
+    def make_regnal(string: str) -> str:
+        """Convert Roman numerals to a worded regnal number, e.g. "IX" --> "the Ninth"."""
+        try:
+            number = roman.fromRoman(string.upper().replace(" ", ""))
+        except (ValueError, roman.InvalidRomanNumeralError) as exc:
+            raise re.error(f"\\M...\\E error: {exc}") from exc
+        if not 1 <= number <= 99:
+            raise re.error(f"\\M...\\E error: {number} out of range 1-99")
+        return f"the {regnal_ordinal(number)}"
+
     replace_str = do_extended_regex("C", eval_python, replace_str)
     replace_str = do_extended_regex("L", lambda s: s.lower(), replace_str)
     replace_str = do_extended_regex("U", lambda s: s.upper(), replace_str)
@@ -1262,6 +1325,7 @@ def get_regex_replacement(
     replace_str = do_extended_regex("A", make_anchor, replace_str)
     replace_str = do_extended_regex("R", make_roman, replace_str)
     replace_str = do_extended_regex("N", make_arabic, replace_str)
+    replace_str = do_extended_regex("M", make_regnal, replace_str)
     return replace_str
 
 
