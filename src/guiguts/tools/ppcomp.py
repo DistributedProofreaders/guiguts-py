@@ -36,6 +36,7 @@ import argparse
 import copy
 from dataclasses import dataclass
 import difflib
+from enum import StrEnum, auto
 import logging
 import os
 import subprocess
@@ -56,6 +57,7 @@ from guiguts.maintext import HighlightTag, maintext
 from guiguts.preferences import (
     PrefKey,
     PersistentBoolean,
+    PersistentString,
     preferences,
 )
 from guiguts.utilities import is_windows, IndexRowCol, IndexRange
@@ -74,6 +76,13 @@ NO_SPACE_AFTER = "[({"
 PAIR_RE = re.compile(
     rf"{FLAG_CH_1_L}(.*?){FLAG_CH_1_R}\s+{FLAG_CH_2_L}(.*?){FLAG_CH_2_R}"
 )
+
+
+class PPcompDisplayType(StrEnum):
+    """Enum class to store PPcomp display types."""
+
+    COMPACT = auto()
+    EXPANDED = auto()
 
 
 class HTMLSyntaxError(SyntaxError):
@@ -103,6 +112,33 @@ class PPcompCheckerDialog(CheckerDialog):
         )
 
         self.rerun_button["text"] = "Compare"
+        self.sort_label["text"] = "Display:"
+        self.rowcol_radio.grid_forget()
+        self.alpha_radio.grid_forget()
+
+        self.compact_radio = ttk.Radiobutton(
+            self.sort_frame,
+            text="Compact",
+            variable=PersistentString(PrefKey.PPCOMP_DISPLAY_TYPE),
+            value=PPcompDisplayType.COMPACT,
+        )
+        self.compact_radio.grid(row=0, column=1, sticky="NS", padx=2)
+        ToolTip(
+            self.compact_radio,
+            "Display results in compact format next time Compare is run",
+        )
+        self.expanded_radio = ttk.Radiobutton(
+            self.sort_frame,
+            text="Expanded",
+            variable=PersistentString(PrefKey.PPCOMP_DISPLAY_TYPE),
+            value=PPcompDisplayType.EXPANDED,
+        )
+        self.expanded_radio.grid(row=0, column=2, sticky="NS", padx=2)
+        ToolTip(
+            self.expanded_radio,
+            "Display results in expanded format (similar to Workbench) next time Compare is run",
+        )
+
         self.custom_frame.columnconfigure(0, weight=1)
         fn_frame = ttk.Frame(self.custom_frame)
         fn_frame.grid(row=0, column=0, sticky="NSEW")
@@ -390,10 +426,11 @@ class PPcompCheckerDialog(CheckerDialog):
                     entry.error_prefix,
                     entry.ep_index,
                     entry.severity,
+                    entry.section,
                 )
             else:
                 # Not a diff - must be a header ("FOOTNOTES")
-                checker.dialog.add_header(entry.text)
+                checker.dialog.add_header(entry.text, section=entry.section)
         checker.dialog.display_entries()
         if save_sel_idx is not None:
             checker.dialog.select_entry_by_index(save_sel_idx)
@@ -663,6 +700,9 @@ def render_marked_diff(
 
     last_a = last_b = None
     cur_linenum: tuple[int, int] | None = None
+    expanded = (
+        preferences.get(PrefKey.PPCOMP_DISPLAY_TYPE) == PPcompDisplayType.EXPANDED
+    )
 
     def flush_changes():
         if old_buf:
@@ -685,7 +725,11 @@ def render_marked_diff(
             b_line = r["b_line"] + b_file_start
 
         # New source line → flush current output line
-        if (a_line, b_line) != (last_a, last_b):
+        # Compact flushes if either source file changes line
+        # Expanded only flushes if first source file changes line
+        if (expanded and a_line != last_a) or (
+            not expanded and (a_line, b_line) != (last_a, last_b)
+        ):
             flush_changes()
             if cur_line and line_has_change:
                 lines.append((join_tokens(cur_line), cur_linenum))
@@ -715,6 +759,7 @@ def render_marked_diff(
         lines.append((join_tokens(cur_line), cur_linenum))
 
     # ---- Send to the dialog ----
+    no_lineno = IndexRange(IndexRowCol(-1, -1), IndexRowCol(-1, -1))
     for text, line_pair in lines:
         if line_pair is None:
             continue
@@ -733,8 +778,33 @@ def render_marked_diff(
                 index = None
             sub_line = f"{a_line}.0: " if a_line else ""
 
+        spaces = " " * len(sub_line)
         text = refine_punctuation_diffs(text)
+        if expanded:
+            dialog.add_header("")
+            for i in range(a_line - 2, -1, -1):
+                before_line = line = re.sub(
+                    r" {2,}",
+                    " ",
+                    re.sub(r"<[^>]+>", " ", PPcompChecker.files[0].lines[i]),
+                ).strip()
+                if before_line:
+                    dialog.add_entry(f"{spaces}{before_line}", no_lineno)
+                    dialog.new_section()
+                    break
         dialog.add_entry(f"{sub_line}{text}", index)
+        if expanded:
+            for i in range(a_line, len(PPcompChecker.files[0].lines)):
+                after_line = line = re.sub(
+                    r" {2,}",
+                    " ",
+                    re.sub(r"<[^>]+>", " ", PPcompChecker.files[0].lines[i]),
+                ).strip()
+                if after_line:
+                    dialog.new_section()
+                    dialog.add_entry(f"{spaces}{after_line}", no_lineno)
+                    dialog.new_section()
+                    break
 
 
 def longest_common_prefix(a: str, b: str) -> int:
@@ -1001,6 +1071,7 @@ class PgdpFile:
         self.args = args
         self.basename = ""
         self.text = ""  # file text
+        self.lines = []  # split into lines
         # line text started, before stripping boilerplate and/or head
         self.start_line = 0
         self.footnotes = ""  # footnotes text, if extracted
@@ -1031,6 +1102,7 @@ class PgdpFile:
             raise FileNotFoundError("Cannot load file: " + filename) from ex
         if len(self.text) < 10:
             raise SyntaxError("File is too short: " + filename)
+        self.lines = self.text.splitlines()
 
     def strip_pg_boilerplate(self):
         """Remove the PG header and footer from the text if present."""

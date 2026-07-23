@@ -142,7 +142,7 @@ from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
 from guiguts.tools.pptxt import pptxt
 from guiguts.tools.pphtml import PPhtmlChecker
-from guiguts.tools.ppcomp import PPcompChecker
+from guiguts.tools.ppcomp import PPcompChecker, PPcompDisplayType
 from guiguts.utilities import (
     is_mac,
     is_windows,
@@ -816,6 +816,7 @@ class Guiguts:
         preferences.set_default(PrefKey.PPCOMP_ROUNDS_PROOFERS, False)
         preferences.set_default(PrefKey.PPCOMP_ROUNDS_REGROUP, False)
         preferences.set_default(PrefKey.PPCOMP_ROUNDS_PAGE_BLOCK, False)
+        preferences.set_default(PrefKey.PPCOMP_DISPLAY_TYPE, PPcompDisplayType.EXPANDED)
         # Check all preferences have a default
         for pref_key in PrefKey:
             assert preferences.get_default(pref_key) is not None
