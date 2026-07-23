@@ -795,7 +795,7 @@ def render_marked_diff(
         dialog.add_entry(f"{sub_line}{text}", index)
         if expanded:
             for i in range(a_line, len(PPcompChecker.files[0].lines)):
-                after_line = line = re.sub(
+                after_line = re.sub(
                     r" {2,}",
                     " ",
                     re.sub(r"<[^>]+>", " ", PPcompChecker.files[0].lines[i]),
