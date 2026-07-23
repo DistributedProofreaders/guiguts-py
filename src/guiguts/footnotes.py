@@ -1559,6 +1559,7 @@ def display_footnote_entries(auto_select_line: bool = True) -> None:
     assert _the_footnote_checker is not None
     checker_dialog = _the_footnote_checker.checker_dialog
     checker_dialog.reset()
+    checker_dialog.update_count_label(working=True)
     fn_records = _the_footnote_checker.get_fn_records()
     an_records = _the_footnote_checker.get_an_records()
     # Boolean to determine if buttons are to be set disabled or normal.

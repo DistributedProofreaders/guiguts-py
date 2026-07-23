@@ -259,6 +259,7 @@ class DehyphenatorChecker:
     def run(self) -> None:
         """Do the actual check and add messages to the dialog."""
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
 
         # Decide whether to use dictionary too
         use_dict = preferences.get(PrefKey.CP_DEHYPH_USE_DICT)
@@ -631,6 +632,7 @@ class HeadFootChecker:
     def run(self) -> None:
         """Do the actual check and add messages to the dialog."""
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
 
         start = maintext().start().index()
         page_num = 0
@@ -1475,6 +1477,7 @@ class CPFilteringDialog(CheckerDialog):
     def create_entries(self) -> None:
         """Create entries from changes dictionary."""
         self.reset()
+        self.update_count_label(working=True)
         verbose = preferences.get(PrefKey.CP_FILTER_VERBOSE)
         for change_dict in self.changes.values():
             for label, lnum_list in change_dict.items():
@@ -1771,6 +1774,7 @@ def cp_fix_common_scannos() -> None:
     slurp_text = maintext().get_text()
 
     checker_dialog.reset()
+    checker_dialog.update_count_label(working=True)
     for scanno, correction in scannos_dict.items():
         # Much quicker to search in slurped text before doing search in maintext()
         # Better search also available with negative lookbehind which Tcl doesn't support.
@@ -1974,6 +1978,7 @@ def cp_list_good_words() -> None:
         rerun_command=cp_list_good_words,
     )
     checker_dialog.reset()
+    checker_dialog.update_count_label(working=True)
 
     for word in the_file().project_dict.good_words.keys():
         checker_dialog.add_entry(word)

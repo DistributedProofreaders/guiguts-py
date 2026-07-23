@@ -171,6 +171,7 @@ class BasicFixup:
             return
 
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
 
         # Dictionary of regexes:
         # One or two capture groups in each regex, with the characters being checked
@@ -1403,6 +1404,7 @@ class ProoferCommentChecker:
     def run(self) -> None:
         """Do the actual check and add messages to the dialog."""
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
 
         matches = maintext().find_matches(
             r"\[\*\*([^]]|\n)*]",
@@ -1945,6 +1947,7 @@ class ScannoRegexCheckerDialog(CheckerDialog):
             update_fields: Set to False if fields should not be updated.
         """
         self.reset()
+        self.update_count_label(working=True)
         if not self.scanno_list:
             self.display_entries(complete_msg=False)
             return
@@ -2503,6 +2506,7 @@ class CurlyQuotesDialog(CheckerDialog):
     def populate(self) -> None:
         """Populate list with suspect curly quotes."""
         self.reset()
+        self.update_count_label(working=True)
         dqtype = 0
         sqtype = 0
         search_start = maintext().start()
