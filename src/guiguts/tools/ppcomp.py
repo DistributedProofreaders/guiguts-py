@@ -783,7 +783,7 @@ def render_marked_diff(
         if expanded:
             dialog.add_header("")
             for i in range(a_line - 2, -1, -1):
-                before_line = line = re.sub(
+                before_line = re.sub(
                     r" {2,}",
                     " ",
                     re.sub(r"<[^>]+>", " ", PPcompChecker.files[0].lines[i]),
