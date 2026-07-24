@@ -422,6 +422,7 @@ class CheckerDialog(ToplevelDialog):
 
         def rerunner() -> None:
             Busy.busy()
+            self.update_count_label(working=True)
             self.selection_on_clear[self.get_dlg_name()] = None
             self.rerun_command()
             self.refresh_view_options()
