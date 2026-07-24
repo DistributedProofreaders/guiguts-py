@@ -370,10 +370,11 @@ class CheckerDialog(ToplevelDialog):
         self.sort_frame.rowconfigure(0, weight=1)
         for cc in range(0, 2):
             self.sort_frame.columnconfigure(cc, weight=1)
-        ttk.Label(
+        self.sort_label = ttk.Label(
             self.sort_frame,
             text="Sort:",
-        ).grid(row=0, column=0, sticky="NS", padx=5)
+        )
+        self.sort_label.grid(row=0, column=0, sticky="NS", padx=5)
 
         # Can't use a PersistentString directly, since we save this value for each checker dialog
         sort_type = tk.StringVar(
@@ -394,13 +395,14 @@ class CheckerDialog(ToplevelDialog):
             value=CheckerSortType.ROWCOL,
         )
         self.rowcol_radio.grid(row=0, column=1, sticky="NS", padx=2)
-        ttk.Radiobutton(
+        self.alpha_radio = ttk.Radiobutton(
             self.sort_frame,
             text="Alpha/Type",
             command=sort_type_changed,
             variable=sort_type,
             value=CheckerSortType.ALPHABETIC,
-        ).grid(row=0, column=2, sticky="NS", padx=2)
+        )
+        self.alpha_radio.grid(row=0, column=2, sticky="NS", padx=2)
         if sort_custom_label:
             ttk.Radiobutton(
                 self.sort_frame,
@@ -1035,34 +1037,42 @@ class CheckerDialog(ToplevelDialog):
         """
         self.section_count += 1
 
-    def _add_headfoot(self, hf_type: CheckerEntryType, *headfoot_lines: str) -> None:
+    def _add_headfoot(
+        self,
+        hf_type: CheckerEntryType,
+        *headfoot_lines: str,
+        section: Optional[int] = None,
+    ) -> None:
         """Internal method to add header or footer to dialog.
 
         Args:
             hf_type: Either header or footer type
             headfoot_lines: Section header or footer lines
+            section: Optional overwrite of section count.
         """
         assert hf_type in (CheckerEntryType.HEADER, CheckerEntryType.FOOTER)
-        self.new_section()
+        if section is None:
+            self.new_section()
         for line in headfoot_lines:
-            self.add_entry(line, None, None, None, hf_type)
-        self.new_section()
+            self.add_entry(line, None, None, None, hf_type, section=section)
+        if section is None:
+            self.new_section()
 
-    def add_header(self, *header_lines: str) -> None:
+    def add_header(self, *header_lines: str, section: Optional[int] = None) -> None:
         """Add header to dialog.
 
         Args:
             header_lines: Strings to add as header lines
         """
-        self._add_headfoot(CheckerEntryType.HEADER, *header_lines)
+        self._add_headfoot(CheckerEntryType.HEADER, *header_lines, section=section)
 
-    def add_footer(self, *footer_lines: str) -> None:
+    def add_footer(self, *footer_lines: str, section: Optional[int] = None) -> None:
         """Add footer to dialog.
 
         Args:
             footer_lines: Strings to add as footer lines
         """
-        self._add_headfoot(CheckerEntryType.FOOTER, *footer_lines)
+        self._add_headfoot(CheckerEntryType.FOOTER, *footer_lines, section=section)
 
     def add_entry(
         self,
@@ -1074,6 +1084,7 @@ class CheckerDialog(ToplevelDialog):
         error_prefix: str = "",
         ep_index: int = 0,
         severity: Optional[CheckerEntrySeverity] = None,
+        section: Optional[int] = None,
     ) -> None:
         """Add an entry ready to be displayed in the dialog.
 
@@ -1089,6 +1100,7 @@ class CheckerDialog(ToplevelDialog):
             error_prefix: Prefix string indicating an error.
             ep_index: Error prefix index (to control color) - must be 0 or 1
             severity: Optional severity of error to override default determination.
+            section: Optional overwrite of section count.
         """
         assert ep_index in (0, 1)
         # Default determination of severity
@@ -1106,7 +1118,7 @@ class CheckerDialog(ToplevelDialog):
             text_range,
             hilite_start,
             hilite_end,
-            self.section_count,
+            self.section_count if section is None else section,
             len(self.entries),
             entry_type,
             error_prefix,
@@ -1177,7 +1189,7 @@ class CheckerDialog(ToplevelDialog):
         for entry in self.entries:
             if self.skip_entry(entry):
                 continue
-            if entry.text_range is not None:
+            if entry.text_range is not None and entry.text_range.start.row >= 0:
                 maxrow = max(maxrow, entry.text_range.start.row)
                 maxcol = max(maxcol, entry.text_range.start.col)
         maxrowlen = len(str(maxrow))
@@ -1190,6 +1202,7 @@ class CheckerDialog(ToplevelDialog):
             and self.view_options_frame.winfo_ismapped()
         )
 
+        space = " "
         for entry in self.entries:
             if self.skip_entry(entry):
                 continue
@@ -1200,9 +1213,10 @@ class CheckerDialog(ToplevelDialog):
                 self.count_suspects += 1
             if entry.text_range is not None:
                 colstr = f"{entry.text_range.start.col}:"
-                rowcol_str = (
-                    f"{entry.text_range.start.row:>{maxrowlen}}.{colstr:<{maxcollen}}"
-                )
+                if entry.text_range.start.row < 0:
+                    rowcol_str = f"{space:>{maxrowlen}} {space:<{maxcollen}}"
+                else:
+                    rowcol_str = f"{entry.text_range.start.row:>{maxrowlen}}.{colstr:<{maxcollen}}"
             ep = "" if hide_ep else entry.error_prefix
             self.text.insert(tk.END, rowcol_str + ep + entry.text + "\n")
             if entry.hilite_start is not None and entry.hilite_end is not None:

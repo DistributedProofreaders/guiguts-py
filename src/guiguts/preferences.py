@@ -259,6 +259,7 @@ class PrefKey(StrEnum):
     PPCOMP_ROUNDS_PROOFERS = auto()
     PPCOMP_ROUNDS_REGROUP = auto()
     PPCOMP_ROUNDS_PAGE_BLOCK = auto()
+    PPCOMP_DISPLAY_TYPE = auto()
 
 
 class Preferences:
