@@ -422,6 +422,7 @@ class CheckerDialog(ToplevelDialog):
 
         def rerunner() -> None:
             Busy.busy()
+            self.update_count_label(working=True)
             self.selection_on_clear[self.get_dlg_name()] = None
             self.rerun_command()
             self.refresh_view_options()
@@ -706,6 +707,7 @@ class CheckerDialog(ToplevelDialog):
         self.selected_text_range: Optional[IndexRange] = None
         self.reverse_mark_gravities = reverse_mark_gravities
         self.reset()
+        self.update_count_label(working=True)
 
     def __new__(cls, *args: Any, **kwargs: Any) -> "CheckerDialog":
         """Ensure CheckerDialogs are not instantiated directly."""
@@ -927,10 +929,10 @@ class CheckerDialog(ToplevelDialog):
         self.section_count = 0
         self.selected_text = ""
         self.selected_text_range = None
-        self.update_count_label(working=True)
         if self.text.winfo_exists():
             self.text.delete("1.0", tk.END)
             self.update()
+        self.update_count_label()
         if maintext().winfo_exists():
             maintext().clear_marks(self.get_dlg_name())
             maintext().remove_spotlights()

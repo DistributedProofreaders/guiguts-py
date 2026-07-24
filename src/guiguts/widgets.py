@@ -262,15 +262,11 @@ class ToplevelDialog(tk.Toplevel):
         """
 
     @classmethod
-    def close_all(cls) -> None:
-        """Close all open ToplevelDialogs."""
+    def reset_all(cls) -> None:
+        """Reset all open ToplevelDialogs."""
         for dlg in ToplevelDialog.toplevel_dialogs.values():
-            if dlg.winfo_exists() and not dlg.__class__.__name__.endswith(
-                "TearOffMenuDialog"
-            ):
-                dlg.destroy()
+            if dlg.winfo_exists():
                 dlg.reset()
-        ToplevelDialog.toplevel_dialogs.clear()
 
     def _do_config(self) -> None:
         """Configure the geometry of the ToplevelDialog.

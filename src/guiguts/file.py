@@ -199,13 +199,13 @@ class File:
     def reset(self) -> None:
         """Reset file internals to defaults, e.g. filename, page markers, etc.
 
-        Also close any open dialogs, since they will refer to the previous file."""
+        Also reset any open dialogs, since they will refer to the previous file."""
         self.filename = ""
         self.image_dir = ""
         self.project_id = ""
         self.remove_page_marks()
         self.page_details = PageDetails()
-        ToplevelDialog.close_all()
+        ToplevelDialog.reset_all()
 
     def open_file(self, filename: str = "") -> str:
         """Open and load a text file.

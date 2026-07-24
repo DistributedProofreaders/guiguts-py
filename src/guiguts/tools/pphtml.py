@@ -81,6 +81,7 @@ class PPhtmlChecker:
     def reset(self) -> None:
         """Reset PPhtml checker."""
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
         self.images_dir = os.path.join(os.path.dirname(the_file().filename), "images")
         self.music_dir = os.path.join(os.path.dirname(the_file().filename), "music")
         self.image_files = []

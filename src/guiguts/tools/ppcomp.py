@@ -470,6 +470,7 @@ class PPcompChecker:
             except HTMLSyntaxError as exc:
                 # Output parsing errors to dialog rather than logging an error
                 self.dialog.reset()
+                self.dialog.update_count_label(working=True)
                 self.dialog.add_header(str(exc))
                 self.dialog.add_header(
                     "Fix the errors below in the HTML file before re-running ppcomp", ""
@@ -501,6 +502,7 @@ class PPcompChecker:
             PPComp.check_characters(PPcompChecker.files)
 
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
         self.dialog.add_header(
             f"Deleted words in first file but not in second will appear {FLAG_CH_1_L}like this{FLAG_CH_1_R}"
         )

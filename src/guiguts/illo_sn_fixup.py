@@ -812,6 +812,7 @@ def display_illosn_entries(tag_type: str, hidden_list: list[bool]) -> None:
     assert the_checker is not None
     checker_dialog = the_checker.checker_dialog
     checker_dialog.reset()
+    checker_dialog.update_count_label(working=True)
     illosn_records = the_checker.get_illosn_records()
     for illosn_index, illosn_record in enumerate(illosn_records):
         if len(hidden_list) == len(illosn_records) and hidden_list[illosn_index]:

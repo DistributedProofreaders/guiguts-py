@@ -993,6 +993,7 @@ class HTMLValidator:
     def run(self) -> None:
         """Do the check and add messages to the dialog."""
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
 
         validator_url = "https://validator.w3.org/nu/"
 
@@ -1144,6 +1145,7 @@ class CSSValidator:
     def run(self) -> None:
         """Validate CSS using SOAP interface."""
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
 
         def report_exception(message: str, exc: Exception | str) -> None:
             """Report exception to user and suggest manual validation.
@@ -1290,6 +1292,7 @@ class HTMLLinkChecker:
     def run(self) -> None:
         """Do the actual check and add messages to the dialog."""
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
 
         class AttrPos:
             """Class to store attribute & position in file."""
@@ -1669,6 +1672,7 @@ class EbookmakerChecker:
     def run(self) -> None:
         """Run ebookmaker"""
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
         cwd = preferences.get(PrefKey.EBOOKMAKER_PATH)
         if not cwd:
             self.dialog.display_entries()
@@ -1806,6 +1810,7 @@ class EbookmakerCheckerAPI:
     def run(self) -> None:
         """Run ebookmaker using API asynchronously."""
         self.dialog.reset()
+        self.dialog.update_count_label(working=True)
         self.dialog.cache_btn["command"] = lambda: None
         self.dialog.cache_btn["state"] = tk.DISABLED
         self.dialog.wave_btn["command"] = lambda: None
