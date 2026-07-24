@@ -862,6 +862,11 @@ def refine_punctuation_diffs(line: str) -> str:
         if re.search(r"\p{Letter}$", a_mid) and re.search(r"^\p{Letter}", b_mid):
             return match.group(0)
 
+        # If middle portion is whitespace (e.g. "a dead"/"adead") leave unchanged
+        # because just a space is hard to spot in the output
+        if not a_mid.strip() and not b_mid.strip():
+            return match.group(0)
+
         parts = []
         # Prefix stays unmarked
         parts.append(prefix)
