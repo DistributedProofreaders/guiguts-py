@@ -1136,12 +1136,9 @@ class PPhtmlChecker:
             line = re.sub("  +", " ", line)
             line = line.strip()
             for a_class in line.split(" "):
-                # Classes that are not pseudo-classes
-                if (
-                    a_class.startswith(".")
-                    and ":" not in a_class
-                    and a_class[1:] not in self.defined_classes
-                ):
+                # Strip pseudo-class, like ".abc::first-letter"
+                a_class = re.sub(":.+", "", a_class)
+                if a_class.startswith(".") and a_class[1:] not in self.defined_classes:
                     self.defined_classes[a_class[1:]] = self.find_defined_class(
                         a_class[1:]
                     )
