@@ -14,6 +14,7 @@ from guiguts.data import dictionaries
 from guiguts.file import ProjectDict, the_file
 from guiguts.checkers import CheckerDialog, CheckerEntry
 from guiguts.maintext import maintext, FindMatch
+from guiguts.mainwindow import menubar_metadata
 from guiguts.misc_tools import tool_save
 from guiguts.preferences import preferences, PersistentInt, PrefKey
 from guiguts.utilities import (
@@ -21,7 +22,6 @@ from guiguts.utilities import (
     IndexRange,
     load_wordfile_into_dict,
     cmd_ctrl_string,
-    process_accel,
     non_text_line,
     is_test,
 )
@@ -73,30 +73,6 @@ class SpellCheckerDialog(CheckerDialog):
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize Spell Checker dialog."""
-
-        def add_to_global_dict() -> None:
-            """Add current word to global dictionary."""
-            current_index = self.current_entry_index()
-            if current_index is None:
-                return
-            checker_entry = self.entries[current_index]
-            if checker_entry.text_range:
-                word = checker_entry.text.split(maxsplit=1)[0]
-                self.add_global_word_callback(word)
-                checker = get_spell_checker()
-                assert checker is not None
-                checker.dictionary[word] = True
-            self.remove_entry_current(all_matching=True)
-
-        def add_to_project_dict() -> None:
-            """Add current word to project dictionary."""
-            current_index = self.current_entry_index()
-            if current_index is None:
-                return
-            checker_entry = self.entries[current_index]
-            if checker_entry.text_range:
-                self.add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
-            self.remove_entry_current(all_matching=True)
 
         # Complication because callbacks to add to project/global dictionaries
         # are passed in from outside, but we need "process_command" to call
@@ -151,68 +127,68 @@ class SpellCheckerDialog(CheckerDialog):
             button.invoke()
             return "break"
 
-        def unbind_shifted_shortcut(key: str) -> None:
-            """Unbind shifted version of dialog specific Cmd/Ctrl shortcut."""
-            for accel in (f"Shift+Cmd/Ctrl+{key}", f"Shift+Cmd/Ctrl+{key.upper()}"):
-                _, key_event = process_accel(accel)
-                self.bind(key_event, lambda _: None)
-
+        # Get custom shortcuts for buttons - needed for tooltips
+        orphans = menubar_metadata().orphans
+        short_glob = next(
+            entry
+            for entry in orphans
+            if entry.label == "Spellcheck, Add Spelling to Global Dict."
+        ).display_shortcut()
+        short_proj = next(
+            entry
+            for entry in orphans
+            if entry.label == "Spellcheck, Add Spelling to Proj. Dict."
+        ).display_shortcut()
+        short_skip = next(
+            entry
+            for entry in orphans
+            if entry.label == "Spellcheck, Skip This Occurrence"
+        ).display_shortcut()
+        short_skipall = next(
+            entry
+            for entry in orphans
+            if entry.label == "Spellcheck, Skip All Occurrences"
+        ).display_shortcut()
         lang = maintext().get_language_list()[0]
         global_dict_button = ttk.Button(
             frame,
             text=f"Add to Global Dict ({lang})",
-            command=add_to_global_dict,
+            command=self.add_to_global_dict,
         )
         global_dict_button.grid(column=2, row=0, sticky="EW")
-        for accel in ("Cmd/Ctrl+a", "Cmd/Ctrl+A"):
-            _, key_event = process_accel(accel)
-            self.bind(key_event, lambda _: invoke_and_break(global_dict_button))
-        unbind_shifted_shortcut("a")
         ToolTip(
             global_dict_button,
-            f"{cmd_ctrl_string()}+A or Shift-{cmd_ctrl_string()}-click message",
+            f"{short_glob} or Shift-{cmd_ctrl_string()}-click message",
         )
         project_dict_button = ttk.Button(
             frame,
             text="Add to Project Dict",
-            command=add_to_project_dict,
+            command=self.add_to_project_dict,
         )
         project_dict_button.grid(column=3, row=0, sticky="EW")
-        for accel in ("Cmd/Ctrl+p", "Cmd/Ctrl+P"):
-            _, key_event = process_accel(accel)
-            self.bind(key_event, lambda _: invoke_and_break(project_dict_button))
-        unbind_shifted_shortcut("p")
         ToolTip(
             project_dict_button,
-            f"{cmd_ctrl_string()}+P or {cmd_ctrl_string()}-click message",
+            f"{short_proj} or {cmd_ctrl_string()}-click message",
         )
         skip_button = ttk.Button(
             frame,
             text="Skip",
-            command=lambda: self.remove_entry_current(all_matching=False),
+            command=self.skip,
         )
         skip_button.grid(column=4, row=0, sticky="EW")
-        for accel in ("Cmd/Ctrl+s", "Cmd/Ctrl+S"):
-            _, key_event = process_accel(accel)
-            self.bind(key_event, lambda _: invoke_and_break(skip_button))
-        unbind_shifted_shortcut("s")
         ToolTip(
             skip_button,
-            f"{cmd_ctrl_string()}+S or right-click message",
+            f"{short_skip} or right-click message",
         )
         skip_all_button = ttk.Button(
             frame,
             text="Skip All",
-            command=lambda: self.remove_entry_current(all_matching=True),
+            command=self.skip_all,
         )
         skip_all_button.grid(column=5, row=0, sticky="EW")
-        for accel in ("Cmd/Ctrl+i", "Cmd/Ctrl+I"):
-            _, key_event = process_accel(accel)
-            self.bind(key_event, lambda _: invoke_and_break(skip_all_button))
-        unbind_shifted_shortcut("i")
         ToolTip(
             skip_all_button,
-            f"{cmd_ctrl_string()}+I or Shift+right-click message",
+            f"{short_skipall} or Shift+right-click message",
         )
 
         # When we add to global/project dict using (Shift+)Cmd/Ctrl click, we also want to
@@ -295,6 +271,61 @@ class SpellCheckerDialog(CheckerDialog):
         )
         self.suggest_map = {w.lower(): w for w in word_list}
         self.suggest_words = list(self.suggest_map.keys())
+
+    @classmethod
+    def add_orphan_commands(cls) -> None:
+        """Add orphan commands for Spellcheck dialog to command palette."""
+
+        menubar_metadata().add_button_orphan(
+            "Spellcheck, Add Spelling to Proj. Dict.",
+            cls.orphan_wrapper("add_to_project_dict"),
+            "Cmd/Ctrl+p",
+        )
+        menubar_metadata().add_button_orphan(
+            "Spellcheck, Add Spelling to Global Dict.",
+            cls.orphan_wrapper("add_to_global_dict"),
+            "Cmd/Ctrl+a",
+        )
+        menubar_metadata().add_button_orphan(
+            "Spellcheck, Skip This Occurrence", cls.orphan_wrapper("skip"), "Cmd/Ctrl+s"
+        )
+        menubar_metadata().add_button_orphan(
+            "Spellcheck, Skip All Occurrences",
+            cls.orphan_wrapper("skip_all"),
+            "Cmd/Ctrl+i",
+        )
+
+    def add_to_global_dict(self) -> None:
+        """Add current word to global dictionary."""
+        current_index = self.current_entry_index()
+        if current_index is None:
+            return
+        checker_entry = self.entries[current_index]
+        if checker_entry.text_range:
+            word = checker_entry.text.split(maxsplit=1)[0]
+            self.add_global_word_callback(word)
+            checker = get_spell_checker()
+            assert checker is not None
+            checker.dictionary[word] = True
+        self.remove_entry_current(all_matching=True)
+
+    def add_to_project_dict(self) -> None:
+        """Add current word to project dictionary."""
+        current_index = self.current_entry_index()
+        if current_index is None:
+            return
+        checker_entry = self.entries[current_index]
+        if checker_entry.text_range:
+            self.add_project_word_callback(checker_entry.text.split(maxsplit=1)[0])
+        self.remove_entry_current(all_matching=True)
+
+    def skip(self) -> None:
+        """Skip currently selected occurrence of spelling."""
+        self.remove_entry_current(all_matching=False)
+
+    def skip_all(self) -> None:
+        """Skip all occurrences of currently selected spelling."""
+        self.remove_entry_current(all_matching=True)
 
     def select_entry_by_index(self, entry_index: int, focus: bool = True) -> None:
         """Overridden to allow suggestions for good spellings."""
