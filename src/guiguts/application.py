@@ -136,7 +136,7 @@ from guiguts.search import (
     replace_matched_string,
     SearchDialog,
 )
-from guiguts.spell import spell_check, SpellCheckerDialog
+from guiguts.spell import spell_check
 from guiguts.tools.bookloupe import bookloupe_check
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
@@ -1563,7 +1563,6 @@ class Guiguts:
         RegexCheckerDialog.add_orphan_commands()
         SurroundWithDialog.add_orphan_commands()
         HTMLMarkupDialog.add_orphan_commands()
-        SpellCheckerDialog.add_orphan_commands()
         mainimage().add_orphan_commands()
         menubar_metadata().add_button_orphan(
             "Quit Without Saving File", lambda: root().quit()
