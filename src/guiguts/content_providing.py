@@ -610,14 +610,13 @@ class HeadFootChecker:
 
         def sort_key_error(
             entry: CheckerEntry,
-        ) -> tuple[int, str, int, int]:
+        ) -> tuple[int, str, str]:
             """Sort key function to sort entries by error prefix, then line number."""
             assert entry.text_range is not None
             return (
                 entry.section,
                 entry.error_prefix,
-                entry.text_range.start.row,
-                entry.text_range.start.col,
+                entry.text,
             )
 
         self.dialog = HeadFootCheckerDialog.show_dialog(
