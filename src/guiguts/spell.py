@@ -146,8 +146,11 @@ class SpellCheckerDialog(CheckerDialog):
             "Do not show errors that appear more than this number of times",
         )
 
-        def invoke_and_break(button: ttk.Button) -> str:
+        def invoke_and_break(evt: tk.Event, button: ttk.Button) -> str:
             """Invoke a button and return "break" to avoid further callbacks."""
+            # Don't override default text entry behavior for shortcuts
+            if evt.widget.winfo_class() in ("Entry", "TEntry", "TCombobox", "TSpinbox"):
+                return ""
             button.invoke()
             return "break"
 
@@ -166,7 +169,7 @@ class SpellCheckerDialog(CheckerDialog):
         global_dict_button.grid(column=2, row=0, sticky="EW")
         for accel in ("Cmd/Ctrl+a", "Cmd/Ctrl+A"):
             _, key_event = process_accel(accel)
-            self.bind(key_event, lambda _: invoke_and_break(global_dict_button))
+            self.bind(key_event, lambda e: invoke_and_break(e, global_dict_button))
         unbind_shifted_shortcut("a")
         ToolTip(
             global_dict_button,
@@ -180,7 +183,7 @@ class SpellCheckerDialog(CheckerDialog):
         project_dict_button.grid(column=3, row=0, sticky="EW")
         for accel in ("Cmd/Ctrl+p", "Cmd/Ctrl+P"):
             _, key_event = process_accel(accel)
-            self.bind(key_event, lambda _: invoke_and_break(project_dict_button))
+            self.bind(key_event, lambda e: invoke_and_break(e, project_dict_button))
         unbind_shifted_shortcut("p")
         ToolTip(
             project_dict_button,
@@ -194,7 +197,7 @@ class SpellCheckerDialog(CheckerDialog):
         skip_button.grid(column=4, row=0, sticky="EW")
         for accel in ("Cmd/Ctrl+s", "Cmd/Ctrl+S"):
             _, key_event = process_accel(accel)
-            self.bind(key_event, lambda _: invoke_and_break(skip_button))
+            self.bind(key_event, lambda e: invoke_and_break(e, skip_button))
         unbind_shifted_shortcut("s")
         ToolTip(
             skip_button,
@@ -208,7 +211,7 @@ class SpellCheckerDialog(CheckerDialog):
         skip_all_button.grid(column=5, row=0, sticky="EW")
         for accel in ("Cmd/Ctrl+i", "Cmd/Ctrl+I"):
             _, key_event = process_accel(accel)
-            self.bind(key_event, lambda _: invoke_and_break(skip_all_button))
+            self.bind(key_event, lambda e: invoke_and_break(e, skip_all_button))
         unbind_shifted_shortcut("i")
         ToolTip(
             skip_all_button,
@@ -220,7 +223,7 @@ class SpellCheckerDialog(CheckerDialog):
         def select_invoke_and_break(evt: tk.Event, button: ttk.Button) -> str:
             """Select clicked message, then invoke given button and return "break"."""
             self.select_entry_by_click(evt)
-            return invoke_and_break(button)
+            return invoke_and_break(evt, button)
 
         mouse_bind(
             self.text,
