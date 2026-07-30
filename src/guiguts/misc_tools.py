@@ -51,6 +51,7 @@ from guiguts.widgets import (
     FileDialog,
     get_global_font,
     themed_style,
+    Busy,
 )
 
 logger = logging.getLogger(__package__)
@@ -460,15 +461,12 @@ class PageSeparatorDialog(ToplevelDialog):
         maintext().remove_undo_redo_callback(self.get_dlg_name())
         super().on_destroy()
 
-    def do_join(self, keep_hyphen: bool) -> None:
+    def do_join(self, keep_hyphen: bool, sep_range: IndexRange) -> None:
         """Join 2 lines if hyphenated, otherwise just remove separator line(s).
 
         Args:
             keep_hyphen: True to keep hyphen when lines are joined.
         """
-        if (sep_range := self.find()) is None:
-            return
-
         # Don't try to join if page ends with "]" or "]*" because that probably means
         # there's a possible mid-para footnote/sidenote/illo at the page end
         start_index = sep_range.start.index()
@@ -546,9 +544,11 @@ class PageSeparatorDialog(ToplevelDialog):
 
     def refresh(self) -> None:
         """Refresh to show the first available page separator."""
+        Busy.busy()
         maintext().undo_block_begin()
         self.do_auto()
         self.view()
+        Busy.unbusy()
 
     def join(self, keep_hyphen: bool) -> None:
         """Handle click on Join buttons.
@@ -556,15 +556,21 @@ class PageSeparatorDialog(ToplevelDialog):
         Args:
             keep_hyphen: True to keep hyphen when lines are joined.
         """
+        Busy.busy()
         maintext().undo_block_begin()
-        self.do_join(keep_hyphen)
-        self.do_auto()
+        sep_range = self.find()
+        if sep_range is not None:
+            self.do_join(keep_hyphen, sep_range)
+            self.do_auto()
+        Busy.unbusy()
 
     def delete(self) -> None:
         """Handle click on Delete button."""
+        Busy.busy()
         maintext().undo_block_begin()
         self.do_delete()
         self.do_auto()
+        Busy.unbusy()
 
     def blank(self, num_lines: int) -> None:
         """Handle click on Blank buttons.
@@ -572,9 +578,11 @@ class PageSeparatorDialog(ToplevelDialog):
         Args:
             num_lines: How many blank lines to use.
         """
+        Busy.busy()
         maintext().undo_block_begin()
         self.do_blank(num_lines)
         self.do_auto()
+        Busy.unbusy()
 
     def view(self) -> None:
         """Show the first available separator line to be processed."""
@@ -583,22 +591,29 @@ class PageSeparatorDialog(ToplevelDialog):
         maintext().do_select(sep_range)
         maintext().set_insert_index(sep_range.start, focus=False)
 
-    def find(self) -> Optional[IndexRange]:
-        """Find the first available separator line.
+    def find(self, start: str = "1.0") -> Optional[IndexRange]:
+        """Find the first available separator line from start.
+
+        Args:
+            start: Text index at which to start searching.
 
         Returns:
             IndexRange containing start & end of separator, or None.
         """
         match = maintext().find_match(
             PageSeparatorDialog.SEPARATOR_REGEX,
-            maintext().start_to_end(),
+            IndexRange(start, maintext().end()),
             nocase=False,
             regexp=True,
             backwards=False,
         )
         if match is None:
             return None
-        end_rowcol = IndexRowCol(match.rowcol.row + 1, match.rowcol.col)
+
+        end_rowcol = IndexRowCol(
+            match.rowcol.row + 1,
+            match.rowcol.col,
+        )
         return IndexRange(match.rowcol, end_rowcol)
 
     def fix_pagebreak_markup(self, sep_range: IndexRange) -> tuple[IndexRange, str]:
@@ -612,17 +627,22 @@ class PageSeparatorDialog(ToplevelDialog):
             Updated page separator range (removal of markup may have affected page sep line number)
             and type of block markup removed, if any, e.g. "#", "*", "P", etc.
         """
-        # Remove all but one page sep lines at this location. As each is deleted
-        # the next will be move up to lie at the same location.
-        line = ""
+        # Remove consecutive page separators, retaining the last one.
+        start = sep_range.start.index()
+        last_start = start
+        end = sep_range.end.index()
         while True:
-            del_range = self.find()
-            if del_range is None or del_range.start != sep_range.start:
+            next_line = maintext().get(end, f"{end} lineend")
+            if not re.fullmatch(PageSeparatorDialog.SEPARATOR_REGEX, next_line):
                 break
-            line = maintext().get(sep_range.start.index(), sep_range.end.index())
-            maintext().delete(sep_range.start.index(), sep_range.end.index())
-        # Add last one back
-        maintext().insert(sep_range.start.index(), line)
+            last_start = end
+            end = maintext().index(f"{end} lineend +1c")
+
+        if last_start != start:
+            maintext().delete(start, last_start)
+        # Update sep_range end (although in general page sep lines are all the same length).
+        sep_range.end = maintext().rowcol(start + " lineend +1c")
+
         ps_start = sep_range.start.index()
         ps_end = sep_range.end.index()
         block_removed = ""
@@ -682,9 +702,12 @@ class PageSeparatorDialog(ToplevelDialog):
             return
 
         # Auto-fix: Loop through page separators, fixing them if possible
-        while sep_range := self.find():
-            # Fix markup across page break, even though the join function would fix it later,
-            # because otherwise it would interfere with check for automated joining below.
+        sep_range: Optional[IndexRange] = maintext().start_to_end()
+        while True:
+            if sep_range is not None:
+                sep_range = self.find(sep_range.start.index())
+            if sep_range is None:
+                break
             sep_range, removed = self.fix_pagebreak_markup(sep_range)
             line_prev = maintext().get(
                 f"{sep_range.start.index()}-1l lineend -10c",
@@ -708,9 +731,7 @@ class PageSeparatorDialog(ToplevelDialog):
                 or line_prev.endswith("]")
                 or line_prev.endswith("]*")
             ):
-                # No hyphen before/after page break and no mid-para
-                # footnote, sidenote or illo, so OK to join
-                self.do_join(False)
+                self.do_join(False, sep_range)
             else:
                 break
         self.view()
