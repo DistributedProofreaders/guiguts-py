@@ -251,7 +251,6 @@ img.w100 {width: 100%;}
     </style>
 </head>
 <body>
-<main>
 
 
 <h1>
@@ -5399,6 +5398,5 @@ of this eBook that support hyperlinks, the page
 references in the List of Illustrations lead to the
 corresponding illustrations.</p>
 
-</main>
 </body>
 </html>

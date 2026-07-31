@@ -251,4 +251,3 @@ img.w100 {width: 100%;}
     </style>
 </head>
 <body>
-<main>
