@@ -1,6 +1,5 @@
 {
     "python.REPL.enableREPLSmartSend": false,
-    "python-envs.defaultEnvManager": "ms-python.python:poetry",
-    "python-envs.pythonProjects": [],
-    "python-envs.defaultPackageManager": "ms-python.python:poetry"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.defaultPackageManager": "ms-python.python:pip"
 }
