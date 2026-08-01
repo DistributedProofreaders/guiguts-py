@@ -2261,6 +2261,10 @@ INIT_APOS_WORDS = (
     "'Twon't",
     "'Tain't",
 )
+CURLY_APOS_WORDS = [word.replace("'", "’") for word in INIT_APOS_WORDS]
+INIT_APOS_WORDS_RE = re.compile(rf"{'|'.join(CURLY_APOS_WORDS)}(?!\w)", re.IGNORECASE)
+INIT_APOS_LEN = len(max(CURLY_APOS_WORDS, key=len))
+
 SAFE_APOS_RQUOTE_REGEXES = (
     r"(?<=\w)'(?=\w)",  # surrounded by letters
     r"(?<=[\.,\w])'",  # preceded by period, comma or letter
@@ -2627,18 +2631,26 @@ class CurlyQuotesDialog(CheckerDialog):
                 last_open_single_idx = match.rowcol.index()
             elif match_text == SQUOTES[1]:  # Close single
                 context = maintext().get(
-                    f"{match.rowcol.index()}-2c", f"{match.rowcol.index()}+3c"
+                    f"{match.rowcol.index()}-1c",
+                    f"{match.rowcol.index()}+{INIT_APOS_LEN}c",
                 )
                 # If letters both sides, it's an apostrophe, so ignore
-                if len(context) < 5 or context[1].isalpha() and context[3].isalpha():
+                if (
+                    len(context) < INIT_APOS_LEN
+                    or context[0].isalpha()
+                    and context[2].isalpha()
+                ):
+                    continue
+                # If one of the known initial apostrophe words, ignore it
+                if INIT_APOS_WORDS_RE.match(context[1:]):
                     continue
                 if sqtype == 0:
                     add_quote_entry("Close SQ unexpected (apos?): ")
-                elif context[1] == "\n":
+                elif context[0] == "\n":
                     add_quote_entry("Close SQ at line start (apos?): ")
-                elif context[1] == " ":
+                elif context[0] == " ":
                     add_quote_entry("Close SQ after space (apos?): ")
-                elif context[3].isalnum():
+                elif context[2].isalnum():
                     add_quote_entry("Close SQ before letter (apos?): ")
                 sqtype = 0
             elif match_text == '"':  # Straight double
