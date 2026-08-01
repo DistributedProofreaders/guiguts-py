@@ -8,10 +8,10 @@ packages = [{include = "guiguts", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-Pillow = "^12.2"
-pywin32 = {version = ">=311,<312", platform = "win32"}
+Pillow = "^12.3"
+pywin32 = {version = ">=312,<313", platform = "win32"}
 roman = "^5.2"
-regex = "^2026.5.9"
+regex = "^2026.7.19"
 levenshtein = "^0.27.3"
 requests = "^2.34.2"
 ttkthemes = "^3.3.0"
@@ -20,18 +20,18 @@ rapidfuzz = "^3.14.5"
 packaging = "^26.2"
 lxml = "^6.1.1"
 tinycss = "^0.4"
-cssselect = "^1.4.0"
+cssselect = "^1.5.0"
 html5lib = "^1.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^26.5"
 flake8 = "^7.3"
 Sphinx = "^8.2"
-pytest = "^9.0"
-mypy = "^2.1"
+pytest = "^9.1"
+mypy = "^2.3"
 pylint = "^4.0"
-beautifulsoup4 = "^4.14"
-types-regex = "^2026.5.9"
+beautifulsoup4 = "^4.15"
+types-regex = "^2026.7.19"
 types-requests = "^2.33"
 types-lxml = "^2026.2.16"
 types-ttkthemes = "^3.3.0"
