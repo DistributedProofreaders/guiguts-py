@@ -71,6 +71,7 @@ FLAG_CH_1_L = "⦓"
 FLAG_CH_1_R = "⦔"
 FLAG_CH_2_L = "⦕"
 FLAG_CH_2_R = "⦖"
+FLAG_NL = "⦑"
 NO_SPACE_BEFORE = "])}.,:;!?"
 NO_SPACE_AFTER = "[({"
 PAIR_RE = re.compile(
@@ -729,6 +730,7 @@ def render_marked_diff(
         # New source line → flush current output line
         # Compact flushes if either source file changes line
         # Expanded only flushes if first source file changes line
+        # but still want to know if second file changes line to aid output
         if (expanded and a_line != last_a) or (
             not expanded and (a_line, b_line) != (last_a, last_b)
         ):
@@ -738,6 +740,8 @@ def render_marked_diff(
                 line_has_change = False
             cur_line = []
             cur_linenum = None
+        elif expanded and b_line != last_b:
+            new_buf.append(FLAG_NL)
 
         last_a, last_b = a_line, b_line
 
@@ -794,7 +798,13 @@ def render_marked_diff(
                     dialog.add_entry(f"{spaces}{before_line}", no_lineno)
                     dialog.new_section()
                     break
-        dialog.add_entry(f"{sub_line}{text}", index)
+        text = re.sub(f" *{FLAG_NL} *", "\n", text)
+        for idx, one_line in enumerate(text.splitlines()):
+            if idx == 0:
+                dialog.add_entry(f"{sub_line}{one_line}", index)
+            else:
+                dialog.add_entry(f"{spaces}{one_line}", no_lineno)
+            dialog.new_section()
         if expanded:
             for i in range(a_line, len(PPcompChecker.files[0].lines)):
                 after_line = re.sub(
