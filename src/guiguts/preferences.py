@@ -128,6 +128,7 @@ class PrefKey(StrEnum):
     HTML_IMAGE_ALIGNMENT = auto()
     HTML_IMAGE_CAPTION_P = auto()
     HTML_IMAGE_DECORATIVE_ONLY = auto()
+    HTML_IMAGE_EMBELLISHED_HR = auto()
     HTML_IMAGE_FIND_FIRST = auto()
     HTML_LINKS_ALPHABETIC = auto()
     HTML_LINKS_HIDE_PAGE = auto()
