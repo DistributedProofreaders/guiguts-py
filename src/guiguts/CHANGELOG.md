@@ -1,6 +1,23 @@
 # Changelog
 
 
+## Version 2.1.3
+
+- PPcomp Expanded output is clearer for multi-line differences
+- Page Separator Fixup is up to 20 times faster on large files and correctly
+  shows the "Working" label
+- HTML Autogeneration no longer automatically adds `<main>` tags
+- Content Providing Header/Footer tool lists headers/footers alphabetically
+  when used with Alpha/Type sorting
+- Curly Quote Check no longer reports an unexpected single quote when it is an
+  apostrophe at the start of a common word, e.g. `’tis`, `’twould`, etc.
+
+### Bug fixes
+
+- PPhtml didn't recognize classes defined with `::first-letter`, etc.
+- Cmd/Ctrl-A in text fields of Spelling dialog did not select all text
+
+
 ## Version 2.1.2
 
 - Alt-text editor added using a stripped down version of the Auto-illus dialog.
