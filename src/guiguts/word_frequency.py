@@ -785,14 +785,18 @@ class WordFrequencyDialog(ToplevelDialog):
             # Also, boundary for an emdash is any non-emdash, but for other non-word characters the
             # boundary is a word/space character
             emdash_bound = "—" if newline_word[0] == "—" else r"[^\w\s]"
+            # If word contains space, then permit boundary character to be a hyphen
+            # (by not having it in the excluded characters)
+            # e.g. "school teacher" will match "Sunday-school teacher"
+            hyph_bound = "" if " " in newline_word else "-"
             left_boundary = (
-                r"(?<!([^\W_]|[\p{L}\p{N}][-'’]))"
+                r"(?<!([^\W_]|[\p{L}\p{N}][" + hyph_bound + r"'’]))"
                 if newline_word[0].isalnum()
                 else rf"(?<!{emdash_bound})"
             )
             emdash_bound = "—" if newline_word[-1] == "—" else r"[^\w\s]"
             right_boundary = (
-                r"(?!([^\W_]|[-'’][\p{L}\p{N}]))"
+                r"(?!([^\W_]|[" + hyph_bound + r"'’][\p{L}\p{N}]))"
                 if newline_word[-1].isalnum()
                 else rf"(?!{emdash_bound})"
             )
