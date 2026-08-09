@@ -951,14 +951,7 @@ class MainText(tk.Text):
         self.bind_event(
             "<Escape>", lambda _: self.cancel_drag_sel(), add=True, bind_peer=True
         )
-
-        def set_anchor(_: tk.Event) -> str:
-            """Set anchor point at current position, then allow Shift-click to
-            execute its default behavior."""
-            self.mark_set(TK_ANCHOR_MARK, f"{self.index(tk.INSERT)}")
-            return ""
-
-        self.bind("<Shift-Button-1>", set_anchor)
+        self.bind("<Shift-Button-1>", self.set_tk_selection_anchor)
 
         # Override default left/right/up/down arrow key behavior if there is a selection
         # Above behavior would affect Shift-Left/Right/Up/Down, so also bind those to
@@ -3920,6 +3913,11 @@ class MainText(tk.Text):
         while start := self.search(" +$", start, regexp=True):
             self.delete(start, f"{start} lineend")
 
+    def set_tk_selection_anchor(self, _: tk.Event) -> str:
+        """Set anchor point at current position."""
+        self.mark_set(TK_ANCHOR_MARK, f"{self.index(tk.INSERT)}")
+        return ""
+
     def go_home(self, event: tk.Event) -> str:
         """Handle the Home key. Either move to start of line, or if
         already there, move to first non-space on line."""
@@ -3955,6 +3953,7 @@ class MainText(tk.Text):
         # If no Shift, just moving, so clear selection
         else:
             self.clear_selection()
+            self.set_tk_selection_anchor(event)
         self.see(tk.INSERT)
         return "break"
 
@@ -3986,6 +3985,7 @@ class MainText(tk.Text):
         # If no Shift, just moving, so clear selection
         else:
             self.clear_selection()
+            self.set_tk_selection_anchor(event)
         self.see(tk.INSERT)
         return "break"
 
