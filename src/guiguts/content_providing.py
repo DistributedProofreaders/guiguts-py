@@ -1103,8 +1103,8 @@ class CPFilteringDialog(CheckerDialog):
         re_exc2 = re.compile(r"'!!")
         re_h = re.compile(r"!!(?=\w)")
         re_exc = re.compile(r"(?<=\w)!(?=\w)")
-        re_ti = re.compile(r"\bT('ll|'m|'d|f|s|t)\b")
-        re_tiw = re.compile(r'"T\b')
+        re_ti = re.compile(r"\bT(['’]ll|['’]m|['’]d|f|s|t)\b")
+        re_tiw = re.compile(r'(["“])T\b')
         re_1i = re.compile(r"(?<![^'\" ])1\b(?!\.)")
         re_0o = re.compile(r"(?<![^'\" ])0\b")
         re_li = re.compile(r"(?<![^'\" ])l\b(?!')")
@@ -1315,7 +1315,7 @@ class CPFilteringDialog(CheckerDialog):
                 add_to_changes(key, "Scanno mid-word ! → l", cnt, linenum)
                 line, cnt = re_ti.subn(r"I\1", line)  # T to I for T'm, T'll, etc.
                 add_to_changes(key, "Scanno T' → I'", cnt, linenum)
-                line, cnt = re_tiw.subn('"I', line)  # "T\b to "I
+                line, cnt = re_tiw.subn(r"\1I", line)  # "T\b to "I
                 add_to_changes(key, 'Scanno "T → "I', cnt, linenum)
 
             # Standalone 1 preceded by space or quote, not followed by period --> I
