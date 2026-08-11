@@ -1313,7 +1313,7 @@ class CPFilteringDialog(CheckerDialog):
                 add_to_changes(key, "Scanno non-word-end !! → H", cnt, linenum)
                 line, cnt = re_exc.subn("l", line)  # ! to l if midword
                 add_to_changes(key, "Scanno mid-word ! → l", cnt, linenum)
-                line, cnt = re_ti.subn("I", line)  # T to I for T'm, T'll, etc.
+                line, cnt = re_ti.subn(r"I\1", line)  # T to I for T'm, T'll, etc.
                 add_to_changes(key, "Scanno T' → I'", cnt, linenum)
                 line, cnt = re_tiw.subn('"I', line)  # "T\b to "I
                 add_to_changes(key, 'Scanno "T → "I', cnt, linenum)
