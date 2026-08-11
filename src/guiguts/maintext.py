@@ -2680,7 +2680,14 @@ class MainText(tk.Text):
         """
         sel_ranges = self.selected_ranges()
         if not sel_ranges:
-            return ""
+            if force_line:
+                sel_ranges.append(
+                    IndexRange(
+                        maintext().get_insert_index(), maintext().get_insert_index()
+                    )
+                )
+            else:
+                return ""
         pos = sel_ranges[-1].end if end else sel_ranges[0].start
         idx = pos.index()
         if force_line:
