@@ -1314,9 +1314,9 @@ class CPFilteringDialog(CheckerDialog):
                 line, cnt = re_exc.subn("l", line)  # ! to l if midword
                 add_to_changes(key, "Scanno mid-word ! → l", cnt, linenum)
                 line, cnt = re_ti.subn(r"I\1", line)  # T to I for T'm, T'll, etc.
-                add_to_changes(key, "Scanno T' → I'", cnt, linenum)
+                add_to_changes(key, "Scanno T'/J' → I'", cnt, linenum)
                 line, cnt = re_tiw.subn(r"\1I", line)  # "T\b to "I
-                add_to_changes(key, 'Scanno "T → "I', cnt, linenum)
+                add_to_changes(key, 'Scanno "T/"J → "I', cnt, linenum)
 
             # Standalone 1 preceded by space or quote, not followed by period --> I
             key = PrefKey.CP_1_TO_I
