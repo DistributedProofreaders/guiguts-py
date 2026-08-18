@@ -1366,18 +1366,16 @@ def html_convert_page_anchors() -> None:
 
     def flush_page_detail_buffer() -> None:
         """Output contents of buffer in pgnum span."""
-        pgnum = lbl_to_pgnum(page_detail_buffer[0]["label"])
-        pstring = f"[{PAGE_LABEL_PREFIX}{pgnum}]" if show_page_numbers else ""
-        if len(page_detail_buffer) == 1:
-            pagenum_span = (
-                f'<span class="pagenum" id="{PAGE_ID_PREFIX}{pgnum}">{pstring}</span>'
+        pagenum_span = ""
+        for idx, pd in enumerate(reversed(page_detail_buffer)):
+            pgnum = lbl_to_pgnum(pd["label"])
+            # Only last page number should actually be output if several at same location
+            pstring = (
+                pgnum
+                if show_page_numbers and idx >= len(page_detail_buffer) - 1
+                else ""
             )
-        else:
-            anchors = f'"></a><a id="{PAGE_ID_PREFIX}'.join(
-                [lbl_to_pgnum(pd["label"]) for pd in reversed(page_detail_buffer)]
-            )
-            anchors = f'<a id="{PAGE_ID_PREFIX}{anchors}"></a>'
-            pagenum_span = f'<span class="pagenum">{anchors}{pstring}</span>'
+            pagenum_span += f'<span class="pagenum" id="{PAGE_ID_PREFIX}{pgnum}" role="doc-pagebreak">{pstring}</span>'
         insert_index = safe_index(page_detail_buffer[0]["index"])
         if outside_paragraph(insert_index):
             pagenum_span = f"\n<p>{pagenum_span}</p>\n"
@@ -1391,7 +1389,8 @@ def html_convert_page_anchors() -> None:
         # Check if this page mark is effectively at different place to last,
         # i.e. if there are non-space characters between them.
         # If it's a new location for page marks - flush the buffer, writing
-        # one pagenum span, with an anchor for each page break if multiple coincident breaks.
+        # a pagenum span for each page break if multiple coincident breaks,
+        # only outputting the page number of the last one.
         text_between = maintext().get(page_detail["index"], last_mark_index)
         last_mark_index = page_detail["index"]
         if page_detail_buffer and re.search(r"\S", text_between):
