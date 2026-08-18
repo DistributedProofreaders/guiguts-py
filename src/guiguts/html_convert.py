@@ -1506,7 +1506,7 @@ def html_convert_footnote_landing_zones() -> None:
             lz_next = tk.END
         # Find last footnote in this LZ by searching backwards from next LZ
         lz_end = maintext().search(
-            '<aside class="footnote">', lz_next, lz_start, backwards=True
+            '<aside class="footnote', lz_next, lz_start, backwards=True
         )
         if lz_end:
             lz_end = maintext().search(
