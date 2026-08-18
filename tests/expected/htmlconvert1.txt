@@ -294,7 +294,7 @@ img.w100 {width: 100%;}
 <p>
   NOTES<br>
   from CALAIS BASE<br>
-<span class="pagenum" id="Page_1">[Pg 1]</span>  .bn p003sa.png<br>
+<span class="pagenum" id="Page_1" role="doc-pagebreak">1</span>  .bn p003sa.png<br>
   <br>
   AND PICTURES OF ITS<br>
   MANY ACTIVITIES<br>
