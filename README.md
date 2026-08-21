@@ -17,13 +17,17 @@ also works with later versions of Python, and has been tested in versions up to 
 Python.org now uses a Python install manager which can be installed using the
 Microsoft Store App.
 The website says "For most users, this is the recommended approach."
+
 2. Once the install manager is installed, in a command window, you should be
 able to use the `py` command to install (or update) Python, e.g. `py install 3.14`.
 You can also use `py list` to list which versions of Python are installed.
 GG has been tested in versions up to 3.14.
+
 3. Next, you need to install Guiguts. In a command window, type `py -m pip install guiguts`
 (or `py -m pip install --upgrade guiguts` to upgrade from a previous version of GG2).
+
 4. To run GG2, in a command window, type `py -m guiguts`.
+
 5. If you prefer to have an icon that runs GG2,
 
     a. Use Windows Notepad or another text editor to create a file containing one line:
@@ -39,15 +43,15 @@ GG has been tested in versions up to 3.14.
 
 ### macOS
 
-1. Install Python 3.13 or above from [python.org](https://www.python.org/), not a Homebrew-installed Python.
-GG has been tested in versions up to 3.14. You may need to add the location of the Python installation to
-your PATH [**MORE DETAIL HERE]
+1. Install [Python](https://www.python.org/) 3.13 or later. GG has been tested
+in versions up to 3.14. You may need to add the location of the Python installation to
+your PATH.
 
-2. In a terminal window, type `pip3 install guiguts` (or `pip3 install guiguts --upgrade` to upgrade from a
-previous version of GG2). If you cannot use `pip3`, try `python3 -m pip install guiguts` instead.
+2. In a terminal window, type `python3 -m pip install guiguts`
+(or `python3 -m pip install --upgrade guiguts` to upgrade from a
+previous version of GG2).
 
-3. In a terminal window, type `guiguts` to run GG2. If this does not work, due to not being on your PATH,
-use `python3 -m guiguts` to run GG2.
+3. In a terminal window, type `python3 -m guiguts` to run GG2.
 
 4. If steps 2 and 3 do not work, then try the following in a terminal window:
 
@@ -66,9 +70,7 @@ use `python3 -m guiguts` to run GG2.
     b. When prompted to "Choose a type for your document," select "Application."
     Then enter "Run Shell Script" from the list of possible actions.
 
-    c. In the "Run Shell Script" panel, type `guiguts`
-    If this does not work, try giving the path to where Python was installed, e.g.
-    `/Library/Frameworks/Python.framework/Versions/Current/bin/python3 -m guiguts`
+    c. In the "Run Shell Script" panel, type `/usr/local/bin/python3 -m guiguts`
 
     d. Press the "Run" button to test the script.
 
@@ -288,10 +290,8 @@ python you installed above.
 
 #### Install Python
 
-Install python 3.13 or later from [python.org](https://www.python.org/). GG has been tested
+Install [python](https://www.python.org/) 3.13 or later. GG has been tested
 in versions up to 3.14.
-
-Note that installing python and python-tk using Homebrew is not supported for GG development.
 
 #### Install Poetry
 
