@@ -253,6 +253,45 @@ class TextLineNumbers(tk.Canvas):
         self.bind("<Enter>", lambda _: bind_mouse_wheel(self, self.textwidget))
         self.bind("<Leave>", lambda _: unbind_mouse_wheel(self))
 
+        # On Tk9 macOS, trackpad gestures fire <TouchpadScroll> rather than
+        # <MouseWheel>, and (unlike MouseWheel) it's delivered directly to the
+        # widget under the pointer, so bind it here rather than via the
+        # Enter/Leave + bind_all approach used for <MouseWheel> above. Rate-limit
+        # to ~60fps by accumulating deltas between frames, matching the text
+        # widget and scrollbars, so scrolling feels the same over the gutter.
+        if is_mac():
+            pending_x: float = 0.0
+            pending_y: float = 0.0
+            after_id: Optional[str] = None
+
+            def to_signed_16(n: int) -> int:
+                return n if n < 0x8000 else n - 0x10000
+
+            def flush_scroll() -> None:
+                nonlocal pending_x, pending_y, after_id
+                after_id = None
+                y_scroll = int(-pending_y)
+                x_scroll = int(-pending_x)
+                pending_y += y_scroll
+                pending_x += x_scroll
+                if y_scroll:
+                    self.textwidget.yview_scroll(y_scroll, "pixels")
+                if x_scroll:
+                    self.textwidget.xview_scroll(x_scroll, "pixels")
+
+            def touchpad_scroll(event: tk.Event) -> str:
+                nonlocal pending_x, pending_y, after_id
+                pending_y += to_signed_16(event.delta & 0xFFFF)
+                pending_x += to_signed_16((event.delta >> 16) & 0xFFFF)
+                if after_id is None:
+                    after_id = self.after(16, flush_scroll)
+                return "break"
+
+            try:
+                self.bind("<TouchpadScroll>", touchpad_scroll)
+            except tk.TclError:
+                pass  # Tk < 9, TouchpadScroll not available
+
     def redraw(self) -> None:
         """Redraw line numbers."""
         # Allow for 5 digit line numbers
