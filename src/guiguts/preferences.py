@@ -56,6 +56,8 @@ class PrefKey(StrEnum):
     FOOTNOTE_INDEX_STYLE = auto()
     FOOTNOTE_PER_LZ = auto()
     FOOTNOTE_SPLIT_WINDOW = auto()
+    FOOTNOTE_LIMIT_SEARCH = auto()
+    FOOTNOTE_LIMIT_LINES = auto()
     SHOW_TOOLTIPS = auto()
     WRAP_LEFT_MARGIN = auto()
     WRAP_RIGHT_MARGIN = auto()

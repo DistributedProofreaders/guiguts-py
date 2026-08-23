@@ -14,6 +14,7 @@ from guiguts.maintext import maintext
 from guiguts.misc_tools import tool_save
 from guiguts.preferences import (
     PersistentString,
+    PersistentInt,
     PersistentBoolean,
     PrefKey,
     preferences,
@@ -462,10 +463,18 @@ class FootnoteChecker:
             # but not where used in context of block markup, e.g. "/#[4]"
             # nor if PPer has used backslash to escape, e.g. "\[1928]"
             start_point = start
+            # Limit search for anchor if necessary
+            unlimited = not preferences.get(PrefKey.FOOTNOTE_LIMIT_SEARCH)
+            limit_lines = preferences.get(PrefKey.FOOTNOTE_LIMIT_LINES)
+            limit_point = (
+                maintext().start()
+                if unlimited
+                else maintext().rowcol(f"{start.index()}-{limit_lines}l")
+            )
             while True:
                 anchor_match = maintext().find_match(
                     f"[{fn_label}]",
-                    IndexRange(start_point, maintext().start()),
+                    IndexRange(start_point, limit_point),
                     backwards=True,
                 )
                 if anchor_match is None:
@@ -532,10 +541,24 @@ class FootnoteChecker:
                 found = False
                 for an_record_list in self.an_records:
                     for an_record in an_record_list:
-                        if an_record.text[
-                            an_record.hilite_start : an_record.hilite_end
-                        ] == an_label and maintext().compare(
-                            an_record.start.index(), ">", anchor_match.rowcol.index()
+                        if (
+                            an_record.text[
+                                an_record.hilite_start : an_record.hilite_end
+                            ]
+                            == an_label
+                            and maintext().compare(
+                                an_record.start.index(),
+                                ">",
+                                anchor_match.rowcol.index(),
+                            )
+                            and (
+                                unlimited
+                                or maintext().compare(
+                                    f"{an_record.start.index()}+{limit_lines}l",
+                                    ">",
+                                    self.fn_records[an_record.fn_index].start.index(),
+                                )
+                            )
                         ):
                             anr = AnchorRecord(
                                 an_line,
@@ -1274,6 +1297,36 @@ class FootnoteCheckerDialog(CheckerDialog):
             match_on_highlight=CheckerMatchType.ERROR_PREFIX,
             **kwargs,
         )
+
+        limited_frame = ttk.Frame(self.custom_frame)
+        limited_frame.grid(column=0, row=0, columnspan=3, sticky="NS")
+        limit_checkbox = ttk.Checkbutton(
+            limited_frame,
+            text="Limit Anchor Search to ",
+            variable=PersistentBoolean(PrefKey.FOOTNOTE_LIMIT_SEARCH),
+        )
+        limit_checkbox.grid(row=0, column=0, sticky="NS")
+        ToolTip(
+            limit_checkbox,
+            "Limit search for matching anchors to given number of lines",
+        )
+        limit_lines = ttk.Entry(
+            limited_frame,
+            width=4,
+            justify=tk.CENTER,
+            textvariable=PersistentInt(PrefKey.FOOTNOTE_LIMIT_LINES),
+            validate=tk.ALL,
+            validatecommand=(
+                self.register(lambda val: val.isdigit() and int(val) > 0 or not val),
+                "%P",
+            ),
+        )
+        limit_lines.grid(row=0, column=1, sticky="NS")
+        ToolTip(limit_lines, "Maximum number of lines to search for matching anchors")
+        ttk.Label(
+            limited_frame,
+            text=" lines",
+        ).grid(row=0, column=2, sticky="NS")
 
         fixit_frame = ttk.Frame(self.custom_frame)
         fixit_frame.grid(column=0, row=1, sticky="NSEW")
