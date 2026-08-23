@@ -1359,6 +1359,15 @@ class MainText(tk.Text):
             try:
                 self.bind("<TouchpadScroll>", _make_touchpad_handler(self))
                 self.peer.bind("<TouchpadScroll>", _make_touchpad_handler(self.peer))
+                # Scrollbars have their own default TouchpadScroll binding, which
+                # scrolls much faster than the rate-limited handler above, so
+                # override it to match the feel of scrolling over the text itself.
+                main_handler = _make_touchpad_handler(self)
+                peer_handler = _make_touchpad_handler(self.peer)
+                self.vscroll.bind("<TouchpadScroll>", main_handler)
+                self.hscroll.bind("<TouchpadScroll>", main_handler)
+                self.peer_vscroll.bind("<TouchpadScroll>", peer_handler)
+                self.peer_hscroll.bind("<TouchpadScroll>", peer_handler)
             except tk.TclError:
                 pass  # Tk < 9, TouchpadScroll not available
 
