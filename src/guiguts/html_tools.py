@@ -1520,6 +1520,86 @@ class HTMLLinkChecker:
         self.dialog.display_entries()
 
 
+class HTMLAltTextCheckerDialog(CheckerDialog):
+    """HTML Alt Text Checker dialog."""
+
+    manual_page = "HTML_Menu#HTML_Extract_Alt_Text"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize HTML Alt Text Checker dialog."""
+
+        super().__init__(
+            "HTML Alt Text Extraction Results",
+            tooltip="\n".join(
+                [
+                    "Left click entry with line number: Select & find alt text",
+                    "Right click: Hide line",
+                    "Shift Right click: Also hide all matching lines",
+                ]
+            ),
+            **kwargs,
+        )
+        self.sort_frame.grid_forget()
+
+
+class HTMLAltTextChecker:
+    """HTML Alt Text checker."""
+
+    def __init__(self) -> None:
+        """Initialize HTML Alt Text checker."""
+
+        self.dialog = HTMLAltTextCheckerDialog.show_dialog(rerun_command=self.run)
+
+    def run(self) -> None:
+        """Do the actual check and add messages to the dialog."""
+        self.dialog.reset()
+        self.dialog.update_count_label(working=True)
+
+        class AltPos:
+            """Class to store alt text & position in file."""
+
+            def __init__(self, value: str, position: tuple[int, int]) -> None:
+                """Initialize alt pos class
+
+                Args:
+                    value: Value of alt attribute.
+                    position: Line & column number of start of attribute in file.
+                """
+                self.value = value
+                self.rowcol = IndexRowCol(position[0], 0)
+
+        alts: list[AltPos] = []
+
+        class HTMLParserLink(HTMLParser):
+            """Class to parse HTML."""
+
+            def handle_starttag(
+                self, tag: str, attrs: list[tuple[str, str | None]]
+            ) -> None:
+                """Handle an HTML start tag"""
+                if tag != "img":
+                    return
+                for attr in attrs:
+                    if attr[0] == "alt" and attr[1] is not None:
+                        alts.append(AltPos(attr[1], self.getpos()))
+
+        # Parse HTML - img tags trigger calls to handle_starttag above
+        parser = HTMLParserLink()
+        parser.feed(maintext().get_text())
+
+        # Populate dialog with results
+        for alt in alts:
+            self.dialog.add_header("")
+            lines = alt.value.splitlines()
+            if not lines:
+                lines = [""]
+            self.dialog.add_entry(lines[0], IndexRange(alt.rowcol, alt.rowcol))
+            for line in lines[1:]:
+                self.dialog.add_footer(f"         {line}")
+
+        self.dialog.display_entries()
+
+
 class EbookmakerCheckerDialog(CheckerDialog):
     """Dialog to show ebookmaker results."""
 

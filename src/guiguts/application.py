@@ -42,6 +42,7 @@ from guiguts.html_tools import (
     HTMLImageManualDialog,
     HTMLValidator,
     HTMLLinkChecker,
+    HTMLAltTextChecker,
     CSSValidator,
     EbookmakerChecker,
     EbookmakerCheckerAPI,
@@ -1344,6 +1345,9 @@ class Guiguts:
         html_menu.add_button("HTML Links/A~nchors...", HTMLLinksDialog.show_dialog)
         html_menu.add_button("HTML Image~s...", HTMLImageManualDialog.show_dialog)
         html_menu.add_button("HTML Alt Te~xt/Role...", HTMLImageEditDialog.show_dialog)
+        html_menu.add_button(
+            "HTML Ext~ract Alt Text", lambda: HTMLAltTextChecker().run()
+        )
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
         html_menu.add_button("HTML Lin~k Checker", lambda: HTMLLinkChecker().run())
