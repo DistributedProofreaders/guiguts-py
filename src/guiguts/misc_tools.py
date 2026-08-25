@@ -944,6 +944,9 @@ def unmatched_html_markup() -> None:
 def unmatched_block_markup() -> None:
     """Check for unmatched block markup."""
 
+    open_regex = rf"(/{ALL_BLOCKS_REG})(\[\d+)?(\.\d+)?(,\d+)?]? *"
+    open_regex_c = re.compile(open_regex)
+
     def match_pair_block_markup(markup_in: str) -> tuple[str, bool]:
         """Get regex that matches open and close block markup.
 
@@ -956,7 +959,7 @@ def unmatched_block_markup() -> None:
         close = markup_in[1] == "/"
         block_type = markup_in[0] if close else markup_in[1]
         block_type = re.escape(block_type)
-        return rf"^(/{block_type}(\[\d+)?(\.\d+)?(,\d+)?]?|{block_type}/)$", close
+        return rf"^(/{block_type}(\[\d+)?(\.\d+)?(,\d+)?]?|{block_type}/) *$", close
 
     def malformed_block_markup(dialog: UnmatchedCheckerDialog) -> None:
         """Add warnings about malformed block markup to given dialog.
@@ -967,7 +970,7 @@ def unmatched_block_markup() -> None:
         search_range = maintext().start_to_end()
         prefix = "Badly formed markup: "
         while match := maintext().find_match(
-            f"(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/)",
+            rf"(/{ALL_BLOCKS_REG}(\[(\d+)?(\.\d+)?(,\d+)?])?|{ALL_BLOCKS_REG}/) *$",
             search_range,
             regexp=True,
             nocase=True,
@@ -996,7 +999,7 @@ def unmatched_block_markup() -> None:
                 idx_start = None
                 idx_end = None
             block_type = re.escape(match_str.replace("/", ""))
-            regex = rf"^(/{block_type}(\[(\d+)?(\.\d+)?(,\d+)?])?|{block_type}/)$"
+            regex = rf"^(/{block_type}(\[(\d+)?(\.\d+)?(,\d+)?])?|{block_type}/) *$"
             if not re.fullmatch(regex, line):
                 dialog.add_entry(
                     f"{prefix}{line}",
@@ -1025,14 +1028,24 @@ def unmatched_block_markup() -> None:
             entry.text_range.start.col,
         )
 
+    def equiv_func(s1: str, s2: str) -> bool:
+        """Check if two block tags are equivalent, i.e. the same type of tag,
+        and both opening or both closing. This is to make `/#[8]`
+        match `/#`, for example, which simple equality would not.
+        """
+        s1 = open_regex_c.sub(r"\1", s1)
+        s2 = open_regex_c.sub(r"\1", s2)
+        return s1 == s2
+
     unmatched_markup_check(
         UnmatchedBlockMarkupDialog,
         rerun_command=unmatched_block_markup,
-        match_reg=f"^(/{ALL_BLOCKS_REG}|{ALL_BLOCKS_REG}/ *$)",
+        match_reg=rf"^(/{ALL_BLOCKS_REG}(\[(\d+)?(\.\d+)?(,\d+)?])?|{ALL_BLOCKS_REG}/) *$",
         match_pair_func=match_pair_block_markup,
         nest_reg="/#|#/",
         sort_key_alpha=sort_key_block_markup,
         additional_check_command=malformed_block_markup,
+        equiv_func=equiv_func,
     )
 
 
