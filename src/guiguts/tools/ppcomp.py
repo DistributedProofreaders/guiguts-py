@@ -515,7 +515,15 @@ class PPcompChecker:
                 )
                 # Extract line & column, message and optional supplementary data (dict)
                 # Display in dialog
-                for (line, col), msg, data in exc.parse_errors:
+                for err in exc.parse_errors:
+                    # Might be HTML5 parsed errors, or HTML4 - structures are different
+                    try:
+                        (line, col), msg, data = err  # html5parser
+                    except TypeError:
+                        msg = err.message  # etree parser
+                        data = ""
+                        line = err.line
+                        col = err.column
                     if data and isinstance(data, dict):
                         extra = (
                             " (" + ", ".join(f"{k}={v}" for k, v in data.items()) + ")"
@@ -1455,8 +1463,11 @@ class PgdpFileHtml(PgdpFile):
         if not filename.lower().endswith((".html", ".htm", ".xhtml")):
             raise SyntaxError("Not an html file: " + filename)
         super().load(filename)
+
         try:
-            if 0 <= self.text.find("<!DOCTYPE html>", 0, 100):  # limit search
+            if (
+                "<!doctype html>" in self.text[:100].lower()
+            ):  # limit search to first 100 chars
                 self.tree, errors = self.parse_html5()
             else:
                 self.tree, errors = self.parse_html()
