@@ -1494,7 +1494,11 @@ def html_convert_footnotes() -> None:
 
 
 def html_convert_footnote_landing_zones() -> None:
-    """Add HTML markup around Landing Zones beginning with "FOOTNOTES"."""
+    """Add HTML markup around Landing Zones beginning with "FOOTNOTES".
+
+    Also adjust footnote markup for footnotes within landing zones.
+    Apple Books, for example, removes footnote text from file under some circumstances.
+    """
     lz_end = "1.0"
     fnhead_regex = "(<p>|<h3.*>\n  )FOOTNOTES:(</p>|\n</h3)"
     while lz_start := maintext().search(fnhead_regex, lz_end, tk.END, regexp=True):
@@ -1515,14 +1519,28 @@ def html_convert_footnote_landing_zones() -> None:
         else:
             # No FN in LZ
             lz_end = f"{lz_start}"
-        lz_end += " lineend"
+        lz_end += "+1l lineend"  # Allow for lines added below
         maintext().insert(lz_end, "\n</section>")
         # FOOTNOTES heading may be marked with p or h3 markup
         # <p>FOOTNOTES:</p> ==> <section class="footnotes"><h3>FOOTNOTES:</h3>
         if maintext().get(lz_start, f"{lz_start}+2c") == "<p":
             maintext().replace(f"{lz_start}+15c", f"{lz_start}+16c", "h3")
             maintext().replace(f"{lz_start}+1c", f"{lz_start}+2c", "h3")
+
         maintext().insert(lz_start, '<section class="footnotes" role="doc-endnotes">\n')
+        # Footnotes within landing zone - use `<div>` element instead of `<aside>`
+        # Also don't want doc-footnote or epub:type="footnote"
+        fn_start = lz_start
+        while fn_start := maintext().search(
+            '<aside class="footnote', f"{fn_start}+1l", lz_end, regexp=True
+        ):
+            line = maintext().get(fn_start, f"{fn_start} lineend")
+            line = (
+                line.replace("<aside", "<div")
+                .replace("</aside", "</div")
+                .replace(' role="doc-footnote" data-epub-type="footnote"', "")
+            )
+            maintext().replace(fn_start, f"{fn_start} lineend", line)
 
 
 def html_add_chapter_divs() -> None:
