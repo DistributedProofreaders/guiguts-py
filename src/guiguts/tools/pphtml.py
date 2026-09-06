@@ -17,6 +17,8 @@ from guiguts.maintext import maintext, HighlightTag
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.utilities import IndexRange, IndexRowCol, sing_plur
 
+DS_STORE = ".DS_store"  # Don't report hidden Mac file as a bad image file
+
 
 class PPhtmlCheckerDialog(CheckerDialog):
     """Dialog to show PPhtml results."""
@@ -149,8 +151,13 @@ class PPhtmlChecker:
             if " " in filename:
                 errors.append(f"  Filename '{filename}' contains spaces")
                 test_passed = False
-            if re.search(r"\p{Lu}", filename):
+            if re.search(r"\p{Lu}", filename) and filename != DS_STORE:
                 errors.append(f"  Filename '{filename}' not all lower case")
+                test_passed = False
+            elif (
+                filename == DS_STORE
+            ):  # Hidden Mac file should not be uploaded for PPV/WW
+                errors.append(f"  Filename '{filename}' must be deleted before upload")
                 test_passed = False
 
         # Make sure all are JPEG, PNG or SVG images
@@ -189,6 +196,8 @@ class PPhtmlChecker:
                     errors.append(f"  File '{filename}' is not valid SVG format")
                     test_passed = False
                     continue
+            elif filename == DS_STORE:
+                continue
             else:
                 errors.append(
                     f"  File '{filename}' does not have extension jpg, png or svg"
