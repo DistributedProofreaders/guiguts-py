@@ -17,7 +17,7 @@ from guiguts.maintext import maintext, HighlightTag
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
 from guiguts.utilities import IndexRange, IndexRowCol, sing_plur
 
-DS_STORE = ".DS_store"  # Don't report hidden Mac file as a bad image file
+DS_STORE = ".DS_Store"  # Don't report hidden Mac file as a bad image file
 
 
 class PPhtmlCheckerDialog(CheckerDialog):
