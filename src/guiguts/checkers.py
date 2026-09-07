@@ -300,6 +300,7 @@ class CheckerDialog(ToplevelDialog):
         show_all_buttons: bool = True,
         match_on_highlight: CheckerMatchType = CheckerMatchType.WHOLE,
         reverse_mark_gravities: bool = False,
+        simple_text_widget: bool = False,
         **kwargs: Any,
     ) -> None:
         """Initialize the dialog.
@@ -324,6 +325,9 @@ class CheckerDialog(ToplevelDialog):
             show_all_buttons: Set to False to hide generic buttons that hide/fix "All".
                 Subordinate to `show_remove_buttons` and `show_process_buttons`.
             match_on_highlight: Type of matching for "Fix All", etc.
+            reverse_mark_gravities: Set to True to reverse which side of matching string the mark sticks to
+            simple_text_widget: Set to True to make output text widget have simple interface, like mouse selection
+
         """
         super().__init__(title, **kwargs)
         self.top_frame.rowconfigure(0, weight=0)
@@ -611,7 +615,7 @@ class CheckerDialog(ToplevelDialog):
         self.top_frame.rowconfigure(3, weight=1)
         self.text = ScrolledReadOnlyText(
             self.top_frame,
-            context_menu=False,
+            context_menu=simple_text_widget,
             wrap=tk.NONE,
             font=maintext().font,
         )
@@ -623,25 +627,28 @@ class CheckerDialog(ToplevelDialog):
         #     process/not_process - controlled by Cmd/Ctrl pressed or not
         #     match/not_match - controlled by Shift pressed or not
         # Only 7 of the 8 possibilities needed, since "select not_process match" makes no sense
-        mouse_bind(self.text, "1", self.select_entry_by_click)
-        mouse_bind(self.text, "3", self.remove_entry_by_click)
-        mouse_bind(
-            self.text,
-            "Shift+3",
-            lambda event: self.remove_entry_by_click(event, all_matching=True),
-        )
-        mouse_bind(self.text, "Cmd/Ctrl+1", self.process_entry_by_click)
-        mouse_bind(
-            self.text,
-            "Shift+Cmd/Ctrl+1",
-            lambda event: self.process_entry_by_click(event, all_matching=True),
-        )
-        mouse_bind(self.text, "Cmd/Ctrl+3", self.process_remove_entry_by_click)
-        mouse_bind(
-            self.text,
-            "Shift+Cmd/Ctrl+3",
-            lambda event: self.process_remove_entry_by_click(event, all_matching=True),
-        )
+        if not simple_text_widget:
+            mouse_bind(self.text, "1", self.select_entry_by_click)
+            mouse_bind(self.text, "3", self.remove_entry_by_click)
+            mouse_bind(
+                self.text,
+                "Shift+3",
+                lambda event: self.remove_entry_by_click(event, all_matching=True),
+            )
+            mouse_bind(self.text, "Cmd/Ctrl+1", self.process_entry_by_click)
+            mouse_bind(
+                self.text,
+                "Shift+Cmd/Ctrl+1",
+                lambda event: self.process_entry_by_click(event, all_matching=True),
+            )
+            mouse_bind(self.text, "Cmd/Ctrl+3", self.process_remove_entry_by_click)
+            mouse_bind(
+                self.text,
+                "Shift+Cmd/Ctrl+3",
+                lambda event: self.process_remove_entry_by_click(
+                    event, all_matching=True
+                ),
+            )
         self.bind("<Up>", lambda _e: self.select_entry_by_arrow(-1))
         self.bind("<Down>", lambda _e: self.select_entry_by_arrow(1))
 
