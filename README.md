@@ -18,17 +18,24 @@ Python.org now uses a Python install manager which can be installed using the
 Microsoft Store App.
 The website says "For most users, this is the recommended approach."
 
-2. Once the install manager is installed, in a command window, you should be
+2. Open a Windows Command Prompt window into which you will type the commands below.
+Note that this is not a Python or IDLE window. You can open a Command Prompt window
+from the Windows Start Menu - if you can't see the entry for it, begin to type the
+word "command" in the Start Menu search box until you see the "Command Prompt" entry.
+When it opens it will probably be mostly blank with a black background and a prompt
+where you can type commands as described in the instructions below.
+
+3. Once the install manager is installed, in the command window, you should be
 able to use the `py` command to install (or update) Python, e.g. `py install 3.14`.
 You can also use `py list` to list which versions of Python are installed.
 GG has been tested in versions up to 3.14.
 
-3. Next, you need to install Guiguts. In a command window, type `py -m pip install guiguts`
+4. Next, you need to install Guiguts. In the command window, type `py -m pip install guiguts`
 (or `py -m pip install --upgrade guiguts` to upgrade from a previous version of GG2).
 
-4. To run GG2, in a command window, type `py -m guiguts`.
+5. To run GG2, in the command window, type `py -m guiguts`.
 
-5. If you prefer to have an icon that runs GG2,
+6. If you prefer to have an icon that runs GG2,
 
     a. Use Windows Notepad or another text editor to create a file containing one line:
     `py -m guiguts %1`
@@ -47,13 +54,20 @@ GG has been tested in versions up to 3.14.
 in versions up to 3.14. You may need to add the location of the Python installation to
 your PATH.
 
-2. In a terminal window, type `python3 -m pip install guiguts`
+2. Open a Terminal window into which you will type the commands below.
+Note that this is not a Python or IDLE window. Don't try to open the Python folder or IDLE app.
+What you need is the Terminal app. You can find it either by opening Spotlight and typing "terminal"
+or else by looking in the Applications folder, inside the Utilities folder. You should then get a
+mostly empty window with a prompt where you can type a command. It's probably either a white or black
+window depending on whether your Mac is using Dark Mode or not.
+
+3. In the Terminal window, type `python3 -m pip install guiguts`
 (or `python3 -m pip install --upgrade guiguts` to upgrade from a
 previous version of GG2).
 
-3. In a terminal window, type `python3 -m guiguts` to run GG2.
+4. In the Terminal window, type `python3 -m guiguts` to run GG2.
 
-4. If steps 2 and 3 do not work, then try the following in a terminal window:
+5. If steps 2 and 3 do not work, then try the following in the terminal window:
 
     a. Install pipx: `/usr/local/bin/python3 -m pip install pipx`
 
@@ -63,7 +77,7 @@ previous version of GG2).
 
     c. Type `guiguts` or `~/.local/bin/guiguts` to run GG2.
 
-5. If you would like to have an icon that runs GG2,
+6. If you would like to have an icon that runs GG2,
 
     a. Launch the Automator app from your Applications folder
 
