@@ -77,20 +77,6 @@ previous version of GG2).
 
     c. Type `guiguts` or `~/.local/bin/guiguts` to run GG2.
 
-6. If you would like to have an icon that runs GG2,
-
-    a. Launch the Automator app from your Applications folder
-
-    b. When prompted to "Choose a type for your document," select "Application."
-    Then enter "Run Shell Script" from the list of possible actions.
-
-    c. In the "Run Shell Script" panel, type `/usr/local/bin/python3 -m guiguts`
-
-    d. Press the "Run" button to test the script.
-
-    e. Choose "Save" to save the new application. You can now click on it to open,
-    like any other Mac app.
-
 ### Linux (Debian/Ubuntu)
 
 Python version 3.13 or above is recommended if possible, though GG has been tested in
