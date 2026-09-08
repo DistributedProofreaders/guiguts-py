@@ -1611,15 +1611,11 @@ class EbookmakerCheckerDialog(CheckerDialog):
         Args:
             api: Set to True if API is to be used.
         """
+        if "simple_text_widget" not in kwargs:
+            kwargs["simple_text_widget"] = True
         super().__init__(
             f"Ebookmaker {'(online)' if api else '(local)'} Results",
-            tooltip="\n".join(
-                [
-                    "Left click: Select message",
-                    "Right click: Hide message",
-                    "Shift Right click: Hide all matching messages",
-                ]
-            ),
+            tooltip="Click & drag to select text\nRight-click for context menu",
             **kwargs,
         )
         self.rerun_button["text"] = "Run Ebookmaker"
