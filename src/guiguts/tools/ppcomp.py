@@ -201,13 +201,17 @@ class PPcompCheckerDialog(CheckerDialog):
                     "Suppress Footnote Tags",
                     'Suppress "[Footnote #:" marks',
                 ),
+                PrefKey.PPCOMP_SUPPRESS_SIDENOTES: (
+                    "Suppress Sidenote Tags",
+                    'Suppress "[Sidenote:" marks',
+                ),
                 PrefKey.PPCOMP_SUPPRESS_ILLOS: (
                     "Suppress Illo Tags",
                     'Suppress "[Illustration:" marks',
                 ),
-                PrefKey.PPCOMP_SUPPRESS_SIDENOTES: (
-                    "Suppress Sidenote Tags",
-                    'Suppress "[Sidenote:" marks',
+                PrefKey.PPCOMP_SUPPRESS_ILLO_TEXT: (
+                    "Suppress Illo Text",
+                    'Suppress text inside "[Illustration:...]" marks',
                 ),
             }.items()
         ):
@@ -1231,12 +1235,27 @@ class PgdpFileText(PgdpFile):
             )
 
     def suppress_illustration_tags(self):
-        """Remove illustration tags"""
+        """Remove illustration tags.
+
+        Either suppress tags only, text only, or both.
+        """
+        illo_text_regex = r"\[Illustration?:([^]]*?)]"
+        empty_tag = "[Illustration]"
         if preferences.get(PrefKey.PPCOMP_SUPPRESS_ILLOS):
-            self.text = re.sub(
-                r"\[Illustration?:([^]]*?)]", r"\1", self.text, flags=re.MULTILINE
+            replacement = (
+                "" if preferences.get(PrefKey.PPCOMP_SUPPRESS_ILLO_TEXT) else r"\1"
             )
-            self.text = self.text.replace("[Illustration]", "")
+            # Suppress tag, or tag & text
+            self.text = re.sub(
+                illo_text_regex, replacement, self.text, flags=re.MULTILINE
+            )
+            # If no text, tag still needs suppressing
+            self.text = self.text.replace(empty_tag, "")
+        elif preferences.get(PrefKey.PPCOMP_SUPPRESS_ILLO_TEXT):
+            # Suppress text, leaving empty tag
+            self.text = re.sub(
+                illo_text_regex, empty_tag, self.text, flags=re.MULTILINE
+            )
 
     def suppress_sidenote_tags(self):
         """Remove sidenote tags"""

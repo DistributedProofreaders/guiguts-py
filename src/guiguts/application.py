@@ -797,6 +797,7 @@ class Guiguts:
         preferences.set_default(PrefKey.PPCOMP_EXTRACT_FOOTNOTES, False)
         preferences.set_default(PrefKey.PPCOMP_SUPPRESS_FOOTNOTES, False)
         preferences.set_default(PrefKey.PPCOMP_SUPPRESS_ILLOS, False)
+        preferences.set_default(PrefKey.PPCOMP_SUPPRESS_ILLO_TEXT, False)
         preferences.set_default(PrefKey.PPCOMP_SUPPRESS_SIDENOTES, False)
         preferences.set_default(PrefKey.PPCOMP_CSS_ADD_ILLOS, False)
         preferences.set_default(PrefKey.PPCOMP_CSS_ADD_SIDENOTES, False)
