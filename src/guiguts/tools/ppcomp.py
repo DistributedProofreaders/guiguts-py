@@ -2033,32 +2033,35 @@ class PPComp:
         In that case, we need to convert one into the other, to get a smaller diff.
         """
         character_checks = {
-            "’": "'",  # close curly single quote to straight
-            "‘": "'",  # open curly single quote to straight
-            "”": '"',  # close curly double quote to straight
-            "“": '"',  # open curly double quote to straight
-            "–": "-",  # en dash to hyphen
-            "—": "--",  # em dash to double hyphen
-            "⁄": "/",  # fraction slash
-            "′": "'",  # prime
-            "″": "''",  # double prime
-            "‴": "'''",  # triple prime
-            "½": "-1/2",
-            "¼": "-1/4",
-            "¾": "-3/4",
+            re.compile("’"): "'",  # close curly single quote to straight
+            re.compile("‘"): "'",  # open curly single quote to straight
+            re.compile("”"): '"',  # close curly double quote to straight
+            re.compile("“"): '"',  # open curly double quote to straight
+            re.compile("–"): "-",  # en dash to hyphen
+            re.compile("—"): "--",  # em dash to double hyphen
+            re.compile("⁄"): "/",  # fraction slash
+            re.compile("′"): "'",  # prime
+            re.compile("″"): "''",  # double prime
+            re.compile("‴"): "'''",  # triple prime
+            re.compile(r"(?<=\S)½"): "-1/2",  # 3½ --> 3-1/2
+            re.compile(r"(?<=\S)¼"): "-1/4",
+            re.compile(r"(?<=\S)¾"): "-3/4",
+            re.compile("½"): "1/2",  # remaining fractions don't need hyphen
+            re.compile("¼"): "1/4",
+            re.compile("¾"): "3/4",
         }
         for char_best, char_other in character_checks.items():
-            finds_0 = files[0].text.find(char_best)
-            finds_1 = files[1].text.find(char_best)
-            if finds_0 >= 0 and finds_1 >= 0:  # Both have it
+            finds_0 = char_best.search(files[0].text)
+            finds_1 = char_best.search(files[1].text)
+            if finds_0 is not None and finds_1 is not None:  # Both have it
                 continue
-            if finds_0 == -1 and finds_1 == -1:  # Neither has it
+            if finds_0 is None and finds_1 is None:  # Neither has it
                 continue
             # Downgrade one version
-            if finds_0 >= 0:
-                files[0].text = files[0].text.replace(char_best, char_other)
+            if finds_0 is not None:
+                files[0].text = char_best.sub(char_other, files[0].text)
             else:
-                files[1].text = files[1].text.replace(char_best, char_other)
+                files[1].text = char_best.sub(char_other, files[1].text)
         if files[0].footnotes and files[1].footnotes:
             for char_best, char_other in character_checks.items():
                 finds_0 = files[0].footnotes.find(char_best)
