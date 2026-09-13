@@ -1,6 +1,45 @@
 # Changelog
 
 
+## Version 2.1.4
+
+- New Alt Text Viewer extracts all alt text and displays it. Clicking on the
+  first line of the alt text jumps to the location in the HTML file. It is also
+  easy to smoothread the alt text, or copy it to another document to facilitate
+  spellchecking, WF checks, etc. 
+- For improved accessibility, HTML generation uses `<aside>` for footnotes at
+  the end of a paragraph, and wraps chapter/book endnotes in an appropriately
+  tagged `<section>`
+- For improved accessibility, the HTML Images dialog now allows an image to
+  be used as a decorative thought break, generating an `<hr>` element
+- For improved accessibility, `pagenum` spans now have `role="doc-pagebreak"`
+- Add more "2/3 letter scannos" to CP Filter, e.g. `T'm` for `I'm`
+- Footnote fixup now allows user to limit how many lines to search for the
+  anchor matching a footnote
+- Touchpad scrolling on Macs now works in line number gutter and is improved
+  in the scrollbar area
+- In ebookmaker dialog, it is now possible to select and copy a portion of the
+  ebookmaker output, e.g. a URL
+- PPcomp has a new option to suppress any text within `[Illustration:...]`
+  markup, to reduce diffs with some uses of HTML alt text 
+- PPhtml now detects macOS `.DS_Store` file and instructs user to remove it
+  from upload
+- Installation instructions have been updated to describe the new Python
+  Install Manager, and clarify which type of terminal window commands should be
+  typed in
+
+### Bug fixes
+
+- Three-word hyphenation combinations such as "Sunday-school teacher" were not
+  always found correctly during WF search
+- Adjust text selection using Shift+Home/End (Shift+Cmd+Left/Right on Macs)
+  behaved unpredictably
+- Unmatched Block Markup failed to detect customized markup, e.g. `/#[4]`
+- PPcomp generated an exception (on Windows/Linux) if `doctype` on the first
+  line of the HTML file was lowercase.
+- PPcomp erroneously reported a difference between `¾` and `3/4` 
+
+
 ## Version 2.1.3
 
 - PPcomp Expanded output is clearer for multi-line differences
