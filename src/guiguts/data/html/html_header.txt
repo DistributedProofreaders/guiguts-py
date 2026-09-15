@@ -90,10 +90,44 @@ li.isub4 {
 table {
     margin-left: auto;
     margin-right: auto;
+    border-collapse: collapse;
 }
-table.autotable    { border-collapse: collapse; }
-table.autotable td,
-table.autotable th { padding: 0.25em; }
+td, th { padding: 0.25em; }
+
+/* Classes to support ToC using list & flex */
+.toc-wrap {
+    max-width: 30em;
+    margin: 0 auto;
+    text-align: left;
+}
+.toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.toc-head {
+    font-weight: bold;
+    font-variant: small-caps;
+}
+.toc-entry {
+    display: flex;
+    line-height: 1.5;
+}
+.toc-num {
+    flex: 0 0 4em;
+    text-align: right;
+}
+.toc-title {
+    flex: 1 1 auto;
+    margin-left: 2em;
+    text-indent: -1em;
+}
+.toc-page {
+    flex: 0 0 5em;
+    margin-left: 1em;
+    text-align: right;
+    align-self: flex-end;
+}
 
 .tdl      {text-align: left;}
 .tdr      {text-align: right;}
