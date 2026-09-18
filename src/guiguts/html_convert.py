@@ -1528,17 +1528,12 @@ def html_convert_footnote_landing_zones() -> None:
 
         maintext().insert(lz_start, '<section class="footnotes" role="doc-endnotes">\n')
         # Footnotes within landing zone - use `<div>` element instead of `<aside>`
-        # Also don't want doc-footnote or epub:type="footnote"
         fn_start = lz_start
         while fn_start := maintext().search(
             '<aside class="footnote', f"{fn_start}+1l", lz_end, regexp=True
         ):
             line = maintext().get(fn_start, f"{fn_start} lineend")
-            line = (
-                line.replace("<aside", "<div")
-                .replace("</aside", "</div")
-                .replace(' role="doc-footnote" data-epub-type="footnote"', "")
-            )
+            line = line.replace("<aside", "<div").replace("</aside", "</div")
             maintext().replace(fn_start, f"{fn_start} lineend", line)
 
 
