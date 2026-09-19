@@ -727,11 +727,25 @@ def weird_characters_check() -> None:
 
     weirdos_lines_dictionary: Dict[str, list[int]] = {}
     weirdos_counts_dictionary: Dict[str, int] = {}
+    # List of chars that are not weird for common languages
+    weirdos_not_language: Dict[str, str] = {
+        "de": "äöüÄÖÜß",
+        "es": "áéíóúüñÁÉÍÓÚÜÑ",
+        "fr": "àâæçéèêëîïôœùûüÿÀÂÆÇÉÈÊËÎÏÔŒÙÛÜŸ",
+        "it": "àèéìîòóùÀÈÉÌÎÒÓÙ",
+        "nl": "ëï",
+        "pt": "áàâãçéêíóôõúüÁÀÂÃÇÉÊÍÓÔÕÚÜ",
+    }
+    lang_exceptions = ""
+    for lang in maintext().get_language_list():
+        if lang in weirdos_not_language:
+            lang_exceptions += weirdos_not_language[lang]
 
     # If no curly quotes in file, don't consider straight quotes to be weirdos
     straight_quotes = "\"'" if csq + cdq == 0 else ""
-    weirdo_regex = (
+    weirdo_regex = re.compile(
         r"[^A-Za-z0-9\s.,:;?!&\\\-_—–=“”‘’\[\]\(\){}¼½¾¹²³⁰⁴-⁹₀-₉⅐-⅞"
+        + lang_exceptions
         + straight_quotes
         + "]"
     )
@@ -743,7 +757,7 @@ def weird_characters_check() -> None:
         if non_text_line(line):
             continue
         # Get list of weirdos on this line. That means any character NOT in the regex.
-        weirdos_list = re.findall(weirdo_regex, line)
+        weirdos_list = weirdo_regex.findall(line)
         # Update dictionary with the weirdos from the line.
         for weirdo in weirdos_list:
             # Skip exceptions
@@ -775,7 +789,6 @@ def weird_characters_check() -> None:
             "[Book contains over 5 different Greek letters so not reporting them]", ""
         )
 
-    # If nothing in the dictioary, nothing to do!
     if len(weirdos_lines_dictionary) != 0:
         none_found = False
         for weirdo, line_list in weirdos_lines_dictionary.items():
@@ -808,11 +821,12 @@ def weird_characters_check() -> None:
                 if line_number == prev_line_number:
                     prev_line_number = line_number
                     continue
-                # Maybe limit the length of the report by reporting only first 5 lines for a word ...
-                if count == report_limit:
+                # Maybe limit the length of the report by reporting only first 5 lines for a char ...
+                # Note: Not affected by "verbose" setting - limit is always 5
+                if count == 5:
                     count = -1
                     break
-                # ... but note that a new dialog line is generated for each time the word appears
+                # ... but note that a new dialog line is generated for each time the char appears
                 # on the line so there may be more than 5 dialog lines output.
                 line = book[line_number - 1]
                 report_multiple_occurrences_on_line(regx, line, line_number)
