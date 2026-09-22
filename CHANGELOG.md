@@ -1,6 +1,27 @@
 # Changelog
 
 
+## Version 2.1.5
+
+- HTML for the automatically generated ToC now uses list and flex markup, with
+  commented out columns for chapter number and page to make it easier for PPers
+  to use this more accessible markup
+- When a table is selected to begin ASCII table work, any horizontal lines
+  consisting of `-`,`=`,`+`,`|` are cleared so that ASCII Tables features work
+- PPtext's report of uncommon characters does not report every occurrence, if
+  there are more than 5.
+- PPtext's report of uncommon characters excludes some common accented
+  characters used in German, Spanish, French, Italian, Dutch and Portuguese
+- Footnote markup now includes the "doc-footnote" role and "footnote"
+  `epub-type` for all footnotes
+
+### Bug fixes
+
+- Multi-line footnotes were converted to HTML incorrectly
+- Stealth scanno reported lowercase after period, even when the period was in
+  fact an ellipsis
+
+
 ## Version 2.1.4
 
 - New Alt Text Viewer extracts all alt text and displays it. Clicking on the
