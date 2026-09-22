@@ -704,6 +704,12 @@ class ASCIITableDialog(ToplevelDialog):
             tblend,
             gravity=tk.RIGHT,
         )
+        # Replace any horizontal border lines with blank lines
+        for row in range(tblstart.row, tblend.row + 1):
+            line = maintext().get(f"{row}.0", f"{row}.end").strip()
+            if re.fullmatch(r"[-=+|]+", line):
+                maintext().delete(f"{row}.0", f"{row}.end")
+
         # The 'sel' tag has priority so its highlighting remains even if we add the
         # table body tag highlighting. To have our table body tag highlight the whole
         # of the selection (i.e. our table), clear selection first.
