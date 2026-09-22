@@ -1731,7 +1731,7 @@ class CheckerDialog(ToplevelDialog):
         self.selected_text = entry.text
         self.selected_text_range = entry.text_range
         maintext().remove_spotlights()
-        if entry.text_range is not None:
+        if entry.text_range is not None and entry.text_range.start.row >= 0:
             if root().state() == "iconic":
                 root().deiconify()
             start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
@@ -1753,7 +1753,7 @@ class CheckerDialog(ToplevelDialog):
             return
         start = maintext().index(self.mark_from_rowcol(entry.text_range.start))
         end = maintext().index(self.mark_from_rowcol(entry.text_range.end))
-        if entry.text_range is not None:
+        if entry.text_range is not None and entry.text_range.start.row >= 0:
             maintext().set_insert_index(
                 IndexRowCol(start),
                 focus=(focus and self.switch_focus_when_clicked),
