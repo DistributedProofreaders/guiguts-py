@@ -1560,7 +1560,15 @@ def html_convert_footnote_landing_zones() -> None:
             '<aside class="footnote', f"{fn_start}+1l", lz_end, regexp=True
         ):
             line = maintext().get(fn_start, f"{fn_start} lineend")
-            line = line.replace("<aside", "<div").replace("</aside", "</div")
+            line = line.replace("<aside", "<div")
+            maintext().replace(fn_start, f"{fn_start} lineend", line)
+        # Now change closing `</aside` to `</div`
+        fn_start = lz_start
+        while fn_start := maintext().search(
+            "</aside", f"{fn_start}+1l", lz_end, regexp=True
+        ):
+            line = maintext().get(fn_start, f"{fn_start} lineend")
+            line = line.replace("</aside", "</div")
             maintext().replace(fn_start, f"{fn_start} lineend", line)
 
 
