@@ -441,6 +441,22 @@ class ASCIITableDialog(ToplevelDialog):
         cpl2g_btn.grid(row=1, column=0, pady=(5, 0))
         ToolTip(cpl2g_btn, "Convert table from one-cell-per-line to grid format")
 
+        # "Horizontal Borders" Frame
+        borders_frame = ttk.LabelFrame(
+            self.top_frame, text="Horizontal Borders", padding=5
+        )
+        borders_frame.grid(row=6, column=0)
+        borders_checkbox = ttk.Checkbutton(
+            borders_frame,
+            text="Add Horizontal Borders on Deselection",
+            variable=PersistentBoolean(PrefKey.ASCII_TABLE_HORIZONTAL_BORDERS),
+        )
+        borders_checkbox.grid(row=0, column=0)
+        ToolTip(
+            borders_checkbox,
+            "Add horizontal borders at blank lines when table is deselected or dialog closed",
+        )
+
         # Since focus remains in dialog when buttons are pressed, bind undo/redo
         # keys to dialog so they work when the user wants to undo the previous operation
         self.key_bind("Cmd/Ctrl+Z", lambda: maintext().event_generate("<<Undo>>"))
@@ -718,8 +734,27 @@ class ASCIITableDialog(ToplevelDialog):
         self.refresh_table_display()
 
     def table_deselect(self) -> None:
-        """Remove tags and marks added by do_table_select()."""
+        """Remove tags and marks added by do_table_select().
+        Optionally add horizontal borders."""
         maintext().undo_block_begin()
+
+        # Add horizontal borders at all blank lines if wanted
+        # Replace all `|` from previous line with `+, and other chars with `-`
+        # `| cell 1 | cell 2 |` -> `+--------+--------+`
+        if (
+            preferences.get(PrefKey.ASCII_TABLE_HORIZONTAL_BORDERS)
+            and self.start_mark_name in maintext().mark_names()
+        ):
+            blank_idx = maintext().index(f"{self.start_mark_name}-1l")
+            while blank_idx := maintext().search(
+                "\n\n", blank_idx, self.end_mark_name, regexp=True
+            ):
+                prev_line = maintext().get(
+                    f"{blank_idx} linestart", f"{blank_idx} lineend"
+                )
+                border_line = "".join("+" if c == "|" else "-" for c in prev_line)
+                maintext().insert(f"{blank_idx} +1l", border_line)
+
         mark = "1.0"
         # Delete all marks we set.
         while mark_next := maintext().mark_next(mark):
