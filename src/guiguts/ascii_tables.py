@@ -143,6 +143,8 @@ class ASCIITableDialog(ToplevelDialog):
         self.end_mark_name = ASCIITableDialog.get_dlg_name() + "End"
 
         self.selected_column = -1
+        self.first_row_border = False
+        self.last_row_border = False
 
         center_frame = ttk.Frame(
             self.top_frame, borderwidth=1, relief=tk.GROOVE, padding=5
@@ -721,10 +723,14 @@ class ASCIITableDialog(ToplevelDialog):
             gravity=tk.RIGHT,
         )
         # Replace any horizontal border lines with blank lines
-        for row in range(tblstart.row, tblend.row + 1):
+        for row in range(tblstart.row, tblend.row):
             line = maintext().get(f"{row}.0", f"{row}.end").strip()
             if re.fullmatch(r"[-=+|]+", line):
                 maintext().delete(f"{row}.0", f"{row}.end")
+                if row == tblstart.row:
+                    self.first_row_border = True  # We cleared the first row
+                if row == tblend.row - 1:
+                    self.last_row_border = True  # We cleared the last row
 
         # The 'sel' tag has priority so its highlighting remains even if we add the
         # table body tag highlighting. To have our table body tag highlight the whole
@@ -738,22 +744,41 @@ class ASCIITableDialog(ToplevelDialog):
         Optionally add horizontal borders."""
         maintext().undo_block_begin()
 
-        # Add horizontal borders at all blank lines if wanted
+        # Add horizontal borders at all "blank" lines if wanted
+        # Note "blank" includes "|   |    |     |" lines
         # Replace all `|` from previous line with `+, and other chars with `-`
         # `| cell 1 | cell 2 |` -> `+--------+--------+`
+        # For first line of table, use next line as reference, not previous
         if (
             preferences.get(PrefKey.ASCII_TABLE_HORIZONTAL_BORDERS)
             and self.start_mark_name in maintext().mark_names()
         ):
-            blank_idx = maintext().index(f"{self.start_mark_name}-1l")
-            while blank_idx := maintext().search(
-                "\n\n", blank_idx, self.end_mark_name, regexp=True
-            ):
-                prev_line = maintext().get(
-                    f"{blank_idx} linestart", f"{blank_idx} lineend"
-                )
-                border_line = "".join("+" if c == "|" else "-" for c in prev_line)
-                maintext().insert(f"{blank_idx} +1l", border_line)
+            startrow = maintext().rowcol(self.start_mark_name).row
+            endrow = maintext().rowcol(self.end_mark_name).row
+            for row in range(startrow, endrow):
+                line = maintext().get(f"{row}.0", f"{row}.end").strip()
+                if re.fullmatch(r"[ |]*", line):
+                    if row == startrow:
+                        # Don't look before first line of table
+                        ref_line = maintext().get(f"{row + 1}.0", f"{row + 1}.end")
+                        self.first_row_border = False  # We added the first row
+                    else:
+                        ref_line = maintext().get(f"{row - 1}.0", f"{row - 1}.end")
+                    if row == endrow - 1:
+                        self.last_row_border = False  # We added the last row
+                    border_line = "".join("+" if c == "|" else "-" for c in ref_line)
+                    maintext().replace(f"{row}.0", f"{row}.end", border_line)
+            # Check if first/last rows still need doing
+            if self.last_row_border:
+                ref_line = maintext().get(f"{endrow - 1}.0", f"{endrow - 1}.end")
+                border_line = "".join("+" if c == "|" else "-" for c in ref_line)
+                maintext().insert(f"{endrow}.0", f"{border_line}\n")
+            if self.first_row_border:
+                ref_line = maintext().get(f"{startrow}.0", f"{startrow}.end")
+                border_line = "".join("+" if c == "|" else "-" for c in ref_line)
+                maintext().insert(f"{startrow}.0", f"{border_line}\n")
+            self.first_row_border = False
+            self.last_row_border = False
 
         mark = "1.0"
         # Delete all marks we set.
