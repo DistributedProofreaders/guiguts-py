@@ -1,8 +1,8 @@
 """
-As far as possible, this file remains the same as ppcomp.py as used by the PP Workbench in
+Initially, this file remained similar to ppcomp.py as used by the PP Workbench in
 January 2026 (https://github.com/DistributedProofreaders/ppcomp/blob/master/ppcomp/ppcomp.py).
-Thus there are unused sections of code. The purpose is to make it easier to port any later
-changes between the two versions.
+Thus there were unused sections of code. These have now been tidied up. Look back at previous
+versions if a more similar version is required.
 
 ppcomp.py - compare text from 2 files, ignoring html and formatting differences, for use by users
 of Distributed Proofreaders (https://www.pgdp.net)
@@ -32,18 +32,16 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
-import argparse
 import copy
+from collections.abc import Iterator
 from dataclasses import dataclass
 import difflib
 from enum import StrEnum, auto
 import logging
 import os
-import subprocess
-import tempfile
 import tkinter as tk
 from tkinter import ttk, font, messagebox
-from typing import Optional, Any, cast
+from typing import Optional, Any, cast, TypedDict, Callable
 import warnings
 
 import cssselect
@@ -89,7 +87,7 @@ class PPcompDisplayType(StrEnum):
 class HTMLSyntaxError(SyntaxError):
     """Exception for when HTML file fails to parse."""
 
-    def __init__(self, errors):
+    def __init__(self, errors: list[Any]):
         super().__init__("Failed to parse HTML file")
         self.parse_errors = errors
 
@@ -324,7 +322,7 @@ class PPcompCheckerDialog(CheckerDialog):
         text.grid(row=0, column=0, sticky="NSEW")
         text.insert(tk.END, preferences.get(PrefKey.PPCOMP_CSS_CUSTOM_VALUE))
 
-        def on_text_focus_out(event: tk.Event):
+        def on_text_focus_out(event: tk.Event) -> None:
             widget = cast(tk.Text, event.widget)
             contents = widget.get("1.0", "end-1c")
             preferences.set(PrefKey.PPCOMP_CSS_CUSTOM_VALUE, contents)
@@ -466,7 +464,6 @@ class PPcompChecker:
             lift_and_unbusy()
             return
 
-        empty_args: list[str] = []
         PPcompChecker.files = []
         cur_fname = the_file().filename
         fnames: list[str] = [
@@ -502,9 +499,9 @@ class PPcompChecker:
                     lift_and_unbusy()
                     return
             if os.path.splitext(fname)[1].lower() in (".htm", ".html", ".xhtml"):
-                PPcompChecker.files.append(PgdpFileHtml(empty_args))
+                PPcompChecker.files.append(PgdpFileHtml())
             else:
-                PPcompChecker.files.append(PgdpFileText(empty_args))
+                PPcompChecker.files.append(PgdpFileText())
 
         for idx, fname in enumerate(fnames):
             try:
@@ -549,7 +546,7 @@ class PPcompChecker:
         for f in PPcompChecker.files:
             f.cleanup()
             # perform common cleanup for both files
-            PPComp.check_characters(PPcompChecker.files)
+            check_characters(PPcompChecker.files)
 
         self.dialog.reset()
         self.dialog.update_count_label(working=True)
@@ -627,7 +624,9 @@ def token_span_to_lines(
     return min(lines) + offset, max(lines) + offset
 
 
-def aligned_tokens(tok_list_a: list[Token], tok_list_b: list[Token]):
+def aligned_tokens(
+    tok_list_a: list[Token], tok_list_b: list[Token]
+) -> Iterator[tuple[Optional[Token], Optional[Token]]]:
     """Check type of change and yield tokens."""
     sm = difflib.SequenceMatcher(
         a=[t.text for t in tok_list_a], b=[t.text for t in tok_list_b], autojunk=False
@@ -655,7 +654,17 @@ def aligned_tokens(tok_list_a: list[Token], tok_list_b: list[Token]):
                 yield None, tok_list_b[k]
 
 
-def aligned_words_with_lines(a_text, b_text):
+class AlignedWord(TypedDict):
+    """Class to hold data about word."""
+
+    a_word: str
+    a_line: int | None
+    b_word: str
+    b_line: int | None
+    changed: bool
+
+
+def aligned_words_with_lines(a_text: str, b_text: str) -> Iterator[AlignedWord]:
     """Yield matched tokens and their line numbers."""
     tok_list_a = tokenize_with_lines(a_text)
     tok_list_b = tokenize_with_lines(b_text)
@@ -719,7 +728,7 @@ def render_marked_diff(
         preferences.get(PrefKey.PPCOMP_DISPLAY_TYPE) == PPcompDisplayType.EXPANDED
     )
 
-    def flush_changes():
+    def flush_changes() -> None:
         if old_buf:
             cur_line.append(f"{FLAG_CH_1_L}{join_tokens(old_buf)}{FLAG_CH_1_R}")
             old_buf.clear()
@@ -942,44 +951,8 @@ DEFAULT_TRANSFORM_CSS = """
   sup { text-transform:superscript; }
   sub { text-transform:subscript; }
 """
-# CSS used to display the diffs
-DIFF_CSS = """
-body {
-  margin-left: 5%;
-  margin-right: 5%;
-}
-ins, del {
-  text-decoration: none;
-  border: 1px solid black;
-  background-color: whitesmoke;
-  font-size: larger;
-}
-ins, .second { color: green; }
-del, .first { color: purple; }
-.lineno { margin-right: 1em; }
-.bbox {
-  margin-left: auto;
-  margin-right: auto;
-  border: 1px dashed;
-  padding: 0 1em;
-  background-color: lightcyan;
-  width: 90%;
-  max-width: 50em;
-}
-h1, .center { text-align: center; }
-/* Use a CSS counter to number each diff. */
-body { counter-reset: diff; } /* set diff counter to 0 */
-hr::before {
-  counter-increment: diff; /* inc the diff counter ... */
-  content: "Diff " counter(diff) ": "; /* ... and display it */
-}
-.error-border {
-  border-style: double;
-  border-color: red;
-  border-width: 15px;
-}
-"""
-"""Note that 'º' and 'ª' are ordinals, assume they would be entered as-is, not superscript"""
+
+# Note that 'º' and 'ª' are ordinals, assume they would be entered as-is, not superscript
 SUPERSCRIPTS = {
     "0": "⁰",
     "1": "¹",
@@ -1068,10 +1041,8 @@ SUBSCRIPTS = {
     "x": "ₓ",
 }
 
-# mypy: disallow-untyped-defs=False
 
-
-def to_superscript(text):
+def to_superscript(text: str) -> str:
     """Convert to unicode superscripts"""
     result = ""
     for char in text:
@@ -1082,7 +1053,7 @@ def to_superscript(text):
     return result
 
 
-def to_subscript(text):
+def to_subscript(text: str) -> str:
     """Convert to unicode subscripts"""
     result = ""
     for char in text:
@@ -1096,16 +1067,15 @@ def to_subscript(text):
 class PgdpFile:
     """Base class: Store and process a DP text or html file"""
 
-    def __init__(self, args):
-        self.args = args
+    def __init__(self) -> None:
         self.basename = ""
         self.text = ""  # file text
-        self.lines = []  # split into lines
+        self.lines: list[str] = []  # split into lines
         # line text started, before stripping boilerplate and/or head
         self.start_line = 0
         self.footnotes = ""  # footnotes text, if extracted
 
-    def load(self, filename):
+    def load(self, filename: str) -> None:
         """Load a file (text or html)
         Args:
             filename: file pathname
@@ -1133,11 +1103,11 @@ class PgdpFile:
             raise SyntaxError("File is too short: " + filename)
         self.lines = self.text.splitlines()
 
-    def strip_pg_boilerplate(self):
+    def strip_pg_boilerplate(self) -> None:
         """Remove the PG header and footer from the text if present."""
         raise NotImplementedError("Override this method")
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Remove tags from the file"""
         raise NotImplementedError("Override this method")
 
@@ -1145,19 +1115,19 @@ class PgdpFile:
 class PgdpFileText(PgdpFile):
     """Store and process a DP text file"""
 
-    def __init__(self, args):
-        super().__init__(args)
+    def __init__(self) -> None:
+        super().__init__()
         self.from_pgdp_rounds = False  # THIS file is from proofing rounds
 
-    def load(self, filename):
+    def load(self, filename: str) -> None:
         """Load the file"""
         if not filename.lower().endswith(".txt"):
             raise SyntaxError("Not a text file: " + filename)
         super().load(filename)
 
-    def strip_pg_boilerplate(self):
+    def strip_pg_boilerplate(self) -> None:
         """Remove the PG header and footer from the text if present."""
-        new_text = []
+        new_text: list[str] = []
         start_found = False
         for lineno, line in enumerate(self.text.splitlines(), start=1):
             # Find the markers. Unfortunately PG lacks consistency
@@ -1173,17 +1143,17 @@ class PgdpFileText(PgdpFile):
                 new_text.append(line)
         self.text = "\n".join(new_text)
 
-    def remove_paging(self):
+    def remove_paging(self) -> None:
         """Remove page markers & blank pages"""
         self.text = re.sub(r"-----File: \w+.png.*", "", self.text)
         self.text = self.text.replace("[Blank Page]", "")
 
-    def remove_block_markup(self):
+    def remove_block_markup(self) -> None:
         """Remove block markup"""
         for markup in ["/*", "*/", "/#", "#/", "/P", "P/", "/F", "F/", "/X", "X/"]:
             self.text = self.text.replace("\n" + markup + "\n", "\n\n")
 
-    def remove_formatting(self):
+    def remove_formatting(self) -> None:
         """Ignore or replace italics and bold tags in file from rounds"""
         if preferences.get(PrefKey.PPCOMP_ROUNDS_FORMAT):
             for tag in ["<i>", "</i>", "<b>", "</b>"]:
@@ -1196,12 +1166,12 @@ class PgdpFileText(PgdpFile):
         # remove other markup
         self.text = re.sub("<.*?>", "", self.text)
 
-    def suppress_proofers_notes(self):
+    def suppress_proofers_notes(self) -> None:
         """suppress proofers notes in file from rounds"""
         if preferences.get(PrefKey.PPCOMP_ROUNDS_PROOFERS):
             self.text = re.sub(r"\[\*\*[^]]*?]", "", self.text)
 
-    def regroup_split_words(self):
+    def regroup_split_words(self) -> None:
         """Regroup split words, must run remove page markers 1st"""
         if preferences.get(PrefKey.PPCOMP_ROUNDS_REGROUP):
             word_splits = {
@@ -1211,17 +1181,17 @@ class PgdpFileText(PgdpFile):
             for key, value in word_splits.items():
                 self.text = re.sub(key, value, self.text)
 
-    def ignore_format(self):
+    def ignore_format(self) -> None:
         """Remove italics and bold markers in proofed file"""
         if preferences.get(PrefKey.PPCOMP_ROUNDS_FORMAT):
             self.text = re.sub(r"_((.|\n)+?)_", r"\1", self.text)
             self.text = re.sub(r"=((.|\n)+?)=", r"\1", self.text)
 
-    def remove_thought_breaks(self):
+    def remove_thought_breaks(self) -> None:
         """Remove thought breaks (4 or more spaced asterisks or dots)"""
         self.text = re.sub(r"\n(?:[ \t]+[*•]){4,}", "\n", self.text)
 
-    def suppress_footnote_tags(self):
+    def suppress_footnote_tags(self) -> None:
         """Remove footnote tags"""
         if preferences.get(PrefKey.PPCOMP_SUPPRESS_FOOTNOTES):
             self.text = re.sub(
@@ -1234,7 +1204,7 @@ class PgdpFileText(PgdpFile):
                 r"\*\[Footnote:\s([^]]*?)]", r"\1", self.text, flags=re.MULTILINE
             )
 
-    def suppress_illustration_tags(self):
+    def suppress_illustration_tags(self) -> None:
         """Remove illustration tags.
 
         Either suppress tags only, text only, or both.
@@ -1257,7 +1227,7 @@ class PgdpFileText(PgdpFile):
                 illo_text_regex, empty_tag, self.text, flags=re.MULTILINE
             )
 
-    def suppress_sidenote_tags(self):
+    def suppress_sidenote_tags(self) -> None:
         """Remove sidenote tags"""
         if preferences.get(PrefKey.PPCOMP_SUPPRESS_SIDENOTES):
             self.text = re.sub(
@@ -1265,34 +1235,30 @@ class PgdpFileText(PgdpFile):
             )
 
     @staticmethod
-    def match_to_superscript(match):
+    def match_to_superscript(match: re.Match) -> str:
         """Convert regex match to subscript"""
         return to_superscript(match.group(1))
 
-    def superscripts(self):
+    def superscripts(self) -> None:
         """Convert ^{} tagged text"""
         self.text = re.sub(
             r"\^{?([\w\d]+)}?", PgdpFileText.match_to_superscript, self.text
         )
 
     @staticmethod
-    def match_to_subscript(match):
+    def match_to_subscript(match: re.Match) -> str:
         """Convert regex match to subscript"""
         return to_subscript(match.group(1))
 
-    def subscripts(self):
+    def subscripts(self) -> None:
         """Convert _{} tagged text"""
         self.text = re.sub(r"_{([\w\d]+)}", PgdpFileText.match_to_subscript, self.text)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Perform cleanup for this type of file"""
         if self.from_pgdp_rounds:
-            # if self.args.txt_cleanup_type == "n":  # none
-            #     return
             # remove page markers & blank pages
             self.remove_paging()
-            # if self.args.txt_cleanup_type == "p":  # proofers, all done
-            #     return
             # else 'b' best effort
             self.remove_block_markup()
             self.remove_formatting()
@@ -1325,7 +1291,7 @@ class PgdpFileText(PgdpFile):
         self.superscripts()
         self.subscripts()
 
-    def extract_footnotes_pgdp(self):
+    def extract_footnotes_pgdp(self) -> None:
         """Extract the footnotes from an F round text file
         Start with [Footnote #: and finish with ] at the end of a line
         """
@@ -1353,7 +1319,7 @@ class PgdpFileText(PgdpFile):
         self.text = "\n".join(text)  # Rebuild text, now without footnotes
         self.footnotes = "\n".join(footnotes)
 
-    def extract_footnotes_pp(self):
+    def extract_footnotes_pp(self) -> int:
         """Extract footnotes from a PP text file. Text is iterable. Updates the text without the
         footnotes, and adds the footnotes to the footnotes string. Empty lines are added to
         maintain the line numbers. regexes is a list of (regex, fn_type) that identify the
@@ -1383,6 +1349,7 @@ class PgdpFileText(PgdpFile):
         footnotes, new_text = [], []
         current_block = None
 
+        new_block: Optional[list[Any]]
         for new_block, empty_lines in self.get_block():
             next_fn_type = 0
             if new_block:
@@ -1393,6 +1360,7 @@ class PgdpFileText(PgdpFile):
                     new_block[0] = matches.group(2)  # remove footnote tag
 
             if current_fn_type:  # in current footnote?
+                assert current_block is not None
                 if next_fn_type:
                     # New block is footnote, so it ends the previous footnote
                     footnotes += current_block + [""]
@@ -1432,11 +1400,11 @@ class PgdpFileText(PgdpFile):
 
         return footnote_count
 
-    def get_block(self):
+    def get_block(self) -> Iterator[tuple[list[Any], int]]:
         """Generator to get a block of text, followed by the number of empty lines."""
         text_lines = self.text.splitlines()
         empty_lines = 0
-        block = []
+        block: list[str] = []
         for line in text_lines:
             if len(line):
                 if empty_lines:  # one or more empty lines will stop a block
@@ -1452,12 +1420,12 @@ class PgdpFileText(PgdpFile):
 class PgdpFileHtml(PgdpFile):
     """Store and process a DP html file."""
 
-    def __init__(self, args):
-        super().__init__(args)
-        self.tree = None
+    def __init__(self) -> None:
+        super().__init__()
+        self.tree: Optional[etree._ElementTree] = None
         self.mycss = ""
 
-    def parse_html5(self):
+    def parse_html5(self) -> tuple[etree._ElementTree, list]:
         """Parse an HTML5 doc"""
         # don't include namespace in elements
         myparser = html5parser.HTMLParser(namespaceHTMLElements=False)
@@ -1466,7 +1434,7 @@ class PgdpFileHtml(PgdpFile):
         tree = html5parser.document_fromstring(self.text, parser=myparser)
         return tree.getroottree(), myparser.errors
 
-    def parse_html(self):
+    def parse_html(self) -> tuple[etree._ElementTree, list]:
         """Parse a non-HTML5 doc"""
         myparser = etree.HTMLParser()
         tree = etree.fromstring(self.text, parser=myparser)
@@ -1477,7 +1445,7 @@ class PgdpFileHtml(PgdpFile):
         ]  # windymilla edited
         return tree.getroottree(), errors
 
-    def load(self, filename):
+    def load(self, filename: str) -> None:
         """Load the file. If parsing succeeded, then self.tree is set, and parser.errors is []"""
         if not filename.lower().endswith((".html", ".htm", ".xhtml")):
             raise SyntaxError("Not an html file: " + filename)
@@ -1505,9 +1473,11 @@ class PgdpFileHtml(PgdpFile):
         # remove the head - we only want the body
         head = self.tree.find("head")
         if head is not None:
-            head.getparent().remove(head)
+            parent = head.getparent()
+            if parent is not None:
+                parent.remove(head)
 
-    def strip_pg_boilerplate(self):
+    def strip_pg_boilerplate(self) -> None:
         """Remove the PG header and footer from the text if present."""
         if -1 == self.text.find(PG_EBOOK_START):
             return
@@ -1515,7 +1485,10 @@ class PgdpFileHtml(PgdpFile):
         # end: from <div>*** END OF THE ...</div> to </body
         start_found = False
         end_found = False
-        for node in self.tree.find("body").iter():
+        assert self.tree is not None
+        body = self.tree.find("body")
+        assert body is not None
+        for node in body.iter():
             # Edited to handle new and old PG headers in HTML
             # New is in "div"; old in "pre" and not at start of pre text
             if node.tag in ("div", "pre") and node.text:
@@ -1534,7 +1507,7 @@ class PgdpFileHtml(PgdpFile):
                 self.start_line = lineno + 1
                 break
 
-    def css_smallcaps(self):
+    def css_smallcaps(self) -> None:
         """Transform small caps"""
         transforms = {"U": "uppercase", "L": "lowercase", "T": "capitalize"}
         # PPWB only has option for uppercase
@@ -1542,12 +1515,12 @@ class PgdpFileHtml(PgdpFile):
         if smcap_type in transforms:
             self.mycss += f".smcap {{ text-transform:{transforms[smcap_type]}; }}"
 
-    def css_bold(self):
+    def css_bold(self) -> None:
         """Surround bold strings with this string"""
         bold_str = "="  # PPWB has no checkbox to change this
         self.mycss += 'b::before, b::after { content: "' + bold_str + '"; }'
 
-    def css_illustration(self):
+    def css_illustration(self) -> None:
         """Add [Illustration: ...] markup"""
         if preferences.get(PrefKey.PPCOMP_CSS_ADD_ILLOS):
             for figclass in ["figcenter", "figleft", "figright"]:
@@ -1556,42 +1529,35 @@ class PgdpFileHtml(PgdpFile):
                 )
                 self.mycss += "." + figclass + '::after { content: "]"; }'
 
-    def css_sidenote(self):
+    def css_sidenote(self) -> None:
         """Add [Sidenote: ...] markup"""
         if preferences.get(PrefKey.PPCOMP_CSS_ADD_SIDENOTES):
             self.mycss += '.sidenote::before { content: "[Sidenote: "; }'
             self.mycss += '.sidenote::after { content: "]"; }'
 
-    def css_greek_title_plus(self):
-        """Greek: if there is a title, use it to replace the (grc=ancient) Greek."""
-        # if preferences.get(PrefKey.PPCOMP_CSS_GREEK_TITLE):
-        #     self.mycss += '*[lang=grc] { content: "+" attr(title) "+"; }'
-
-    def css_custom_css(self):
-        """--css can be present multiple times, so it's a list"""
+    def css_custom_css(self) -> None:
+        """Add custom CSS from dialog."""
         if not preferences.get(PrefKey.PPCOMP_CSS_CUSTOM):
             return
-        custom = [preferences.get(PrefKey.PPCOMP_CSS_CUSTOM_VALUE)]
-        for css in custom:
-            self.mycss += css
+        self.mycss += preferences.get(PrefKey.PPCOMP_CSS_CUSTOM_VALUE)
 
-    def remove_nbspaces(self):
+    def remove_nbspaces(self) -> None:
         """Remove non-breakable spaces between numbers. For instance, a
         text file could have 250000, and the html could have 250 000.
         """
         if preferences.get(PrefKey.PPCOMP_SUPPRESS_NBSP):
             self.text = re.sub(r"(\d)\u00A0(\d)", r"\1\2", self.text)
 
-    def remove_wordjoin(self):
+    def remove_wordjoin(self) -> None:
         """Remove word join (NoBreak) (U+2060)."""
         if preferences.get(PrefKey.PPCOMP_SUPPRESS_WJ):
             self.text = re.sub(r"\u2060", r"", self.text)
 
-    def remove_soft_hyphen(self):
+    def remove_soft_hyphen(self) -> None:
         """Suppress shy (soft hyphen)"""
         self.text = re.sub(r"\u00AD", r"", self.text)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Perform cleanup for this type of file - build up a list of CSS transform rules,
         process them against tree, then convert to text.
         """
@@ -1609,6 +1575,7 @@ class PgdpFileHtml(PgdpFile):
         self.extract_footnotes()
 
         # Transform html into text for character search.
+        assert self.tree is not None
         self.text = etree.XPath("string(/)")(self.tree)
 
         self.remove_nbspaces()
@@ -1616,7 +1583,7 @@ class PgdpFileHtml(PgdpFile):
         self.remove_wordjoin()
 
     @staticmethod
-    def _text_transform(val, errors: list):
+    def _text_transform(val: Any, errors: list) -> Optional[Callable[[Any], Any]]:
         """Transform smcaps"""
         if len(val.value) != 1:
             errors += [(val.line, val.column, val.name + " takes 1 argument")]
@@ -1643,7 +1610,7 @@ class PgdpFileHtml(PgdpFile):
         return None
 
     @staticmethod
-    def _text_replace(val, errors: list):
+    def _text_replace(val: Any, errors: list) -> Optional[Callable[[Any], Any]]:
         """Skip S (spaces) tokens"""
         values = [v for v in val.value if v.type != "S"]
         if len(values) != 2:
@@ -1652,7 +1619,7 @@ class PgdpFileHtml(PgdpFile):
         return lambda x: x.replace(values[0].value, values[1].value)
 
     @staticmethod
-    def _text_move(val, errors: list):
+    def _text_move(val: Any, errors: list) -> Optional[list]:
         """Move a node"""
         values = [v for v in val.value if v.type != "S"]
         if len(values) < 1:
@@ -1675,7 +1642,7 @@ class PgdpFileHtml(PgdpFile):
                 return None
         return f_move
 
-    def process_css(self):
+    def process_css(self) -> str:
         """Process each rule from our transformation CSS"""
         # tinycss is not maintained, so needs warnings filtering
         warnings.filterwarnings(
@@ -1684,9 +1651,9 @@ class PgdpFileHtml(PgdpFile):
         import tinycss  # type: ignore[import-untyped] # pylint: disable=import-outside-toplevel
 
         stylesheet = tinycss.make_parser().parse_stylesheet(self.mycss)
-        property_errors = []
+        property_errors: list[Any] = []
 
-        def _move_element(elem, move_list):
+        def _move_element(elem: etree._Element, move_list: list) -> None:
             """Move elem in tree"""
             parent = elem.getparent()
             new = elem
@@ -1697,14 +1664,15 @@ class PgdpFileHtml(PgdpFile):
                 sibling = elem.getprevious()
                 if sibling:
                     sibling.tail = (sibling.tail or "") + elem.tail
-                else:
+                elif parent:
                     parent.text = (parent.text or "") + elem.tail
                 elem.tail = None
             # prune and graft
+            assert parent is not None
             parent.remove(elem)
             new.append(elem)
 
-        def _process_element(elem, val):
+        def _process_element(elem: etree._Element, val: Any) -> None:
             """replace text with content of an attribute."""
             if val.name == "content":
                 v_content = self.new_content(elem, val)
@@ -1728,7 +1696,7 @@ class PgdpFileHtml(PgdpFile):
             f_transform = None
             f_replace_with_attr = None
             f_element_func = None
-            f_move = []
+            f_move: list[Any] = []
 
             for value in rule.declarations:
                 if value.name == "content":
@@ -1740,7 +1708,7 @@ class PgdpFileHtml(PgdpFile):
                 elif value.name == "_replace_with_attr":
                     attr_name = value.value[0].value
 
-                    def _replace(elem, attr=attr_name):
+                    def _replace(elem: etree._Element, attr: Any = attr_name) -> Any:
                         return elem.attrib[attr]
 
                     f_replace_with_attr = _replace
@@ -1749,7 +1717,9 @@ class PgdpFileHtml(PgdpFile):
                     # support display none only. So ignore "none" argument
                     f_element_func = PgdpFileHtml.clear_element
                 elif value.name == "_graft":
-                    f_move = self._text_move(value, property_errors)
+                    move = self._text_move(value, property_errors)
+                    assert move is not None
+                    f_move = move
                 else:
                     property_errors += [
                         (value.line, value.column, "Unsupported property " + value.name)
@@ -1761,12 +1731,13 @@ class PgdpFileHtml(PgdpFile):
                     xpath = cssselect.HTMLTranslator().selector_to_xpath(selector)
                     find = etree.XPath(xpath)
                     # find each matching elem in the HTML document
+                    assert self.tree is not None
                     for element in find(self.tree):
                         _process_element(element, value)
 
         return self.css_errors(stylesheet.errors, property_errors)
 
-    def css_errors(self, stylesheet_errors, property_errors):
+    def css_errors(self, stylesheet_errors: list, property_errors: list) -> str:
         """Collect transformation CSS errors"""
         css_errors = ""
         if stylesheet_errors or property_errors:
@@ -1786,10 +1757,10 @@ class PgdpFileHtml(PgdpFile):
         return css_errors
 
     @staticmethod
-    def new_content(elem, val):
+    def new_content(elem: etree._Element, val: Any) -> str:
         """Process the "content:" property"""
 
-        def _escaped_unicode(element):
+        def _escaped_unicode(element: re.Match) -> str:
             try:
                 return bytes(element.group(0), "utf8").decode("unicode-escape")
             except UnicodeDecodeError:
@@ -1805,11 +1776,12 @@ class PgdpFileHtml(PgdpFile):
                     result += elem.attrib.get(token.content[0].value, "")
             elif token.type == "IDENT":
                 if token.value == "content":  # identity, e.g. { content: content }
+                    assert elem.text is not None
                     result += elem.text
         return result
 
     @staticmethod
-    def text_apply(tree_elem, func):
+    def text_apply(tree_elem: etree._Element, func: Callable[[Any], Any]) -> None:
         """Apply a function to every sub-element's .text and .tail, and element's .text"""
         if tree_elem.text:
             tree_elem.text = func(tree_elem.text)
@@ -1822,16 +1794,16 @@ class PgdpFileHtml(PgdpFile):
                 sub.tail = func(sub.tail)
 
     @staticmethod
-    def clear_element(element):
+    def clear_element(element: etree._Element) -> None:
         """In an XHTML tree, remove all sub-elements of a given element"""
         tail = element.tail
         element.clear()
         element.tail = tail
 
-    def extract_footnotes(self):
+    def extract_footnotes(self) -> None:
         """Extract the footnotes"""
 
-        def strip_note_tag(string):
+        def strip_note_tag(string: str) -> str:
             """Remove note tag and number. "Note 123: lorem ipsum" becomes "lorem ipsum"."""
             for regex in [
                 r"\s*\[([\w-]+)\](.*)",
@@ -1849,6 +1821,7 @@ class PgdpFileHtml(PgdpFile):
         footnotes = []
         # Special case for PPers who do not keep the marking around
         # the whole footnote. They only mark the first paragraph.
+        assert self.tree is not None
         elements = etree.XPath("//div[@class='footnote']")(self.tree)
         if len(elements) == 1:
             # remove footnote number & remove footnote from main document
@@ -1871,424 +1844,51 @@ class PgdpFileHtml(PgdpFile):
         self.footnotes = "\n".join(footnotes)  # save as text string
 
 
-class PPComp:
-    """Compare two files."""
-
-    def __init__(self, args):
-        self.args = args
-
-    def do_process(self):
-        """Main routine: load & process the files"""
-        # files = [None, None]
-        # for i, fname in enumerate(self.args.filename):
-        #     if fname.lower().endswith((".html", ".htm", ".xhtml")):
-        #         files[i] = PgdpFileHtml(self.args)
-        #     else:
-        #         files[i] = PgdpFileText(self.args)
-        #     files[i].load(fname)
-        #     files[i].cleanup()  # perform cleanup for each type of file
-
-        # # perform common cleanup for both files
-        # self.check_characters(files)
-
-        # # Compare the two versions
-        # main_diff = self.compare_texts(files[0].text, files[1].text)
-        # if self.args.extract_footnotes:
-        #     fnotes_diff = self.compare_texts(files[0].footnotes, files[1].footnotes)
-        # else:
-        #     fnotes_diff = ""
-        # html_content = self.create_html(files, main_diff, fnotes_diff)
-        # return html_content, files[0].basename, files[1].basename
-        return "", "", ""
-
-    def compare_texts(self, text1, text2):
-        """Compare two sources, using dwdiff"""
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8"
-        ) as temp1, tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as temp2:
-            temp1.write(text1)
-            temp1.flush()
-            temp2.write(text2)
-            temp2.flush()
-            repo_dir = os.environ.get("OPENSHIFT_DATA_DIR", "")
-            if repo_dir:
-                dwdiff_path = os.path.join(repo_dir, "bin", "dwdiff")
-            else:
-                dwdiff_path = "dwdiff"
-
-            # -P Use punctuation characters as delimiters.
-            # -R Repeat the begin and end markers at the start and end of line if a change crosses
-            #    a newline.
-            # -C 2 Show <num> lines of context before and after each changes.
-            # -L Show line numbers at the start of each line.
-            cmd = [
-                dwdiff_path,
-                "-P",
-                "-R",
-                "-C 2",
-                "-L",
-                "-w ]COMPPP_START_DEL[",
-                "-x ]COMPPP_STOP_DEL[",
-                "-y ]COMPPP_START_INS[",
-                "-z ]COMPPP_STOP_INS[",
-            ]
-            if self.args.ignore_case:
-                cmd += ["--ignore-case"]
-            cmd += [temp1.name, temp2.name]
-            with subprocess.Popen(cmd, stdout=subprocess.PIPE) as process:
-                return process.stdout.read().decode("utf-8")
-
-    def create_html(self, files, text, footnotes):
-        """Create the output html file"""
-
-        def massage_input(txt, start0, start1):
-            # Massage the input
-            replacements = {
-                "&": "&amp;",
-                "<": "&lt;",
-                ">": "&gt;",
-                "]COMPPP_START_DEL[": "<del>",
-                "]COMPPP_STOP_DEL[": "</del>",
-                "]COMPPP_START_INS[": "<ins>",
-                "]COMPPP_STOP_INS[": "</ins>",
-            }
-            newtext = txt
-            for key, value in replacements.items():
-                newtext = newtext.replace(key, value)
-            if newtext:
-                newtext = "<hr /><pre>\n" + newtext
-            newtext = newtext.replace("\n--\n", "\n</pre><hr /><pre>\n")
-            newtext = re.sub(
-                r"^\s*(\d+):(\d+)",
-                lambda m: f"<span class='lineno'>{int(m.group(1)) + start0}"
-                f" : {int(m.group(2)) + start1}</span>",
-                newtext,
-                flags=re.MULTILINE,
-            )
-            if newtext:
-                newtext += "</pre>\n"
-            return newtext
-
-        # Find the number of diff sections
-        diffs_text = 0
-        if text:
-            diffs_text = len(re.findall("\n--\n", text)) + 1
-            # Text, with correct (?) line numbers
-            text = massage_input(text, files[0].start_line, files[1].start_line)
-        html_content = "<div>"
-        if diffs_text == 0:
-            html_content += "<p>There is no diff section in the main text.</p>"
-        elif diffs_text == 1:
-            html_content += "<p>There is 1 diff section in the main text.</p>"
+def check_characters(files: list[PgdpFile]) -> None:
+    """Check whether each file has the 'best' character. If not, convert.
+    This is used for instance if one version uses curly quotes while the other uses straight.
+    In that case, we need to convert one into the other, to get a smaller diff.
+    """
+    character_checks = {
+        re.compile("’"): "'",  # close curly single quote to straight
+        re.compile("‘"): "'",  # open curly single quote to straight
+        re.compile("”"): '"',  # close curly double quote to straight
+        re.compile("“"): '"',  # open curly double quote to straight
+        re.compile("–"): "-",  # en dash to hyphen
+        re.compile("—"): "--",  # em dash to double hyphen
+        re.compile("⁄"): "/",  # fraction slash
+        re.compile("′"): "'",  # prime
+        re.compile("″"): "''",  # double prime
+        re.compile("‴"): "'''",  # triple prime
+        re.compile(r"(?<=\S)½"): "-1/2",  # 3½ --> 3-1/2
+        re.compile(r"(?<=\S)¼"): "-1/4",
+        re.compile(r"(?<=\S)¾"): "-3/4",
+        re.compile("½"): "1/2",  # remaining fractions don't need hyphen
+        re.compile("¼"): "1/4",
+        re.compile("¾"): "3/4",
+    }
+    for reg_best, char_other in character_checks.items():
+        finds_0 = reg_best.search(files[0].text)
+        finds_1 = reg_best.search(files[1].text)
+        if finds_0 is not None and finds_1 is not None:  # Both have it
+            continue
+        if finds_0 is None and finds_1 is None:  # Neither has it
+            continue
+        # Downgrade one version
+        if finds_0 is not None:
+            files[0].text = reg_best.sub(char_other, files[0].text)
         else:
-            html_content += (
-                f"<p>There are <b>{diffs_text}</b> diff sections in the main text.</p>"
-            )
-
-        if footnotes:
-            diffs_footnotes = len(re.findall("\n--\n", footnotes or "")) + 1
-            # Footnotes - line numbers are meaningless right now. We could fix that.
-            footnotes = massage_input(footnotes, 0, 0)
-            html_content += (
-                "<p>Footnotes are diff'ed separately <a href='#footnotes'>here</a></p>"
-            )
-            if diffs_footnotes == 0:
-                html_content += "<p>There is no diff section in the footnotes.</p>"
-            elif diffs_footnotes == 1:
-                html_content += "<p>There is 1 diff section in the footnotes.</p>"
-            else:
-                html_content += (
-                    f"<p>There are {diffs_footnotes}"
-                    " diff sections in the footnotes.</p>"
-                )
-        else:
-            if self.args.extract_footnotes:
-                html_content += "<p>There is no diff section in the footnotes.</p>"
-
-        if diffs_text:
-            html_content += "<h2>Main text</h2>"
-            html_content += text
-        if footnotes:
-            html_content += "<h2 id='footnotes'>Footnotes</h2>"
-            html_content += "<pre>" + footnotes + "</pre>"
-        html_content += "</div>"
-        return html_content
-
-    def simple_html(self):
-        """Debugging only, transform the html and print the text output"""
-        if not self.args.filename[0].lower().endswith((".html", ".htm")):
-            print("Error: 1st file must be an html file")
-            return
-        html_file = PgdpFileHtml(self.args)
-        html_file.load(self.args.filename[0])
-        html_file.cleanup()
-        print(html_file.text)
-        with open("outhtml.txt", "w", encoding="utf-8") as file:
-            file.write(html_file.text)
-
-    @staticmethod
-    def check_characters(files):
-        """Check whether each file has the 'best' character. If not, convert.
-        This is used for instance if one version uses curly quotes while the other uses straight.
-        In that case, we need to convert one into the other, to get a smaller diff.
-        """
-        character_checks = {
-            re.compile("’"): "'",  # close curly single quote to straight
-            re.compile("‘"): "'",  # open curly single quote to straight
-            re.compile("”"): '"',  # close curly double quote to straight
-            re.compile("“"): '"',  # open curly double quote to straight
-            re.compile("–"): "-",  # en dash to hyphen
-            re.compile("—"): "--",  # em dash to double hyphen
-            re.compile("⁄"): "/",  # fraction slash
-            re.compile("′"): "'",  # prime
-            re.compile("″"): "''",  # double prime
-            re.compile("‴"): "'''",  # triple prime
-            re.compile(r"(?<=\S)½"): "-1/2",  # 3½ --> 3-1/2
-            re.compile(r"(?<=\S)¼"): "-1/4",
-            re.compile(r"(?<=\S)¾"): "-3/4",
-            re.compile("½"): "1/2",  # remaining fractions don't need hyphen
-            re.compile("¼"): "1/4",
-            re.compile("¾"): "3/4",
-        }
-        for char_best, char_other in character_checks.items():
-            finds_0 = char_best.search(files[0].text)
-            finds_1 = char_best.search(files[1].text)
+            files[1].text = reg_best.sub(char_other, files[1].text)
+    if files[0].footnotes and files[1].footnotes:
+        for reg_best, char_other in character_checks.items():
+            finds_0 = reg_best.search(files[0].footnotes)
+            finds_1 = reg_best.search(files[1].footnotes)
             if finds_0 is not None and finds_1 is not None:  # Both have it
                 continue
             if finds_0 is None and finds_1 is None:  # Neither has it
                 continue
             # Downgrade one version
             if finds_0 is not None:
-                files[0].text = char_best.sub(char_other, files[0].text)
+                files[0].footnotes = reg_best.sub(char_other, files[0].footnotes)
             else:
-                files[1].text = char_best.sub(char_other, files[1].text)
-        if files[0].footnotes and files[1].footnotes:
-            for char_best, char_other in character_checks.items():
-                finds_0 = files[0].footnotes.find(char_best)
-                finds_1 = files[1].footnotes.find(char_best)
-                if finds_0 >= 0 and finds_1 >= 0:  # Both have it
-                    continue
-                if finds_0 == -1 and finds_1 == -1:  # Neither has it
-                    continue
-                if finds_0 >= 0:
-                    files[0].footnotes = files[0].footnotes.replace(
-                        char_best, char_other
-                    )
-                else:
-                    files[1].footnotes = files[1].footnotes.replace(
-                        char_best, char_other
-                    )
-
-
-# noinspection PyPep8
-def html_usage(filename1, filename2):
-    """Describe how to use the diffs"""
-    # noinspection PyPep8
-    return f"""
-    <div class="bbox">
-      <p class="center">— Note —</p>
-      <p>The first number is the line number in the first file (<b>{filename1}</b>)<br />
-        The second number is the line number in the second file (<b>{filename2}</b>)<br />
-        Line numbers can sometimes be very approximate.</p>
-      <p>Deleted words that were in the first file but not in the second will appear <del>like
-         this</del>.<br />
-        Inserted words that were in the second file but not in the first will appear <ins>like
-         this</ins>.</p>
-    </div>
-    """
-
-
-def output_html(html_content, filename1, filename2, css):
-    """Outputs a complete HTML file"""
-    print(
-        """
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Compare """
-        + filename1
-        + " and "
-        + filename2
-        + """</title>
-  <style type="text/css">
-"""
-    )
-    print(DIFF_CSS)
-    print("""
-  </style>
-</head>
-<body>
-""")
-    print(
-        f'<h1>Diff of <span class="first">{filename1}</span> and'
-        f' <span class="second">{filename2}</span></h1>'
-    )
-    print(html_usage(filename1, filename2))
-    if css:
-        print("<p>Custom CSS added on command line: " + " ".join(css) + "</p>")
-    print(html_content)
-    print("""
-</body>
-</html>
-""")
-
-
-def main():
-    """Main program"""
-    parser = argparse.ArgumentParser(
-        description="Diff text/HTML documents for PGDP" " Post-Processors."
-    )
-    parser.add_argument(
-        "filename", metavar="FILENAME", type=str, help="input files", nargs=2
-    )
-    parser.add_argument(
-        "--ignore-case",
-        action="store_true",
-        default=False,
-        help="Ignore case when comparing",
-    )
-    parser.add_argument(
-        "--extract-footnotes",
-        action="store_true",
-        default=False,
-        help="Extract and process footnotes separately",
-    )
-    parser.add_argument(
-        "--suppress-footnote-tags",
-        action="store_true",
-        default=False,
-        help='TXT: Suppress "[Footnote #:" marks',
-    )
-    parser.add_argument(
-        "--suppress-illustration-tags",
-        action="store_true",
-        default=False,
-        help='TXT: Suppress "[Illustration:" marks',
-    )
-    parser.add_argument(
-        "--suppress-sidenote-tags",
-        action="store_true",
-        default=False,
-        help='TXT: Suppress "[Sidenote:" marks',
-    )
-    parser.add_argument(
-        "--ignore-format",
-        action="store_true",
-        default=False,
-        help="In Px/Fx versions, silence formatting differences",
-    )
-    parser.add_argument(
-        "--suppress-proofers-notes",
-        action="store_true",
-        default=False,
-        help="In Px/Fx versions, remove [**proofreaders notes]",
-    )
-    parser.add_argument(
-        "--regroup-split-words",
-        action="store_true",
-        default=False,
-        help="In Px/Fx versions, regroup split wo-* *rds",
-    )
-    parser.add_argument(
-        "--txt-cleanup-type",
-        type=str,
-        default="b",
-        help="TXT: In Px/Fx versions, type of text cleaning -- (b)est effort,"
-        " (n)one, (p)roofers",
-    )
-    parser.add_argument(
-        "--css-add-illustration",
-        action="store_true",
-        default=False,
-        help="HTML: add [Illustration ] tag",
-    )
-    parser.add_argument(
-        "--css-add-sidenote",
-        action="store_true",
-        default=False,
-        help="HTML: add [Sidenote: ...]",
-    )
-    parser.add_argument(
-        "--css-smcap",
-        type=str,
-        default=None,
-        help="HTML: Transform small caps into uppercase (U), lowercase (L) or"
-        " title case (T)",
-    )
-    parser.add_argument(
-        "--css-bold",
-        type=str,
-        default="=",
-        help="HTML: Surround bold strings with this string",
-    )
-    parser.add_argument(
-        "--css",
-        type=str,
-        default=[],
-        action="append",
-        help="HTML: Insert transformation CSS",
-    )
-    parser.add_argument(
-        "--css-no-default",
-        action="store_true",
-        default=False,
-        help="HTML: do not use default transformation CSS",
-    )
-    parser.add_argument(
-        "--suppress-nbsp-num",
-        action="store_true",
-        default=False,
-        help="HTML: Suppress non-breakable spaces between numbers",
-    )
-    parser.add_argument(
-        "--suppress-word-join",
-        action="store_true",
-        default=False,
-        help="HTML: Suppress word join (NoBreak) (U+2060)",
-    )
-    parser.add_argument(
-        "--ignore-0-space",
-        action="store_true",
-        default=False,
-        help="HTML: suppress zero width space (U+200b)",
-    )
-    parser.add_argument(
-        "--css-greek-title-plus",
-        action="store_true",
-        default=False,
-        help="HTML: use greek transliteration in title attribute",
-    )
-    parser.add_argument(
-        "--simple-html",
-        action="store_true",
-        default=False,
-        help="HTML: Process just the html file and print the output (debug)",
-    )
-    args = parser.parse_args()
-
-    if args.extract_footnotes and args.suppress_footnote_tags:
-        raise SyntaxError(
-            "Cannot use both --extract-footnotes and --suppress-footnote-tags"
-        )
-
-    compare = PPComp(args)
-    if args.simple_html:
-        compare.simple_html()
-    else:
-        html_content, file1, file2 = compare.do_process()
-        output_html(html_content, file1, file2, args.css)
-
-
-def dumptree(tree):
-    """Save tree for debug"""
-    with open("tmptree.txt", "w", encoding="utf-8") as file:
-        for node in tree.iter():
-            if node.text:
-                file.write(node.tag + ": " + node.text + "\n")
-            else:
-                file.write(node.tag + "\n")
-
-
-if __name__ == "__main__":
-    main()
+                files[1].footnotes = reg_best.sub(char_other, files[1].footnotes)
