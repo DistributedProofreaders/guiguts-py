@@ -161,6 +161,7 @@ class PrefKey(StrEnum):
     ASCII_TABLE_JUSTIFY = auto()
     ASCII_TABLE_FILL_CHAR = auto()
     ASCII_TABLE_RIGHT_COL = auto()
+    ASCII_TABLE_HORIZONTAL_BORDERS = auto()
     COMMAND_PALETTE_HISTORY = auto()
     COMMAND_PALETTE_SORT = auto()
     KEYBOARD_SHORTCUTS_DICT = auto()
