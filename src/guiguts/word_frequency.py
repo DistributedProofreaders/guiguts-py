@@ -476,8 +476,10 @@ class WordFrequencyDialog(ToplevelDialog):
                 "<Shift-Command-Down>",
                 lambda _e: self.goto_word(len(self.entries) - 1, force_first=True),
             )
+        # Add tooltip to frame parent of text, so that using the scrollbars
+        # then re-entering text doesn't cause tooltip to be re-displayed
         ToolTip(
-            self.text,
+            self.text.frame,
             "\n".join(
                 [
                     "Left click: Find first match; click again for next match",
