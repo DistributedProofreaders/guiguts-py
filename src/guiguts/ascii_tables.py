@@ -1051,7 +1051,7 @@ class ASCIITableDialog(ToplevelDialog):
                 for line_num, _ in enumerate(col.fragments):
                     assert col_widths[col_num] >= len(col.fragments[line_num])
                     col.fragments[line_num] += " " * (
-                        col_widths[col_num] - len(col.fragments[line_num]) + 1
+                        col_widths[col_num] - len(col.fragments[line_num])
                     )
         self.put_table_grid(tbl)
         self.selected_column = -1
