@@ -5,13 +5,13 @@ from enum import StrEnum, auto
 import logging
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, cast
 
 import regex as re
 
+from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerSortType
 from guiguts.content_providing import CPCharSuitesDialog
 from guiguts.maintext import maintext, HighlightTag
-from guiguts.mainwindow import ScrolledReadOnlyText
 from guiguts.misc_tools import tool_save, do_open_ngram
 from guiguts.preferences import (
     preferences,
@@ -28,11 +28,9 @@ from guiguts.utilities import (
     sound_bell,
     process_accel,
     cmd_ctrl_string,
-    is_mac,
     non_text_line,
 )
 from guiguts.widgets import (
-    ToplevelDialog,
     Combobox,
     ToolTip,
     mouse_bind,
@@ -147,8 +145,8 @@ class WFWordLists:
         return self.emdash_words
 
 
-class WordFrequencyEntry:
-    """Class to hold one entry in the Word Frequency dialog.
+class WordFrequencyCustom:
+    """Class to hold custom data for entry in the Word Frequency dialog.
 
     Attributes:
         text: Single line of text to display in dialog.
@@ -170,7 +168,7 @@ class WordFrequencyEntry:
         self.suspect = suspect
 
 
-class WordFrequencyDialog(ToplevelDialog):
+class WordFrequencyDialog(CheckerDialog):
     """Dialog to show results of word frequency analysis.
 
     Attributes:
@@ -195,31 +193,27 @@ class WordFrequencyDialog(ToplevelDialog):
         "Katakana",
         "Hangul",
     ]
+    display_type: PersistentString
 
     def __init__(
         self,
+        **kwargs: Any,
     ) -> None:
         """Initialize the dialog."""
-        super().__init__("Word Frequency")
-        self.top_frame.rowconfigure(0, weight=0)
-        header_frame = ttk.Frame(self.top_frame)
-        header_frame.grid(row=0, column=0, sticky="NSEW")
-        header_frame.columnconfigure(0, weight=1)
 
-        # Message label
-        label_frame = ttk.Frame(header_frame, borderwidth=1, relief=tk.GROOVE)
-        label_frame.grid(row=0, column=0, sticky="NSEW")
-        # label_frame.columnconfigure(0, weight=1)
-        self.message = tk.StringVar()
-        ttk.Label(label_frame, textvariable=self.message).grid(
-            row=0, column=0, sticky="NSW", padx=5, pady=2
-        )
-
-        # Re-run buttons
-        rerun_frame = ttk.Frame(header_frame, borderwidth=1, relief=tk.GROOVE)
-        rerun_frame.grid(row=0, column=1, rowspan=2)
-        ttk.Button(rerun_frame, text="Re-run", command=word_frequency).grid(
-            row=0, column=0, sticky="NSEW", padx=5, pady=2
+        super().__init__(
+            "Word Frequency",
+            tooltip="\n".join(
+                [
+                    "Left click: Find first match; click again for next match",
+                    "Shift Left click: Find last match; click again for previous match",
+                    f"{cmd_ctrl_string()} left click: Find using Search dialog",
+                    f"Shift {cmd_ctrl_string()} left click: Open in Google Books Ngram Viewer",
+                ]
+            ),
+            sort_custom_label="Len",
+            show_suspects_only=True,
+            **kwargs,
         )
 
         def change_ignore_case() -> None:
@@ -228,81 +222,40 @@ class WordFrequencyDialog(ToplevelDialog):
             word_frequency()
 
         ttk.Checkbutton(
-            rerun_frame,
+            self.count_header_frame,
             text="Ignore Case",
             command=change_ignore_case,
             variable=PersistentBoolean(PrefKey.WFDIALOG_IGNORE_CASE),
-        ).grid(row=1, column=0, sticky="NSEW", padx=5, pady=2)
+        ).grid(row=1, column=4, sticky="NSEW", padx=(10, 5), pady=2)
+        self.rerun_button.grid(sticky="NSEW")
 
-        # Options
-        options_frame = ttk.Frame(
-            header_frame, borderwidth=1, relief=tk.GROOVE, padding=2
-        )
-        options_frame.grid(row=1, column=0, sticky="NSEW")
-        options_frame.columnconfigure(0, weight=1)
-        self.suspects_btn = ttk.Checkbutton(
-            options_frame,
-            text="Suspects Only",
-            variable=PersistentBoolean(PrefKey.WFDIALOG_SUSPECTS_ONLY),
-            command=self.wf_populate,
-        )
-        self.suspects_btn.grid(row=0, column=0, sticky="NSW", padx=5)
-
-        def copy_errors() -> None:
-            """Copy text messages to clipboard."""
-            maintext().clipboard_clear()
-            maintext().clipboard_append(self.text.get("1.0", tk.END))
-
-        copy_button = ttk.Button(
-            options_frame, text="Copy Results", command=copy_errors
-        )
-        copy_button.grid(row=0, column=1, sticky="NSE", padx=(0, 20))
-
-        ttk.Label(
-            options_frame,
-            text="Sort:",
-        ).grid(row=0, column=2, sticky="NSE", padx=5)
-        sort_type = PersistentString(PrefKey.WFDIALOG_SORT_TYPE)
-        ttk.Radiobutton(
-            options_frame,
-            text="Alph",
-            command=self.wf_populate,
-            variable=sort_type,
-            value=WFSortType.ALPHABETIC,
-        ).grid(row=0, column=3, sticky="NSE", padx=2)
-        ttk.Radiobutton(
-            options_frame,
-            text="Freq",
-            command=self.wf_populate,
-            variable=sort_type,
-            value=WFSortType.FREQUENCY,
-        ).grid(row=0, column=4, sticky="NSE", padx=2)
-        ttk.Radiobutton(
-            options_frame,
-            text="Len",
-            command=self.wf_populate,
-            variable=sort_type,
-            value=WFSortType.LENGTH,
-        ).grid(row=0, column=5, sticky="NSE", padx=(2, 5))
+        self.count_label.grid(padx=(5, 0), columnspan=3)
+        self.sort_frame.grid(row=1, column=2, columnspan=2)
+        self.alpha_radio["text"] = "Alph"
+        self.alpha_radio.grid(column=2)
+        self.rowcol_radio["text"] = "Freq"
+        self.rowcol_radio.grid(column=3)
+        self.custom_radio.grid(column=4)
+        assert self.suspects_only_btn is not None
+        self.suspects_only_btn.grid(padx=(5, 0), row=1, column=0)
 
         # Display type radio buttons
-        display_frame = ttk.Frame(
-            header_frame, borderwidth=1, relief=tk.GROOVE, padding=2
-        )
-        display_frame.grid(row=2, column=0, columnspan=2, sticky="NSEW")
-        for col in range(0, 4):
-            display_frame.columnconfigure(index=col, weight=1)
+        for col in range(0, 2):
+            self.custom_frame.columnconfigure(index=col, weight=1)
+        self.custom_frame.columnconfigure(index=3, weight=0)
         for row in range(0, 5):
-            display_frame.rowconfigure(index=row, uniform="wfequal")
+            self.custom_frame.rowconfigure(index=row, uniform="wfequal")
 
-        display_type = PersistentString(PrefKey.WFDIALOG_DISPLAY_TYPE)
+        WordFrequencyDialog.display_type = PersistentString(
+            PrefKey.WFDIALOG_DISPLAY_TYPE
+        )
 
         def display_radio(
             row: int,
             column: int,
             text: str,
             value: str,
-            frame: ttk.Frame = display_frame,
+            frame: ttk.Frame = self.custom_frame,
         ) -> ttk.Radiobutton:
             """Add a radio button to change display type.
 
@@ -316,7 +269,7 @@ class WordFrequencyDialog(ToplevelDialog):
                 frame,
                 text=text,
                 command=self.wf_populate,
-                variable=display_type,
+                variable=WordFrequencyDialog.display_type,
                 value=value,
             )
             button.grid(row=row, column=column, sticky="NSW", padx=5)
@@ -333,7 +286,7 @@ class WordFrequencyDialog(ToplevelDialog):
             1, 2, "Initial Capitals", WFDisplayType.INITIAL_CAPS
         )
         display_radio(2, 0, "Emdashes", WFDisplayType.EMDASHES)
-        hyphen_frame = ttk.Frame(display_frame)
+        hyphen_frame = ttk.Frame(self.custom_frame)
         hyphen_frame.grid(row=2, column=1, columnspan=2, sticky="NSEW")
         hyphen_frame.columnconfigure(index=3, weight=1)
         hyphen_frame.rowconfigure(index=0, weight=1)
@@ -341,7 +294,7 @@ class WordFrequencyDialog(ToplevelDialog):
             hyphen_frame,
             text='Hyphens  -  Including "two word" Matches?',
             command=self.wf_populate,
-            variable=display_type,
+            variable=WordFrequencyDialog.display_type,
             value=WFDisplayType.HYPHENS,
         ).grid(row=0, column=0, sticky="NSW", padx=(5, 0))
 
@@ -356,7 +309,7 @@ class WordFrequencyDialog(ToplevelDialog):
             variable=PersistentBoolean(PrefKey.WFDIALOG_HYPHEN_TWO_WORDS),
         ).grid(row=0, column=2, sticky="NSW", padx=(3, 0))
         display_radio(3, 0, "Alpha/Num", WFDisplayType.ALPHANUM)
-        italic_frame = ttk.Frame(display_frame)
+        italic_frame = ttk.Frame(self.custom_frame)
         italic_frame.grid(row=3, column=1, columnspan=2, sticky="NSEW")
         italic_frame.columnconfigure(index=1, weight=1)
         display_radio(
@@ -399,7 +352,7 @@ class WordFrequencyDialog(ToplevelDialog):
 
         display_radio(4, 0, "Character Counts", WFDisplayType.CHAR_COUNTS)
         display_radio(4, 1, "Mixed Scripts", WFDisplayType.MIXED_SCRIPT)
-        regex_frame = ttk.Frame(display_frame)
+        regex_frame = ttk.Frame(self.custom_frame)
         regex_frame.grid(row=5, column=0, columnspan=3, sticky="NSEW")
         regex_frame.columnconfigure(index=1, weight=1)
         display_radio(0, 0, "Regular Expression", WFDisplayType.REGEXP, regex_frame)
@@ -420,14 +373,6 @@ class WordFrequencyDialog(ToplevelDialog):
         self.regex_box.display_latest_value()
 
         # Main display list
-        self.top_frame.rowconfigure(1, weight=1)
-        self.text = ScrolledReadOnlyText(
-            self.top_frame,
-            context_menu=False,
-            wrap=tk.NONE,
-            font=maintext().font,
-        )
-        self.text.grid(row=1, column=0, sticky="NSEW")
         mouse_bind(self.text, "1", self.goto_word_by_click)
         mouse_bind(
             self.text, "Shift-1", lambda e: self.goto_word_by_click(e, reverse=True)
@@ -442,58 +387,6 @@ class WordFrequencyDialog(ToplevelDialog):
         self.search_buffer = ""
         self.reset_timer_id = ""
 
-        _, event = process_accel("Cmd/Ctrl+a")
-        self.text.bind(event, lambda _e: self.text.event_generate("<<SelectAll>>"))
-        _, event = process_accel("Cmd/Ctrl+A")
-        self.text.bind(event, lambda _e: self.text.event_generate("<<SelectAll>>"))
-        _, event = process_accel("Cmd/Ctrl+c")
-        self.text.bind(event, lambda _e: self.text.event_generate("<<Copy>>"))
-        _, event = process_accel("Cmd/Ctrl+C")
-        self.text.bind(event, lambda _e: self.text.event_generate("<<Copy>>"))
-        self.text.bind("<Home>", lambda _e: self.goto_word(0, force_first=True))
-        self.text.bind("<Shift-Home>", lambda _e: self.goto_word(0, force_first=True))
-        self.text.bind(
-            "<End>", lambda _e: self.goto_word(len(self.entries) - 1, force_first=True)
-        )
-        self.text.bind(
-            "<Shift-End>",
-            lambda _e: self.goto_word(len(self.entries) - 1, force_first=True),
-        )
-        # Bind same keys as main window uses for top/bottom on Mac.
-        # Above bindings work already for Windows
-        if is_mac():
-            self.text.bind(
-                "<Command-Up>", lambda _e: self.goto_word(0, force_first=True)
-            )
-            self.text.bind(
-                "<Shift-Command-Up>", lambda _e: self.goto_word(0, force_first=True)
-            )
-            self.text.bind(
-                "<Command-Down>",
-                lambda _e: self.goto_word(len(self.entries) - 1, force_first=True),
-            )
-            self.text.bind(
-                "<Shift-Command-Down>",
-                lambda _e: self.goto_word(len(self.entries) - 1, force_first=True),
-            )
-        # Add tooltip to frame parent of text, so that using the scrollbars
-        # then re-entering text doesn't cause tooltip to be re-displayed
-        ToolTip(
-            self.text.frame,
-            "\n".join(
-                [
-                    "Left click: Find first match; click again for next match",
-                    "Shift Left click: Find last match; click again for previous match",
-                    f"{cmd_ctrl_string()} left click: Find using Search dialog",
-                    f"Shift {cmd_ctrl_string()} left click: Open in Google Books Ngram Viewer",
-                ]
-            ),
-            use_pointer_pos=True,
-        )
-
-        self.bind("<Up>", lambda _e: self.goto_word_by_arrow(-1))
-        self.bind("<Down>", lambda _e: self.goto_word_by_arrow(1))
-
         self.previous_word = ""
         # Store tooltips so they can be added/destroyed depending on Ignore Case
         self.tooltip_dict: dict[ttk.Widget, ToolTip] = {}
@@ -501,17 +394,6 @@ class WordFrequencyDialog(ToplevelDialog):
 
         self.minsize(450, 100)
         self.reset()
-
-    def reset(self) -> None:
-        """Reset dialog."""
-        super().reset()
-        self.entries: list[WordFrequencyEntry] = []
-        if maintext().winfo_exists():
-            maintext().remove_spotlights()
-        if not self.text.winfo_exists():
-            return
-        self.text.delete("1.0", tk.END)
-        self.message.set("")
 
     def set_case_sensitive_btns(self) -> None:
         """Enable/disable buttons depending on Ignore Case setting.
@@ -531,7 +413,7 @@ class WordFrequencyDialog(ToplevelDialog):
                 except (tk.TclError, KeyError):
                     pass  # OK for tooltip not to exist
 
-    def add_entry(self, word: str, frequency: int, suspect: bool = False) -> None:
+    def add_wf_entry(self, word: str, frequency: int, suspect: bool = False) -> None:
         """Add an entry to be displayed in the dialog.
 
         Args:
@@ -539,69 +421,86 @@ class WordFrequencyDialog(ToplevelDialog):
             frequency: Number of occurrences of word.
             suspect: Optional bool to flag this word as "suspect".
         """
-        entry = WordFrequencyEntry(word, frequency, suspect)
-        self.entries.append(entry)
+        self.add_entry(word)
+        self.entries[-1].custom_data = WordFrequencyCustom(word, frequency, suspect)
 
-    def display_entries(self) -> None:
+    @classmethod
+    def remove_diacritics_and_hyphens(cls, word: str) -> str:
+        """Remove diacritics, and also hyphens, asterisks & spaces in
+        hyphen check so that "a-b", "ab" and "a b" sort adjacently."""
+        no_dia = DiacriticRemover.remove_diacritics(word)
+        if WordFrequencyDialog.display_type == WFDisplayType.HYPHENS:
+            no_dia = re.sub(r"[-* ]+", "", no_dia)
+        return no_dia
+
+    @classmethod
+    def sort_key_alpha_wf(
+        cls,
+        entry: CheckerEntry,
+    ) -> tuple[str, ...]:
+        """Custom alpha sorter for WF."""
+        custom = cast(WordFrequencyCustom, entry.custom_data)
+        no_dia = WordFrequencyDialog.remove_diacritics_and_hyphens(custom.word)
+        return (no_dia.lower(), no_dia, custom.word)
+
+    @classmethod
+    def sort_key_alpha_no_markup_wf(
+        cls,
+        entry: CheckerEntry,
+    ) -> tuple[str, ...]:
+        """Custom alpha sorter for WF removing markup."""
+        custom = cast(WordFrequencyCustom, entry.custom_data)
+        unmarked = re.sub(rf"^<({MARKUP_TYPES})>", "", custom.word)
+        unmarked = re.sub(rf"</({MARKUP_TYPES})>$", "", unmarked)
+        unmarked_no_dia = WordFrequencyDialog.remove_diacritics_and_hyphens(unmarked)
+        no_dia = WordFrequencyDialog.remove_diacritics_and_hyphens(custom.word)
+        return (
+            unmarked_no_dia.lower(),
+            unmarked_no_dia,
+            no_dia.lower(),
+            no_dia,
+            custom.word,
+        )
+
+    @classmethod
+    def sort_key_freq_wf(cls, entry: CheckerEntry) -> tuple[int | str, ...]:
+        """Custom frequency sorter for WF."""
+        custom = cast(WordFrequencyCustom, entry.custom_data)
+        no_dia = WordFrequencyDialog.remove_diacritics_and_hyphens(custom.word)
+        return (-custom.frequency,) + (no_dia.lower(), no_dia, custom.word)
+
+    @classmethod
+    def sort_key_len_wf(cls, entry: CheckerEntry) -> tuple[int | str, ...]:
+        """Custom word length sorter for WF."""
+        custom = cast(WordFrequencyCustom, entry.custom_data)
+        no_dia = WordFrequencyDialog.remove_diacritics_and_hyphens(custom.word)
+        return (-len(custom.word), no_dia.lower(), no_dia, custom.word)
+
+    def do_display_entries(
+        self, auto_select_line: bool = True, complete_msg: bool = True
+    ) -> None:
         """Display all the stored entries in the dialog according to
         the sort setting."""
 
-        display_type = preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
+        WordFrequencyDialog.display_type = preferences.get(
+            PrefKey.WFDIALOG_DISPLAY_TYPE
+        )
 
-        def remove_diacritics_and_hyphens(word: str) -> str:
-            """Remove diacritics, and also hyphens, asterisks & spaces in
-            hyphen check so that "a-b", "ab" and "a b" sort adjacently."""
-            no_dia = DiacriticRemover.remove_diacritics(word)
-            if display_type == WFDisplayType.HYPHENS:
-                no_dia = re.sub(r"[-* ]+", "", no_dia)
-            return no_dia
-
-        def sort_key_alpha(
-            entry: WordFrequencyEntry,
-        ) -> tuple[str, ...]:
-            no_dia = remove_diacritics_and_hyphens(entry.word)
-            return (no_dia.lower(), no_dia, entry.word)
-
-        def sort_key_alpha_no_markup(
-            entry: WordFrequencyEntry,
-        ) -> tuple[str, ...]:
-            unmarked = re.sub(rf"^<({MARKUP_TYPES})>", "", entry.word)
-            unmarked = re.sub(rf"</({MARKUP_TYPES})>$", "", unmarked)
-            unmarked_no_dia = remove_diacritics_and_hyphens(unmarked)
-            no_dia = remove_diacritics_and_hyphens(entry.word)
-            return (
-                unmarked_no_dia.lower(),
-                unmarked_no_dia,
-                no_dia.lower(),
-                no_dia,
-                entry.word,
+        key: Callable[[CheckerEntry], tuple]
+        sort_type = self.get_dialog_pref(PrefKey.CHECKERDIALOG_SORT_TYPE_DICT)
+        if sort_type == CheckerSortType.ROWCOL:
+            key = WordFrequencyDialog.sort_key_freq_wf
+        elif sort_type == CheckerSortType.CUSTOM:
+            key = WordFrequencyDialog.sort_key_len_wf
+        else:
+            key = (
+                WordFrequencyDialog.sort_key_alpha_no_markup_wf
+                if WordFrequencyDialog.display_type == WFDisplayType.MARKEDUP
+                else WordFrequencyDialog.sort_key_alpha_wf
             )
 
-        def sort_key_freq(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
-            no_dia = remove_diacritics_and_hyphens(entry.word)
-            return (-entry.frequency,) + (no_dia.lower(), no_dia, entry.word)
-
-        def sort_key_len(entry: WordFrequencyEntry) -> tuple[int | str, ...]:
-            no_dia = remove_diacritics_and_hyphens(entry.word)
-            return (-len(entry.word), no_dia.lower(), no_dia, entry.word)
-
-        key: Callable[[WordFrequencyEntry], tuple]
-        match preferences.get(PrefKey.WFDIALOG_SORT_TYPE):
-            case WFSortType.ALPHABETIC:
-                key = (
-                    sort_key_alpha_no_markup
-                    if display_type == WFDisplayType.MARKEDUP
-                    else sort_key_alpha
-                )
-            case WFSortType.FREQUENCY:
-                key = sort_key_freq
-            case WFSortType.LENGTH:
-                key = sort_key_len
-            case _ as bad_value:
-                assert False, f"Invalid WFSortType: {bad_value}"
-
         hilite_orphan_chars = (
-            display_type == WFDisplayType.CHAR_COUNTS
+            WordFrequencyDialog.display_type == WFDisplayType.CHAR_COUNTS
             and preferences.get(PrefKey.CP_HIGHLIGHT_CHARSUITE_ORPHANS)
         )
         enabled = False
@@ -609,23 +508,26 @@ class WordFrequencyDialog(ToplevelDialog):
         # Sort stored list, rather than just displayed list, since later
         # we'll want to index into list based on index in display.
         self.entries.sort(key=key)
+        self.text.delete("1.0", tk.END)
         # Get longest frequency to aid formatting
         max_freq = 0
         for entry in self.entries:
-            max_freq = max(max_freq, entry.frequency)
+            custom = cast(WordFrequencyCustom, entry.custom_data)
+            max_freq = max(max_freq, custom.frequency)
         max_freq_len = len(str(max_freq))
         # Display entries
         for entry in self.entries:
-            suspect = f" {WordFrequencyEntry.SUSPECT}" if entry.suspect else ""
+            custom = cast(WordFrequencyCustom, entry.custom_data)
+            suspect = f" {WordFrequencyCustom.SUSPECT}" if custom.suspect else ""
             # Single whitespace characters are replaced with a visible label
             try:
-                word = WordFrequencyDialog.CHAR_DISPLAY[entry.word]
+                word = WordFrequencyDialog.CHAR_DISPLAY[custom.word]
             except KeyError:
-                word = entry.word
-            message = f"{entry.frequency:>{max_freq_len}}  {word}{suspect}"
+                word = custom.word
+            message = f"{custom.frequency:>{max_freq_len}}  {word}{suspect}"
             if hilite_orphan_chars:
                 suites, enabled = CPCharSuitesDialog.selected_charsuite_check(
-                    entry.word
+                    custom.word
                 )
                 if not enabled:
                     message += (
@@ -715,10 +617,20 @@ class WordFrequencyDialog(ToplevelDialog):
         # Search from selected to end of list & wrap to beginning
         for loop in range(n_entries):
             idx = (selected + loop) % n_entries
-            if self.entries[idx].word.lower().startswith(self.search_buffer):
+            custom_data = cast(WordFrequencyCustom, self.entries[idx].custom_data)
+            if custom_data.word.lower().startswith(self.search_buffer):
                 self.goto_word(idx, force_first=True)
                 return "break"
         return ""
+
+    def select_entry_by_arrow(self, increment: int) -> None:
+        """Select next/previous line in dialog, and jump to the line in the
+        main text widget that corresponds to it.
+
+        Args:
+            increment: +1 to move to next line, -1 to move to previous line.
+        """
+        self.goto_word_by_arrow(increment)
 
     def goto_word_by_arrow(self, increment: int) -> str:
         """Select next/previous line in dialog, and jump to the line in the
@@ -758,7 +670,8 @@ class WordFrequencyDialog(ToplevelDialog):
         self.text.select_line(entry_index + 1)
         self.text.mark_set(tk.INSERT, f"{entry_index + 1}.0")
         self.text.focus()
-        word = self.entries[entry_index].word
+        custom_data = cast(WordFrequencyCustom, self.entries[entry_index].custom_data)
+        word = custom_data.word
         if word == self.previous_word and not force_first:
             start = maintext().rowcol(
                 f"{maintext().get_insert_index().index()}{'-' if reverse else '+'}1c"
@@ -834,6 +747,18 @@ class WordFrequencyDialog(ToplevelDialog):
             maintext().spotlight_range(IndexRange(start_index, end_index))
             self.previous_word = word
 
+    def select_entry_by_index(self, entry_index: int, focus: bool = True) -> None:
+        """Select line in dialog corresponding to given entry index,
+        and jump to the line in the main text widget that corresponds to it.
+
+        Args:
+            entry_index: Index of chosen entry.
+            focus: Whether to switch focus to text window.
+        """
+        if not self.text.winfo_exists():
+            return
+        self.goto_word(entry_index, force_first=True)
+
     def search_word(self, event: tk.Event) -> str:
         """Open search dialog ready to search for selected word."""
         try:
@@ -841,7 +766,8 @@ class WordFrequencyDialog(ToplevelDialog):
         except IndexError:
             return "break"
         self.text.select_line(entry_index + 1)
-        word = self.entries[entry_index].word
+        custom_data = cast(WordFrequencyCustom, self.entries[entry_index].custom_data)
+        word = custom_data.word
 
         # Special handling for newline characters (displayed as RETURN_ARROW)
         match_word = re.sub(RETURN_ARROW, "\n", word) if RETURN_ARROW in word else word
@@ -865,12 +791,14 @@ class WordFrequencyDialog(ToplevelDialog):
         except IndexError:
             return "break"
         self.text.select_line(entry_index + 1)
-        word = self.entries[entry_index].word.replace("-*", "-")
+        custom_data = cast(WordFrequencyCustom, self.entries[entry_index].custom_data)
+        word = custom_data.word.replace("-*", "-")
         content_list = [word]
 
         nohyp = re.sub("[-* ]+", "", word)
         for entry in self.entries:
-            entry_word = entry.word.replace("-*", "-")
+            custom_data = cast(WordFrequencyCustom, entry.custom_data)
+            entry_word = custom_data.word.replace("-*", "-")
             if (
                 entry_word not in content_list
                 and re.sub("[- ]+", "", entry_word) == nohyp
@@ -913,10 +841,12 @@ class WordFrequencyDialog(ToplevelDialog):
 
     def do_wf_populate(self) -> None:
         """Populate the WF dialog with words based on the display type."""
+        self.update_count_label(working=True)
         self.previous_word = ""
         display_type = preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
 
         # Suspects Only is only relevant for some modes
+        assert self.suspects_only_btn is not None
         if display_type in (
             WFDisplayType.EMDASHES,
             WFDisplayType.HYPHENS,
@@ -924,9 +854,9 @@ class WordFrequencyDialog(ToplevelDialog):
             WFDisplayType.ACCENTS,
             WFDisplayType.LIGATURES,
         ):
-            self.suspects_btn.grid()
+            self.suspects_only_btn.grid()
         else:
-            self.suspects_btn.grid_remove()
+            self.suspects_only_btn.grid_remove()
 
         match display_type:
             case WFDisplayType.ALL_WORDS:
@@ -967,12 +897,22 @@ class WordFrequencyDialog(ToplevelDialog):
         all_words = _the_word_lists.get_all_words()
         total_cnt = 0
         for word, freq in all_words.items():
-            self.add_entry(word, freq)
+            self.add_wf_entry(word, freq)
             total_cnt += freq
         self.display_entries()
-        self.message.set(
+        self.count_label["text"] = (
             f"{sing_plur(total_cnt, 'total word')}; {sing_plur(len(all_words), 'distinct word')}"
         )
+
+    def update_count_label(self, working: bool = False) -> None:
+        """Update the label with "Working..." - counts displayed in wf_populate_all.
+
+        Args:
+            working: If set to True, display a "Working..." label instead.
+        """
+        if working and self.count_label.winfo_exists():
+            self.count_label["text"] = "Working..."
+            self.count_label.update()
 
     def wf_populate_emdashes(self) -> None:
         """Populate the WF dialog with the list of emdashed words."""
@@ -986,16 +926,18 @@ class WordFrequencyDialog(ToplevelDialog):
             # Check for suspect, i.e. also seen with a single hyphen
             word = re.sub("(--|—)", "-", emdash_word)
             suspect = word in all_words
-            if suspect or not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
-                self.add_entry(emdash_word, freq, suspect=suspect)
+            if suspect or not self.get_dialog_pref(
+                PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT
+            ):
+                self.add_wf_entry(emdash_word, freq, suspect=suspect)
                 if suspect:
                     suspect_cnt += 1
             if suspect:
-                self.add_entry(word, all_words[word], suspect=True)
+                self.add_wf_entry(word, all_words[word], suspect=True)
                 suspect_cnt += 1
         self.display_entries()
-        self.message.set(
-            f"{sing_plur(len(emdash_words), 'emdash phrase')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
+        self.count_label["text"] = (
+            f"{sing_plur(len(emdash_words), 'emdash phrase')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyCustom.SUSPECT})"
         )
 
     def wf_populate_hyphens(self) -> None:
@@ -1051,48 +993,50 @@ class WordFrequencyDialog(ToplevelDialog):
             suspect = wp_exists or nh_exists or th_exists or "-*" in word
             suspect_inc = 1 if suspect else 0
 
-            if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY):
-                self.add_entry(word, freq, suspect=suspect)
+            if not self.get_dialog_pref(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT):
+                self.add_wf_entry(word, freq, suspect=suspect)
                 word_output[word] = True
                 suspect_cnt += suspect_inc
             if wp_exists:
                 if word not in word_output:
-                    self.add_entry(word, freq, suspect=suspect)
+                    self.add_wf_entry(word, freq, suspect=suspect)
                     word_output[word] = True
                     suspect_cnt += suspect_inc
                 if word_pair not in word_output:
-                    self.add_entry(word_pair, word_pairs[word_pair], suspect=suspect)
+                    self.add_wf_entry(word_pair, word_pairs[word_pair], suspect=suspect)
                     word_output[word_pair] = True
                     suspect_cnt += suspect_inc
             nohyp_word = re.sub(r"-\*?", "", word)
             if nh_exists:
                 if word not in word_output:
-                    self.add_entry(word, freq, suspect=suspect)
+                    self.add_wf_entry(word, freq, suspect=suspect)
                     word_output[word] = True
                     suspect_cnt += suspect_inc
                 if nohyp_word not in word_output:
-                    self.add_entry(nohyp_word, all_words[nohyp_word], suspect=suspect)
+                    self.add_wf_entry(
+                        nohyp_word, all_words[nohyp_word], suspect=suspect
+                    )
                     word_output[nohyp_word] = True
                     suspect_cnt += suspect_inc
             twohyp_word = re.sub(r"-\*?", "--", word)
             if th_exists:
                 if word not in word_output:
-                    self.add_entry(word, freq, suspect=suspect)
+                    self.add_wf_entry(word, freq, suspect=suspect)
                     word_output[word] = True
                     suspect_cnt += suspect_inc
                 if twohyp_word not in word_output:
-                    self.add_entry(
+                    self.add_wf_entry(
                         twohyp_word, emdash_words[twohyp_word], suspect=suspect
                     )
                     word_output[twohyp_word] = True
                     suspect_cnt += suspect_inc
             if "-*" in word and word not in word_output:
-                self.add_entry(word, freq, suspect=suspect)
+                self.add_wf_entry(word, freq, suspect=suspect)
                 word_output[word] = True
                 suspect_cnt += suspect_inc
         self.display_entries()
-        self.message.set(
-            f"{sing_plur(total_cnt, 'hyphenated word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
+        self.count_label["text"] = (
+            f"{sing_plur(total_cnt, 'hyphenated word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyCustom.SUSPECT})"
         )
 
     def wf_populate_by_match(
@@ -1113,10 +1057,10 @@ class WordFrequencyDialog(ToplevelDialog):
         count = 0
         for word, freq in all_words.items():
             if match_func(word):
-                self.add_entry(word, freq)
+                self.add_wf_entry(word, freq)
                 count += 1
         self.display_entries()
-        self.message.set(f"{sing_plur(count, desc + ' word')}")
+        self.count_label["text"] = f"{sing_plur(count, desc + ' word')}"
 
     def wf_populate_alphanum(self) -> None:
         """Populate the WF dialog with the list of all alphanumeric words."""
@@ -1209,19 +1153,19 @@ class WordFrequencyDialog(ToplevelDialog):
                     re.findall(unmarked_search, whole_text, flags=search_flags)
                 )
                 if unmarked_count[unmarked_phrase] > 0:
-                    self.add_entry(
+                    self.add_wf_entry(
                         unmarked_phrase, unmarked_count[unmarked_phrase], suspect=True
                     )
                     suspect_cnt += 1
 
-            if unmarked_count[unmarked_phrase] > 0 or not preferences.get(
-                PrefKey.WFDIALOG_SUSPECTS_ONLY
+            if unmarked_count[unmarked_phrase] > 0 or not self.get_dialog_pref(
+                PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT
             ):
-                self.add_entry(marked_phrase, marked_count)
+                self.add_wf_entry(marked_phrase, marked_count)
 
         self.display_entries()
-        self.message.set(
-            f"{sing_plur(total_cnt, 'marked-up phrase')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
+        self.count_label["text"] = (
+            f"{sing_plur(total_cnt, 'marked-up phrase')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyCustom.SUSPECT})"
         )
 
     def wf_populate_accents(self) -> None:
@@ -1246,18 +1190,23 @@ class WordFrequencyDialog(ToplevelDialog):
             # Check for suspect, i.e. seen without accent variation
             suspect = num_accent_variants[no_accent_word] > 1
             # Add to list if it's a suspect, or if we're showing all accented words
-            if not preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY) or suspect:
-                self.add_entry(word, freq, suspect=suspect)
+            if (
+                not self.get_dialog_pref(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT)
+                or suspect
+            ):
+                self.add_wf_entry(word, freq, suspect=suspect)
             # Also add no-accent word if in file and it hasn't been added before
             if no_accent_word in all_words and no_accent_word not in no_accents_added:
-                self.add_entry(no_accent_word, all_words[no_accent_word], suspect=True)
+                self.add_wf_entry(
+                    no_accent_word, all_words[no_accent_word], suspect=True
+                )
                 no_accents_added.add(no_accent_word)
                 suspect_cnt += 1  # No-accent word is also a suspect
             if suspect:
                 suspect_cnt += 1
         self.display_entries()
-        self.message.set(
-            f"{sing_plur(total_cnt, 'accented word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
+        self.count_label["text"] = (
+            f"{sing_plur(total_cnt, 'accented word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyCustom.SUSPECT})"
         )
 
     def wf_populate_ligatures(self) -> None:
@@ -1268,7 +1217,7 @@ class WordFrequencyDialog(ToplevelDialog):
         all_words = _the_word_lists.get_all_words()
         suspect_cnt = 0
         total_cnt = 0
-        suspects_only = preferences.get(PrefKey.WFDIALOG_SUSPECTS_ONLY)
+        suspects_only = self.get_dialog_pref(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT)
         replacements = [
             ("æ", "ae"),
             ("Æ", "Ae"),
@@ -1292,9 +1241,9 @@ class WordFrequencyDialog(ToplevelDialog):
                     suspect = False
                 if suspect:
                     suspect_cnt += 1
-                    self.add_entry(word, freq, suspect=True)
+                    self.add_wf_entry(word, freq, suspect=True)
                 elif not suspects_only:
-                    self.add_entry(word, freq)
+                    self.add_wf_entry(word, freq)
             else:
                 lig_word = re.sub("ae", "æ", word)
                 lig_word = re.sub("(AE|Ae)", "Æ", lig_word)
@@ -1302,12 +1251,12 @@ class WordFrequencyDialog(ToplevelDialog):
                 lig_word = re.sub("(OE|Oe)", "Œ", lig_word)
                 if lig_word in all_words:
                     suspect_cnt += 1
-                    self.add_entry(word, freq, suspect=True)
+                    self.add_wf_entry(word, freq, suspect=True)
                 elif not suspects_only:
-                    self.add_entry(word, freq)
+                    self.add_wf_entry(word, freq)
         self.display_entries()
-        self.message.set(
-            f"{sing_plur(total_cnt, 'ligature word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyEntry.SUSPECT})"
+        self.count_label["text"] = (
+            f"{sing_plur(total_cnt, 'ligature word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyCustom.SUSPECT})"
         )
 
     def wf_populate_charcounts(self) -> None:
@@ -1326,10 +1275,10 @@ class WordFrequencyDialog(ToplevelDialog):
                 tally_word(char_dict, char)
 
         for char, count in char_dict.items():
-            self.add_entry(char, count)
+            self.add_wf_entry(char, count)
 
         self.display_entries()
-        self.message.set(
+        self.count_label["text"] = (
             f"{sing_plur(total_cnt, 'character')}; {sing_plur(len(char_dict), 'distinct character')}"
         )
 
@@ -1380,7 +1329,7 @@ class WordFrequencyDialog(ToplevelDialog):
                 lambda word: re.search(regexp, word),
             )
         except re.error as exc:
-            self.message.set("Bad regex: " + str(exc))
+            self.count_label["text"] = "Bad regex: " + str(exc)
 
     @classmethod
     def highlight_charsuite_refresh(cls) -> None:
@@ -1402,7 +1351,9 @@ def word_frequency() -> None:
 
     _the_word_lists = WFWordLists()
 
-    self = WordFrequencyDialog.show_dialog()
+    self = WordFrequencyDialog.show_dialog(
+        rerun_command=word_frequency,
+    )
     self.wf_populate()
 
 
