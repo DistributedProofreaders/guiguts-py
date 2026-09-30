@@ -180,7 +180,8 @@ def import_prep_text_files() -> None:
             maintext().undo_block_end()
             return
 
-        # Remove BOM & trailing blank lines
+        # Remove "Digitized by Google", BOM & trailing blank lines
+        file_text = re.sub(" *(Digitized +by|Google) *", "", file_text)
         file_text = re.sub(r"[ \n]+$", "", file_text.replace("\ufeff", ""))
         separator = f"-----File: {file_path.stem}.png" + "-" * 45
         maintext().insert("end", separator + "\n" + file_text + "\n")
