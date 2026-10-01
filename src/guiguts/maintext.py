@@ -1895,6 +1895,7 @@ class MainText(tk.Text):
         focus: bool = True,
         focus_widget: Optional["MainText | TextPeer"] = None,
         see_end_rowcol: Optional[IndexRowCol] = None,
+        top_of_page: bool = False,
         store_location: bool = True,
     ) -> None:
         """Set the position of the insert cursor.
@@ -1907,6 +1908,8 @@ class MainText(tk.Text):
                 If specified, and its row is the same as `insert_pos.row`, then the
                 final `see` uses the mid point of these two positions. Will only
                 change things if there are long lines that don't fit in screen width.
+            top_of_page: If given, instead of centering index position vertically on
+                screen, position it near top of page.
             store_location: Set False if current location should not be stored in
                 history before insert cursor is moved.
         """
@@ -1916,19 +1919,23 @@ class MainText(tk.Text):
             focus_widget.location_history.push()
         insert_index = insert_pos.index()
         focus_widget.mark_set(tk.INSERT, insert_index)
-        # The `see` method can leave the desired line at the top or bottom of window.
-        # So, we "see" lines above and below desired line incrementally up to
-        # half window height each way, ensuring desired line is left in the middle.
-        # If performance turns out to be an issue, consider giving `step` to `range`.
-        # Step should be smaller than half minimum likely window height.
-        start_index = focus_widget.index(
-            f"@0,{int(focus_widget.cget('borderwidth'))} linestart"
-        )
-        end_index = focus_widget.index(f"@0,{focus_widget.winfo_height()} linestart")
-        n_lines = IndexRowCol(end_index).row - IndexRowCol(start_index).row
-        for inc in range(1, int(n_lines / 2) + 1):
-            focus_widget.see(f"{tk.INSERT}-{inc}l")
-            focus_widget.see(f"{tk.INSERT}+{inc}l")
+        focus_widget.see(insert_index)
+        # Check where insert index is, and where we want it, then
+        # scroll up/down to get it right.
+        # Use dlineinfo to make it cope with soft-wrapping, i.e. displayed lines
+        # not lines of text in the file
+        target_info = focus_widget.dlineinfo(insert_index)
+        if target_info is not None:
+            target_y = target_info[1]
+            line_height = target_info[3]
+            if top_of_page:
+                top_y = int(focus_widget.cget("borderwidth"))
+                desired_y = top_y + 2 * line_height
+            else:
+                desired_y = focus_widget.winfo_height() // 2
+            delta = round((target_y - desired_y) / line_height)
+            focus_widget.yview_scroll(delta, "units")
+
         # If an endpoint hint is given, try to improve the "see" position horizontally
         # by first seeing the endpoint, before seeing the start point, then the mid-point
         if see_end_rowcol is not None and insert_pos.row == see_end_rowcol.row:
