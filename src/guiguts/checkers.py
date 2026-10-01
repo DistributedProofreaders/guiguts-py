@@ -333,17 +333,17 @@ class CheckerDialog(ToplevelDialog):
         self.top_frame.rowconfigure(0, weight=0)
 
         # At top of dialog, header Frame to hold "count" label and Re-run button
-        count_header_frame = ttk.Frame(
+        self.count_header_frame = ttk.Frame(
             self.top_frame,
             padding=2,
             borderwidth=1,
             relief=tk.GROOVE,
         )
-        count_header_frame.grid(row=0, column=0, sticky="NSEW")
-        count_header_frame.rowconfigure(0, weight=1)
-        count_header_frame.columnconfigure(2, weight=1)
+        self.count_header_frame.grid(row=0, column=0, sticky="NSEW")
+        self.count_header_frame.rowconfigure(0, weight=1)
+        self.count_header_frame.columnconfigure(2, weight=1)
 
-        self.count_label = ttk.Label(count_header_frame, text="No results")
+        self.count_label = ttk.Label(self.count_header_frame, text="No results")
         self.count_label.grid(row=0, column=0, sticky="NSW")
 
         self.suspects_only_btn: Optional[ttk.Checkbutton]
@@ -360,7 +360,7 @@ class CheckerDialog(ToplevelDialog):
                 self.display_entries()
 
             self.suspects_only_btn = ttk.Checkbutton(
-                count_header_frame,
+                self.count_header_frame,
                 text="Suspects Only",
                 variable=suspects_only_var,
                 command=suspects_only_changed,
@@ -369,7 +369,7 @@ class CheckerDialog(ToplevelDialog):
         else:
             self.suspects_only_btn = None
 
-        self.sort_frame = ttk.Frame(count_header_frame)
+        self.sort_frame = ttk.Frame(self.count_header_frame)
         self.sort_frame.grid(row=0, column=2, sticky="NS", pady=5)
         self.sort_frame.rowconfigure(0, weight=1)
         for cc in range(0, 2):
@@ -408,23 +408,24 @@ class CheckerDialog(ToplevelDialog):
         )
         self.alpha_radio.grid(row=0, column=2, sticky="NS", padx=2)
         if sort_custom_label:
-            ttk.Radiobutton(
+            self.custom_radio = ttk.Radiobutton(
                 self.sort_frame,
                 text=sort_custom_label,
                 command=sort_type_changed,
                 variable=sort_type,
                 value=CheckerSortType.CUSTOM,
-            ).grid(row=0, column=3, sticky="NS", padx=2)
+            )
+            self.custom_radio.grid(row=0, column=3, sticky="NS", padx=2)
 
         def copy_errors() -> None:
             """Copy text messages to clipboard."""
             maintext().clipboard_clear()
             maintext().clipboard_append(self.text.get("1.0", tk.END))
 
-        copy_button = ttk.Button(
-            count_header_frame, text="Copy Results", command=copy_errors
+        self.copy_button = ttk.Button(
+            self.count_header_frame, text="Copy Results", command=copy_errors
         )
-        copy_button.grid(row=0, column=3, sticky="NSE")
+        self.copy_button.grid(row=0, column=3, sticky="NSE")
 
         def rerunner() -> None:
             Busy.busy()
@@ -435,7 +436,7 @@ class CheckerDialog(ToplevelDialog):
 
         self.rerun_command = rerun_command
         self.rerun_button = ttk.Button(
-            count_header_frame, text="Re-run", command=rerunner
+            self.count_header_frame, text="Re-run", command=rerunner
         )
         self.rerun_button.grid(row=0, column=4, sticky="NSE", padx=(10, 0))
 
