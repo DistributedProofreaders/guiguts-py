@@ -178,7 +178,7 @@ class PageDetailsDialog(OkApplyCancelDialog):
             except KeyError:
                 return
             index = maintext().rowcol(page_mark_from_img(png))
-            maintext().set_insert_index(index, focus=False)
+            maintext().set_insert_index(index, focus=False, top_of_page=True)
 
         self.list.bind("<<TreeviewSelect>>", display_page)
         self.list.grid(row=0, column=0, sticky=tk.NSEW)

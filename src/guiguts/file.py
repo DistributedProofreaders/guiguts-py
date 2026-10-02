@@ -821,7 +821,7 @@ class File:
             except tk.TclError:
                 # Bad image number
                 continue
-            maintext().set_insert_index(index)
+            maintext().set_insert_index(index, top_of_page=True)
             return
         sound_bell()
 
@@ -855,7 +855,7 @@ class File:
         if mark := maintext().page_mark_next_previous(mark, direction):
             # Store mark to cope with coincident page marks
             maintext().store_page_mark(mark)
-            maintext().set_insert_index(maintext().rowcol(mark))
+            maintext().set_insert_index(maintext().rowcol(mark), top_of_page=True)
             return
         sound_bell()
 
