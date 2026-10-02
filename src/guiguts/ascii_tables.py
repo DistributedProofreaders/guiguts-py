@@ -400,54 +400,26 @@ class ASCIITableDialog(ToplevelDialog):
         unfill_btn.grid(row=0, column=2, sticky="NSEW")
         ToolTip(unfill_btn, "Replace fill character with spaces")
 
-        # "Grid <==> Step" LabelFrame
+        # "Restructure" LabelFrame
         restructure_frame = ttk.LabelFrame(
             self.top_frame, text="Restructure", padding=5
         )
         restructure_frame.grid(row=5, column=0, sticky="NSEW")
         restructure_frame.columnconfigure(0, weight=1)
-        center_frame = ttk.Frame(restructure_frame)
-        center_frame.grid(row=0, column=0, pady=2)
-        ttk.Label(center_frame, text="Table Right Column").grid(
-            row=0, column=0, pady=2, sticky="NSEW"
-        )
-        right_entry = ttk.Entry(
-            center_frame,
-            width=3,
-            justify=tk.CENTER,
-            textvariable=PersistentInt(PrefKey.ASCII_TABLE_RIGHT_COL),
-            validate=tk.ALL,
-            validatecommand=(self.register(lambda val: val.isdigit() or not val), "%P"),
-        )
-        right_entry.grid(row=0, column=1, padx=(5, 20), sticky="NSEW")
-        ToolTip(right_entry, "Right margin to use when converting grid ⇔ step format")
-        g2s_btn = ttk.Button(
-            center_frame,
-            text="Convert Grid to Step",
-            command=self.grid_to_step,
-        )
-        g2s_btn.grid(row=0, column=2, sticky="NSEW", padx=5)
-        ToolTip(g2s_btn, "Convert table from grid to step format")
-        s2g_btn = ttk.Button(
-            center_frame,
-            text="Convert Step to Grid",
-            command=self.step_to_grid,
-        )
-        s2g_btn.grid(row=0, column=3, sticky="NSEW", padx=5)
-        ToolTip(s2g_btn, "Convert table from step to grid format")
         cpl2g_btn = ttk.Button(
             restructure_frame,
             text="Convert Cell-per-line to Grid",
             command=self.cell_per_line_to_grid,
         )
-        cpl2g_btn.grid(row=1, column=0, pady=(5, 0))
+        cpl2g_btn.grid(row=0, column=0)
         ToolTip(cpl2g_btn, "Convert table from one-cell-per-line to grid format")
 
         # "Horizontal Borders" Frame
         borders_frame = ttk.LabelFrame(
             self.top_frame, text="Horizontal Borders", padding=5
         )
-        borders_frame.grid(row=6, column=0)
+        borders_frame.grid(row=6, column=0, sticky="EW")
+        borders_frame.columnconfigure(0, weight=1)
         borders_checkbox = ttk.Checkbutton(
             borders_frame,
             text="Add Horizontal Borders on Deselection",
@@ -629,28 +601,6 @@ class ASCIITableDialog(ToplevelDialog):
             cell_fragments = row.cells[self.selected_column].fragments
             for nfrag, _ in enumerate(cell_fragments):
                 cell_fragments[nfrag] = cell_fragments[nfrag].replace(fill_char, " ")
-        maintext().undo_block_begin()
-        tbl.square_off()
-        self.put_table_grid(tbl)
-        self.refresh_table_display()
-
-    def grid_to_step(self) -> None:
-        """Convert table from grid format to step format."""
-        right_col = preferences.get(PrefKey.ASCII_TABLE_RIGHT_COL)
-        tbl = self.get_table_grid()
-        if len(tbl.rows) == 0 or right_col <= 0:
-            return
-        maintext().undo_block_begin()
-        tbl.square_off()
-        self.put_table_step(tbl)
-        self.refresh_table_display()
-
-    def step_to_grid(self) -> None:
-        """Convert table from step format to grid format."""
-        right_col = preferences.get(PrefKey.ASCII_TABLE_RIGHT_COL)
-        tbl = self.get_table_step()
-        if len(tbl.rows) == 0 or right_col <= 0:
-            return
         maintext().undo_block_begin()
         tbl.square_off()
         self.put_table_grid(tbl)
@@ -1111,113 +1061,6 @@ class ASCIITableDialog(ToplevelDialog):
                         line_parts.append(" " * col_widths[col_num])
                 text_rows.append("|".join(line_parts))
         text_table = "|\n".join(text_rows) + "|\n"
-        maintext().replace(self.start_mark_name, self.end_mark_name, text_table)
-
-    def get_table_step(self) -> ASCIITable:
-        """Get step-format table from file and return as an ASCIITable.
-
-        Returns:
-            Table with each cell in one element of 2D array, i.e.
-            all sublists have the same number of elements(=table columns).
-        """
-        table = ASCIITable()
-        table.spaced = True
-        ranges = maintext().tag_ranges(HighlightTag.TABLE_BODY)
-        if len(ranges) == 0:
-            return table
-        table_text = maintext().get(self.start_mark_name, self.end_mark_name)
-        text_lines: list[str] = table_text.split("\n")
-        # Get max number of columns
-        max_cols = max(len(re.findall(r"(    \|)", line)) + 1 for line in text_lines)
-        # Space columns evenly (allow for max_cols dividers)
-        col_width = max(
-            (preferences.get(PrefKey.ASCII_TABLE_RIGHT_COL) - max_cols) // max_cols, 1
-        )
-        wrapper = TextWrapper(
-            width=col_width,
-            break_long_words=False,
-        )
-
-        # For each line of text, check if we've moved to a new cell by counting "    |" prefixes
-        # Once cell is complete, wrap it & store in fragments
-        col_num = -1
-        fragments: list[str] = []
-
-        def store_fragments() -> None:
-            """Store collected fragments in new table cell."""
-            table.rows[-1].cells.append(ASCIITableCell())
-            join_text = re.sub("  +", " ", " ".join(fragments)).strip()
-            table.rows[-1].cells[-1].fragments = wrapper.wrap(join_text)
-
-        table.rows.append(ASCIITableRow())
-        for line in text_lines:
-            # Check for end of row - store collected fragments & start new row
-            if re.fullmatch(r"(    \|)+ *", line):
-                store_fragments()
-                table.rows.append(ASCIITableRow())
-                col_num = -1
-                fragments = []
-                continue
-            ncol = len(re.findall(r"(    \|)", line))
-            frag_text = re.sub(r"^(    \|)+ *", "", line)
-            if ncol == col_num:  # Same cell as previously
-                fragments.append(frag_text)
-            else:
-                # Store collected fragments and start new cell
-                if fragments:
-                    store_fragments()
-                col_num = ncol
-                fragments = [frag_text]
-        # "Square off" table, making all rows have max_cols columns
-        table.square_off()
-        # Pad fragments with space to fit column widths
-        col_widths = table.get_max_column_widths()
-        for row in table.rows:
-            for col_num, cell in enumerate(row.cells):
-                cell_fragments = cell.fragments
-                for nfrag, _ in enumerate(cell_fragments):
-                    cell_fragments[nfrag] = cell_fragments[nfrag].ljust(
-                        col_widths[col_num]
-                    )
-        return table
-
-    def put_table_step(self, table: ASCIITable) -> None:
-        """Put ASCIITable back into file in step format.
-
-        Args:
-            table: ASCIITable structure to be inserted back into file.
-        """
-
-        wrapper = TextWrapper(
-            width=preferences.get(PrefKey.ASCII_TABLE_RIGHT_COL),
-            break_long_words=False,
-        )
-        text_rows: list[str] = []
-        leading_vertical_line = True
-        for row in table.rows:
-            for frag in row.cells[0].fragments:
-                if len(frag.strip()) > 0:
-                    leading_vertical_line = False
-                    break
-            else:
-                # No non-empty frag on this row - check next row
-                continue
-            # Non-empty frag found, break outer loop
-            break
-        for row in table.rows:
-            col_num = 0
-            for idx, cell in enumerate(row.cells):
-                if leading_vertical_line and idx == 0:
-                    continue
-                wrapper.initial_indent = "    |" * col_num + " " if col_num > 0 else ""
-                wrapper.subsequent_indent = wrapper.initial_indent
-                cell_text = re.sub("  +", " ", " ".join(cell.fragments)).strip()
-                text_rows.extend(wrapper.wrap(cell_text))
-                col_num += 1
-            text_rows.append(
-                "    |" * (col_num - 1 if leading_vertical_line else col_num)
-            )
-        text_table = "\n".join(text_rows) + "\n"
         maintext().replace(self.start_mark_name, self.end_mark_name, text_table)
 
     def refresh_table_display(self) -> None:

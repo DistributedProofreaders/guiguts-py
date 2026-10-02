@@ -707,7 +707,6 @@ class Guiguts:
         preferences.set_default(PrefKey.ASCII_TABLE_REWRAP, False)
         preferences.set_default(PrefKey.ASCII_TABLE_JUSTIFY, JustifyStyle.LEFT)
         preferences.set_default(PrefKey.ASCII_TABLE_FILL_CHAR, "@")
-        preferences.set_default(PrefKey.ASCII_TABLE_RIGHT_COL, 70)
         preferences.set_default(PrefKey.ASCII_TABLE_HORIZONTAL_BORDERS, False)
         preferences.set_default(PrefKey.COMMAND_PALETTE_HISTORY, [])
         preferences.set_default(PrefKey.COMMAND_PALETTE_SORT, 1)
