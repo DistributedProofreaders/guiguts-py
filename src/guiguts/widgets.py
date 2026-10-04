@@ -16,7 +16,7 @@ from guiguts.preferences import (
     PrefKey,
     PersistentString,
 )
-from guiguts.root import root, RootWindowState
+from guiguts.root import root, RootWindowState, disable_macos_native_fullscreen
 from guiguts.utilities import is_windows, is_mac, process_accel, cmd_ctrl_string, is_x11
 
 NUM_HISTORY = 10
@@ -114,6 +114,7 @@ class ToplevelDialog(tk.Toplevel):
         ):
             self.transient(root())
         self.wm_deiconify()
+        disable_macos_native_fullscreen(self)
 
         self.tooltip_list: list[ToolTip] = []
         # Bind to top_frame being destroyed because if binding is to dialog,

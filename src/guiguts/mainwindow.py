@@ -27,7 +27,7 @@ from guiguts.maintext import (
     add_text_context_menu,
 )
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
-from guiguts.root import Root, root
+from guiguts.root import Root, root, disable_macos_native_fullscreen
 from guiguts.utilities import (
     is_mac,
     is_x11,
@@ -1665,6 +1665,8 @@ class MainWindow:
             float_func=self.float_image,
             dock_func=self.dock_image,
         )
+        # Applies whenever image viewer is floated
+        disable_macos_native_fullscreen(MainWindow.mainimage)
         if preferences.get(PrefKey.IMAGE_VIEWER_INTERNAL):
             root().after_idle(lambda: self.load_image("", force_show=True))
 
