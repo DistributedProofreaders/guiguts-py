@@ -85,7 +85,7 @@ class ToplevelDialog(tk.Toplevel):
             self._pin_menu = tk.Menu(self, tearoff=False)
             self._pin_menu.add_command(label="Pin 📌", command=self.toggle_pin)
             mouse_bind(self, "3", self._show_context_menu)
-            self.pin_unpin(first=True)
+            self.pin_unpin()
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -188,23 +188,20 @@ class ToplevelDialog(tk.Toplevel):
         self.save_dialog_pref(PrefKey.DIALOG_PIN_DICT, new_pin)
         self.pin_unpin()
 
-    def pin_unpin(self, first: bool = False) -> None:
-        """Pin/unpin dialog based on it's pref setting.
-
-        Args:
-            first: Set True on first call for this dialog.
-        """
+    def pin_unpin(self) -> None:
+        """Pin/unpin dialog based on its pref setting."""
         if self.is_pinned():
             self.transient(root())
             self.title(f"{self.base_title} 📌")
         else:
-            self.transient(None)
-            # Window manager won't release dialog even with the above call, so if
-            # unpinning from pinned, tell user they need to close the dialog to fully unpin.
-            if first:
-                self.title(self.base_title)
-            else:
-                self.title(f"{self.base_title} 📌 (will unpin when closed)")
+            # Can't use `self.transient(None)` (old approach) since tkinter truncates
+            # the Tcl command at `None`, turning it into a query rather than an unset.
+            self.tk.call("wm", "transient", str(self), "")
+            self.title(self.base_title)
+            # Unpinning can drop dialog behind main window, so raise it. Dropping behind
+            # the main window looks the same to the user as if the window closed; this
+            # helps avoid confusion.
+            self.lift()
 
     def _show_context_menu(self, event: tk.Event) -> None:
         """Display pin/unpin context menu."""
