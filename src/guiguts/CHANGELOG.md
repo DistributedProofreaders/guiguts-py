@@ -1,6 +1,35 @@
 # Changelog
 
 
+## Version 2.1.6
+
+- ASCII Tables Dialog now has an option to re-insert horizontal table borders
+  when the table is deselected or the dialog closed. It attempts to remember
+  whether there was a border at the very top and bottom of the table when
+  work on the table began
+- Goto Page, Goto Label, Prev Image, Next Image, and page navigation in the
+  Page Label Configuration dialog, all position the page break near the top
+  of the window, rather than the center, thus showing more of the page's text  
+- Tooltips in checker dialogs are not re-popped if the user only leaves the
+  message area to scroll using the scrollbars
+- Content Providing import strips out "Digitized by Google"
+- Grid-to-Step/Step-to-Grid removed from ASCII Tables dialog - PG would prefer
+  a wide table than reformatting in this way
+- Word Frequency dialog is now a true checker dialog, so behavior should be
+  more consistent with other dialogs where appropriate
+- Unused code in PPcomp (only needed for the online version) was removed
+
+### Bug fixes
+
+- ASCII Tables added an unwanted space before vertical borders in Auto-Columns
+- In PPcomp expanded mode, if a message without a line number was selected the
+  insert cursor jumped to the start of the file
+- Unpinning a dialog required the user to close and re-open the dialog before
+  the unpin actually happened
+- On macOS, the green gumdrop fullscreen button used Mac-native fullscreen which
+  did not work well in Guiguts - it now just maximizes the window instead
+
+
 ## Version 2.1.5
 
 - HTML for the automatically generated ToC now uses list and flex markup, with
