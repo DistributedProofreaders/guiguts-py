@@ -2,14 +2,18 @@
 
 from collections import Counter
 from enum import StrEnum, auto
+import importlib.resources
+import json
 import logging
 import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable, Optional, cast
+import unicodedata
 
 import regex as re
 
 from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerSortType
+from guiguts.data import confusables
 from guiguts.content_providing import CPCharSuitesDialog
 from guiguts.maintext import maintext, HighlightTag
 from guiguts.misc_tools import tool_save, do_open_ngram
@@ -43,6 +47,14 @@ _the_word_lists = None
 
 RETURN_ARROW = "⏎"
 MARKUP_TYPES = "i|b|sc|f|g|u|cite|em|strong"
+CONFUSABLES: dict[str, set[str]] = {
+    char: set(chars)
+    for char, chars in json.loads(
+        importlib.resources.files(confusables)
+        .joinpath("confusables.json")
+        .read_text(encoding="utf-8")
+    ).items()
+}
 
 
 class WFDisplayType(StrEnum):
@@ -387,6 +399,8 @@ class WordFrequencyDialog(CheckerDialog):
         self.search_buffer = ""
         self.reset_timer_id = ""
 
+        self.char_count_chars: set[str] = set()
+
         self.previous_word = ""
         # Store tooltips so they can be added/destroyed depending on Ignore Case
         self.tooltip_dict: dict[ttk.Widget, ToolTip] = {}
@@ -476,6 +490,37 @@ class WordFrequencyDialog(CheckerDialog):
         no_dia = WordFrequencyDialog.remove_diacritics_and_hyphens(custom.word)
         return (-len(custom.word), no_dia.lower(), no_dia, custom.word)
 
+    @staticmethod
+    def confusable_message(
+        char: str,
+        chars_present: set[str],
+    ) -> str:
+        """Return a message if a confusable character occurs in the document."""
+        present = CONFUSABLES.get(char, set()) & chars_present
+
+        if not present:
+            return ""
+
+        # Prefer a Latin character as the character we are warning that
+        # the displayed character may be confused with.
+        latin_confusables = [
+            candidate
+            for candidate in present
+            if "LATIN" in unicodedata.name(candidate, "")
+        ]
+
+        confusable = min(
+            latin_confusables or list(present),
+            key=ord,
+        )
+
+        confusable_name = unicodedata.name(
+            confusable,
+            f"U+{ord(confusable):04X}",
+        )
+
+        return f'  (Confusable with "{confusable}" — {confusable_name})'
+
     def do_display_entries(
         self, auto_select_line: bool = True, complete_msg: bool = True
     ) -> None:
@@ -535,6 +580,11 @@ class WordFrequencyDialog(CheckerDialog):
                         if suites
                         else "  (Not in any character suite)"
                     )
+            if WordFrequencyDialog.display_type == WFDisplayType.CHAR_COUNTS:
+                message += self.confusable_message(
+                    custom.word,
+                    self.char_count_chars,
+                )
             self.text.insert(tk.END, f"{message}\n")
             if hilite_orphan_chars and not enabled:
                 self.text.tag_add(
@@ -1273,6 +1323,8 @@ class WordFrequencyDialog(CheckerDialog):
             total_cnt += len(line)
             for char in line:
                 tally_word(char_dict, char)
+
+        self.char_count_chars = set(char_dict)
 
         for char, count in char_dict.items():
             self.add_wf_entry(char, count)
