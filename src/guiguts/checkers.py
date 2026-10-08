@@ -349,21 +349,15 @@ class CheckerDialog(ToplevelDialog):
         self.suspects_only_btn: Optional[ttk.Checkbutton]
         if show_suspects_only:
             # Can't use a PersistentBoolean directly, since we save this value for each checker dialog
-            suspects_only_var = tk.BooleanVar(
+            self.suspects_only_var = tk.BooleanVar(
                 self, self.get_dialog_pref(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT)
             )
-
-            def suspects_only_changed() -> None:
-                self.save_dialog_pref(
-                    PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT, suspects_only_var.get()
-                )
-                self.display_entries()
 
             self.suspects_only_btn = ttk.Checkbutton(
                 self.count_header_frame,
                 text="Suspects Only",
-                variable=suspects_only_var,
-                command=suspects_only_changed,
+                variable=self.suspects_only_var,
+                command=self.suspects_only_changed,
             )
             self.suspects_only_btn.grid(row=0, column=1, sticky="NSW", padx=(10, 0))
         else:
@@ -931,6 +925,13 @@ class CheckerDialog(ToplevelDialog):
                 "fixremall_btn", "process_remove_entry_current", all_matching=True
             ),
         )
+
+    def suspects_only_changed(self) -> None:
+        """Update dialog when Suspects Only checkbox is changed."""
+        self.save_dialog_pref(
+            PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT, self.suspects_only_var.get()
+        )
+        self.display_entries()
 
     def reset(self) -> None:
         """Reset dialog and associated structures & marks."""

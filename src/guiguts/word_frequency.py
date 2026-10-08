@@ -395,6 +395,14 @@ class WordFrequencyDialog(CheckerDialog):
         self.minsize(450, 100)
         self.reset()
 
+    def suspects_only_changed(self) -> None:
+        """Update dialog when Suspects Only checkbox is changed.
+        WF needs a full populate, not just a display of entries."""
+        self.save_dialog_pref(
+            PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT, self.suspects_only_var.get()
+        )
+        self.wf_populate()
+
     def set_case_sensitive_btns(self) -> None:
         """Enable/disable buttons depending on Ignore Case setting.
 
