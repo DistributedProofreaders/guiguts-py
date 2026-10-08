@@ -730,6 +730,16 @@ class ASCIITableDialog(ToplevelDialog):
             self.first_row_border = False
             self.last_row_border = False
 
+        # Trim any end of line spaces
+        try:
+            start = maintext().index(self.start_mark_name)
+            while start := maintext().search(
+                " +$", start, self.end_mark_name, regexp=True
+            ):
+                maintext().delete(start, f"{start} lineend")
+        except tk.TclError:
+            pass  # OK if table has already been deselected and marks deleted
+
         mark = "1.0"
         # Delete all marks we set.
         while mark_next := maintext().mark_next(mark):
