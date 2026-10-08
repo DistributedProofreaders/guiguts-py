@@ -1,6 +1,15 @@
 # Changelog
 
 
+## Version 2.1.7
+
+- The Index page for the GG2 manual has been expanded
+
+### Bug fixes
+
+- Word Frequency Suspects Only button did not automatically refresh the display
+- ASCII Tables dialog could leave some trailing spaces on the end of lines
+
 ## Version 2.1.6
 
 - ASCII Tables Dialog now has an option to re-insert horizontal table borders
