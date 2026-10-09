@@ -9,7 +9,7 @@ Guiguts - an application to support creation of ebooks for PG. A complete [Guigu
 This section contains notes from users who have installed Guiguts 2 on various platforms to use for PPing.
 
 Note that although some example installation commands specify Python 3.13, Guiguts 2
-also works with later versions of Python, and has been tested in versions up to 3.14.
+also works with later versions of Python, and has been tested in versions up to 3.15.
 
 ### Windows
 
@@ -26,9 +26,9 @@ When it opens it will probably be mostly blank with a black background and a pro
 where you can type commands as described in the instructions below.
 
 3. Once the install manager is installed, in the command window, you should be
-able to use the `py` command to install (or update) Python, e.g. `py install 3.14`.
+able to use the `py` command to install (or update) Python, e.g. `py install 3.15`.
 You can also use `py list` to list which versions of Python are installed.
-GG has been tested in versions up to 3.14.
+GG has been tested in versions up to 3.15.
 
 4. Next, you need to install Guiguts. In the command window, type `py -m pip install guiguts`
 (or `py -m pip install --upgrade guiguts` to upgrade from a previous version of GG2).
@@ -51,7 +51,7 @@ GG has been tested in versions up to 3.14.
 ### macOS
 
 1. Install [Python](https://www.python.org/) 3.13 or later. GG has been tested
-in versions up to 3.14. You may need to add the location of the Python installation to
+in versions up to 3.15. You may need to add the location of the Python installation to
 your PATH.
 
 2. Open a Terminal window into which you will type the commands below.
@@ -80,7 +80,7 @@ previous version of GG2).
 ### Linux (Debian/Ubuntu)
 
 Python version 3.13 or above is recommended if possible, though GG has been tested in
-versions from 3.11 up to 3.14.
+versions from 3.11 up to 3.15.
 
 1. Install python, pipx, and Tk. Note that on some Linux distributions, the version number for `idle-python3.12` may differ slightly, e.g. as of this writing Debian 12 would require `idle-python3.11`.
 
@@ -96,12 +96,10 @@ versions from 3.11 up to 3.14.
 
 ### Linux (Fedora)
 
-Instructions tested on Fedora Linux 42 (Workstation Edition). Note that Fedora Linux 43 is reported to include
-Python 3.14 and Tk 9.0 rather than Tk 8.6. Guiguts does not yet support Tk 9.0, so at the moment is not
-expected to run successfully on Fedora Linux 43. 
+Instructions tested on Fedora Linux 42 (Workstation Edition).
 
-Fedora already has python3 installed. Version 3.13 is recommended, if available, and GG has been tested in
-versions 3.11 up to 3.13 (see note above regarding 3.14).
+Fedora already has python3 installed. Version 3.13 or above is recommended, if available, and GG has been tested in
+versions 3.11 up to 3.15.
 
 1. Install pip, pipx, Tk & idle: `sudo dnf install pip pipx python3-tkinter python3-idle`
 
@@ -235,7 +233,7 @@ environment, either exit the shell or run `deactivate`.
 ##### Single (system-wide) version
 
 1. Download Python 3.13 or above from [python.org](https://www.python.org/). GG has been
-   tested in versions up to 3.14.
+   tested in versions up to 3.15.
 2. Install – default dir is `C:\Users\<username>\AppData\Local\Programs\Python\Python313`
 3. Ensure this dir is in PATH variable
 
@@ -291,7 +289,7 @@ python you installed above.
 #### Install Python
 
 Install [python](https://www.python.org/) 3.13 or later. GG has been tested
-in versions up to 3.14.
+in versions up to 3.15.
 
 #### Install Poetry
 
@@ -316,7 +314,7 @@ poetry env use /usr/local/bin/python3
 
 1. Install Python, Poetry, etc.
    * Example from Ubuntu 22.04 -- adapt to your own Linux distro. Python version 3.13 or above,
-     is recommended, and GG has been tested in versions 3.11 up to 3.14.
+     is recommended, and GG has been tested in versions 3.11 up to 3.15.
      ```bash
      sudo apt install python3.13 python3-pip python3-tk idle-python3.13 git pipx
      sudo pipx install poetry
