@@ -126,6 +126,7 @@ class ToplevelDialog(tk.Toplevel):
         self.bind("<FocusIn>", lambda _: self.got_focus())
 
         grab_focus(self)
+        self.after_idle(self.lift)
 
     def __new__(cls, *args: Any, **kwargs: Any) -> "ToplevelDialog":
         """Ensure ToplevelDialogs are not instantiated directly."""
