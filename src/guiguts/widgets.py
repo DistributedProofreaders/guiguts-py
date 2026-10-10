@@ -21,8 +21,8 @@ from guiguts.utilities import is_windows, is_mac, process_accel, cmd_ctrl_string
 
 NUM_HISTORY = 10
 GLOBAL_FONT_NAME = "global_font"
-global_font: Optional[tk_font.Font] = None
-default_font: Optional[tk_font.Font] = None
+GLOBAL_FONT: Optional[tk_font.Font] = None
+DEFAULT_FONT: Optional[tk_font.Font] = None
 
 
 TlDlg = TypeVar("TlDlg", bound="ToplevelDialog")
@@ -1295,7 +1295,7 @@ def themed_style(style: Optional[ThemedStyle] = None) -> ThemedStyle:
 # in dialogs like Compose Sequence (which are used to create the special
 # characters).
 
-_text_focus_widget: Optional[tk.Widget] = None
+_TEXT_FOCUS_WIDGET: Optional[tk.Widget] = None
 
 
 def register_focus_widget(widget: ttk.Entry | tk.Text) -> None:
@@ -1304,18 +1304,18 @@ def register_focus_widget(widget: ttk.Entry | tk.Text) -> None:
     Args:
         widget: The widget whose focus is to be tracked.
     """
-    global _text_focus_widget
+    global _TEXT_FOCUS_WIDGET
     assert isinstance(widget, (ttk.Entry, tk.Text))
 
     def set_focus_widget(event: tk.Event) -> None:
         """Store the widget that triggered the event."""
-        global _text_focus_widget
+        global _TEXT_FOCUS_WIDGET
         assert isinstance(event.widget, tk.Widget)
-        _text_focus_widget = event.widget
+        _TEXT_FOCUS_WIDGET = event.widget
 
     widget.bind("<FocusIn>", set_focus_widget, add=True)
-    if _text_focus_widget is None:
-        _text_focus_widget = widget
+    if _TEXT_FOCUS_WIDGET is None:
+        _TEXT_FOCUS_WIDGET = widget
 
 
 def focus_in_focus_widget() -> None:
@@ -1325,9 +1325,9 @@ def focus_in_focus_widget() -> None:
     This is useful if a dialog was popped from the status/tool bar, rather than leaving
     focus there.
     """
-    if _text_focus_widget is None or not _text_focus_widget.winfo_exists():
+    if _TEXT_FOCUS_WIDGET is None or not _TEXT_FOCUS_WIDGET.winfo_exists():
         return
-    _text_focus_widget.focus_set()
+    _TEXT_FOCUS_WIDGET.focus_set()
 
 
 def insert_in_focus_widget(string: str) -> None:
@@ -1336,20 +1336,20 @@ def insert_in_focus_widget(string: str) -> None:
     Args:
         string: String to be inserted.
     """
-    if _text_focus_widget is None or not _text_focus_widget.winfo_exists():
+    if _TEXT_FOCUS_WIDGET is None or not _TEXT_FOCUS_WIDGET.winfo_exists():
         return
-    assert isinstance(_text_focus_widget, (ttk.Entry, tk.Text))
+    assert isinstance(_TEXT_FOCUS_WIDGET, (ttk.Entry, tk.Text))
 
-    if isinstance(_text_focus_widget, tk.Text):
-        sel_ranges = _text_focus_widget.tag_ranges("sel")
+    if isinstance(_TEXT_FOCUS_WIDGET, tk.Text):
+        sel_ranges = _TEXT_FOCUS_WIDGET.tag_ranges("sel")
         if sel_ranges:
-            _text_focus_widget.mark_set(tk.INSERT, sel_ranges[0])
-            _text_focus_widget.delete(sel_ranges[0], sel_ranges[1])
-            _text_focus_widget.tag_remove("sel", "1.0", tk.END)
-    elif isinstance(_text_focus_widget, ttk.Entry):
-        if _text_focus_widget.selection_present():
-            _text_focus_widget.delete("sel.first", "sel.last")
-    _text_focus_widget.insert(tk.INSERT, string)
+            _TEXT_FOCUS_WIDGET.mark_set(tk.INSERT, sel_ranges[0])
+            _TEXT_FOCUS_WIDGET.delete(sel_ranges[0], sel_ranges[1])
+            _TEXT_FOCUS_WIDGET.tag_remove("sel", "1.0", tk.END)
+    elif isinstance(_TEXT_FOCUS_WIDGET, ttk.Entry):
+        if _TEXT_FOCUS_WIDGET.selection_present():
+            _TEXT_FOCUS_WIDGET.delete("sel.first", "sel.last")
+    _TEXT_FOCUS_WIDGET.insert(tk.INSERT, string)
 
 
 def focus_next_widget(event: tk.Event) -> str:
@@ -1633,15 +1633,15 @@ def askinteger(
 def init_global_font() -> None:
     """Initialize the global font to match the default system font for labels or
     the values from preferences."""
-    global global_font, default_font
+    global GLOBAL_FONT, DEFAULT_FONT
     temp_label = tk.Label()
-    default_font = tk_font.nametofont(temp_label["font"])
+    DEFAULT_FONT = tk_font.nametofont(temp_label["font"])
     temp_label.destroy()
-    global_font = tk_font.Font(name=GLOBAL_FONT_NAME)
+    GLOBAL_FONT = tk_font.Font(name=GLOBAL_FONT_NAME)
     if preferences.get(PrefKey.GLOBAL_FONT_FAMILY) == "":
-        preferences.set(PrefKey.GLOBAL_FONT_FAMILY, default_font.cget("family"))
+        preferences.set(PrefKey.GLOBAL_FONT_FAMILY, DEFAULT_FONT.cget("family"))
     if preferences.get(PrefKey.GLOBAL_FONT_SIZE) < 0:
-        preferences.set(PrefKey.GLOBAL_FONT_SIZE, default_font.cget("size"))
+        preferences.set(PrefKey.GLOBAL_FONT_SIZE, DEFAULT_FONT.cget("size"))
     set_global_font()
     root().option_add("*font", GLOBAL_FONT_NAME)
 
@@ -1649,25 +1649,25 @@ def init_global_font() -> None:
 def set_global_font() -> None:
     """Set the global font to match the default system font for labels or
     the values from preferences."""
-    assert global_font is not None and default_font is not None
+    assert GLOBAL_FONT is not None and DEFAULT_FONT is not None
     if preferences.get(PrefKey.GLOBAL_FONT_SYSTEM):
-        global_font.config(
-            family=default_font.cget("family"),
-            size=default_font.cget("size"),
-            weight=default_font.cget("weight"),
+        GLOBAL_FONT.config(
+            family=DEFAULT_FONT.cget("family"),
+            size=DEFAULT_FONT.cget("size"),
+            weight=DEFAULT_FONT.cget("weight"),
         )
     else:
-        global_font.config(
+        GLOBAL_FONT.config(
             family=preferences.get(PrefKey.GLOBAL_FONT_FAMILY),
             size=preferences.get(PrefKey.GLOBAL_FONT_SIZE),
-            weight=default_font.cget("weight"),
+            weight=DEFAULT_FONT.cget("weight"),
         )
 
 
 def get_global_font() -> tk_font.Font:
     """Return global font."""
-    assert global_font is not None
-    return global_font
+    assert GLOBAL_FONT is not None
+    return GLOBAL_FONT
 
 
 def is_tk9() -> bool:

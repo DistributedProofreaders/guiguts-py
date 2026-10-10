@@ -1385,7 +1385,7 @@ class MessageLog(logging.Handler):
         """Initialize the message log handler."""
         super().__init__(*args)
         self._messagelog: str = ""
-        self.dialog: MessageLogDialog
+        self.dialog: Optional[MessageLogDialog] = None
         self.label_widget = label_widget
         self.label_fade_ids: list[str] = []  # Store so they can be canceled
 
@@ -1400,13 +1400,14 @@ class MessageLog(logging.Handler):
         self._messagelog += message
 
         # If dialog is visible, append error
+        assert self.dialog is not None
         if hasattr(self, "dialog") and self.dialog.winfo_exists():
             self.dialog.append(message)
             self.dialog.lift()
 
     def show(self) -> None:
         """Show the message log dialog."""
-        already_shown = hasattr(self, "dialog") and self.dialog.winfo_exists()
+        already_shown = self.dialog is not None and self.dialog.winfo_exists()
         self.dialog = MessageLogDialog.show_dialog()
         if not already_shown:
             self.dialog.append(self._messagelog)

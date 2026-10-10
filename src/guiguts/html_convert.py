@@ -33,7 +33,7 @@ from guiguts.widgets import ToplevelDialog, Busy
 logger = logging.getLogger(__package__)
 
 css_indents: set[int] = set()
-book_title: Optional[str] = None
+BOOK_TITLE: Optional[str] = None
 DEFAULT_HTML_DIR = importlib.resources.files(html)
 HTML_HEADER_NAME = "html_header.txt"
 PAGE_ID_PREFIX = "Page_"
