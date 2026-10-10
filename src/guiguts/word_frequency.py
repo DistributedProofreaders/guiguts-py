@@ -39,7 +39,7 @@ from guiguts.widgets import (
 
 logger = logging.getLogger(__package__)
 
-_the_word_lists = None
+_THE_WORD_LISTS = None
 
 RETURN_ARROW = "⏎"
 MARKUP_TYPES = "i|b|sc|f|g|u|cite|em|strong"
@@ -899,10 +899,10 @@ class WordFrequencyDialog(CheckerDialog):
 
     def wf_populate_all(self) -> None:
         """Populate the WF dialog with the list of all words."""
-        assert _the_word_lists is not None
+        assert _THE_WORD_LISTS is not None
         self.reset()
 
-        all_words = _the_word_lists.get_all_words()
+        all_words = _THE_WORD_LISTS.get_all_words()
         total_cnt = 0
         for word, freq in all_words.items():
             self.add_wf_entry(word, freq)
@@ -924,11 +924,11 @@ class WordFrequencyDialog(CheckerDialog):
 
     def wf_populate_emdashes(self) -> None:
         """Populate the WF dialog with the list of emdashed words."""
-        assert _the_word_lists is not None
+        assert _THE_WORD_LISTS is not None
         self.reset()
 
-        all_words = _the_word_lists.get_all_words()
-        emdash_words = _the_word_lists.get_emdash_words()
+        all_words = _THE_WORD_LISTS.get_all_words()
+        emdash_words = _THE_WORD_LISTS.get_emdash_words()
         suspect_cnt = 0
         for emdash_word, freq in emdash_words.items():
             # Check for suspect, i.e. also seen with a single hyphen
@@ -950,11 +950,11 @@ class WordFrequencyDialog(CheckerDialog):
 
     def wf_populate_hyphens(self) -> None:
         """Populate the WF dialog with the list of word pairs."""
-        assert _the_word_lists is not None
+        assert _THE_WORD_LISTS is not None
         self.reset()
 
-        all_words = _the_word_lists.get_all_words()
-        emdash_words = _the_word_lists.get_emdash_words()
+        all_words = _THE_WORD_LISTS.get_all_words()
+        emdash_words = _THE_WORD_LISTS.get_emdash_words()
 
         # See if word pair suspects exist, e.g. "flash light" for "flash-light"
         word_pairs: WFDict = WFDict()
@@ -1058,10 +1058,10 @@ class WordFrequencyDialog(CheckerDialog):
             desc: Description for message, e.g. desc "ALLCAPS" -> message "27 ALLCAPS words"
             match_func: Function that returns Truthy result if word matches the required criteria
         """
-        assert _the_word_lists is not None
+        assert _THE_WORD_LISTS is not None
         self.reset()
 
-        all_words = _the_word_lists.get_all_words()
+        all_words = _THE_WORD_LISTS.get_all_words()
         count = 0
         for word, freq in all_words.items():
             if match_func(word):
@@ -1178,10 +1178,10 @@ class WordFrequencyDialog(CheckerDialog):
 
     def wf_populate_accents(self) -> None:
         """Populate the WF dialog with the list of all accented words."""
-        assert _the_word_lists is not None
+        assert _THE_WORD_LISTS is not None
         self.reset()
 
-        all_words = _the_word_lists.get_all_words()
+        all_words = _THE_WORD_LISTS.get_all_words()
         suspect_cnt = 0
         total_cnt = 0
         # For suspects check, remove accents from all words - then we will be able
@@ -1219,10 +1219,10 @@ class WordFrequencyDialog(CheckerDialog):
 
     def wf_populate_ligatures(self) -> None:
         """Populate the WF dialog with the list of all ligature words."""
-        assert _the_word_lists is not None
+        assert _THE_WORD_LISTS is not None
         self.reset()
 
-        all_words = _the_word_lists.get_all_words()
+        all_words = _THE_WORD_LISTS.get_all_words()
         suspect_cnt = 0
         total_cnt = 0
         suspects_only = self.get_dialog_pref(PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT)
@@ -1352,12 +1352,12 @@ class WordFrequencyDialog(CheckerDialog):
 
 def word_frequency() -> None:
     """Do word frequency analysis on file."""
-    global _the_word_lists
+    global _THE_WORD_LISTS
 
     if not tool_save():
         return
 
-    _the_word_lists = WFWordLists()
+    _THE_WORD_LISTS = WFWordLists()
 
     self = WordFrequencyDialog.show_dialog(
         rerun_command=word_frequency,

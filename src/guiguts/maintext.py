@@ -847,12 +847,6 @@ class MainText(tk.Text):
 
         self.config_callbacks: list[Callable[[], None]] = []
 
-        # Set up response to text being modified
-        self.modified_callbacks: list[Callable[[], None]] = []
-        self.bind_event(
-            "<<Modified>>", lambda _event: self.modify_flag_changed_callback()
-        )
-
         # Register this widget to have its focus tracked for inserting special characters
         register_focus_widget(self)
 
@@ -929,6 +923,12 @@ class MainText(tk.Text):
 
         # Register peer widget to have its focus tracked for inserting special characters
         register_focus_widget(self.peer)
+
+        # Set up response to text being modified
+        self.modified_callbacks: list[Callable[[], None]] = []
+        self.bind_event(
+            "<<Modified>>", lambda _event: self.modify_flag_changed_callback()
+        )
 
         self.paned_text_window.add(maintext().frame, minsize=PEER_MIN_SIZE)
 
@@ -6024,16 +6024,16 @@ class MenubarMetadata:
         return None
 
 
-_menubar_metadata = None
+_MENUBAR_METADATA = None
 
 
 def menubar_metadata() -> MenubarMetadata:
     """Return single instance of menubar metadata."""
-    global _menubar_metadata
-    if _menubar_metadata is None:
-        _menubar_metadata = MenubarMetadata()
-    assert _menubar_metadata is not None
-    return _menubar_metadata
+    global _MENUBAR_METADATA
+    if _MENUBAR_METADATA is None:
+        _MENUBAR_METADATA = MenubarMetadata()
+    assert _MENUBAR_METADATA is not None
+    return _MENUBAR_METADATA
 
 
 class TearOffMenuDialog(ToplevelDialog):
