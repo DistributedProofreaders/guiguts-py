@@ -427,8 +427,15 @@ def html_convert_body() -> None:
         maintext().insert(f"{next_step}.0", "</div>\n")
         return 1
 
+    def get_class(line: str) -> str:
+        """Extract optional `{classname}` from line`.
+        If no classname, return empty string."""
+        match = re.search(r"\{([^}]*)\}", line)
+        return match[1] if match else ""
+
     markup_start = 1
     chap_start = 1
+    front_classadd = ""
     while next_step <= maintext().end().row:
         step = next_step
         next_step += 1
@@ -465,9 +472,12 @@ def html_convert_body() -> None:
                 in_h1_heading = False
             continue
 
+        classname = get_class(selection_lower)
+        classadd = f" {classname}" if classname else ""
+        classattr = f' class="{classname}"' if classname else ""
         # "/x" is replaced with "<pre>", then leave lines unchanged until "/x"-->"</pre>"
         if selection_lower.startswith("/x"):  # open
-            maintext().replace(line_start, line_end, "<pre>")
+            maintext().replace(line_start, line_end, f"<pre{classattr}>")
             pre_flag = True
             markup_start = step
             continue
@@ -486,6 +496,7 @@ def html_convert_body() -> None:
             check_valid_open_markup()
             maintext().delete(line_start, line_end)
             front_flag = True
+            front_classadd = classadd  # store for all subsequent paragraphs
             markup_start = step
             in_front_para = False
             continue
@@ -497,7 +508,7 @@ def html_convert_body() -> None:
                 front_flag = False
             elif selection:
                 if not in_front_para:  # start of paragraph
-                    maintext().insert(line_start, '<p class="center">')
+                    maintext().insert(line_start, f'<p class="center{front_classadd}">')
                     in_front_para = True
             elif in_front_para:  # blank line - end of paragraph
                 maintext().insert(f"{line_start} -1l lineend", "</p>")
@@ -524,7 +535,7 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                '<div class="poetry-container">\n  <div class="poetry">',
+                f'<div class="poetry-container">\n  <div class="poetry{classadd}">',
             )
             next_step += 1
             reset_ibs_dict()
@@ -572,7 +583,7 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                "<ul>",
+                f"<ul{classattr}>",
             )
             list_flag = True
             markup_start = step
@@ -600,7 +611,7 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                "<blockquote>",
+                f"<blockquote{classattr}>",
             )
             markup_start = step
             continue
@@ -630,7 +641,7 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                "<p>",
+                f"<p{classattr}>",
             )
             reset_ibs_dict()
             continue
@@ -654,7 +665,7 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                "<p>",
+                f"<p{classattr}>",
             )
             reset_ibs_dict()
             continue
@@ -695,7 +706,7 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                '<nav data-epub-type="index">\n<ul class="index">',
+                f'<nav data-epub-type="index">\n<ul class="index{classadd}">',
             )
             next_step += 1
             reset_ibs_dict()
@@ -748,7 +759,7 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                '<p class="center">',
+                f'<p class="center{classadd}">',
             )
             reset_ibs_dict()
             continue
@@ -777,7 +788,7 @@ def html_convert_body() -> None:
             maintext().replace(
                 line_start,
                 line_end,
-                '<p class="right">',
+                f'<p class="right{classadd}">',
             )
             reset_ibs_dict()
             # Begin list of line lengths in order to add right-margin indents later

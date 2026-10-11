@@ -959,7 +959,10 @@ def unmatched_block_markup() -> None:
         close = markup_in[1] == "/"
         block_type = markup_in[0] if close else markup_in[1]
         block_type = re.escape(block_type)
-        return rf"^(/{block_type}(\[\d+)?(\.\d+)?(,\d+)?]?|{block_type}/) *$", close
+        return (
+            rf"^(/{block_type}(\[\d+)?(\.\d+)?(,\d+)?]? *(\{{[^}}]*\}})?|{block_type}/) *$",
+            close,
+        )
 
     def malformed_block_markup(dialog: UnmatchedCheckerDialog) -> None:
         """Add warnings about malformed block markup to given dialog.
@@ -970,7 +973,7 @@ def unmatched_block_markup() -> None:
         search_range = maintext().start_to_end()
         prefix = "Badly formed markup: "
         while match := maintext().find_match(
-            rf"(/{ALL_BLOCKS_REG}(\[(\d+)?(\.\d+)?(,\d+)?])?|{ALL_BLOCKS_REG}/) *$",
+            rf"(/{ALL_BLOCKS_REG}(\[(\d+)?(\.\d+)?(,\d+)?])? *(\{{[^}}]*\}})?|{ALL_BLOCKS_REG}/) *$",
             search_range,
             regexp=True,
             nocase=True,
@@ -999,7 +1002,7 @@ def unmatched_block_markup() -> None:
                 idx_start = None
                 idx_end = None
             block_type = re.escape(match_str.replace("/", ""))
-            regex = rf"^(/{block_type}(\[(\d+)?(\.\d+)?(,\d+)?])?|{block_type}/) *$"
+            regex = rf"^(/{block_type}(\[(\d+)?(\.\d+)?(,\d+)?])?|{block_type}/) *(\{{[^}}]*\}})? *$"
             if not re.fullmatch(regex, line):
                 dialog.add_entry(
                     f"{prefix}{line}",
@@ -1040,7 +1043,7 @@ def unmatched_block_markup() -> None:
     unmatched_markup_check(
         UnmatchedBlockMarkupDialog,
         rerun_command=unmatched_block_markup,
-        match_reg=rf"^(/{ALL_BLOCKS_REG}(\[(\d+)?(\.\d+)?(,\d+)?])?|{ALL_BLOCKS_REG}/) *$",
+        match_reg=rf"^(/{ALL_BLOCKS_REG}(\[(\d+)?(\.\d+)?(,\d+)?])? *(\{{[^}}]*\}})?|{ALL_BLOCKS_REG}/) *$",
         match_pair_func=match_pair_block_markup,
         nest_reg="/#|#/",
         sort_key_alpha=sort_key_block_markup,

@@ -3516,6 +3516,8 @@ class MainText(tk.Text):
                 paragraph_complete = False
                 # Check for various block markup types
                 trimmed = line.lower().rstrip(" \n").replace(PAGEMARK_PIN, "")
+                # Remove optional HTML wrap class
+                trimmed = re.sub(r" *\{[^}]*\} *", "", trimmed)
                 # Begin block quote (maybe customized)
                 if match := re.fullmatch(r"/#(\[\d+)?(\.\d+)?(,\d+)?]?", trimmed):
                     bq_depth_change = 1
