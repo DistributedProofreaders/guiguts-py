@@ -35,7 +35,7 @@ SPELL_CHECK_OK_YES = 0
 SPELL_CHECK_OK_NO = 1
 SPELL_CHECK_OK_BAD = 2
 
-_the_spell_checker: Optional["SpellChecker"] = None
+_THE_SPELL_CHECKER: Optional["SpellChecker"] = None
 
 
 class DictionaryNotFoundError(Exception):
@@ -292,8 +292,8 @@ class SpellCheckerDialog(CheckerDialog):
         # Create list of words to be used for suggestions
         # Map lowercased version to cased version so can retrieve cased version
         # after doing a case-insensitive match later
-        assert _the_spell_checker is not None
-        word_list = list(_the_spell_checker.dictionary.keys()) + list(
+        assert _THE_SPELL_CHECKER is not None
+        word_list = list(_THE_SPELL_CHECKER.dictionary.keys()) + list(
             the_file().project_dict.good_words.keys()
         )
         self.suggest_map = {w.lower(): w for w in word_list}
@@ -611,21 +611,21 @@ def get_spell_checker() -> SpellChecker | None:
         A SpellChecker object if required dictionary present, otherwise None
     """
 
-    global _the_spell_checker
+    global _THE_SPELL_CHECKER
 
     # If we already have a spell checker with the wrong languages, delete it
     if (
-        _the_spell_checker is not None
-        and _the_spell_checker.language_list != maintext().get_language_list()
+        _THE_SPELL_CHECKER is not None
+        and _THE_SPELL_CHECKER.language_list != maintext().get_language_list()
     ):
-        _the_spell_checker = None
-    if _the_spell_checker is None:
+        _THE_SPELL_CHECKER = None
+    if _THE_SPELL_CHECKER is None:
         try:
-            _the_spell_checker = SpellChecker()
+            _THE_SPELL_CHECKER = SpellChecker()
         except DictionaryNotFoundError as exc:
             logger.error(f"Dictionary not found for language: {exc.language}")
             return None
-    return _the_spell_checker
+    return _THE_SPELL_CHECKER
 
 
 def process_suggestion(checker_entry: CheckerEntry) -> None:

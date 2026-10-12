@@ -2191,16 +2191,16 @@ class RegexCheckerDialog(ScannoRegexCheckerDialog):
         )
 
 
-_the_stealth_scannos_dialog: Optional[ScannoCheckerDialog] = None
-_the_regex_library_dialog: Optional[RegexCheckerDialog] = None
+_THE_STEALTH_SCANNOS_DIALOG: Optional[ScannoCheckerDialog] = None
+_THE_REGEX_LIBRARY_DIALOG: Optional[RegexCheckerDialog] = None
 
 
 def do_replace_scanno_regex(dlg_type: str, checker_entry: CheckerEntry) -> None:
     """Process the checker entry by replacing with the replacement regex/string."""
     dlg = (
-        _the_stealth_scannos_dialog
+        _THE_STEALTH_SCANNOS_DIALOG
         if dlg_type == ScannoRegexCheckerDialog.scanno_type
-        else _the_regex_library_dialog
+        else _THE_REGEX_LIBRARY_DIALOG
     )
     assert dlg is not None
     if checker_entry.text_range:
@@ -2222,17 +2222,17 @@ def do_replace_scanno(checker_entry: CheckerEntry) -> None:
 
 def stealth_scannos() -> None:
     """Report potential stealth scannos in file."""
-    global _the_stealth_scannos_dialog
+    global _THE_STEALTH_SCANNOS_DIALOG
 
     if not tool_save():
         return
 
-    _the_stealth_scannos_dialog = ScannoCheckerDialog.show_dialog(
+    _THE_STEALTH_SCANNOS_DIALOG = ScannoCheckerDialog.show_dialog(
         rerun_command=stealth_scannos,
         process_command=do_replace_scanno,
         match_on_highlight=CheckerMatchType.HIGHLIGHT,
     )
-    _the_stealth_scannos_dialog.load_scannos()
+    _THE_STEALTH_SCANNOS_DIALOG.load_scannos()
 
 
 def do_replace_regex(checker_entry: CheckerEntry) -> None:
@@ -2242,17 +2242,17 @@ def do_replace_regex(checker_entry: CheckerEntry) -> None:
 
 def library_regexes() -> None:
     """Operate the regex library."""
-    global _the_regex_library_dialog
+    global _THE_REGEX_LIBRARY_DIALOG
 
     if not tool_save():
         return
 
-    _the_regex_library_dialog = RegexCheckerDialog.show_dialog(
+    _THE_REGEX_LIBRARY_DIALOG = RegexCheckerDialog.show_dialog(
         rerun_command=library_regexes,
         process_command=do_replace_regex,
         match_on_highlight=CheckerMatchType.ALL_MESSAGES,
     )
-    _the_regex_library_dialog.load_scannos()
+    _THE_REGEX_LIBRARY_DIALOG.load_scannos()
 
 
 DQUOTES = "“”"
@@ -2806,17 +2806,17 @@ class CurlyQuotesDialog(CheckerDialog):
 
     def delete_quote(self) -> None:
         """Delete quote."""
-        assert _the_curly_quotes_dialog is not None
+        assert _THE_CURLY_QUOTES_DIALOG is not None
         entry_index = self.current_entry_index()
         if entry_index is None:
             return
         checker_entry = self.entries[entry_index]
         if not checker_entry.text_range:
             return
-        start = _the_curly_quotes_dialog.mark_from_rowcol(
+        start = _THE_CURLY_QUOTES_DIALOG.mark_from_rowcol(
             checker_entry.text_range.start
         )
-        end = _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.end)
+        end = _THE_CURLY_QUOTES_DIALOG.mark_from_rowcol(checker_entry.text_range.end)
         match_text = maintext().get(start, end)
         if match_text not in ('"', "'", "“", "‘", "”", "’"):
             return
@@ -2826,16 +2826,16 @@ class CurlyQuotesDialog(CheckerDialog):
         except KeyError:
             pass  # User has edited since tool was run
         # Reselect to refresh highlighting
-        if cur_idx := _the_curly_quotes_dialog.current_entry_index():
-            _the_curly_quotes_dialog.select_entry_by_index(cur_idx)
+        if cur_idx := _THE_CURLY_QUOTES_DIALOG.current_entry_index():
+            _THE_CURLY_QUOTES_DIALOG.select_entry_by_index(cur_idx)
 
 
-_the_curly_quotes_dialog: Optional[CurlyQuotesDialog] = None
+_THE_CURLY_QUOTES_DIALOG: Optional[CurlyQuotesDialog] = None
 
 
 def do_fix_quote(checker_entry: CheckerEntry) -> None:
     """Fix the quote problem."""
-    assert _the_curly_quotes_dialog is not None
+    assert _THE_CURLY_QUOTES_DIALOG is not None
     assert checker_entry.text_range is not None
     if (
         checker_entry.error_prefix
@@ -2844,8 +2844,8 @@ def do_fix_quote(checker_entry: CheckerEntry) -> None:
             "SQ not converted: ",
         )
         and maintext().get(
-            _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.start),
-            _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.end),
+            _THE_CURLY_QUOTES_DIALOG.mark_from_rowcol(checker_entry.text_range.start),
+            _THE_CURLY_QUOTES_DIALOG.mark_from_rowcol(checker_entry.text_range.end),
         )
         in "'\""
     ):
@@ -2874,11 +2874,11 @@ def do_process_with_dict(
     Args:
         swap_dict: Dictionary of which character to swap for which.
     """
-    assert _the_curly_quotes_dialog is not None
+    assert _THE_CURLY_QUOTES_DIALOG is not None
     if not checker_entry.text_range:
         return
-    start = _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.start)
-    end = _the_curly_quotes_dialog.mark_from_rowcol(checker_entry.text_range.end)
+    start = _THE_CURLY_QUOTES_DIALOG.mark_from_rowcol(checker_entry.text_range.start)
+    end = _THE_CURLY_QUOTES_DIALOG.mark_from_rowcol(checker_entry.text_range.end)
     match_text = maintext().get(start, end)
     maintext().undo_block_begin()
     try:
@@ -2886,8 +2886,8 @@ def do_process_with_dict(
     except KeyError:
         pass  # User has edited since tool was run
     # Reselect to refresh highlighting
-    if cur_idx := _the_curly_quotes_dialog.current_entry_index():
-        _the_curly_quotes_dialog.select_entry_by_index(cur_idx)
+    if cur_idx := _THE_CURLY_QUOTES_DIALOG.current_entry_index():
+        _THE_CURLY_QUOTES_DIALOG.select_entry_by_index(cur_idx)
 
 
 def sort_key_error(
@@ -2911,12 +2911,12 @@ def sort_key_error(
 
 def check_curly_quotes() -> None:
     """Check for suspect curly quotes."""
-    global _the_curly_quotes_dialog
+    global _THE_CURLY_QUOTES_DIALOG
 
     if not tool_save():
         return
 
-    _the_curly_quotes_dialog = CurlyQuotesDialog.show_dialog(
+    _THE_CURLY_QUOTES_DIALOG = CurlyQuotesDialog.show_dialog(
         rerun_command=check_curly_quotes,
         process_command=do_fix_quote,
         sort_key_alpha=sort_key_error,
@@ -2924,7 +2924,7 @@ def check_curly_quotes() -> None:
         view_options_dialog_class=CurlyQuotesViewOptionsDialog,
         view_options_filters=CURLY_QUOTES_CHECKER_FILTERS,
     )
-    _the_curly_quotes_dialog.populate()
+    _THE_CURLY_QUOTES_DIALOG.populate()
 
 
 def indent_selection(indent: int) -> None:

@@ -16,8 +16,8 @@ from guiguts.widgets import ToolTip
 
 logger = logging.getLogger(__package__)
 
-_the_illo_checker: Optional["IlloSNChecker"] = None
-_the_sn_checker: Optional["IlloSNChecker"] = None
+_THE_ILLO_CHECKER: Optional["IlloSNChecker"] = None
+_THE_SN_CHECKER: Optional["IlloSNChecker"] = None
 
 TEMP_SPACE = "\u2231"  # Obscure character
 
@@ -426,7 +426,7 @@ class IlloSNChecker:
 
 def get_hidden_list(tag_type: str) -> list[bool]:
     """Get list of whether each illo/sn is hidden."""
-    checker = _the_illo_checker if tag_type == "Illustration" else _the_sn_checker
+    checker = _THE_ILLO_CHECKER if tag_type == "Illustration" else _THE_SN_CHECKER
     assert checker is not None
     illosn_records = checker.get_illosn_records()
     entries = checker.checker_dialog.entries
@@ -452,7 +452,7 @@ def move_selection_up(tag_type: str) -> None:
     Args:
         tag_type: a string which is either "Sidenote" or "Illustration".
     """
-    checker = _the_illo_checker if tag_type == "Illustration" else _the_sn_checker
+    checker = _THE_ILLO_CHECKER if tag_type == "Illustration" else _THE_SN_CHECKER
     assert checker is not None
     selected_illosn_index = checker.get_selected_illosn_index()
     if selected_illosn_index < 0:
@@ -590,7 +590,7 @@ def move_selection_down(tag_type: str) -> None:
     Args:
         tag_type: a string which is either "Sidenote" or "Illustration".
     """
-    checker = _the_illo_checker if tag_type == "Illustration" else _the_sn_checker
+    checker = _THE_ILLO_CHECKER if tag_type == "Illustration" else _THE_SN_CHECKER
     assert checker is not None
     selected_illosn_index = checker.get_selected_illosn_index()
     if selected_illosn_index < 0:
@@ -761,8 +761,8 @@ def illosn_check(tag_type: str) -> None:
     Args:
         tag_type: which tag to check for - "Illustration" or "Sidenote"
     """
-    global _the_illo_checker
-    global _the_sn_checker
+    global _THE_ILLO_CHECKER
+    global _THE_SN_CHECKER
 
     if not tool_save():
         return
@@ -775,17 +775,17 @@ def illosn_check(tag_type: str) -> None:
         sort_key_alpha=sort_key_type,
     )
     if tag_type == "Illustration":
-        if _the_illo_checker is None:
-            _the_illo_checker = IlloSNChecker(checker_dialog)
-        elif not _the_illo_checker.checker_dialog.winfo_exists():
-            _the_illo_checker.checker_dialog = checker_dialog
-        the_checker = _the_illo_checker
+        if _THE_ILLO_CHECKER is None:
+            _THE_ILLO_CHECKER = IlloSNChecker(checker_dialog)
+        elif not _THE_ILLO_CHECKER.checker_dialog.winfo_exists():
+            _THE_ILLO_CHECKER.checker_dialog = checker_dialog
+        the_checker = _THE_ILLO_CHECKER
     else:
-        if _the_sn_checker is None:
-            _the_sn_checker = IlloSNChecker(checker_dialog)
-        elif not _the_sn_checker.checker_dialog.winfo_exists():
-            _the_sn_checker.checker_dialog = checker_dialog
-        the_checker = _the_sn_checker
+        if _THE_SN_CHECKER is None:
+            _THE_SN_CHECKER = IlloSNChecker(checker_dialog)
+        elif not _THE_SN_CHECKER.checker_dialog.winfo_exists():
+            _THE_SN_CHECKER.checker_dialog = checker_dialog
+        the_checker = _THE_SN_CHECKER
 
     the_checker.run_check(tag_type)
     display_illosn_entries(tag_type, [])
@@ -808,7 +808,7 @@ def display_illosn_entries(tag_type: str, hidden_list: list[bool]) -> None:
         tag_type: which tag to check for - "Illustration" or "Sidenote"
     """
     assert tag_type in ("Illustration", "Sidenote")
-    the_checker = _the_illo_checker if tag_type == "Illustration" else _the_sn_checker
+    the_checker = _THE_ILLO_CHECKER if tag_type == "Illustration" else _THE_SN_CHECKER
     assert the_checker is not None
     checker_dialog = the_checker.checker_dialog
     checker_dialog.reset()
