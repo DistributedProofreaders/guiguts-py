@@ -1584,6 +1584,12 @@ class Guiguts:
         menubar_metadata().add_button_orphan(
             "Delete Next Character", lambda: maintext().delete_next_character()
         )
+        menubar_metadata().add_button_orphan(
+            "Center Cursor In Text View",
+            lambda: maintext().set_insert_index(
+                maintext().get_insert_index(), store_location=False
+            ),
+        )
 
         def open_file_number(fn: int) -> None:
             """Open recent file number `fn`."""
