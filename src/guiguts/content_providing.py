@@ -1083,7 +1083,7 @@ class CPFilteringDialog(CheckerDialog):
         re_vs = re.compile("[\u000b\u000c\u0085\u2028\u2029]")
         re_d1 = re.compile("[\u00ac\u2010\u2011\u2013\u2212]")
         re_d2 = re.compile("[\u2012\u2014\u2015]")
-        re_2s = re.compile("  ")
+        re_2s = re.compile("  +")
         re_sh = re.compile(" -( |$)")
         re_ps = re.compile(r" ([\.,!?:;])")
         re_el = re.compile(r"(?<!\.)\.{3}(?!\.)")
