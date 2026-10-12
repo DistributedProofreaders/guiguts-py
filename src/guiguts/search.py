@@ -223,6 +223,7 @@ class SearchDialog(ToplevelDialog):
             font=self.font,
             validate=tk.ALL,
             validatecommand=(self.register(self.is_valid_regex), "%P"),
+            placeholder="Enter text/regexp to find…",
         )
         self.search_box.grid(row=2, column=0, padx=PADX, pady=PADY, sticky="NSEW")
         # Register search box to have its focus tracked for inserting special characters
@@ -236,8 +237,13 @@ class SearchDialog(ToplevelDialog):
         self.repl_all_btn: list[ttk.Button] = []
 
         for rep_num in range(self.max_multi_rows):
+            placeholder = "Enter replacement…" if rep_num == 0 else ""
             cbox = Combobox(
-                self.top_frame, PrefKey.REPLACE_HISTORY, width=30, font=self.font
+                self.top_frame,
+                PrefKey.REPLACE_HISTORY,
+                width=30,
+                font=self.font,
+                placeholder=placeholder,
             )
             cbox.grid(row=rep_num + 3, column=0, padx=PADX, pady=PADY, sticky="NSEW")
             self.replace_box.append(cbox)

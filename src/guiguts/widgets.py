@@ -532,6 +532,8 @@ class Combobox(ttk.Combobox):
     def __init__(
         self, parent: tk.Widget, prefs_key: PrefKey, *args: Any, **kwargs: Any
     ) -> None:
+        if not is_tk9():
+            kwargs.pop("placeholder", None)
         super().__init__(parent, *args, **kwargs)
         self._handle_popdown_font()
         self.prefs_key = prefs_key
