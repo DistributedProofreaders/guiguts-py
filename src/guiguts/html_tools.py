@@ -2325,18 +2325,24 @@ class HTMLAutoTableDialog(ToplevelDialog):
 
         ttk.Checkbutton(
             self.top_frame,
+            text="Use List/Flex Layout",
+            variable=PersistentBoolean(PrefKey.AUTOTABLE_LISTFLEX),
+        ).grid(row=0, column=0, sticky="NSEW", pady=3)
+
+        ttk.Checkbutton(
+            self.top_frame,
             text="Multi-line (rows separated by blank lines)",
             variable=PersistentBoolean(PrefKey.AUTOTABLE_MULTILINE),
-        ).grid(row=0, column=0, sticky="NSEW", pady=3)
+        ).grid(row=1, column=0, sticky="NSEW", pady=3)
 
         ttk.Checkbutton(
             self.top_frame,
             text='Wide Table (add "overflow-x" div)',
             variable=PersistentBoolean(PrefKey.AUTOTABLE_WIDE_FLAG),
-        ).grid(row=1, column=0, sticky="NSEW", pady=3)
+        ).grid(row=2, column=0, sticky="NSEW", pady=3)
 
         align_frame = ttk.LabelFrame(self.top_frame, text="Alignment", padding=3)
-        align_frame.grid(row=2, column=0, sticky="NSEW")
+        align_frame.grid(row=3, column=0, sticky="NSEW")
 
         default_align_frame = ttk.Frame(align_frame)
         default_align_frame.grid(row=0, column=0, sticky="NSEW", pady=2)
@@ -2390,7 +2396,7 @@ class HTMLAutoTableDialog(ToplevelDialog):
         )
 
         ttk.Button(self.top_frame, text="Convert to HTML", command=self.convert).grid(
-            row=3, column=0, sticky="NS", pady=(5, 2)
+            row=4, column=0, sticky="NS", pady=(5, 2)
         )
 
     def convert(self) -> None:
@@ -2407,6 +2413,9 @@ class HTMLAutoTableDialog(ToplevelDialog):
         table_text = maintext().get(
             sel_ranges[0].start.index(), sel_ranges[-1].end.index()
         )
+        # Save point just before table to move cursor to when all finished
+        start_mark = "autotable_start"
+        maintext().mark_set(start_mark, f"{sel_ranges[0].start.index()}-1l")
         # Trim blank lines at end of selected text
         table_lines = table_text.splitlines()
         for idx in range(len(table_lines) - 1, -1, -1):
@@ -2433,7 +2442,7 @@ class HTMLAutoTableDialog(ToplevelDialog):
                     strip_line = cell_line.strip(" ")
                     if col >= len(the_table[-1]):
                         the_table[-1].append(strip_line)  # Start new cell
-                    else:
+                    elif strip_line:
                         the_table[-1][col] += f"\n{strip_line}"  # Add to existing
         # "Square off" table, making all rows have max_cols columns
         max_cols = max(len(row) for row in the_table)
@@ -2442,42 +2451,92 @@ class HTMLAutoTableDialog(ToplevelDialog):
                 row.append("")
 
         maintext().undo_block_begin()
+        end_linenum = sel_ranges[-1].end.row
         # Work backwards through table rows to avoid affecting later indexes into file,
         # since typically replacement text will consist of more lines than original.
         # Also work a row at a time to avoid moving page markers.
-        end_linenum = sel_ranges[-1].end.row
-        close_row = (
-            "</table>\n</div>\n"
-            if preferences.get(PrefKey.AUTOTABLE_WIDE_FLAG)
-            else "</table>\n"
-        )
-        maintext().insert(f"{end_linenum}.0", close_row)
-        for rev_row_num, text_row in enumerate(reversed(text_rows)):
-            n_lines = text_row.count("\n") + 1  # No. of lines in original table row
-            start_linenum = end_linenum - n_lines
-            html = self.html_row_from_text(the_table[-1 - rev_row_num])
-            # If multiline, and not the top row of the table, allow for blank line or "|  |" line above
-            if (
-                multiline
-                and rev_row_num < len(text_rows) - 1
-                and re.fullmatch(
-                    r"[| \u00a0]*",
-                    maintext().get(
-                        f"{start_linenum}.0 -1l", f"{start_linenum}.0 -1l lineend"
-                    ),
-                )
-            ):
-                start_linenum -= 1
-            maintext().replace(f"{start_linenum}.0", f"{end_linenum - 1}.end", html)
-            end_linenum = start_linenum
-        open_row = (
-            '<div style="overflow-x:auto;">\n<table class="autotable">\n'
-            if preferences.get(PrefKey.AUTOTABLE_WIDE_FLAG)
-            else '<table class="autotable">\n'
-        )
-        maintext().insert(f"{end_linenum}.0", open_row)
+        if preferences.get(PrefKey.AUTOTABLE_LISTFLEX):
+            close_row = (
+                "</ul>\n</div>\n</div>\n"
+                if preferences.get(PrefKey.AUTOTABLE_WIDE_FLAG)
+                else "</ul>\n</div>"
+            )
+            maintext().insert(f"{end_linenum}.0", close_row)
+            for rev_row_num, text_row in enumerate(reversed(text_rows)):
+                n_lines = text_row.count("\n") + 1  # No. of lines in original table row
+                start_linenum = end_linenum - n_lines
+                html = self.html_list_element_from_text(the_table[-1 - rev_row_num])
+                # If multiline, and not the top row of the table, allow for blank line or "|  |" line above
+                if (
+                    multiline
+                    and rev_row_num < len(text_rows) - 1
+                    and re.fullmatch(
+                        r"[| \u00a0]*",
+                        maintext().get(
+                            f"{start_linenum}.0 -1l", f"{start_linenum}.0 -1l lineend"
+                        ),
+                    )
+                ):
+                    start_linenum -= 1
+                maintext().replace(f"{start_linenum}.0", f"{end_linenum - 1}.end", html)
+                end_linenum = start_linenum
+            open_row = (
+                '<div style="overflow-x:auto;">\n<div class="autoflex-width">\n<ul class="autoflex-list">\n'
+                if preferences.get(PrefKey.AUTOTABLE_WIDE_FLAG)
+                else '<div class="autoflex-width">\n<ul class="autoflex-list">\n'
+            )
+            maintext().insert(f"{end_linenum}.0", open_row)
+
+            # Now add CSS at end of style block
+            if insert_point := maintext().search("</style", "1.0", tk.END):
+                cssdef = ""
+                for col in range(max_cols):
+                    colname = f".autoflex-col{col + 1}"
+                    # Only add if definition not already in file
+                    if not maintext().search(colname, "1.0", insert_point):
+                        cssdef += (
+                            ("\n" if col == 0 else "")  # Separate from CSS above
+                            + f"{colname} {{\n    flex-grow: 0;\n    flex-shrink: 0;\n    flex-basis: 10em;\n"
+                            + ("    margin-left: 1em;\n" if col > 0 else "")
+                            + "}\n"
+                        )
+                maintext().insert(f"{insert_point} linestart", cssdef)
+        else:
+            close_row = (
+                "</table>\n</div>\n"
+                if preferences.get(PrefKey.AUTOTABLE_WIDE_FLAG)
+                else "</table>\n"
+            )
+            maintext().insert(f"{end_linenum}.0", close_row)
+            for rev_row_num, text_row in enumerate(reversed(text_rows)):
+                n_lines = text_row.count("\n") + 1  # No. of lines in original table row
+                start_linenum = end_linenum - n_lines
+                html = self.html_row_from_text(the_table[-1 - rev_row_num])
+                # If multiline, and not the top row of the table, allow for blank line or "|  |" line above
+                if (
+                    multiline
+                    and rev_row_num < len(text_rows) - 1
+                    and re.fullmatch(
+                        r"[| \u00a0]*",
+                        maintext().get(
+                            f"{start_linenum}.0 -1l", f"{start_linenum}.0 -1l lineend"
+                        ),
+                    )
+                ):
+                    start_linenum -= 1
+                maintext().replace(f"{start_linenum}.0", f"{end_linenum - 1}.end", html)
+                end_linenum = start_linenum
+            open_row = (
+                '<div style="overflow-x:auto;">\n<table class="autotable">\n'
+                if preferences.get(PrefKey.AUTOTABLE_WIDE_FLAG)
+                else '<table class="autotable">\n'
+            )
+            maintext().insert(f"{end_linenum}.0", open_row)
+
         maintext().clear_selection()
-        maintext().set_insert_index(IndexRowCol(end_linenum, 0))
+        maintext().set_insert_index(
+            maintext().rowcol(f"{start_mark}+1l"), top_of_page=True
+        )
 
         self.column_align_text.add_to_history(
             preferences.get(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT)
@@ -2494,6 +2553,21 @@ class HTMLAutoTableDialog(ToplevelDialog):
             col_align = self.get_align_class(col_num)
             html.append(f'<td class="{col_align}">\n{cell}\n</td>')
         html.append("</tr>")
+        return "\n".join(html)
+
+    def html_list_element_from_text(self, row_cells: list[str]) -> str:
+        """Convert list of strings defining row of cells to HTML list element.
+
+        Args:
+            row_cells: List of strings with contents of a row of cells.
+        """
+        html = ['<li class="autoflex-entry">']
+        for col_num, cell in enumerate(row_cells):
+            col_align = self.get_align_class(col_num)
+            html.append(
+                f'<span class="autoflex-col{col_num + 1} {col_align}">\n{cell}\n</span>'
+            )
+        html.append("</li>")
         return "\n".join(html)
 
     def get_align_class(self, col_num: int) -> str:
