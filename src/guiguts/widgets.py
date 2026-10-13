@@ -745,6 +745,28 @@ class TreeviewList(ttk.Treeview):
         if "height" not in kwargs:
             kwargs["height"] = 10
         kwargs["selectmode"] = tk.BROWSE
+        kwargs["striped"] = True
+
+        def stripe_color(background: str) -> str:
+            """Return a subtly lighter or darker version of a background colour."""
+            background = background.lstrip("#")
+            rgb = [int(background[i : i + 2], 16) for i in (0, 2, 4)]
+
+            # Approximate brightness; choose the direction of the adjustment.
+            brightness = sum(rgb) / 3
+            target = 255 if brightness < 128 else 0
+
+            # Make each channel a bit lighter/darker
+            adjusted = [round(channel + (target - channel) * 0.08) for channel in rgb]
+            return "#" + "".join(f"{channel:02x}" for channel in adjusted)
+
+        # Use Tk9 striped background feature
+        if is_tk9():
+            if background := themed_style().lookup("Treeview", "background"):
+                themed_style().configure(
+                    "Treeview",
+                    stripedbackground=stripe_color(background),
+                )
 
         self.sort_pref = sort_pref
 
