@@ -26,7 +26,6 @@ html5lib = "^1.1"
 [tool.poetry.group.dev.dependencies]
 black = "^26.10"
 flake8 = "^7.4"
-Sphinx = "^8.2" # Version 9.1 requires Python >= 3.12
 pytest = "^9.1"
 mypy = "^2.4"
 pylint = "^4.1"
