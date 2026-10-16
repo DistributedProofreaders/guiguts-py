@@ -429,28 +429,45 @@ class FootnoteChecker:
             else:
                 colon_pos = colon_match.rowcol
             end_point = colon_pos
+
             # Find closing square bracket - allow open/close bracket within footnote
+            # Only search as far as the next footnote
+            line_below = maintext().rowcol(f"{end_point.index()}+1l linestart")
+            if search_end_match := maintext().find_match(
+                match_regex,
+                IndexRange(line_below, search_range.end),
+                regexp=True,
+                nocase=True,
+            ):
+                search_end_rowcol = search_end_match.rowcol
+            else:
+                search_end_rowcol = maintext().end()
             end_match = None
-            nested = False
+            nesting_depth = 0
             while True:
                 end_match = maintext().find_match(
-                    "[][]", IndexRange(end_point, maintext().end()), regexp=True
+                    "[][]", IndexRange(end_point, search_end_rowcol), regexp=True
                 )
                 if end_match is None:
                     break
                 end_point = maintext().rowcol(f"{end_match.rowcol.index()}+1c")
                 if maintext().get_match_text(end_match) == "]":
-                    if not nested:
+                    # Assume we've found the end if we find a close bracket and we
+                    # weren't nested, or if it's "]*", marking end of continued footnote
+                    if maintext().get(f"{end_match.rowcol.index()}+1c") == "*":
+                        # Clear previous nesting - assume "]*" is genuine end
+                        nesting_depth = 0
+                    if nesting_depth == 0:
                         break  # Found the one we want
-                    nested = False  # Closing nesting
+                    nesting_depth -= 1  # Closing nesting
                 else:
-                    if nested:
-                        end_match = None  # Not attempting to handle double nesting
-                        break
-                    nested = True  # Opening nesting
+                    nesting_depth += 1  # Opening nesting
 
-            # If closing [ not found, use end of line
-            if end_match is None:
+            # If nesting non-zero, or closing [ not found, something's wrong
+            assert nesting_depth >= 0  # depth < 0 can never happen
+            if nesting_depth > 0 or end_match is None:
+                logger.error(f'Unclosed "[" in footnote beginning at line {start.row}')
+                # Still need an end point - use end of line
                 end_point = maintext().rowcol(f"{start.row}.end")
 
             # Get label of footnote, e.g. "[Footnote 4:..." has label "4"
