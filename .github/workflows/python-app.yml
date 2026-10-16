@@ -35,12 +35,6 @@ jobs:
     - name: Check format with black
       run: |
         poetry run black --check --verbose .
-    - name: Check documentation with sphinx
-      run: |
-        poetry run sphinx-build -W -b html docs docs/build
-    - name: Report undocumented code with sphinx
-      run: |
-        poetry run python -m sphinx -M coverage docs docs/build -W
     - name: Static type check with mypy
       run: |
         poetry run mypy --disallow-untyped-defs -p guiguts

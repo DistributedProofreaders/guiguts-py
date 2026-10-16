@@ -363,23 +363,6 @@ most other variables, functions and methods are all_lowercase.
 [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
 are used to document modules, classes, functions, etc.
 
-[Sphinx](https://www.sphinx-doc.org/en/master/index.html) will be installed by
-poetry (above) and can be used to create HTML documentation by running the following command:
-```bash
-poetry run python -m sphinx -q -b html docs docs/build
-```
-
-HTML docs will appear in the `docs/build` directory.
-
-Sphinx can also be used to check coverage, i.e. that docstrings have been used everywhere
-appropriate:
-```bash
-poetry run python -m sphinx -q -M coverage docs docs/build
-```
-
-This project uses Github Actions to ensure running sphinx does not report an error, and
-that the coverage check does not report any undocumented items.
-
 ### Type checking
 
 [Mypy](https://mypy.readthedocs.io/en/stable/index.html) will be installed by
