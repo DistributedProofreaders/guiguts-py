@@ -1342,7 +1342,7 @@ class Guiguts:
         try:
             css_text = "\n" + css_filepath.read_text(encoding="utf-8").rstrip() + "\n"
         except (OSError, UnicodeDecodeError) as exc:
-            logger.error(f"Unable to read {css_path}\n{exc}")
+            logger.error(f"Unable to read {css_filepath}\n{exc}")
             return
         try:
             insert_pos = end_of_css()
@@ -1351,8 +1351,12 @@ class Guiguts:
             return
         begin_marker = f"/* BEGIN {filename} */"
         end_marker = f"/* END {filename} */"
-        begin_pos = maintext().search(begin_marker, "1.0", stopindex=insert_pos, regexp=False)
-        end_pos = maintext().search(end_marker, "1.0", stopindex=insert_pos, regexp=False)
+        begin_pos = maintext().search(
+            begin_marker, "1.0", stopindex=insert_pos, regexp=False
+        )
+        end_pos = maintext().search(
+            end_marker, "1.0", stopindex=insert_pos, regexp=False
+        )
         if begin_pos and end_pos:
             if not messagebox.askyesno(
                 title="Replace existing CSS?",
@@ -1367,12 +1371,12 @@ class Guiguts:
             maintext().delete(begin_pos, end_pos)
             maintext().insert(begin_pos, f"{begin_marker}{css_text}{end_marker}\n")
             return
-        elif begin_pos or end_pos:
+        if begin_pos or end_pos:
             logger.error(f"END or BEGIN marker for {filename} not found")
             return
         maintext().undo_block_begin()
         maintext().insert(insert_pos, f"\n{begin_marker}{css_text}{end_marker}\n")
-        
+
     def init_html_menu(self) -> None:
         """Create the HTML menu."""
         html_menu = self.top_level_menu("HT~ML")
