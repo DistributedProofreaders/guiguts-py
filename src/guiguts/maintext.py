@@ -1227,9 +1227,9 @@ class MainText(tk.Text):
                 idir: 1 for down; -1 for up.
             """
             text = self.focus_widget()
-            text.see("insert")
+            text.see(tk.INSERT)
             n_lines = idir * (get_page_lines(text) - 1)
-            text.mark_set("insert", f"insert {n_lines:+}l")
+            text.mark_set(tk.INSERT, f"{tk.INSERT} {n_lines:+}l")
             text.yview_scroll(n_lines, "units")
             text.tag_remove("sel", "1.0", "end")
 
@@ -1241,7 +1241,7 @@ class MainText(tk.Text):
             """
             text = self.focus_widget()
             # anchor stores the index of the start/end of selection that will remain fixed
-            anchor = text.index("insert")  # Default to current insert position
+            anchor = text.index(tk.INSERT)  # Default to current insert position
             # If there's a selection, move the edge where the insert cursor is
             if sel_ranges := maintext().selected_ranges():
                 sel_rng = sel_ranges[0]
@@ -1251,10 +1251,10 @@ class MainText(tk.Text):
                     else sel_rng.start.index()
                 )
             page_down_up(idir)
-            if text.compare(anchor, "<=", "insert"):
-                text.tag_add("sel", anchor, "insert")
+            if text.compare(anchor, "<=", tk.INSERT):
+                text.tag_add("sel", anchor, tk.INSERT)
             else:
-                text.tag_add("sel", "insert", anchor)
+                text.tag_add("sel", tk.INSERT, anchor)
 
         self.bind_event("<Next>", lambda _: page_down_up(1), bind_peer=True)
         self.bind_event("<Prior>", lambda _: page_down_up(-1), bind_peer=True)
@@ -1326,6 +1326,52 @@ class MainText(tk.Text):
             self.bind_event(
                 "<Shift-Command-Right>", self.go_end, add=True, bind_peer=True
             )
+
+        # Tk9 helpfully often treats a character with a combining character as one character
+        # For GG2, it is nice to be able to left/right arrow in-between the character and the
+        # following combining character.
+        # To do this, override left/right bindings, then unoverride Ctrl/Option-left/right
+        def char_left(_: tk.Event) -> str:
+            """Move insert position 1 char left, not skipping over combining characters."""
+            pos = self.rowcol(tk.INSERT)
+
+            lend = ""
+            # Start of line - go to end of previous line
+            if pos.col == 0:
+                if pos.row != 1:  # Not if at very start of file
+                    pos.row -= 1
+                    lend = " lineend"
+            else:
+                pos.col -= 1
+
+            self.mark_set(tk.INSERT, f"{pos.index()}{lend}")
+            self.see(tk.INSERT)
+            return "break"
+
+        def char_right(_: tk.Event) -> str:
+            """Move insert position 1 char right, not skipping over combining characters."""
+            pos = self.rowcol(tk.INSERT)
+            char = self.get(pos.index())
+
+            if char == "\n":
+                pos.row += 1
+                pos.col = 0
+            else:
+                pos.col += 1
+
+            self.mark_set(tk.INSERT, pos.index())
+            self.see(tk.INSERT)
+            return "break"
+
+        self.bind_event("<Left>", char_left, add=True, bind_peer=True)
+        self.bind_event("<Right>", char_right, add=True, bind_peer=True)
+        modifier = "Option" if is_mac() else "Control"
+        self.bind_event(
+            f"<{modifier}-Left>", lambda _: "", force_break=False, bind_peer=True
+        )
+        self.bind_event(
+            f"<{modifier}-Right>", lambda _: "", force_break=False, bind_peer=True
+        )
 
         # get the current bind tags
         bindtags = list(self.bindtags())
@@ -2543,8 +2589,8 @@ class MainText(tk.Text):
             self._create_drag_window(event)
             event.widget.config(cursor="fleur")
             self.drag_cursor = True
-        event.widget.mark_set("insert", self._get_drag_index(event))
-        event.widget.see("insert")
+        event.widget.mark_set(tk.INSERT, self._get_drag_index(event))
+        event.widget.see(tk.INSERT)
         self._move_drag_window(event)
 
         return "break"
