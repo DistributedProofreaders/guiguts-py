@@ -617,7 +617,7 @@ class CheckerDialog(ToplevelDialog):
         self.text.grid(row=3, column=0, sticky="NSEW")
         # Add tooltip to frame parent of text, so that using the scrollbars
         # then re-entering text doesn't cause tooltip to be re-displayed
-        ToolTip(self.text.frame, tooltip, use_pointer_pos=True)
+        ToolTip(self.text.frame, tooltip)
 
         # 3 binary choices:
         #     remove/not_remove (just select) - controlled by button 3 or button 1
