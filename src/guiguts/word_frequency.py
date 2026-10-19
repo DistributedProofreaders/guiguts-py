@@ -505,7 +505,9 @@ class WordFrequencyDialog(CheckerDialog):
     ) -> str:
         """Return a message if a confusable character occurs in the document."""
         present = CONFUSABLES.get(char, set()) & chars_present
-
+        # Avoid reporting two ascii characters as being confusable
+        if char.isascii():
+            present = {ch for ch in present if not ch.isascii()}
         if not present:
             return ""
 
