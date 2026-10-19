@@ -1338,7 +1338,7 @@ class Guiguts:
 
     def add_css_file(self, filename: str) -> None:
         """Add selected custom CSS to the end of the HTML style section."""
-        css_filepath = Path(preferences.prefsdir, "CSS", filename)
+        css_filepath = Path(preferences.prefsdir, "css", filename)
         try:
             css_text = "\n" + css_filepath.read_text(encoding="utf-8").rstrip() + "\n"
         except (OSError, UnicodeDecodeError) as exc:
@@ -1351,12 +1351,8 @@ class Guiguts:
             return
         begin_marker = f"/* BEGIN {filename} */"
         end_marker = f"/* END {filename} */"
-        begin_pos = maintext().search(
-            begin_marker, "1.0", stopindex=insert_pos, regexp=False
-        )
-        end_pos = maintext().search(
-            end_marker, "1.0", stopindex=insert_pos, regexp=False
-        )
+        begin_pos = maintext().search(begin_marker, "1.0", stopindex=insert_pos)
+        end_pos = maintext().search(end_marker, "1.0", stopindex=insert_pos)
         if begin_pos and end_pos:
             if not messagebox.askyesno(
                 title="Replace existing CSS?",
@@ -1366,10 +1362,9 @@ class Guiguts:
                 icon=messagebox.WARNING,
             ):
                 return
-            end_pos = f"{int(end_pos.split('.')[0]) + 1}.0"
+            end_pos += "+1l linestart"
             maintext().undo_block_begin()
-            maintext().delete(begin_pos, end_pos)
-            maintext().insert(begin_pos, f"{begin_marker}{css_text}{end_marker}\n")
+            maintext().replace(begin_pos, end_pos, f"{begin_marker}{css_text}{end_marker}\n")
             return
         if begin_pos or end_pos:
             logger.error(f"END or BEGIN marker for {filename} not found")
@@ -1395,7 +1390,7 @@ class Guiguts:
         html_menu.add_button(
             "HTML Ext~ract Alt Text", lambda: HTMLAltTextChecker().run()
         )
-        css_dir = Path(preferences.prefsdir, "CSS")
+        css_dir = Path(preferences.prefsdir, "css")
         if os.path.exists(css_dir):
             css_menu = html_menu.add_submenu("A~dd CSS")
             for css_file in sorted(css_dir.glob("*.css")):
