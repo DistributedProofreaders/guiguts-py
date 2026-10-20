@@ -1364,7 +1364,9 @@ class Guiguts:
                 return
             end_pos += "+1l linestart"
             maintext().undo_block_begin()
-            maintext().replace(begin_pos, end_pos, f"{begin_marker}{css_text}{end_marker}\n")
+            maintext().replace(
+                begin_pos, end_pos, f"{begin_marker}{css_text}{end_marker}\n"
+            )
             return
         if begin_pos or end_pos:
             logger.error(f"END or BEGIN marker for {filename} not found")
