@@ -1496,15 +1496,19 @@ def html_convert_footnotes() -> None:
             fn_cutoff = fn_end
         # Add markup for footnote
         maintext().replace(fn_cutoff, f"{fn_end} lineend", "</p></aside>")
+        code_prior_to_fn_label = 'class="label" role="doc-backlink"'
         maintext().replace(
             fn_start,
             f"{fn_label_end}+1c",
-            f'<aside class="footnote" id="{fn_id}" role="doc-footnote" data-epub-type="footnote"><p><a href="#{an_id}" class="label" role="doc-backlink">[{fn_label}]</a>',
+            f'<aside class="footnote" id="{fn_id}" role="doc-footnote" data-epub-type="footnote"><p><a href="#{an_id}" {code_prior_to_fn_label}>[{fn_label}]</a>',
         )
 
         # Search backwards for another footnote with the same label (or start of file)
         an_search_start = maintext().search(
-            f'class="label">[{fn_label}]</a>', fn_start, "1.0", backwards=True
+            f"{code_prior_to_fn_label}>[{fn_label}]</a>",
+            fn_start,
+            "1.0",
+            backwards=True,
         )
         if an_search_start:
             an_search_start += (
