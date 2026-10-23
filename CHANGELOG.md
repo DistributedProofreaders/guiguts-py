@@ -1,6 +1,29 @@
 # Changelog
 
 
+## Version 2.1.8
+
+- Opening block markup, e.g. `/P` or `/#[8.4,64]` can have a class name
+  enclosed in braces appended - the class name will be added to the relevant
+  HTML element during autogeneration 
+- Word Frequency Character Count notes if two different letters could be
+  easily confused visually, e.g. Latin A and Greek Alpha
+- A new shadow command to center the insert cursor in the text view has been
+  added, allowing the user to bind a key to this behavior
+- Configure Guiguts to work with Python 3.15 on all platforms
+- Ensure combining characters are displayed in a way that is helpful for PPing
+- Tooltips are no longer displayed over the top of checker dialog message lists
+
+### Bug fixes
+
+- If footnote numbering restarted for each chapter, the HTML generated was not
+  correct
+- Content Providing Filter to convert multiple spaces to a single space only
+  converted double spaces to a single
+- Due to a change in macOS 27 (Golden Gate), dialogs were not always popped to
+  the front when they were created
+
+
 ## Version 2.1.7
 
 - The Index page for the GG2 manual has been expanded
