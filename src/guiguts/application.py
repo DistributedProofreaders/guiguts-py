@@ -5,9 +5,11 @@ import argparse
 import logging
 
 from importlib.metadata import version
+from pathlib import Path
 import os
 import sys
 import tkinter as tk
+from tkinter import messagebox
 from typing import Optional
 import unicodedata
 import webbrowser
@@ -35,7 +37,7 @@ from guiguts.content_providing import (
 
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle, footnote_mask
-from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
+from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes, end_of_css
 from guiguts.html_tools import (
     HTMLImageAutoDialog,
     HTMLImageEditDialog,
@@ -1334,6 +1336,44 @@ class Guiguts:
         text_menu.add_button("~Right Align", lambda: align_selection(False))
         text_menu.add_button("Right Align ~Numbers", right_align_numbers)
 
+    def add_css_file(self, filename: str) -> None:
+        """Add selected custom CSS to the end of the HTML style section."""
+        css_filepath = Path(preferences.prefsdir, "css", filename)
+        try:
+            css_text = "\n" + css_filepath.read_text(encoding="utf-8").rstrip() + "\n"
+        except (OSError, UnicodeDecodeError) as exc:
+            logger.error(f"Unable to read {css_filepath}\n{exc}")
+            return
+        try:
+            insert_pos = end_of_css()
+        except SyntaxError:
+            logger.error("No </style> line found in the current file.")
+            return
+        begin_marker = f"/* BEGIN {filename} */"
+        end_marker = f"/* END {filename} */"
+        begin_pos = maintext().search(begin_marker, "1.0", stopindex=insert_pos)
+        end_pos = maintext().search(end_marker, "1.0", stopindex=insert_pos)
+        if begin_pos and end_pos:
+            if not messagebox.askyesno(
+                title="Replace existing CSS?",
+                message=f"This will replace existing CSS imported from {filename}\n",
+                detail="Are you sure you want to continue?",
+                default=messagebox.NO,
+                icon=messagebox.WARNING,
+            ):
+                return
+            end_pos += "+1l linestart"
+            maintext().undo_block_begin()
+            maintext().replace(
+                begin_pos, end_pos, f"{begin_marker}{css_text}{end_marker}\n"
+            )
+            return
+        if begin_pos or end_pos:
+            logger.error(f"END or BEGIN marker for {filename} not found")
+            return
+        maintext().undo_block_begin()
+        maintext().insert(insert_pos, f"\n{begin_marker}{css_text}{end_marker}\n")
+
     def init_html_menu(self) -> None:
         """Create the HTML menu."""
         html_menu = self.top_level_menu("HT~ML")
@@ -1352,6 +1392,14 @@ class Guiguts:
         html_menu.add_button(
             "HTML Ext~ract Alt Text", lambda: HTMLAltTextChecker().run()
         )
+        css_dir = Path(preferences.prefsdir, "css")
+        if os.path.exists(css_dir):
+            css_menu = html_menu.add_submenu("A~dd CSS")
+            for css_file in sorted(css_dir.glob("*.css")):
+                css_menu.add_button(
+                    css_file.name,
+                    lambda fn=css_file.name: self.add_css_file(fn),  # type: ignore[misc]
+                )
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
         html_menu.add_button("HTML Lin~k Checker", lambda: HTMLLinkChecker().run())
