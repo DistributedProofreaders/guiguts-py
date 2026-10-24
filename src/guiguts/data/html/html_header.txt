@@ -282,15 +282,6 @@ img.w100 {width: 100%;}
 .poetry .stanza   {margin: 1em auto;}
 .poetry .verse    {text-indent: -3em; padding-left: 3em;}
 
-/* Transcriber's notes */
-.transnote {background-color: #E6E6FA;
-    color: black;
-    font-size:small;
-    padding:0.5em;
-    margin-bottom:5em;
-    font-family:sans-serif, serif;
-}
-
     </style>
 </head>
 <body>
