@@ -716,6 +716,7 @@ class Guiguts:
         preferences.set_default(PrefKey.AUTOTABLE_DEFAULT_ALIGNMENT, "left")
         preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT, "")
         preferences.set_default(PrefKey.AUTOTABLE_COLUMN_ALIGNMENT_HISTORY, [])
+        preferences.set_default(PrefKey.AUTOTABLE_LISTFLEX, False)
         preferences.set_default(PrefKey.AUTOLIST_MULTILINE, False)
         preferences.set_default(PrefKey.AUTOLIST_TYPE, HTMLAutoListDialog.UNORDERED)
         preferences.set_default(PrefKey.SURROUND_WITH_BEFORE, "")
