@@ -1,0 +1,38 @@
+name: guiguts
+version: "2.1.8"
+summary: GUI tools for Project Gutenberg post-processing
+description: |
+  Guiguts is a GUI application for post-processing
+  Project Gutenberg ebooks.
+grade: devel
+confinement: strict
+base: core24
+
+parts:
+  guiguts:
+    plugin: poetry
+    # Development build
+    source: .
+    # Build from tagged version
+    # source: https://github.com/DistributedProofreaders/guiguts-py.git
+    # source-tag: v2.1.8
+    stage-packages:
+      - python3-tk
+      - idle
+      - tcl8.6
+      - tk8.6
+      - x11-xkb-utils
+
+apps:
+  guiguts:
+    command: bin/guiguts
+    environment:
+      PYTHONPATH: $SNAP/usr/lib/python3.12:$SNAP/usr/lib/python3.12/lib-dynload
+      TCL_LIBRARY: $SNAP/usr/share/tcltk/tcl8.6
+      TK_LIBRARY: $SNAP/usr/share/tcltk/tk8.6
+      GUIGUTS_PREFSDIR: $SNAP_USER_COMMON/.ggpreferences
+    plugs:
+      - home
+      - desktop
+      - desktop-legacy
+      - x11

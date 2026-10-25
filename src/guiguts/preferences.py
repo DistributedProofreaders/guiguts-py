@@ -477,7 +477,12 @@ class Preferences:
     def load(self, prefs_basefile: Optional[str]) -> None:
         """Load dictionary from JSON file, and use PrefKeys
         to store values in preferences dictionary."""
-        if is_x11():
+        prefsdir = os.environ.get("GUIGUTS_PREFSDIR")
+        if prefsdir:
+            print(f"{prefsdir=}")
+            self.prefsdir = os.path.expanduser(prefsdir)
+        elif is_x11():
+            print("GUIGUTS_PREFSDIR was not defined")
             self.prefsdir = os.path.join(os.path.expanduser("~"), ".ggpreferences")
         elif is_windows():
             self.prefsdir = os.path.join(
