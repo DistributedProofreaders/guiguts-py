@@ -1333,7 +1333,8 @@ class MainText(tk.Text):
         # To do this, override left/right bindings, then unoverride Ctrl/Option-left/right
         def char_left(_: tk.Event) -> str:
             """Move insert position 1 char left, not skipping over combining characters."""
-            pos = self.rowcol(tk.INSERT)
+            text = self.focus_widget()
+            pos = IndexRowCol(text.index(tk.INSERT))
 
             lend = ""
             # Start of line - go to end of previous line
@@ -1344,14 +1345,15 @@ class MainText(tk.Text):
             else:
                 pos.col -= 1
 
-            self.mark_set(tk.INSERT, f"{pos.index()}{lend}")
-            self.see(tk.INSERT)
+            text.mark_set(tk.INSERT, f"{pos.index()}{lend}")
+            text.see(tk.INSERT)
             return "break"
 
         def char_right(_: tk.Event) -> str:
             """Move insert position 1 char right, not skipping over combining characters."""
-            pos = self.rowcol(tk.INSERT)
-            char = self.get(pos.index())
+            text = self.focus_widget()
+            pos = IndexRowCol(text.index(tk.INSERT))
+            char = text.get(pos.index())
 
             if char == "\n":
                 pos.row += 1
@@ -1359,8 +1361,8 @@ class MainText(tk.Text):
             else:
                 pos.col += 1
 
-            self.mark_set(tk.INSERT, pos.index())
-            self.see(tk.INSERT)
+            text.mark_set(tk.INSERT, pos.index())
+            text.see(tk.INSERT)
             return "break"
 
         self.bind_event("<Left>", char_left, add=True, bind_peer=True)
