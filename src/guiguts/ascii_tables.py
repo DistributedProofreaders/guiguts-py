@@ -27,6 +27,8 @@ class JustifyStyle(StrEnum):
     LEFT = auto()
     CENTER = auto()
     RIGHT = auto()
+    TOP = auto()
+    BOTTOM = auto()
 
 
 class ASCIITableCell:
@@ -70,12 +72,9 @@ class ASCIITable:
             row.cells.extend(
                 [ASCIITableCell() for _ in range(len(row.cells), max_cols)]
             )
-            # If not spaced, don't want to mess with leading/trailing fragments
+            # If not spaced, don't want to mess with trailing fragments
+            # Leave leading fragments, because they are needed for bottom alignment
             if self.spaced:
-                # Delete any leading empty/whitespace fragments
-                for col, cell in enumerate(row.cells):
-                    while cell.fragments and not cell.fragments[0].strip():
-                        del cell.fragments[0]
                 # Delete any trailing empty/whitespace fragments
                 for col, cell in enumerate(row.cells):
                     while cell.fragments and not cell.fragments[-1].strip():
@@ -270,7 +269,9 @@ class ASCIITableDialog(ToplevelDialog):
         adjust_col_row1_frame = ttk.Frame(self.adjust_col_frame)
         adjust_col_row1_frame.grid(row=0, column=0, pady=2)
         adjust_col_row2_frame = ttk.Frame(self.adjust_col_frame)
-        adjust_col_row2_frame.grid(row=1, column=0, pady=2)
+        adjust_col_row2_frame.grid(row=1, column=0, pady=(2, 4))
+        adjust_col_row3_frame = ttk.Frame(self.adjust_col_frame)
+        adjust_col_row3_frame.grid(row=2, column=0, pady=2)
 
         # Populate the first row.
         rewrap_cols_checkbox = ttk.Checkbutton(
@@ -285,7 +286,7 @@ class ASCIITableDialog(ToplevelDialog):
             "If checked, text within cells will rewrap & justify when vertical lines are moved",
         )
 
-        self.label_justify = ttk.Label(adjust_col_row1_frame, text="Justify")
+        self.label_justify = ttk.Label(adjust_col_row1_frame, text="Justify:")
         self.label_justify.grid(row=0, column=1, padx=(0, 5), pady=2, sticky="NSEW")
 
         justify_style = PersistentString(PrefKey.ASCII_TABLE_JUSTIFY)
@@ -336,11 +337,31 @@ class ASCIITableDialog(ToplevelDialog):
             self.hanging_checkbox,
             "If checked, use hanging indent instead of standard indent when rewrapping",
         )
-        self.justify_update()
 
         # Populate the second row.
-        move_left_button = ttk.Button(
+        vertical_style = PersistentString(PrefKey.ASCII_TABLE_VERTICAL_ALIGN)
+        self.label_vertical = ttk.Label(
+            adjust_col_row2_frame, text="Vertical Alignment:"
+        )
+        self.label_vertical.grid(row=0, column=0, padx=(0, 5))
+        self.justify_top = ttk.Radiobutton(
             adjust_col_row2_frame,
+            text="Top",
+            variable=vertical_style,
+            value=JustifyStyle.TOP,
+        )
+        self.justify_top.grid(row=0, column=1, sticky="NSEW", padx=5)
+        self.justify_bottom = ttk.Radiobutton(
+            adjust_col_row2_frame,
+            text="Bottom",
+            variable=vertical_style,
+            value=JustifyStyle.BOTTOM,
+        )
+        self.justify_bottom.grid(row=0, column=3, sticky="NSEW", padx=5)
+
+        # Populate the third row.
+        move_left_button = ttk.Button(
+            adjust_col_row3_frame,
             text="Move Left",
             command=lambda: self.column_adjust(-1),
         )
@@ -351,7 +372,7 @@ class ASCIITableDialog(ToplevelDialog):
         )
 
         move_right_button = ttk.Button(
-            adjust_col_row2_frame,
+            adjust_col_row3_frame,
             text="Move Right",
             command=lambda: self.column_adjust(1),
         )
@@ -445,6 +466,8 @@ class ASCIITableDialog(ToplevelDialog):
 
         self.selected_col_width_label = ttk.Label(adjust_col_row2_frame)
         self.selected_col_width_label.grid(row=0, column=4, sticky="NSEW")
+
+        self.justify_update()
         self.table_select()
         self.refresh_table_display()
 
@@ -468,6 +491,9 @@ class ASCIITableDialog(ToplevelDialog):
             self.justify_left,
             self.justify_center,
             self.justify_right,
+            self.label_vertical,
+            self.justify_bottom,
+            self.justify_top,
             self.label_indent,
             self.indent_value_entry,
             self.hanging_checkbox,
@@ -541,6 +567,18 @@ class ASCIITableDialog(ToplevelDialog):
                     cell_fragments[nfrag] = justify_func(
                         cell_fragments[nfrag], col_width
                     )
+            if (
+                preferences.get(PrefKey.ASCII_TABLE_VERTICAL_ALIGN)
+                == JustifyStyle.BOTTOM
+            ):
+                for row in tbl.rows:
+                    # Find the maximum number of fragments in a cell on this row.
+                    max_fragments = max(len(cell.fragments) for cell in row.cells)
+                    # Pad the selected cell at the top to bottom-align its text.
+                    cell_fragments = row.cells[self.selected_column].fragments
+                    padding = max_fragments - len(cell_fragments)
+                    if padding > 0:
+                        cell_fragments[:0] = [" " * col_width] * padding
         else:
             for row in tbl.rows:
                 cell_fragments = row.cells[self.selected_column].fragments

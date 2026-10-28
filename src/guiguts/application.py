@@ -706,6 +706,7 @@ class Guiguts:
         preferences.set_default(PrefKey.ASCII_TABLE_INDENT, 1)
         preferences.set_default(PrefKey.ASCII_TABLE_REWRAP, False)
         preferences.set_default(PrefKey.ASCII_TABLE_JUSTIFY, JustifyStyle.LEFT)
+        preferences.set_default(PrefKey.ASCII_TABLE_VERTICAL_ALIGN, JustifyStyle.TOP)
         preferences.set_default(PrefKey.ASCII_TABLE_FILL_CHAR, "@")
         preferences.set_default(PrefKey.ASCII_TABLE_HORIZONTAL_BORDERS, False)
         preferences.set_default(PrefKey.COMMAND_PALETTE_HISTORY, [])

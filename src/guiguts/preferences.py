@@ -159,6 +159,7 @@ class PrefKey(StrEnum):
     ASCII_TABLE_INDENT = auto()
     ASCII_TABLE_REWRAP = auto()
     ASCII_TABLE_JUSTIFY = auto()
+    ASCII_TABLE_VERTICAL_ALIGN = auto()
     ASCII_TABLE_FILL_CHAR = auto()
     ASCII_TABLE_HORIZONTAL_BORDERS = auto()
     COMMAND_PALETTE_HISTORY = auto()
