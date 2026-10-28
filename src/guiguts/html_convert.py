@@ -1541,7 +1541,7 @@ def html_convert_footnote_landing_zones() -> None:
     Apple Books, for example, removes footnote text from file under some circumstances.
     """
     lz_end = "1.0"
-    fnhead_regex = "(<p>|<h3.*>\n  )FOOTNOTES:(</p>|\n</h3)"
+    fnhead_regex = "(<p>| *<h[23].*>\n +)FOOTNOTES:(</p>|\n *</h[23])"
     while lz_start := maintext().search(fnhead_regex, lz_end, tk.END, regexp=True):
         # Find next LZ (or end of file) to help find the end of this LZ
         lz_next = maintext().search(
@@ -1562,7 +1562,7 @@ def html_convert_footnote_landing_zones() -> None:
             lz_end = f"{lz_start}"
         lz_end += "+1l lineend"  # Allow for lines added below
         maintext().insert(lz_end, "\n</section>")
-        # FOOTNOTES heading may be marked with p or h3 markup
+        # FOOTNOTES heading may be marked with p or h2/h3 markup
         # <p>FOOTNOTES:</p> ==> <section class="footnotes"><h3>FOOTNOTES:</h3>
         if maintext().get(lz_start, f"{lz_start}+2c") == "<p":
             maintext().replace(f"{lz_start}+15c", f"{lz_start}+16c", "h3")

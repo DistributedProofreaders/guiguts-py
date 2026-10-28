@@ -134,22 +134,13 @@ class FootnoteChecker:
             lz_index: index of position at which to add LZ header.
         """
         # If the insert point is a blank line immediately after a Page Marker,
-        # place the insert point at the start of the Page Marker as GG1 does. If
-        # Page Markers have been removed then look for a page mark at the insertion
-        # point and place the insertion point before that page mark. Recall that
-        # the gravity setting used for marks is tk.RIGHT.
+        # place the insert point at the start of the Page Marker as GG1 does.
         #
         # Get line immediately before the insertion point. We'll test below if it
         # is a Page Marker record.
         line_before = maintext().get(
             f"{lz_index} -1l linestart", f"{lz_index} -1l lineend"
         )
-        # Get page mark if we are relying on page marks because Page Separator Fixup
-        # has been run.
-        prev_page_mark = maintext().page_mark_previous(lz_index)
-        # Set 'prev_page_mark' to be lz_index if it's not a page mark.
-        if not maintext().is_page_mark(prev_page_mark):
-            prev_page_mark = lz_index
         if line_before[0:11] == "-----File: ":
             lz_index = maintext().rowcol(f"{lz_index} -1l linestart").index()
         maintext().insert(f"{lz_index} -1c", "\n\n\n" + "FOOTNOTES:")
@@ -821,7 +812,7 @@ def reindex() -> None:
     _THE_FOOTNOTE_CHECKER.enable_disable_buttons()
 
 
-def autoset_end_lz() -> None:
+def autoset_end_lz(blank_lines: int = 4) -> None:
     """Insert a 'FOOTNOTES:' LZ header line at end of file."""
     assert _THE_FOOTNOTE_CHECKER is not None
     maintext().undo_block_begin()
@@ -830,7 +821,10 @@ def autoset_end_lz() -> None:
     if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
         _THE_FOOTNOTE_CHECKER.add_blank_line_at_eof()
     end_of_file = maintext().end().index()
-    _THE_FOOTNOTE_CHECKER.set_lz(end_of_file)
+    # Adjust end to mean last non-blank line
+    if last_char := maintext().search(r"\S", "end", backwards=True, regexp=True):
+        end_of_file = maintext().index(f"{last_char} lineend")
+    maintext().insert(end_of_file, blank_lines * "\n" + "\nFOOTNOTES:\n")
 
 
 def autoset_chapter_lz() -> None:
@@ -854,8 +848,6 @@ def autoset_chapter_lz() -> None:
     end_of_file = maintext().end().index()
     if maintext().get(f"{end_of_file} linestart", f"{end_of_file} lineend") != "":
         _THE_FOOTNOTE_CHECKER.add_blank_line_at_eof()
-    # Append LZ header to end of file to catch footnotes in the last chapter
-    autoset_end_lz()
     # Set search range for finding 'chapter breaks'. Look for them from the
     # start of the first anchor rather than after the first 200 lines as
     # in GG1.
@@ -895,6 +887,9 @@ def autoset_chapter_lz() -> None:
             # Advance to avoid finding same blank line again.
             restart_point = maintext().rowcol(f"{start_index} +1l")
         search_range = IndexRange(restart_point, maintext().end())
+
+    # Append LZ header to end of file to catch footnotes in the last chapter
+    autoset_end_lz(blank_lines=2)
 
     # The file has changed so rebuild AN/FN records and refresh dialog.
     _THE_FOOTNOTE_CHECKER.run_check()
