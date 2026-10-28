@@ -1326,6 +1326,28 @@ class MainText(tk.Text):
             self.bind_event(
                 "<Shift-Command-Right>", self.go_end, add=True, bind_peer=True
             )
+        # Just push location on stack, then leave for default behavior for start/end keys
+        stack_keys: tuple[str, ...] = (
+            "<Control-Home>",
+            "<Control-Shift-Home>",
+            "<Control-End>",
+            "<Control-Shift-End>",
+        )
+        if is_mac():
+            stack_keys += (
+                "<Command-Up>",
+                "<Command-Shift-Up>",
+                "<Command-Down>",
+                "<Command-Shift-Down>",
+            )
+        for key_combo in stack_keys:
+            self.bind_event(
+                key_combo,
+                lambda _: self.focus_widget().location_history.push(),
+                add=True,
+                force_break=False,
+                bind_peer=True,
+            )
 
         # Tk9 helpfully often treats a character with a combining character as one character
         # For GG2, it is nice to be able to left/right arrow in-between the character and the
