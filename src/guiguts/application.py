@@ -5,6 +5,7 @@ import argparse
 import logging
 
 from importlib.metadata import version
+from pathlib import Path
 import os
 import sys
 import tkinter as tk
@@ -35,7 +36,7 @@ from guiguts.content_providing import (
 
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle, footnote_mask
-from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
+from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes, add_css_file
 from guiguts.html_tools import (
     HTMLImageAutoDialog,
     HTMLImageEditDialog,
@@ -1353,6 +1354,14 @@ class Guiguts:
         html_menu.add_button(
             "HTML Ext~ract Alt Text", lambda: HTMLAltTextChecker().run()
         )
+        css_dir = Path(preferences.prefsdir, "css")
+        if os.path.exists(css_dir):
+            css_menu = html_menu.add_submenu("A~dd CSS")
+            for css_file in sorted(css_dir.glob("*.css")):
+                css_menu.add_button(
+                    css_file.name,
+                    lambda fn=css_file.name: add_css_file(fn),  # type: ignore[misc]
+                )
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
         html_menu.add_button("HTML Lin~k Checker", lambda: HTMLLinkChecker().run())
