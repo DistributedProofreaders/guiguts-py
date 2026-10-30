@@ -1106,8 +1106,8 @@ class CPFilteringDialog(CheckerDialog):
         re_exc = re.compile(r"(?<=\w)!(?=\w)")
         re_ti = re.compile(r"\b[TJ](['’]ll|['’]m|['’]d|f|s|t)\b")
         re_tiw = re.compile(r"([\"“'‘])[TJ]\b")
-        re_1i = re.compile(r"(?<![^'\" ])1\b(?!\.)")
-        re_0o = re.compile(r"(?<![^'\" ])0\b")
+        re_1i = re.compile(r"(?<![^'\" ])1\b(?![-\.])")
+        re_0o = re.compile(r"(?<![^'\" ])0\b(?!\.)")
         re_li = re.compile(r"(?<![^'\" ])l\b(?!')")
         re_la = re.compile(r"(?<![^'\" ])l'(?!\p{Letter})")
         re_mf = re.compile(
