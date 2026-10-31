@@ -397,6 +397,38 @@ Developers are encouraged to add tests (as appropriate) when new code is added t
 
 This project uses Github Actions to ensure running `pytest` does not report an error.
 
+
+### Setup releasing new versions
+
+1. You need an account at pypi.org that is registered as a collaborator on the
+   [guiguts project](https://pypi.org/project/guiguts/).
+2. Manage Project, Settings, Create a token for guiguts, then copy the text of the token
+3. Use `poetry config pypi-token.pypi <token>` where `<token>` is the long text string copied above
+4. Token will be stored in Windows Credential Manager, Apple's Keychain, Linux Keyring
+   (or fallback to auth.toml) depending on your platform, but you should not need to refer to it again
+
+
+### Releasing a new version
+
+1. Edit `pyproject.toml` to increment the version number, e.g. near top of file `version = "2.1.9"`
+2. Edit CHANGELOG.md from the project root directory to add the changes in this release to
+   the top of the file, using the same layout/format as previous releases
+3. Copy CHANGELOG.md from the project root directory to overwrite CHANGELOG.md in `src/guiguts`
+   subdirectory - these two files must be identical prior to release
+4. Create a commit, and PR, with the above changes, get it reviewed, then merged into `master`
+5. Ensure local `master` is updated to include this commit
+6. Tag the commit with the version number (including `v` prefix), e.g. `git tag v2.1.9`
+7. Push the tag upstream, e.g. `git push upstream v2.1.9`
+8. Run `poetry install` & check that running guiguts brings up the right version & changelog
+9. Run `poetry publish --build` - it may say there are already built files (from a previous release)
+   and ask you to confirm you want to replace them with the new ones
+10. Check at [PyPI](https://pypi.org/project/guiguts/) that the new tag is there
+11. Test installation of new release, e.g. `pip3 install guiguts --upgrade`
+12. Post in GG2 Slack channel and DP forum thread to announce the new release, including a suitably
+    formatted list of changes/bugs from the CHANGELOG - may be easiest to copy, then edit a previous
+    announcement
+
+
 ### Editor / IDE additional notes
 
 #### Visual Studio Code
