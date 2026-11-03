@@ -3,6 +3,7 @@
 from enum import StrEnum, auto
 import importlib.resources
 import logging
+import os
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -1190,11 +1191,56 @@ def insert_header_footer() -> None:
         # Insert user header if there is one, just before closing "</style>"
         if user_header:
             maintext().insert(end_of_css(), f"{user_header}\n")
+    # Append CSS for transcriber note
+    add_css_file("transcriber_note.css")
     # Insert footer
     maintext().insert(tk.END, "\n</body>\n</html>\n")
     # Restore mark gravity if changed above
     for page_mark in page_mark_list:
         maintext().mark_gravity(page_mark, tk.LEFT)
+
+
+def add_css_file(filename: str) -> None:
+    """Add specified .css file to the end of the HTML style section."""
+    user_css_filepath = Path(preferences.prefsdir, "css", filename)
+    default_css_filepath = DEFAULT_HTML_DIR.joinpath(filename)
+    css_filepath = (
+        user_css_filepath if os.path.isfile(user_css_filepath) else default_css_filepath
+    )
+    try:
+        css_text = "\n" + css_filepath.read_text(encoding="utf-8").rstrip() + "\n"
+    except (OSError, UnicodeDecodeError) as exc:
+        logger.error(f"Unable to read {css_filepath}\n{exc}")
+        return
+    try:
+        insert_pos = end_of_css()
+    except SyntaxError:
+        logger.error("No </style> line found in the current file.")
+        return
+    begin_marker = f"/* BEGIN {filename} */"
+    end_marker = f"/* END {filename} */"
+    begin_pos = maintext().search(begin_marker, "1.0", stopindex=insert_pos)
+    end_pos = maintext().search(end_marker, "1.0", stopindex=insert_pos)
+    if begin_pos and end_pos:
+        if not messagebox.askyesno(
+            title="Replace existing CSS?",
+            message=f"This will replace existing CSS imported from {filename}\n",
+            detail="Are you sure you want to continue?",
+            default=messagebox.NO,
+            icon=messagebox.WARNING,
+        ):
+            return
+        end_pos += "+1l linestart"
+        maintext().undo_block_begin()
+        maintext().replace(
+            begin_pos, end_pos, f"{begin_marker}{css_text}{end_marker}\n"
+        )
+        return
+    if begin_pos or end_pos:
+        logger.error(f"END or BEGIN marker for {filename} not found")
+        return
+    maintext().undo_block_begin()
+    maintext().insert(insert_pos, f"\n{begin_marker}{css_text}{end_marker}\n")
 
 
 def replace_header_keywords(header: str) -> str:
