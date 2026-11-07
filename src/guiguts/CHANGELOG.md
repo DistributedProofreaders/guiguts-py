@@ -1,6 +1,17 @@
 # Changelog
 
 
+## Version 2.1.9
+
+- HTML Auto-Table now supports using list/flex markup for simple layouts that
+  are more accessible as lists
+
+### Bug fixes
+
+- Square brackets within footnotes could cause "Join to Previous" to fail with
+  no warning; code now copes with more cases, and gives error if unable to cope
+- Using left/right arrow keys in split screen view sometimes worked incorrectly
+
 ## Version 2.1.8
 
 - Opening block markup, e.g. `/P` or `/#[8.4,64]` can have a class name

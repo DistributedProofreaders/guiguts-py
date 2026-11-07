@@ -1326,6 +1326,28 @@ class MainText(tk.Text):
             self.bind_event(
                 "<Shift-Command-Right>", self.go_end, add=True, bind_peer=True
             )
+        # Just push location on stack, then leave for default behavior for start/end keys
+        stack_keys: tuple[str, ...] = (
+            "<Control-Home>",
+            "<Control-Shift-Home>",
+            "<Control-End>",
+            "<Control-Shift-End>",
+        )
+        if is_mac():
+            stack_keys += (
+                "<Command-Up>",
+                "<Command-Shift-Up>",
+                "<Command-Down>",
+                "<Command-Shift-Down>",
+            )
+        for key_combo in stack_keys:
+            self.bind_event(
+                key_combo,
+                lambda _: self.focus_widget().location_history.push(),
+                add=True,
+                force_break=False,
+                bind_peer=True,
+            )
 
         # Tk9 helpfully often treats a character with a combining character as one character
         # For GG2, it is nice to be able to left/right arrow in-between the character and the
@@ -1333,7 +1355,8 @@ class MainText(tk.Text):
         # To do this, override left/right bindings, then unoverride Ctrl/Option-left/right
         def char_left(_: tk.Event) -> str:
             """Move insert position 1 char left, not skipping over combining characters."""
-            pos = self.rowcol(tk.INSERT)
+            text = self.focus_widget()
+            pos = IndexRowCol(text.index(tk.INSERT))
 
             lend = ""
             # Start of line - go to end of previous line
@@ -1344,14 +1367,15 @@ class MainText(tk.Text):
             else:
                 pos.col -= 1
 
-            self.mark_set(tk.INSERT, f"{pos.index()}{lend}")
-            self.see(tk.INSERT)
+            text.mark_set(tk.INSERT, f"{pos.index()}{lend}")
+            text.see(tk.INSERT)
             return "break"
 
         def char_right(_: tk.Event) -> str:
             """Move insert position 1 char right, not skipping over combining characters."""
-            pos = self.rowcol(tk.INSERT)
-            char = self.get(pos.index())
+            text = self.focus_widget()
+            pos = IndexRowCol(text.index(tk.INSERT))
+            char = text.get(pos.index())
 
             if char == "\n":
                 pos.row += 1
@@ -1359,8 +1383,8 @@ class MainText(tk.Text):
             else:
                 pos.col += 1
 
-            self.mark_set(tk.INSERT, pos.index())
-            self.see(tk.INSERT)
+            text.mark_set(tk.INSERT, pos.index())
+            text.see(tk.INSERT)
             return "break"
 
         self.bind_event("<Left>", char_left, add=True, bind_peer=True)

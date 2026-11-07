@@ -1575,8 +1575,8 @@ class MainWindow:
         create_separator(9)
         create_toolbar_btn(10, "search", "Search & Replace")
         create_separator(11)
-        create_toolbar_btn(12, "back", "Back")
-        create_toolbar_btn(13, "forward", "Forward")
+        create_toolbar_btn(12, "back", "Back - Right-click for history")
+        create_toolbar_btn(13, "forward", "Forward - Right-click for history")
         create_separator(14)
         create_toolbar_btn(15, "help", "Help")
 

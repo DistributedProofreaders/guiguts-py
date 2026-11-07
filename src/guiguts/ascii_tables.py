@@ -72,14 +72,44 @@ class ASCIITable:
             )
             # If not spaced, don't want to mess with leading/trailing fragments
             if self.spaced:
-                # Delete any leading empty/whitespace fragments
-                for col, cell in enumerate(row.cells):
-                    while cell.fragments and not cell.fragments[0].strip():
-                        del cell.fragments[0]
-                # Delete any trailing empty/whitespace fragments
-                for col, cell in enumerate(row.cells):
-                    while cell.fragments and not cell.fragments[-1].strip():
-                        del cell.fragments[-1]
+                # Delete leading empty/whitespace fragments common to all cells
+                leading = min(
+                    (
+                        next(
+                            (
+                                i
+                                for i, frag in enumerate(cell.fragments)
+                                if frag.strip()
+                            ),
+                            len(cell.fragments),
+                        )
+                        for cell in row.cells
+                    ),
+                    default=0,
+                )
+                if leading:
+                    for cell in row.cells:
+                        del cell.fragments[:leading]
+
+                # Delete trailing empty/whitespace fragments common to all cells
+                trailing = min(
+                    (
+                        next(
+                            (
+                                i
+                                for i, frag in enumerate(reversed(cell.fragments))
+                                if frag.strip()
+                            ),
+                            len(cell.fragments),
+                        )
+                        for cell in row.cells
+                    ),
+                    default=0,
+                )
+                if trailing:
+                    for cell in row.cells:
+                        del cell.fragments[-trailing:]
+
             # Recalculate max number of fragments & add trailing whitespace fragments
             # so all cells on row have same number
             max_frags = max(len(cell.fragments) for cell in row.cells)
@@ -361,11 +391,43 @@ class ASCIITableDialog(ToplevelDialog):
             "Move highlighted vertical line right, increasing column width, and rewrapping if enabled",
         )
 
+        # "Vertical Alignment" LabelFrame.
+        self.vertical_align_frame = ttk.LabelFrame(
+            self.top_frame, text="Vertical Alignment", padding=5
+        )
+        self.vertical_align_frame.grid(row=4, column=0, sticky="NSEW")
+        self.vertical_align_frame.columnconfigure(0, weight=1)
+
+        vertical_align_inner_frame = ttk.Frame(self.vertical_align_frame)
+        vertical_align_inner_frame.grid(row=0, column=0, pady=2)
+
+        align_top_button = ttk.Button(
+            vertical_align_inner_frame,
+            text="Align Top",
+            command=self.align_top,
+        )
+        align_top_button.grid(row=0, column=1, sticky="NSEW", padx=5)
+        ToolTip(
+            align_top_button,
+            "Top align selected column",
+        )
+
+        align_bottom_button = ttk.Button(
+            vertical_align_inner_frame,
+            text="Align Bottom",
+            command=self.align_bottom,
+        )
+        align_bottom_button.grid(row=0, column=3, sticky="NSEW", padx=5)
+        ToolTip(
+            align_bottom_button,
+            "Bottom align selected column",
+        )
+
         # "Leading/Trailing Spaces" LabelFrame
         spaces_frame = ttk.LabelFrame(
             self.top_frame, text="Leading/Trailing Spaces", padding=5
         )
-        spaces_frame.grid(row=4, column=0, sticky="NSEW")
+        spaces_frame.grid(row=5, column=0, sticky="NSEW")
         spaces_frame.columnconfigure(0, weight=1)
         center_frame = ttk.Frame(spaces_frame)
         center_frame.grid(row=0, column=0, pady=2)
@@ -404,7 +466,7 @@ class ASCIITableDialog(ToplevelDialog):
         restructure_frame = ttk.LabelFrame(
             self.top_frame, text="Restructure", padding=5
         )
-        restructure_frame.grid(row=5, column=0, sticky="NSEW")
+        restructure_frame.grid(row=6, column=0, sticky="NSEW")
         restructure_frame.columnconfigure(0, weight=1)
         cpl2g_btn = ttk.Button(
             restructure_frame,
@@ -418,7 +480,7 @@ class ASCIITableDialog(ToplevelDialog):
         borders_frame = ttk.LabelFrame(
             self.top_frame, text="Horizontal Borders", padding=5
         )
-        borders_frame.grid(row=6, column=0, sticky="EW")
+        borders_frame.grid(row=7, column=0, sticky="EW")
         borders_frame.columnconfigure(0, weight=1)
         borders_checkbox = ttk.Checkbutton(
             borders_frame,
@@ -558,6 +620,57 @@ class ASCIITableDialog(ToplevelDialog):
                     )
         maintext().undo_block_begin()
         tbl.square_off()
+        self.put_table_grid(tbl)
+        self.refresh_table_display()
+
+    def align_top(self) -> None:
+        """Top align the current column, by removing leading empty fragments.
+        and appending the same number of trailing ones."""
+        tbl = self.get_table_grid()
+        if (
+            len(tbl.rows) == 0
+            or self.selected_column < 0
+            or self.selected_column >= len(tbl.rows[0].cells)
+        ):
+            return
+
+        for row in tbl.rows:
+            fragments = row.cells[self.selected_column].fragments
+            padding = 0
+            empty_frag = ""
+            while fragments and fragments[0].strip() == "":
+                empty_frag = fragments[0]
+                del fragments[0]
+                padding += 1
+            fragments.extend([empty_frag] * padding)
+
+        maintext().undo_block_begin()
+        self.put_table_grid(tbl)
+        self.refresh_table_display()
+
+    def align_bottom(self) -> None:
+        """Bottom align the current column."""
+        tbl = self.get_table_grid()
+        if (
+            len(tbl.rows) == 0
+            or self.selected_column < 0
+            or self.selected_column >= len(tbl.rows[0].cells)
+        ):
+            return
+
+        for row in tbl.rows:
+            fragments = row.cells[self.selected_column].fragments
+
+            # Remove trailing empty fragments and replace at the beginning.
+            padding = 0
+            empty_frag = ""
+            while fragments and fragments[-1].strip() == "":
+                empty_frag = fragments.pop()
+                padding += 1
+
+            fragments[:0] = [empty_frag] * padding
+
+        maintext().undo_block_begin()
         self.put_table_grid(tbl)
         self.refresh_table_display()
 
