@@ -648,7 +648,7 @@ class BookloupeChecker:
             # Trim any markup or footnote remnants left at start/end of word
             word = re.sub(r"^.+>|<.+$|\[.+$", "", match[1])
             # Trim trailing underscores, punct with final apostrophe, e.g. "C_.’"
-            word = re.sub(r"[.,!?;:_']+[’']$", "", word)
+            word = re.sub(r"[.,!?;:_’']+$", "", word)
             word_lower = word.lower()
             # Query standalone 0 or 1 except in `^[Footnote 1:`
             if word in ("0", "1"):
