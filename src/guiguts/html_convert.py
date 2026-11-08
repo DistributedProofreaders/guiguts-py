@@ -1175,7 +1175,9 @@ def insert_header_footer() -> None:
     # Get user's header file if there is one
     user_path = Path(preferences.prefsdir, HTML_HEADER_NAME)
     if not is_test() and user_path.is_file():
-        user_header = replace_header_keywords(user_path.read_text(encoding="utf-8"))
+        user_header = replace_header_keywords(
+            user_path.read_text(encoding="utf-8")
+        ).rstrip()
     else:
         user_header = ""
     # If user has provided complete header, insert at start instead of default
@@ -1190,7 +1192,11 @@ def insert_header_footer() -> None:
         maintext().insert("1.0", f"{default_header}\n")
         # Insert user header if there is one, just before closing "</style>"
         if user_header:
-            maintext().insert(end_of_css(), f"{user_header}\n")
+            begin_marker = "/* BEGIN User Header */"
+            end_marker = "/* END User Header */"
+            maintext().insert(
+                end_of_css(), f"{begin_marker}\n{user_header}\n{end_marker}\n\n"
+            )
     # Append CSS for transcriber note
     add_css_file("transcriber_note.css")
     # Insert footer
@@ -1200,13 +1206,43 @@ def insert_header_footer() -> None:
         maintext().mark_gravity(page_mark, tk.LEFT)
 
 
+def allow_default_css() -> bool:
+    """Allow GG2-supplied css only if there's no full replacement of header."""
+    user_path = Path(preferences.prefsdir, HTML_HEADER_NAME)
+    user_header = (
+        user_path.read_text(encoding="utf-8")
+        if not is_test() and user_path.is_file()
+        else ""
+    )
+    return not user_header.startswith("<!DOCTYPE")
+
+
+def get_css_filenames() -> list[str]:
+    """Return list of available css files for the CSS submenu"""
+    user_css_dir = Path(preferences.prefsdir, "css")
+    user_css_files = {f.name for f in user_css_dir.glob("*.css")}
+    if allow_default_css():
+        default_css_files = {
+            f.name for f in DEFAULT_HTML_DIR.iterdir() if f.name.endswith(".css")
+        }
+    else:
+        default_css_files = set()
+    return sorted(user_css_files | default_css_files)
+
+
 def add_css_file(filename: str) -> None:
     """Add specified .css file to the end of the HTML style section."""
     user_css_filepath = Path(preferences.prefsdir, "css", filename)
-    default_css_filepath = DEFAULT_HTML_DIR.joinpath(filename)
-    css_filepath = (
-        user_css_filepath if os.path.isfile(user_css_filepath) else default_css_filepath
+    default_css_filepath = (
+        DEFAULT_HTML_DIR.joinpath(filename) if allow_default_css() else None
     )
+    css_filepath = (
+        user_css_filepath
+        if os.path.isfile(user_css_filepath) and not is_test()
+        else default_css_filepath
+    )
+    if css_filepath is None:
+        return
     try:
         css_text = "\n" + css_filepath.read_text(encoding="utf-8").rstrip() + "\n"
     except (OSError, UnicodeDecodeError) as exc:
@@ -1240,7 +1276,7 @@ def add_css_file(filename: str) -> None:
         logger.error(f"END or BEGIN marker for {filename} not found")
         return
     maintext().undo_block_begin()
-    maintext().insert(insert_pos, f"\n{begin_marker}{css_text}{end_marker}\n")
+    maintext().insert(insert_pos, f"{begin_marker}{css_text}{end_marker}\n\n")
 
 
 def replace_header_keywords(header: str) -> str:
@@ -1578,6 +1614,9 @@ def html_convert_footnotes() -> None:
             maintext().insert(an_start, open_markup)
             id_markup = ""
             an_search_start = maintext().index(f"{an_start}+{len(open_markup) + 4}c")
+    # Append footnote css if necessary
+    if fn_number:
+        add_css_file("footnotes.css")
 
 
 def html_convert_footnote_landing_zones() -> None:
