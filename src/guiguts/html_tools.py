@@ -2527,9 +2527,9 @@ class HTMLAutoTableDialog(ToplevelDialog):
                 maintext().replace(f"{start_linenum}.0", f"{end_linenum - 1}.end", html)
                 end_linenum = start_linenum
             open_row = (
-                '<div style="overflow-x:auto;">\n<table class="autotable">\n'
+                '<div style="overflow-x:auto;">\n<table>\n'
                 if preferences.get(PrefKey.AUTOTABLE_WIDE_FLAG)
-                else '<table class="autotable">\n'
+                else "<table>\n"
             )
             maintext().insert(f"{end_linenum}.0", open_row)
 
