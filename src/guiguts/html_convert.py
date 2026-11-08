@@ -1364,7 +1364,7 @@ def html_convert_page_anchors() -> None:
                 move = len(re.sub(r"[\s<].*", "", check_str)) - 1
                 if move > 0:
                     pnum_index = maintext().index(f"{pnum_index}+{move}c")
-        else:  # At beginning of line - check it's in suitable place if within index
+        else:  # At beginning of line - check it's in suitable place if within index or h2 markup
             # Skip blank lines and get potential index line
             skip = pnum_index
             line = ""
@@ -1380,6 +1380,9 @@ def html_convert_page_anchors() -> None:
                 if col >= 0:
                     pnum_rowcol.col = col + 1
                     pnum_index = pnum_rowcol.index()
+            elif re.match(" *</h2>", line):
+                # This line is closing /h2, put pagenum on the line below
+                pnum_index = maintext().index(f"{skip} +1l linestart")
         return pnum_index
 
     def outside_paragraph(index: str) -> bool:
