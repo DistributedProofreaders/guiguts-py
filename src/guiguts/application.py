@@ -130,7 +130,7 @@ from guiguts.misc_tools import (
 )
 from guiguts.page_details import PageDetailsDialog
 from guiguts.preferences import preferences, PrefKey, PersistentBoolean
-from guiguts.root import root
+from guiguts.root import root, install_macos_hide_workaround
 from guiguts.search import (
     show_search_dialog,
     find_next,
@@ -868,6 +868,7 @@ class Guiguts:
             )
             root().createcommand("tk::mac::OpenDocument", self.open_document)
             root().createcommand("tk::mac::Quit", self.quit_program)
+            install_macos_hide_workaround(root())
 
         menubar_metadata().set_shortcuts_from_prefs()
         self.recreate_menus()
