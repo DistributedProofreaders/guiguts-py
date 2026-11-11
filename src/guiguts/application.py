@@ -35,7 +35,12 @@ from guiguts.content_providing import (
 
 from guiguts.file import File, the_file, NUM_RECENT_FILES
 from guiguts.footnotes import footnote_check, FootnoteIndexStyle, footnote_mask
-from guiguts.html_convert import HTMLGeneratorDialog, HTMLMarkupTypes
+from guiguts.html_convert import (
+    HTMLGeneratorDialog,
+    HTMLMarkupTypes,
+    add_css_file,
+    get_css_filenames,
+)
 from guiguts.html_tools import (
     HTMLImageAutoDialog,
     HTMLImageEditDialog,
@@ -1353,6 +1358,14 @@ class Guiguts:
         html_menu.add_button(
             "HTML Ext~ract Alt Text", lambda: HTMLAltTextChecker().run()
         )
+        css_filenames = get_css_filenames()
+        if css_filenames:
+            css_menu = html_menu.add_submenu("A~dd CSS")
+            for file in css_filenames:
+                css_menu.add_button(
+                    file,
+                    lambda fn=file: add_css_file(fn),  # type: ignore[misc]
+                )
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
         html_menu.add_button("HTML Lin~k Checker", lambda: HTMLLinkChecker().run())
