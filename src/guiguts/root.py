@@ -3,13 +3,14 @@
 import ctypes
 import ctypes.util
 from enum import StrEnum, auto
+from functools import cache
 import logging
 import traceback
 import tkinter as tk
 from tkinter import ttk
 
 from types import TracebackType
-from typing import Any
+from typing import Any, Optional
 from ttkthemes import ThemedTk
 
 from guiguts.preferences import preferences, PrefKey
@@ -150,6 +151,131 @@ class Root(ThemedTk):
         self.allow_config_saves = True
 
 
+@cache
+def _objc_runtime() -> ctypes.CDLL:
+    """Return the Objective-C runtime library, set up for use via ctypes."""
+    libobjc_path = ctypes.util.find_library("objc")
+    assert libobjc_path is not None
+    objc = ctypes.cdll.LoadLibrary(libobjc_path)
+    objc.objc_getClass.restype = ctypes.c_void_p
+    objc.objc_getClass.argtypes = [ctypes.c_char_p]
+    objc.sel_registerName.restype = ctypes.c_void_p
+    objc.sel_registerName.argtypes = [ctypes.c_char_p]
+    return objc
+
+
+def _objc_send(restype: Any, obj: Any, selector: str, *args: Any) -> Any:
+    """Send Objective-C message. Needs exact prototype (not variadic) on arm64.
+    Only NSUInteger arguments, or equivalents passed as integers, are needed here."""
+    objc = _objc_runtime()
+    msg_send_addr = ctypes.cast(objc.objc_msgSend, ctypes.c_void_p).value
+    assert msg_send_addr is not None
+    prototype = ctypes.CFUNCTYPE(
+        restype, ctypes.c_void_p, ctypes.c_void_p, *[ctypes.c_ulong] * len(args)
+    )
+    func = prototype(msg_send_addr)
+    return func(obj, objc.sel_registerName(selector.encode()), *args)
+
+
+def _objc_send_from_event_loop(obj: Any, selector: str) -> None:
+    """Queue Objective-C message, with nil argument if it takes one, to be sent
+    from the event loop, in the order queued.
+
+    Needed for messages that change window state when called from a Tk callback.
+    They can make Tk call back into Python, and tkinter aborts the process if that
+    happens during a ctypes call made from a Python callback.
+    """
+    _objc_send(
+        None,
+        obj,
+        "performSelectorOnMainThread:withObject:waitUntilDone:",
+        _objc_runtime().sel_registerName(selector.encode()),
+        0,
+        0,
+    )
+
+
+def _ns_app() -> int:
+    """Return the shared NSApplication instance."""
+    return _objc_send(
+        ctypes.c_void_p,
+        _objc_runtime().objc_getClass(b"NSApplication"),
+        "sharedApplication",
+    )
+
+
+def _ns_ordered_windows() -> list[int]:
+    """Return the app's NSWindows, front to back."""
+    ns_windows = _objc_send(ctypes.c_void_p, _ns_app(), "orderedWindows")
+    return [
+        _objc_send(ctypes.c_void_p, ns_windows, "objectAtIndex:", idx)
+        for idx in range(_objc_send(ctypes.c_ulong, ns_windows, "count"))
+    ]
+
+
+def _ns_visible_parentless_windows() -> list[int]:
+    """Return visible NSWindows that aren't child windows, front to back.
+
+    Pinned dialogs are child windows, which are shown/hidden with their parent.
+    Ordering one out directly would detach it from its parent.
+    """
+    return [
+        ns_window
+        for ns_window in _ns_ordered_windows()
+        if _objc_send(ctypes.c_bool, ns_window, "isVisible")
+        and not _objc_send(ctypes.c_void_p, ns_window, "parentWindow")
+    ]
+
+
+def install_macos_hide_workaround(window: tk.Misc) -> None:
+    """Make the macOS Hide command (Cmd-H or app menu) hide all the app's windows.
+
+    With Tk 9, macOS hides the app's windows except for one, usually the main window,
+    which is left on screen behind other apps. On hide, order that window out.
+    Using NSWindows directly avoids `wm withdraw`, which brings another window to the
+    front when the key window is withdrawn, and which would detach pinned dialogs.
+
+    By the time Tk reports the hide, the stacking order is lost, so it is recorded
+    whenever the focus changes, and used to restore the stacking order on unhide.
+
+    Args:
+        window: Any widget, used to access Tk.
+    """
+    if not is_mac() or tk.TkVersion < 9.0:
+        return
+    stack: list[int] = []  # Front to back
+    key_window: Optional[int] = None
+
+    def record_stack() -> None:
+        if not _objc_send(ctypes.c_bool, _ns_app(), "isHidden"):
+            stack[:] = _ns_visible_parentless_windows()
+
+    def on_hide() -> None:
+        nonlocal key_window
+        key_window = _objc_send(ctypes.c_void_p, _ns_app(), "keyWindow")
+        existing = _ns_ordered_windows()
+        left_on_screen = _ns_visible_parentless_windows()
+        # Windows closed since the last record must not be messaged later
+        stack[:] = [ns_window for ns_window in stack if ns_window in existing]
+        stack.extend(w for w in left_on_screen if w not in stack)
+        for ns_window in left_on_screen:
+            # Ordering out the key window without this makes macOS unhide the app
+            _objc_send_from_event_loop(ns_window, "resignKeyWindow")
+            _objc_send_from_event_loop(ns_window, "orderOut:")
+
+    def on_show() -> None:
+        existing = _ns_ordered_windows()
+        for ns_window in reversed(stack):
+            if ns_window in existing:
+                _objc_send_from_event_loop(ns_window, "orderFront:")
+        if key_window in existing:
+            _objc_send_from_event_loop(key_window, "makeKeyWindow")
+
+    window.bind_all("<FocusIn>", lambda _: window.after_idle(record_stack), add=True)
+    window.tk.createcommand("::tk::mac::OnHide", on_hide)
+    window.tk.createcommand("::tk::mac::OnShow", on_show)
+
+
 def disable_macos_native_fullscreen(window: tk.Misc) -> None:
     """Make the macOS green title-bar button zoom the window rather than
     putting it into native fullscreen mode, which Guiguts doesn't handle well.
@@ -190,42 +316,24 @@ def _set_ns_window_fullscreen_none(window: tk.Misc) -> None:
     full_screen_none = 1 << 9  # NSWindowCollectionBehaviorFullScreenNone
     title = window.tk.call("wm", "title", window)
     try:
-        libobjc_path = ctypes.util.find_library("objc")
-        assert libobjc_path is not None
-        objc = ctypes.cdll.LoadLibrary(libobjc_path)
-        objc.objc_getClass.restype = ctypes.c_void_p
-        objc.objc_getClass.argtypes = [ctypes.c_char_p]
-        objc.sel_registerName.restype = ctypes.c_void_p
-        objc.sel_registerName.argtypes = [ctypes.c_char_p]
-        msg_send_addr = ctypes.cast(objc.objc_msgSend, ctypes.c_void_p).value
-        assert msg_send_addr is not None
-
-        def send(restype: Any, obj: Any, selector: str, *args: Any) -> Any:
-            """Send Objective-C message. Needs exact prototype (not variadic) on arm64.
-            Only NSUInteger arguments are needed here."""
-            prototype = ctypes.CFUNCTYPE(
-                restype, ctypes.c_void_p, ctypes.c_void_p, *[ctypes.c_ulong] * len(args)
-            )
-            func = prototype(msg_send_addr)
-            return func(obj, objc.sel_registerName(selector.encode()), *args)
-
         # Tk doesn't expose the NSWindow, so temporarily give the window a unique
         # title, and find the NSWindow with that title.
         unique_title = f"guiguts-fullscreen-none-{id(window)}"
         window.tk.call("wm", "title", window, unique_title)
         window.update_idletasks()
-        app = send(
-            ctypes.c_void_p, objc.objc_getClass(b"NSApplication"), "sharedApplication"
-        )
-        ns_windows = send(ctypes.c_void_p, app, "windows")
-        for idx in range(send(ctypes.c_ulong, ns_windows, "count")):
-            ns_window = send(ctypes.c_void_p, ns_windows, "objectAtIndex:", idx)
-            ns_title = send(ctypes.c_void_p, ns_window, "title")
-            if send(ctypes.c_char_p, ns_title, "UTF8String") != unique_title.encode():
+        app = _ns_app()
+        ns_windows = _objc_send(ctypes.c_void_p, app, "windows")
+        for idx in range(_objc_send(ctypes.c_ulong, ns_windows, "count")):
+            ns_window = _objc_send(ctypes.c_void_p, ns_windows, "objectAtIndex:", idx)
+            ns_title = _objc_send(ctypes.c_void_p, ns_window, "title")
+            if (
+                _objc_send(ctypes.c_char_p, ns_title, "UTF8String")
+                != unique_title.encode()
+            ):
                 continue
-            behavior = send(ctypes.c_ulong, ns_window, "collectionBehavior")
+            behavior = _objc_send(ctypes.c_ulong, ns_window, "collectionBehavior")
             behavior = (behavior & ~full_screen_primary) | full_screen_none
-            send(None, ns_window, "setCollectionBehavior:", behavior)
+            _objc_send(None, ns_window, "setCollectionBehavior:", behavior)
             break
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.debug(f"Unable to disable macOS native fullscreen: {exc}")
