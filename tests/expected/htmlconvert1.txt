@@ -224,8 +224,6 @@ img {
     max-width: 100%;
     height: auto;
 }
-img.w100 {width: 100%;}
-
 
 .figcenter {
     margin: auto;
