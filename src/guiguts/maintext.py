@@ -3661,10 +3661,9 @@ class MainText(tk.Text):
                         pass
 
                     # Handle complete fixed-indent block
-                    elif block_type in "*pl":
-                        indent = poetry_indent if block_type == "p" else block_indent
+                    elif block_type in "*l":
                         left_margin = self.wrap_interpret_single_margin(
-                            match[2], block_params_list[-1].left + indent
+                            match[2], block_params_list[-1].left + block_indent
                         )
                         block_min_left, _ = self.wrap_get_block_limits(
                             line_start, close_index
@@ -3674,6 +3673,40 @@ class MainText(tk.Text):
                             close_index,
                             left_margin - block_min_left,
                         )
+
+                    # Handle complete poetry block
+                    elif block_type == "p":
+                        (
+                            poetry_wrap_left,
+                            poetry_main_left,
+                            poetry_right,
+                        ) = self.wrap_interpret_margins(
+                            match[2],
+                            match[3],
+                            match[4],
+                            poetry_indent + poetry_indent,
+                            poetry_indent,
+                            preferences.get(PrefKey.WRAP_RIGHT_MARGIN),
+                        )
+                        block_min_left, _ = self.wrap_get_block_limits(
+                            line_start, close_index
+                        )
+                        self.wrap_reindent_block(
+                            line_start,
+                            close_index,
+                            poetry_main_left - block_min_left,
+                        )
+                        # Wrap each line if necessary
+                        start_row = IndexRowCol(line_start).row
+                        end_row = IndexRowCol(close_index).row
+                        for row in range(end_row, start_row - 1, -1):
+                            this_line = maintext().get(f"{row}.0", f"{row}.end")
+                            if len(this_line) > poetry_right:
+                                wrapper.width = poetry_right
+                                wrapper.initial_indent = poetry_main_left * " "
+                                wrapper.subsequent_indent = poetry_wrap_left * " "
+                                wrapped = wrapper.fill(this_line).rstrip()
+                                maintext().replace(f"{row}.0", f"{row}.end", wrapped)
 
                     # Handle complete right-align block
                     elif block_type == "r":
