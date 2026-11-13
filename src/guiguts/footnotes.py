@@ -423,6 +423,7 @@ class FootnoteChecker:
 
             # Find closing square bracket - allow open/close bracket within footnote
             # Only search as far as the next footnote
+            # (cf html_convert.py:html_convert_footnotes)
             line_below = maintext().rowcol(f"{end_point.index()}+1l linestart")
             if search_end_match := maintext().find_match(
                 match_regex,

@@ -1479,14 +1479,38 @@ def html_convert_footnotes() -> None:
     while fn_start := maintext().search(
         r"<p>\[Footnote .+?:", fn_end, tk.END, regexp=True
     ):
+        # Find start of next footnote - don't want to search beyond that point
+        # (cf footnotes.py:run_check)
+        # Not doing full nested search because footnote may have solitary"["
+        line_below = maintext().rowcol(f"{fn_start}+1l linestart")
+        if search_end_match := maintext().find_match(
+            r"<p>\[Footnote .+?:",
+            IndexRange(line_below, maintext().end()),
+            regexp=True,
+            nocase=True,
+        ):
+            search_end_index = search_end_match.rowcol.index()
+        else:
+            search_end_index = tk.END
         # Find end of footnote
-        fn_end = maintext().search(r"]</p>$", fn_start, tk.END, regexp=True)
-        if not fn_end:
-            raise SyntaxError(
-                f"No paragraph break at footnote end:\n{maintext().get(f'{fn_start}+3c', f'{fn_start} lineend')}"
+        this_start = fn_start
+        while True:
+            fn_end = maintext().search(
+                r"]</p>$", this_start, search_end_index, regexp=True
             )
+            if not fn_end:
+                raise SyntaxError(
+                    f"Unable to find footnote end:\n{maintext().get(f'{fn_start}+3c', f'{fn_start} lineend')}"
+                )
+            # Ignore embedded single line illustration
+            if not re.fullmatch(
+                r"<p>\[(Illustration|Sidenote)[^]]*]</p>",
+                maintext().get(f"{fn_end} linestart", f"{fn_end} lineend"),
+            ):
+                break
+            this_start = maintext().index(f"{fn_end}+1l linestart")
         # Extract label for footnote
-        fn_label_end = maintext().search(":", fn_start, tk.END)
+        fn_label_end = maintext().search(":", fn_start, fn_end)
         fn_label = maintext().get(f"{fn_start}+13c", fn_label_end)
         fn_number += 1
         fn_id = f"Footnote_{fn_label}_{fn_number}"
