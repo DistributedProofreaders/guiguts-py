@@ -12,10 +12,10 @@ import regex as re
 
 from guiguts.data import dictionaries
 from guiguts.file import ProjectDict, the_file
-from guiguts.checkers import CheckerDialog, CheckerEntry
+from guiguts.checkers import CheckerDialog, CheckerEntry, CheckerMatchType
 from guiguts.maintext import maintext, FindMatch
 from guiguts.misc_tools import tool_save
-from guiguts.preferences import preferences, PersistentInt, PrefKey
+from guiguts.preferences import preferences, PersistentInt, PrefKey, PersistentString
 from guiguts.utilities import (
     IndexRowCol,
     IndexRange,
@@ -25,7 +25,7 @@ from guiguts.utilities import (
     non_text_line,
     is_test,
 )
-from guiguts.widgets import ToolTip, mouse_bind
+from guiguts.widgets import ToolTip, mouse_bind, Combobox
 
 logger = logging.getLogger(__package__)
 
@@ -345,12 +345,16 @@ class SpellCheckerDialog(CheckerDialog):
 class SpellChecker:
     """Provides spell check functionality."""
 
-    def __init__(self) -> None:
-        """Initialize SpellChecker class."""
+    def __init__(self, default_only: bool = False) -> None:
+        """Initialize SpellChecker class.
+
+        Args:
+            default_only: If true, do not load user dictionary if there's a default dictionary.
+        """
         self.dictionary: dict[str, bool] = {}
         self.language_list = maintext().get_language_list()
         for lang in self.language_list:
-            self.add_words_from_language(lang)
+            self.add_words_from_language(lang, default_only)
 
     def do_spell_check(self, project_dict: ProjectDict) -> list[SpellingError]:
         """Spell check the currently loaded file, or just the selected range(s).
@@ -579,15 +583,16 @@ class SpellChecker:
 
         return SPELL_CHECK_OK_NO
 
-    def add_words_from_language(self, lang: str) -> None:
+    def add_words_from_language(self, lang: str, default_only: bool) -> None:
         """Add dictionary words for given language.
 
-        Attempts to load default and user dictionaries.
+        Attempts to load default and optionally user dictionaries.
         Outputs warning if default dictionary doesn't exist.
         Raises DictionaryNotFoundError exception if neither dictionary exists.
 
         Args:
             lang: Language to be loaded.
+            default_only: If default dictionary exists, just load it not user dictionary.
         """
         path = DEFAULT_DICTIONARY_DIR.joinpath(f"dict_{lang}_default.txt")
         words_loaded = load_wordfile_into_dict(path, self.dictionary)
@@ -597,7 +602,10 @@ class SpellChecker:
         # Don't load user dictionary if testing or it will skew results
         if not is_test():
             path = Path(preferences.prefsdir, f"dict_{lang}_user.txt")
-            if load_wordfile_into_dict(path, self.dictionary):
+            # If no default dictionary, or if default_only is False, add user dictionary too
+            if (not words_loaded or not default_only) and load_wordfile_into_dict(
+                path, self.dictionary
+            ):
                 words_loaded = True
             if not words_loaded:  # Neither default nor user dictionary exist
                 raise DictionaryNotFoundError(lang)
@@ -693,3 +701,176 @@ def spell_check(
         # Sort by frequency in descending order
         checker_dialog.entries[-1].custom_data = -spelling.frequency
     checker_dialog.display_entries()
+
+
+class LanguageFinderDialog(CheckerDialog):
+    """HTML Language Finder dialog."""
+
+    manual_page = "Tools_Menu#LanguageFinder"
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize Language Finder dialog."""
+
+        super().__init__(
+            "Language Finder Results",
+            tooltip="\n".join(
+                [
+                    "Left click: Select & find word",
+                    "Right click: Remove word from list",
+                    "Shift Right click: Remove all matching words",
+                    f"{cmd_ctrl_string()}-click: Add language markup to word",
+                    f"Shift {cmd_ctrl_string()}-click: Add language markup to all matching words",
+                ]
+            ),
+            **kwargs,
+        )
+        ttk.Label(self.custom_frame, text="Exclude: ").grid(row=0, column=0)
+        self.exclude_combo = Combobox(
+            self.custom_frame,
+            PrefKey.LANGUAGE_FINDER_EXCLUDE_HISTORY,
+            textvariable=PersistentString(PrefKey.LANGUAGE_FINDER_EXCLUDE),
+        )
+        self.exclude_combo.grid(row=0, column=1)
+        ttk.Label(self.custom_frame, text="Include: ").grid(
+            row=0, column=2, padx=(10, 0)
+        )
+        self.include_combo = Combobox(
+            self.custom_frame,
+            PrefKey.LANGUAGE_FINDER_INCLUDE_HISTORY,
+            textvariable=PersistentString(PrefKey.LANGUAGE_FINDER_INCLUDE),
+        )
+        self.include_combo.grid(row=0, column=3)
+
+
+class LanguageFinder:
+    """HTML Language Finder."""
+
+    def __init__(self) -> None:
+        """Initialize HTML Language Finder."""
+
+        self.dialog = LanguageFinderDialog.show_dialog(
+            rerun_command=self.run,
+            match_on_highlight=CheckerMatchType.HIGHLIGHT,
+            show_process_buttons=False,
+            process_command=self.add_markup,
+        )
+
+        # Taken from CheckerDialog
+        fix_btn = ttk.Button(
+            self.dialog.message_controls_frame,
+            text="Add Markup",
+            command=lambda: self.dialog.process_entry_current(all_matching=False),
+        )
+        fix_btn.grid(row=0, column=2, sticky="NSEW")
+        ToolTip(
+            fix_btn, f"Add language markup round word ({cmd_ctrl_string()} left-click)"
+        )
+        fixall_btn = ttk.Button(
+            self.dialog.message_controls_frame,
+            text="Add to Matching",
+            command=lambda: self.dialog.process_entry_current(all_matching=True),
+        )
+        fixall_btn.grid(row=0, column=3, sticky="NSEW")
+        ToolTip(
+            fixall_btn,
+            f"Add language markup round all occurrences of word (Shift {cmd_ctrl_string()} left-click)",
+        )
+        fixrem_btn = ttk.Button(
+            self.dialog.message_controls_frame,
+            text="Add&Hide",
+            command=lambda: self.dialog.process_remove_entry_current(
+                all_matching=False
+            ),
+        )
+        fixrem_btn.grid(row=0, column=4, sticky="NSEW")
+        ToolTip(
+            fixrem_btn,
+            f"Add language markup & hide message ({cmd_ctrl_string()} right-click)",
+        )
+        fixremall_btn = ttk.Button(
+            self.dialog.message_controls_frame,
+            text="Add&Hide Matching",
+            command=lambda: self.dialog.process_remove_entry_current(all_matching=True),
+        )
+        fixremall_btn.grid(row=0, column=5, sticky="NSEW")
+        ToolTip(
+            fixremall_btn,
+            f"Add language markup & hide all matching selected word (Shift {cmd_ctrl_string()} right-click)",
+        )
+
+    def run(self) -> None:
+        """Do the actual check and add messages to the dialog."""
+        self.dialog.reset()
+        self.dialog.update_count_label(working=True)
+        # Create string of excluded/included language(s) in standard format, e.g. "en+de"/"fr"
+        lang_exclude = preferences.get(PrefKey.LANGUAGE_FINDER_EXCLUDE)
+        if lang_exclude:
+            self.dialog.exclude_combo.add_to_history(lang_exclude)
+        exclude_lang = "+".join(
+            [lang for lang in re.split(r"\W", lang_exclude) if lang]
+        )
+        lang_include = preferences.get(PrefKey.LANGUAGE_FINDER_INCLUDE)
+        if lang_include:
+            self.dialog.include_combo.add_to_history(lang_include)
+        include_lang = "+".join(
+            [lang for lang in re.split(r"\W", lang_include) if lang]
+        )
+        if not lang_exclude or not lang_include:
+            logger.error("Exclude and Include lanuage lists cannot be empty")
+            self.dialog.display_entries(complete_msg=False)
+            self.dialog.lift()
+            return
+        # Create exclude/include spellcheckers
+        saved_langs = "+".join(maintext().get_language_list())
+        maintext().set_languages(exclude_lang)
+        checker_exclude = SpellChecker(default_only=True)
+        maintext().set_languages(include_lang)
+        checker_include = SpellChecker(default_only=True)
+        maintext().set_languages(saved_langs)
+        # Get list of spellings not in excluded languages (e.g. "en") dictionaries
+        no_project_dict = ProjectDict()
+        potentials = checker_exclude.do_spell_check(no_project_dict)
+        # For each such word, check if it is included languages (e.g. "fr") dictionaries
+        found: list[SpellingError] = []
+        found_counts: dict[str, int] = {}
+        for potential in potentials:
+            spell_check_result = checker_include.spell_check_word(
+                potential.word, no_project_dict
+            )
+            if spell_check_result == SPELL_CHECK_OK_YES:
+                found.append(
+                    SpellingError(
+                        potential.rowcol,
+                        potential.word,
+                        False,
+                    )
+                )
+                try:
+                    found_counts[potential.word] += 1
+                except KeyError:
+                    found_counts[potential.word] = 1
+
+        for spelling in found:
+            end_rowcol = IndexRowCol(
+                maintext().index(spelling.rowcol.index() + f"+{spelling.count}c")
+            )
+            self.dialog.add_entry(
+                f"{spelling.word} ({found_counts[spelling.word]})",
+                IndexRange(spelling.rowcol, end_rowcol),
+            )
+        self.dialog.display_entries()
+
+    def add_markup(self, checker_entry: CheckerEntry) -> None:
+        """Add markup around the word."""
+        if checker_entry.text_range is None:
+            return
+        start_mark = LanguageFinderDialog.mark_from_rowcol(
+            checker_entry.text_range.start
+        )
+        end_mark = LanguageFinderDialog.mark_from_rowcol(checker_entry.text_range.end)
+        "ab".split()
+        lang_include = (
+            preferences.get(PrefKey.LANGUAGE_FINDER_INCLUDE).strip().split("+")[0]
+        )
+        maintext().insert(end_mark, "</span>")
+        maintext().insert(start_mark, f'<span lang="{lang_include}">')
