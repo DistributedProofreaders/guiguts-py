@@ -1,6 +1,31 @@
 # Changelog
 
 
+## Version 2.1.10
+
+- Align Top/Bottom buttons added to ASCII Tables dialog - these can be used
+  on a column after setting column widths and wrap alignments
+- `/P[8.4,50]`-style extended margin markup has been added for poetry
+- Ctrl-Home/End (Cmd-Up/Down on Macs) saves the current location, so that
+  "Back" can return there
+- A few more exceptions have been added to the Content Providing scannos and
+  filter features to avoid false positives
+- Content Providing menu has been re-ordered to match process order
+- `ob` has been removed from the default English dictionary
+
+### Bug fixes
+
+- End of file "FOOTNOTES" heading was marked up with `<h3>` rather than `<h2>`
+- Short abbreviations without vowels, e.g. `Mr.`, were being queried in
+  bookloupe
+- `autotable` class was being used by HTML AutoTable despite having been
+  removed from default header file
+- HTML generation of footnotes did not cope with embedded `[` or `]` in the
+  same way Footnote Fixup did
+- `<p>` pagenum markup sometimes appeared within `h2` markup
+- `Hide Python` on macOS with Tk9 was not hiding Guiguts
+
+
 ## Version 2.1.9
 
 - HTML Auto-Table now supports using list/flex markup for simple layouts that
@@ -11,6 +36,7 @@
 - Square brackets within footnotes could cause "Join to Previous" to fail with
   no warning; code now copes with more cases, and gives error if unable to cope
 - Using left/right arrow keys in split screen view sometimes worked incorrectly
+
 
 ## Version 2.1.8
 
@@ -43,6 +69,7 @@
 
 - Word Frequency Suspects Only button did not automatically refresh the display
 - ASCII Tables dialog could leave some trailing spaces on the end of lines
+
 
 ## Version 2.1.6
 
