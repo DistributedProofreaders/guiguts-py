@@ -72,6 +72,7 @@ class WFDisplayType(StrEnum):
     MARKEDUP = auto()
     CHAR_COUNTS = auto()
     MIXED_SCRIPT = auto()
+    APOSTROPHES = auto()
     REGEXP = auto()
 
 
@@ -364,6 +365,7 @@ class WordFrequencyDialog(CheckerDialog):
 
         display_radio(4, 0, "Character Counts", WFDisplayType.CHAR_COUNTS)
         display_radio(4, 1, "Mixed Scripts", WFDisplayType.MIXED_SCRIPT)
+        display_radio(4, 2, "Apostrophes", WFDisplayType.APOSTROPHES)
         regex_frame = ttk.Frame(self.custom_frame)
         regex_frame.grid(row=5, column=0, columnspan=3, sticky="NSEW")
         regex_frame.columnconfigure(index=1, weight=1)
@@ -485,6 +487,27 @@ class WordFrequencyDialog(CheckerDialog):
         )
 
     @classmethod
+    def sort_key_alpha_apostrophes_wf(
+        cls,
+        entry: CheckerEntry,
+    ) -> tuple[str, ...]:
+        """Custom alpha sorter for WF accepting apostrophes."""
+        custom = cast(WordFrequencyCustom, entry.custom_data)
+        no_apos = re.sub("['’]", "", custom.word)
+        no_apos_no_dia = WordFrequencyDialog.remove_diacritics_and_hyphens(no_apos)
+        # Replace apostrophes with { or } so they sort after the no-apostrophe version
+        no_dia = WordFrequencyDialog.remove_diacritics_and_hyphens(
+            custom.word.replace("'", "{").replace("’", "}")
+        )
+        return (
+            no_apos_no_dia.lower(),
+            no_apos_no_dia,
+            no_dia.lower(),
+            no_dia,
+            custom.word,
+        )
+
+    @classmethod
     def sort_key_freq_wf(cls, entry: CheckerEntry) -> tuple[int | str, ...]:
         """Custom frequency sorter for WF."""
         custom = cast(WordFrequencyCustom, entry.custom_data)
@@ -548,11 +571,12 @@ class WordFrequencyDialog(CheckerDialog):
         elif sort_type == CheckerSortType.CUSTOM:
             key = WordFrequencyDialog.sort_key_len_wf
         else:
-            key = (
-                WordFrequencyDialog.sort_key_alpha_no_markup_wf
-                if WordFrequencyDialog.display_type == WFDisplayType.MARKEDUP
-                else WordFrequencyDialog.sort_key_alpha_wf
-            )
+            if WordFrequencyDialog.display_type == WFDisplayType.MARKEDUP:
+                key = WordFrequencyDialog.sort_key_alpha_no_markup_wf
+            elif WordFrequencyDialog.display_type == WFDisplayType.APOSTROPHES:
+                key = WordFrequencyDialog.sort_key_alpha_apostrophes_wf
+            else:
+                key = WordFrequencyDialog.sort_key_alpha_wf
 
         hilite_orphan_chars = (
             WordFrequencyDialog.display_type == WFDisplayType.CHAR_COUNTS
@@ -745,11 +769,10 @@ class WordFrequencyDialog(CheckerDialog):
         # Also special handling for non-marked-up phrase from marked-up check
         # (Regex to specifically find non-marked-up version), for char count,
         # and for words that begin/end with non-word chars
-        if preferences.get(
-            PrefKey.WFDIALOG_DISPLAY_TYPE
-        ) == WFDisplayType.MARKEDUP and not word.startswith("<"):
+        display_type = preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE)
+        if display_type == WFDisplayType.MARKEDUP and not word.startswith("<"):
             match_word = r"(?<![>\w])" + re.escape(newline_word) + r"(?![<\w])"
-        elif preferences.get(PrefKey.WFDIALOG_DISPLAY_TYPE) in (
+        elif display_type in (
             WFDisplayType.CHAR_COUNTS,
             WFDisplayType.MARKEDUP,
         ):
@@ -764,17 +787,23 @@ class WordFrequencyDialog(CheckerDialog):
             # (by not having it in the excluded characters)
             # e.g. "school teacher" will match "Sunday-school teacher"
             hyph_bound = "" if " " in newline_word else "-"
+            apos_bound = "" if display_type == WFDisplayType.APOSTROPHES else "'’"
             left_boundary = (
-                r"(?<!([^\W_]|[\p{L}\p{N}][" + hyph_bound + r"'’]))"
+                rf"(?<!([^\W\_]|[\p{{L}}\p{{N}}][{hyph_bound}{apos_bound}]))"
                 if newline_word[0].isalnum()
                 else rf"(?<!{emdash_bound})"
             )
             emdash_bound = "—" if newline_word[-1] == "—" else r"[^\w\s]"
             right_boundary = (
-                r"(?!([^\W_]|[" + hyph_bound + r"'’][\p{L}\p{N}]))"
+                rf"(?!([^\W\_]|[{hyph_bound}{apos_bound}][\p{{L}}\p{{N}}]))"
                 if newline_word[-1].isalnum()
                 else rf"(?!{emdash_bound})"
             )
+            # Must not have apostrophe before/after when doing goto in apostrophe mode
+            # Otherwise `long` would match in `'long`
+            if display_type == WFDisplayType.APOSTROPHES:
+                left_boundary = "(?<!['’])" + left_boundary
+                right_boundary = "(?!['’])" + right_boundary
             match_word = rf"{left_boundary}{re.escape(newline_word)}{right_boundary}"
 
         # If hyphen matching and there's one (escaped) space in the word, let that match
@@ -913,6 +942,7 @@ class WordFrequencyDialog(CheckerDialog):
             WFDisplayType.MARKEDUP,
             WFDisplayType.ACCENTS,
             WFDisplayType.LIGATURES,
+            WFDisplayType.APOSTROPHES,
         ):
             self.suspects_only_btn.grid()
         else:
@@ -943,6 +973,8 @@ class WordFrequencyDialog(CheckerDialog):
                 self.wf_populate_charcounts()
             case WFDisplayType.MIXED_SCRIPT:
                 self.wf_populate_mixedscript()
+            case WFDisplayType.APOSTROPHES:
+                self.wf_populate_apostrophes()
             case WFDisplayType.REGEXP:
                 self.wf_populate_regexps()
             case _ as bad_value:
@@ -1226,6 +1258,66 @@ class WordFrequencyDialog(CheckerDialog):
         self.display_entries()
         self.count_label["text"] = (
             f"{sing_plur(total_cnt, 'marked-up phrase')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyCustom.SUSPECT})"
+        )
+
+    def wf_populate_apostrophes(self) -> None:
+        """Populate the WF dialog with the list of words containing apostrophes."""
+        self.reset()
+
+        apos_dict: WFDict = WFDict()
+        nocase = preferences.get(PrefKey.WFDIALOG_IGNORE_CASE)
+        search_flags = re.IGNORECASE if nocase else 0
+
+        whole_text = maintext().get_text()
+
+        matches = re.findall(
+            r"(?<![\p{L}-])(?=[\p{L}'’\-]*['’])[\p{L}'’\-]+(?![\p{L}-])",
+            whole_text,
+            flags=search_flags,
+        )
+        for match in matches:
+            if nocase:
+                match = match.lower()
+            tally_word(apos_dict, match)
+
+        apos_variants: dict[str, set[str]] = {}
+        for match in apos_dict:
+            no_apos_word = re.sub("['’]", "", match)
+            apos_variants.setdefault(no_apos_word, set()).add(match)
+
+        total_cnt = 0
+        suspect_cnt = 0
+        unapos_dict = {}
+        for match, apos_count in apos_dict.items():
+            # Suspect if the word without apostrophe appears an excess number of times,
+            # i.e. all occurrences > apostrophe occurrences
+            no_apos_word = re.sub("['’]", "", match)
+            no_apos_search = (
+                rf"(?<![\p{{L}}\d'’-]){re.escape(no_apos_word)}(?![\p{{L}}\d'’-])"
+            )
+            total_cnt += 1
+            multiple_variants = len(apos_variants[no_apos_word]) > 1
+
+            # Store no_apos counts so we don't do check twice,
+            # e.g. if runnin', runn'in and runnin all exist
+            if no_apos_word not in unapos_dict:
+                unapos_dict[no_apos_word] = len(
+                    re.findall(no_apos_search, whole_text, flags=search_flags)
+                )
+                if unapos_dict[no_apos_word] > 0:
+                    self.add_wf_entry(
+                        no_apos_word, unapos_dict[no_apos_word], suspect=True
+                    )
+                    suspect_cnt += 1
+
+            if unapos_dict[no_apos_word] > 0 or not self.get_dialog_pref(
+                PrefKey.CHECKERDIALOG_SUSPECTS_ONLY_DICT
+            ):
+                self.add_wf_entry(match, apos_count, suspect=multiple_variants)
+
+        self.display_entries()
+        self.count_label["text"] = (
+            f"{sing_plur(total_cnt, 'apostrophe word')}; {sing_plur(suspect_cnt, 'suspect')} ({WordFrequencyCustom.SUSPECT})"
         )
 
     def wf_populate_accents(self) -> None:
