@@ -3701,10 +3701,16 @@ class MainText(tk.Text):
                         end_row = IndexRowCol(close_index).row
                         for row in range(end_row, start_row - 1, -1):
                             this_line = maintext().get(f"{row}.0", f"{row}.end")
+                            # Find indent on this line after initial poetry wrap
+                            # Use that indent as the initial indent when re-wrapping
+                            # the line to permit poetry to wrap
+                            p_indent = len(this_line) - len(this_line.lstrip())
                             if len(this_line) > poetry_right:
                                 wrapper.width = poetry_right
-                                wrapper.initial_indent = poetry_main_left * " "
+                                wrapper.initial_indent = p_indent * " "
                                 wrapper.subsequent_indent = poetry_wrap_left * " "
+                                # Wrap using the same first margin as line had already,
+                                # but the given subsequent margin & right margin
                                 wrapped = wrapper.fill(this_line).rstrip()
                                 maintext().replace(f"{row}.0", f"{row}.end", wrapped)
 
