@@ -1,0 +1,12 @@
+.footnotes        {border: 1px dashed;}
+
+.footnote         {margin-left: 10%; margin-right: 10%; font-size: 0.9em;}
+
+.footnote .label  {position: absolute; right: 84%; text-align: right;}
+
+.fnanchor {
+    vertical-align: super;
+    font-size: .8em;
+    text-decoration:
+    none;
+}

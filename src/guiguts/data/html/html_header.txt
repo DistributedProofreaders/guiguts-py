@@ -266,20 +266,6 @@ img.w100 {width: 100%;}
 .x-ebookmaker .figright {float: none; text-align: center; margin-left: 0;}
 /* .x-ebookmaker .figright {float: right;} */
 
-/* Footnotes */
-.footnotes        {border: 1px dashed;}
-
-.footnote         {margin-left: 10%; margin-right: 10%; font-size: 0.9em;}
-
-.footnote .label  {position: absolute; right: 84%; text-align: right;}
-
-.fnanchor {
-    vertical-align: super;
-    font-size: .8em;
-    text-decoration:
-    none;
-}
-
 /* Poetry */
 /* uncomment the next line for centered poetry */
 /* .poetry-container {display: flex; justify-content: center;} */
@@ -287,15 +273,6 @@ img.w100 {width: 100%;}
 .poetry           {text-align: left; margin-left: 5%; margin-right: 5%;}
 .poetry .stanza   {margin: 1em auto;}
 .poetry .verse    {text-indent: -3em; padding-left: 3em;}
-
-/* Transcriber's notes */
-.transnote {background-color: #E6E6FA;
-    color: black;
-    font-size:small;
-    padding:0.5em;
-    margin-bottom:5em;
-    font-family:sans-serif, serif;
-}
 
     </style>
 </head>
