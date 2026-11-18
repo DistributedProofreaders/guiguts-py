@@ -1,6 +1,15 @@
 # Changelog
 
 
+## Version 2.1.11
+
+- Documentation on how to create a GG2 release added to README
+
+### Bug fixes
+
+- Long lines of poetry were wrapped, but ignored additional line indents
+
+
 ## Version 2.1.10
 
 - Align Top/Bottom buttons added to ASCII Tables dialog - these can be used
