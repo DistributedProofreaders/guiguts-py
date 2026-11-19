@@ -871,12 +871,11 @@ class HTMLImageBaseDialog(ToplevelDialog):
         unit_type = preferences.get(PrefKey.HTML_IMAGE_UNIT)
         width = self.width_textvariable.get()
         height = self.height_textvariable.get()
-        img_size = img_class = fig_class = style = ""
+        img_size = fig_class = style = ""
         if unit_type == "px":
             img_size = f' width="{width}" height="{height}"'
             style = f' style="width: {width}px;"'
         else:
-            img_class = ' class="w100"'
             fig_class = " illow"
             fig_class += "p" if unit_type == "%" else "e"
             fig_class += width.replace(".", "_")
@@ -894,7 +893,7 @@ class HTMLImageBaseDialog(ToplevelDialog):
             html = f'<hr class="hrimage {hr_class}">'
         else:
             html = f'<figure class="{alignment}{fig_class}" id="{image_id}"{style}>\n'
-            html += f'  <img{img_class} src="{filename}"{img_size}{alt}{role}>\n'
+            html += f'  <img src="{filename}"{img_size}{alt}{role}>\n'
             html += f"{caption}</figure>"
 
         maintext().undo_block_begin()
