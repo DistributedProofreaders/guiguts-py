@@ -137,7 +137,7 @@ from guiguts.search import (
     replace_matched_string,
     SearchDialog,
 )
-from guiguts.spell import spell_check
+from guiguts.spell import spell_check, LanguageFinder
 from guiguts.tools.bookloupe import bookloupe_check
 from guiguts.tools.jeebies import jeebies_check, JeebiesParanoiaLevel
 from guiguts.tools.levenshtein import levenshtein_check, LevenshteinEditDistance
@@ -552,6 +552,12 @@ class Guiguts:
         preferences.set_default(PrefKey.PREF_TAB_CURRENT, 0)
         preferences.set_default(PrefKey.SPELL_THRESHOLD, 3)
         preferences.set_default(PrefKey.SPELL_SUGGESTIONS, True)
+        preferences.set_default(PrefKey.LANGUAGE_FINDER_EXCLUDE, "en")
+        preferences.set_default(PrefKey.LANGUAGE_FINDER_INCLUDE, "fr")
+        preferences.set_default(PrefKey.LANGUAGE_FINDER_EXCLUDE_HISTORY, ["en"])
+        preferences.set_default(
+            PrefKey.LANGUAGE_FINDER_INCLUDE_HISTORY, ["de", "es", "fr", "nl", "pt"]
+        )
         preferences.set_default(PrefKey.UNMATCHED_NESTABLE, False)
         preferences.set_default(PrefKey.UNMATCHED_WITHIN_PARA, False)
         preferences.set_default(
@@ -1315,6 +1321,7 @@ class Guiguts:
             "Google Books Ngram ~Viewer (opens in browser)",
             open_ngram,
         )
+        tools_menu.add_separator()
 
     def init_text_menu(self) -> None:
         """Create the Text menu."""
@@ -1354,6 +1361,7 @@ class Guiguts:
         html_menu.add_button(
             "HTML Ext~ract Alt Text", lambda: HTMLAltTextChecker().run()
         )
+        html_menu.add_button("HTML Language ~Finder", lambda: LanguageFinder().run())
         html_menu.add_separator()
         html_menu.add_button("~Unmatched HTML Tags", unmatched_html_markup)
         html_menu.add_button("HTML Lin~k Checker", lambda: HTMLLinkChecker().run())
