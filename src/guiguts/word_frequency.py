@@ -1276,6 +1276,8 @@ class WordFrequencyDialog(CheckerDialog):
             flags=search_flags,
         )
         for match in matches:
+            if re.fullmatch("[ '’]*", match):
+                continue
             if nocase:
                 match = match.lower()
             tally_word(apos_dict, match)
