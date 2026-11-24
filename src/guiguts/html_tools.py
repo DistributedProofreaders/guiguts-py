@@ -14,6 +14,7 @@ from typing import Optional, Any, Callable
 import xml.sax
 import shutil
 import threading
+from urllib.parse import urlsplit
 import webbrowser
 import zipfile
 
@@ -2095,8 +2096,31 @@ class EbookmakerCheckerAPI:
             return
 
         result = response.json()
+
+        def is_valid_ebookmaker_url(url: str) -> bool:
+            """Check that a URL belongs to the Ebookmaker service."""
+            try:
+                parsed = urlsplit(url)
+                return (
+                    parsed.scheme == "https" and parsed.netloc == "ebookmaker.pglaf.org"
+                )
+            except ValueError:
+                return False
+
         output_txt_url = result["output_log"]
+        if not is_valid_ebookmaker_url(output_txt_url):
+            report_exception(
+                "Ebookmaker returned an invalid output.txt URL.",
+                output_txt_url,
+            )
+            return
         output_dir = result["output_dir"]
+        if not is_valid_ebookmaker_url(output_dir):
+            report_exception(
+                "Ebookmaker returned an invalid output directory URL.",
+                output_dir,
+            )
+            return
 
         # Get output.txt
         try:
