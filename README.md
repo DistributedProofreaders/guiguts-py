@@ -80,7 +80,7 @@ previous version of GG2).
 ### Linux (Debian/Ubuntu)
 
 Python version 3.13 or above is recommended if possible, though GG has been tested in
-versions from 3.11 up to 3.15.
+versions from 3.11.5 up to 3.15.
 
 1. Install python, pipx, and Tk. Note that on some Linux distributions, the version number for `idle-python3.12` may differ slightly, e.g. as of this writing Debian 12 would require `idle-python3.11`.
 
@@ -99,7 +99,7 @@ versions from 3.11 up to 3.15.
 Instructions tested on Fedora Linux 42 (Workstation Edition).
 
 Fedora already has python3 installed. Version 3.13 or above is recommended, if available, and GG has been tested in
-versions 3.11 up to 3.15.
+versions 3.11.5 up to 3.15.
 
 1. Install pip, pipx, Tk & idle: `sudo dnf install pip pipx python3-tkinter python3-idle`
 
@@ -314,7 +314,7 @@ poetry env use /usr/local/bin/python3
 
 1. Install Python, Poetry, etc.
    * Example from Ubuntu 22.04 -- adapt to your own Linux distro. Python version 3.13 or above,
-     is recommended, and GG has been tested in versions 3.11 up to 3.15.
+     is recommended, and GG has been tested in versions 3.11.5 up to 3.15.
      ```bash
      sudo apt install python3.13 python3-pip python3-tk idle-python3.13 git pipx
      sudo pipx install poetry
