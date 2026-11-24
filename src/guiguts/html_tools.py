@@ -2051,6 +2051,8 @@ class EbookmakerCheckerAPI:
                     for root, _, files in os.walk(folder_path):
                         for f in files:
                             full_path = os.path.join(root, f)
+                            if os.path.islink(full_path):
+                                continue
                             arcname = os.path.relpath(
                                 full_path, start=os.path.dirname(folder_path)
                             )
