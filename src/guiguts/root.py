@@ -227,6 +227,15 @@ def _ns_visible_parentless_windows() -> list[int]:
     ]
 
 
+# See https://github.com/python/cpython/issues/161848#issuecomment-7127026878
+# See https://github.com/DistributedProofreaders/guiguts-py/pull/2027
+# See commit 14c848009342
+#
+# Once Tk 9.0.5 or later is assumed to be available, we shouldn't need this
+# anymore (or all of the supporting ObjC functions surrounding it; see the PR
+# for everything that was added and refactored in that change). Unfortunately
+# tkinter.TkVersion doesn't give the patchlevel for the version number, only
+# major/minor.
 def install_macos_hide_workaround(window: tk.Misc) -> None:
     """Make the macOS Hide command (Cmd-H or app menu) hide all the app's windows.
 
