@@ -1855,6 +1855,7 @@ def check_characters(files: list[PgdpFile]) -> None:
         re.compile("”"): '"',  # close curly double quote to straight
         re.compile("“"): '"',  # open curly double quote to straight
         re.compile("–"): "-",  # en dash to hyphen
+        re.compile("−"): "-",  # minus sign to hyphen
         re.compile("—"): "--",  # em dash to double hyphen
         re.compile("⁄"): "/",  # fraction slash
         re.compile("′"): "'",  # prime
